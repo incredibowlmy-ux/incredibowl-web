@@ -1,4 +1,17 @@
 "use client";
+interface CartItem {
+    id: number;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+    calories?: string;
+    performance?: string;
+}
+
 import React, { useState, useEffect } from 'react'
 import { ShoppingBag, Heart, Star, Clock, MapPin, Phone, Leaf, Award, X, Plus, Minus, Trash2, Zap, Home, User } from 'lucide-react'
 
@@ -106,13 +119,14 @@ export default function MenuPage() {
     setCart(prev => prev.filter((i: any) => i.id !== id))
   }
 
-  const updateQuantity = (id: any, delta: any) => {
-    setCart((prev: any[]) => prev.map((item: any) => {
+  const updateQuantity = (id: number, delta: number) => {
+    setCart((prev: CartItem[]) => prev.map((item: CartItem) => {
       if (item.id === id) {
-        return { ...item, quantity: item.quantity + delta }
+        const newQty = item.quantity + delta
+        return newQty > 0 ? { ...item, quantity: newQty } : item
       }
       return item
-    }).filter((item: any) => item.quantity > 0)) // 只要数量加减后小于等于0，就直接过滤掉
+    }).filter((item: CartItem) => item.quantity > 0))
   }
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
