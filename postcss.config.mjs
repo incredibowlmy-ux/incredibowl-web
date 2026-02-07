@@ -1,9 +1,6 @@
-/** @type {import('postcss-load-config').Config} */
-const config = {
+export default {
   plugins: {
-    '@tailwindcss/postcss': {}, // 注意：加上 @ 符号和 /postcss
+    '@tailwindcss/postcss': {}, // 必须使用这个带 @ 符号的正确名称
     'autoprefixer': {},
   },
 };
-
-export default config;

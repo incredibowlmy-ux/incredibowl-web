@@ -92,7 +92,7 @@ export default function MenuPage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const addToCart = (item: any) => {
+  const addToCart = (item: any) => { // 给 item 加上 : any 类型
     setCart(prev => {
       const existing = prev.find((i: any) => i.id === item.id)
       if (existing) {
