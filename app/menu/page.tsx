@@ -92,28 +92,27 @@ export default function MenuPage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const addToCart = (item: any) => { // 给 item 加上 : any 类型
-    setCart(prev => {
-      const existing = prev.find((i: any) => i.id === item.id)
-      if (existing) {
-        return prev.map((i: any) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
-      }
-      return [...prev, { ...item, quantity: 1 }]
-    })
-  }
+  const addToCart = (item: any) => { 
+  setCart((prev: any[]) => { // 修改点：使用 any[] 或具体的 MenuItem[]
+    const existing = prev.find((i: any) => i.id === item.id)
+    if (existing) {
+      return prev.map((i: any) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
+    }
+    return [...prev, { ...item, quantity: 1 }]
+  })
+}
 
   const removeFromCart = (id: any) => {
     setCart(prev => prev.filter((i: any) => i.id !== id))
   }
 
-    const updateQuantity = (id: any, delta: any) => {
-    setCart(prev => prev.map((item: any) => {
+  const updateQuantity = (id: any, delta: any) => {
+    setCart((prev: any[]) => prev.map((item: any) => {
       if (item.id === id) {
-        const newQty = item.quantity + delta
-        return newQty > 0 ? { ...item, quantity: newQty } : item
+        return { ...item, quantity: item.quantity + delta }
       }
       return item
-    }).filter(item => item.quantity > 0))
+    }).filter((item: any) => item.quantity > 0)) // 只要数量加减后小于等于0，就直接过滤掉
   }
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
