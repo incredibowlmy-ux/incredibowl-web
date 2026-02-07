@@ -92,22 +92,22 @@ export default function MenuPage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const addToCart = (item) => {
+  const addToCart = (item: any) => {
     setCart(prev => {
-      const existing = prev.find(i => i.id === item.id)
+      const existing = prev.find((i: any) => i.id === item.id)
       if (existing) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
+        return prev.map((i: any) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
       }
       return [...prev, { ...item, quantity: 1 }]
     })
   }
 
-  const removeFromCart = (id) => {
-    setCart(prev => prev.filter(i => i.id !== id))
+  const removeFromCart = (id: any) => {
+    setCart(prev => prev.filter((i: any) => i.id !== id))
   }
 
-  const updateQuantity = (id, delta) => {
-    setCart(prev => prev.map(item => {
+    const updateQuantity = (id: any, delta: any) => {
+    setCart(prev => prev.map((item: any) => {
       if (item.id === id) {
         const newQty = item.quantity + delta
         return newQty > 0 ? { ...item, quantity: newQty } : item
