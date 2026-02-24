@@ -108,7 +108,7 @@ export default function CartDrawer({
                                 <div className="aspect-square w-48 mx-auto bg-white p-4 border-4 border-[#FAF9F6] rounded-2xl shadow-inner flex items-center justify-center relative">
                                     <div className="text-center font-black opacity-20 text-xs">BANK QR CODE <br />PLACEHOLDER</div>
                                     <div className="absolute inset-0 flex items-center justify-center">
-                                        <Image src="/logo_hd.png" alt="QR" width={48} height={48} className="rounded-full opacity-60 bg-white" />
+                                        <Image src="/logo.png" alt="QR" width={48} height={48} className="rounded-full opacity-60 bg-white" />
                                     </div>
                                 </div>
 

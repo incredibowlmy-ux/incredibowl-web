@@ -14,7 +14,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                         <X size={20} />
                     </button>
                     <div className="w-16 h-16 mx-auto mb-4 bg-white border border-[#D4A373]/20 rounded-full flex items-center justify-center p-1 shadow-md">
-                        <Image src="/logo_hd.png" alt="Logo" width={60} height={60} className="scale-105" />
+                        <Image src="/logo.png" alt="Logo" width={60} height={60} className="scale-105" />
                     </div>
                     <h2 className="text-2xl font-black text-[#5D4037] italic">Incredibowl 邻里</h2>
                     <p className="text-xs font-bold text-[#D4A373] uppercase tracking-widest mt-2 flex items-center justify-center gap-1">
