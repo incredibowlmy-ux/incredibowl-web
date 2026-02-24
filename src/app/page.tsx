@@ -218,14 +218,14 @@ export default function V4BentoLayout() {
             <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
                     <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
+                        <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
                             <Image src="/logo.png" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                         </div>
                         <div>
-                            <h1 className="text-xl md:text-2xl font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
+                            <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
                             <div className="flex items-center gap-2">
                                 <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
-                                <p className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
+                                <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
                             </div>
                         </div>
                     </div>
