@@ -308,7 +308,7 @@ export default function V4BentoLayout() {
                                 type="date"
                                 className="flex-1 px-4 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
                                 onChange={(e) => setSelectedDate(e.target.value)}
-                                min={new Date().toISOString().split('T')[0]}
+                                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
                             />
                             <select
                                 className="px-6 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
