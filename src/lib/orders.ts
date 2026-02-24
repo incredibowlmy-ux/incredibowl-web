@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface OrderItem {
@@ -8,6 +8,8 @@ export interface OrderItem {
     quantity: number;
     image?: string;
 }
+
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
 
 export interface OrderData {
     userId: string;
@@ -21,14 +23,13 @@ export interface OrderData {
     deliveryTime: string;
     paymentMethod: 'qr' | 'fpx';
     receiptUploaded: boolean;
-    status: 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
+    status: OrderStatus;
     note?: string;
 }
 
-// Submit a new order to Firestore
+// Submit a new order
 export const submitOrder = async (orderData: OrderData): Promise<string> => {
     const ordersRef = collection(db, "orders");
-
     const docRef = await addDoc(ordersRef, {
         ...orderData,
         createdAt: serverTimestamp(),
@@ -40,9 +41,43 @@ export const submitOrder = async (orderData: OrderData): Promise<string> => {
     await updateDoc(userRef, {
         totalOrders: increment(1),
         totalSpent: increment(orderData.total),
-        points: increment(Math.floor(orderData.total)), // RM 1 = 1 point
+        points: increment(Math.floor(orderData.total)),
         lastOrderAt: serverTimestamp(),
     });
 
     return docRef.id;
+};
+
+// Get all orders (for admin)
+export const getAllOrders = async () => {
+    const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+// Get orders by date
+export const getOrdersByDate = async (date: string) => {
+    const q = query(
+        collection(db, "orders"),
+        where("deliveryDate", "==", date),
+        orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+// Update order status
+export const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    const orderRef = doc(db, "orders", orderId);
+    await updateDoc(orderRef, {
+        status,
+        updatedAt: serverTimestamp(),
+    });
+};
+
+// Get all users (for admin)
+export const getAllUsers = async () => {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
