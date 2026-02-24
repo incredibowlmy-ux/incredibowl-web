@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700;900&family=Quicksand:wght@300;500;700&family=Fredoka+One&display=swap');
+@import "tailwindcss";
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #1D1D1D;
+  --primary: #FF6B00;
+  --primary-dark: #E66000;
+  --secondary: #E63946;
+  --accent: #FFD60A;
+  --kraft: #F4EFE6;
+  --kraft-dark: #E8E1D1;
+  --rooster: #D62828;
+  --twine: #9D8461;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-kraft: var(--kraft);
+  --color-kraft-dark: var(--kraft-dark);
+  --color-rooster: var(--rooster);
+  --color-twine: var(--twine);
+
+  --color-incredibowl-primary: var(--primary);
+  --color-incredibowl-secondary: var(--secondary);
+  --color-incredibowl-accent: var(--accent);
+  --color-incredibowl-rooster: var(--rooster);
+  --color-incredibowl-kraft: var(--kraft);
+  --color-incredibowl-kraft-dark: var(--kraft-dark);
+  --color-incredibowl-text: var(--foreground);
+  --color-twine: var(--twine);
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background: var(--kraft);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
