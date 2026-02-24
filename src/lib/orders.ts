@@ -89,3 +89,14 @@ export const getAllUsers = async () => {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
+
+// Get orders for a specific user (for client order history)
+export const getUserOrders = async (userId: string) => {
+    const q = query(
+        collection(db, "orders"),
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
