@@ -214,7 +214,7 @@ export default function V4BentoLayout() {
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
-                            <Image src="/logo_hd.png" alt="Incredibowl Logo" width={64} height={64} className="scale-110" />
+                            <Image src="/logo.jpg" alt="Incredibowl Logo" width={128} height={128} className="scale-110" />
                         </div>
                         <div>
                             <h1 className="text-2xl font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
@@ -430,7 +430,7 @@ export default function V4BentoLayout() {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-gray-100 pb-12">
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-full bg-white border-2 border-[#E3EADA] flex items-center justify-center overflow-hidden shadow-sm">
-                                <Image src="/logo_hd.png" alt="Incredibowl Logo" width={64} height={64} className="scale-110" />
+                                <Image src="/logo.jpg" alt="Incredibowl Logo" width={128} height={128} className="scale-110" />
                             </div>
                             <div className="text-left">
                                 <span className="text-2xl font-black tracking-tighter uppercase text-[#1A2D23]">Incredibowl.my</span>
