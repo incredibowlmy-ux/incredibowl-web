@@ -56,10 +56,10 @@ export default function AdminPage() {
         setLoading(false);
     };
 
-    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    const handleStatusChange = async (order: any, newStatus: OrderStatus) => {
         try {
-            await updateOrderStatus(orderId, newStatus);
-            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            await updateOrderStatus(order.id, newStatus, order);
+            setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
         } catch (error) {
             alert('更新失败: ' + error);
         }
@@ -275,21 +275,21 @@ export default function AdminPage() {
                                             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                                                 {order.status === 'pending' && (
                                                     <>
-                                                        <button onClick={() => handleStatusChange(order.id, 'confirmed')} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex items-center gap-1">
+                                                        <button onClick={() => handleStatusChange(order, 'confirmed')} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex items-center gap-1">
                                                             <CheckCircle size={12} /> 确认付款
                                                         </button>
-                                                        <button onClick={() => handleStatusChange(order.id, 'cancelled')} className="px-4 py-2 bg-red-100 text-red-500 rounded-lg text-xs font-bold hover:bg-red-200 flex items-center gap-1">
+                                                        <button onClick={() => handleStatusChange(order, 'cancelled')} className="px-4 py-2 bg-red-100 text-red-500 rounded-lg text-xs font-bold hover:bg-red-200 flex items-center gap-1">
                                                             <XCircle size={12} /> 取消
                                                         </button>
                                                     </>
                                                 )}
                                                 {order.status === 'confirmed' && (
-                                                    <button onClick={() => handleStatusChange(order.id, 'preparing')} className="px-4 py-2 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 flex items-center gap-1">
+                                                    <button onClick={() => handleStatusChange(order, 'preparing')} className="px-4 py-2 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 flex items-center gap-1">
                                                         <ChefHat size={12} /> 开始准备
                                                     </button>
                                                 )}
                                                 {order.status === 'preparing' && (
-                                                    <button onClick={() => handleStatusChange(order.id, 'delivered')} className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 flex items-center gap-1">
+                                                    <button onClick={() => handleStatusChange(order, 'delivered')} className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 flex items-center gap-1">
                                                         <Truck size={12} /> 已送达
                                                     </button>
                                                 )}

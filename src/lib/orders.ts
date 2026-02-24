@@ -27,7 +27,7 @@ export interface OrderData {
     note?: string;
 }
 
-// Submit a new order
+// Submit a new order (points NO LONGER awarded here)
 export const submitOrder = async (orderData: OrderData): Promise<string> => {
     const ordersRef = collection(db, "orders");
     const docRef = await addDoc(ordersRef, {
@@ -36,12 +36,9 @@ export const submitOrder = async (orderData: OrderData): Promise<string> => {
         updatedAt: serverTimestamp(),
     });
 
-    // Update user stats
+    // We only update lastOrderAt here, NO POINTS yet!
     const userRef = doc(db, "users", orderData.userId);
     await updateDoc(userRef, {
-        totalOrders: increment(1),
-        totalSpent: increment(orderData.total),
-        points: increment(Math.floor(orderData.total)),
         lastOrderAt: serverTimestamp(),
     });
 
@@ -66,9 +63,20 @@ export const getOrdersByDate = async (date: string) => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Update order status
-export const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+// Update order status and AWARD POINTS if confirmed
+export const updateOrderStatus = async (orderId: string, status: OrderStatus, orderData?: any) => {
     const orderRef = doc(db, "orders", orderId);
+
+    // If status is changing to 'confirmed', award points now!
+    if (status === 'confirmed' && orderData) {
+        const userRef = doc(db, "users", orderData.userId);
+        await updateDoc(userRef, {
+            totalOrders: increment(1),
+            totalSpent: increment(orderData.total),
+            points: increment(Math.floor(orderData.total ?? 0)), // RM 1 = 1 point
+        });
+    }
+
     await updateDoc(orderRef, {
         status,
         updatedAt: serverTimestamp(),

@@ -127,7 +127,7 @@ export default function CartDrawer({
                         <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
                             <CheckCircle size={48} className="text-green-500" />
                         </div>
-                        <h2 className="text-3xl font-black text-[#1A2D23]">下单成功！🎉</h2>
+                        <h2 className="text-3xl font-black text-[#1A2D23]">订单已提交！🍛</h2>
                         <p className="text-gray-500">
                             订单编号：<span className="font-bold text-[#FF6B35]">#{orderSuccess.slice(-6).toUpperCase()}</span>
                         </p>
@@ -136,9 +136,10 @@ export default function CartDrawer({
                             <p className="text-sm"><span className="font-bold">⏰ 时段：</span>{selectedTime}</p>
                             <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
                             <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
-                            <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分</span></p>
+                            <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分 (核对后发放)</span></p>
                         </div>
-                        <p className="text-xs text-gray-400">阿姨会在 WhatsApp 联系你确认订单 💬</p>
+                        <p className="text-sm font-bold text-[#FF6B35] animate-pulse">阿姨正在核对付款截图，请耐心等候 💬</p>
+                        <p className="text-xs text-gray-400">核对成功后，积分将自动存入你的账户</p>
                     </div>
                 </div>
             </div>
@@ -223,7 +224,7 @@ export default function CartDrawer({
                         {/* Points preview */}
                         <div className="flex items-center gap-2 px-3 py-2 bg-[#E3EADA]/30 rounded-xl">
                             <Sparkles size={14} className="text-[#FF6B35]" />
-                            <span className="text-xs font-bold text-[#1A2D23]/60">此单可获 <span className="text-[#FF6B35]">+{Math.floor(cartTotal)}</span> 积分</span>
+                            <span className="text-xs font-bold text-[#1A2D23]/60">核对成功后可获 <span className="text-[#FF6B35]">+{Math.floor(cartTotal)}</span> 积分</span>
                         </div>
 
                         {/* Login Warning */}
@@ -287,8 +288,8 @@ export default function CartDrawer({
                             onClick={handleCheckout}
                             disabled={submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)}
                             className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                    : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
                                 }`}
                         >
                             <CheckCircle size={22} />
