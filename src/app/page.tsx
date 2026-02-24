@@ -215,27 +215,32 @@ export default function V4BentoLayout() {
             `}</style>
 
             {/* Navigation - v1 Style adapted to v4 colors */}
-            <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-[#E3EADA] py-3' : 'bg-transparent py-6'}`}>
-                <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
+            <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
+                <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
                             <Image src="/logo.png" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
+                            <h1 className="text-lg md:text-2xl font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
                             <div className="flex items-center gap-2">
                                 <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
+                                <p className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 md:gap-6">
-                        <button onClick={() => setIsAuthOpen(true)} className="hidden md:flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                    <div className="flex items-center gap-2 md:gap-4">
+                        {/* Mobile: icon-only login button */}
+                        <button onClick={() => setIsAuthOpen(true)} className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <User size={18} className="text-[#1A2D23]" />
+                        </button>
+                        {/* Desktop: full login button */}
+                        <button onClick={() => setIsAuthOpen(true)} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                             <User size={16} className="text-[#1A2D23]" />
                             <span className="text-xs font-bold text-[#1A2D23]">登录 / 邻里会员</span>
                         </button>
-                        <button onClick={() => setIsCartOpen(true)} className="relative p-3 md:p-4 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-all">
+                        <button onClick={() => setIsCartOpen(true)} className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-all">
                             <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
                             {cartCount > 0 && (
                                 <span className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-[#FF6B35] text-white text-[10px] md:text-xs rounded-full flex items-center justify-center font-black animate-pulse shadow-md">
