@@ -8,7 +8,7 @@ import {
     User,
     updateProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 // Providers
@@ -28,11 +28,16 @@ export const loginWithEmail = async (email: string, password: string) => {
 };
 
 // Register with Email/Password
-export const registerWithEmail = async (email: string, password: string, displayName: string) => {
+export const registerWithEmail = async (
+    email: string,
+    password: string,
+    displayName: string,
+    phone: string,
+    address: string
+) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
-    // Set display name
     await updateProfile(result.user, { displayName });
-    await saveUserProfile(result.user, displayName);
+    await saveUserProfile(result.user, displayName, phone, address);
     return result.user;
 };
 
@@ -42,18 +47,18 @@ export const logout = async () => {
 };
 
 // Save user profile to Firestore
-export const saveUserProfile = async (user: User, displayName?: string) => {
+export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string) => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-        // New user - create profile
         await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
             displayName: displayName || user.displayName || "Guest",
             photoURL: user.photoURL || null,
-            phone: user.phoneNumber || null,
+            phone: phone || null,
+            address: address || null,
             createdAt: serverTimestamp(),
             lastLoginAt: serverTimestamp(),
             totalOrders: 0,
@@ -61,11 +66,26 @@ export const saveUserProfile = async (user: User, displayName?: string) => {
             points: 0,
         });
     } else {
-        // Existing user - update last login
         await setDoc(userRef, {
             lastLoginAt: serverTimestamp(),
         }, { merge: true });
     }
+};
+
+// Update user profile (phone, address, etc.)
+export const updateUserProfile = async (uid: string, data: { phone?: string; address?: string; displayName?: string }) => {
+    const userRef = doc(db, "users", uid);
+    await updateDoc(userRef, {
+        ...data,
+        updatedAt: serverTimestamp(),
+    });
+};
+
+// Get user profile from Firestore
+export const getUserProfile = async (uid: string) => {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    return userSnap.exists() ? userSnap.data() : null;
 };
 
 // Listen to auth state changes
