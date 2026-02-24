@@ -91,12 +91,18 @@ export const getAllUsers = async () => {
 };
 
 // Get orders for a specific user (for client order history)
+// Note: no orderBy to avoid needing a composite index - sort client-side instead
 export const getUserOrders = async (userId: string) => {
     const q = query(
         collection(db, "orders"),
-        where("userId", "==", userId),
-        orderBy("createdAt", "desc")
+        where("userId", "==", userId)
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort by createdAt descending (client-side)
+    return orders.sort((a: any, b: any) => {
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
+    });
 };
