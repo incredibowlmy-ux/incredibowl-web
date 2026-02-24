@@ -80,6 +80,11 @@ export default function V4BentoLayout() {
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("Lunch");
 
+    // Calculate tomorrow's date in local timezone (fixes UTC offset bug on mobile)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
     // Scroll state for Navigation Header
     const [scrolled, setScrolled] = useState(false);
 
@@ -309,14 +314,15 @@ export default function V4BentoLayout() {
                                     type="date"
                                     className="flex-1 px-4 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
                                     onChange={(e) => setSelectedDate(e.target.value)}
-                                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                    min={minDate}
+                                    defaultValue={minDate}
                                 />
                                 <select
                                     className="px-6 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
                                     onChange={(e) => setSelectedTime(e.target.value)}
                                 >
                                     <option>Lunch (11:00 AM - 1:00 PM)</option>
-                                    <option>Dinner (8:00 PM)</option>
+                                    <option>Dinner (6:00 PM - 8:00 PM)</option>
                                 </select>
                             </div>
                         </div>
