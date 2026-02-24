@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { ShoppingBag, X, Plus, Minus, Trash2, Phone, Upload, CheckCircle, CreditCard, Sparkles, Utensils } from 'lucide-react';
+"use client";
 
-// 这里我们暂时借用你原来的数据结构进行展示，实际应从 zustand store 获取
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle } from 'lucide-react';
+import { onAuthChange, getUserProfile } from '@/lib/auth';
+import { submitOrder } from '@/lib/orders';
+import { User } from 'firebase/auth';
+
 export default function CartDrawer({
     isOpen,
     onClose,
@@ -10,138 +14,285 @@ export default function CartDrawer({
     updateQuantity,
     removeFromCart,
     cartTotal,
-    cartCount
+    cartCount,
+    selectedDate,
+    selectedTime,
+    onAuthOpen,
+    onClearCart
 }: any) {
-    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'razorpay'>('qr');
+    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx'>('qr');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
+    const [orderNote, setOrderNote] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthChange(async (user: User | null) => {
+            setCurrentUser(user);
+            if (user) {
+                const profile = await getUserProfile(user.uid);
+                setUserProfile(profile);
+            } else {
+                setUserProfile(null);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     if (!isOpen) return null;
 
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
-            // 模拟上传成功
-            setTimeout(() => setReceiptUploaded(true), 800);
+            setTimeout(() => setReceiptUploaded(true), 500);
         }
     };
 
-    const handleCheckout = () => {
-        if (paymentMethod === 'qr' && !receiptUploaded) {
-            alert("麻烦先 Upload 你的 Bank Receipt 哦，阿姨才能确定开火！");
+    const handleCheckout = async () => {
+        // Check login
+        if (!currentUser) {
+            onAuthOpen();
             return;
         }
-        alert("Payment Confirmed! 阿姨准时把温暖送到。");
+
+        // Check profile completeness
+        if (!userProfile?.phone || !userProfile?.address) {
+            onAuthOpen();
+            return;
+        }
+
+        // Check date selected
+        if (!selectedDate) {
+            alert("请先选择配送日期！");
+            return;
+        }
+
+        // Check receipt for QR payment
+        if (paymentMethod === 'qr' && !receiptUploaded) {
+            alert("请先上传付款截图！");
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            const orderId = await submitOrder({
+                userId: currentUser.uid,
+                userName: currentUser.displayName || userProfile?.displayName || 'Guest',
+                userEmail: currentUser.email || '',
+                userPhone: userProfile.phone,
+                userAddress: userProfile.address,
+                items: cart.map((item: any) => ({
+                    name: item.name,
+                    nameEn: item.nameEn || '',
+                    price: item.price,
+                    quantity: item.quantity,
+                    image: item.image || '',
+                })),
+                total: cartTotal,
+                deliveryDate: selectedDate,
+                deliveryTime: selectedTime || 'Lunch (11:00 AM - 1:00 PM)',
+                paymentMethod: paymentMethod,
+                receiptUploaded: receiptUploaded,
+                status: 'pending',
+                note: orderNote,
+            });
+
+            setOrderSuccess(orderId);
+
+            // Clear cart after 3 seconds
+            setTimeout(() => {
+                onClearCart();
+                setOrderSuccess(null);
+                setReceiptUploaded(false);
+                setOrderNote('');
+                onClose();
+            }, 4000);
+
+        } catch (error: any) {
+            alert(`下单失败: ${error.message}`);
+        }
+
+        setSubmitting(false);
     };
+
+    // Order success view
+    if (orderSuccess) {
+        return (
+            <div className="fixed inset-0 z-[100] flex justify-end">
+                <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" />
+                <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col items-center justify-center border-l border-[#E3EADA]">
+                    <div className="text-center space-y-6 p-8 animate-in zoom-in-95 duration-500">
+                        <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                            <CheckCircle size={48} className="text-green-500" />
+                        </div>
+                        <h2 className="text-3xl font-black text-[#1A2D23]">下单成功！🎉</h2>
+                        <p className="text-gray-500">
+                            订单编号：<span className="font-bold text-[#FF6B35]">#{orderSuccess.slice(-6).toUpperCase()}</span>
+                        </p>
+                        <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
+                            <p className="text-sm"><span className="font-bold">📅 配送日期：</span>{selectedDate}</p>
+                            <p className="text-sm"><span className="font-bold">⏰ 时段：</span>{selectedTime}</p>
+                            <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
+                            <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
+                            <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分</span></p>
+                        </div>
+                        <p className="text-xs text-gray-400">阿姨会在 WhatsApp 联系你确认订单 💬</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
-            <div className="absolute inset-0 bg-[#5D4037]/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-md bg-[#FAF9F6] h-full shadow-2xl flex flex-col border-l border-[#B04A33]/20 animate-in slide-in-from-right duration-500">
+            <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col border-l border-[#E3EADA] animate-in slide-in-from-right duration-500">
 
-                {/* 顶部标签 */}
-                <div className="p-8 bg-white border-b border-[#B04A33]/10 flex justify-between items-center">
-                    <h2 className="text-2xl font-black italic flex items-center gap-3 text-[#B04A33]">
-                        <ShoppingBag /> 拎走温暖 ({cartCount})
+                {/* Header */}
+                <div className="p-6 bg-white border-b border-[#E3EADA] flex justify-between items-center">
+                    <h2 className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
+                        <ShoppingBag size={22} /> 我的订单 ({cartCount})
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-[#FAF9F6] rounded-xl text-[#5D4037]">
-                        <X size={24} />
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400">
+                        <X size={22} />
                     </button>
                 </div>
 
-                {/* 购物车内容区 */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Delivery Info */}
+                {cart.length > 0 && (
+                    <div className="px-6 py-3 bg-[#E3EADA]/30 border-b border-[#E3EADA]/50 flex items-center gap-4 text-xs">
+                        <span className="font-bold text-[#1A2D23]">📅 {selectedDate || '未选日期'}</span>
+                        <span className="text-gray-300">|</span>
+                        <span className="font-bold text-[#1A2D23]">⏰ {selectedTime || 'Lunch'}</span>
+                    </div>
+                )}
+
+                {/* Cart Items */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {cart.length === 0 ? (
-                        <div className="text-center py-20 opacity-20 italic text-[#5D4037]">
+                        <div className="text-center py-20 opacity-20 text-[#1A2D23]">
                             <Utensils className="w-16 h-16 mx-auto mb-4" />
-                            <p className="font-bold uppercase tracking-widest text-sm">还没有挑中心水的家味</p>
+                            <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
                         </div>
                     ) : (
                         cart.map((item: any, i: number) => (
-                            <div key={item.cartItemId} className="bg-white rounded-3xl p-5 border border-[#B04A33]/5 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: `${i * 50}ms` }}>
-                                <div className="w-16 h-16 rounded-2xl bg-[#FAF9F6] flex items-center justify-center text-3xl overflow-hidden relative">
-                                    {item.image.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
+                            <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
+                                <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
+                                    {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="font-black text-[#5D4037]">{item.name}</h4>
-                                    <p className="text-[#B04A33] font-bold text-xl">RM {item.price.toFixed(2)}</p>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-6 h-6 rounded-md border border-[#B04A33]/10 flex items-center justify-center hover:bg-[#B04A33] hover:text-white transition-colors text-[#5D4037]"><Minus size={12} /></button>
-                                        <span className="font-bold text-sm w-4 text-center text-[#5D4037]">{item.quantity}</span>
-                                        <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-6 h-6 rounded-md border border-[#B04A33]/10 flex items-center justify-center hover:bg-[#B04A33] hover:text-white transition-colors text-[#5D4037]"><Plus size={12} /></button>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
+                                    <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
+                                    <div className="flex items-center gap-3 mt-1">
+                                        <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
+                                        <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
                                     </div>
                                 </div>
-                                <button onClick={() => removeFromCart(item.cartItemId)} className="text-[#D4A373]/30 hover:text-[#B04A33] transition-colors self-start"><Trash2 size={20} /></button>
+                                <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start"><Trash2 size={18} /></button>
                             </div>
                         ))
                     )}
+
+                    {/* Order Note */}
+                    {cart.length > 0 && (
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">备注 Note (可选)</label>
+                            <textarea
+                                value={orderNote}
+                                onChange={(e) => setOrderNote(e.target.value)}
+                                placeholder="例：少辣、不要葱…"
+                                rows={2}
+                                className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none"
+                            />
+                        </div>
+                    )}
                 </div>
 
-                {/* Checkout & Payment 区 */}
+                {/* Checkout Section */}
                 {cart.length > 0 && (
-                    <div className="p-8 bg-white border-t border-[#B04A33]/10 space-y-6 shadow-[0_-20px_40px_rgba(176,74,51,0.05)] text-[#5D4037]">
-                        <div className="flex justify-between items-baseline mb-2">
-                            <h3 className="text-lg font-bold italic opacity-40 uppercase tracking-widest">Grand Total</h3>
-                            <p className="text-4xl font-black text-[#B04A33] italic text-right">RM {cartTotal.toFixed(2)}</p>
+                    <div className="p-6 bg-white border-t border-[#E3EADA] space-y-4 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+                        {/* Total */}
+                        <div className="flex justify-between items-baseline">
+                            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                            <span className="text-3xl font-black text-[#FF6B35]">RM {cartTotal.toFixed(2)}</span>
                         </div>
 
-                        {/* 支付方式选择 */}
-                        <div className="grid grid-cols-2 gap-3 mb-4">
+                        {/* Points preview */}
+                        <div className="flex items-center gap-2 px-3 py-2 bg-[#E3EADA]/30 rounded-xl">
+                            <Sparkles size={14} className="text-[#FF6B35]" />
+                            <span className="text-xs font-bold text-[#1A2D23]/60">此单可获 <span className="text-[#FF6B35]">+{Math.floor(cartTotal)}</span> 积分</span>
+                        </div>
+
+                        {/* Login Warning */}
+                        {!currentUser && (
+                            <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
+                                <AlertCircle size={16} /> 请先登录再下单
+                            </button>
+                        )}
+
+                        {/* Profile Warning */}
+                        {currentUser && (!userProfile?.phone || !userProfile?.address) && (
+                            <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
+                                <AlertCircle size={16} /> 请先补充手机号和地址
+                            </button>
+                        )}
+
+                        {/* Payment Methods */}
+                        <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => setPaymentMethod('qr')}
-                                className={`py-3 rounded-xl border-2 font-bold text-sm flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#B04A33] bg-[#B04A33]/5 text-[#B04A33]' : 'border-gray-100 text-gray-400'}`}
+                                className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
                             >
-                                <Phone size={16} /> 户口扫码 (QR)
+                                <Phone size={14} /> DuitNow / QR
                             </button>
                             <button
-                                onClick={() => setPaymentMethod('razorpay')}
-                                className={`py-3 rounded-xl border-2 font-bold text-sm flex justify-center items-center gap-2 transition-all ${paymentMethod === 'razorpay' ? 'border-[#B04A33] bg-[#B04A33]/5 text-[#B04A33]' : 'border-gray-100 text-gray-400'}`}
+                                onClick={() => setPaymentMethod('fpx')}
+                                className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
                             >
-                                <CreditCard size={16} /> FPX / Card
+                                <CreditCard size={14} /> FPX / Card
                             </button>
                         </div>
 
-                        {/* QR Payment 逻辑 */}
-                        {paymentMethod === 'qr' ? (
-                            <div className="space-y-4 pt-4 border-t border-[#B04A33]/10 animate-in fade-in zoom-in duration-300">
-                                <p className="text-sm font-black italic flex items-center gap-2">
-                                    <Sparkles size={16} className="text-[#D4A373]" /> DuitNow / Bank QR
-                                </p>
-                                <div className="aspect-square w-48 mx-auto bg-white p-4 border-4 border-[#FAF9F6] rounded-2xl shadow-inner flex items-center justify-center relative">
-                                    <div className="text-center font-black opacity-20 text-xs">BANK QR CODE <br />PLACEHOLDER</div>
+                        {/* QR Upload */}
+                        {paymentMethod === 'qr' && (
+                            <div className="space-y-3 animate-in fade-in duration-300">
+                                <div className="aspect-square w-40 mx-auto bg-white p-3 border-2 border-[#E3EADA] rounded-2xl shadow-inner flex items-center justify-center relative">
+                                    <div className="text-center font-black opacity-20 text-xs">BANK QR CODE<br />PLACEHOLDER</div>
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <Image src="/logo.png" alt="QR" width={48} height={48} className="rounded-full opacity-60 bg-white" />
                                     </div>
                                 </div>
-
-                                <div className="flex flex-col gap-3">
-                                    <label className={`w-full py-4 border-2 border-dashed rounded-xl flex items-center justify-center gap-3 cursor-pointer transition-colors ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FAF9F6] border-[#D4A373]/30 hover:bg-[#D4A373]/5'}`}>
-                                        {receiptUploaded ? (
-                                            <>
-                                                <CheckCircle size={20} className="text-green-500" />
-                                                <span className="text-sm font-bold text-green-600">已上传凭证 / Uploaded</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Plus size={20} className="text-[#D4A373]" />
-                                                <span className="text-sm font-bold text-[#D4A373]">上传付款截图 / Upload Receipt</span>
-                                            </>
-                                        )}
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                                    </label>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="pt-4 border-t border-[#B04A33]/10 text-center space-y-2 animate-in fade-in duration-300">
-                                <p className="text-sm font-bold italic text-[#795548]">Powered by Razorpay / Curlec</p>
-                                <p className="text-xs text-[#D4A373]">点击下方按钮将前往安全支付网关</p>
+                                <label className={`w-full py-3 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
+                                    {receiptUploaded ? (
+                                        <><CheckCircle size={18} className="text-green-500" /><span className="font-bold text-green-600">已上传凭证 ✓</span></>
+                                    ) : (
+                                        <><Plus size={18} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35]">上传付款截图</span></>
+                                    )}
+                                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                                </label>
                             </div>
                         )}
 
+                        {paymentMethod === 'fpx' && (
+                            <div className="text-center py-3 animate-in fade-in duration-300">
+                                <p className="text-xs text-gray-400">即将支持 FPX 在线支付</p>
+                            </div>
+                        )}
+
+                        {/* Submit Button */}
                         <button
                             onClick={handleCheckout}
-                            disabled={paymentMethod === 'qr' && !receiptUploaded}
-                            className={`w-full py-5 rounded-2xl font-bold text-xl transition-all shadow-xl flex items-center justify-center gap-4 ${paymentMethod === 'qr' && !receiptUploaded ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' : 'bg-[#B04A33] text-white hover:bg-[#8D3421] shadow-[#B04A33]/20'}`}
+                            disabled={submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)}
+                            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
+                                }`}
                         >
-                            <CheckCircle size={24} /> 确认下单 / Confirm Order →
+                            <CheckCircle size={22} />
+                            {submitting ? '提交中...' : '确认下单 →'}
                         </button>
                     </div>
                 )}

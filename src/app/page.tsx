@@ -495,7 +495,7 @@ export default function V4BentoLayout() {
             </footer>
 
             {/* Integrated Renderers */}
-            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} />
+            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
         </div>
     );
