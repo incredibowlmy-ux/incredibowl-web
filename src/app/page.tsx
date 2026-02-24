@@ -293,30 +293,40 @@ export default function V4BentoLayout() {
                     </div>
 
                     {/* Pre-order Widget (Full Width spanning) */}
-                    <div className="lg:col-span-12 bg-white rounded-[32px] p-4 md:p-6 lg:p-8 shadow-sm border border-gray-100 mt-4 flex flex-col md:flex-row items-center justify-between gap-6" id="menu">
-                        <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-[#FDFBF7] rounded-2xl flex items-center justify-center text-[#FF6B35]">
-                                <Calendar size={28} />
+                    <div className="lg:col-span-12 bg-white rounded-[32px] p-4 md:p-6 lg:p-8 shadow-sm border border-gray-100 mt-4 flex flex-col gap-4" id="menu">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-[#FDFBF7] rounded-2xl flex items-center justify-center text-[#FF6B35]">
+                                    <Calendar size={28} />
+                                </div>
+                                <div>
+                                    <h3 className="font-extrabold text-xl">预约你的这周的午饭</h3>
+                                    <p className="text-sm font-medium text-gray-500">选择接收时间，每天阿姨准时开饭</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-extrabold text-xl">预约你的这周的午饭</h3>
-                                <p className="text-sm font-medium text-gray-500">选择接收时间，每天阿姨准时开饭</p>
+                            <div className="flex gap-3 w-full md:w-auto">
+                                <input
+                                    type="date"
+                                    className="flex-1 px-4 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                />
+                                <select
+                                    className="px-6 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
+                                    onChange={(e) => setSelectedTime(e.target.value)}
+                                >
+                                    <option>Lunch (11:00 AM - 1:00 PM)</option>
+                                    <option>Dinner (8:00 PM)</option>
+                                </select>
                             </div>
                         </div>
-                        <div className="flex gap-3 w-full md:w-auto">
-                            <input
-                                type="date"
-                                className="flex-1 px-4 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                            />
-                            <select
-                                className="px-6 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
-                                onChange={(e) => setSelectedTime(e.target.value)}
-                            >
-                                <option>Lunch (12:00 PM)</option>
-                                <option>Dinner (6:30 PM)</option>
-                            </select>
+                        {/* Next-day reminder */}
+                        <div className="flex items-center gap-3 px-4 py-3 bg-[#FFF3E0] rounded-2xl border border-[#FFE0B2]">
+                            <Info size={18} className="text-[#FF6B35] shrink-0" />
+                            <p className="text-xs font-bold text-[#E65100]">
+                                ⚠️ 温馨提醒：所有订单为<span className="underline">隔天</span>的预订，请确认好日期再下单哦！
+                                <span className="text-[#FF6B35] font-medium ml-1">Reminder: All orders are for the NEXT DAY.</span>
+                            </p>
                         </div>
                     </div>
 
