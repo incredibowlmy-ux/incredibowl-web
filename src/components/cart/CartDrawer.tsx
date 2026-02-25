@@ -261,10 +261,8 @@ export default function CartDrawer({
                         {paymentMethod === 'qr' && (
                             <div className="space-y-3 animate-in fade-in duration-300">
                                 {/* DuitNow QR Code */}
-                                <div className="bg-white rounded-2xl border-2 border-[#E3EADA] p-4 shadow-inner">
-                                    <div className="relative w-full max-w-[220px] mx-auto">
-                                        <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={440} height={600} className="w-full h-auto rounded-xl" />
-                                    </div>
+                                <div className="bg-white rounded-2xl border-2 border-[#E3EADA] p-3 shadow-inner">
+                                    <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={600} height={820} className="w-full h-auto rounded-xl" />
                                 </div>
 
                                 {/* Payment Instructions */}
