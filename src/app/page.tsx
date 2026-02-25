@@ -350,10 +350,10 @@ export default function V4BentoLayout() {
                                     <p className="text-sm font-medium text-gray-500">选择接收时间，每天阿姨准时开饭</p>
                                 </div>
                             </div>
-                            <div className="flex gap-3 w-full md:w-auto">
+                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                                 <input
                                     type="date"
-                                    className="flex-1 px-4 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
+                                    className="flex-1 px-4 py-3 md:py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
                                     onChange={(e) => {
                                         const selected = e.target.value;
                                         if (selected < minDate) {
@@ -367,11 +367,11 @@ export default function V4BentoLayout() {
                                     defaultValue={minDate}
                                 />
                                 <select
-                                    className="px-6 py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
+                                    className="flex-1 sm:flex-none px-4 md:px-6 py-3 md:py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
                                     onChange={(e) => setSelectedTime(e.target.value)}
                                 >
-                                    <option>Lunch (11:00 AM - 1:00 PM)</option>
-                                    <option>Dinner (6:00 PM - 8:00 PM)</option>
+                                    <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
+                                    <option value="Dinner (6PM-8PM)">🌙 晚餐 6PM - 8PM</option>
                                 </select>
                             </div>
                         </div>
