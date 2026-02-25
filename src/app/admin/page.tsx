@@ -271,6 +271,25 @@ export default function AdminPage() {
                                                 </div>
                                             )}
 
+                                            {/* Payment & Promo Info */}
+                                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                                <span className={`px-2 py-1 rounded-lg font-bold ${order.paymentMethod === 'qr' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                    {order.paymentMethod === 'qr' ? '💳 DuitNow QR' : '🏦 FPX/Card'}
+                                                </span>
+                                                {order.receiptUploaded && (
+                                                    <span className="px-2 py-1 rounded-lg font-bold bg-green-100 text-green-700">📷 已上传凭证</span>
+                                                )}
+                                                {!order.receiptUploaded && order.paymentMethod === 'qr' && (
+                                                    <span className="px-2 py-1 rounded-lg font-bold bg-red-100 text-red-600">⚠️ 未上传凭证</span>
+                                                )}
+                                                {order.promoCode && (
+                                                    <span className="px-2 py-1 rounded-lg font-bold bg-yellow-100 text-yellow-700">🏷️ {order.promoCode} (-RM{(order.promoDiscount || 0).toFixed(0)})</span>
+                                                )}
+                                            </div>
+                                            {order.promoCode && order.originalTotal && (
+                                                <p className="text-[10px] text-gray-400">原价 RM {order.originalTotal.toFixed(2)} → 优惠后 RM {(order.total || 0).toFixed(2)}</p>
+                                            )}
+
                                             {/* Quick Actions */}
                                             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                                                 {order.status === 'pending' && (

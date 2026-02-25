@@ -37,6 +37,28 @@ export default function MemberPage() {
     const [page, setPage] = useState(0);
     const [copied, setCopied] = useState(false);
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+    const [redeemedCode, setRedeemedCode] = useState('');
+    const [redeeming, setRedeeming] = useState(false);
+
+    const handleRedeemPoints = async () => {
+        if (!currentUser || (profileData?.points || 0) < 100) return;
+        setRedeeming(true);
+        try {
+            // Generate unique promo code
+            const code = 'POINTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            // Deduct 100 points from user
+            const { doc, updateDoc, increment } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const userRef = doc(db, 'users', currentUser.uid);
+            await updateDoc(userRef, { points: increment(-100) });
+            // Update local state
+            setProfileData((prev: any) => ({ ...prev, points: (prev?.points || 0) - 100 }));
+            setRedeemedCode(code);
+        } catch (error) {
+            alert('兑换失败，请稍后再试');
+        }
+        setRedeeming(false);
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -185,7 +207,40 @@ export default function MemberPage() {
                     <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
                         <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] h-3 rounded-full transition-all duration-700" style={{ width: `${pointsProgress}%` }}></div>
                     </div>
-                    <p className="text-[11px] text-gray-400">再累积 <span className="font-bold text-[#FF6B35]">{Math.max(100 - (profileData?.points || 0), 0)}</span> 分即可兑换 RM10 优惠</p>
+
+                    {(profileData?.points || 0) >= 100 ? (
+                        <div className="space-y-3 mt-2">
+                            {!redeemedCode ? (
+                                <button
+                                    onClick={handleRedeemPoints}
+                                    disabled={redeeming}
+                                    className="w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-[#FF6B35]/20"
+                                >
+                                    <Sparkles size={16} />
+                                    {redeeming ? '生成中...' : '🎁 兑换 RM10 优惠码 (扣除100积分)'}
+                                </button>
+                            ) : (
+                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 space-y-2">
+                                    <p className="text-xs font-bold text-green-700 flex items-center gap-1"><CheckCircle size={14} /> 兑换成功！你的优惠码：</p>
+                                    <div className="flex items-center gap-2">
+                                        <code className="flex-1 bg-white px-4 py-2.5 rounded-lg font-mono font-black text-lg text-[#FF6B35] text-center border border-green-200 tracking-wider">
+                                            {redeemedCode}
+                                        </code>
+                                        <button
+                                            onClick={() => { navigator.clipboard.writeText(redeemedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                            className="px-3 py-2.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold hover:bg-[#2A3D33]"
+                                        >
+                                            {copied ? '✅' : '复制'}
+                                        </button>
+                                    </div>
+                                    <p className="text-[10px] text-green-600">结账时输入此优惠码即可减免 RM10</p>
+                                </div>
+                            )}
+                            <p className="text-[10px] text-gray-400 text-center">当前积分：{profileData?.points || 0} 分 · 每 100 分可兑换 RM10</p>
+                        </div>
+                    ) : (
+                        <p className="text-[11px] text-gray-400">再累积 <span className="font-bold text-[#FF6B35]">{Math.max(100 - (profileData?.points || 0), 0)}</span> 分即可兑换 RM10 优惠</p>
+                    )}
                 </div>
 
                 {/* Stats Grid */}
