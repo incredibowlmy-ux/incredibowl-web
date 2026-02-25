@@ -265,16 +265,11 @@ export default function CartDrawer({
                                     <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={600} height={820} className="w-full h-auto rounded-xl" />
                                 </div>
 
-                                {/* Payment Instructions */}
-                                <div className="bg-[#FFF8F0] rounded-xl p-3 space-y-1.5 border border-[#FFE0B2]">
-                                    <p className="text-xs font-bold text-[#E65100] flex items-center gap-1">📋 付款步骤：</p>
-                                    <ol className="text-[11px] text-[#1A2D23]/70 space-y-1 pl-4 list-decimal">
-                                        <li>打开你的银行 App 或电子钱包</li>
-                                        <li>扫描上方 <strong>DuitNow QR</strong> 码</li>
-                                        <li>输入金额 <strong className="text-[#FF6B35]">RM {cartTotal.toFixed(2)}</strong></li>
-                                        <li>截图付款凭证并上传</li>
-                                    </ol>
-                                    <p className="text-[10px] text-gray-400 pt-1">✅ 商户：INCREDIBOWL SERVICES<br />✅ 合作银行：Hong Leong Bank<br />✅ 支持所有银行 & e-Wallet（TnG, MAE, Boost 等）</p>
+                                {/* Merchant Info */}
+                                <div className="bg-[#F5F3EF] rounded-xl px-4 py-3 space-y-1">
+                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 商户：<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
+                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 合作银行：<strong className="text-[#1A2D23]">Hong Leong Bank</strong></p>
+                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 支持所有银行 & e-Wallet（TnG, SPay, MAE, Boost 等）</p>
                                 </div>
 
                                 {/* Upload Receipt */}
