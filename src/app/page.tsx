@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, Calendar, Clock, MapPin, User, ArrowRight, CheckCircle2, MessageCircle, Info, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Calendar, Clock, MapPin, User, ArrowRight, CheckCircle2, MessageCircle, Info, Phone, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import AuthModal from '@/components/auth/AuthModal';
 import CartDrawer from '@/components/cart/CartDrawer';
+import { onAuthChange } from '@/lib/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 
 // Weekly Menu Data
 const weeklyMenu = [
@@ -75,6 +77,12 @@ export default function V4BentoLayout() {
     const [cart, setCart] = useState<any[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthChange((user) => setCurrentUser(user));
+        return () => unsubscribe();
+    }, []);
 
     // Booking State
     const [selectedDate, setSelectedDate] = useState("");
@@ -229,17 +237,45 @@ export default function V4BentoLayout() {
                             </div>
                         </div>
                     </div>
-
                     <div className="flex items-center gap-2 md:gap-4">
-                        {/* Mobile: icon-only login button */}
-                        <button onClick={() => setIsAuthOpen(true)} className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
-                            <User size={18} className="text-[#1A2D23]" />
-                        </button>
-                        {/* Desktop: full login button */}
-                        <button onClick={() => setIsAuthOpen(true)} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
-                            <User size={16} className="text-[#1A2D23]" />
-                            <span className="text-xs font-bold text-[#1A2D23]">登录 / 邻里会员</span>
-                        </button>
+                        {currentUser ? (
+                            <>
+                                {/* Mobile: avatar only */}
+                                <a href="/member" className="md:hidden">
+                                    <div className="w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm border-2 border-[#E3EADA] shadow-sm overflow-hidden">
+                                        {currentUser.photoURL ? (
+                                            <img src={currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            (currentUser.displayName || 'U')[0].toUpperCase()
+                                        )}
+                                    </div>
+                                </a>
+                                {/* Desktop: avatar + name */}
+                                <a href="/member" className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                                    <div className="w-7 h-7 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-bold text-xs overflow-hidden">
+                                        {currentUser.photoURL ? (
+                                            <img src={currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            (currentUser.displayName || 'U')[0].toUpperCase()
+                                        )}
+                                    </div>
+                                    <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || '会员中心'}</span>
+                                    <Sparkles size={12} className="text-[#FF6B35]" />
+                                </a>
+                            </>
+                        ) : (
+                            <>
+                                {/* Mobile: icon-only login button */}
+                                <button onClick={() => setIsAuthOpen(true)} className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                                    <User size={18} className="text-[#1A2D23]" />
+                                </button>
+                                {/* Desktop: full login button */}
+                                <button onClick={() => setIsAuthOpen(true)} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                                    <User size={16} className="text-[#1A2D23]" />
+                                    <span className="text-xs font-bold text-[#1A2D23]">登录 / 邻里会员</span>
+                                </button>
+                            </>
+                        )}
                         <button onClick={() => setIsCartOpen(true)} className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-all">
                             <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
                             {cartCount > 0 && (
@@ -451,10 +487,10 @@ export default function V4BentoLayout() {
                     </div>
 
                 </div>
-            </main>
+            </main >
 
             {/* Footer - v1 Style adapted to v4 colors */}
-            <footer className="py-20 bg-white border-t border-[#E3EADA]">
+            < footer className="py-20 bg-white border-t border-[#E3EADA]" >
                 <div className="max-w-7xl mx-auto px-6 text-center space-y-12">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-gray-100 pb-12">
                         <div className="flex items-center gap-4">
@@ -492,11 +528,12 @@ export default function V4BentoLayout() {
                     </div>
                     <p className="text-[#1A2D23]/30 text-[10px] uppercase font-black tracking-widest">&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
                 </div>
-            </footer>
+            </footer >
 
             {/* Integrated Renderers */}
-            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
-            <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-        </div>
+            < CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)
+            } cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
+            < AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        </div >
     );
 }
