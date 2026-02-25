@@ -20,7 +20,7 @@ export default function CartDrawer({
     onAuthOpen,
     onClearCart
 }: any) {
-    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx'>('qr');
+    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx' | ''>('');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
     const [receiptUrl, setReceiptUrl] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -131,7 +131,7 @@ export default function CartDrawer({
                 promoDiscount: promoDiscount,
                 deliveryDate: selectedDate,
                 deliveryTime: selectedTime || 'Lunch (11AM-1PM)',
-                paymentMethod: paymentMethod,
+                paymentMethod: paymentMethod as 'qr' | 'fpx',
                 receiptUploaded: receiptUploaded,
                 receiptUrl: receiptUrl,
                 status: 'pending',
@@ -380,8 +380,8 @@ export default function CartDrawer({
                         {/* Submit Button */}
                         <button
                             onClick={handleCheckout}
-                            disabled={submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)}
-                            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || (paymentMethod === 'qr' && !receiptUploaded)
+                            disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)}
+                            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                 : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
                                 }`}
