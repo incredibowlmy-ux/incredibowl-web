@@ -285,9 +285,14 @@ export default function MemberPage() {
                                                     </p>
                                                     <p className="text-[10px] text-gray-400 mt-0.5">📅 {order.deliveryDate}</p>
                                                 </div>
-                                                <div className="text-right shrink-0">
+                                                <div className="flex flex-col items-end gap-1.5 shrink-0">
                                                     <p className="font-black text-[#FF6B35]">RM {(order.total || 0).toFixed(2)}</p>
-                                                    <p className="text-[9px] text-gray-400">{isExpanded ? '▲ 收起' : '▼ 详情'}</p>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleReorder(order); }}
+                                                        className="px-3 py-1 bg-[#FF6B35] text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-[#E95D31] transition-colors shadow-sm"
+                                                    >
+                                                        <RefreshCw size={10} /> 再来一单
+                                                    </button>
                                                 </div>
                                             </button>
 
@@ -309,13 +314,6 @@ export default function MemberPage() {
                                                     {order.note && (
                                                         <p className="text-[10px] text-[#FF6B35] font-bold">📝 {order.note}</p>
                                                     )}
-                                                    {/* Reorder Button */}
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleReorder(order); }}
-                                                        className="w-full py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#E95D31] transition-colors shadow-sm shadow-[#FF6B35]/20"
-                                                    >
-                                                        <RefreshCw size={14} /> 再来一单 →
-                                                    </button>
                                                 </div>
                                             )}
                                         </div>
