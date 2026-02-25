@@ -294,9 +294,10 @@ export default function V4BentoLayout() {
 
                     {/* Hero Bento 1: Main Promise */}
                     <div className="lg:col-span-8 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[400px]">
-                        <div className="absolute top-0 right-0 w-2/3 h-full opacity-30 mix-blend-multiply pointer-events-none">
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] to-transparent z-10" />
-                            <Image src="/scallion_chicken_soup.jpg" alt="Background" fill className="object-cover object-right opacity-60" />
+                        <div className="absolute inset-0 opacity-25 mix-blend-multiply pointer-events-none">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] via-transparent to-[#E3EADA]/80 z-10" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#E3EADA] via-transparent to-transparent z-10" />
+                            <Image src="/scallion_chicken_soup.jpg" alt="Background" fill className="object-cover object-center" />
                         </div>
 
                         <div className="relative z-20 max-w-xl">
