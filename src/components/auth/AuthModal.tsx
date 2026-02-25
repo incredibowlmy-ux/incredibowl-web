@@ -312,56 +312,14 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                         {message && (
                             <p className="text-center text-sm font-bold text-[#FF6B35]">{message}</p>
                         )}
-
-                        {/* My Orders */}
-                        <div className="space-y-3">
-                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                                <ShoppingBag size={12} /> 我的订单
-                            </h4>
-                            {loadingOrders ? (
-                                <div className="text-center py-6">
-                                    <div className="animate-spin w-6 h-6 border-2 border-[#FF6B35] border-t-transparent rounded-full mx-auto"></div>
-                                </div>
-                            ) : userOrders.length === 0 ? (
-                                <div className="text-center py-6 text-gray-300 text-sm">
-                                    <ShoppingBag className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                    还没有订单哦
-                                </div>
-                            ) : (
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
-                                    {userOrders.map((order: any) => {
-                                        const statusMap: Record<string, { label: string; color: string; icon: any }> = {
-                                            pending: { label: '待确认', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
-                                            confirmed: { label: '已确认', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
-                                            preparing: { label: '准备中', color: 'bg-purple-100 text-purple-700', icon: ChefHat },
-                                            delivered: { label: '已送达', color: 'bg-green-100 text-green-700', icon: Truck },
-                                            cancelled: { label: '已取消', color: 'bg-red-100 text-red-700', icon: XCircle },
-                                        };
-                                        const st = statusMap[order.status] || statusMap.pending;
-                                        const StIcon = st.icon;
-                                        return (
-                                            <div key={order.id} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[10px] font-mono text-gray-400">#{order.id.slice(-6).toUpperCase()}</span>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 ${st.color}`}>
-                                                        <StIcon size={10} /> {st.label}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-0.5">
-                                                    {order.items?.map((item: any, i: number) => (
-                                                        <p key={i} className="text-xs text-gray-600">{item.name} x{item.quantity}</p>
-                                                    ))}
-                                                </div>
-                                                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-50">
-                                                    <span className="text-[10px] text-gray-400">📅 {order.deliveryDate}</span>
-                                                    <span className="text-sm font-black text-[#FF6B35]">RM {(order.total || 0).toFixed(2)}</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
+                        {/* Member Center Link */}
+                        <a
+                            href="/member"
+                            onClick={onClose}
+                            className="w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:shadow-lg hover:shadow-[#FF6B35]/20 transition-all"
+                        >
+                            <ShoppingBag size={16} /> 查看订单 & 会员中心 →
+                        </a>
                     </div>
                 )}
 
