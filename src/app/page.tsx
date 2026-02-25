@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ShoppingBag, Calendar, Clock, MapPin, User, ArrowRight, CheckCircle2, MessageCircle, Info, Phone, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import AuthModal from '@/components/auth/AuthModal';
 import CartDrawer from '@/components/cart/CartDrawer';
+import AddOnModal from '@/components/menu/AddOnModal';
 import { onAuthChange } from '@/lib/auth';
 import { User as FirebaseUser } from 'firebase/auth';
 
@@ -79,6 +80,8 @@ export default function V4BentoLayout() {
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
     const [heroImgIdx, setHeroImgIdx] = useState(0);
+    const [isAddOnOpen, setIsAddOnOpen] = useState(false);
+    const [selectedDish, setSelectedDish] = useState<typeof weeklyMenu[0] | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => setCurrentUser(user));
@@ -169,6 +172,52 @@ export default function V4BentoLayout() {
                 return prev.map((i: any) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
             }
             return [...prev, { ...item, cartItemId: item.id, quantity: 1, selectedDate, selectedTime }];
+        });
+        setIsCartOpen(true);
+    };
+
+    // Open the add-on modal for a specific dish
+    const openAddOnModal = (dish: typeof weeklyMenu[0]) => {
+        setSelectedDish(dish);
+        setIsAddOnOpen(true);
+    };
+
+    // Handle "Add to Cart" from the AddOnModal
+    const handleAddWithAddOns = (dish: any, addOns: { item: any; quantity: number }[], totalPrice: number, note: string) => {
+        // Add the main dish
+        setCart(prev => {
+            const newItems = [...prev];
+            // Add main dish
+            const existingDish = newItems.find((i: any) => i.id === dish.id && !i.isAddOn);
+            if (existingDish) {
+                existingDish.quantity += 1;
+                existingDish.note = note; // Update note if exists
+            } else {
+                newItems.push({ ...dish, cartItemId: dish.id, quantity: 1, selectedDate: selectedDate || minDate, selectedTime, note });
+            }
+            // Add each add-on as a separate cart line
+            addOns.forEach(({ item, quantity }) => {
+                const addOnCartId = `${dish.id}-addon-${item.id}`;
+                const existingAddOn = newItems.find((i: any) => i.cartItemId === addOnCartId);
+                if (existingAddOn) {
+                    existingAddOn.quantity += quantity;
+                } else {
+                    newItems.push({
+                        id: addOnCartId,
+                        cartItemId: addOnCartId,
+                        name: `↳ ${item.name}`,
+                        nameEn: item.nameEn,
+                        price: item.price,
+                        image: item.image || dish.image,
+                        quantity,
+                        isAddOn: true,
+                        parentDishId: dish.id,
+                        selectedDate: selectedDate || minDate,
+                        selectedTime,
+                    });
+                }
+            });
+            return newItems;
         });
         setIsCartOpen(true);
     };
@@ -471,7 +520,7 @@ export default function V4BentoLayout() {
                                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                                             <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
                                             <button
-                                                onClick={(e) => { e.stopPropagation(); addToCart(dish); }}
+                                                onClick={(e) => { e.stopPropagation(); openAddOnModal(dish); }}
                                                 className="w-full py-4 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors"
                                             >
                                                 <ShoppingBag size={18} /> 加入预订
@@ -559,6 +608,12 @@ export default function V4BentoLayout() {
             {/* Integrated Renderers */}
             <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+            <AddOnModal
+                isOpen={isAddOnOpen}
+                onClose={() => setIsAddOnOpen(false)}
+                dish={selectedDish}
+                onAddToCart={handleAddWithAddOns}
+            />
         </div>
     );
 }
