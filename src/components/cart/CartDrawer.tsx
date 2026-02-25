@@ -259,25 +259,25 @@ export default function CartDrawer({
 
                         {/* QR Upload */}
                         {paymentMethod === 'qr' && (
-                            <div className="space-y-3 animate-in fade-in duration-300">
-                                {/* DuitNow QR Code */}
-                                <div className="bg-white rounded-2xl border-2 border-[#E3EADA] p-3 shadow-inner">
-                                    <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={600} height={820} className="w-full h-auto rounded-xl" />
+                            <div className="space-y-2 animate-in fade-in duration-300">
+                                {/* DuitNow QR Code - Compact */}
+                                <div className="bg-white rounded-xl border border-[#E3EADA] p-2 max-w-[200px] mx-auto shadow-sm">
+                                    <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={400} height={550} className="w-full h-auto rounded-lg" />
                                 </div>
 
-                                {/* Merchant Info */}
-                                <div className="bg-[#F5F3EF] rounded-xl px-4 py-3 space-y-1">
-                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 商户：<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
-                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 合作银行：<strong className="text-[#1A2D23]">Hong Leong Bank</strong></p>
-                                    <p className="text-[11px] text-[#1A2D23]/70 flex items-center gap-1.5"><span className="text-green-500">✅</span> 支持所有银行 & e-Wallet（TnG, SPay, MAE, Boost 等）</p>
+                                {/* Merchant Info - Compact */}
+                                <div className="bg-[#F5F3EF] rounded-lg px-3 py-2 text-[10px] text-[#1A2D23]/60 space-y-0.5">
+                                    <p>✅ 商户：<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
+                                    <p>✅ 合作银行：<strong className="text-[#1A2D23]">Hong Leong Bank</strong></p>
+                                    <p>✅ 支持所有银行 & e-Wallet（TnG, SPay, MAE, Boost 等）</p>
                                 </div>
 
                                 {/* Upload Receipt */}
-                                <label className={`w-full py-3 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
+                                <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
                                     {receiptUploaded ? (
-                                        <><CheckCircle size={18} className="text-green-500" /><span className="font-bold text-green-600">已上传凭证 ✓</span></>
+                                        <><CheckCircle size={16} className="text-green-500" /><span className="font-bold text-green-600 text-xs">已上传凭证 ✓</span></>
                                     ) : (
-                                        <><Plus size={18} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35]">上传付款截图</span></>
+                                        <><Plus size={16} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35] text-xs">上传付款截图</span></>
                                     )}
                                     <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
                                 </label>
