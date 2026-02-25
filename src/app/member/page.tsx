@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { User } from 'firebase/auth';
-import { onAuthChange, getUserProfile } from '@/lib/auth';
+import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut } from 'lucide-react';
 
 // Dish image mapping for favorite dish display
 const DISH_IMAGES: Record<string, string> = {
@@ -473,6 +473,14 @@ export default function MemberPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* Logout Button */}
+                <button
+                    onClick={async () => { await logout(); window.location.href = '/'; }}
+                    className="w-full py-3 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center gap-2 font-bold hover:bg-gray-200 transition-all text-sm"
+                >
+                    <LogOut size={16} /> 登出
+                </button>
             </div>
         </div>
     );
