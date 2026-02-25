@@ -150,7 +150,12 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         setLoading(true);
         setMessage('');
         try {
-            await updateUserProfile(currentUser.uid, { phone, address });
+            const updateData: any = { phone, address };
+            // Save referral code if entered for the first time
+            if (referralInput.trim() && !profileData?.referredBy) {
+                updateData.referredBy = referralInput.trim().toUpperCase();
+            }
+            await updateUserProfile(currentUser.uid, updateData);
             setMessage('✅ 资料已更新！');
             setEditingProfile(false);
             await loadProfile(currentUser.uid);
@@ -279,6 +284,23 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                                     </p>
                                 )}
                             </div>
+
+                            {/* Referral Code - only show for new users without referral */}
+                            {editingProfile && !profileData?.referredBy && (profileData?.totalOrders || 0) === 0 && (
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                                        🎁 推荐码 Referral Code（选填）
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={referralInput}
+                                        onChange={(e) => setReferralInput(e.target.value)}
+                                        placeholder="朋友的推荐码，例: IB-A1B2C3"
+                                        className="w-full mt-1 px-4 py-3 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30"
+                                    />
+                                    <p className="text-[10px] text-[#E65100]/50 mt-1">填写推荐码，首次下单确认后双方各获 50 积分</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
