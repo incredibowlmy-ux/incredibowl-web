@@ -78,10 +78,19 @@ export default function V4BentoLayout() {
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+    const [heroImgIdx, setHeroImgIdx] = useState(0);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => setCurrentUser(user));
         return () => unsubscribe();
+    }, []);
+
+    // Hero background image rotation (every 8 seconds)
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setHeroImgIdx(prev => (prev + 1) % weeklyMenu.length);
+        }, 8000);
+        return () => clearInterval(timer);
     }, []);
 
     // Booking State
@@ -294,10 +303,15 @@ export default function V4BentoLayout() {
 
                     {/* Hero Bento 1: Main Promise */}
                     <div className="lg:col-span-8 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[400px]">
-                        <div className="absolute inset-0 opacity-25 mix-blend-multiply pointer-events-none">
+                        {/* Rotating Background Images */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            {weeklyMenu.map((dish, i) => (
+                                <div key={dish.id} className="absolute inset-0 transition-opacity duration-[2000ms] ease-in-out" style={{ opacity: heroImgIdx === i ? 0.25 : 0 }}>
+                                    <Image src={dish.image} alt="" fill className="object-cover object-center mix-blend-multiply" />
+                                </div>
+                            ))}
                             <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] via-transparent to-[#E3EADA]/80 z-10" />
                             <div className="absolute inset-0 bg-gradient-to-t from-[#E3EADA] via-transparent to-transparent z-10" />
-                            <Image src="/scallion_chicken_soup.jpg" alt="Background" fill className="object-cover object-center" />
                         </div>
 
                         <div className="relative z-20 max-w-xl">
