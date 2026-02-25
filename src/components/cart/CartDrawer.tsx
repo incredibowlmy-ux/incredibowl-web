@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2 } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
@@ -27,6 +27,27 @@ export default function CartDrawer({
     const [orderNote, setOrderNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+    const [promoCode, setPromoCode] = useState('');
+    const [promoApplied, setPromoApplied] = useState(false);
+    const [promoError, setPromoError] = useState('');
+    const [promoDiscount, setPromoDiscount] = useState(0);
+
+    const handleApplyPromo = () => {
+        const code = promoCode.trim().toUpperCase();
+        if (!code) return;
+        // Accept any code that starts with IB- (referral) or POINTS (points redemption)
+        if (code.startsWith('IB-') || code.startsWith('POINTS') || code === 'INCREDIBOWL10') {
+            setPromoDiscount(10);
+            setPromoApplied(true);
+            setPromoError('');
+        } else {
+            setPromoError('优惠码无效，请检查后重试');
+            setPromoApplied(false);
+            setPromoDiscount(0);
+        }
+    };
+
+    const finalTotal = Math.max(0, cartTotal - promoDiscount);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (user: User | null) => {
@@ -90,9 +111,12 @@ export default function CartDrawer({
                     quantity: item.quantity,
                     image: item.image || '',
                 })),
-                total: cartTotal,
+                total: finalTotal,
+                originalTotal: cartTotal,
+                promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
+                promoDiscount: promoDiscount,
                 deliveryDate: selectedDate,
-                deliveryTime: selectedTime || 'Lunch (11:00 AM - 1:00 PM)',
+                deliveryTime: selectedTime || 'Lunch (11AM-1PM)',
                 paymentMethod: paymentMethod,
                 receiptUploaded: receiptUploaded,
                 status: 'pending',
@@ -107,6 +131,9 @@ export default function CartDrawer({
                 setOrderSuccess(null);
                 setReceiptUploaded(false);
                 setOrderNote('');
+                setPromoCode('');
+                setPromoApplied(false);
+                setPromoDiscount(0);
                 onClose();
             }, 4000);
 
@@ -215,16 +242,46 @@ export default function CartDrawer({
                 {/* Checkout Section */}
                 {cart.length > 0 && (
                     <div className="p-6 bg-white border-t border-[#E3EADA] space-y-4 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+                        {/* Promo Code */}
+                        <div className="space-y-2">
+                            <div className="flex gap-2">
+                                <div className="flex-1 relative">
+                                    <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                                    <input
+                                        type="text"
+                                        value={promoCode}
+                                        onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
+                                        placeholder="输入优惠码 / Promo Code"
+                                        disabled={promoApplied}
+                                        className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'
+                                            }`}
+                                    />
+                                </div>
+                                {promoApplied ? (
+                                    <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }} className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
+                                ) : (
+                                    <button onClick={handleApplyPromo} className="px-4 py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors">使用</button>
+                                )}
+                            </div>
+                            {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
+                            {promoApplied && <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1"><CheckCircle size={12} /> 已减免 RM {promoDiscount.toFixed(2)}</p>}
+                        </div>
+
                         {/* Total */}
                         <div className="flex justify-between items-baseline">
                             <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                            <span className="text-3xl font-black text-[#FF6B35]">RM {cartTotal.toFixed(2)}</span>
+                            <div className="text-right">
+                                {promoApplied && (
+                                    <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
+                                )}
+                                <span className="text-3xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
+                            </div>
                         </div>
 
                         {/* Points preview */}
                         <div className="flex items-center gap-2 px-3 py-2 bg-[#E3EADA]/30 rounded-xl">
                             <Sparkles size={14} className="text-[#FF6B35]" />
-                            <span className="text-xs font-bold text-[#1A2D23]/60">核对成功后可获 <span className="text-[#FF6B35]">+{Math.floor(cartTotal)}</span> 积分</span>
+                            <span className="text-xs font-bold text-[#1A2D23]/60">核对成功后可获 <span className="text-[#FF6B35]">+{Math.floor(finalTotal)}</span> 积分</span>
                         </div>
 
                         {/* Login Warning */}

@@ -19,6 +19,9 @@ export interface OrderData {
     userAddress: string;
     items: OrderItem[];
     total: number;
+    originalTotal?: number;
+    promoCode?: string;
+    promoDiscount?: number;
     deliveryDate: string;
     deliveryTime: string;
     paymentMethod: 'qr' | 'fpx';
