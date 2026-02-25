@@ -3,6 +3,7 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     GoogleAuthProvider,
+    FacebookAuthProvider,
     signOut,
     onAuthStateChanged,
     User,
@@ -13,10 +14,18 @@ import { auth, db } from "./firebase";
 
 // Providers
 const googleProvider = new GoogleAuthProvider();
+const facebookProvider = new FacebookAuthProvider();
 
 // Sign in with Google
 export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
+    await saveUserProfile(result.user);
+    return result.user;
+};
+
+// Sign in with Facebook
+export const signInWithFacebook = async () => {
+    const result = await signInWithPopup(auth, facebookProvider);
     await saveUserProfile(result.user);
     return result.user;
 };
