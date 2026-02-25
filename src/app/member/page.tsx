@@ -173,9 +173,17 @@ export default function MemberPage() {
                     <div className="absolute bottom-5 right-10 text-7xl">🥢</div>
                 </div>
                 <div className="max-w-2xl mx-auto relative">
-                    <Link href="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-bold mb-6 transition-colors">
-                        <ArrowLeft size={16} /> 返回首页
-                    </Link>
+                    <div className="flex items-center justify-between mb-6">
+                        <Link href="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-bold transition-colors">
+                            <ArrowLeft size={16} /> 返回首页
+                        </Link>
+                        <button
+                            onClick={async () => { await logout(); window.location.href = '/'; }}
+                            className="inline-flex items-center gap-1.5 text-white/40 hover:text-white text-xs font-bold transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
+                        >
+                            <LogOut size={14} /> 登出
+                        </button>
+                    </div>
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center overflow-hidden">
                             {currentUser?.photoURL ? (
@@ -473,14 +481,6 @@ export default function MemberPage() {
                         ))}
                     </div>
                 </div>
-
-                {/* Logout Button */}
-                <button
-                    onClick={async () => { await logout(); window.location.href = '/'; }}
-                    className="w-full py-3 bg-gray-100 text-gray-500 rounded-2xl flex items-center justify-center gap-2 font-bold hover:bg-gray-200 transition-all text-sm"
-                >
-                    <LogOut size={16} /> 登出
-                </button>
             </div>
         </div>
     );
