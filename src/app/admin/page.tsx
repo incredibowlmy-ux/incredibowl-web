@@ -276,9 +276,11 @@ export default function AdminPage() {
                                                 <span className={`px-2 py-1 rounded-lg font-bold ${order.paymentMethod === 'qr' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
                                                     {order.paymentMethod === 'qr' ? '💳 DuitNow QR' : '🏦 FPX/Card'}
                                                 </span>
-                                                {order.receiptUploaded && (
+                                                {order.receiptUploaded && order.receiptUrl ? (
+                                                    <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-lg font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-colors">📷 查看凭证</a>
+                                                ) : order.receiptUploaded ? (
                                                     <span className="px-2 py-1 rounded-lg font-bold bg-green-100 text-green-700">📷 已上传凭证</span>
-                                                )}
+                                                ) : null}
                                                 {!order.receiptUploaded && order.paymentMethod === 'qr' && (
                                                     <span className="px-2 py-1 rounded-lg font-bold bg-red-100 text-red-600">⚠️ 未上传凭证</span>
                                                 )}

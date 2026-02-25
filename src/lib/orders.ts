@@ -26,6 +26,7 @@ export interface OrderData {
     deliveryTime: string;
     paymentMethod: 'qr' | 'fpx';
     receiptUploaded: boolean;
+    receiptUrl?: string;
     status: OrderStatus;
     note?: string;
 }

@@ -22,6 +22,8 @@ export default function CartDrawer({
 }: any) {
     const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx'>('qr');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
+    const [receiptUrl, setReceiptUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [orderNote, setOrderNote] = useState('');
@@ -35,7 +37,6 @@ export default function CartDrawer({
     const handleApplyPromo = () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
-        // Accept any code that starts with IB- (referral) or POINTS (points redemption)
         if (code.startsWith('IB-') || code.startsWith('POINTS') || code === 'INCREDIBOWL10') {
             setPromoDiscount(10);
             setPromoApplied(true);
@@ -64,10 +65,23 @@ export default function CartDrawer({
 
     if (!isOpen) return null;
 
-    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            setTimeout(() => setReceiptUploaded(true), 500);
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        const file = e.target.files[0];
+        setUploading(true);
+        try {
+            const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+            const { storage } = await import('@/lib/firebase');
+            const fileName = `receipts/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, fileName);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+            setReceiptUrl(url);
+            setReceiptUploaded(true);
+        } catch (error) {
+            alert('上传失败，请重试');
         }
+        setUploading(false);
     };
 
     const handleCheckout = async () => {
@@ -119,6 +133,7 @@ export default function CartDrawer({
                 deliveryTime: selectedTime || 'Lunch (11AM-1PM)',
                 paymentMethod: paymentMethod,
                 receiptUploaded: receiptUploaded,
+                receiptUrl: receiptUrl,
                 status: 'pending',
                 note: orderNote,
             });
@@ -130,6 +145,7 @@ export default function CartDrawer({
                 onClearCart();
                 setOrderSuccess(null);
                 setReceiptUploaded(false);
+                setReceiptUrl('');
                 setOrderNote('');
                 setPromoCode('');
                 setPromoApplied(false);
@@ -330,14 +346,28 @@ export default function CartDrawer({
                                 </div>
 
                                 {/* Upload Receipt */}
-                                <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
-                                    {receiptUploaded ? (
-                                        <><CheckCircle size={16} className="text-green-500" /><span className="font-bold text-green-600 text-xs">已上传凭证 ✓</span></>
-                                    ) : (
-                                        <><Plus size={16} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35] text-xs">上传付款截图</span></>
-                                    )}
-                                    <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                                </label>
+                                {receiptUploaded && receiptUrl ? (
+                                    <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2">
+                                        <img src={receiptUrl} alt="Receipt" className="w-12 h-12 rounded-lg object-cover border border-green-200" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-bold text-green-700 flex items-center gap-1"><CheckCircle size={12} /> 凭证已上传</p>
+                                            <p className="text-[10px] text-green-600/60 truncate">点击重新上传</p>
+                                        </div>
+                                        <label className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-green-200">
+                                            换图
+                                            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${uploading ? 'bg-orange-50 border-orange-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
+                                        {uploading ? (
+                                            <><Loader2 size={16} className="text-[#FF6B35] animate-spin" /><span className="font-bold text-[#FF6B35] text-xs">上传中...</span></>
+                                        ) : (
+                                            <><Plus size={16} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35] text-xs">上传付款截图</span></>
+                                        )}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
+                                    </label>
+                                )}
                             </div>
                         )}
 

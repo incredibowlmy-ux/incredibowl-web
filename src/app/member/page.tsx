@@ -209,34 +209,58 @@ export default function MemberPage() {
                     </div>
 
                     {(profileData?.points || 0) >= 100 ? (
-                        <div className="space-y-3 mt-2">
+                        <div className="mt-3">
                             {!redeemedCode ? (
-                                <button
-                                    onClick={handleRedeemPoints}
-                                    disabled={redeeming}
-                                    className="w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity shadow-lg shadow-[#FF6B35]/20"
-                                >
-                                    <Sparkles size={16} />
-                                    {redeeming ? '生成中...' : '🎁 兑换 RM10 优惠码 (扣除100积分)'}
-                                </button>
-                            ) : (
-                                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 space-y-2">
-                                    <p className="text-xs font-bold text-green-700 flex items-center gap-1"><CheckCircle size={14} /> 兑换成功！你的优惠码：</p>
-                                    <div className="flex items-center gap-2">
-                                        <code className="flex-1 bg-white px-4 py-2.5 rounded-lg font-mono font-black text-lg text-[#FF6B35] text-center border border-green-200 tracking-wider">
-                                            {redeemedCode}
-                                        </code>
+                                <div className="bg-gradient-to-br from-[#FFF3E0] via-[#FFECB3] to-[#FFE0B2] rounded-2xl p-5 border border-[#FFD54F]/50 relative overflow-hidden">
+                                    {/* Decorative */}
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#FF6B35]/10 rounded-full blur-2xl" />
+                                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-[#FFD54F]/20 rounded-full blur-xl" />
+
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-12 h-12 bg-white/80 rounded-2xl flex items-center justify-center text-2xl shadow-sm animate-bounce">
+                                                🎁
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-[#E65100] text-sm">恭喜！积分已达标</p>
+                                                <p className="text-[11px] text-[#E65100]/60">你可以用 100 积分兑换 RM10 优惠码</p>
+                                            </div>
+                                        </div>
                                         <button
-                                            onClick={() => { navigator.clipboard.writeText(redeemedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                                            className="px-3 py-2.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold hover:bg-[#2A3D33]"
+                                            onClick={handleRedeemPoints}
+                                            disabled={redeeming}
+                                            className="w-full py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/30 active:scale-[0.98]"
                                         >
-                                            {copied ? '✅' : '复制'}
+                                            <Sparkles size={16} />
+                                            {redeeming ? '生成优惠码中...' : '立即兑换 RM10 优惠码'}
                                         </button>
+                                        <p className="text-[10px] text-[#E65100]/40 text-center mt-2">兑换后将扣除 100 积分 · 剩余 {Math.max(0, (profileData?.points || 0) - 100)} 分</p>
                                     </div>
-                                    <p className="text-[10px] text-green-600">结账时输入此优惠码即可减免 RM10</p>
+                                </div>
+                            ) : (
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-200 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/30 rounded-full blur-2xl" />
+                                    <div className="relative z-10 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                                <CheckCircle size={18} className="text-green-600" />
+                                            </div>
+                                            <p className="font-black text-green-700 text-sm">兑换成功！🎉</p>
+                                        </div>
+                                        <div className="bg-white rounded-xl p-4 border border-green-200 text-center">
+                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">你的优惠码</p>
+                                            <p className="font-mono font-black text-2xl text-[#FF6B35] tracking-[0.15em] mb-2">{redeemedCode}</p>
+                                            <button
+                                                onClick={() => { navigator.clipboard.writeText(redeemedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                                className="px-5 py-2 bg-[#1A2D23] text-white rounded-lg text-xs font-bold hover:bg-[#2A3D33] transition-colors"
+                                            >
+                                                {copied ? '✅ 已复制' : '📋 复制优惠码'}
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-green-600/70 text-center">结账时粘贴此优惠码即可减免 RM10</p>
+                                    </div>
                                 </div>
                             )}
-                            <p className="text-[10px] text-gray-400 text-center">当前积分：{profileData?.points || 0} 分 · 每 100 分可兑换 RM10</p>
                         </div>
                     ) : (
                         <p className="text-[11px] text-gray-400">再累积 <span className="font-bold text-[#FF6B35]">{Math.max(100 - (profileData?.points || 0), 0)}</span> 分即可兑换 RM10 优惠</p>
