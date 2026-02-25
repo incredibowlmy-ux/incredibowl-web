@@ -487,10 +487,10 @@ export default function V4BentoLayout() {
                     </div>
 
                 </div>
-            </main >
+            </main>
 
             {/* Footer - v1 Style adapted to v4 colors */}
-            < footer className="py-20 bg-white border-t border-[#E3EADA]" >
+            <footer className="py-20 bg-white border-t border-[#E3EADA]">
                 <div className="max-w-7xl mx-auto px-6 text-center space-y-12">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-gray-100 pb-12">
                         <div className="flex items-center gap-4">
@@ -528,12 +528,11 @@ export default function V4BentoLayout() {
                     </div>
                     <p className="text-[#1A2D23]/30 text-[10px] uppercase font-black tracking-widest">&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
                 </div>
-            </footer >
+            </footer>
 
             {/* Integrated Renderers */}
-            < CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)
-            } cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
-            < AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-        </div >
+            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
+            <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+        </div>
     );
 }

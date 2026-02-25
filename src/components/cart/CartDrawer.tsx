@@ -260,12 +260,26 @@ export default function CartDrawer({
                         {/* QR Upload */}
                         {paymentMethod === 'qr' && (
                             <div className="space-y-3 animate-in fade-in duration-300">
-                                <div className="aspect-square w-40 mx-auto bg-white p-3 border-2 border-[#E3EADA] rounded-2xl shadow-inner flex items-center justify-center relative">
-                                    <div className="text-center font-black opacity-20 text-xs">BANK QR CODE<br />PLACEHOLDER</div>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <Image src="/logo.png" alt="QR" width={48} height={48} className="rounded-full opacity-60 bg-white" />
+                                {/* DuitNow QR Code */}
+                                <div className="bg-white rounded-2xl border-2 border-[#E3EADA] p-4 shadow-inner">
+                                    <div className="relative w-full max-w-[220px] mx-auto">
+                                        <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={440} height={600} className="w-full h-auto rounded-xl" />
                                     </div>
                                 </div>
+
+                                {/* Payment Instructions */}
+                                <div className="bg-[#FFF8F0] rounded-xl p-3 space-y-1.5 border border-[#FFE0B2]">
+                                    <p className="text-xs font-bold text-[#E65100] flex items-center gap-1">📋 付款步骤：</p>
+                                    <ol className="text-[11px] text-[#1A2D23]/70 space-y-1 pl-4 list-decimal">
+                                        <li>打开你的银行 App 或电子钱包</li>
+                                        <li>扫描上方 <strong>DuitNow QR</strong> 码</li>
+                                        <li>输入金额 <strong className="text-[#FF6B35]">RM {cartTotal.toFixed(2)}</strong></li>
+                                        <li>截图付款凭证并上传</li>
+                                    </ol>
+                                    <p className="text-[10px] text-gray-400 pt-1">✅ 商户：INCREDIBOWL SERVICES<br />✅ 合作银行：Hong Leong Bank<br />✅ 支持所有银行 & e-Wallet（TnG, MAE, Boost 等）</p>
+                                </div>
+
+                                {/* Upload Receipt */}
                                 <label className={`w-full py-3 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${receiptUploaded ? 'bg-green-50 border-green-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
                                     {receiptUploaded ? (
                                         <><CheckCircle size={18} className="text-green-500" /><span className="font-bold text-green-600">已上传凭证 ✓</span></>
