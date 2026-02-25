@@ -376,12 +376,23 @@ export default function V4BentoLayout() {
                             </div>
                         </div>
                         {/* Next-day reminder */}
-                        <div className="flex items-center gap-3 px-4 py-3 bg-[#FFF3E0] rounded-2xl border border-[#FFE0B2]">
-                            <Info size={18} className="text-[#FF6B35] shrink-0" />
-                            <p className="text-xs font-bold text-[#E65100]">
-                                ⚠️ 温馨提醒：所有订单为<span className="underline">隔天</span>的预订，请确认好日期再下单哦！
-                                <span className="text-[#FF6B35] font-medium ml-1">Reminder: All orders are for the NEXT DAY.</span>
-                            </p>
+                        <div className="bg-[#FFF3E0] rounded-2xl border border-[#FFE0B2] px-4 py-3 md:px-5 md:py-4">
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-full bg-[#FF6B35]/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Info size={16} className="text-[#FF6B35]" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-[#E65100] mb-1">
+                                        📌 所有订单为<span className="underline">隔天</span>的预订
+                                    </p>
+                                    <p className="text-[11px] text-[#1A2D23]/60 leading-relaxed">
+                                        阿姨每天清早亲自去巴刹挑选最新鲜的食材，需要提前一天知道份量才能准确采购，确保你吃到的每一口都是当天现煮、真材实料。
+                                    </p>
+                                    <p className="text-[10px] text-[#FF6B35]/70 mt-1 font-medium italic">
+                                        Auntie visits the market fresh every morning — we need your order a day ahead to buy just the right amount. That's our promise of freshness.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
