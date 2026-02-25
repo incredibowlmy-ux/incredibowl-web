@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   title: "Incredibowl | Performance Food for the KL Office",
   description: "Old Klang Road home-cooked meals designed to beat the afternoon slump. Mom-standard quality for the CBD.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
