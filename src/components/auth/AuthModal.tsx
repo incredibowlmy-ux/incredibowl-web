@@ -24,6 +24,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const [editingProfile, setEditingProfile] = useState(false);
     const [userOrders, setUserOrders] = useState<any[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
+    const [referralInput, setReferralInput] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -125,7 +126,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         setLoading(true);
         setMessage('');
         try {
-            await registerWithEmail(email, password, name, phone, address);
+            await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
             setMessage('✅ 注册成功！欢迎加入 Incredibowl！');
             setTimeout(() => resetAndClose(), 1500);
         } catch (error: any) {
@@ -439,6 +440,12 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
                                 </div>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">🎁 推荐码 Referral Code（选填）</label>
+                                <input type="text" value={referralInput} onChange={(e) => setReferralInput(e.target.value)} placeholder="朋友的推荐码，例: IB-A1B2C3"
+                                    className="w-full mt-1 px-4 py-3 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30" />
+                                <p className="text-[10px] text-[#E65100]/50 mt-1">填写推荐码，首次下单确认后双方各获 50 积分</p>
                             </div>
                             <button type="submit" disabled={loading}
                                 className="w-full py-3 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] disabled:opacity-50 shadow-lg shadow-[#FF6B35]/20">

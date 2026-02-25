@@ -120,8 +120,8 @@ export default function MemberPage() {
     const pointsProgress = Math.min(((profileData?.points || 0) / 100) * 100, 100);
 
     // Referral code
-    const referralCode = currentUser?.uid?.slice(0, 6).toUpperCase() || 'XXXXXX';
-    const shareText = `🍛 我在 Incredibowl 订了好吃的家味便当！用我的推荐码 ${referralCode} 注册，双方各获 50 积分！\n👉 https://incredibowl.my`;
+    const referralCode = profileData?.referralCode || ('IB-' + (currentUser?.uid?.slice(0, 6).toUpperCase() || 'XXXXXX'));
+    const shareText = `🍛 我在 Incredibowl 订了好吃的家味便当！用我的推荐码 ${referralCode} 注册，首次下单确认后双方各获 50 积分！\n👉 https://incredibowl.my`;
     const shareUrl = 'https://incredibowl.my';
 
     const handleCopyCode = () => {

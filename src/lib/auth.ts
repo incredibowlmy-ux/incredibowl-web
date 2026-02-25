@@ -8,7 +8,7 @@ import {
     User,
     updateProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, increment } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 // Providers
@@ -33,11 +33,12 @@ export const registerWithEmail = async (
     password: string,
     displayName: string,
     phone: string,
-    address: string
+    address: string,
+    referralCode?: string
 ) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(result.user, { displayName });
-    await saveUserProfile(result.user, displayName, phone, address);
+    await saveUserProfile(result.user, displayName, phone, address, referralCode);
     return result.user;
 };
 
@@ -47,11 +48,12 @@ export const logout = async () => {
 };
 
 // Save user profile to Firestore
-export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string) => {
+export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string) => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
+        const ownReferralCode = 'IB-' + user.uid.slice(0, 6).toUpperCase();
         await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
@@ -59,6 +61,9 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             photoURL: user.photoURL || null,
             phone: phone || null,
             address: address || null,
+            referralCode: ownReferralCode,
+            referredBy: referralCode || null,
+            referralBonusAwarded: false,
             createdAt: serverTimestamp(),
             lastLoginAt: serverTimestamp(),
             totalOrders: 0,

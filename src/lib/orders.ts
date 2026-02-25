@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, getDocs, getDoc, query, orderBy, where, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface OrderItem {
@@ -79,6 +79,29 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, or
             totalSpent: increment(orderData.total),
             points: increment(Math.floor(orderData.total ?? 0)), // RM 1 = 1 point
         });
+
+        // Check referral bonus (only on first confirmed order)
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        if (userData?.referredBy && !userData?.referralBonusAwarded) {
+            const referralCode = userData.referredBy; // e.g. "IB-A1B2C3"
+            // Find the referrer by their referralCode
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("referralCode", "==", referralCode));
+            const referrerSnap = await getDocs(q);
+            if (!referrerSnap.empty) {
+                const referrerDoc = referrerSnap.docs[0];
+                // Award 50 points to referrer
+                await updateDoc(doc(db, "users", referrerDoc.id), {
+                    points: increment(50),
+                });
+                // Award 50 points to new user
+                await updateDoc(userRef, {
+                    points: increment(50),
+                    referralBonusAwarded: true,
+                });
+            }
+        }
     }
 
     await updateDoc(orderRef, {
