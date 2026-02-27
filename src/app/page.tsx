@@ -112,10 +112,85 @@ export default function V4BentoLayout() {
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("Lunch");
 
-    // Calculate tomorrow's date in local timezone (fixes UTC offset bug on mobile)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const minDate = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+    // Calculate dynamic dates and cutoff
+    const fallbackTomorrow = new Date();
+    fallbackTomorrow.setDate(fallbackTomorrow.getDate() + 1);
+    const fallbackDateStr = `${fallbackTomorrow.getFullYear()}-${String(fallbackTomorrow.getMonth() + 1).padStart(2, '0')}-${String(fallbackTomorrow.getDate()).padStart(2, '0')}`;
+
+    const [minDate, setMinDate] = useState<string>(fallbackDateStr);
+    const [menuDates, setMenuDates] = useState<any>({});
+
+    useEffect(() => {
+        const now = new Date();
+        const cutoffHour = 21; // 9 PM cut-off
+        const isPastCutoff = now.getHours() >= cutoffHour;
+
+        let nextAvail = new Date(now);
+        nextAvail.setDate(now.getDate() + (isPastCutoff ? 2 : 1));
+
+        if (nextAvail.getDay() === 6) nextAvail.setDate(nextAvail.getDate() + 2);
+        else if (nextAvail.getDay() === 0) nextAvail.setDate(nextAvail.getDate() + 1);
+
+        const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const formatMD = (d: Date) => `${d.getMonth() + 1}月${d.getDate()}日`;
+
+        const nextAvailStr = formatYMD(nextAvail);
+        setMinDate(nextAvailStr);
+        setSelectedDate(prev => (!prev || prev < nextAvailStr) ? nextAvailStr : prev);
+
+        const nowMid = new Date(now).setHours(0, 0, 0, 0);
+        const nextAvailMid = new Date(nextAvail).setHours(0, 0, 0, 0);
+        const diffDays = Math.round((nextAvailMid - nowMid) / 86400000);
+        let relativeDay = "明天";
+        if (diffDays === 2) relativeDay = "后天";
+        else if (diffDays > 2) relativeDay = `${formatMD(nextAvail)}`;
+
+        const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const newMenuDates: any = {};
+
+        weeklyMenu.forEach(dish => {
+            if (dish.id === 6) {
+                newMenuDates[dish.id] = {
+                    topTag: `📅 常驻供应 · Daily`,
+                    btnText: `📅 加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
+                    disabled: false,
+                    actualDate: nextAvailStr
+                };
+                return;
+            }
+
+            const targetWd = dish.id;
+
+            let targetDate = new Date(now);
+            targetDate.setDate(now.getDate() + 1);
+            while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);
+
+            const cutoffForTarget = new Date(targetDate);
+            cutoffForTarget.setDate(targetDate.getDate() - 1);
+            cutoffForTarget.setHours(cutoffHour, 0, 0, 0);
+
+            let isDisabled = false;
+            let btnText = "";
+
+            if (now >= cutoffForTarget) {
+                targetDate.setDate(targetDate.getDate() + 7);
+                isDisabled = true;
+                btnText = `⏰ 明日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
+            } else {
+                btnText = `📅 预订 ${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
+            }
+
+            newMenuDates[dish.id] = {
+                topTag: `📅 ${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`,
+                btnText,
+                disabled: isDisabled,
+                actualDate: formatYMD(targetDate)
+            };
+        });
+
+        setMenuDates(newMenuDates);
+    }, []);
 
     // Scroll state for Navigation Header
     const [scrolled, setScrolled] = useState(false);
@@ -190,6 +265,9 @@ export default function V4BentoLayout() {
 
     // Open the add-on modal for a specific dish
     const openAddOnModal = (dish: typeof weeklyMenu[0]) => {
+        const dInfo = menuDates[dish.id];
+        if (dInfo && dInfo.disabled) return;
+        if (dInfo) setSelectedDate(dInfo.actualDate);
         setSelectedDish(dish);
         setIsAddOnOpen(true);
     };
@@ -567,7 +645,7 @@ export default function V4BentoLayout() {
                                 >
                                     <div className="flex justify-between items-start mb-6">
                                         <div className={`px-3 py-1 rounded-lg text-xs font-bold ${activeIdx === i ? 'bg-white/10 text-white' : 'bg-[#FDFBF7] text-gray-500'}`}>
-                                            {dish.day}
+                                            {menuDates[dish.id] ? menuDates[dish.id].topTag : dish.day}
                                         </div>
                                         <p className="font-extrabold text-xl">RM {dish.price.toFixed(2)}</p>
                                     </div>
@@ -592,9 +670,11 @@ export default function V4BentoLayout() {
                                             <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); openAddOnModal(dish); }}
-                                                className="w-full py-4 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors"
+                                                disabled={menuDates[dish.id]?.disabled}
+                                                className={`w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors text-sm ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white'}`}
                                             >
-                                                <ShoppingBag size={18} /> 加入明天的预订
+                                                {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
+                                                {menuDates[dish.id] ? menuDates[dish.id].btnText : '加入明天的预订'}
                                             </button>
                                         </div>
                                     )}
