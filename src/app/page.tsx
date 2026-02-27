@@ -108,9 +108,8 @@ export default function V4BentoLayout() {
         return () => clearInterval(timer);
     }, []);
 
-    // Booking State
-    const [selectedDate, setSelectedDate] = useState("");
-    const [selectedTime, setSelectedTime] = useState("Lunch");
+    // Booking State is now per-dish, handled via AddOnModal
+
 
     // Calculate dynamic dates and cutoff
     const fallbackTomorrow = new Date();
@@ -137,7 +136,6 @@ export default function V4BentoLayout() {
 
         const nextAvailStr = formatYMD(nextAvail);
         setMinDate(nextAvailStr);
-        setSelectedDate(prev => (!prev || prev < nextAvailStr) ? nextAvailStr : prev);
 
         const nowMid = new Date(now).setHours(0, 0, 0, 0);
         const nextAvailMid = new Date(nextAvail).setHours(0, 0, 0, 0);
@@ -254,12 +252,14 @@ export default function V4BentoLayout() {
     }, []);
 
     const addToCart = (item: any) => {
+        // Obsolete global addToCart (kept for safety if used elsewhere, but with generic defaults)
         setCart(prev => {
-            const existing = prev.find((i: any) => i.id === item.id);
+            const defaultDateStr = minDate;
+            const existing = prev.find((i: any) => i.id === item.id && !i.isAddOn && i.selectedDate === defaultDateStr);
             if (existing) {
-                return prev.map((i: any) => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+                return prev.map((i: any) => i.cartItemId === existing.cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
             }
-            return [...prev, { ...item, cartItemId: item.id, quantity: 1, selectedDate, selectedTime }];
+            return [...prev, { ...item, cartItemId: `${item.id}-${defaultDateStr}-Lunch`, quantity: 1, selectedDate: defaultDateStr, selectedTime: "Lunch (11AM-1PM)" }];
         });
         setIsCartOpen(true);
     };
@@ -268,43 +268,43 @@ export default function V4BentoLayout() {
     const openAddOnModal = (dish: typeof weeklyMenu[0]) => {
         const dInfo = menuDates[dish.id];
         if (dInfo && dInfo.disabled) return;
-        if (dInfo) setSelectedDate(dInfo.actualDate);
         setSelectedDish(dish);
         setIsAddOnOpen(true);
     };
 
     // Handle "Add to Cart" from the AddOnModal
-    const handleAddWithAddOns = (dish: any, addOns: { item: any; quantity: number }[], totalPrice: number, note: string) => {
-        // Add the main dish
+    const handleAddWithAddOns = (dish: any, addOns: { item: any; quantity: number }[], totalPrice: number, note: string, sDate: string, sTime: string) => {
         setCart(prev => {
             const newItems = [...prev];
             // Add main dish
-            const existingDish = newItems.find((i: any) => i.id === dish.id && !i.isAddOn);
+            const dishCartId = `${dish.id}-${sDate}-${sTime}`;
+            const existingDish = newItems.find((i: any) => i.cartItemId === dishCartId && !i.isAddOn);
             if (existingDish) {
                 existingDish.quantity += 1;
                 existingDish.note = note; // Update note if exists
             } else {
-                newItems.push({ ...dish, cartItemId: dish.id, quantity: 1, selectedDate: selectedDate || minDate, selectedTime, note });
+                newItems.push({ ...dish, cartItemId: dishCartId, quantity: 1, selectedDate: sDate, selectedTime: sTime, note });
             }
-            // Add each add-on as a separate cart line
+            // Add each add-on as a separate cart line linked to the same delivery dimension
             addOns.forEach(({ item, quantity }) => {
-                const addOnCartId = `${dish.id}-addon-${item.id}`;
+                const addOnCartId = `${dishCartId}-addon-${item.id}`;
                 const existingAddOn = newItems.find((i: any) => i.cartItemId === addOnCartId);
                 if (existingAddOn) {
                     existingAddOn.quantity += quantity;
                 } else {
                     newItems.push({
-                        id: addOnCartId,
+                        id: item.id,
                         cartItemId: addOnCartId,
                         name: `↳ ${item.name}`,
                         nameEn: item.nameEn,
                         price: item.price,
-                        image: item.image || dish.image,
-                        quantity,
+                        category: item.category,
+                        image: item.image,
                         isAddOn: true,
-                        parentDishId: dish.id,
-                        selectedDate: selectedDate || minDate,
-                        selectedTime,
+                        parentId: dishCartId,
+                        quantity,
+                        selectedDate: sDate,
+                        selectedTime: sTime
                     });
                 }
             });
@@ -511,64 +511,6 @@ export default function V4BentoLayout() {
                         </div>
                     </div>
 
-                    {/* Pre-order Widget (Full Width spanning) */}
-                    <div className="lg:col-span-12 bg-white rounded-[32px] p-4 md:p-6 lg:p-8 shadow-sm border border-gray-100 mt-4 flex flex-col gap-4">
-                        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-[#FDFBF7] rounded-2xl flex items-center justify-center text-[#FF6B35]">
-                                    <Calendar size={28} />
-                                </div>
-                                <div>
-                                    <h3 className="font-extrabold text-xl">预约你的这周的午饭</h3>
-                                    <p className="text-sm font-medium text-gray-500">选择接收时间，每天阿姨准时开饭</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                                <input
-                                    type="date"
-                                    className="flex-1 px-4 py-3 md:py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium"
-                                    onChange={(e) => {
-                                        const selected = e.target.value;
-                                        if (selected < minDate) {
-                                            e.target.value = minDate;
-                                            setSelectedDate(minDate);
-                                            return;
-                                        }
-                                        setSelectedDate(selected);
-                                    }}
-                                    min={minDate}
-                                    defaultValue={minDate}
-                                />
-                                <select
-                                    className="flex-1 sm:flex-none px-4 md:px-6 py-3 md:py-4 bg-[#FDFBF7] border-none rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#E3EADA] font-medium cursor-pointer"
-                                    onChange={(e) => setSelectedTime(e.target.value)}
-                                >
-                                    <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
-                                    <option value="Dinner (6PM-8PM)">🌙 晚餐 6PM - 8PM</option>
-                                </select>
-                            </div>
-                        </div>
-                        {/* Next-day reminder */}
-                        <div className="bg-[#FFF3E0] rounded-2xl border border-[#FFE0B2] px-4 py-3 md:px-5 md:py-4">
-                            <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-[#FF6B35]/10 flex items-center justify-center shrink-0 mt-0.5">
-                                    <Info size={16} className="text-[#FF6B35]" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-[#E65100] mb-1">
-                                        📌 所有订单为<span className="underline">隔天</span>的预订
-                                    </p>
-                                    <p className="text-[11px] text-[#1A2D23]/60 leading-relaxed">
-                                        阿姨每天清早亲自去巴刹挑选最新鲜的食材，需要提前一天知道份量才能准确采购，确保你吃到的每一口都是当天现煮、真材实料。
-                                    </p>
-                                    <p className="text-[10px] text-[#FF6B35]/70 mt-1 font-medium italic">
-                                        Auntie visits the market fresh every morning — we need your order a day ahead to buy just the right amount. That's our promise of freshness.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Delivery Coverage Widget */}
                     <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                         <div className="md:col-span-2 bg-[#1A2D23] text-white rounded-[32px] p-6 md:p-8 flex flex-col justify-center relative overflow-hidden">
@@ -763,15 +705,20 @@ export default function V4BentoLayout() {
             </footer>
 
             {/* Integrated Renderers */}
-            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} selectedDate={selectedDate || minDate} selectedTime={selectedTime} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
+            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-            <AddOnModal
-                isOpen={isAddOnOpen}
-                onClose={() => setIsAddOnOpen(false)}
-                dish={selectedDish}
-                onAddToCart={handleAddWithAddOns}
-            />
-
+            {selectedDish && (
+                <AddOnModal
+                    isOpen={isAddOnOpen}
+                    onClose={() => setIsAddOnOpen(false)}
+                    dish={selectedDish}
+                    onAddToCart={handleAddWithAddOns}
+                    defaultDate={menuDates[selectedDish.id]?.actualDate}
+                    isDaily={selectedDish.id === 6}
+                    minDate={minDate}
+                    dateLabel={menuDates[selectedDish.id]?.topTag}
+                />
+            )}
             {/* Feedback Modal */}
             {isFeedbackModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

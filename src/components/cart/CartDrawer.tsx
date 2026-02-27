@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2 } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
@@ -15,8 +15,6 @@ export default function CartDrawer({
     removeFromCart,
     cartTotal,
     cartCount,
-    selectedDate,
-    selectedTime,
     onAuthOpen,
     onClearCart
 }: any) {
@@ -108,8 +106,8 @@ export default function CartDrawer({
         }
 
         // Check date selected
-        if (!selectedDate) {
-            alert("请先选择配送日期！");
+        if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
+            alert("部分菜品未选择配送日期，请移除后重试！");
             return;
         }
 
@@ -134,13 +132,15 @@ export default function CartDrawer({
                     price: item.price,
                     quantity: item.quantity,
                     image: item.image || '',
+                    deliveryDate: item.selectedDate || '未定',
+                    deliveryTime: item.selectedTime || 'Lunch',
                 })),
                 total: finalTotal,
                 originalTotal: cartTotal,
                 promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
                 promoDiscount: promoDiscount,
-                deliveryDate: selectedDate,
-                deliveryTime: selectedTime || 'Lunch (11AM-1PM)',
+                deliveryDate: 'Multi-day',
+                deliveryTime: 'Mixed',
                 paymentMethod: paymentMethod as 'qr' | 'fpx',
                 receiptUploaded: receiptUploaded,
                 receiptUrl: receiptUrl,
@@ -185,8 +185,7 @@ export default function CartDrawer({
                             订单编号：<span className="font-bold text-[#FF6B35]">#{orderSuccess.slice(-6).toUpperCase()}</span>
                         </p>
                         <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
-                            <p className="text-sm"><span className="font-bold">📅 配送日期：</span>{selectedDate}</p>
-                            <p className="text-sm"><span className="font-bold">⏰ 时段：</span>{selectedTime}</p>
+                            <p className="text-sm"><span className="font-bold">📅 配送日期：</span><span className="text-[#FF6B35] font-black">多日配送 (请于订单群组中查看明细)</span></p>
                             <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
                             <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
                             <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分 (核对后发放)</span></p>
@@ -222,14 +221,6 @@ export default function CartDrawer({
                         <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] flex flex-col gap-2 shrink-0">
                             <div className="text-xs font-bold text-[#1A2D23] flex flex-col gap-2">
                                 <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                    <span className="text-gray-500 font-medium">📅 送达日期</span>
-                                    <span className="text-[#FF6B35]">{selectedDate || '未选日期'} (明天)</span>
-                                </p>
-                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                    <span className="text-gray-500 font-medium">⏰ 送达时段</span>
-                                    <span>{selectedTime || 'Lunch'}</span>
-                                </p>
-                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
                                     <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
                                     <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
                                 </p>
@@ -245,21 +236,38 @@ export default function CartDrawer({
                                 <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
                             </div>
                         ) : (
-                            cart.map((item: any, i: number) => (
-                                <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
-                                    <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
-                                        {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
-                                        <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
-                                        <div className="flex items-center gap-3 mt-1">
-                                            <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
-                                            <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
-                                            <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
+                            Object.entries(cart.reduce((acc: any, item: any) => {
+                                const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
+                                if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [] };
+                                acc[key].items.push(item);
+                                return acc;
+                            }, {})).sort().map(([key, group]: any) => (
+                                <div key={key} className="space-y-3 mb-8">
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm">
+                                        <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center">
+                                            <Calendar size={14} className="text-[#1A2D23]" />
                                         </div>
+                                        <span className="text-sm font-black text-[#1A2D23]">{group.date}</span>
+                                        <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold">{group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}</span>
                                     </div>
-                                    <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start"><Trash2 size={18} /></button>
+                                    {group.items.map((item: any, i: number) => (
+                                        <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
+                                            <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
+                                                {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
+                                                <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
+                                                {item.note && <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">备注: {item.note}</p>}
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
+                                                    <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
+                                                    <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start p-1"><Trash2 size={18} /></button>
+                                        </div>
+                                    ))}
                                 </div>
                             ))
                         )}

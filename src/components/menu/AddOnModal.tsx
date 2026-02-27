@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
 
 // ─── Add-on Data ────────────────────────────────────────────────────────────
 // TODO: Move prices/items to a central config or CMS once finalized
@@ -88,7 +88,11 @@ interface AddOnModalProps {
     onClose: () => void;
     dish: DishItem | null;
     addOnSections?: AddOnSection[];
-    onAddToCart: (dish: DishItem, addOns: { item: AddOnItem; quantity: number }[], totalPrice: number, note: string) => void;
+    onAddToCart: (dish: DishItem, addOns: { item: AddOnItem; quantity: number }[], totalPrice: number, note: string, selectedDate: string, selectedTime: string) => void;
+    defaultDate?: string;
+    isDaily?: boolean;
+    minDate?: string;
+    dateLabel?: string;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -99,6 +103,10 @@ export default function AddOnModal({
     dish,
     addOnSections = defaultAddOnSections,
     onAddToCart,
+    defaultDate = '',
+    isDaily = false,
+    minDate = '',
+    dateLabel = '',
 }: AddOnModalProps) {
     // Track quantities per add-on item
     const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -108,6 +116,9 @@ export default function AddOnModal({
     const [dishQty, setDishQty] = useState(1);
     // Note to restaurant
     const [note, setNote] = useState('');
+    // Delivery Date and Time
+    const [selectedDate, setSelectedDate] = useState("");
+    const [selectedTime, setSelectedTime] = useState("Lunch (11AM-1PM)");
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
 
@@ -185,6 +196,8 @@ export default function AddOnModal({
             setQuantities({});
             setDishQty(1);
             setNote('');
+            setSelectedDate(defaultDate || minDate || "");
+            setSelectedTime("Lunch (11AM-1PM)");
             // Expand first section by default
             const initialExpanded: Record<string, boolean> = {};
             activeAddOnSections.forEach((s, i) => {
@@ -196,7 +209,7 @@ export default function AddOnModal({
         } else {
             setIsVisible(false);
         }
-    }, [isOpen, dish, activeAddOnSections]);
+    }, [isOpen, dish, activeAddOnSections, defaultDate, minDate]);
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -241,7 +254,7 @@ export default function AddOnModal({
                 .filter(item => (quantities[item.id] || 0) > 0)
                 .map(item => ({ item, quantity: quantities[item.id] }))
         );
-        onAddToCart(dish, selectedAddOns, grandTotal, note);
+        onAddToCart(dish, selectedAddOns, grandTotal, note, selectedDate, selectedTime);
         handleClose();
     };
 
@@ -469,6 +482,55 @@ export default function AddOnModal({
                             placeholder="告诉阿姨你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
                             className="w-full h-24 p-4 bg-white rounded-2xl border border-[#E8DFD0] text-sm text-[#3B2A1A] placeholder:text-[#8B7355]/40 outline-none focus:ring-2 focus:ring-[#2D5F3E]/20 transition-all resize-none"
                         />
+                    </div>
+
+                    {/* ─── Delivery Date and Time ─── */}
+                    <div className="px-5 md:px-6 mt-6 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Calendar size={18} className="text-[#8B7355]" />
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                            {isDaily ? (
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-4 flex justify-center items-center pointer-events-none">
+                                        <Calendar size={16} className="text-[#2D5F3E]" />
+                                    </div>
+                                    <input
+                                        type="date"
+                                        className="w-full pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold"
+                                        value={selectedDate}
+                                        min={minDate}
+                                        onChange={(e) => {
+                                            const selected = e.target.value;
+                                            if (selected < (minDate || "")) {
+                                                setSelectedDate(minDate || "");
+                                            } else {
+                                                setSelectedDate(selected);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-full px-4 py-3 bg-[#E8DFD0]/30 border border-[#E8DFD0] rounded-2xl text-sm font-bold text-[#3B2A1A] flex items-center gap-2">
+                                    <Calendar size={16} className="text-[#2D5F3E]" />
+                                    {dateLabel || selectedDate} (固定款)
+                                </div>
+                            )}
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-4 flex justify-center items-center pointer-events-none">
+                                    <Clock size={16} className="text-[#2D5F3E]" />
+                                </div>
+                                <select
+                                    className="w-full pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold cursor-pointer"
+                                    value={selectedTime}
+                                    onChange={(e) => setSelectedTime(e.target.value)}
+                                >
+                                    <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
+                                    <option value="Dinner (6PM-8PM)">🌙 晚餐 6PM - 8PM</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Bottom spacer for sticky footer */}
