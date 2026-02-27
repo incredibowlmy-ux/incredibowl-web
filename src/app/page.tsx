@@ -714,7 +714,10 @@ export default function V4BentoLayout() {
                         <span>No MSG</span>
                         <span>Daily Fresh</span>
                     </div>
-                    <p className="text-[#1A2D23]/30 text-[10px] uppercase font-black tracking-widest">&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
+                    <div className="flex flex-col items-center gap-2 text-[#1A2D23]/30 text-[10px] uppercase font-black tracking-widest text-center">
+                        <p>&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
+                        <p>Operated by INCREDIBOWL SERVICES 202603047882 (SA0649425-V)</p>
+                    </div>
                 </div>
             </footer>
 
