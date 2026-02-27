@@ -490,12 +490,19 @@ export default function V4BentoLayout() {
                     <div className="lg:col-span-4 flex flex-col gap-4">
                         <div className="bg-[#1A2D23] rounded-[32px] p-8 text-white flex-1 flex flex-col justify-center relative overflow-hidden">
                             <div className="w-32 h-32 bg-[#FF6B35] rounded-full blur-3xl opacity-20 absolute -top-10 -right-10" />
-                            <h3 className="text-2xl font-bold mb-2">邻里内测中</h3>
-                            <p className="text-white/60 text-sm mb-6">阿姨的厨房正式开灶！首批仅开放 Pearl Suria 周边邻居试吃。<br />名额有限，每天限量 25 份。</p>
-                            <ul className="space-y-3">
-                                {['100% 无预制菜', '少盐少油', '选用鲜切好肉'].map((feat, idx) => (
-                                    <li key={idx} className="flex items-center gap-3 text-sm font-medium">
-                                        <CheckCircle2 size={16} className="text-[#FF6B35]" /> {feat}
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="px-2.5 py-1 rounded-md bg-[#FF6B35] text-white text-[11px] font-black tracking-widest animate-pulse shadow-lg shadow-[#FF6B35]/20">BETA</div>
+                                <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">邻里内测中</h3>
+                            </div>
+                            <p className="text-white/80 text-sm md:text-base mb-6 leading-relaxed">
+                                阿姨的厨房正式开灶！首批仅开放 <span className="text-white font-bold">Pearl Suria</span> 周边邻居试吃。<br />
+                                名额有限，<span className="text-[#FF6B35] font-black text-base underline decoration-[#FF6B35]/30 underline-offset-4">每天限量 25 份</span>。
+                            </p>
+                            <div className="w-full h-px bg-white/10 mb-5" />
+                            <ul className="space-y-3.5">
+                                {['100% 无味精', '少盐少油', '选用鲜切好肉'].map((feat, idx) => (
+                                    <li key={idx} className="flex items-center gap-3 text-sm font-bold text-white/90">
+                                        <CheckCircle2 size={18} className="text-[#FF6B35]" /> {feat}
                                     </li>
                                 ))}
                             </ul>
