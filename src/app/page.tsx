@@ -490,10 +490,10 @@ export default function V4BentoLayout() {
                     <div className="lg:col-span-4 flex flex-col gap-4">
                         <div className="bg-[#1A2D23] rounded-[32px] p-8 text-white flex-1 flex flex-col justify-center relative overflow-hidden">
                             <div className="w-32 h-32 bg-[#FF6B35] rounded-full blur-3xl opacity-20 absolute -top-10 -right-10" />
-                            <h3 className="text-2xl font-bold mb-2">限量供应</h3>
-                            <p className="text-white/60 text-sm mb-6">阿姨每天下巴刹，食材有限，售完即刻收火。</p>
+                            <h3 className="text-2xl font-bold mb-2">邻里内测中</h3>
+                            <p className="text-white/60 text-sm mb-6">阿姨的厨房正式开灶！首批仅开放 Pearl Suria 周边邻居试吃。<br />名额有限，每天限量 25 份。</p>
                             <ul className="space-y-3">
-                                {['100% 无味精', '少盐少油', '选用鲜切好肉'].map((feat, idx) => (
+                                {['100% 无预制菜', '少盐少油', '选用鲜切好肉'].map((feat, idx) => (
                                     <li key={idx} className="flex items-center gap-3 text-sm font-medium">
                                         <CheckCircle2 size={16} className="text-[#FF6B35]" /> {feat}
                                     </li>
@@ -644,15 +644,23 @@ export default function V4BentoLayout() {
                         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {[
                                 { name: "Little Jack (SkyVille 8 @ Benteng)", text: "昨天的排骨很酥烂，我老婆说比外面的健康多了。今天的鸡腿我还想加一份！", time: "上午 11:42" },
+                                { name: "Ah Hao (Pearl Suria)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
                                 { name: "Amy Tan (Millerz Square)", text: "No MSG is a lifesaver. I don't feel sleepy at all after lunch. Recommend!", time: "昨天" },
                                 ...feedbacks.map(f => ({ name: f.name, text: f.text, time: f.time }))
                             ].map((msg, idx) => (
                                 <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
                                     <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
-                                        <p className="text-[#1A2D23] font-medium text-sm leading-relaxed relative z-10">{msg.text}</p>
+                                        <p className="text-[#1A2D23] font-medium leading-relaxed italic text-sm">
+                                            "{msg.text}"
+                                        </p>
+                                        <div className="flex gap-2 justify-end mb-1">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs font-bold text-gray-400">
-                                        <span>{msg.name}</span>
+                                    <div className="text-right mt-3 text-xs text-[#1A2D23]/50 font-bold px-4 flex justify-end gap-2 items-center">
+                                        <span>— {msg.name}</span>
                                         <span>{msg.time}</span>
                                     </div>
                                 </div>
