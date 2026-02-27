@@ -650,7 +650,7 @@ export default function V4BentoLayout() {
 
                         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {[
-                                { name: "Little Jack (SkyVille 8 @ Benteng)", text: "昨天的排骨很酥烂，我老婆说比外面的健康多了。今天的鸡腿我还想加一份！", time: "上午 11:42" },
+                                { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，阿姨的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
                                 { name: "Ah Hao (Pearl Suria)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
                                 { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
                                 ...feedbacks.map(f => ({ name: f.name, text: f.text, time: f.time }))
