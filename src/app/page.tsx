@@ -510,7 +510,7 @@ export default function V4BentoLayout() {
                         <div className="bg-[#FF6B35] rounded-[32px] p-6 shadow-lg shadow-[#FF6B35]/30 flex items-center justify-between group cursor-pointer hover:bg-[#E95D31] hover:shadow-xl hover:shadow-[#FF6B35]/40 transition-all duration-300 transform hover:-translate-y-1" onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}>
                             <div>
                                 <p className="text-xs font-black text-white/80 uppercase tracking-widest mb-1 animate-pulse">Explore Menu</p>
-                                <p className="font-extrabold text-xl md:text-2xl text-white">👀 去看看今日菜单</p>
+                                <p className="font-extrabold text-xl md:text-2xl text-white">去看看今日菜单</p>
                             </div>
                             <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 transition-transform duration-300 shadow-md">
                                 <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
@@ -652,7 +652,7 @@ export default function V4BentoLayout() {
                             {[
                                 { name: "Little Jack (SkyVille 8 @ Benteng)", text: "昨天的排骨很酥烂，我老婆说比外面的健康多了。今天的鸡腿我还想加一份！", time: "上午 11:42" },
                                 { name: "Ah Hao (Pearl Suria)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
-                                { name: "Amy Tan (Millerz Square)", text: "No MSG is a lifesaver. I don't feel sleepy at all after lunch. Recommend!", time: "昨天" },
+                                { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
                                 ...feedbacks.map(f => ({ name: f.name, text: f.text, time: f.time }))
                             ].map((msg, idx) => (
                                 <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
