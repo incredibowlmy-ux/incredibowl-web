@@ -29,6 +29,10 @@ export interface OrderData {
     receiptUrl?: string;
     status: OrderStatus;
     note?: string;
+    isMultiPart?: boolean;
+    partIndex?: number;
+    totalParts?: number;
+    groupId?: string;
 }
 
 // Submit a new order (points NO LONGER awarded here)

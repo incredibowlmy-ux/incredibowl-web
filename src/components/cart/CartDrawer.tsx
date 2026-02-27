@@ -120,35 +120,75 @@ export default function CartDrawer({
         setSubmitting(true);
 
         try {
-            const orderId = await submitOrder({
-                userId: currentUser.uid,
-                userName: currentUser.displayName || userProfile?.displayName || 'Guest',
-                userEmail: currentUser.email || '',
-                userPhone: userProfile.phone,
-                userAddress: userProfile.address,
-                items: cart.map((item: any) => ({
-                    name: item.name,
-                    nameEn: item.nameEn || '',
-                    price: item.price,
-                    quantity: item.quantity,
-                    image: item.image || '',
-                    deliveryDate: item.selectedDate || '未定',
-                    deliveryTime: item.selectedTime || 'Lunch',
-                })),
-                total: finalTotal,
-                originalTotal: cartTotal,
-                promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
-                promoDiscount: promoDiscount,
-                deliveryDate: 'Multi-day',
-                deliveryTime: 'Mixed',
-                paymentMethod: paymentMethod as 'qr' | 'fpx',
-                receiptUploaded: receiptUploaded,
-                receiptUrl: receiptUrl,
-                status: 'pending',
-                note: orderNote,
+            // Group cart items by deliveryDate and deliveryTime
+            const grouped = cart.reduce((acc: any, item: any) => {
+                const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
+                if (!acc[key]) {
+                    acc[key] = {
+                        date: item.selectedDate || '未定',
+                        time: item.selectedTime || 'Lunch',
+                        items: [],
+                        subtotal: 0
+                    };
+                }
+                acc[key].items.push(item);
+                acc[key].subtotal += (item.price * item.quantity);
+                return acc;
+            }, {});
+
+            const groups = Object.values(grouped) as any[];
+            const isMultiPart = groups.length > 1;
+            const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
+
+            let remainingPromo = promoDiscount;
+
+            const submitPromises = groups.map((group, index) => {
+                let currentPromo = 0;
+                if (promoApplied && promoDiscount > 0) {
+                    if (index === groups.length - 1) {
+                        currentPromo = Number(remainingPromo.toFixed(2));
+                    } else {
+                        currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2));
+                        remainingPromo -= currentPromo;
+                    }
+                }
+
+                const currentFinal = Math.max(0, group.subtotal - currentPromo);
+
+                return submitOrder({
+                    userId: currentUser.uid,
+                    userName: currentUser.displayName || userProfile?.displayName || 'Guest',
+                    userEmail: currentUser.email || '',
+                    userPhone: userProfile.phone,
+                    userAddress: userProfile.address,
+                    items: group.items.map((item: any) => ({
+                        name: item.name,
+                        nameEn: item.nameEn || '',
+                        price: item.price,
+                        quantity: item.quantity,
+                        image: item.image || '',
+                    })),
+                    total: currentFinal,
+                    originalTotal: group.subtotal,
+                    promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
+                    promoDiscount: currentPromo,
+                    deliveryDate: group.date,
+                    deliveryTime: group.time,
+                    paymentMethod: paymentMethod as 'qr' | 'fpx',
+                    receiptUploaded: receiptUploaded,
+                    receiptUrl: receiptUrl,
+                    status: 'pending',
+                    note: orderNote,
+                    isMultiPart,
+                    partIndex: isMultiPart ? index + 1 : undefined,
+                    totalParts: isMultiPart ? groups.length : undefined,
+                    groupId: isMultiPart ? groupId : undefined
+                });
             });
 
-            setOrderSuccess(orderId);
+            const orderIds = await Promise.all(submitPromises);
+
+            setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
 
             // Clear cart after 3 seconds
             setTimeout(() => {
@@ -181,11 +221,12 @@ export default function CartDrawer({
                             <CheckCircle size={48} className="text-green-500" />
                         </div>
                         <h2 className="text-3xl font-black text-[#1A2D23]">订单已提交！🍛</h2>
-                        <p className="text-gray-500">
-                            订单编号：<span className="font-bold text-[#FF6B35]">#{orderSuccess.slice(-6).toUpperCase()}</span>
+                        <p className="text-gray-500 flex flex-col items-center gap-1">
+                            <span>{orderSuccess.startsWith('GRP') ? '订单群组编号：' : '订单编号：'}<span className="font-bold text-[#FF6B35]">#{orderSuccess.startsWith('GRP') ? orderSuccess : orderSuccess.slice(-6).toUpperCase()}</span></span>
+                            {orderSuccess.startsWith('GRP') && <span className="text-[10px] font-bold text-[#FF6B35]/70 bg-[#FF6B35]/10 px-2 py-0.5 rounded-full mt-1">你的订单已按送达日期自动拆分方便阿姨备餐</span>}
                         </p>
                         <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
-                            <p className="text-sm"><span className="font-bold">📅 配送日期：</span><span className="text-[#FF6B35] font-black">多日配送 (请于订单群组中查看明细)</span></p>
+                            <p className="text-sm"><span className="font-bold">📅 配送安排：</span><span className="text-[#FF6B35] font-black">{orderSuccess.startsWith('GRP') ? '多日配送 (已各自独立建单)' : `${cart[0]?.selectedDate || '未定'} ${cart[0]?.selectedTime?.includes('Lunch') ? '🌞午餐' : '🌙晚餐'}`}</span></p>
                             <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
                             <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
                             <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分 (核对后发放)</span></p>
