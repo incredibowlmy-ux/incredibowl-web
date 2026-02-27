@@ -110,6 +110,53 @@ export default function AddOnModal({
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
 
+    // Compute dynamic add-on sections based on the selected dish
+    const activeAddOnSections = React.useMemo(() => {
+        if (!dish) return addOnSections;
+
+        // If it's Natto Rice Bowl (id: 6), prepend a special combo section
+        if (dish.id === 6) {
+            const nattoSpecial: AddOnSection & { extraDesc?: string } = {
+                id: 'natto-combo',
+                title: '✨ 升级你的 Incredibowl！',
+                titleEn: '灵魂三件套 (Soulful Trio) (+ RM 5) · Max 3',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：浓厚温泉蛋 + 脆质海苔 + 特制日本酱油\n“当酱油遇见脆爽海苔，在流心月见的温柔包裹下，瞬间唤醒纳豆沉睡的‘极鲜’灵魂。”',
+                items: [
+                    { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.0)', nameEn: 'Soulful Trio', price: 5.00, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: 4.90, category: 'sides' },
+                            { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: 2.50, category: 'sides' },
+                            { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: 2.00, category: 'sides' },
+                            { id: 'soy-sauce', name: '秘制日本酱油', nameEn: 'Secret Japanese Soy Sauce', price: 1.50, category: 'sides' },
+                            ...section.items.filter(item => item.id.includes('rice') && item.id !== 'brown-rice')
+                        ]
+                    };
+                }
+                if (section.id === 'alacarte') {
+                    return {
+                        ...section,
+                        items: [
+                            { id: 'sunny-egg-alacarte', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
+                            { id: 'potato-egg-alacarte', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
+                            ...section.items.filter(item => item.id.includes('chia-pudding'))
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [nattoSpecial, ...customSections];
+        }
+        return addOnSections;
+    }, [dish, addOnSections]);
+
     // Reset state when modal opens/dish changes
     useEffect(() => {
         if (isOpen && dish) {
@@ -118,7 +165,7 @@ export default function AddOnModal({
             setNote('');
             // Expand first section by default
             const initialExpanded: Record<string, boolean> = {};
-            addOnSections.forEach((s, i) => {
+            activeAddOnSections.forEach((s, i) => {
                 initialExpanded[s.id] = i === 0;
             });
             setExpandedSections(initialExpanded);
@@ -127,7 +174,7 @@ export default function AddOnModal({
         } else {
             setIsVisible(false);
         }
-    }, [isOpen, dish, addOnSections]);
+    }, [isOpen, dish, activeAddOnSections]);
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -160,14 +207,14 @@ export default function AddOnModal({
         return section.items.reduce((sum, item) => sum + (quantities[item.id] || 0), 0);
     };
 
-    const addOnsTotal = addOnSections.reduce((sum, section) => {
+    const addOnsTotal = activeAddOnSections.reduce((sum, section) => {
         return sum + section.items.reduce((s, item) => s + (quantities[item.id] || 0) * item.price, 0);
     }, 0);
 
     const grandTotal = (dish.price * dishQty) + addOnsTotal;
 
     const handleAddToCart = () => {
-        const selectedAddOns = addOnSections.flatMap(section =>
+        const selectedAddOns = activeAddOnSections.flatMap(section =>
             section.items
                 .filter(item => (quantities[item.id] || 0) > 0)
                 .map(item => ({ item, quantity: quantities[item.id] }))
@@ -288,30 +335,35 @@ export default function AddOnModal({
 
                     {/* ─── Add-on Sections ─── */}
                     <div className="px-5 md:px-6 mt-4 space-y-3">
-                        {addOnSections.map(section => {
+                        {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
 
                             return (
-                                <div key={section.id} className="bg-white rounded-2xl border border-[#E8DFD0] overflow-hidden transition-all duration-300">
+                                <div key={section.id} className={`bg-white rounded-2xl border ${section.id === 'natto-combo' ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
                                     {/* Section Header */}
                                     <button
                                         onClick={() => toggleSection(section.id)}
-                                        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors"
+                                        className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${section.id === 'natto-combo' ? 'bg-[#FFF3E0]' : ''}`}
                                     >
                                         <div className="text-left">
-                                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">
+                                            <h3 className={`text-sm font-extrabold ${section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
                                                 {section.title}
                                             </h3>
-                                            <p className="text-[11px] text-[#8B7355] font-medium">
+                                            <p className={`text-[11px] font-medium ${section.id === 'natto-combo' ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
                                                 {section.titleEn}
                                             </p>
+                                            {(section as any).extraDesc && (
+                                                <p className="max-w-[85%] text-[10px] mt-1.5 leading-relaxed text-[#FF6B35]/70 whitespace-pre-wrap">
+                                                    {(section as any).extraDesc}
+                                                </p>
+                                            )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isExpanded ? (
-                                                <ChevronUp size={18} className="text-[#8B7355]" />
+                                                <ChevronUp size={18} className={section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
                                             ) : (
-                                                <ChevronDown size={18} className="text-[#8B7355]" />
+                                                <ChevronDown size={18} className={section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
                                             )}
                                         </div>
                                     </button>
@@ -320,7 +372,7 @@ export default function AddOnModal({
                                     <div
                                         className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
                                     >
-                                        <div className="border-t border-[#E8DFD0]/60">
+                                        <div className={`border-t ${section.id === 'natto-combo' ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
                                             {section.items.map((item, itemIdx) => {
                                                 const qty = quantities[item.id] || 0;
                                                 const sectionCount = getSectionSelectedCount(section);
@@ -329,7 +381,7 @@ export default function AddOnModal({
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? 'border-b border-[#E8DFD0]/40' : ''} transition-colors hover:bg-[#FDF8F0]/30`}
+                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (section.id === 'natto-combo' ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors hover:bg-[#FDF8F0]/30`}
                                                     >
                                                         {/* Thumbnail */}
                                                         {item.image && (
@@ -368,8 +420,8 @@ export default function AddOnModal({
                                                             </span>
                                                             <button
                                                                 onClick={() => updateQty(item.id, 1)}
-                                                                disabled={qty >= 10}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${qty >= 10 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
+                                                                disabled={qty >= (item.id === 'less-rice' ? 1 : 10) || sectionCount >= section.maxSelect}
+                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.id === 'less-rice' ? 1 : 10) || sectionCount >= section.maxSelect) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
                                                             >
                                                                 <Plus size={14} />
                                                             </button>

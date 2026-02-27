@@ -17,7 +17,7 @@ const weeklyMenu = [
         day: "Daily / 常驻",
         name: "纳豆月见海苔饭",
         nameEn: "Natto Tsukimi Rice Bowl",
-        price: 18.90,
+        price: 16.90,
         image: "/natto_bowl.jpg",
         tags: ["益生菌", "轻食主义", "健康长寿"],
         desc: "经典的健康选择。纳豆的鲜香配上顺滑的月见蛋，简单却极富层次。"
