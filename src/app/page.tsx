@@ -565,7 +565,6 @@ export default function V4BentoLayout() {
                             <div>
                                 <h2 className="text-2xl font-extrabold tracking-tight">每日一味 / Weekly Rotation</h2>
                                 <p className="text-xs text-gray-400 font-medium mt-1">点击或滑动切换每日精选菜单</p>
-                                <p className="text-[10px] text-gray-400/80 mt-1">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button

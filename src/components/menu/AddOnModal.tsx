@@ -323,7 +323,7 @@ export default function AddOnModal({
                         </p>
 
                         {/* Tags */}
-                        <div className="flex flex-wrap gap-1.5 mb-4">
+                        <div className="flex flex-wrap gap-1.5 mb-1.5">
                             {dish.tags.map(tag => (
                                 <span
                                     key={tag}
@@ -333,6 +333,7 @@ export default function AddOnModal({
                                 </span>
                             ))}
                         </div>
+                        <p className="text-[9px] font-bold text-[#8B7355]/50 mb-4">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
 
                         {/* Description */}
                         <p className="text-sm text-[#5C4A32]/80 leading-relaxed mb-4 italic">
