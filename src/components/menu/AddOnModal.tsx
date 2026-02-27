@@ -14,6 +14,7 @@ export interface AddOnItem {
     price: number;
     image?: string;
     category: string;
+    maxQty?: number;
 }
 
 export interface AddOnSection {
@@ -36,9 +37,9 @@ const defaultAddOnSections: AddOnSection[] = [
         items: [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'sides' },
             { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'sides' },
-            { id: 'less-rice', name: '少饭 (150g)', nameEn: 'Less Rice', price: 0.00, category: 'sides' },
-            { id: 'extra-rice', name: '加饭 (120g)', nameEn: 'Extra Rice', price: 2.00, category: 'sides' },
-            { id: 'brown-rice', name: '白饭换糙米 (180g)', nameEn: 'Swap Brown Rice', price: 2.00, category: 'sides' },
+            { id: 'less-rice', name: '少饭 (150g)', nameEn: 'Less Rice', price: 0.00, category: 'sides', maxQty: 1 },
+            { id: 'extra-rice', name: '加饭 (150g)', nameEn: 'Extra Rice', price: 2.00, category: 'sides' },
+            { id: 'brown-rice', name: '白饭换糙米 (180g)', nameEn: 'Swap Brown Rice', price: 2.00, category: 'sides', maxQty: 1 },
         ]
     },
     {
@@ -154,6 +155,27 @@ export default function AddOnModal({
             });
             return [nattoSpecial, ...customSections];
         }
+
+        // If it's Golden Crispy Chicken Chop (id: 1), append specific add-ons to the sides
+        if (dish.id === 1) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 8.50, category: 'sides', maxQty: 1 },
+                            { id: 'edamame', name: '枝豆 (50g)', nameEn: 'Edamame', price: 2.00, category: 'sides', maxQty: 1 },
+                            { id: 'corn', name: '玉米粒 (50g)', nameEn: 'Corn', price: 2.00, category: 'sides', maxQty: 1 },
+                            { id: 'cherry-tomato', name: '小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.00, category: 'sides', maxQty: 1 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
         return addOnSections;
     }, [dish, addOnSections]);
 
@@ -420,8 +442,8 @@ export default function AddOnModal({
                                                             </span>
                                                             <button
                                                                 onClick={() => updateQty(item.id, 1)}
-                                                                disabled={qty >= (item.id === 'less-rice' ? 1 : 10) || sectionCount >= section.maxSelect}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.id === 'less-rice' ? 1 : 10) || sectionCount >= section.maxSelect) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
+                                                                disabled={qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect}
+                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
                                                             >
                                                                 <Plus size={14} />
                                                             </button>
