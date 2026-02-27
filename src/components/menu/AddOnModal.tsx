@@ -118,7 +118,7 @@ export default function AddOnModal({
     const [note, setNote] = useState('');
     // Delivery Date and Time
     const [selectedDate, setSelectedDate] = useState("");
-    const [selectedTime, setSelectedTime] = useState("Lunch (11AM-1PM)");
+    const [selectedTime, setSelectedTime] = useState("");
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
 
@@ -197,7 +197,7 @@ export default function AddOnModal({
             setDishQty(1);
             setNote('');
             setSelectedDate(defaultDate || minDate || "");
-            setSelectedTime("Lunch (11AM-1PM)");
+            setSelectedTime("");
             // Expand first section by default
             const initialExpanded: Record<string, boolean> = {};
             activeAddOnSections.forEach((s, i) => {
@@ -471,19 +471,6 @@ export default function AddOnModal({
                         })}
                     </div>
 
-                    {/* ─── Note to Restaurant ─── */}
-                    <div className="px-5 md:px-6 mt-6">
-                        <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">备注 / Note to Kitchen</h3>
-                        </div>
-                        <textarea
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="告诉阿姨你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
-                            className="w-full h-24 p-4 bg-white rounded-2xl border border-[#E8DFD0] text-sm text-[#3B2A1A] placeholder:text-[#8B7355]/40 outline-none focus:ring-2 focus:ring-[#2D5F3E]/20 transition-all resize-none"
-                        />
-                    </div>
-
                     {/* ─── Delivery Date and Time ─── */}
                     <div className="px-5 md:px-6 mt-6 mb-2">
                         <div className="flex items-center gap-2 mb-3">
@@ -526,11 +513,25 @@ export default function AddOnModal({
                                     value={selectedTime}
                                     onChange={(e) => setSelectedTime(e.target.value)}
                                 >
+                                    <option value="" disabled hidden>选个时间呗 / Select Time</option>
                                     <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
                                     <option value="Dinner (6PM-8PM)">🌙 晚餐 6PM - 8PM</option>
                                 </select>
                             </div>
                         </div>
+                    </div>
+
+                    {/* ─── Note to Restaurant ─── */}
+                    <div className="px-5 md:px-6 mt-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">备注 / Note to Kitchen</h3>
+                        </div>
+                        <textarea
+                            value={note}
+                            onChange={(e) => setNote(e.target.value)}
+                            placeholder="告诉阿姨你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
+                            className="w-full h-24 p-4 bg-white rounded-2xl border border-[#E8DFD0] text-sm text-[#3B2A1A] placeholder:text-[#8B7355]/40 outline-none focus:ring-2 focus:ring-[#2D5F3E]/20 transition-all resize-none"
+                        />
                     </div>
 
                     {/* Bottom spacer for sticky footer */}
@@ -547,10 +548,14 @@ export default function AddOnModal({
                     )}
                     <button
                         onClick={handleAddToCart}
-                        className="w-full py-4 bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white rounded-2xl font-extrabold text-base flex justify-center items-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#2D5F3E]/20"
+                        disabled={!selectedTime}
+                        className={`w-full py-4 rounded-2xl font-extrabold text-base flex justify-center items-center gap-2.5 transition-all duration-200 shadow-lg ${selectedTime
+                                ? 'bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white shadow-[#2D5F3E]/20'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                            }`}
                     >
                         <ShoppingBag size={20} />
-                        加入预订 · RM {grandTotal.toFixed(2)}
+                        {selectedTime ? `加入预订 · RM ${grandTotal.toFixed(2)}` : '请先选择送达时段 👆'}
                     </button>
                 </div>
             </div>
