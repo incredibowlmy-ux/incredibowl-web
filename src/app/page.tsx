@@ -507,13 +507,13 @@ export default function V4BentoLayout() {
                                 ))}
                             </ul>
                         </div>
-                        <div className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex items-center justify-between group cursor-pointer hover:border-[#E3EADA] transition-colors" onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}>
+                        <div className="bg-[#FF6B35] rounded-[32px] p-6 shadow-lg shadow-[#FF6B35]/30 flex items-center justify-between group cursor-pointer hover:bg-[#E95D31] hover:shadow-xl hover:shadow-[#FF6B35]/40 transition-all duration-300 transform hover:-translate-y-1" onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}>
                             <div>
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Explore</p>
-                                <p className="font-extrabold text-lg">看看今日菜单</p>
+                                <p className="text-xs font-black text-white/80 uppercase tracking-widest mb-1 animate-pulse">Explore Menu</p>
+                                <p className="font-extrabold text-xl md:text-2xl text-white">👀 去看看今日菜单</p>
                             </div>
-                            <div className="w-12 h-12 rounded-full bg-[#FDFBF7] flex items-center justify-center group-hover:bg-[#FF6B35] group-hover:text-white transition-colors">
-                                <ArrowRight size={20} />
+                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 transition-transform duration-300 shadow-md">
+                                <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         </div>
                     </div>
