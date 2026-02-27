@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { getAllOrders, updateOrderStatus, getAllUsers, OrderStatus } from '@/lib/orders';
+import { getAllFeedbacks, updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
-import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut } from 'lucide-react';
+import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 const ADMIN_EMAILS = ['incredibowl.my@gmail.com']; // Add your email here
@@ -20,9 +21,10 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color
 export default function AdminPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
-    const [activeTab, setActiveTab] = useState<'orders' | 'customers'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'feedbacks'>('orders');
     const [orders, setOrders] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -44,12 +46,14 @@ export default function AdminPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [ordersData, usersData] = await Promise.all([
+            const [ordersData, usersData, feedbacksData] = await Promise.all([
                 getAllOrders(),
                 getAllUsers(),
+                getAllFeedbacks(),
             ]);
             setOrders(ordersData);
             setCustomers(usersData);
+            setFeedbacks(feedbacksData);
         } catch (error) {
             console.error('Failed to load data:', error);
         }
@@ -173,18 +177,24 @@ export default function AdminPage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar">
                     <button
                         onClick={() => setActiveTab('orders')}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'orders' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                        className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'orders' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <ShoppingBag size={16} /> 订单 ({orders.length})
                     </button>
                     <button
                         onClick={() => setActiveTab('customers')}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'customers' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                        className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'customers' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <Users size={16} /> 客户 ({customers.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('feedbacks')}
+                        className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'feedbacks' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <MessageCircle size={16} /> 留言审批 ({feedbacks.length})
                     </button>
                 </div>
 
@@ -362,6 +372,55 @@ export default function AdminPage() {
                                             </a>
                                         </div>
                                     )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {/* Feedbacks Tab */}
+                {activeTab === 'feedbacks' && (
+                    <div className="space-y-3">
+                        {loading ? (
+                            <div className="text-center py-20">
+                                <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full mx-auto"></div>
+                            </div>
+                        ) : feedbacks.length === 0 ? (
+                            <div className="text-center py-20 text-gray-400">
+                                <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                                <p className="font-bold">暂无留言</p>
+                            </div>
+                        ) : (
+                            feedbacks.map((fb) => (
+                                <div key={fb.id} className={`bg-white rounded-2xl p-5 border shadow-sm transition-colors ${fb.status === 'PENDING' ? 'border-yellow-300 bg-[#FFFAEB]' : 'border-gray-100'}`}>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border flex items-center gap-1 ${fb.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-green-100 text-green-700 border-green-200'}`}>
+                                                    {fb.status === 'PENDING' ? <><Clock size={10} /> 待审核 (Pending)</> : <><CheckCircle size={10} /> 已发布 (Approved)</>}
+                                                </span>
+                                                <span className="text-xs text-gray-400">{new Date(fb.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            <p className="font-black text-[#1A2D23] text-lg">{fb.name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/50 rounded-xl p-4 border border-black/5 mb-4">
+                                        <p className="text-sm font-medium text-gray-700 whitespace-pre-wrap leading-relaxed">{fb.text}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        {fb.status === 'PENDING' ? (
+                                            <button onClick={async () => { await updateFeedbackStatus(fb.id!, 'APPROVED'); loadData(); }} className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 flex items-center gap-1 transition-transform active:scale-95">
+                                                <CheckCircle size={14} /> 批准发布
+                                            </button>
+                                        ) : (
+                                            <button onClick={async () => { await updateFeedbackStatus(fb.id!, 'PENDING'); loadData(); }} className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-xs font-bold hover:bg-yellow-600 flex items-center gap-1 transition-transform active:scale-95">
+                                                <Clock size={14} /> 撤下 (改为待审核)
+                                            </button>
+                                        )}
+                                        <button onClick={async () => { if (window.confirm('确定要彻底删除这条留言吗？此操作不可恢复。')) { await deleteFeedback(fb.id!); loadData(); } }} className="px-4 py-2 bg-red-100 text-red-600 rounded-lg text-xs font-bold hover:bg-red-200 flex items-center gap-1 transition-transform active:scale-95">
+                                            <Trash2 size={14} /> 删除
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
