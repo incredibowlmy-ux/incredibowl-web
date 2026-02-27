@@ -275,7 +275,7 @@ export default function AddOnModal({
 
             {/* Modal Panel */}
             <div
-                className={`relative w-full max-w-lg max-h-[92vh] md:max-h-[88vh] bg-[#FDF8F0] md:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-[0.97]'}`}
+                className={`relative w-full max-w-lg h-[92vh] md:h-auto md:max-h-[88vh] bg-[#FDF8F0] md:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-[0.97]'}`}
             >
                 {/* ─── Close Button ─── */}
                 <button
@@ -286,7 +286,7 @@ export default function AddOnModal({
                 </button>
 
                 {/* ─── Scrollable Content ─── */}
-                <div className="flex-1 overflow-y-auto overscroll-contain">
+                <div className="flex-1 overflow-y-auto overscroll-contain pb-6">
 
                     {/* ─── Dish Hero Image ─── */}
                     <div className="relative w-full aspect-[4/3] bg-[#E8DFD0]">
@@ -534,12 +534,10 @@ export default function AddOnModal({
                         />
                     </div>
 
-                    {/* Bottom spacer for sticky footer */}
-                    <div className="h-4" />
                 </div>
 
-                {/* ─── Sticky Footer: Add to Cart ─── */}
-                <div className="shrink-0 bg-white/95 backdrop-blur-md border-t border-[#E8DFD0] px-5 md:px-6 py-4 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] z-10 w-full">
+                {/* ─── Non-overlapping Footer: Add to Cart ─── */}
+                <div className="shrink-0 bg-white border-t border-[#E8DFD0] px-5 md:px-6 py-4 shadow-[0_-8px_30px_rgba(0,0,0,0.05)] w-full">
                     {/* Add-on summary (if any) */}
                     {addOnsTotal > 0 && (
                         <div className="flex justify-between items-center text-xs text-[#8B7355] mb-2 px-1">
@@ -550,8 +548,8 @@ export default function AddOnModal({
                         onClick={handleAddToCart}
                         disabled={!selectedTime}
                         className={`w-full py-4 rounded-2xl font-extrabold text-base flex justify-center items-center gap-2.5 transition-all duration-200 shadow-lg ${selectedTime
-                                ? 'bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white shadow-[#2D5F3E]/20'
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                            ? 'bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white shadow-[#2D5F3E]/20'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                             }`}
                     >
                         <ShoppingBag size={20} />
