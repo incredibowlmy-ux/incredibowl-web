@@ -488,7 +488,7 @@ export default function AddOnModal({
                         className="w-full py-4 bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white rounded-2xl font-extrabold text-base flex justify-center items-center gap-2.5 transition-all duration-200 shadow-lg shadow-[#2D5F3E]/20"
                     >
                         <ShoppingBag size={20} />
-                        加入明天的预订 · RM {grandTotal.toFixed(2)}
+                        加入预订 · RM {grandTotal.toFixed(2)}
                     </button>
                 </div>
             </div>

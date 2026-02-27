@@ -20,7 +20,7 @@ const weeklyMenu = [
         nameEn: "Natto Tsukimi Rice Bowl",
         price: 16.90,
         image: "/natto_bowl.jpg",
-        tags: ["🔥 ~485 kcal", "💪 高蛋白 25g+", "✅ 无味精", "🌿 益生菌"],
+        tags: ["~485 kcal*", "高蛋白 25g+", "无味精", "益生菌"],
         desc: "经典的健康选择。纳豆的鲜香配上顺滑的月见蛋，简单却极富层次。"
     },
     {
@@ -122,8 +122,9 @@ export default function V4BentoLayout() {
 
     useEffect(() => {
         const now = new Date();
-        const cutoffHour = 21; // 9 PM cut-off
-        const isPastCutoff = now.getHours() >= cutoffHour;
+        const cutoffHour = 22; // 10:30 PM cut-off
+        const cutoffMinute = 30;
+        const isPastCutoff = now.getHours() > cutoffHour || (now.getHours() === cutoffHour && now.getMinutes() >= cutoffMinute);
 
         let nextAvail = new Date(now);
         nextAvail.setDate(now.getDate() + (isPastCutoff ? 2 : 1));
@@ -152,8 +153,8 @@ export default function V4BentoLayout() {
         weeklyMenu.forEach(dish => {
             if (dish.id === 6) {
                 newMenuDates[dish.id] = {
-                    topTag: `📅 常驻供应 · Daily`,
-                    btnText: `📅 加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
+                    topTag: `常驻供应 · Daily`,
+                    btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                     disabled: false,
                     actualDate: nextAvailStr
                 };
@@ -168,7 +169,7 @@ export default function V4BentoLayout() {
 
             const cutoffForTarget = new Date(targetDate);
             cutoffForTarget.setDate(targetDate.getDate() - 1);
-            cutoffForTarget.setHours(cutoffHour, 0, 0, 0);
+            cutoffForTarget.setHours(cutoffHour, cutoffMinute, 0, 0);
 
             let isDisabled = false;
             let btnText = "";
@@ -176,13 +177,13 @@ export default function V4BentoLayout() {
             if (now >= cutoffForTarget) {
                 targetDate.setDate(targetDate.getDate() + 7);
                 isDisabled = true;
-                btnText = `⏰ 明日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
+                btnText = `明日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
             } else {
-                btnText = `📅 预订 ${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
+                btnText = `预订 ${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
             }
 
             newMenuDates[dish.id] = {
-                topTag: `📅 ${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`,
+                topTag: `${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`,
                 btnText,
                 disabled: isDisabled,
                 actualDate: formatYMD(targetDate)
@@ -615,6 +616,7 @@ export default function V4BentoLayout() {
                             <div>
                                 <h2 className="text-2xl font-extrabold tracking-tight">每日一味 / Weekly Rotation</h2>
                                 <p className="text-xs text-gray-400 font-medium mt-1">点击或滑动切换每日精选菜单</p>
+                                <p className="text-[10px] text-gray-400/80 mt-1">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
