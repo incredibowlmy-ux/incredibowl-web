@@ -634,8 +634,8 @@ export default function V4BentoLayout() {
                     <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                         <div className="md:col-span-1 bg-[#E3EADA] rounded-[32px] p-8 flex flex-col justify-center">
                             <MessageCircle size={32} className="text-[#1A2D23] mb-4" />
-                            <h2 className="text-3xl font-extrabold mb-4 leading-tight">来自邻里的<br />真实反馈</h2>
-                            <p className="text-[#1A2D23]/70 font-medium text-sm mb-6">这些都是来自 Pearl Suria 与周边公寓邻居们在 WhatsApp 里的留言。绝不作假。</p>
+                            <h2 className="text-3xl font-extrabold mb-4 leading-tight">隔壁邻居<br />怎么说</h2>
+                            <p className="text-[#1A2D23]/70 font-medium text-sm mb-6">每一条都来自 Pearl Suria 和周边公寓邻居的真实 WhatsApp 留言。<br /><br />没有网红，没有广告，只有吃过的人说的真心话。</p>
                             <button onClick={() => setIsFeedbackModalOpen(true)} className="w-full py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors flex items-center justify-center gap-2">
                                 <Plus size={18} /> 写下您的留言
                             </button>
