@@ -206,10 +206,21 @@ export default function CartDrawer({
 
                 {/* Delivery Info */}
                 {cart.length > 0 && (
-                    <div className="px-6 py-3 bg-[#E3EADA]/30 border-b border-[#E3EADA]/50 flex items-center gap-4 text-xs">
-                        <span className="font-bold text-[#1A2D23]">📅 {selectedDate || '未选日期'}</span>
-                        <span className="text-gray-300">|</span>
-                        <span className="font-bold text-[#1A2D23]">⏰ {selectedTime || 'Lunch'}</span>
+                    <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] flex flex-col gap-2">
+                        <div className="text-xs font-bold text-[#1A2D23] flex flex-col gap-2">
+                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                <span className="text-gray-500 font-medium">📅 送达日期</span>
+                                <span className="text-[#FF6B35]">{selectedDate || '未选日期'} (明天)</span>
+                            </p>
+                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                <span className="text-gray-500 font-medium">⏰ 送达时段</span>
+                                <span>{selectedTime || 'Lunch'}</span>
+                            </p>
+                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
+                                <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
+                            </p>
+                        </div>
                     </div>
                 )}
 

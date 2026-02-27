@@ -594,7 +594,7 @@ export default function V4BentoLayout() {
                                                 onClick={(e) => { e.stopPropagation(); openAddOnModal(dish); }}
                                                 className="w-full py-4 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors"
                                             >
-                                                <ShoppingBag size={18} /> 加入预订
+                                                <ShoppingBag size={18} /> 加入明天的预订
                                             </button>
                                         </div>
                                     )}
