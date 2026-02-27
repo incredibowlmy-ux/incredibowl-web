@@ -63,6 +63,16 @@ export default function CartDrawer({
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const fetchProfile = async () => {
+            if (isOpen && currentUser) {
+                const profile = await getUserProfile(currentUser.uid);
+                setUserProfile(profile);
+            }
+        };
+        fetchProfile();
+    }, [isOpen, currentUser]);
+
     if (!isOpen) return null;
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -205,65 +215,69 @@ export default function CartDrawer({
                 </div>
 
                 {/* Delivery Info */}
-                {cart.length > 0 && (
-                    <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] flex flex-col gap-2">
-                        <div className="text-xs font-bold text-[#1A2D23] flex flex-col gap-2">
-                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                <span className="text-gray-500 font-medium">📅 送达日期</span>
-                                <span className="text-[#FF6B35]">{selectedDate || '未选日期'} (明天)</span>
-                            </p>
-                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                <span className="text-gray-500 font-medium">⏰ 送达时段</span>
-                                <span>{selectedTime || 'Lunch'}</span>
-                            </p>
-                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
-                                <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {cart.length === 0 ? (
-                        <div className="text-center py-20 opacity-20 text-[#1A2D23]">
-                            <Utensils className="w-16 h-16 mx-auto mb-4" />
-                            <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
-                        </div>
-                    ) : (
-                        cart.map((item: any, i: number) => (
-                            <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
-                                <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
-                                    {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
-                                    <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
-                                        <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
-                                        <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
-                                    </div>
-                                </div>
-                                <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start"><Trash2 size={18} /></button>
-                            </div>
-                        ))
-                    )}
-
-                    {/* Order Note */}
+                {/* Scrollable Middle Area: Delivery Info + Cart Items */}
+                <div className="flex-1 overflow-y-auto flex flex-col">
+                    {/* Delivery Info */}
                     {cart.length > 0 && (
-                        <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">备注 Note (可选)</label>
-                            <textarea
-                                value={orderNote}
-                                onChange={(e) => setOrderNote(e.target.value)}
-                                placeholder="例：少辣、不要葱…"
-                                rows={2}
-                                className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none"
-                            />
+                        <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] flex flex-col gap-2 shrink-0">
+                            <div className="text-xs font-bold text-[#1A2D23] flex flex-col gap-2">
+                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                    <span className="text-gray-500 font-medium">📅 送达日期</span>
+                                    <span className="text-[#FF6B35]">{selectedDate || '未选日期'} (明天)</span>
+                                </p>
+                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                    <span className="text-gray-500 font-medium">⏰ 送达时段</span>
+                                    <span>{selectedTime || 'Lunch'}</span>
+                                </p>
+                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
+                                    <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
+                                    <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
+                                </p>
+                            </div>
                         </div>
                     )}
+
+                    {/* Cart Items */}
+                    <div className="flex-1 p-6 space-y-4">
+                        {cart.length === 0 ? (
+                            <div className="text-center py-20 opacity-20 text-[#1A2D23]">
+                                <Utensils className="w-16 h-16 mx-auto mb-4" />
+                                <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
+                            </div>
+                        ) : (
+                            cart.map((item: any, i: number) => (
+                                <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
+                                    <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
+                                        {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
+                                        <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
+                                            <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
+                                            <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start"><Trash2 size={18} /></button>
+                                </div>
+                            ))
+                        )}
+
+                        {/* Order Note */}
+                        {cart.length > 0 && (
+                            <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">备注 Note (可选)</label>
+                                <textarea
+                                    value={orderNote}
+                                    onChange={(e) => setOrderNote(e.target.value)}
+                                    placeholder="例：少辣、不要葱…"
+                                    rows={2}
+                                    className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none"
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Checkout Section - Scrollable */}
