@@ -433,7 +433,7 @@ export default function V4BentoLayout() {
                     </div>
 
                     {/* Pre-order Widget (Full Width spanning) */}
-                    <div className="lg:col-span-12 bg-white rounded-[32px] p-4 md:p-6 lg:p-8 shadow-sm border border-gray-100 mt-4 flex flex-col gap-4" id="menu">
+                    <div className="lg:col-span-12 bg-white rounded-[32px] p-4 md:p-6 lg:p-8 shadow-sm border border-gray-100 mt-4 flex flex-col gap-4">
                         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 bg-[#FDFBF7] rounded-2xl flex items-center justify-center text-[#FF6B35]">
@@ -532,7 +532,7 @@ export default function V4BentoLayout() {
                     </div>
 
                     {/* Horizontal Interactive Menu Carousel */}
-                    <div className="lg:col-span-12 mt-8">
+                    <div className="lg:col-span-12 mt-8" id="menu">
                         <div className="flex items-center justify-between mb-6 px-2">
                             <div>
                                 <h2 className="text-2xl font-extrabold tracking-tight">每日一味 / Weekly Rotation</h2>
