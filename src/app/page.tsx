@@ -525,7 +525,7 @@ export default function V4BentoLayout() {
                             <p className="text-xs font-bold text-gray-500 mb-1">🤔 不确定你家在不在范围内？</p>
                             <p className="text-[10px] text-gray-400 italic mb-4">Not sure if we deliver to you?</p>
 
-                            <a href="https://wa.me/60103370197?text=%E9%98%BF%E5%A7%A8%EF%BC%8C%E6%88%91%E6%83%B3%E7%A1%AE%E8%AE%A4%E4%B8%80%E4%B8%8B%E6%88%91%E5%AE%B6%E5%9C%A8%E4%B8%8D%E5%9C%A8%E9%85%8D%E9%80%81%E8%8C%83%E5%9B%B4%E5%86%85%EF%BC%9F" target="_blank" rel="noopener noreferrer" className="w-full py-3.5 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20">
+                            <a href="https://wa.me/60103370197?text=Hi%20Auntie%21%20%E7%9C%8B%E4%BA%86%E4%BD%A0%E7%9A%84%E8%8F%9C%E5%8D%95%E6%9E%81%E5%BA%A6%E6%83%B3%E5%BF%B5%20home-cooked%20food%20%F0%9F%8D%B3%EF%BC%8C%E6%83%B3%E7%A1%AE%E8%AE%A4%E6%88%91%E8%BF%99%E8%BE%B9%E7%9A%84%20condo%20%E6%9C%89%E6%B2%A1%E6%9C%89%E5%9C%A8%20delivery%20coverage%20%E9%87%8C%E9%9D%A2%E5%91%A2%EF%BC%9F" target="_blank" rel="noopener noreferrer" className="w-full py-3.5 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20">
                                 <Phone size={16} /> WhatsApp 问阿姨
                             </a>
                         </div>
