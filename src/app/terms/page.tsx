@@ -7,7 +7,7 @@ export default function TermsAndConditions() {
     return (
         <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
-                <Link href="/v3" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
+                <Link href="/" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
                 <h1 className="text-4xl font-black mb-10 text-[#E76F51]">Terms & Conditions / 服务条款</h1>
 
                 <div className="space-y-12 leading-relaxed text-sm">
