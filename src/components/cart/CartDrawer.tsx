@@ -349,8 +349,8 @@ export default function CartDrawer({
                                             {/* Action Row: Edit helper & Quantity */}
                                             <div className="flex items-center justify-between mt-3 px-1 relative z-20">
                                                 {onEditItem ? (
-                                                    <button onClick={() => onEditItem(item)} className="px-3.5 py-1.5 bg-[#FF6B35]/10 text-[#FF6B35] text-[11px] font-bold rounded-xl hover:bg-[#FF6B35] hover:text-white transition-all flex items-center gap-1.5">
-                                                        <Sparkles size={12} /> 修改配置
+                                                    <button onClick={() => onEditItem(item)} className="px-3 py-1.5 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
+                                                        Edit
                                                     </button>
                                                 ) : <div />}
 

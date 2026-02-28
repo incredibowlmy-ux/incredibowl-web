@@ -39,7 +39,7 @@ const weeklyMenu = [
         name: "山药云耳海陆双鲜炒",
         nameEn: "Surf & Turf Yam Stir-fry",
         price: 18.50,
-        image: "/yam_surf_turf_egg.jpg",
+        image: "/chinese_yam_black_fungus_v3.png",
         tags: ["健脾益胃", "清肺润燥"],
         desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。"
     },
