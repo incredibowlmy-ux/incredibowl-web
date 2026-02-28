@@ -83,6 +83,7 @@ export default function V4BentoLayout() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
     const [isAddOnOpen, setIsAddOnOpen] = useState(false);
     const [selectedDish, setSelectedDish] = useState<typeof weeklyMenu[0] | null>(null);
+    const [editConfig, setEditConfig] = useState<any>(null);
 
     // Feedback State
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -273,43 +274,42 @@ export default function V4BentoLayout() {
     };
 
     // Handle "Add to Cart" from the AddOnModal
-    const handleAddWithAddOns = (dish: any, addOns: { item: any; quantity: number }[], totalPrice: number, note: string, sDate: string, sTime: string) => {
+    const handleAddWithAddOns = (dish: any, addOns: { item: any; quantity: number }[], bundleTotalPrice: number, note: string, sDate: string, sTime: string, dishQty: number, editCartItemId?: string) => {
         setCart(prev => {
             const newItems = [...prev];
-            // Add main dish
-            const dishCartId = `${dish.id}-${sDate}-${sTime}`;
-            const existingDish = newItems.find((i: any) => i.cartItemId === dishCartId && !i.isAddOn);
-            if (existingDish) {
-                existingDish.quantity += 1;
-                existingDish.note = note; // Update note if exists
-            } else {
-                newItems.push({ ...dish, cartItemId: dishCartId, quantity: 1, selectedDate: sDate, selectedTime: sTime, note });
-            }
-            // Add each add-on as a separate cart line linked to the same delivery dimension
-            addOns.forEach(({ item, quantity }) => {
-                const addOnCartId = `${dishCartId}-addon-${item.id}`;
-                const existingAddOn = newItems.find((i: any) => i.cartItemId === addOnCartId);
-                if (existingAddOn) {
-                    existingAddOn.quantity += quantity;
-                } else {
-                    newItems.push({
-                        id: item.id,
-                        cartItemId: addOnCartId,
-                        name: `↳ ${item.name}`,
-                        nameEn: item.nameEn,
-                        price: item.price,
-                        category: item.category,
-                        image: item.image,
-                        isAddOn: true,
-                        parentId: dishCartId,
-                        quantity,
+            if (editCartItemId) {
+                // We are editing an existing bundle
+                const index = newItems.findIndex((i: any) => i.cartItemId === editCartItemId);
+                if (index >= 0) {
+                    newItems[index] = {
+                        ...newItems[index],
+                        dish,
+                        dishQty,
+                        addOns,
+                        price: bundleTotalPrice,
+                        note,
                         selectedDate: sDate,
-                        selectedTime: sTime
-                    });
+                        selectedTime: sTime,
+                    };
                 }
-            });
+            } else {
+                // New bundle
+                const cartItemId = `${dish.id}-${Date.now()}`;
+                newItems.push({
+                    cartItemId,
+                    dish,
+                    dishQty,
+                    addOns,
+                    note,
+                    selectedDate: sDate,
+                    selectedTime: sTime,
+                    price: bundleTotalPrice,
+                    quantity: 1, // default 1 bundle
+                });
+            }
             return newItems;
         });
+        setEditConfig(null);
         setIsCartOpen(true);
     };
 
@@ -325,6 +325,22 @@ export default function V4BentoLayout() {
 
     const removeFromCart = (cartItemId: any) => {
         setCart(prev => prev.filter((i: any) => i.cartItemId !== cartItemId));
+    };
+
+    const handleEditCartItem = (bundle: any) => {
+        setSelectedDish(bundle.dish);
+        const initQuantities: Record<string, number> = {};
+        bundle.addOns.forEach((a: any) => { initQuantities[a.item.id] = a.quantity; });
+        setEditConfig({
+            cartItemId: bundle.cartItemId,
+            quantities: initQuantities,
+            dishQty: bundle.dishQty,
+            note: bundle.note,
+            selectedDate: bundle.selectedDate,
+            selectedTime: bundle.selectedTime
+        });
+        setIsCartOpen(false);
+        setIsAddOnOpen(true);
     };
 
     const scrollToIndex = (index: number) => {
@@ -722,18 +738,19 @@ export default function V4BentoLayout() {
             </footer>
 
             {/* Integrated Renderers */}
-            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} />
+            <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} cart={cart} updateQuantity={updateQuantity} removeFromCart={removeFromCart} cartTotal={cartTotal} cartCount={cartCount} onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }} onClearCart={() => setCart([])} onEditItem={handleEditCartItem} />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
             {selectedDish && (
                 <AddOnModal
                     isOpen={isAddOnOpen}
-                    onClose={() => setIsAddOnOpen(false)}
+                    onClose={() => { setIsAddOnOpen(false); setEditConfig(null); }}
                     dish={selectedDish}
                     onAddToCart={handleAddWithAddOns}
                     defaultDate={menuDates[selectedDish.id]?.actualDate}
                     isDaily={selectedDish.id === 6}
                     minDate={minDate}
                     dateLabel={menuDates[selectedDish.id]?.topTag}
+                    initialConfig={editConfig}
                 />
             )}
             {/* Feedback Modal */}

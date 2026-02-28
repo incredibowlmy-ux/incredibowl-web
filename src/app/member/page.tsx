@@ -160,17 +160,26 @@ export default function MemberPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F5F3EF]">
+        <div className="min-h-screen bg-[#FDFBF7] relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-40 -left-20 w-72 h-72 bg-[#FF6B35]/5 rounded-full blur-[100px]" />
+                <div className="absolute bottom-40 -right-20 w-96 h-96 bg-[#1A2D23]/5 rounded-full blur-[120px]" />
+            </div>
             <style jsx global>{`
                 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
                 body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
             `}</style>
 
             {/* Header */}
-            <header className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] text-white pb-20 pt-6 px-4 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute top-10 left-10 text-8xl">🍜</div>
-                    <div className="absolute bottom-5 right-10 text-7xl">🥢</div>
+            <header className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] text-white pb-28 pt-8 px-4 relative overflow-hidden shadow-2xl shadow-[#1A2D23]/10">
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B35]/20 rounded-full blur-[80px] mix-blend-screen" />
+                    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#E3EADA]/10 rounded-full blur-[60px] mix-blend-screen" />
+                    <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.8)_1px,transparent_1px)] bg-[length:24px_24px]"></div>
+                </div>
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                    <div className="absolute top-10 left-10 text-8xl transform -rotate-12">🍜</div>
+                    <div className="absolute bottom-10 right-10 text-7xl transform rotate-12">🥢</div>
                 </div>
                 <div className="max-w-2xl mx-auto relative">
                     <div className="flex items-center justify-between mb-6">
@@ -200,9 +209,9 @@ export default function MemberPage() {
                 </div>
             </header>
 
-            <div className="max-w-2xl mx-auto px-4 -mt-14 space-y-5 pb-12">
+            <div className="max-w-2xl mx-auto px-4 -mt-20 relative z-10 space-y-6 pb-12">
                 {/* Points Card */}
-                <div className="bg-white rounded-3xl p-6 shadow-xl shadow-black/5 border border-gray-100">
+                <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-6 shadow-xl shadow-black/5 border border-white">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center">
@@ -277,25 +286,25 @@ export default function MemberPage() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <ShoppingBag size={18} className="mx-auto mb-1 text-[#FF6B35]" />
                         <p className="text-xl font-black text-[#1A2D23]">{profileData?.totalOrders || 0}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">总订单</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">总订单</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Wallet size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-xl font-black text-[#1A2D23]">RM{(profileData?.totalSpent || 0).toFixed(0)}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">累计消费</p>
+                        <p className="text-xl font-black text-[#1A2D23] truncate">RM{(profileData?.totalSpent || 0).toFixed(0)}</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">累计消费</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Star size={18} className="mx-auto mb-1 text-[#FF6B35]" />
                         <p className="text-xl font-black text-[#1A2D23]">{favDish ? favDish[1] : 0}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">最爱点数</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">最爱点数</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Calendar size={18} className="mx-auto mb-1 text-[#FF6B35]" />
                         <p className="text-xl font-black text-[#1A2D23]">{memberDays}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">已加入天</p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">已加入天</p>
                     </div>
                 </div>
 
@@ -318,8 +327,8 @@ export default function MemberPage() {
                 )}
 
                 {/* Order History */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                <div className="bg-white/80 backdrop-blur-xl rounded-[32px] shadow-lg shadow-black/5 border border-white overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/50">
                         <h2 className="font-black text-[#1A2D23] flex items-center gap-2">
                             <ShoppingBag size={18} /> 订单记录
                         </h2>
@@ -435,50 +444,55 @@ export default function MemberPage() {
                 </div>
 
                 {/* Referral Section */}
-                <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-3xl p-6 text-white">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Share2 size={18} className="text-[#FF6B35]" />
-                        <h3 className="font-black">推荐好友赚积分</h3>
-                    </div>
-                    <p className="text-white/50 text-xs mb-4">分享你的推荐码给朋友，好友完成首单后双方各获 <span className="text-[#FF6B35] font-bold">50 积分</span>！</p>
+                <div className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] rounded-[32px] p-6 text-white shadow-2xl shadow-[#1A2D23]/20 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B35]/20 rounded-full blur-[50px] mix-blend-screen pointer-events-none" />
+                    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#E3EADA]/10 rounded-full blur-[40px] mix-blend-screen pointer-events-none" />
 
-                    <div className="bg-white/10 rounded-xl p-4 flex items-center justify-between mb-4">
-                        <div>
-                            <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">推荐码</p>
-                            <p className="text-2xl font-black tracking-[0.3em] text-[#FF6B35]">{referralCode}</p>
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Share2 size={18} className="text-[#FF6B35]" />
+                            <h3 className="font-black text-lg">推荐好友赚积分</h3>
                         </div>
-                        <button
-                            onClick={handleCopyCode}
-                            className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                        >
-                            {copied ? <><CheckCircle size={12} /> 已复制</> : <><Copy size={12} /> 复制</>}
-                        </button>
-                    </div>
+                        <p className="text-white/70 text-xs mb-5 leading-relaxed">分享你的推荐码给朋友，好友完成首单后双方各获 <span className="text-[#FF6B35] font-black">50 积分</span>！</p>
 
-                    {/* Social Share Buttons */}
-                    <div className="grid grid-cols-4 gap-2 mb-3">
-                        {socialLinks.slice(0, 4).map((social) => (
+                        <div className="bg-white/10 rounded-xl p-4 flex items-center justify-between mb-4">
+                            <div>
+                                <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">推荐码</p>
+                                <p className="text-2xl font-black tracking-[0.3em] text-[#FF6B35]">{referralCode}</p>
+                            </div>
                             <button
-                                key={social.name}
-                                onClick={social.onClick}
-                                className={`py-3 rounded-xl text-white font-bold text-[10px] flex flex-col items-center gap-1.5 transition-all ${social.color}`}
+                                onClick={handleCopyCode}
+                                className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
                             >
-                                {social.icon}
-                                {social.name}
+                                {copied ? <><CheckCircle size={12} /> 已复制</> : <><Copy size={12} /> 复制</>}
                             </button>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                        {socialLinks.slice(4).map((social) => (
-                            <button
-                                key={social.name}
-                                onClick={social.onClick}
-                                className={`py-3 rounded-xl text-white font-bold text-[10px] flex flex-col items-center gap-1.5 transition-all ${social.color}`}
-                            >
-                                {social.icon}
-                                {social.name}
-                            </button>
-                        ))}
+                        </div>
+
+                        {/* Social Share Buttons */}
+                        <div className="grid grid-cols-4 gap-2 mb-3">
+                            {socialLinks.slice(0, 4).map((social) => (
+                                <button
+                                    key={social.name}
+                                    onClick={social.onClick}
+                                    className={`py-3 rounded-xl text-white font-bold text-[10px] flex flex-col items-center gap-1.5 transition-all ${social.color}`}
+                                >
+                                    {social.icon}
+                                    {social.name}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {socialLinks.slice(4).map((social) => (
+                                <button
+                                    key={social.name}
+                                    onClick={social.onClick}
+                                    className={`py-3 rounded-xl text-white font-bold text-[10px] flex flex-col items-center gap-1.5 transition-all ${social.color}`}
+                                >
+                                    {social.icon}
+                                    {social.name}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>

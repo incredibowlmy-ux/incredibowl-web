@@ -16,7 +16,8 @@ export default function CartDrawer({
     cartTotal,
     cartCount,
     onAuthOpen,
-    onClearCart
+    onClearCart,
+    onEditItem
 }: any) {
     const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx' | ''>('');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
@@ -161,13 +162,30 @@ export default function CartDrawer({
                     userEmail: currentUser.email || '',
                     userPhone: userProfile.phone,
                     userAddress: userProfile.address,
-                    items: group.items.map((item: any) => ({
-                        name: item.name,
-                        nameEn: item.nameEn || '',
-                        price: item.price,
-                        quantity: item.quantity,
-                        image: item.image || '',
-                    })),
+                    items: group.items.flatMap((bundle: any) => {
+                        const arr = [];
+                        // Main dish
+                        arr.push({
+                            name: bundle.dish.name,
+                            nameEn: bundle.dish.nameEn || '',
+                            price: bundle.dish.price,
+                            quantity: bundle.dishQty * bundle.quantity,
+                            image: bundle.dish.image || '',
+                        });
+                        // Add-ons
+                        if (bundle.addOns) {
+                            bundle.addOns.forEach((a: any) => {
+                                arr.push({
+                                    name: `↳ ${a.item.name}`,
+                                    nameEn: a.item.nameEn || '',
+                                    price: a.item.price,
+                                    quantity: a.quantity * bundle.quantity,
+                                    image: a.item.image || '',
+                                });
+                            });
+                        }
+                        return arr;
+                    }),
                     total: currentFinal,
                     originalTotal: group.subtotal,
                     promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
@@ -292,21 +310,56 @@ export default function CartDrawer({
                                         <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold">{group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}</span>
                                     </div>
                                     {group.items.map((item: any, i: number) => (
-                                        <div key={item.cartItemId || item.id} className="bg-white rounded-2xl p-4 border border-[#E3EADA]/50 shadow-sm flex gap-4 animate-in slide-in-from-bottom duration-300" style={{ animationDelay: `${i * 50}ms` }}>
-                                            <div className="w-14 h-14 rounded-xl bg-[#FDFBF7] flex items-center justify-center text-2xl overflow-hidden relative shrink-0">
-                                                {item.image?.startsWith('/') ? <Image src={item.image} alt={item.name} fill className="object-cover" /> : item.image}
+                                        <div key={item.cartItemId} className="bg-white rounded-[24px] p-4 border border-[#E3EADA]/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group" style={{ animationDelay: `${i * 50}ms` }}>
+
+                                            {/* Clickable Area for Editing */}
+                                            {onEditItem && (
+                                                <button
+                                                    onClick={() => onEditItem(item)}
+                                                    className="absolute inset-0 w-full h-full z-0 rounded-[24px] hover:bg-[#1A2D23]/[0.02] transition-colors"
+                                                    aria-label="Edit Item"
+                                                />
+                                            )}
+
+                                            {/* Top Row: Image & Title */}
+                                            <div className="flex gap-4 items-center relative z-20">
+                                                <div className="w-16 h-16 rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-[#E3EADA]/30">
+                                                    {item.dish.image?.startsWith('/') ? <Image src={item.dish.image} alt={item.dish.name} fill className="object-cover" /> : item.dish.image}
+                                                </div>
+                                                <div className="flex-1 min-w-0 pr-8">
+                                                    <div className="flex flex-col">
+                                                        <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
+                                                            {item.dish.name}
+                                                            {item.dishQty > 1 && <span className="ml-2 text-[10px] bg-[#1A2D23]/5 text-[#1A2D23] px-1.5 py-0.5 rounded font-bold inline-block relative -top-0.5">x{item.dishQty}</span>}
+                                                        </h4>
+                                                        {(item.addOns?.length > 0 || item.note) && (
+                                                            <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex flex-wrap gap-x-2">
+                                                                {item.addOns?.length > 0 && <span>加购 {item.addOns.reduce((sum: number, a: any) => sum + a.quantity, 0)} 项</span>}
+                                                                {item.note && <span>📝 备注</span>}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[#FF6B35] font-black text-lg mt-1 relative z-20 w-fit">RM {(item.price * item.quantity).toFixed(2)}</p>
+                                                </div>
+                                                <button onClick={() => removeFromCart(item.cartItemId)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute top-0 right-0 z-20">
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-[#1A2D23] text-sm truncate">{item.name}</h4>
-                                                <p className="text-[#FF6B35] font-black text-lg">RM {item.price.toFixed(2)}</p>
-                                                {item.note && <p className="text-xs text-gray-400 mt-1 line-clamp-1 italic">备注: {item.note}</p>}
-                                                <div className="flex items-center gap-3 mt-2">
-                                                    <button onClick={() => updateQuantity(item.cartItemId || item.id, -1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Minus size={14} /></button>
-                                                    <span className="font-black text-sm w-4 text-center">{item.quantity}</span>
-                                                    <button onClick={() => updateQuantity(item.cartItemId || item.id, 1)} className="w-7 h-7 rounded-lg border border-[#E3EADA] flex items-center justify-center hover:bg-[#FF6B35] hover:text-white hover:border-[#FF6B35] transition-colors"><Plus size={14} /></button>
+
+                                            {/* Action Row: Edit helper & Quantity */}
+                                            <div className="flex items-center justify-between mt-3 px-1 relative z-20">
+                                                {onEditItem ? (
+                                                    <button onClick={() => onEditItem(item)} className="px-3.5 py-1.5 bg-[#FF6B35]/10 text-[#FF6B35] text-[11px] font-bold rounded-xl hover:bg-[#FF6B35] hover:text-white transition-all flex items-center gap-1.5">
+                                                        <Sparkles size={12} /> 修改配置
+                                                    </button>
+                                                ) : <div />}
+
+                                                <div className="flex items-center gap-2 bg-white border border-[#E3EADA] rounded-xl p-1 shadow-sm relative z-20">
+                                                    <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Minus size={14} /></button>
+                                                    <span className="font-black text-sm w-5 text-center text-[#1A2D23]">{item.quantity}</span>
+                                                    <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Plus size={14} /></button>
                                                 </div>
                                             </div>
-                                            <button onClick={() => removeFromCart(item.cartItemId || item.id)} className="text-gray-300 hover:text-red-400 transition-colors self-start p-1"><Trash2 size={18} /></button>
                                         </div>
                                     ))}
                                 </div>

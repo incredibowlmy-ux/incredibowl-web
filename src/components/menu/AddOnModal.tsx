@@ -88,11 +88,19 @@ interface AddOnModalProps {
     onClose: () => void;
     dish: DishItem | null;
     addOnSections?: AddOnSection[];
-    onAddToCart: (dish: DishItem, addOns: { item: AddOnItem; quantity: number }[], totalPrice: number, note: string, selectedDate: string, selectedTime: string) => void;
+    onAddToCart: (dish: DishItem, addOns: { item: AddOnItem; quantity: number }[], totalPrice: number, note: string, selectedDate: string, selectedTime: string, dishQty: number, editCartItemId?: string) => void;
     defaultDate?: string;
     isDaily?: boolean;
     minDate?: string;
     dateLabel?: string;
+    initialConfig?: {
+        cartItemId: string;
+        quantities: Record<string, number>;
+        dishQty: number;
+        note: string;
+        selectedDate: string;
+        selectedTime: string;
+    } | null;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -107,6 +115,7 @@ export default function AddOnModal({
     isDaily = false,
     minDate = '',
     dateLabel = '',
+    initialConfig = null,
 }: AddOnModalProps) {
     // Track quantities per add-on item
     const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -193,23 +202,35 @@ export default function AddOnModal({
     // Reset state when modal opens/dish changes
     useEffect(() => {
         if (isOpen && dish) {
-            setQuantities({});
-            setDishQty(1);
-            setNote('');
-            setSelectedDate(defaultDate || minDate || "");
-            setSelectedTime("");
-            // Expand first section by default
-            const initialExpanded: Record<string, boolean> = {};
-            activeAddOnSections.forEach((s, i) => {
-                initialExpanded[s.id] = i === 0;
-            });
-            setExpandedSections(initialExpanded);
+            if (initialConfig) {
+                setQuantities(initialConfig.quantities);
+                setDishQty(initialConfig.dishQty);
+                setNote(initialConfig.note);
+                setSelectedDate(initialConfig.selectedDate);
+                setSelectedTime(initialConfig.selectedTime);
+                const initialExpanded: Record<string, boolean> = {};
+                activeAddOnSections.forEach((s) => {
+                    initialExpanded[s.id] = true;
+                });
+                setExpandedSections(initialExpanded);
+            } else {
+                setQuantities({});
+                setDishQty(1);
+                setNote('');
+                setSelectedDate(defaultDate || minDate || "");
+                setSelectedTime("");
+                const initialExpanded: Record<string, boolean> = {};
+                activeAddOnSections.forEach((s, i) => {
+                    initialExpanded[s.id] = i === 0;
+                });
+                setExpandedSections(initialExpanded);
+            }
             // Trigger entrance animation
             requestAnimationFrame(() => setIsVisible(true));
         } else {
             setIsVisible(false);
         }
-    }, [isOpen, dish, activeAddOnSections, defaultDate, minDate]);
+    }, [isOpen, dish, activeAddOnSections, defaultDate, minDate, initialConfig]);
 
     // Prevent body scroll when modal is open
     useEffect(() => {
@@ -254,7 +275,7 @@ export default function AddOnModal({
                 .filter(item => (quantities[item.id] || 0) > 0)
                 .map(item => ({ item, quantity: quantities[item.id] }))
         );
-        onAddToCart(dish, selectedAddOns, grandTotal, note, selectedDate, selectedTime);
+        onAddToCart(dish, selectedAddOns, grandTotal, note, selectedDate, selectedTime, dishQty, initialConfig?.cartItemId);
         handleClose();
     };
 
@@ -554,7 +575,7 @@ export default function AddOnModal({
                             }`}
                     >
                         <ShoppingBag size={20} />
-                        {selectedTime ? `加入预订 · RM ${grandTotal.toFixed(2)}` : '请先选择送达时段 👆'}
+                        {selectedTime ? (initialConfig ? `更新订单配置 · RM ${grandTotal.toFixed(2)}` : `加入预订 · RM ${grandTotal.toFixed(2)}`) : '请先选择送达时段 👆'}
                     </button>
                 </div>
             </div>
