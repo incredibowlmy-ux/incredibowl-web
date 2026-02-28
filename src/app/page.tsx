@@ -20,7 +20,7 @@ const weeklyMenu = [
         nameEn: "Natto Tsukimi Rice Bowl",
         price: 16.90,
         image: "/natto_bowl.jpg",
-        tags: ["~485 kcal*", "高蛋白 25g+", "无味精", "益生菌"],
+        tags: ["~485 kcal*", "高蛋白 25g+", "纳豆激酶", "益生菌"],
         desc: "经典的健康选择。纳豆的鲜香配上顺滑的月见蛋，简单却极富层次。"
     },
     {
