@@ -516,7 +516,7 @@ export default function V4BentoLayout() {
                             </p>
                             <div className="w-full h-px bg-white/10 mb-5" />
                             <ul className="space-y-3.5">
-                                {['100% 无味精', '少盐少油', '选用鲜切好肉'].map((feat, idx) => (
+                                {['纯天然，0 味精提鲜', '轻盐减油，吃完不口干', '每日巴刹鲜购优质肉'].map((feat, idx) => (
                                     <li key={idx} className="flex items-center gap-3 text-sm font-bold text-white/90">
                                         <CheckCircle2 size={18} className="text-[#FF6B35]" /> {feat}
                                     </li>
