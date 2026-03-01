@@ -84,6 +84,7 @@ export default function V4BentoLayout() {
     const [isAddOnOpen, setIsAddOnOpen] = useState(false);
     const [selectedDish, setSelectedDish] = useState<typeof weeklyMenu[0] | null>(null);
     const [editConfig, setEditConfig] = useState<any>(null);
+    const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
     // Feedback State
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -690,16 +691,6 @@ export default function V4BentoLayout() {
                         </div>
                     </div>
 
-                    {/* AI Chatbot Assistant */}
-                    <div className="lg:col-span-12 mt-4 bg-[#FDFBF7] rounded-[32px] overflow-hidden border border-[#E3EADA] shadow-sm">
-                        <iframe
-                            src="https://udify.app/chatbot/sYBrRfnjikAZm3S5"
-                            style={{ width: '100%', height: '100%', minHeight: '700px' }}
-                            frameBorder="0"
-                            allow="microphone">
-                        </iframe>
-                    </div>
-
                 </div>
             </main>
 
@@ -807,6 +798,41 @@ export default function V4BentoLayout() {
                     </div>
                 </div>
             )}
+
+            {/* Floating Chatbot */}
+            <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end space-y-4">
+                {isChatbotOpen && (
+                    <div className="w-[340px] md:w-[400px] h-[580px] max-h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E3EADA] animate-in slide-in-from-bottom-5 flex flex-col">
+                        <div className="bg-[#1A2D23] p-4 flex justify-between items-center text-white">
+                            <div className="flex items-center gap-2">
+                                <MessageCircle size={20} className="text-[#FF6B35]" />
+                                <span className="font-bold text-sm tracking-wide">阿姨的金牌小助手</span>
+                            </div>
+                            <button onClick={() => setIsChatbotOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition-colors relative group">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <iframe
+                            src="https://udify.app/chatbot/sYBrRfnjikAZm3S5"
+                            style={{ width: '100%', height: '100%', border: 'none' }}
+                            frameBorder="0"
+                            allow="microphone">
+                        </iframe>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => setIsChatbotOpen(!isChatbotOpen)}
+                    className="w-[56px] h-[56px] bg-[#1A2D23] text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 hover:bg-[#2A3D33] border-2 border-[#E3EADA] transition-all duration-300 relative group"
+                >
+                    {isChatbotOpen ? <X size={26} /> : (
+                        <>
+                            <MessageCircle size={26} />
+                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#FF6B35] rounded-full border-2 border-[#1A2D23] animate-pulse"></span>
+                        </>
+                    )}
+                </button>
+            </div>
         </div>
     );
 }
