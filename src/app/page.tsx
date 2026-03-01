@@ -690,6 +690,16 @@ export default function V4BentoLayout() {
                         </div>
                     </div>
 
+                    {/* AI Chatbot Assistant */}
+                    <div className="lg:col-span-12 mt-4 bg-[#FDFBF7] rounded-[32px] overflow-hidden border border-[#E3EADA] shadow-sm">
+                        <iframe
+                            src="https://udify.app/chatbot/sYBrRfnjikAZm3S5"
+                            style={{ width: '100%', height: '100%', minHeight: '700px' }}
+                            frameBorder="0"
+                            allow="microphone">
+                        </iframe>
+                    </div>
+
                 </div>
             </main>
 
