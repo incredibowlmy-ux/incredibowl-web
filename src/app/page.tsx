@@ -803,15 +803,6 @@ export default function V4BentoLayout() {
             <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end space-y-4">
                 {isChatbotOpen && (
                     <div className="w-[340px] md:w-[400px] h-[580px] max-h-[75vh] bg-white rounded-2xl shadow-2xl overflow-hidden border border-[#E3EADA] animate-in slide-in-from-bottom-5 flex flex-col">
-                        <div className="bg-[#1A2D23] p-4 flex justify-between items-center text-white">
-                            <div className="flex items-center gap-2">
-                                <MessageCircle size={20} className="text-[#FF6B35]" />
-                                <span className="font-bold text-sm tracking-wide">阿姨的金牌小助手</span>
-                            </div>
-                            <button onClick={() => setIsChatbotOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition-colors relative group">
-                                <X size={18} />
-                            </button>
-                        </div>
                         <iframe
                             src="https://udify.app/chatbot/sYBrRfnjikAZm3S5"
                             style={{ width: '100%', height: '100%', border: 'none' }}
