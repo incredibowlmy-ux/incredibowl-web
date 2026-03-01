@@ -511,7 +511,7 @@ export default function V4BentoLayout() {
                                 <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">邻里内测中</h3>
                             </div>
                             <p className="text-white/80 text-sm md:text-base mb-6 leading-relaxed">
-                                阿姨的厨房正式开灶！首批仅开放 <span className="text-white font-bold">Pearl Suria</span> 周边邻居试吃。<br />
+                                阿姨的厨房正式开灶！首批仅开放 <span className="text-white font-bold">Pearl Point</span> 周边邻居试吃。<br />
                                 名额有限，<span className="text-[#FF6B35] font-black text-base underline decoration-[#FF6B35]/30 underline-offset-4">每天限量 25 份</span>。
                             </p>
                             <div className="w-full h-px bg-white/10 mb-5" />
@@ -549,7 +549,7 @@ export default function V4BentoLayout() {
                             </p>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4 text-xs font-bold text-white/90">
-                                {['Pearl Suria (大本营)', 'Millerz Square', 'The Scott Garden', "D'Ivoz Residences", 'Pearl Point', 'Verve Suites', 'The Harmony', 'Platinum Arena', 'Citizen 1&2', 'Petalz', "D'Sands", 'SkyVille 8 @ Benteng'].map(loc => (
+                                {['Pearl Point 邻里小灶', 'Millerz Square', 'The Scott Garden', "D'Ivoz Residences", 'Verve Suites', 'The Harmony', 'Platinum Arena', 'Citizen 1&2', 'Petalz', "D'Sands", 'SkyVille 8 @ Benteng'].map(loc => (
                                     <div key={loc} className="flex items-center gap-2">
                                         <CheckCircle2 size={14} className="text-[#FF6B35] shrink-0" />
                                         <span className="truncate">{loc}</span>
@@ -562,7 +562,7 @@ export default function V4BentoLayout() {
                             <div className="w-12 h-12 bg-[#FFF3E0] rounded-full flex items-center justify-center text-[#FF6B35] mb-4">
                                 <MapPin size={24} />
                             </div>
-                            <p className="font-extrabold text-[#1A2D23] text-sm mb-1">以 Pearl Suria 为中心，</p>
+                            <p className="font-extrabold text-[#1A2D23] text-sm mb-1">以 Pearl Point 为中心，</p>
                             <p className="font-extrabold text-[#1A2D23] text-sm mb-2">方圆 2 公里内的公寓邻居。</p>
                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6 border-b border-gray-100 pb-4 w-full">Within 2km along Old Klang Road</p>
 
@@ -657,7 +657,7 @@ export default function V4BentoLayout() {
                         <div className="md:col-span-1 bg-[#E3EADA] rounded-[32px] p-8 flex flex-col justify-center">
                             <MessageCircle size={32} className="text-[#1A2D23] mb-4" />
                             <h2 className="text-3xl font-extrabold mb-4 leading-tight">隔壁邻居<br />怎么说</h2>
-                            <p className="text-[#1A2D23]/70 font-medium text-sm mb-6">每一条都来自 Pearl Suria 和周边公寓邻居的真实 WhatsApp 留言。<br /><br />没有网红，没有广告，只有吃过的人说的真心话。</p>
+                            <p className="text-[#1A2D23]/70 font-medium text-sm mb-6">每一条都来自 Old Klang Road 周边公寓邻居的真实 WhatsApp 留言。<br /><br />没有网红，没有广告，只有吃过的人说的真心话。</p>
                             <button onClick={() => setIsFeedbackModalOpen(true)} className="w-full py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors flex items-center justify-center gap-2">
                                 <Plus size={18} /> 写下您的留言
                             </button>
@@ -666,7 +666,7 @@ export default function V4BentoLayout() {
                         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {[
                                 { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，阿姨的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
-                                { name: "Ah Hao (Pearl Suria)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
+                                { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
                                 { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
                                 ...feedbacks.map(f => ({ name: f.name, text: f.text, time: f.time }))
                             ].map((msg, idx) => (
@@ -721,7 +721,7 @@ export default function V4BentoLayout() {
                                 <span className="opacity-20 text-[#1A2D23]">|</span>
                                 <a href="mailto:incredibowl.my@gmail.com" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors">incredibowl.my@gmail.com</a>
                             </div>
-                            <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black">📍 Pearl Suria / Millerz Square / OUG, Kuala Lumpur</p>
+                            <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black">📍 Pearl Point / Millerz Square / OUG, Kuala Lumpur</p>
                         </div>
                     </div>
 
@@ -773,7 +773,7 @@ export default function V4BentoLayout() {
                                         type="text"
                                         value={feedbackName}
                                         onChange={e => setFeedbackName(e.target.value)}
-                                        placeholder="例如: Amy Tan (Pearl Suria)"
+                                        placeholder="例如: Amy Tan (Pearl Point)"
                                         className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium"
                                         required
                                     />

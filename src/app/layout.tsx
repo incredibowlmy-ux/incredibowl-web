@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Incredibowl | Performance Food for the KL Office",
-  description: "Old Klang Road home-cooked meals designed to beat the afternoon slump. Mom-standard quality for the CBD.",
+  title: "Incredibowl | Old Klang Road 邻里的家常料理",
+  description: "每天为您新鲜采购、坚持无味精烹调的“每日一味”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。让您和家人每餐都吃得健康无负担。",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",
