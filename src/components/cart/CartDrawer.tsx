@@ -267,7 +267,7 @@ export default function CartDrawer({
                     paymentMethod: paymentMethod as 'qr' | 'fpx',
                     receiptUploaded: receiptUploaded,
                     receiptUrl: receiptUrl,
-                    status: 'pending',
+                    status: paymentMethod === 'fpx' ? 'confirmed' : 'pending',
                     note: orderNote,
                     isMultiPart,
                     partIndex: isMultiPart ? index + 1 : undefined,
