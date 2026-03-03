@@ -125,15 +125,46 @@ export default function AdminPage() {
         return true;
     });
 
+    // Helper: format date string
+    const formatDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
     // Stats
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = formatDateStr(new Date());
     const tomorrowDate = new Date();
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrowStr = `${tomorrowDate.getFullYear()}-${String(tomorrowDate.getMonth() + 1).padStart(2, '0')}-${String(tomorrowDate.getDate()).padStart(2, '0')}`;
+    const tomorrowStr = formatDateStr(tomorrowDate);
 
     const pendingCount = orders.filter(o => o.status === 'pending').length;
     const tomorrowOrders = orders.filter(o => o.deliveryDate === tomorrowStr);
     const todayRevenue = orders.filter(o => o.deliveryDate === todayStr && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+
+    // Build upcoming days (tomorrow + next 6 days = 7 days total)
+    const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
+    const dayLabels = ['明天', '后天', '大后天'];
+    for (let i = 1; i <= 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        const dateStr = formatDateStr(d);
+        const dayOrders = orders.filter(o => o.deliveryDate === dateStr && o.status !== 'cancelled');
+        if (dayOrders.length > 0) {
+            const label = i <= 3 ? `${dayLabels[i - 1]} (${dateStr})` : dateStr;
+            upcomingDays.push({ dateStr, label, orders: dayOrders });
+        }
+    }
+
+    // Helper: split orders into lunch and dinner
+    const splitMealTime = (dayOrders: any[]) => {
+        const lunch = dayOrders.filter(o => !o.deliveryTime || o.deliveryTime.toLowerCase().includes('lunch') || o.deliveryTime.includes('午'));
+        const dinner = dayOrders.filter(o => o.deliveryTime && (o.deliveryTime.toLowerCase().includes('dinner') || o.deliveryTime.includes('晚')));
+        return { lunch, dinner };
+    };
+
+    // Helper: format order creation time
+    const formatCreatedAt = (order: any) => {
+        if (!order.createdAt) return '—';
+        const ts = order.createdAt.seconds ? new Date(order.createdAt.seconds * 1000) : new Date(order.createdAt);
+        return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+    };
 
     return (
         <div className="min-h-screen bg-[#F5F3EF]">
@@ -175,6 +206,66 @@ export default function AdminPage() {
                         <p className="text-3xl font-black text-[#FF6B35]">{customers.length}</p>
                     </div>
                 </div>
+
+                {/* Upcoming Orders by Day - Lunch/Dinner Split */}
+                {upcomingDays.length > 0 && (
+                    <div className="space-y-4">
+                        <h2 className="text-lg font-black text-[#1A2D23] flex items-center gap-2">📋 未来订单预览（按日/餐次）</h2>
+                        {upcomingDays.map(day => {
+                            const { lunch, dinner } = splitMealTime(day.orders);
+                            return (
+                                <div key={day.dateStr} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                    <div className="bg-[#1A2D23] px-5 py-3 flex items-center justify-between">
+                                        <span className="text-white font-black text-sm">📅 {day.label}</span>
+                                        <span className="text-white/60 text-xs font-bold">{day.orders.length} 单 · RM {day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0).toFixed(0)}</span>
+                                    </div>
+                                    <div className="divide-y divide-gray-100">
+                                        {/* Lunch Section */}
+                                        {lunch.length > 0 && (
+                                            <div className="p-4">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-black">🌞 午餐 ({lunch.length} 单)</span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {lunch.map((o: any) => (
+                                                        <div key={o.id} className="flex items-center justify-between text-sm bg-[#FDFBF7] rounded-xl px-4 py-2.5 border border-gray-100">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
+                                                                <span className="text-gray-400 text-xs shrink-0">({o.items?.length || 0} 道)</span>
+                                                            </div>
+                                                            <span className="font-black text-[#FF6B35] shrink-0 ml-2">RM {(o.total || 0).toFixed(2)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Dinner Section */}
+                                        {dinner.length > 0 && (
+                                            <div className="p-4">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black">🌙 晚餐 ({dinner.length} 单)</span>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {dinner.map((o: any) => (
+                                                        <div key={o.id} className="flex items-center justify-between text-sm bg-[#FDFBF7] rounded-xl px-4 py-2.5 border border-gray-100">
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
+                                                                <span className="text-gray-400 text-xs shrink-0">({o.items?.length || 0} 道)</span>
+                                                            </div>
+                                                            <span className="font-black text-[#FF6B35] shrink-0 ml-2">RM {(o.total || 0).toFixed(2)}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Tabs */}
                 <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar">
@@ -250,10 +341,11 @@ export default function AdminPage() {
                                                         </span>
                                                     </div>
                                                     <p className="font-black text-[#1A2D23]">{order.userName}</p>
-                                                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                                                    <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 flex-wrap">
                                                         <span className="flex items-center gap-1"><Phone size={10} /> {order.userPhone}</span>
                                                         <span>📅 {order.deliveryDate}</span>
                                                         <span>⏰ {order.deliveryTime?.split('(')[0]?.trim()}</span>
+                                                        <span className="text-gray-300">🕐 下单: {formatCreatedAt(order)}</span>
                                                     </div>
                                                 </div>
                                                 <p className="text-xl font-black text-[#FF6B35]">RM {(order.total || 0).toFixed(2)}</p>
