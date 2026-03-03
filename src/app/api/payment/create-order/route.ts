@@ -20,6 +20,15 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { amount, currency = "MYR", receipt, notes } = body;
 
+        // Validate currency against whitelist
+        const ALLOWED_CURRENCIES = ["MYR"];
+        if (currency && !ALLOWED_CURRENCIES.includes(currency)) {
+            return NextResponse.json(
+                { error: "Invalid currency. Only MYR is supported." },
+                { status: 400 }
+            );
+        }
+
         // Validate amount (minimum RM 1.00 = 100 sen)
         if (!amount || amount < 100) {
             return NextResponse.json(
