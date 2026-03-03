@@ -550,7 +550,7 @@ export default function V4BentoLayout() {
                             </p>
 
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4 text-xs font-bold text-white/90">
-                                {['Pearl Point 邻里小灶', 'Millerz Square', 'The Scott Garden', "D'Ivoz Residences", 'Verve Suites', 'The Harmony', 'Platinum Arena', 'Citizen 1&2', 'Petalz', "D'Sands", 'SkyVille 8 @ Benteng'].map(loc => (
+                                {['Pearl Point', 'Meadow Park Condo 1, 2 & 3', 'Millerz Square', 'The Scott Garden', "D'Ivoz Residences", 'Verve Suites', 'The Harmony', 'Platinum Arena', 'Citizen 1&2', 'Petalz', "D'Sands", 'SkyVille 8 @ Benteng'].map(loc => (
                                     <div key={loc} className="flex items-center gap-2">
                                         <CheckCircle2 size={14} className="text-[#FF6B35] shrink-0" />
                                         <span className="truncate">{loc}</span>
