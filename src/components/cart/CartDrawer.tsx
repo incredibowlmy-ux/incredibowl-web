@@ -106,6 +106,14 @@ export default function CartDrawer({
             return;
         }
 
+        // Check phone format
+        const isValidMyPhone = (p: string) => /^(\+?6?01)[0-9]{8,9}$/.test(p.replace(/[\s\-()]/g, ''));
+        if (!isValidMyPhone(userProfile.phone)) {
+            alert("手机号码格式不正确，请到会员资料更新，例: 010-337 0197");
+            onAuthOpen();
+            return;
+        }
+
         // Check date selected
         if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
             alert("部分菜品未选择配送日期，请移除后重试！");

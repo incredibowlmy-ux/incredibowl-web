@@ -66,6 +66,10 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
 
     if (!isOpen) return null;
 
+    // Validation helpers
+    const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+    const isValidMyPhone = (p: string) => /^(\+?6?01)[0-9]{8,9}$/.test(p.replace(/[\s\-()]/g, ''));
+
     const handleGoogleLogin = async () => {
         setLoading(true);
         setMessage('');
@@ -119,6 +123,10 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             setMessage('⚠️ 请填写邮箱和密码');
             return;
         }
+        if (!isValidEmail(email)) {
+            setMessage('⚠️ 邮箱格式不正确，例: your@email.com');
+            return;
+        }
         setLoading(true);
         setMessage('');
         try {
@@ -141,6 +149,18 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         e.preventDefault();
         if (!name || !email || !password || !phone || !address) {
             setMessage('⚠️ 请填写所有字段');
+            return;
+        }
+        if (!isValidEmail(email)) {
+            setMessage('⚠️ 邮箱格式不正确，例: your@email.com');
+            return;
+        }
+        if (!isValidMyPhone(phone)) {
+            setMessage('⚠️ 手机格式不正确，例: 010-337 0197');
+            return;
+        }
+        if (address.trim().length < 10) {
+            setMessage('⚠️ 请填写完整配送地址（至少 10 个字符）');
             return;
         }
         if (password.length < 6) {
@@ -169,6 +189,14 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         if (!currentUser) return;
         if (!phone || !address) {
             setMessage('⚠️ 手机号码和配送地址为必填');
+            return;
+        }
+        if (!isValidMyPhone(phone)) {
+            setMessage('⚠️ 手机格式不正确，例: 010-337 0197');
+            return;
+        }
+        if (address.trim().length < 10) {
+            setMessage('⚠️ 请填写完整配送地址（至少 10 个字符）');
             return;
         }
         setLoading(true);
