@@ -133,7 +133,7 @@ export default function CartDrawer({
             acc[key].subtotal += (item.price * item.quantity);
             return acc;
         }, {});
-        return Object.values(grouped);
+        return Object.values(grouped) as any[];
     }, [cart]);
 
     // Helper: submit orders to Firebase
