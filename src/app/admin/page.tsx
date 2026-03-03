@@ -147,6 +147,7 @@ export default function AdminPage() {
     const pendingCount = orders.filter(o => o.status === 'pending').length;
     const tomorrowOrders = orders.filter(o => o.deliveryDate === tomorrowStr);
     const todayRevenue = orders.filter(o => o.deliveryDate === todayStr && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+    const todayCustomersCount = new Set(orders.filter(o => o.deliveryDate === todayStr).map(o => o.userId)).size;
 
     // Build upcoming days (tomorrow + next 6 days = 7 days total)
     const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
@@ -223,8 +224,8 @@ export default function AdminPage() {
                         <p className="text-3xl font-black text-green-600">RM {todayRevenue.toFixed(0)}</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">总客户</p>
-                        <p className="text-3xl font-black text-[#FF6B35]">{customers.length}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">今日客户</p>
+                        <p className="text-3xl font-black text-[#FF6B35]">{todayCustomersCount}</p>
                     </div>
                 </div>
 
