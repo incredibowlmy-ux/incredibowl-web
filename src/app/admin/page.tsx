@@ -287,7 +287,7 @@ export default function AdminPage() {
                                                         <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
                                                             {/* Meal Summary */}
                                                             <div className="bg-[#1A2D23] text-white p-4 rounded-xl space-y-2">
-                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1">👨ΓÇì🍳 厨房备菜总结 (午餐)</p>
+                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1"><ChefHat size={12} className="text-[#FF6B35]" /> 厨房备菜总结 (午餐)</p>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
                                                                     {getPrepSummary(lunch).map(([name, qty]) => (
                                                                         <div key={name} className="flex justify-between items-center text-xs py-1 border-b border-white/10 last:border-0 font-bold">
@@ -347,7 +347,7 @@ export default function AdminPage() {
                                                         <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
                                                             {/* Meal Summary */}
                                                             <div className="bg-[#1A2D23] text-white p-4 rounded-xl space-y-2">
-                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1">👨ΓÇì🍳 厨房备菜总结 (晚餐)</p>
+                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1"><ChefHat size={12} className="text-[#FF6B35]" /> 厨房备菜总结 (晚餐)</p>
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
                                                                     {getPrepSummary(dinner).map(([name, qty]) => (
                                                                         <div key={name} className="flex justify-between items-center text-xs py-1 border-b border-white/10 last:border-0 font-bold">
