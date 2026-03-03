@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar } from 'lucide-react';
+import { ShoppingBag, X, Plus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
@@ -11,7 +11,7 @@ export default function CartDrawer({
     isOpen,
     onClose,
     cart,
-    updateQuantity,
+
     removeFromCart,
     cartTotal,
     cartCount,
@@ -302,9 +302,9 @@ export default function CartDrawer({
                                     onClose();
                                     setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
                                 }}
-                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-[#FF6B35]/40 bg-white hover:bg-[#FF6B35]/5 hover:border-[#FF6B35]/70 text-[#FF6B35] text-xs font-bold transition-all"
+                                className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-[#FF6B35]/70 text-[11px] font-semibold hover:text-[#FF6B35] transition-colors"
                             >
-                                <Plus size={13} />
+                                <Plus size={12} strokeWidth={2.5} />
                                 <span>继续添加别的菜</span>
                             </button>
 
@@ -359,20 +359,14 @@ export default function CartDrawer({
                                                 </button>
                                             </div>
 
-                                            {/* Action Row: Edit helper & Quantity */}
-                                            <div className="flex items-center justify-between mt-3 px-1 relative z-20">
-                                                {onEditItem ? (
-                                                    <button onClick={() => onEditItem(item)} className="px-3 py-1.5 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
+                                            {/* Action Row: Edit */}
+                                            {onEditItem && (
+                                                <div className="mt-2.5 px-1 relative z-20">
+                                                    <button onClick={() => onEditItem(item)} className="px-3 py-1 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
                                                         Edit
                                                     </button>
-                                                ) : <div />}
-
-                                                <div className="flex items-center gap-2 bg-white border border-[#E3EADA] rounded-xl p-1 shadow-sm relative z-20">
-                                                    <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Minus size={14} /></button>
-                                                    <span className="font-black text-sm w-5 text-center text-[#1A2D23]">{item.quantity}</span>
-                                                    <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Plus size={14} /></button>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
