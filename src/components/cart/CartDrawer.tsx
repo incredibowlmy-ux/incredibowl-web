@@ -1,11 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar, Shield } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
+
+// Declare Razorpay on window
+declare global {
+    interface Window {
+        Razorpay: any;
+    }
+}
 
 export default function CartDrawer({
     isOpen,
@@ -19,7 +26,7 @@ export default function CartDrawer({
     onClearCart,
     onEditItem
 }: any) {
-    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx' | ''>('');
+    const [paymentMethod, setPaymentMethod] = useState<'qr' | 'curlec' | ''>('');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
     const [receiptUrl, setReceiptUrl] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -32,6 +39,21 @@ export default function CartDrawer({
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [promoDiscount, setPromoDiscount] = useState(0);
+    const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+    // Load Razorpay checkout script
+    useEffect(() => {
+        if (typeof window !== 'undefined' && !window.Razorpay) {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => setRazorpayLoaded(true);
+            script.onerror = () => console.error('Failed to load Razorpay script');
+            document.body.appendChild(script);
+        } else if (window.Razorpay) {
+            setRazorpayLoaded(true);
+        }
+    }, []);
 
     const handleApplyPromo = () => {
         const code = promoCode.trim().toUpperCase();
@@ -93,6 +115,213 @@ export default function CartDrawer({
         setUploading(false);
     };
 
+    // Helper: build order groups from cart
+    const buildOrderGroups = useCallback(() => {
+        const grouped = cart.reduce((acc: any, item: any) => {
+            const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
+            if (!acc[key]) {
+                acc[key] = {
+                    date: item.selectedDate || '未定',
+                    time: item.selectedTime || 'Lunch',
+                    items: [],
+                    subtotal: 0
+                };
+            }
+            acc[key].items.push(item);
+            acc[key].subtotal += (item.price * item.quantity);
+            return acc;
+        }, {});
+        return Object.values(grouped) as any[];
+    }, [cart]);
+
+    // Helper: submit orders to Firebase
+    const submitAllOrders = async (payMethod: 'qr' | 'curlec', razorpayData?: { paymentId: string; orderId: string; signature: string }) => {
+        const groups = buildOrderGroups();
+        const isMultiPart = groups.length > 1;
+        const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
+
+        let remainingPromo = promoDiscount;
+
+        const submitPromises = groups.map((group, index) => {
+            let currentPromo = 0;
+            if (promoApplied && promoDiscount > 0) {
+                if (index === groups.length - 1) {
+                    currentPromo = Number(remainingPromo.toFixed(2));
+                } else {
+                    currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2));
+                    remainingPromo -= currentPromo;
+                }
+            }
+
+            const currentFinal = Math.max(0, group.subtotal - currentPromo);
+
+            return submitOrder({
+                userId: currentUser!.uid,
+                userName: currentUser!.displayName || userProfile?.displayName || 'Guest',
+                userEmail: currentUser!.email || '',
+                userPhone: userProfile.phone,
+                userAddress: userProfile.address,
+                items: group.items.flatMap((bundle: any) => {
+                    const arr = [];
+                    arr.push({
+                        name: bundle.dish.name,
+                        nameEn: bundle.dish.nameEn || '',
+                        price: bundle.dish.price,
+                        quantity: bundle.dishQty * bundle.quantity,
+                        image: bundle.dish.image || '',
+                    });
+                    if (bundle.addOns) {
+                        bundle.addOns.forEach((a: any) => {
+                            arr.push({
+                                name: `↳ ${a.item.name}`,
+                                nameEn: a.item.nameEn || '',
+                                price: a.item.price,
+                                quantity: a.quantity * bundle.quantity,
+                                image: a.item.image || '',
+                            });
+                        });
+                    }
+                    return arr;
+                }),
+                total: currentFinal,
+                originalTotal: group.subtotal,
+                promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
+                promoDiscount: currentPromo,
+                deliveryDate: group.date,
+                deliveryTime: group.time,
+                paymentMethod: payMethod,
+                receiptUploaded: payMethod === 'qr' ? receiptUploaded : false,
+                receiptUrl: payMethod === 'qr' ? receiptUrl : '',
+                razorpayPaymentId: razorpayData?.paymentId,
+                razorpayOrderId: razorpayData?.orderId,
+                razorpaySignature: razorpayData?.signature,
+                status: payMethod === 'curlec' ? 'confirmed' : 'pending',
+                note: orderNote,
+                isMultiPart,
+                partIndex: isMultiPart ? index + 1 : undefined,
+                totalParts: isMultiPart ? groups.length : undefined,
+                groupId: isMultiPart ? groupId : undefined
+            });
+        });
+
+        const orderIds = await Promise.all(submitPromises);
+        return { orderIds, isMultiPart, groupId };
+    };
+
+    // Handle Curlec/Razorpay online payment
+    const handleCurlecPayment = async () => {
+        if (!razorpayLoaded || !window.Razorpay) {
+            alert('支付模块加载中，请稍后重试...');
+            return;
+        }
+
+        setSubmitting(true);
+
+        try {
+            // Step 1: Create order on server
+            const amountInSen = Math.round(finalTotal * 100); // convert RM to sen
+            const res = await fetch('/api/payment/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amountInSen,
+                    currency: 'MYR',
+                    receipt: `incredibowl_${Date.now()}`,
+                    notes: {
+                        customerName: currentUser!.displayName || 'Guest',
+                        customerEmail: currentUser!.email || '',
+                        customerPhone: userProfile?.phone || '',
+                    }
+                }),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || '创建支付订单失败');
+            }
+
+            const orderData = await res.json();
+
+            // Step 2: Open Razorpay checkout modal
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: 'Incredibowl',
+                description: `${cart.length} 道菜品 · 新鲜无味精`,
+                order_id: orderData.orderId,
+                prefill: {
+                    name: currentUser!.displayName || 'Guest',
+                    email: currentUser!.email || '',
+                    contact: userProfile?.phone || '',
+                },
+                theme: {
+                    color: '#FF6B35',
+                },
+                handler: async function (response: any) {
+                    // Step 3: Verify payment signature on server
+                    try {
+                        const verifyRes = await fetch('/api/payment/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        });
+
+                        const verifyData = await verifyRes.json();
+
+                        if (verifyData.verified) {
+                            // Step 4: Submit order to Firebase
+                            const result = await submitAllOrders('curlec', {
+                                paymentId: response.razorpay_payment_id,
+                                orderId: response.razorpay_order_id,
+                                signature: response.razorpay_signature,
+                            });
+
+                            setOrderSuccess(result.isMultiPart ? result.groupId : result.orderIds[0]);
+
+                            setTimeout(() => {
+                                onClearCart();
+                                setOrderSuccess(null);
+                                setReceiptUploaded(false);
+                                setReceiptUrl('');
+                                setOrderNote('');
+                                setPromoCode('');
+                                setPromoApplied(false);
+                                setPromoDiscount(0);
+                                onClose();
+                            }, 4000);
+                        } else {
+                            alert('支付验证失败，请联系客服。');
+                        }
+                    } catch (verifyError: any) {
+                        alert(`支付验证出错: ${verifyError.message}`);
+                    }
+                    setSubmitting(false);
+                },
+                modal: {
+                    ondismiss: function () {
+                        setSubmitting(false);
+                    },
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response: any) {
+                alert(`支付失败: ${response.error.description}`);
+                setSubmitting(false);
+            });
+            rzp.open();
+
+        } catch (error: any) {
+            alert(`支付出错: ${error.message}`);
+            setSubmitting(false);
+        }
+    };
+
     const handleCheckout = async () => {
         // Check login
         if (!currentUser) {
@@ -112,7 +341,13 @@ export default function CartDrawer({
             return;
         }
 
-        // Check receipt for QR payment
+        // Curlec online payment flow
+        if (paymentMethod === 'curlec') {
+            await handleCurlecPayment();
+            return;
+        }
+
+        // QR payment flow (existing)
         if (paymentMethod === 'qr' && !receiptUploaded) {
             alert("请先上传付款截图！");
             return;
@@ -121,94 +356,10 @@ export default function CartDrawer({
         setSubmitting(true);
 
         try {
-            // Group cart items by deliveryDate and deliveryTime
-            const grouped = cart.reduce((acc: any, item: any) => {
-                const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-                if (!acc[key]) {
-                    acc[key] = {
-                        date: item.selectedDate || '未定',
-                        time: item.selectedTime || 'Lunch',
-                        items: [],
-                        subtotal: 0
-                    };
-                }
-                acc[key].items.push(item);
-                acc[key].subtotal += (item.price * item.quantity);
-                return acc;
-            }, {});
+            const result = await submitAllOrders('qr');
 
-            const groups = Object.values(grouped) as any[];
-            const isMultiPart = groups.length > 1;
-            const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
+            setOrderSuccess(result.isMultiPart ? result.groupId : result.orderIds[0]);
 
-            let remainingPromo = promoDiscount;
-
-            const submitPromises = groups.map((group, index) => {
-                let currentPromo = 0;
-                if (promoApplied && promoDiscount > 0) {
-                    if (index === groups.length - 1) {
-                        currentPromo = Number(remainingPromo.toFixed(2));
-                    } else {
-                        currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2));
-                        remainingPromo -= currentPromo;
-                    }
-                }
-
-                const currentFinal = Math.max(0, group.subtotal - currentPromo);
-
-                return submitOrder({
-                    userId: currentUser.uid,
-                    userName: currentUser.displayName || userProfile?.displayName || 'Guest',
-                    userEmail: currentUser.email || '',
-                    userPhone: userProfile.phone,
-                    userAddress: userProfile.address,
-                    items: group.items.flatMap((bundle: any) => {
-                        const arr = [];
-                        // Main dish
-                        arr.push({
-                            name: bundle.dish.name,
-                            nameEn: bundle.dish.nameEn || '',
-                            price: bundle.dish.price,
-                            quantity: bundle.dishQty * bundle.quantity,
-                            image: bundle.dish.image || '',
-                        });
-                        // Add-ons
-                        if (bundle.addOns) {
-                            bundle.addOns.forEach((a: any) => {
-                                arr.push({
-                                    name: `↳ ${a.item.name}`,
-                                    nameEn: a.item.nameEn || '',
-                                    price: a.item.price,
-                                    quantity: a.quantity * bundle.quantity,
-                                    image: a.item.image || '',
-                                });
-                            });
-                        }
-                        return arr;
-                    }),
-                    total: currentFinal,
-                    originalTotal: group.subtotal,
-                    promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
-                    promoDiscount: currentPromo,
-                    deliveryDate: group.date,
-                    deliveryTime: group.time,
-                    paymentMethod: paymentMethod as 'qr' | 'fpx',
-                    receiptUploaded: receiptUploaded,
-                    receiptUrl: receiptUrl,
-                    status: 'pending',
-                    note: orderNote,
-                    isMultiPart,
-                    partIndex: isMultiPart ? index + 1 : undefined,
-                    totalParts: isMultiPart ? groups.length : undefined,
-                    groupId: isMultiPart ? groupId : undefined
-                });
-            });
-
-            const orderIds = await Promise.all(submitPromises);
-
-            setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
-
-            // Clear cart after 3 seconds
             setTimeout(() => {
                 onClearCart();
                 setOrderSuccess(null);
@@ -451,10 +602,10 @@ export default function CartDrawer({
                                     <Phone size={14} /> DuitNow / QR
                                 </button>
                                 <button
-                                    onClick={() => setPaymentMethod('fpx')}
-                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
+                                    onClick={() => setPaymentMethod('curlec')}
+                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'curlec' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
                                 >
-                                    <CreditCard size={14} /> FPX / Card
+                                    <CreditCard size={14} /> 在线支付
                                 </button>
                             </div>
 
@@ -499,23 +650,33 @@ export default function CartDrawer({
                                 </div>
                             )}
 
-                            {paymentMethod === 'fpx' && (
-                                <div className="text-center py-3 animate-in fade-in duration-300">
-                                    <p className="text-xs text-gray-400">即将支持 FPX 在线支付</p>
+                            {paymentMethod === 'curlec' && (
+                                <div className="space-y-2 animate-in fade-in duration-300">
+                                    <div className="bg-gradient-to-r from-[#F5F3EF] to-white rounded-xl px-4 py-3 border border-[#E3EADA]/50">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Shield size={14} className="text-green-500" />
+                                            <span className="text-[11px] font-bold text-[#1A2D23]">安全在线支付 · Curlec by Razorpay</span>
+                                        </div>
+                                        <div className="text-[10px] text-gray-400 space-y-0.5">
+                                            <p>✅ 支持 FPX 线上银行转账（所有本地银行）</p>
+                                            <p>✅ 支持 Visa / Mastercard 信用卡 & 借记卡</p>
+                                            <p>✅ 付款成功后订单自动确认，无需等待核对</p>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Submit Button */}
                             <button
                                 onClick={handleCheckout}
-                                disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)
+                                disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || (paymentMethod === 'curlec' && !razorpayLoaded)}
+                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || (paymentMethod === 'curlec' && !razorpayLoaded)
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
                                     }`}
                             >
                                 <CheckCircle size={22} />
-                                {submitting ? '提交中...' : '确认下单 →'}
+                                {submitting ? '处理中...' : paymentMethod === 'curlec' ? `安全支付 RM ${finalTotal.toFixed(2)} →` : '确认下单 →'}
                             </button>
                         </div>
                     </div>

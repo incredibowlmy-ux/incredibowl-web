@@ -24,9 +24,12 @@ export interface OrderData {
     promoDiscount?: number;
     deliveryDate: string;
     deliveryTime: string;
-    paymentMethod: 'qr' | 'fpx';
+    paymentMethod: 'qr' | 'fpx' | 'curlec';
     receiptUploaded: boolean;
     receiptUrl?: string;
+    razorpayPaymentId?: string;
+    razorpayOrderId?: string;
+    razorpaySignature?: string;
     status: OrderStatus;
     note?: string;
     isMultiPart?: boolean;
