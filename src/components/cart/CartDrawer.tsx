@@ -543,14 +543,14 @@ export default function CartDrawer({
                                                 </button>
                                             </div>
 
-                                            {/* Action Row: Edit helper & Quantity */}
-                                            <div className="flex items-center justify-between mt-3 px-1 relative z-20">
-                                                {onEditItem ? (
+                                            {/* Action Row: Edit helper */}
+                                            {onEditItem && (
+                                                <div className="flex items-center justify-between mt-3 px-1 relative z-20">
                                                     <button onClick={() => onEditItem(item)} className="px-3 py-1.5 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
                                                         Edit
                                                     </button>
-                                                ) : <div />}
-                                            </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
