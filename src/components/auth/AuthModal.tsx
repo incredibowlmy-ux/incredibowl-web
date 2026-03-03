@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile } from '@/lib/auth';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
+import { isValidEmail, isValidMyPhone } from '@/lib/cartUtils';
 
 type AuthView = 'main' | 'email-login' | 'email-signup' | 'profile';
 
@@ -65,10 +66,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     };
 
     if (!isOpen) return null;
-
-    // Validation helpers
-    const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
-    const isValidMyPhone = (p: string) => /^(\+?6?01)[0-9]{8,9}$/.test(p.replace(/[\s\-()]/g, ''));
 
     const handleGoogleLogin = async () => {
         setLoading(true);

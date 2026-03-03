@@ -14,8 +14,10 @@ import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
 import FloatingChatbot from '@/components/home/FloatingChatbot';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
-import { AddOnSelection } from '@/types';
+import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
+import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
+import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -25,13 +27,8 @@ export default function V4BentoLayout() {
     const [isAddOnOpen, setIsAddOnOpen] = useState(false);
     const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
     const [editConfig, setEditConfig] = useState<any>(null);
-
-    // Dynamic delivery dates
-    const fallbackTomorrow = new Date();
-    fallbackTomorrow.setDate(fallbackTomorrow.getDate() + 1);
-    const fallbackDateStr = `${fallbackTomorrow.getFullYear()}-${String(fallbackTomorrow.getMonth() + 1).padStart(2, '0')}-${String(fallbackTomorrow.getDate()).padStart(2, '0')}`;
-    const [minDate, setMinDate] = useState<string>(fallbackDateStr);
-    const [menuDates, setMenuDates] = useState<any>({});
+    const [minDate, setMinDate] = useState<string>('');
+    const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => setCurrentUser(user));
@@ -39,61 +36,9 @@ export default function V4BentoLayout() {
     }, []);
 
     useEffect(() => {
-        const now = new Date();
-        const cutoffHour = 22;
-        const cutoffMinute = 30;
-        const isPastCutoff = now.getHours() > cutoffHour || (now.getHours() === cutoffHour && now.getMinutes() >= cutoffMinute);
-
-        let nextAvail = new Date(now);
-        nextAvail.setDate(now.getDate() + (isPastCutoff ? 2 : 1));
-        if (nextAvail.getDay() === 6) nextAvail.setDate(nextAvail.getDate() + 2);
-        else if (nextAvail.getDay() === 0) nextAvail.setDate(nextAvail.getDate() + 1);
-
-        const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        const formatMD = (d: Date) => `${d.getMonth() + 1}月${d.getDate()}日`;
-
-        const nextAvailStr = formatYMD(nextAvail);
-        setMinDate(nextAvailStr);
-
-        const nowMid = new Date(now).setHours(0, 0, 0, 0);
-        const nextAvailMid = new Date(nextAvail).setHours(0, 0, 0, 0);
-        const diffDays = Math.round((nextAvailMid - nowMid) / 86400000);
-        let relativeDay = "明天";
-        if (diffDays === 2) relativeDay = "后天";
-        else if (diffDays > 2) relativeDay = `${formatMD(nextAvail)}`;
-
-        const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-        const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        const newMenuDates: any = {};
-
-        weeklyMenu.forEach(dish => {
-            if (dish.id === 6) {
-                newMenuDates[dish.id] = { topTag: `常驻供应 · Daily`, btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`, disabled: false, actualDate: nextAvailStr };
-                return;
-            }
-            const targetWd = dish.id;
-            let targetDate = new Date(now);
-            targetDate.setDate(now.getDate() + 1);
-            while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);
-
-            const cutoffForTarget = new Date(targetDate);
-            cutoffForTarget.setDate(targetDate.getDate() - 1);
-            cutoffForTarget.setHours(cutoffHour, cutoffMinute, 0, 0);
-
-            let isDisabled = false;
-            let btnText = "";
-            if (now >= cutoffForTarget) {
-                targetDate.setDate(targetDate.getDate() + 7);
-                isDisabled = true;
-                btnText = `明日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
-            } else {
-                btnText = `预订 ${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
-            }
-
-            newMenuDates[dish.id] = { topTag: `${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`, btnText, disabled: isDisabled, actualDate: formatYMD(targetDate) };
-        });
-
-        setMenuDates(newMenuDates);
+        const { menuDates: dates, minDate: min } = computeMenuDates(weeklyMenu);
+        setMenuDates(dates);
+        setMinDate(min);
     }, []);
 
     const openAddOnModal = (dish: MenuItem) => {
@@ -114,7 +59,7 @@ export default function V4BentoLayout() {
         setIsCartOpen(true);
     };
 
-    const handleEditCartItem = (bundle: import('@/types').CartBundle) => {
+    const handleEditCartItem = (bundle: CartBundle) => {
         setSelectedDish(bundle.dish);
         const initQuantities: Record<string, number> = {};
         bundle.addOns.forEach(a => { initQuantities[a.item.id] = a.quantity; });
@@ -123,8 +68,8 @@ export default function V4BentoLayout() {
         setIsAddOnOpen(true);
     };
 
-    const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const cartCount = cart.length;
+    const cartTotal = calcCartTotal(cart);
+    const cartCount = calcCartCount(cart);
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">

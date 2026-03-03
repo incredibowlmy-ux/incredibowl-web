@@ -6,6 +6,7 @@ import { ShoppingBag, X, Plus, Trash2, Phone, CheckCircle, CreditCard, Sparkles,
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
+import { isValidMyPhone } from '@/lib/cartUtils';
 
 export default function CartDrawer({
     isOpen,
@@ -107,7 +108,6 @@ export default function CartDrawer({
         }
 
         // Check phone format
-        const isValidMyPhone = (p: string) => /^(\+?6?01)[0-9]{8,9}$/.test(p.replace(/[\s\-()]/g, ''));
         if (!isValidMyPhone(userProfile.phone)) {
             alert("手机号码格式不正确，请到会员资料更新，例: 010-337 0197");
             onAuthOpen();

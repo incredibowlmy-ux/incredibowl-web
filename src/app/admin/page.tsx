@@ -8,6 +8,7 @@ import { User } from 'firebase/auth';
 import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
+import { formatCreatedAt } from '@/lib/dateUtils';
 
 const ADMIN_EMAILS = ['incredibowl.my@gmail.com']; // Add your email here
 
@@ -206,13 +207,6 @@ export default function AdminPage() {
         const lunch = dayOrders.filter(o => !o.deliveryTime || o.deliveryTime.toLowerCase().includes('lunch') || o.deliveryTime.includes('午'));
         const dinner = dayOrders.filter(o => o.deliveryTime && (o.deliveryTime.toLowerCase().includes('dinner') || o.deliveryTime.includes('晚')));
         return { lunch, dinner };
-    };
-
-    // Helper: format order creation time
-    const formatCreatedAt = (order: AdminOrder) => {
-        if (!order.createdAt) return '—';
-        const ts = new Date(order.createdAt.seconds * 1000);
-        return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     // Helper: calculate summary of all dishes in a day's meal

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Leaf, ArrowLeft, CreditCard, Truck, ShieldCheck, CheckCircle2, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
+import { calcCartTotal } from '@/lib/cartUtils'
 
 export default function CheckoutPage() {
     const router = useRouter()
@@ -31,7 +32,7 @@ export default function CheckoutPage() {
         else router.push('/login') // Must be logged in to checkout
     }, [router])
 
-    const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const cartTotal = calcCartTotal(cart)
 
     const handleCheckout = (e: React.FormEvent) => {
         e.preventDefault()
