@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { ShoppingBag, X, Plus, Minus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar, Shield } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
-import { submitOrder } from '@/lib/orders';
+import { submitOrder, updateOrderStatus } from '@/lib/orders';
 import { User } from 'firebase/auth';
 
 // Declare Razorpay on window
@@ -94,7 +94,7 @@ export default function CartDrawer({
         fetchProfile();
     }, [isOpen, currentUser]);
 
-    if (!isOpen) return null;
+
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -142,6 +142,8 @@ export default function CartDrawer({
 
         let remainingPromo = promoDiscount;
 
+        const orderTotals: number[] = [];
+
         const submitPromises = groups.map((group, index) => {
             let currentPromo = 0;
             if (promoApplied && promoDiscount > 0) {
@@ -154,6 +156,7 @@ export default function CartDrawer({
             }
 
             const currentFinal = Math.max(0, group.subtotal - currentPromo);
+            orderTotals.push(currentFinal);
 
             return submitOrder({
                 userId: currentUser!.uid,
@@ -192,20 +195,79 @@ export default function CartDrawer({
                 paymentMethod: payMethod,
                 receiptUploaded: payMethod === 'qr' ? receiptUploaded : false,
                 receiptUrl: payMethod === 'qr' ? receiptUrl : '',
-                razorpayPaymentId: razorpayData?.paymentId,
-                razorpayOrderId: razorpayData?.orderId,
-                razorpaySignature: razorpayData?.signature,
+                ...(razorpayData?.paymentId ? { razorpayPaymentId: razorpayData.paymentId } : {}),
+                ...(razorpayData?.orderId ? { razorpayOrderId: razorpayData.orderId } : {}),
+                ...(razorpayData?.signature ? { razorpaySignature: razorpayData.signature } : {}),
                 status: payMethod === 'curlec' ? 'confirmed' : 'pending',
-                note: orderNote,
+                note: orderNote || '',
                 isMultiPart,
-                partIndex: isMultiPart ? index + 1 : undefined,
-                totalParts: isMultiPart ? groups.length : undefined,
-                groupId: isMultiPart ? groupId : undefined
+                ...(isMultiPart ? { partIndex: index + 1 } : {}),
+                ...(isMultiPart ? { totalParts: groups.length } : {}),
+                ...(isMultiPart ? { groupId: groupId } : {}),
             });
         });
 
         const orderIds = await Promise.all(submitPromises);
+
+        // Auto-award points for Curlec payments (since payment is already verified)
+        if (payMethod === 'curlec') {
+            const pointPromises = orderIds.map((orderId, index) =>
+                updateOrderStatus(orderId, 'confirmed', {
+                    userId: currentUser!.uid,
+                    total: orderTotals[index],
+                })
+            );
+            await Promise.all(pointPromises);
+        }
+
         return { orderIds, isMultiPart, groupId };
+    };
+
+    // Process payment after Razorpay handler fires
+    const processPaymentResult = async (razorpayResponse: any) => {
+        try {
+            // Step 3: Verify payment signature on server
+            const verifyRes = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    razorpay_order_id: razorpayResponse.razorpay_order_id,
+                    razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+                    razorpay_signature: razorpayResponse.razorpay_signature,
+                }),
+            });
+
+            const verifyData = await verifyRes.json();
+
+            if (verifyData.verified) {
+                // Step 4: Submit order to Firebase
+                const result = await submitAllOrders('curlec', {
+                    paymentId: razorpayResponse.razorpay_payment_id,
+                    orderId: razorpayResponse.razorpay_order_id,
+                    signature: razorpayResponse.razorpay_signature,
+                });
+
+                setOrderSuccess(result.isMultiPart ? result.groupId : result.orderIds[0]);
+
+                setTimeout(() => {
+                    onClearCart();
+                    setOrderSuccess(null);
+                    setReceiptUploaded(false);
+                    setReceiptUrl('');
+                    setOrderNote('');
+                    setPromoCode('');
+                    setPromoApplied(false);
+                    setPromoDiscount(0);
+                    onClose();
+                }, 5000);
+            } else {
+                alert('❌ 支付验证失败，请联系客服。您的付款不会被扣除。');
+            }
+        } catch (verifyError: any) {
+            console.error('Payment verification error:', verifyError);
+            alert(`❌ 支付验证出错: ${verifyError.message}\n请联系客服确认订单状态。`);
+        }
+        setSubmitting(false);
     };
 
     // Handle Curlec/Razorpay online payment
@@ -258,49 +320,10 @@ export default function CartDrawer({
                 theme: {
                     color: '#FF6B35',
                 },
-                handler: async function (response: any) {
-                    // Step 3: Verify payment signature on server
-                    try {
-                        const verifyRes = await fetch('/api/payment/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                            }),
-                        });
-
-                        const verifyData = await verifyRes.json();
-
-                        if (verifyData.verified) {
-                            // Step 4: Submit order to Firebase
-                            const result = await submitAllOrders('curlec', {
-                                paymentId: response.razorpay_payment_id,
-                                orderId: response.razorpay_order_id,
-                                signature: response.razorpay_signature,
-                            });
-
-                            setOrderSuccess(result.isMultiPart ? result.groupId : result.orderIds[0]);
-
-                            setTimeout(() => {
-                                onClearCart();
-                                setOrderSuccess(null);
-                                setReceiptUploaded(false);
-                                setReceiptUrl('');
-                                setOrderNote('');
-                                setPromoCode('');
-                                setPromoApplied(false);
-                                setPromoDiscount(0);
-                                onClose();
-                            }, 4000);
-                        } else {
-                            alert('支付验证失败，请联系客服。');
-                        }
-                    } catch (verifyError: any) {
-                        alert(`支付验证出错: ${verifyError.message}`);
-                    }
-                    setSubmitting(false);
+                // Use synchronous handler - Razorpay doesn't await async handlers
+                handler: function (response: any) {
+                    // Use setTimeout to break out of Razorpay's context
+                    setTimeout(() => processPaymentResult(response), 100);
                 },
                 modal: {
                     ondismiss: function () {
@@ -311,7 +334,7 @@ export default function CartDrawer({
 
             const rzp = new window.Razorpay(options);
             rzp.on('payment.failed', function (response: any) {
-                alert(`支付失败: ${response.error.description}`);
+                alert(`❌ 支付失败: ${response.error.description}\n请重试或选择其他支付方式。`);
                 setSubmitting(false);
             });
             rzp.open();
@@ -378,6 +401,8 @@ export default function CartDrawer({
 
         setSubmitting(false);
     };
+
+    if (!isOpen && !orderSuccess) return null;
 
     // Order success view
     if (orderSuccess) {
