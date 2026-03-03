@@ -1,18 +1,19 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { ShoppingBag, X, Plus, Trash2, Phone, CheckCircle, CreditCard, Sparkles, Utensils, AlertCircle, Tag, Loader2, Calendar } from 'lucide-react';
+import { ShoppingBag, X, Plus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { submitOrder } from '@/lib/orders';
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
+import CartSuccess from './CartSuccess';
+import CartItemCard from './CartItemCard';
+import QRPaymentSection from './QRPaymentSection';
 
 export default function CartDrawer({
     isOpen,
     onClose,
     cart,
-
     removeFromCart,
     cartTotal,
     cartCount,
@@ -34,31 +35,23 @@ export default function CartDrawer({
     const [promoError, setPromoError] = useState('');
     const [promoDiscount, setPromoDiscount] = useState(0);
 
+    const finalTotal = Math.max(0, cartTotal - promoDiscount);
+
     const handleApplyPromo = () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
         if (code.startsWith('IB-') || code.startsWith('POINTS') || code === 'INCREDIBOWL10') {
-            setPromoDiscount(10);
-            setPromoApplied(true);
-            setPromoError('');
+            setPromoDiscount(10); setPromoApplied(true); setPromoError('');
         } else {
-            setPromoError('优惠码无效，请检查后重试');
-            setPromoApplied(false);
-            setPromoDiscount(0);
+            setPromoError('优惠码无效，请检查后重试'); setPromoApplied(false); setPromoDiscount(0);
         }
     };
-
-    const finalTotal = Math.max(0, cartTotal - promoDiscount);
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (user: User | null) => {
             setCurrentUser(user);
-            if (user) {
-                const profile = await getUserProfile(user.uid);
-                setUserProfile(profile);
-            } else {
-                setUserProfile(null);
-            }
+            if (user) { const profile = await getUserProfile(user.uid); setUserProfile(profile); }
+            else setUserProfile(null);
         });
         return () => unsubscribe();
     }, []);
@@ -81,14 +74,10 @@ export default function CartDrawer({
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '创建支付订单失败');
-
                 const options = {
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                    amount: data.amount,
-                    currency: data.currency,
-                    order_id: data.orderId,
-                    name: 'Incredibowl',
-                    description: '餐点预订',
+                    amount: data.amount, currency: data.currency, order_id: data.orderId,
+                    name: 'Incredibowl', description: '餐点预订',
                     handler: (response: any) => resolve(response),
                     modal: { ondismiss: () => reject(new Error('已取消支付')) },
                     prefill: {
@@ -98,21 +87,15 @@ export default function CartDrawer({
                     },
                     theme: { color: '#FF6B35' },
                 };
-
                 const rzp = new (window as any).Razorpay(options);
                 rzp.open();
-            } catch (err) {
-                reject(err);
-            }
+            } catch (err) { reject(err); }
         });
     };
 
     useEffect(() => {
         const fetchProfile = async () => {
-            if (isOpen && currentUser) {
-                const profile = await getUserProfile(currentUser.uid);
-                setUserProfile(profile);
-            }
+            if (isOpen && currentUser) { const profile = await getUserProfile(currentUser.uid); setUserProfile(profile); }
         };
         fetchProfile();
     }, [isOpen, currentUser]);
@@ -126,84 +109,42 @@ export default function CartDrawer({
         try {
             const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
             const { storage } = await import('@/lib/firebase');
-            const fileName = `receipts/${Date.now()}_${file.name}`;
-            const storageRef = ref(storage, fileName);
+            const storageRef = ref(storage, `receipts/${Date.now()}_${file.name}`);
             await uploadBytes(storageRef, file);
-            const url = await getDownloadURL(storageRef);
-            setReceiptUrl(url);
+            setReceiptUrl(await getDownloadURL(storageRef));
             setReceiptUploaded(true);
-        } catch (error) {
-            alert('上传失败，请重试');
-        }
+        } catch { alert('上传失败，请重试'); }
         setUploading(false);
     };
 
     const handleCheckout = async () => {
-        // Check login
-        if (!currentUser) {
-            onAuthOpen();
-            return;
-        }
-
-        // Check profile completeness
-        if (!userProfile?.phone || !userProfile?.address) {
-            onAuthOpen();
-            return;
-        }
-
-        // Check phone format
+        if (!currentUser) { onAuthOpen(); return; }
+        if (!userProfile?.phone || !userProfile?.address) { onAuthOpen(); return; }
         if (!isValidMyPhone(userProfile.phone)) {
-            alert("手机号码格式不正确，请到会员资料更新，例: 010-337 0197");
-            onAuthOpen();
-            return;
+            alert("手机号码格式不正确，请到会员资料更新，例: 010-337 0197"); onAuthOpen(); return;
         }
-
-        // Check date selected
         if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
-            alert("部分菜品未选择配送日期，请移除后重试！");
-            return;
+            alert("部分菜品未选择配送日期，请移除后重试！"); return;
         }
+        if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
 
-        // Check receipt for QR payment
-        if (paymentMethod === 'qr' && !receiptUploaded) {
-            alert("请先上传付款截图！");
-            return;
-        }
-
-        // FPX: initiate Razorpay checkout before submitting to Firestore
         if (paymentMethod === 'fpx') {
             try {
                 const paymentResult = await initiateRazorpayPayment(finalTotal);
                 const verifyRes = await fetch('/api/payment/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) {
-                    alert('支付验证失败，请联系客服');
-                    return;
-                }
-            } catch (err: any) {
-                alert(err.message || '支付失败，请重试');
-                return;
-            }
+                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); return; }
+            } catch (err: any) { alert(err.message || '支付失败，请重试'); return; }
         }
 
         setSubmitting(true);
-
         try {
-            // Group cart items by deliveryDate and deliveryTime
             const grouped = cart.reduce((acc: any, item: any) => {
                 const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-                if (!acc[key]) {
-                    acc[key] = {
-                        date: item.selectedDate || '未定',
-                        time: item.selectedTime || 'Lunch',
-                        items: [],
-                        subtotal: 0
-                    };
-                }
+                if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [], subtotal: 0 };
                 acc[key].items.push(item);
                 acc[key].subtotal += (item.price * item.quantity);
                 return acc;
@@ -212,121 +153,51 @@ export default function CartDrawer({
             const groups = Object.values(grouped) as any[];
             const isMultiPart = groups.length > 1;
             const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
-
             let remainingPromo = promoDiscount;
 
-            const submitPromises = groups.map((group, index) => {
+            const orderIds = await Promise.all(groups.map((group, index) => {
                 let currentPromo = 0;
                 if (promoApplied && promoDiscount > 0) {
-                    if (index === groups.length - 1) {
-                        currentPromo = Number(remainingPromo.toFixed(2));
-                    } else {
-                        currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2));
-                        remainingPromo -= currentPromo;
-                    }
+                    if (index === groups.length - 1) { currentPromo = Number(remainingPromo.toFixed(2)); }
+                    else { currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2)); remainingPromo -= currentPromo; }
                 }
-
                 const currentFinal = Math.max(0, group.subtotal - currentPromo);
-
                 return submitOrder({
                     userId: currentUser.uid,
                     userName: currentUser.displayName || userProfile?.displayName || 'Guest',
                     userEmail: currentUser.email || '',
-                    userPhone: userProfile.phone,
-                    userAddress: userProfile.address,
+                    userPhone: userProfile.phone, userAddress: userProfile.address,
                     items: group.items.flatMap((bundle: any) => {
-                        const arr = [];
-                        // Main dish
-                        arr.push({
-                            name: bundle.dish.name,
-                            nameEn: bundle.dish.nameEn || '',
-                            price: bundle.dish.price,
-                            quantity: bundle.dishQty * bundle.quantity,
-                            image: bundle.dish.image || '',
-                        });
-                        // Add-ons
-                        if (bundle.addOns) {
-                            bundle.addOns.forEach((a: any) => {
-                                arr.push({
-                                    name: `↳ ${a.item.name}`,
-                                    nameEn: a.item.nameEn || '',
-                                    price: a.item.price,
-                                    quantity: a.quantity * bundle.quantity,
-                                    image: a.item.image || '',
-                                });
-                            });
-                        }
+                        const arr: any[] = [{ name: bundle.dish.name, nameEn: bundle.dish.nameEn || '', price: bundle.dish.price, quantity: bundle.dishQty * bundle.quantity, image: bundle.dish.image || '' }];
+                        if (bundle.addOns) bundle.addOns.forEach((a: any) => arr.push({ name: `↳ ${a.item.name}`, nameEn: a.item.nameEn || '', price: a.item.price, quantity: a.quantity * bundle.quantity, image: a.item.image || '' }));
                         return arr;
                     }),
-                    total: currentFinal,
-                    originalTotal: group.subtotal,
+                    total: currentFinal, originalTotal: group.subtotal,
                     promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
                     promoDiscount: currentPromo,
-                    deliveryDate: group.date,
-                    deliveryTime: group.time,
+                    deliveryDate: group.date, deliveryTime: group.time,
                     paymentMethod: paymentMethod as 'qr' | 'fpx',
-                    receiptUploaded: receiptUploaded,
-                    receiptUrl: receiptUrl,
+                    receiptUploaded, receiptUrl,
                     status: paymentMethod === 'fpx' ? 'confirmed' : 'pending',
-                    note: orderNote,
-                    isMultiPart,
+                    note: orderNote, isMultiPart,
                     partIndex: isMultiPart ? index + 1 : undefined,
                     totalParts: isMultiPart ? groups.length : undefined,
-                    groupId: isMultiPart ? groupId : undefined
+                    groupId: isMultiPart ? groupId : undefined,
                 });
-            });
-
-            const orderIds = await Promise.all(submitPromises);
+            }));
 
             setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
-
-            // Clear cart after 3 seconds
             setTimeout(() => {
-                onClearCart();
-                setOrderSuccess(null);
-                setReceiptUploaded(false);
-                setReceiptUrl('');
-                setOrderNote('');
-                setPromoCode('');
-                setPromoApplied(false);
-                setPromoDiscount(0);
+                onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl('');
+                setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0);
                 onClose();
             }, 4000);
-
-        } catch (error: any) {
-            alert(`下单失败: ${error.message}`);
-        }
-
+        } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
     };
 
-    // Order success view
     if (orderSuccess) {
-        return (
-            <div className="fixed inset-0 z-[100] flex justify-end">
-                <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" />
-                <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col items-center justify-center border-l border-[#E3EADA]">
-                    <div className="text-center space-y-6 p-8 animate-in zoom-in-95 duration-500">
-                        <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-                            <CheckCircle size={48} className="text-green-500" />
-                        </div>
-                        <h2 className="text-3xl font-black text-[#1A2D23]">订单已提交！🍛</h2>
-                        <p className="text-gray-500 flex flex-col items-center gap-1">
-                            <span>{orderSuccess.startsWith('GRP') ? '订单群组编号：' : '订单编号：'}<span className="font-bold text-[#FF6B35]">#{orderSuccess.startsWith('GRP') ? orderSuccess : orderSuccess.slice(-6).toUpperCase()}</span></span>
-                            {orderSuccess.startsWith('GRP') && <span className="text-[10px] font-bold text-[#FF6B35]/70 bg-[#FF6B35]/10 px-2 py-0.5 rounded-full mt-1">你的订单已按送达日期自动拆分方便阿姨备餐</span>}
-                        </p>
-                        <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
-                            <p className="text-sm"><span className="font-bold">📅 配送安排：</span><span className="text-[#FF6B35] font-black">{orderSuccess.startsWith('GRP') ? '多日配送 (已各自独立建单)' : `${cart[0]?.selectedDate || '未定'} ${cart[0]?.selectedTime?.includes('Lunch') ? '🌞午餐' : '🌙晚餐'}`}</span></p>
-                            <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
-                            <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
-                            <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分 (核对后发放)</span></p>
-                        </div>
-                        <p className="text-sm font-bold text-[#FF6B35] animate-pulse">阿姨正在核对付款截图，请耐心等候 💬</p>
-                        <p className="text-xs text-gray-400">核对成功后，积分将自动存入你的账户</p>
-                    </div>
-                </div>
-            </div>
-        );
+        return <CartSuccess orderSuccess={orderSuccess} cart={cart} userProfile={userProfile} cartTotal={cartTotal} />;
     }
 
     return (
@@ -339,27 +210,24 @@ export default function CartDrawer({
                     <h2 className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
                         <ShoppingBag size={22} /> 我的订单 ({cartCount})
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400">
-                        <X size={22} />
-                    </button>
+                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400"><X size={22} /></button>
                 </div>
 
-                {/* Delivery Info */}
-                {/* Scrollable Middle Area: Delivery Info + Cart Items */}
+                {/* Scrollable body */}
                 <div className="flex-1 overflow-y-auto flex flex-col">
-                    {/* Delivery Info */}
+                    {/* Delivery address */}
                     {cart.length > 0 && (
-                        <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] flex flex-col gap-2 shrink-0">
-                            <div className="text-xs font-bold text-[#1A2D23] flex flex-col gap-2">
-                                <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50">
-                                    <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
-                                    <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
-                                </p>
-                            </div>
+                        <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] shrink-0">
+                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50 text-xs font-bold text-[#1A2D23]">
+                                <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
+                                <span className="truncate ml-4 text-right">
+                                    {userProfile?.address || <span className="text-red-500">尚未填写 (请在下方补充)</span>}
+                                </span>
+                            </p>
                         </div>
                     )}
 
-                    {/* Cart Items */}
+                    {/* Cart items */}
                     <div className="flex-1 p-6 space-y-4">
                         {cart.length === 0 ? (
                             <div className="text-center py-20 text-[#1A2D23]">
@@ -367,136 +235,74 @@ export default function CartDrawer({
                                     <Utensils className="w-16 h-16 mx-auto mb-4" />
                                     <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        onClose();
-                                        setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
-                                    }}
-                                    className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-black rounded-xl hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20"
-                                >
+                                <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
+                                    className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-black rounded-xl hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20">
                                     去点菜 →
                                 </button>
                             </div>
                         ) : (
                             <>
-                            {/* Continue Shopping — above first order group */}
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
-                                }}
-                                className="flex items-center justify-end gap-1.5 w-full py-1.5 text-[#FF6B35] text-xs font-black hover:text-[#E95D31] transition-colors"
-                            >
-                                <Plus size={13} strokeWidth={2.5} />
-                                <span>继续添加别的菜</span>
-                            </button>
+                                <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
+                                    className="flex items-center justify-end gap-1.5 w-full py-1.5 text-[#FF6B35] text-xs font-black hover:text-[#E95D31] transition-colors">
+                                    <Plus size={13} strokeWidth={2.5} /><span>继续添加别的菜</span>
+                                </button>
 
-                            {Object.entries(cart.reduce((acc: any, item: any) => {
-                                const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-                                if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [] };
-                                acc[key].items.push(item);
-                                return acc;
-                            }, {})).sort().map(([key, group]: any) => (
-                                <div key={key} className="space-y-3 mb-8">
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm">
-                                        <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center">
-                                            <Calendar size={14} className="text-[#1A2D23]" />
-                                        </div>
-                                        <span className="text-sm font-black text-[#1A2D23]">{group.date}</span>
-                                        <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold">{group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}</span>
-                                    </div>
-                                    {group.items.map((item: any, i: number) => (
-                                        <div key={item.cartItemId} className="bg-white rounded-[24px] p-4 border border-[#E3EADA]/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group" style={{ animationDelay: `${i * 50}ms` }}>
-
-                                            {/* Clickable Area for Editing */}
-                                            {onEditItem && (
-                                                <button
-                                                    onClick={() => onEditItem(item)}
-                                                    className="absolute inset-0 w-full h-full z-0 rounded-[24px] hover:bg-[#1A2D23]/[0.02] transition-colors"
-                                                    aria-label="Edit Item"
-                                                />
-                                            )}
-
-                                            {/* Top Row: Image & Title */}
-                                            <div className="flex gap-4 items-center relative z-20">
-                                                <div className="w-16 h-16 rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-[#E3EADA]/30">
-                                                    {item.dish.image?.startsWith('/') ? <Image src={item.dish.image} alt={item.dish.name} fill className="object-cover" /> : item.dish.image}
-                                                </div>
-                                                <div className="flex-1 min-w-0 pr-8">
-                                                    <div className="flex flex-col">
-                                                        <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
-                                                            {item.dish.name}
-                                                            {item.dishQty > 1 && <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-black inline-block relative -top-0.5">x{item.dishQty}</span>}
-                                                        </h4>
-                                                        {(item.addOns?.length > 0 || item.note) && (
-                                                            <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex flex-wrap gap-x-2">
-                                                                {item.addOns?.length > 0 && <span>加购 {item.addOns.reduce((sum: number, a: any) => sum + a.quantity, 0)} 项</span>}
-                                                                {item.note && <span>📝 备注</span>}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[#FF6B35] font-black text-lg mt-1 relative z-20 w-fit">RM {(item.price * item.quantity).toFixed(2)}</p>
-                                                </div>
-                                                <button onClick={() => removeFromCart(item.cartItemId)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute top-0 right-0 z-20">
-                                                    <Trash2 size={16} />
-                                                </button>
+                                {Object.entries(cart.reduce((acc: any, item: any) => {
+                                    const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
+                                    if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [] };
+                                    acc[key].items.push(item);
+                                    return acc;
+                                }, {})).sort().map(([key, group]: any) => (
+                                    <div key={key} className="space-y-3 mb-8">
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm">
+                                            <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center">
+                                                <Calendar size={14} className="text-[#1A2D23]" />
                                             </div>
-
-                                            {/* Action Row: Edit — bottom right */}
-                                            {onEditItem && (
-                                                <div className="mt-2.5 flex justify-end px-1 relative z-20">
-                                                    <button onClick={() => onEditItem(item)} className="px-3 py-1 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
-                                                        Edit
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <span className="text-sm font-black text-[#1A2D23]">{group.date}</span>
+                                            <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold">
+                                                {group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}
+                                            </span>
                                         </div>
-                                    ))}
-                                </div>
-                            ))
-                            }
+                                        {group.items.map((item: any, i: number) => (
+                                            <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} />
+                                        ))}
+                                    </div>
+                                ))}
                             </>
                         )}
 
-                        {/* Order Note */}
+                        {/* Order note */}
                         {cart.length > 0 && (
                             <div>
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">备注 Note (可选)</label>
-                                <textarea
-                                    value={orderNote}
-                                    onChange={(e) => setOrderNote(e.target.value)}
+                                <textarea value={orderNote} onChange={(e) => setOrderNote(e.target.value)}
                                     placeholder="例：放 Lobby、Block A、Block B、交给 Security Guard…"
-                                    rows={2}
-                                    className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none"
-                                />
+                                    rows={2} className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" />
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Checkout Section - Scrollable */}
+                {/* Checkout panel */}
                 {cart.length > 0 && (
                     <div className="bg-white border-t border-[#E3EADA] shadow-[0_-10px_30px_rgba(0,0,0,0.03)] max-h-[55vh] overflow-y-auto">
                         <div className="p-5 space-y-3">
-                            {/* Promo Code */}
+                            {/* Promo */}
                             <div className="space-y-2">
                                 <div className="flex gap-2">
                                     <div className="flex-1 relative">
                                         <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
-                                        <input
-                                            type="text"
-                                            value={promoCode}
+                                        <input type="text" value={promoCode}
                                             onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
-                                            placeholder="输入优惠码 / Promo Code"
-                                            disabled={promoApplied}
-                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'
-                                                }`}
-                                        />
+                                            placeholder="输入优惠码 / Promo Code" disabled={promoApplied}
+                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`} />
                                     </div>
                                     {promoApplied ? (
-                                        <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }} className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
+                                        <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
+                                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
                                     ) : (
-                                        <button onClick={handleApplyPromo} className="px-4 py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors">使用</button>
+                                        <button onClick={handleApplyPromo}
+                                            className="px-4 py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors">使用</button>
                                     )}
                                 </div>
                                 {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
@@ -507,9 +313,7 @@ export default function CartDrawer({
                             <div className="flex justify-between items-baseline">
                                 <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total</span>
                                 <div className="text-right">
-                                    {promoApplied && (
-                                        <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
-                                    )}
+                                    {promoApplied && <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>}
                                     <span className="text-3xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
                                 </div>
                             </div>
@@ -520,75 +324,32 @@ export default function CartDrawer({
                                 <span className="text-xs font-bold text-[#1A2D23]/60">核对成功后可获 <span className="text-[#FF6B35]">+{Math.floor(finalTotal)}</span> 积分</span>
                             </div>
 
-                            {/* Login Warning */}
+                            {/* Warnings */}
                             {!currentUser && (
                                 <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
                                     <AlertCircle size={16} /> 请先登录再下单
                                 </button>
                             )}
-
-                            {/* Profile Warning */}
                             {currentUser && (!userProfile?.phone || !userProfile?.address) && (
                                 <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
                                     <AlertCircle size={16} /> 请先补充手机号和地址
                                 </button>
                             )}
 
-                            {/* Payment Methods */}
+                            {/* Payment method selector */}
                             <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => setPaymentMethod('qr')}
-                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
-                                >
+                                <button onClick={() => setPaymentMethod('qr')}
+                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
                                     <Phone size={14} /> DuitNow / QR
                                 </button>
-                                <button
-                                    onClick={() => setPaymentMethod('fpx')}
-                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}
-                                >
+                                <button onClick={() => setPaymentMethod('fpx')}
+                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
                                     <CreditCard size={14} /> FPX / Card
                                 </button>
                             </div>
 
-                            {/* QR Upload */}
                             {paymentMethod === 'qr' && (
-                                <div className="space-y-2 animate-in fade-in duration-300">
-                                    {/* DuitNow QR Code - Compact */}
-                                    <div className="bg-white rounded-xl border border-[#E3EADA] p-2 max-w-[200px] mx-auto shadow-sm">
-                                        <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={400} height={550} className="w-full h-auto rounded-lg" />
-                                    </div>
-
-                                    {/* Merchant Info - Compact */}
-                                    <div className="bg-[#F5F3EF] rounded-lg px-3 py-2 text-[10px] text-[#1A2D23]/60 space-y-0.5">
-                                        <p>✅ 商户：<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
-                                        <p>✅ 合作银行：<strong className="text-[#1A2D23]">Hong Leong Bank</strong></p>
-                                        <p>✅ 支持所有银行 & e-Wallet（TnG, SPay, MAE, Boost 等）</p>
-                                    </div>
-
-                                    {/* Upload Receipt */}
-                                    {receiptUploaded && receiptUrl ? (
-                                        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2">
-                                            <img src={receiptUrl} alt="Receipt" className="w-12 h-12 rounded-lg object-cover border border-green-200" />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-green-700 flex items-center gap-1"><CheckCircle size={12} /> 凭证已上传</p>
-                                                <p className="text-[10px] text-green-600/60 truncate">点击重新上传</p>
-                                            </div>
-                                            <label className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-green-200">
-                                                换图
-                                                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-                                            </label>
-                                        </div>
-                                    ) : (
-                                        <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${uploading ? 'bg-orange-50 border-orange-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
-                                            {uploading ? (
-                                                <><Loader2 size={16} className="text-[#FF6B35] animate-spin" /><span className="font-bold text-[#FF6B35] text-xs">上传中...</span></>
-                                            ) : (
-                                                <><Plus size={16} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35] text-xs">上传付款截图</span></>
-                                            )}
-                                            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
-                                        </label>
-                                    )}
-                                </div>
+                                <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} />
                             )}
 
                             {paymentMethod === 'fpx' && (
@@ -598,15 +359,12 @@ export default function CartDrawer({
                                 </div>
                             )}
 
-                            {/* Submit Button */}
-                            <button
-                                onClick={handleCheckout}
+                            {/* Submit */}
+                            <button onClick={handleCheckout}
                                 disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)}
                                 className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                    : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
-                                    }`}
-                            >
+                                    : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                                 <CheckCircle size={22} />
                                 {submitting ? '提交中...' : '确认下单 →'}
                             </button>
