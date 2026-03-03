@@ -246,12 +246,22 @@ export default function AddOnModal({
 
     // ─── Handlers ─────────────────────────────────────────────────
 
+    // Mutual exclusion pairs — selecting one auto-clears the other
+    const MUTEX_PAIRS: Record<string, string> = {
+        'less-rice': 'extra-rice',
+        'extra-rice': 'less-rice',
+    };
+
     const updateQty = (itemId: string, delta: number) => {
         setQuantities(prev => {
             const current = prev[itemId] || 0;
             const newVal = Math.max(0, current + delta);
-            // Limit individual add-on to 10 items
-            return { ...prev, [itemId]: Math.min(newVal, 10) };
+            const updated = { ...prev, [itemId]: Math.min(newVal, 10) };
+            // Enforce mutual exclusion: adding this item zeros out its pair
+            if (delta > 0 && newVal > 0 && MUTEX_PAIRS[itemId]) {
+                updated[MUTEX_PAIRS[itemId]] = 0;
+            }
+            return updated;
         });
     };
 
@@ -433,12 +443,12 @@ export default function AddOnModal({
                                             {section.items.map((item, itemIdx) => {
                                                 const qty = quantities[item.id] || 0;
                                                 const sectionCount = getSectionSelectedCount(section);
-                                                const atMax = sectionCount >= section.maxSelect && qty === 0;
+                                                const mutexBlocked = MUTEX_PAIRS[item.id] ? (quantities[MUTEX_PAIRS[item.id]] || 0) > 0 : false;
 
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (section.id === 'natto-combo' ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors hover:bg-[#FDF8F0]/30`}
+                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (section.id === 'natto-combo' ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
                                                     >
                                                         {/* Thumbnail */}
                                                         {item.image && (
@@ -477,8 +487,8 @@ export default function AddOnModal({
                                                             </span>
                                                             <button
                                                                 onClick={() => updateQty(item.id, 1)}
-                                                                disabled={qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
+                                                                disabled={qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked}
+                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
                                                             >
                                                                 <Plus size={14} />
                                                             </button>
