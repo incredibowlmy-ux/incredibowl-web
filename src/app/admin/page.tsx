@@ -11,6 +11,7 @@ import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
 
 const ADMIN_EMAILS = ['incredibowl.my@gmail.com']; // Add your email here
+const PAGE_SIZE = 20;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color: string; icon: LucideIcon }> = {
     pending: { label: 'Pending', labelCn: '待确认', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
@@ -34,6 +35,7 @@ export default function AdminPage() {
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
     const [customerSort, setCustomerSort] = useState<'points' | 'spent' | 'orders'>('points');
+    const [currentPage, setCurrentPage] = useState(1);
 
     const toggleSection = (id: string) => {
         setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -73,6 +75,8 @@ export default function AdminPage() {
         }
         setLoading(false);
     };
+
+    useEffect(() => { setCurrentPage(1); }, [filterStatus, filterDate]);
 
     const handleStatusChange = async (order: AdminOrder, newStatus: OrderStatus) => {
         try {
@@ -156,6 +160,10 @@ export default function AdminPage() {
             const bTime = b.createdAt?.seconds ?? 0;
             return bTime - aTime;
         });
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / PAGE_SIZE));
+    const pagedOrders = filteredOrders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
     // Helper: format date string
     const formatDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -574,7 +582,7 @@ export default function AdminPage() {
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                {filteredOrders.map((order: any) => {
+                                {pagedOrders.map((order: any) => {
                                     const statusConf = STATUS_CONFIG[order.status as OrderStatus] || STATUS_CONFIG.pending;
                                     const StatusIcon = statusConf.icon;
                                     return (
@@ -681,6 +689,31 @@ export default function AdminPage() {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {filteredOrders.length > PAGE_SIZE && (
+                            <div className="flex items-center justify-between pt-2">
+                                <span className="text-xs text-gray-400">
+                                    共 {filteredOrders.length} 单 · 第 {currentPage} / {totalPages} 页
+                                </span>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        ← 上一页
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        下一页 →
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
