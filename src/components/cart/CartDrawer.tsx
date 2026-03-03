@@ -471,6 +471,15 @@ export default function CartDrawer({
                                     <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
                                     <span className="truncate ml-4 text-right">{userProfile?.address ? userProfile.address : <span className="text-red-500">尚未填写 (请在下方补充)</span>}</span>
                                 </p>
+                                <button
+                                    onClick={() => {
+                                        onClose();
+                                        setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
+                                    }}
+                                    className="flex items-center justify-center gap-1 w-full py-2 bg-white border border-dashed border-[#FF6B35]/50 hover:bg-[#FF6B35]/5 text-[#FF6B35] rounded-lg transition-colors"
+                                >
+                                    <Plus size={14} /> <span>继续添加别的菜</span>
+                                </button>
                             </div>
                         </div>
                     )}
@@ -541,12 +550,6 @@ export default function CartDrawer({
                                                         Edit
                                                     </button>
                                                 ) : <div />}
-
-                                                <div className="flex items-center gap-2 bg-white border border-[#E3EADA] rounded-xl p-1 shadow-sm relative z-20">
-                                                    <button onClick={() => updateQuantity(item.cartItemId, -1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Minus size={14} /></button>
-                                                    <span className="font-black text-sm w-5 text-center text-[#1A2D23]">{item.quantity}</span>
-                                                    <button onClick={() => updateQuantity(item.cartItemId, 1)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:bg-[#F5F3EF] hover:text-[#1A2D23] transition-colors"><Plus size={14} /></button>
-                                                </div>
                                             </div>
                                         </div>
                                     ))}
