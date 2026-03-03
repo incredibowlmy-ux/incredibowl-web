@@ -28,6 +28,16 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
+    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+    const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+
+    const toggleSection = (id: string) => {
+        setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const toggleOrderExp = (id: string) => {
+        setExpandedOrders(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -166,6 +176,17 @@ export default function AdminPage() {
         return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
+    // Helper: calculate summary of all dishes in a day's meal
+    const getPrepSummary = (mealOrders: any[]) => {
+        const counts: Record<string, number> = {};
+        mealOrders.forEach(o => {
+            o.items?.forEach((item: any) => {
+                counts[item.name] = (counts[item.name] || 0) + (item.quantity || 0);
+            });
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    };
+
     return (
         <div className="min-h-screen bg-[#F5F3EF]">
             {/* Header */}
@@ -210,62 +231,175 @@ export default function AdminPage() {
                 {/* Upcoming Orders by Day - Lunch/Dinner Split */}
                 {upcomingDays.length > 0 && (
                     <div className="space-y-4">
-                        <h2 className="text-lg font-black text-[#1A2D23] flex items-center gap-2">📋 未来订单预览（按日/餐次）</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-black text-[#1A2D23] flex items-center gap-2">📋 未来订单预览（按日/餐次）</h2>
+                            <div className="flex gap-2">
+                                {Object.keys(expandedSections).some(k => expandedSections[k]) ? (
+                                    <button onClick={() => setExpandedSections({})} className="text-[10px] font-bold text-gray-400 border border-gray-200 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors">全部折叠</button>
+                                ) : (
+                                    <button onClick={() => {
+                                        const allKeys: any = {};
+                                        upcomingDays.forEach(d => { allKeys[d.dateStr] = true; allKeys[`${d.dateStr}-lunch`] = true; allKeys[`${d.dateStr}-dinner`] = true; });
+                                        setExpandedSections(allKeys);
+                                    }} className="text-[10px] font-bold text-gray-400 border border-gray-200 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors">全部展开</button>
+                                )}
+                            </div>
+                        </div>
+
                         {upcomingDays.map(day => {
                             const { lunch, dinner } = splitMealTime(day.orders);
+                            const isDayExpanded = expandedSections[day.dateStr];
                             return (
-                                <div key={day.dateStr} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                                    <div className="bg-[#1A2D23] px-5 py-3 flex items-center justify-between">
-                                        <span className="text-white font-black text-sm">📅 {day.label}</span>
-                                        <span className="text-white/60 text-xs font-bold">{day.orders.length} 单 · RM {day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0).toFixed(0)}</span>
-                                    </div>
-                                    <div className="divide-y divide-gray-100">
-                                        {/* Lunch Section */}
-                                        {lunch.length > 0 && (
-                                            <div className="p-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-black">🌞 午餐 ({lunch.length} 单)</span>
+                                <div key={day.dateStr} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden transition-all">
+                                    <button
+                                        onClick={() => toggleSection(day.dateStr)}
+                                        className={`w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors ${isDayExpanded ? 'bg-[#1A2D23] text-white' : 'bg-white text-[#1A2D23]'}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-black text-sm">📅 {day.label}</span>
+                                            {!isDayExpanded && (
+                                                <div className="flex gap-1">
+                                                    {lunch.length > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-md font-bold">午 {lunch.length}</span>}
+                                                    {dinner.length > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-md font-bold">晚 {dinner.length}</span>}
                                                 </div>
-                                                <div className="space-y-2">
-                                                    {lunch.map((o: any) => (
-                                                        <div key={o.id} className="flex items-center justify-between text-sm bg-[#FDFBF7] rounded-xl px-4 py-2.5 border border-gray-100">
-                                                            <div className="flex items-center gap-3 min-w-0">
-                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
-                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
-                                                                <span className="text-gray-400 text-xs shrink-0">({o.items?.length || 0} 道)</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`text-xs font-bold ${isDayExpanded ? 'text-white/60' : 'text-gray-400'}`}>{day.orders.length} 单 · RM {day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0).toFixed(0)}</span>
+                                            <Clock size={16} className={`transition-transform duration-300 ${isDayExpanded ? 'rotate-180 text-white' : 'text-gray-300'}`} />
+                                        </div>
+                                    </button>
+
+                                    {isDayExpanded && (
+                                        <div className="divide-y divide-gray-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                                            {/* Lunch Section */}
+                                            {lunch.length > 0 && (
+                                                <div className="p-0">
+                                                    <button
+                                                        onClick={() => toggleSection(`${day.dateStr}-lunch`)}
+                                                        className="w-full px-4 py-3 flex items-center justify-between bg-amber-50/50 hover:bg-amber-50 transition-colors"
+                                                    >
+                                                        <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-black flex items-center gap-2">🌞 午餐 ({lunch.length} 单)</span>
+                                                        <Clock size={14} className={`text-amber-300 transition-transform ${expandedSections[`${day.dateStr}-lunch`] ? 'rotate-180' : ''}`} />
+                                                    </button>
+
+                                                    {expandedSections[`${day.dateStr}-lunch`] && (
+                                                        <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
+                                                            {/* Meal Summary */}
+                                                            <div className="bg-[#1A2D23] text-white p-4 rounded-xl space-y-2">
+                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1">👨ΓÇì🍳 厨房备菜总结 (午餐)</p>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                                                                    {getPrepSummary(lunch).map(([name, qty]) => (
+                                                                        <div key={name} className="flex justify-between items-center text-xs py-1 border-b border-white/10 last:border-0 font-bold">
+                                                                            <span className={name.includes('↳') ? 'text-white/50 pl-2' : ''}>{name}</span>
+                                                                            <span className="text-[#FF6B35]">x{qty}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
-                                                            <span className="font-black text-[#FF6B35] shrink-0 ml-2">RM {(o.total || 0).toFixed(2)}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* Dinner Section */}
-                                        {dinner.length > 0 && (
-                                            <div className="p-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black">🌙 晚餐 ({dinner.length} 单)</span>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {dinner.map((o: any) => (
-                                                        <div key={o.id} className="flex items-center justify-between text-sm bg-[#FDFBF7] rounded-xl px-4 py-2.5 border border-gray-100">
-                                                            <div className="flex items-center gap-3 min-w-0">
-                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
-                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
-                                                                <span className="text-gray-400 text-xs shrink-0">({o.items?.length || 0} 道)</span>
+
+                                                            <div className="space-y-2">
+                                                                {lunch.map((o: any) => (
+                                                                    <div key={o.id} className="bg-[#FDFBF7] rounded-xl border border-gray-100 overflow-hidden">
+                                                                        <button
+                                                                            onClick={() => toggleOrderExp(o.id)}
+                                                                            className="w-full flex items-center justify-between text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                                                                        >
+                                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
+                                                                                <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
+                                                                                <Clock size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
+                                                                            </div>
+                                                                        </button>
+                                                                        {expandedOrders[o.id] && (
+                                                                            <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-white/50 text-[11px] space-y-1">
+                                                                                {o.items?.map((item: any, idx: number) => (
+                                                                                    <div key={idx} className="flex justify-between">
+                                                                                        <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
+                                                                                        <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
                                                             </div>
-                                                            <span className="font-black text-[#FF6B35] shrink-0 ml-2">RM {(o.total || 0).toFixed(2)}</span>
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                            )}
+                                            {/* Dinner Section */}
+                                            {dinner.length > 0 && (
+                                                <div className="p-0">
+                                                    <button
+                                                        onClick={() => toggleSection(`${day.dateStr}-dinner`)}
+                                                        className="w-full px-4 py-3 flex items-center justify-between bg-indigo-50/50 hover:bg-indigo-50 transition-colors border-t border-gray-100"
+                                                    >
+                                                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black flex items-center gap-2">🌙 晚餐 ({dinner.length} 单)</span>
+                                                        <Clock size={14} className={`text-indigo-300 transition-transform ${expandedSections[`${day.dateStr}-dinner`] ? 'rotate-180' : ''}`} />
+                                                    </button>
+
+                                                    {expandedSections[`${day.dateStr}-dinner`] && (
+                                                        <div className="p-4 space-y-4 animate-in fade-in slide-in-from-top-1">
+                                                            {/* Meal Summary */}
+                                                            <div className="bg-[#1A2D23] text-white p-4 rounded-xl space-y-2">
+                                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest flex items-center gap-2 mb-1">👨ΓÇì🍳 厨房备菜总结 (晚餐)</p>
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                                                                    {getPrepSummary(dinner).map(([name, qty]) => (
+                                                                        <div key={name} className="flex justify-between items-center text-xs py-1 border-b border-white/10 last:border-0 font-bold">
+                                                                            <span className={name.includes('↳') ? 'text-white/50 pl-2' : ''}>{name}</span>
+                                                                            <span className="text-[#FF6B35]">x{qty}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="space-y-2">
+                                                                {dinner.map((o: any) => (
+                                                                    <div key={o.id} className="bg-[#FDFBF7] rounded-xl border border-gray-100 overflow-hidden">
+                                                                        <button
+                                                                            onClick={() => toggleOrderExp(o.id)}
+                                                                            className="w-full flex items-center justify-between text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
+                                                                        >
+                                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                                <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
+                                                                                <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
+                                                                                <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-3">
+                                                                                <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
+                                                                                <Clock size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
+                                                                            </div>
+                                                                        </button>
+                                                                        {expandedOrders[o.id] && (
+                                                                            <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-white/50 text-[11px] space-y-1">
+                                                                                {o.items?.map((item: any, idx: number) => (
+                                                                                    <div key={idx} className="flex justify-between">
+                                                                                        <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
+                                                                                        <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                    </div>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
                     </div>
                 )}
+
 
                 {/* Tabs */}
                 <div className="flex gap-2 pb-2 overflow-x-auto no-scrollbar">
@@ -292,6 +426,23 @@ export default function AdminPage() {
                 {/* Orders Tab */}
                 {activeTab === 'orders' && (
                     <div className="space-y-4">
+                        {/* Status Legend */}
+                        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-wrap gap-4 items-center justify-center">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">状态对应:</span>
+                            {[
+                                { color: 'bg-yellow-400', label: '待确认' },
+                                { color: 'bg-blue-400', label: '已确认' },
+                                { color: 'bg-purple-400', label: '准备中' },
+                                { color: 'bg-green-400', label: '已送达' },
+                                { color: 'bg-red-400', label: '已取消' }
+                            ].map(s => (
+                                <div key={s.label} className="flex items-center gap-1.5 grayscale-[0.2]">
+                                    <div className={`w-2 h-2 rounded-full ${s.color}`} />
+                                    <span className="text-[11px] font-bold text-gray-500">{s.label}</span>
+                                </div>
+                            ))}
+                        </div>
+
                         {/* Filters */}
                         <div className="flex flex-wrap gap-2">
                             {['all', 'pending', 'confirmed', 'preparing', 'delivered', 'cancelled'].map(status => (
