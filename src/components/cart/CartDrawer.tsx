@@ -117,6 +117,8 @@ export default function CartDrawer({
 
     // Helper: build order groups from cart
     const buildOrderGroups = useCallback(() => {
+        if (!cart || cart.length === 0) return [];
+
         const grouped = cart.reduce((acc: any, item: any) => {
             const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
             if (!acc[key]) {
@@ -131,7 +133,7 @@ export default function CartDrawer({
             acc[key].subtotal += (item.price * item.quantity);
             return acc;
         }, {});
-        return Object.values(grouped) as any[];
+        return Object.values(grouped);
     }, [cart]);
 
     // Helper: submit orders to Firebase
@@ -158,7 +160,8 @@ export default function CartDrawer({
             const currentFinal = Math.max(0, group.subtotal - currentPromo);
             orderTotals.push(currentFinal);
 
-            return submitOrder({
+            // Order data structure for Firestore
+            const baseOrderData: any = {
                 userId: currentUser!.uid,
                 userName: currentUser!.displayName || userProfile?.displayName || 'Guest',
                 userEmail: currentUser!.email || '',
@@ -195,16 +198,24 @@ export default function CartDrawer({
                 paymentMethod: payMethod,
                 receiptUploaded: payMethod === 'qr' ? receiptUploaded : false,
                 receiptUrl: payMethod === 'qr' ? receiptUrl : '',
-                ...(razorpayData?.paymentId ? { razorpayPaymentId: razorpayData.paymentId } : {}),
-                ...(razorpayData?.orderId ? { razorpayOrderId: razorpayData.orderId } : {}),
-                ...(razorpayData?.signature ? { razorpaySignature: razorpayData.signature } : {}),
                 status: payMethod === 'curlec' ? 'confirmed' : 'pending',
                 note: orderNote || '',
-                isMultiPart,
-                ...(isMultiPart ? { partIndex: index + 1 } : {}),
-                ...(isMultiPart ? { totalParts: groups.length } : {}),
-                ...(isMultiPart ? { groupId: groupId } : {}),
-            });
+                isMultiPart
+            };
+
+            // Add Razorpay specific fields if available
+            if (razorpayData?.paymentId) baseOrderData.razorpayPaymentId = razorpayData.paymentId;
+            if (razorpayData?.orderId) baseOrderData.razorpayOrderId = razorpayData.orderId;
+            if (razorpayData?.signature) baseOrderData.razorpaySignature = razorpayData.signature;
+
+            // Add multi-part specific fields safely
+            if (isMultiPart) {
+                baseOrderData.partIndex = index + 1;
+                baseOrderData.totalParts = groups.length;
+                baseOrderData.groupId = groupId;
+            }
+
+            return submitOrder(baseOrderData);
         });
 
         const orderIds = await Promise.all(submitPromises);

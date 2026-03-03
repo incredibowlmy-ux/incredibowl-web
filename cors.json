@@ -1,0 +1,19 @@
+[
+  {
+    "origin": [
+      "https://www.incredibowl.my",
+      "https://incredibowl.my",
+      "http://localhost:3000",
+      "http://localhost:3001"
+    ],
+    "method": ["GET", "POST", "PUT", "DELETE", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "x-goog-resumable"
+    ]
+  }
+]

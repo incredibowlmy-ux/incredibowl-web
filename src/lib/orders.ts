@@ -40,9 +40,17 @@ export interface OrderData {
 
 // Submit a new order (points NO LONGER awarded here)
 export const submitOrder = async (orderData: OrderData): Promise<string> => {
+    // Sanitize data: Firestore does not allow 'undefined' values
+    const sanitizedData = Object.entries(orderData).reduce((acc: any, [key, value]) => {
+        if (value !== undefined) {
+            acc[key] = value;
+        }
+        return acc;
+    }, {});
+
     const ordersRef = collection(db, "orders");
     const docRef = await addDoc(ordersRef, {
-        ...orderData,
+        ...sanitizedData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     });
