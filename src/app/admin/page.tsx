@@ -28,6 +28,7 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
+    const [statsDate, setStatsDate] = useState<string>('7days'); // '7days' or specific date string
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
 
@@ -149,16 +150,22 @@ export default function AdminPage() {
     const todayRevenue = orders.filter(o => o.deliveryDate === todayStr && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
     const todayCustomersCount = new Set(orders.filter(o => o.deliveryDate === todayStr).map(o => o.userId)).size;
 
-    // Aggregate stats for next 7 days (including today)
-    const next7Days: string[] = [];
+    // Aggregate stats for next 7 days
+    const statsDaysList: { date: string; label: string }[] = [{ date: '7days', label: '未来 7 日' }];
     for (let i = 0; i < 7; i++) {
         const d = new Date();
         d.setDate(d.getDate() + i);
-        next7Days.push(formatDateStr(d));
+        const ds = formatDateStr(d);
+        const label = i === 0 ? '今天' : i === 1 ? '明天' : i === 2 ? '后天' : ds.split('-').slice(1).join('/');
+        statsDaysList.push({ date: ds, label });
     }
-    const upcomingOrdersCount = orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').length;
-    const upcomingRevenue = orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
-    const upcomingCustomersCount = new Set(orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
+
+    const targetDates = statsDate === '7days' ? statsDaysList.slice(1).map(d => d.date) : [statsDate];
+    const displayLabel = statsDaysList.find(d => d.date === statsDate)?.label || '数据';
+
+    const upcomingOrdersCount = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').length;
+    const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+    const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
     // Build upcoming days (tomorrow + next 6 days = 7 days total)
     const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
@@ -220,23 +227,44 @@ export default function AdminPage() {
             </header>
 
             <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+                {/* Stats Date Selector */}
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar pt-2">
+                    {statsDaysList.map((d) => (
+                        <button
+                            key={d.date}
+                            onClick={() => setStatsDate(d.date)}
+                            className={`px-4 py-1.5 rounded-full text-[11px] font-black whitespace-nowrap transition-all border ${statsDate === d.date ? 'bg-[#1A2D23] text-white border-[#1A2D23] shadow-md scale-105' : 'bg-white text-gray-400 border-gray-100 hover:border-gray-300'}`}
+                        >
+                            {d.label}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">待确认</p>
-                        <p className="text-3xl font-black text-yellow-600">{pendingCount}</p>
+                        <p className="text-3xl font-black text-yellow-600 relative">{pendingCount}</p>
+                        <p className="text-[8px] text-gray-300 mt-1">需尽快处理</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日订单</p>
-                        <p className="text-3xl font-black text-blue-600">{upcomingOrdersCount}</p>
+                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 订单</p>
+                        <p className="text-3xl font-black text-blue-600 relative">{upcomingOrdersCount}</p>
+                        <p className="text-[8px] text-gray-300 mt-1">有效订单数</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日预计收入</p>
-                        <p className="text-3xl font-black text-green-600">RM {upcomingRevenue.toFixed(0)}</p>
+                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-green-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 收入</p>
+                        <p className="text-3xl font-black text-green-600 relative">RM {upcomingRevenue.toFixed(0)}</p>
+                        <p className="text-[8px] text-gray-300 mt-1">预计营业额</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日总客户</p>
-                        <p className="text-3xl font-black text-[#FF6B35]">{upcomingCustomersCount}</p>
+                    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-16 h-16 bg-orange-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 客户</p>
+                        <p className="text-3xl font-black text-[#FF6B35] relative">{upcomingCustomersCount}</p>
+                        <p className="text-[8px] text-gray-300 mt-1">去重客户数</p>
                     </div>
                 </div>
 
