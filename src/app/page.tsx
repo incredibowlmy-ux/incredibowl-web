@@ -14,10 +14,11 @@ import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
 import FloatingChatbot from '@/components/home/FloatingChatbot';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
-import { CartBundle, AddOnSelection } from '@/types';
+import { AddOnSelection } from '@/types';
+import { useCartStore } from '@/store/cartStore';
 
 export default function V4BentoLayout() {
-    const [cart, setCart] = useState<CartBundle[]>([]);
+    const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
@@ -103,38 +104,17 @@ export default function V4BentoLayout() {
     };
 
     const handleAddWithAddOns = (dish: MenuItem, addOns: AddOnSelection[], bundleTotalPrice: number, note: string, sDate: string, sTime: string, dishQty: number, editCartItemId?: string) => {
-        setCart(prev => {
-            const newItems = [...prev];
-            if (editCartItemId) {
-                const index = newItems.findIndex(i => i.cartItemId === editCartItemId);
-                if (index >= 0) {
-                    newItems[index] = { ...newItems[index], dish, dishQty, addOns, price: bundleTotalPrice, note, selectedDate: sDate, selectedTime: sTime };
-                }
-            } else {
-                const cartItemId = `${dish.id}-${Date.now()}`;
-                newItems.push({ cartItemId, dish, dishQty, addOns, note, selectedDate: sDate, selectedTime: sTime, price: bundleTotalPrice, quantity: 1 });
-            }
-            return newItems;
-        });
+        if (editCartItemId) {
+            updateBundle(editCartItemId, { dish, dishQty, addOns, price: bundleTotalPrice, note, selectedDate: sDate, selectedTime: sTime });
+        } else {
+            const cartItemId = `${dish.id}-${Date.now()}`;
+            addBundle({ cartItemId, dish, dishQty, addOns, note, selectedDate: sDate, selectedTime: sTime, price: bundleTotalPrice, quantity: 1 });
+        }
         setEditConfig(null);
         setIsCartOpen(true);
     };
 
-    const updateQuantity = (cartItemId: string, delta: number) => {
-        setCart(prev => prev.map(item => {
-            if (item.cartItemId === cartItemId) {
-                const newQty = item.quantity + delta;
-                return newQty > 0 ? { ...item, quantity: newQty } : item;
-            }
-            return item;
-        }).filter(item => item.quantity > 0));
-    };
-
-    const removeFromCart = (cartItemId: string) => {
-        setCart(prev => prev.filter(i => i.cartItemId !== cartItemId));
-    };
-
-    const handleEditCartItem = (bundle: CartBundle) => {
+    const handleEditCartItem = (bundle: import('@/types').CartBundle) => {
         setSelectedDish(bundle.dish);
         const initQuantities: Record<string, number> = {};
         bundle.addOns.forEach(a => { initQuantities[a.item.id] = a.quantity; });
@@ -196,7 +176,7 @@ export default function V4BentoLayout() {
                 cartTotal={cartTotal}
                 cartCount={cartCount}
                 onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                onClearCart={() => setCart([])}
+                onClearCart={clearCart}
                 onEditItem={handleEditCartItem}
             />
             <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />

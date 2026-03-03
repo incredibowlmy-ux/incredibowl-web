@@ -1,60 +1,51 @@
 import { create } from 'zustand';
-
-export interface CartItem {
-    id: string | number;
-    name: string;
-    nameEn?: string;
-    price: number;
-    quantity: number;
-    image: string;
-    options?: any;
-    selectedDate?: string;
-    selectedTime?: string;
-}
+import { persist } from 'zustand/middleware';
+import { CartBundle } from '@/types';
 
 interface CartStore {
-    items: CartItem[];
-    isOpen: boolean;
-    addItem: (item: Omit<CartItem, 'quantity'>, options?: any) => void;
-    removeItem: (id: string | number) => void;
-    updateQuantity: (id: string | number, delta: number) => void;
-    toggleCart: () => void;
+    cart: CartBundle[];
+    addBundle: (bundle: CartBundle) => void;
+    updateBundle: (cartItemId: string, updates: Partial<CartBundle>) => void;
+    updateQuantity: (cartItemId: string, delta: number) => void;
+    removeFromCart: (cartItemId: string) => void;
     clearCart: () => void;
-    getCartTotal: () => number;
-    getCartCount: () => number;
 }
 
-export const useCartStore = create<CartStore>((set, get) => ({
-    items: [],
-    isOpen: false,
-    addItem: (item, options) => {
-        set((state) => {
-            const cartItemId = options?.cartItemId || item.id;
-            const existing = state.items.find((i: any) => i.id === cartItemId);
+export const useCartStore = create<CartStore>()(
+    persist(
+        (set) => ({
+            cart: [],
 
-            if (existing) {
-                return {
-                    items: state.items.map((i: any) =>
-                        i.id === cartItemId ? { ...i, quantity: i.quantity + 1 } : i
+            addBundle: (bundle) =>
+                set(state => ({ cart: [...state.cart, bundle] })),
+
+            updateBundle: (cartItemId, updates) =>
+                set(state => ({
+                    cart: state.cart.map(item =>
+                        item.cartItemId === cartItemId ? { ...item, ...updates } : item
                     ),
-                    isOpen: true
-                };
-            }
-            return { items: [...state.items, { ...item, id: cartItemId, quantity: 1, ...options }], isOpen: true };
-        });
-    },
-    removeItem: (id) => set((state) => ({ items: state.items.filter(i => i.id !== id) })),
-    updateQuantity: (id, delta) => set((state) => ({
-        items: state.items.map(item => {
-            if (item.id === id) {
-                const newQty = item.quantity + delta;
-                return newQty > 0 ? { ...item, quantity: newQty } : item;
-            }
-            return item;
-        }).filter(item => item.quantity > 0)
-    })),
-    toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-    clearCart: () => set({ items: [] }),
-    getCartTotal: () => get().items.reduce((total, item) => total + item.price * item.quantity, 0),
-    getCartCount: () => get().items.reduce((count, item) => count + item.quantity, 0),
-}));
+                })),
+
+            updateQuantity: (cartItemId, delta) =>
+                set(state => ({
+                    cart: state.cart
+                        .map(item => {
+                            if (item.cartItemId !== cartItemId) return item;
+                            const newQty = item.quantity + delta;
+                            return newQty > 0 ? { ...item, quantity: newQty } : item;
+                        })
+                        .filter(item => item.quantity > 0),
+                })),
+
+            removeFromCart: (cartItemId) =>
+                set(state => ({
+                    cart: state.cart.filter(item => item.cartItemId !== cartItemId),
+                })),
+
+            clearCart: () => set({ cart: [] }),
+        }),
+        {
+            name: 'incredibowl-cart', // localStorage key
+        }
+    )
+);
