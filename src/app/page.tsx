@@ -18,6 +18,7 @@ import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -104,27 +105,35 @@ export default function V4BentoLayout() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <HeroSection />
                     <DeliveryWidget />
-                    <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
-                    <FeedbackSection />
+                    <ErrorBoundary>
+                        <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
+                    </ErrorBoundary>
+                    <ErrorBoundary>
+                        <FeedbackSection />
+                    </ErrorBoundary>
                 </div>
             </main>
 
             <Footer />
             <FloatingChatbot />
 
-            <CartDrawer
-                isOpen={isCartOpen}
-                onClose={() => setIsCartOpen(false)}
-                cart={cart}
-                updateQuantity={updateQuantity}
-                removeFromCart={removeFromCart}
-                cartTotal={cartTotal}
-                cartCount={cartCount}
-                onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
-                onClearCart={clearCart}
-                onEditItem={handleEditCartItem}
-            />
-            <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+            <ErrorBoundary>
+                <CartDrawer
+                    isOpen={isCartOpen}
+                    onClose={() => setIsCartOpen(false)}
+                    cart={cart}
+                    updateQuantity={updateQuantity}
+                    removeFromCart={removeFromCart}
+                    cartTotal={cartTotal}
+                    cartCount={cartCount}
+                    onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
+                    onClearCart={clearCart}
+                    onEditItem={handleEditCartItem}
+                />
+            </ErrorBoundary>
+            <ErrorBoundary>
+                <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+            </ErrorBoundary>
             {selectedDish && (
                 <AddOnModal
                     isOpen={isAddOnOpen}

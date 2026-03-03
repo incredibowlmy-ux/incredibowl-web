@@ -3,6 +3,7 @@
 import React from 'react';
 import { Sparkles, LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag } from 'lucide-react';
 import { User } from 'firebase/auth';
+import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 interface AuthProfileViewProps {
     currentUser: User;
@@ -41,27 +42,40 @@ export default function AuthProfileView({
             </div>
 
             {/* Points Dashboard */}
-            <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 text-white">
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">我的积分</span>
-                    <Sparkles size={14} className="text-[#FF6B35]" />
-                </div>
-                <div className="text-3xl font-black mb-1">{profileData?.points || 0} <span className="text-sm font-bold opacity-50">分</span></div>
-                <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                    <div className="bg-[#FF6B35] h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(((profileData?.points || 0) / 100) * 100, 100)}%` }}></div>
-                </div>
-                <p className="text-[10px] opacity-60">累积 100 积分可兑换 RM10 优惠</p>
-                <div className="flex gap-4 mt-4 pt-3 border-t border-white/10">
-                    <div>
-                        <p className="text-lg font-black">{profileData?.totalOrders || 0}</p>
-                        <p className="text-[9px] opacity-50 uppercase">总订单</p>
-                    </div>
-                    <div>
-                        <p className="text-lg font-black">RM {(profileData?.totalSpent || 0).toFixed(0)}</p>
-                        <p className="text-[9px] opacity-50 uppercase">累计消费</p>
+            {profileData === null ? (
+                <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 space-y-3">
+                    <SkeletonBlock className="h-3 w-20 bg-white/20" />
+                    <SkeletonBlock className="h-8 w-28 bg-white/20" />
+                    <SkeletonBlock className="h-2 w-full bg-white/20" />
+                    <SkeletonBlock className="h-3 w-40 bg-white/20" />
+                    <div className="flex gap-4 pt-3 border-t border-white/10">
+                        <SkeletonBlock className="h-6 w-12 bg-white/20" />
+                        <SkeletonBlock className="h-6 w-16 bg-white/20" />
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 text-white">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">我的积分</span>
+                        <Sparkles size={14} className="text-[#FF6B35]" />
+                    </div>
+                    <div className="text-3xl font-black mb-1">{profileData?.points || 0} <span className="text-sm font-bold opacity-50">分</span></div>
+                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
+                        <div className="bg-[#FF6B35] h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(((profileData?.points || 0) / 100) * 100, 100)}%` }}></div>
+                    </div>
+                    <p className="text-[10px] opacity-60">累积 100 积分可兑换 RM10 优惠</p>
+                    <div className="flex gap-4 mt-4 pt-3 border-t border-white/10">
+                        <div>
+                            <p className="text-lg font-black">{profileData?.totalOrders || 0}</p>
+                            <p className="text-[9px] opacity-50 uppercase">总订单</p>
+                        </div>
+                        <div>
+                            <p className="text-lg font-black">RM {(profileData?.totalSpent || 0).toFixed(0)}</p>
+                            <p className="text-[9px] opacity-50 uppercase">累计消费</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Profile Info / Edit */}
             <div className="space-y-3">

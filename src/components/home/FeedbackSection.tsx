@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Plus, X } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
+import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 const SEED_FEEDBACKS = [
     { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，阿姨的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
@@ -12,13 +13,14 @@ const SEED_FEEDBACKS = [
 
 export default function FeedbackSection() {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackText, setFeedbackText] = useState('');
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
     useEffect(() => {
-        getApprovedFeedbacks().then(data => setFeedbacks(data));
+        getApprovedFeedbacks().then(data => { setFeedbacks(data); setLoading(false); });
     }, []);
 
     const handleFeedbackSubmit = async (e: React.FormEvent) => {
@@ -57,24 +59,40 @@ export default function FeedbackSection() {
                 </div>
 
                 <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {allMessages.map((msg, idx) => (
-                        <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-                            <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
-                                <p className="text-[#1A2D23] font-medium leading-relaxed italic text-sm">
-                                    "{msg.text}"
-                                </p>
-                                <div className="flex gap-2 justify-end mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                    {loading ? (
+                        Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
+                                <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4">
+                                    <SkeletonBlock className="h-4 w-full mb-2" />
+                                    <SkeletonBlock className="h-4 w-4/5 mb-2" />
+                                    <SkeletonBlock className="h-4 w-3/5" />
+                                </div>
+                                <div className="flex justify-end gap-2 mt-3 px-4">
+                                    <SkeletonBlock className="h-3 w-24" />
+                                    <SkeletonBlock className="h-3 w-12" />
                                 </div>
                             </div>
-                            <div className="text-right mt-3 text-xs text-[#1A2D23]/50 font-bold px-4 flex justify-end gap-2 items-center">
-                                <span>— {msg.name}</span>
-                                <span>{msg.time}</span>
+                        ))
+                    ) : (
+                        allMessages.map((msg, idx) => (
+                            <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
+                                <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
+                                    <p className="text-[#1A2D23] font-medium leading-relaxed italic text-sm">
+                                        "{msg.text}"
+                                    </p>
+                                    <div className="flex gap-2 justify-end mb-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                                    </div>
+                                </div>
+                                <div className="text-right mt-3 text-xs text-[#1A2D23]/50 font-bold px-4 flex justify-end gap-2 items-center">
+                                    <span>— {msg.name}</span>
+                                    <span>{msg.time}</span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
