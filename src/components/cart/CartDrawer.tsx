@@ -393,7 +393,7 @@ export default function CartDrawer({
                                 <textarea
                                     value={orderNote}
                                     onChange={(e) => setOrderNote(e.target.value)}
-                                    placeholder="例：少辣、不要葱…"
+                                    placeholder="例：放 Lobby、Block A、Block B、交给 Security Guard…"
                                     rows={2}
                                     className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none"
                                 />
