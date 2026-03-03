@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+// Lazy initialization: only create Razorpay instance at runtime, not at build time
+let razorpayInstance: Razorpay | null = null;
+
+function getRazorpay() {
+    if (!razorpayInstance) {
+        razorpayInstance = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID!,
+            key_secret: process.env.RAZORPAY_KEY_SECRET!,
+        });
+    }
+    return razorpayInstance;
+}
 
 export async function POST(request: NextRequest) {
     try {
+        const razorpay = getRazorpay();
         const body = await request.json();
         const { amount, currency = "MYR", receipt, notes } = body;
 
@@ -39,3 +48,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
