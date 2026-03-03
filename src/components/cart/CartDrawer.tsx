@@ -64,6 +64,50 @@ export default function CartDrawer({
     }, []);
 
     useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.body.appendChild(script);
+        return () => { document.body.removeChild(script); };
+    }, []);
+
+    const initiateRazorpayPayment = (amountMYR: number): Promise<{ razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }> => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await fetch('/api/payment/create-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount: Math.round(amountMYR * 100) }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || '创建支付订单失败');
+
+                const options = {
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                    amount: data.amount,
+                    currency: data.currency,
+                    order_id: data.orderId,
+                    name: 'Incredibowl',
+                    description: '餐点预订',
+                    handler: (response: any) => resolve(response),
+                    modal: { ondismiss: () => reject(new Error('已取消支付')) },
+                    prefill: {
+                        name: (userProfile?.displayName || currentUser?.displayName || ''),
+                        email: (currentUser?.email || ''),
+                        contact: (userProfile?.phone || ''),
+                    },
+                    theme: { color: '#FF6B35' },
+                };
+
+                const rzp = new (window as any).Razorpay(options);
+                rzp.open();
+            } catch (err) {
+                reject(err);
+            }
+        });
+    };
+
+    useEffect(() => {
         const fetchProfile = async () => {
             if (isOpen && currentUser) {
                 const profile = await getUserProfile(currentUser.uid);
@@ -124,6 +168,26 @@ export default function CartDrawer({
         if (paymentMethod === 'qr' && !receiptUploaded) {
             alert("请先上传付款截图！");
             return;
+        }
+
+        // FPX: initiate Razorpay checkout before submitting to Firestore
+        if (paymentMethod === 'fpx') {
+            try {
+                const paymentResult = await initiateRazorpayPayment(finalTotal);
+                const verifyRes = await fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(paymentResult),
+                });
+                const verifyData = await verifyRes.json();
+                if (!verifyData.verified) {
+                    alert('支付验证失败，请联系客服');
+                    return;
+                }
+            } catch (err: any) {
+                alert(err.message || '支付失败，请重试');
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -528,8 +592,9 @@ export default function CartDrawer({
                             )}
 
                             {paymentMethod === 'fpx' && (
-                                <div className="text-center py-3 animate-in fade-in duration-300">
-                                    <p className="text-xs text-gray-400">即将支持 FPX 在线支付</p>
+                                <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
+                                    <p className="text-xs text-[#FF6B35] font-bold">🔒 安全在线支付</p>
+                                    <p className="text-[11px] text-gray-500 mt-0.5">点击「确认下单」后将跳转至 Curlec 支付页面完成付款</p>
                                 </div>
                             )}
 
