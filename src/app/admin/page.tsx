@@ -340,7 +340,7 @@ export default function AdminPage() {
 
                                                             <div className="space-y-2">
                                                                 {lunch.map((o: any) => (
-                                                                    <div key={o.id} className="bg-[#FDFBF7] rounded-xl border border-gray-100 overflow-hidden">
+                                                                    <div key={o.id} className={`bg-[#FDFBF7] rounded-xl border overflow-hidden ${o.note || o.items?.some((it: any) => it.note) ? 'border-orange-300 ring-1 ring-orange-200' : 'border-gray-100'}`}>
                                                                         <button
                                                                             onClick={() => toggleOrderExp(o.id)}
                                                                             className="w-full flex items-center justify-between text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
@@ -349,7 +349,7 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
-                                                                                {o.note && <span className="text-[#FF6B35] shrink-0" aria-label={o.note}><FileText size={10} /></span>}
+                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-black shrink-0 animate-pulse">📝 有备注</span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
@@ -359,15 +359,25 @@ export default function AdminPage() {
                                                                         {expandedOrders[o.id] && (
                                                                             <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-white/50 text-[11px] space-y-1">
                                                                                 {o.items?.map((item: any, idx: number) => (
-                                                                                    <div key={idx} className="flex justify-between">
-                                                                                        <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
-                                                                                        <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                    <div key={idx}>
+                                                                                        <div className="flex justify-between">
+                                                                                            <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
+                                                                                            <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                        </div>
+                                                                                        {item.note && (
+                                                                                            <div className="ml-3 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[10px] text-yellow-800 font-bold">
+                                                                                                📝 {item.note}
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
                                                                                 ))}
                                                                                 {o.note && (
-                                                                                    <div className="flex items-start gap-1.5 pt-2 mt-1 border-t border-orange-100">
-                                                                                        <FileText size={10} className="text-[#FF6B35] shrink-0 mt-0.5" />
-                                                                                        <span className="font-bold text-[#FF6B35]">备注: {o.note}</span>
+                                                                                    <div className="mt-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+                                                                                        <span className="text-base">⚠️</span>
+                                                                                        <div>
+                                                                                            <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                                                            <p className="text-xs font-bold text-orange-700 mt-0.5">{o.note}</p>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -407,7 +417,7 @@ export default function AdminPage() {
 
                                                             <div className="space-y-2">
                                                                 {dinner.map((o: any) => (
-                                                                    <div key={o.id} className="bg-[#FDFBF7] rounded-xl border border-gray-100 overflow-hidden">
+                                                                    <div key={o.id} className={`bg-[#FDFBF7] rounded-xl border overflow-hidden ${o.note || o.items?.some((it: any) => it.note) ? 'border-orange-300 ring-1 ring-orange-200' : 'border-gray-100'}`}>
                                                                         <button
                                                                             onClick={() => toggleOrderExp(o.id)}
                                                                             className="w-full flex items-center justify-between text-sm px-4 py-2.5 hover:bg-gray-50 transition-colors"
@@ -416,7 +426,7 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
-                                                                                {o.note && <span className="text-[#FF6B35] shrink-0" aria-label={o.note}><FileText size={10} /></span>}
+                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-black shrink-0 animate-pulse">📝 有备注</span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
@@ -426,15 +436,25 @@ export default function AdminPage() {
                                                                         {expandedOrders[o.id] && (
                                                                             <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-white/50 text-[11px] space-y-1">
                                                                                 {o.items?.map((item: any, idx: number) => (
-                                                                                    <div key={idx} className="flex justify-between">
-                                                                                        <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
-                                                                                        <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                    <div key={idx}>
+                                                                                        <div className="flex justify-between">
+                                                                                            <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
+                                                                                            <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                                                        </div>
+                                                                                        {item.note && (
+                                                                                            <div className="ml-3 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[10px] text-yellow-800 font-bold">
+                                                                                                📝 {item.note}
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
                                                                                 ))}
                                                                                 {o.note && (
-                                                                                    <div className="flex items-start gap-1.5 pt-2 mt-1 border-t border-orange-100">
-                                                                                        <FileText size={10} className="text-[#FF6B35] shrink-0 mt-0.5" />
-                                                                                        <span className="font-bold text-[#FF6B35]">备注: {o.note}</span>
+                                                                                    <div className="mt-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+                                                                                        <span className="text-base">⚠️</span>
+                                                                                        <div>
+                                                                                            <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                                                            <p className="text-xs font-bold text-orange-700 mt-0.5">{o.note}</p>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -559,9 +579,16 @@ export default function AdminPage() {
                                             {/* Items */}
                                             <div className="bg-[#F5F3EF] rounded-xl p-3 space-y-1">
                                                 {order.items?.map((item: any, i: number) => (
-                                                    <div key={i} className="flex justify-between text-sm">
-                                                        <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
-                                                        <span className="font-bold">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                    <div key={i}>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
+                                                            <span className="font-bold">RM {(item.price * item.quantity).toFixed(2)}</span>
+                                                        </div>
+                                                        {item.note && (
+                                                            <div className="ml-2 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[11px] text-yellow-800 font-bold">
+                                                                📝 {item.note}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -572,9 +599,12 @@ export default function AdminPage() {
                                                 <span>{order.userAddress}</span>
                                             </div>
                                             {order.note && (
-                                                <div className="flex items-start gap-2 text-xs text-[#FF6B35]">
-                                                    <FileText size={12} className="shrink-0 mt-0.5" />
-                                                    <span className="font-bold">备注: {order.note}</span>
+                                                <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+                                                    <span className="text-base">⚠️</span>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                        <p className="text-sm font-bold text-orange-700 mt-0.5">{order.note}</p>
+                                                    </div>
                                                 </div>
                                             )}
 

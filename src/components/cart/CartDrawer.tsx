@@ -175,6 +175,7 @@ export default function CartDrawer({
                         price: bundle.dish.price,
                         quantity: bundle.dishQty * bundle.quantity,
                         image: bundle.dish.image || '',
+                        ...(bundle.note ? { note: bundle.note } : {}),
                     });
                     if (bundle.addOns) {
                         bundle.addOns.forEach((a: any) => {
