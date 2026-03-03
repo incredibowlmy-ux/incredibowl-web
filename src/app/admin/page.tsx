@@ -149,6 +149,17 @@ export default function AdminPage() {
     const todayRevenue = orders.filter(o => o.deliveryDate === todayStr && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
     const todayCustomersCount = new Set(orders.filter(o => o.deliveryDate === todayStr).map(o => o.userId)).size;
 
+    // Aggregate stats for next 7 days (including today)
+    const next7Days: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        next7Days.push(formatDateStr(d));
+    }
+    const upcomingOrdersCount = orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').length;
+    const upcomingRevenue = orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+    const upcomingCustomersCount = new Set(orders.filter(o => next7Days.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
+
     // Build upcoming days (tomorrow + next 6 days = 7 days total)
     const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
     const dayLabels = ['明天', '后天', '大后天'];
@@ -216,16 +227,16 @@ export default function AdminPage() {
                         <p className="text-3xl font-black text-yellow-600">{pendingCount}</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">明日订单</p>
-                        <p className="text-3xl font-black text-blue-600">{tomorrowOrders.length}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日订单</p>
+                        <p className="text-3xl font-black text-blue-600">{upcomingOrdersCount}</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">今日收入</p>
-                        <p className="text-3xl font-black text-green-600">RM {todayRevenue.toFixed(0)}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日预计收入</p>
+                        <p className="text-3xl font-black text-green-600">RM {upcomingRevenue.toFixed(0)}</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">今日客户</p>
-                        <p className="text-3xl font-black text-[#FF6B35]">{todayCustomersCount}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">未来7日总客户</p>
+                        <p className="text-3xl font-black text-[#FF6B35]">{upcomingCustomersCount}</p>
                     </div>
                 </div>
 
