@@ -349,6 +349,7 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
+                                                                                {o.note && <span className="text-[#FF6B35] shrink-0" aria-label={o.note}><FileText size={10} /></span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
@@ -363,6 +364,12 @@ export default function AdminPage() {
                                                                                         <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                                                     </div>
                                                                                 ))}
+                                                                                {o.note && (
+                                                                                    <div className="flex items-start gap-1.5 pt-2 mt-1 border-t border-orange-100">
+                                                                                        <FileText size={10} className="text-[#FF6B35] shrink-0 mt-0.5" />
+                                                                                        <span className="font-bold text-[#FF6B35]">备注: {o.note}</span>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
@@ -409,6 +416,7 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
+                                                                                {o.note && <span className="text-[#FF6B35] shrink-0" aria-label={o.note}><FileText size={10} /></span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
@@ -423,6 +431,12 @@ export default function AdminPage() {
                                                                                         <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                                                     </div>
                                                                                 ))}
+                                                                                {o.note && (
+                                                                                    <div className="flex items-start gap-1.5 pt-2 mt-1 border-t border-orange-100">
+                                                                                        <FileText size={10} className="text-[#FF6B35] shrink-0 mt-0.5" />
+                                                                                        <span className="font-bold text-[#FF6B35]">备注: {o.note}</span>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         )}
                                                                     </div>
