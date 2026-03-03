@@ -290,9 +290,20 @@ export default function CartDrawer({
                     {/* Cart Items */}
                     <div className="flex-1 p-6 space-y-4">
                         {cart.length === 0 ? (
-                            <div className="text-center py-20 opacity-20 text-[#1A2D23]">
-                                <Utensils className="w-16 h-16 mx-auto mb-4" />
-                                <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
+                            <div className="text-center py-20 text-[#1A2D23]">
+                                <div className="opacity-20 mb-6">
+                                    <Utensils className="w-16 h-16 mx-auto mb-4" />
+                                    <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        onClose();
+                                        setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
+                                    }}
+                                    className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-black rounded-xl hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20"
+                                >
+                                    去点菜 →
+                                </button>
                             </div>
                         ) : (
                             <>
@@ -302,9 +313,9 @@ export default function CartDrawer({
                                     onClose();
                                     setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300);
                                 }}
-                                className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg text-[#FF6B35]/70 text-[11px] font-semibold hover:text-[#FF6B35] transition-colors"
+                                className="flex items-center justify-end gap-1.5 w-full py-1.5 text-[#FF6B35] text-xs font-black hover:text-[#E95D31] transition-colors"
                             >
-                                <Plus size={12} strokeWidth={2.5} />
+                                <Plus size={13} strokeWidth={2.5} />
                                 <span>继续添加别的菜</span>
                             </button>
 
@@ -343,7 +354,7 @@ export default function CartDrawer({
                                                     <div className="flex flex-col">
                                                         <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
                                                             {item.dish.name}
-                                                            {item.dishQty > 1 && <span className="ml-2 text-[10px] bg-[#1A2D23]/5 text-[#1A2D23] px-1.5 py-0.5 rounded font-bold inline-block relative -top-0.5">x{item.dishQty}</span>}
+                                                            {item.dishQty > 1 && <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-black inline-block relative -top-0.5">x{item.dishQty}</span>}
                                                         </h4>
                                                         {(item.addOns?.length > 0 || item.note) && (
                                                             <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex flex-wrap gap-x-2">
@@ -359,9 +370,9 @@ export default function CartDrawer({
                                                 </button>
                                             </div>
 
-                                            {/* Action Row: Edit */}
+                                            {/* Action Row: Edit — bottom right */}
                                             {onEditItem && (
-                                                <div className="mt-2.5 px-1 relative z-20">
+                                                <div className="mt-2.5 flex justify-end px-1 relative z-20">
                                                     <button onClick={() => onEditItem(item)} className="px-3 py-1 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
                                                         Edit
                                                     </button>
