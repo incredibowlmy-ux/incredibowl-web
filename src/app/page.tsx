@@ -360,7 +360,7 @@ export default function V4BentoLayout() {
     };
 
     const cartTotal = cart.reduce((sum, item: any) => sum + item.price * item.quantity, 0);
-    const cartCount = cart.reduce((sum, item: any) => sum + item.quantity, 0);
+    const cartCount = cart.length;
 
     const handleFeedbackSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
