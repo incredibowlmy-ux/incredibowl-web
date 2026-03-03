@@ -31,6 +31,7 @@ export default function AdminPage() {
     const [statsDate, setStatsDate] = useState<string>('7days'); // '7days' or specific date string
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+    const [customerSort, setCustomerSort] = useState<'points' | 'spent' | 'orders'>('points');
 
     const toggleSection = (id: string) => {
         setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -129,12 +130,30 @@ export default function AdminPage() {
         );
     }
 
-    // Filter orders
-    const filteredOrders = orders.filter(order => {
-        if (filterStatus !== 'all' && order.status !== filterStatus) return false;
-        if (filterDate && order.deliveryDate !== filterDate) return false;
-        return true;
+    // Derived counts
+    const pendingFeedbackCount = feedbacks.filter(f => f.status === 'PENDING').length;
+
+    // Sorted customers
+    const sortedCustomers = [...customers].sort((a, b) => {
+        if (customerSort === 'points') return (b.points || 0) - (a.points || 0);
+        if (customerSort === 'spent') return (b.totalSpent || 0) - (a.totalSpent || 0);
+        return (b.totalOrders || 0) - (a.totalOrders || 0);
     });
+
+    // Filter + sort orders: pending first, then newest first
+    const filteredOrders = orders
+        .filter(order => {
+            if (filterStatus !== 'all' && order.status !== filterStatus) return false;
+            if (filterDate && order.deliveryDate !== filterDate) return false;
+            return true;
+        })
+        .sort((a, b) => {
+            if (a.status === 'pending' && b.status !== 'pending') return -1;
+            if (b.status === 'pending' && a.status !== 'pending') return 1;
+            const aTime = a.createdAt?.seconds ?? 0;
+            const bTime = b.createdAt?.seconds ?? 0;
+            return bTime - aTime;
+        });
 
     // Helper: format date string
     const formatDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -167,16 +186,16 @@ export default function AdminPage() {
     const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
-    // Build upcoming days (tomorrow + next 6 days = 7 days total)
+    // Build upcoming days (today + next 7 days)
     const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
-    const dayLabels = ['明天', '后天', '大后天'];
-    for (let i = 1; i <= 7; i++) {
+    const dayLabels = ['今天', '明天', '后天', '大后天'];
+    for (let i = 0; i <= 7; i++) {
         const d = new Date();
         d.setDate(d.getDate() + i);
         const dateStr = formatDateStr(d);
         const dayOrders = orders.filter(o => o.deliveryDate === dateStr && o.status !== 'cancelled');
         if (dayOrders.length > 0) {
-            const label = i <= 3 ? `${dayLabels[i - 1]} (${dateStr})` : dateStr;
+            const label = i <= 3 ? `${dayLabels[i]} (${dateStr})` : dateStr;
             upcomingDays.push({ dateStr, label, orders: dayOrders });
         }
     }
@@ -494,6 +513,9 @@ export default function AdminPage() {
                         className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'feedbacks' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         <MessageCircle size={16} /> 留言审批 ({feedbacks.length})
+                        {pendingFeedbackCount > 0 && (
+                            <span className="px-1.5 py-0.5 bg-yellow-400 text-white text-[10px] font-black rounded-full leading-none">{pendingFeedbackCount}</span>
+                        )}
                     </button>
                 </div>
 
@@ -528,6 +550,12 @@ export default function AdminPage() {
                                     {status === 'all' ? '全部' : STATUS_CONFIG[status as OrderStatus]?.labelCn || status}
                                 </button>
                             ))}
+                            <button
+                                onClick={() => setFilterDate(filterDate === todayStr ? '' : todayStr)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${filterDate === todayStr ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}
+                            >
+                                📅 今天
+                            </button>
                             <input
                                 type="date"
                                 value={filterDate}
@@ -567,7 +595,7 @@ export default function AdminPage() {
                                                     </div>
                                                     <p className="font-black text-[#1A2D23]">{order.userName}</p>
                                                     <div className="flex items-center gap-3 text-xs text-gray-400 mt-1 flex-wrap">
-                                                        <span className="flex items-center gap-1"><Phone size={10} /> {order.userPhone}</span>
+                                                        <a href={`tel:${order.userPhone}`} className="flex items-center gap-1 hover:text-[#FF6B35] transition-colors"><Phone size={10} /> {order.userPhone}</a>
                                                         <span>📅 {order.deliveryDate}</span>
                                                         <span>⏰ {order.deliveryTime?.split('(')[0]?.trim()}</span>
                                                         <span className="text-gray-300">🕐 下单: {formatCreatedAt(order)}</span>
@@ -666,24 +694,42 @@ export default function AdminPage() {
                 {/* Customers Tab */}
                 {activeTab === 'customers' && (
                     <div className="space-y-3">
+                        {/* Sort Controls */}
+                        <div className="flex gap-2 items-center">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">排序:</span>
+                            {([
+                                { key: 'points', label: '积分' },
+                                { key: 'spent', label: '消费' },
+                                { key: 'orders', label: '订单数' },
+                            ] as { key: 'points' | 'spent' | 'orders'; label: string }[]).map(({ key, label }) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setCustomerSort(key)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${customerSort === key ? 'bg-[#FF6B35] text-white' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
                         {loading ? (
                             <div className="text-center py-20">
                                 <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full mx-auto"></div>
                             </div>
-                        ) : customers.length === 0 ? (
+                        ) : sortedCustomers.length === 0 ? (
                             <div className="text-center py-20 text-gray-400">
                                 <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
                                 <p className="font-bold">暂无客户</p>
                             </div>
                         ) : (
-                            customers.map((user: any) => (
+                            sortedCustomers.map((user: any) => (
                                 <div key={user.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                                     <div className="flex items-start justify-between">
                                         <div>
                                             <p className="font-black text-[#1A2D23]">{user.displayName || 'Guest'}</p>
                                             <p className="text-xs text-gray-400">{user.email}</p>
                                             <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                                                {user.phone && <span className="flex items-center gap-1"><Phone size={10} /> {user.phone}</span>}
+                                                {user.phone && <a href={`tel:${user.phone}`} className="flex items-center gap-1 hover:text-[#FF6B35] transition-colors"><Phone size={10} /> {user.phone}</a>}
                                                 {user.address && <span className="flex items-center gap-1"><MapPin size={10} /> {user.address}</span>}
                                             </div>
                                         </div>
