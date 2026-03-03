@@ -5,12 +5,13 @@ import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { getAllOrders, updateOrderStatus, getAllUsers, OrderStatus } from '@/lib/orders';
 import { getAllFeedbacks, updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
-import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2 } from 'lucide-react';
+import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
+import { AdminOrder, AppUser } from '@/types';
 
 const ADMIN_EMAILS = ['incredibowl.my@gmail.com']; // Add your email here
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color: string; icon: any }> = {
+const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color: string; icon: LucideIcon }> = {
     pending: { label: 'Pending', labelCn: '待确认', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
     confirmed: { label: 'Confirmed', labelCn: '已确认', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle },
     preparing: { label: 'Preparing', labelCn: '准备中', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: ChefHat },
@@ -22,8 +23,8 @@ export default function AdminPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
     const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'feedbacks'>('orders');
-    const [orders, setOrders] = useState<any[]>([]);
-    const [customers, setCustomers] = useState<any[]>([]);
+    const [orders, setOrders] = useState<AdminOrder[]>([]);
+    const [customers, setCustomers] = useState<AppUser[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -63,8 +64,8 @@ export default function AdminPage() {
                 getAllUsers(),
                 getAllFeedbacks(),
             ]);
-            setOrders(ordersData);
-            setCustomers(usersData);
+            setOrders(ordersData as AdminOrder[]);
+            setCustomers(usersData as AppUser[]);
             setFeedbacks(feedbacksData);
         } catch (error) {
             console.error('Failed to load data:', error);
@@ -72,7 +73,7 @@ export default function AdminPage() {
         setLoading(false);
     };
 
-    const handleStatusChange = async (order: any, newStatus: OrderStatus) => {
+    const handleStatusChange = async (order: AdminOrder, newStatus: OrderStatus) => {
         try {
             await updateOrderStatus(order.id, newStatus, order);
             setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
@@ -183,11 +184,11 @@ export default function AdminPage() {
     const displayLabel = statsDaysList.find(d => d.date === statsDate)?.label || '数据';
 
     const upcomingOrdersCount = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').length;
-    const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
+    const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + (o.total || 0), 0);
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
     // Build upcoming days (today + next 7 days)
-    const upcomingDays: { dateStr: string; label: string; orders: any[] }[] = [];
+    const upcomingDays: { dateStr: string; label: string; orders: AdminOrder[] }[] = [];
     const dayLabels = ['今天', '明天', '后天', '大后天'];
     for (let i = 0; i <= 7; i++) {
         const d = new Date();
@@ -201,21 +202,21 @@ export default function AdminPage() {
     }
 
     // Helper: split orders into lunch and dinner
-    const splitMealTime = (dayOrders: any[]) => {
+    const splitMealTime = (dayOrders: AdminOrder[]) => {
         const lunch = dayOrders.filter(o => !o.deliveryTime || o.deliveryTime.toLowerCase().includes('lunch') || o.deliveryTime.includes('午'));
         const dinner = dayOrders.filter(o => o.deliveryTime && (o.deliveryTime.toLowerCase().includes('dinner') || o.deliveryTime.includes('晚')));
         return { lunch, dinner };
     };
 
     // Helper: format order creation time
-    const formatCreatedAt = (order: any) => {
+    const formatCreatedAt = (order: AdminOrder) => {
         if (!order.createdAt) return '—';
-        const ts = order.createdAt.seconds ? new Date(order.createdAt.seconds * 1000) : new Date(order.createdAt);
+        const ts = new Date(order.createdAt.seconds * 1000);
         return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
     // Helper: calculate summary of all dishes in a day's meal
-    const getPrepSummary = (mealOrders: any[]) => {
+    const getPrepSummary = (mealOrders: AdminOrder[]) => {
         const counts: Record<string, number> = {};
         mealOrders.forEach(o => {
             o.items?.forEach((item: any) => {
