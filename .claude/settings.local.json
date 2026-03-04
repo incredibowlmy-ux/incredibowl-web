@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npx eslint src/components/cart/CartDrawer.tsx)",
+      "Bash(git add src/components/cart/CartDrawer.tsx)",
+      "Bash(git commit:*)",
+      "Bash(git push origin main)",
+      "Bash(npx eslint src/components/menu/AddOnModal.tsx)",
+      "Bash(git add src/components/menu/AddOnModal.tsx)",
+      "Bash(git add src/app/page.tsx)",
+      "Bash(npm run build)",
+      "Bash(git add src/app/admin/page.tsx)",
+      "Bash(git push)",
+      "Bash(git add src/app/page.tsx src/data/weeklyMenu.ts src/components/home/)",
+      "Bash(grep -v \"//\")",
+      "Bash(git add src/types/index.ts src/app/admin/page.tsx src/app/page.tsx)",
+      "Bash(git fetch origin)",
+      "Bash(git add src/store/cartStore.ts src/app/page.tsx)",
+      "Bash(git add src/components/auth/AuthModal.tsx src/components/cart/CartDrawer.tsx)",
+      "Bash(git add src/lib/dateUtils.ts src/lib/cartUtils.ts src/app/page.tsx src/app/admin/page.tsx src/components/auth/AuthModal.tsx src/components/cart/CartDrawer.tsx src/app/checkout/page.tsx src/components/home/MenuCarousel.tsx)",
+      "Bash(git add src/components/auth/ src/components/cart/)",
+      "Bash(git add src/components/ui/ErrorBoundary.tsx src/components/ui/SkeletonBlock.tsx src/components/home/MenuCarousel.tsx src/components/home/FeedbackSection.tsx src/components/auth/AuthProfileView.tsx src/app/page.tsx)",
+      "Bash(git checkout HEAD -- src/components/cart/CartDrawer.tsx)",
+      "Bash(git add src/components/cart/CartDrawer.tsx src/app/api/payment/fpx-callback/route.ts src/app/page.tsx)",
+      "Bash(git add src/app/api/payment/fpx-callback/route.ts)",
+      "Bash(git add src/lib/orders.ts src/components/cart/CartDrawer.tsx src/app/page.tsx src/app/api/payment/fpx-callback/route.ts)"
+    ]
+  }
+}

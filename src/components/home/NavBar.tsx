@@ -41,9 +41,9 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                         <>
                             {/* Mobile: avatar only */}
                             <a href="/member" className="md:hidden">
-                                <div className="w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm border-2 border-[#E3EADA] shadow-sm overflow-hidden">
+                                <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm border-2 border-[#E3EADA] shadow-sm overflow-hidden">
                                     {currentUser.photoURL ? (
-                                        <img src={currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                                        <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
                                     ) : (
                                         (currentUser.displayName || 'U')[0].toUpperCase()
                                     )}
@@ -51,9 +51,9 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                             </a>
                             {/* Desktop: avatar + name */}
                             <a href="/member" className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
-                                <div className="w-7 h-7 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-bold text-xs overflow-hidden">
+                                <div className="relative w-7 h-7 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-bold text-xs overflow-hidden">
                                     {currentUser.photoURL ? (
-                                        <img src={currentUser.photoURL} alt="" className="w-full h-full object-cover" />
+                                        <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
                                     ) : (
                                         (currentUser.displayName || 'U')[0].toUpperCase()
                                     )}

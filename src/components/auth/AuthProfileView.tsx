@@ -3,6 +3,7 @@
 import React from 'react';
 import { Sparkles, LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag } from 'lucide-react';
 import { User } from 'firebase/auth';
+import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 interface AuthProfileViewProps {
@@ -30,9 +31,9 @@ export default function AuthProfileView({
         <div className="p-6 space-y-5">
             {/* Avatar + name */}
             <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full bg-[#E3EADA] flex items-center justify-center overflow-hidden border-2 border-[#E3EADA]">
+                <div className="relative w-16 h-16 mx-auto rounded-full bg-[#E3EADA] flex items-center justify-center overflow-hidden border-2 border-[#E3EADA]">
                     {currentUser.photoURL ? (
-                        <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                        <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
                     ) : (
                         <UserIcon size={28} className="text-[#1A2D23]" />
                     )}

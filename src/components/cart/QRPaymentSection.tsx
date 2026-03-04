@@ -26,7 +26,9 @@ export default function QRPaymentSection({ receiptUploaded, receiptUrl, uploadin
 
             {receiptUploaded && receiptUrl ? (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-2">
-                    <img src={receiptUrl} alt="Receipt" className="w-12 h-12 rounded-lg object-cover border border-green-200" />
+                    <div className="relative w-12 h-12">
+                        <Image src={receiptUrl} alt="Receipt" fill unoptimized className="rounded-lg object-cover border border-green-200" />
+                    </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-green-700 flex items-center gap-1"><CheckCircle size={12} /> 凭证已上传</p>
                         <p className="text-[10px] text-green-600/60 truncate">点击重新上传</p>
