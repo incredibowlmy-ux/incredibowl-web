@@ -80,7 +80,13 @@ export default function CartDrawer({
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
                     name: 'Incredibowl', description: '餐点预订',
                     handler: (response: any) => { resolved = true; resolve(response); },
-                    modal: { ondismiss: () => { if (!resolved) reject(new Error('已取消支付')); } },
+                    modal: {
+                        ondismiss: () => {
+                            // Razorpay test mode may fire ondismiss BEFORE handler.
+                            // Wait 1.5 s to give handler a chance to settle first.
+                            setTimeout(() => { if (!resolved) reject(new Error('已取消支付')); }, 1500);
+                        },
+                    },
                     prefill: {
                         name: (userProfile?.displayName || currentUser?.displayName || ''),
                         email: (currentUser?.email || ''),
@@ -213,9 +219,13 @@ export default function CartDrawer({
                 setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
-                // User dismissed modal or payment failed. Pending orders remain in Firestore
-                // and will be confirmed by page.tsx if FPX redirect returns with payment params.
-                if (err.message !== '已取消支付') alert(err.message || '支付失败，请重试');
+                if (err.message === '已取消支付') {
+                    // User genuinely dismissed — cancel orphan pending orders.
+                    await Promise.all(orderIds.map(id => updateOrderStatus(id, 'cancelled'))).catch(() => {});
+                    sessionStorage.removeItem('fpx_pending_order');
+                } else {
+                    alert(err.message || '支付失败，请重试');
+                }
             }
             setSubmitting(false);
             return;
