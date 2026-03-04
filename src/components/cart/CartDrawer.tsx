@@ -74,13 +74,13 @@ export default function CartDrawer({
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '创建支付订单失败');
+                let resolved = false;
                 const options = {
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
                     name: 'Incredibowl', description: '餐点预订',
-                    handler: (response: any) => resolve(response),
-                    callback_url: `${window.location.origin}/api/payment/fpx-callback`,
-                    modal: { ondismiss: () => reject(new Error('已取消支付')) },
+                    handler: (response: any) => { resolved = true; resolve(response); },
+                    modal: { ondismiss: () => { if (!resolved) reject(new Error('已取消支付')); } },
                     prefill: {
                         name: (userProfile?.displayName || currentUser?.displayName || ''),
                         email: (currentUser?.email || ''),
