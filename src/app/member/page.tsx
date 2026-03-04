@@ -167,7 +167,8 @@ export default function MemberPage() {
                 <div className="absolute bottom-40 -right-20 w-96 h-96 bg-[#1A2D23]/5 rounded-full blur-[120px]" />
             </div>
             <style jsx global>{`
-                body { font-family: var(--font-plus-jakarta), var(--font-noto-sans-sc), sans-serif; }
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+                body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
             `}</style>
 
             {/* Header */}

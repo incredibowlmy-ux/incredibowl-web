@@ -40,8 +40,9 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-[#F7F9F9] font-sans text-[#2D3142] flex flex-col items-center justify-center p-6">
             <style jsx global>{`
-                h1, h2, h3 { font-family: var(--font-outfit), sans-serif; }
-                body { font-family: var(--font-inter), sans-serif; }
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700;900&display=swap');
+                h1, h2, h3 { font-family: 'Outfit', sans-serif; }
+                body { font-family: 'Inter', sans-serif; }
             `}</style>
 
             <Link href="/" className="flex items-center gap-4 mb-12 hover:scale-105 transition-transform group">

@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700;900&family=Quicksand:wght@300;500;700&family=Fredoka+One&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -34,7 +35,7 @@
   --color-incredibowl-text: var(--foreground);
   --color-twine: var(--twine);
 
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
