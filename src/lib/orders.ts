@@ -82,8 +82,14 @@ export const getOrdersByDate = async (date: string) => {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Update order status and AWARD POINTS if confirmed
-export const updateOrderStatus = async (orderId: string, status: OrderStatus, orderData?: any) => {
+// Update order status and AWARD POINTS if confirmed.
+// paymentData: optional Razorpay fields to persist on the order document.
+export const updateOrderStatus = async (
+    orderId: string,
+    status: OrderStatus,
+    orderData?: any,
+    paymentData?: { razorpayPaymentId?: string; razorpayOrderId?: string; razorpaySignature?: string }
+) => {
     const orderRef = doc(db, "orders", orderId);
 
     // If status is changing to 'confirmed', award points now!
@@ -119,10 +125,11 @@ export const updateOrderStatus = async (orderId: string, status: OrderStatus, or
         }
     }
 
-    await updateDoc(orderRef, {
-        status,
-        updatedAt: serverTimestamp(),
-    });
+    const updateFields: Record<string, any> = { status, updatedAt: serverTimestamp() };
+    if (paymentData?.razorpayPaymentId) updateFields.razorpayPaymentId = paymentData.razorpayPaymentId;
+    if (paymentData?.razorpayOrderId) updateFields.razorpayOrderId = paymentData.razorpayOrderId;
+    if (paymentData?.razorpaySignature) updateFields.razorpaySignature = paymentData.razorpaySignature;
+    await updateDoc(orderRef, updateFields);
 };
 
 // Get all users (for admin)

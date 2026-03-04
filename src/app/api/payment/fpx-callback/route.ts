@@ -30,6 +30,7 @@ function verifyAndRedirect(
     dest.searchParams.set("fpx_ok", "1");
     dest.searchParams.set("fpx_pid", razorpay_payment_id);
     dest.searchParams.set("fpx_oid", razorpay_order_id);
+    dest.searchParams.set("fpx_sig", razorpay_signature);
     return NextResponse.redirect(dest.toString());
 }
 

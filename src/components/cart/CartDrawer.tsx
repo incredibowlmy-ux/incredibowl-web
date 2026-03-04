@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, X, Plus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
-import { submitOrder } from '@/lib/orders';
+import { submitOrder, updateOrderStatus } from '@/lib/orders';
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import CartSuccess from './CartSuccess';
@@ -153,7 +153,7 @@ export default function CartDrawer({
                 deliveryDate: group.date, deliveryTime: group.time,
                 paymentMethod: paymentMethod as 'qr' | 'fpx',
                 receiptUploaded, receiptUrl,
-                status: paymentMethod === 'fpx' ? 'confirmed' as const : 'pending' as const,
+                status: 'pending' as const,
                 note: orderNote, isMultiPart,
                 partIndex: isMultiPart ? index + 1 : undefined,
                 totalParts: isMultiPart ? groups.length : undefined,
@@ -175,34 +175,47 @@ export default function CartDrawer({
         if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
 
         if (paymentMethod === 'fpx') {
-            // Pre-build payloads and save to sessionStorage BEFORE opening Razorpay.
-            // FPX online banking triggers a full-page redirect; if that happens the
-            // handler will never fire and React state is lost. The saved payload is
-            // recovered by page.tsx after the bank redirects back via /api/payment/fpx-callback.
+            // Step 1: Write all orders to Firestore as 'pending' BEFORE opening payment.
+            // This ensures orders exist even if the page navigates away (FPX full-page redirect).
+            setSubmitting(true);
             const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
-            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ payloads, isMultiPart, groupId }));
+            let orderIds: string[] = [];
+            try {
+                orderIds = await Promise.all(payloads.map((p: any) => submitOrder(p)));
+            } catch (err: any) {
+                alert('建立订单失败，请重试');
+                setSubmitting(false);
+                return;
+            }
+            // Step 2: Save {orderIds, payloads} for FPX redirect recovery in page.tsx.
+            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads }));
+            setSubmitting(false);
+
             try {
                 const paymentResult = await initiateRazorpayPayment(finalTotal);
-                // handler fired → card / e-wallet completed inline (no page redirect)
+                // handler fired → inline payment completed (card / e-wallet via Razorpay modal).
+                // FPX full-page redirect never reaches here; page.tsx handles that path instead.
                 const verifyRes = await fetch('/api/payment/verify', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); sessionStorage.removeItem('fpx_pending_order'); return; }
+                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); return; }
                 setSubmitting(true);
-                const orderIds = await Promise.all(payloads.map((p: any) => submitOrder({
-                    ...p, razorpayPaymentId: paymentResult.razorpay_payment_id,
-                    razorpayOrderId: paymentResult.razorpay_order_id, razorpaySignature: paymentResult.razorpay_signature,
-                })));
+                const payData = {
+                    razorpayPaymentId: paymentResult.razorpay_payment_id,
+                    razorpayOrderId: paymentResult.razorpay_order_id,
+                    razorpaySignature: paymentResult.razorpay_signature,
+                };
+                // Step 3: Confirm all pending orders.
+                await Promise.all(orderIds.map((id, i) => updateOrderStatus(id, 'confirmed', payloads[i], payData)));
                 sessionStorage.removeItem('fpx_pending_order');
                 setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
-                // '已取消支付' = user dismissed modal; safe to clear saved payload.
-                // Any other error (including silent redirect) = keep it for callback recovery.
-                if (err.message === '已取消支付') sessionStorage.removeItem('fpx_pending_order');
-                alert(err.message || '支付失败，请重试');
+                // User dismissed modal or payment failed. Pending orders remain in Firestore
+                // and will be confirmed by page.tsx if FPX redirect returns with payment params.
+                if (err.message !== '已取消支付') alert(err.message || '支付失败，请重试');
             }
             setSubmitting(false);
             return;
