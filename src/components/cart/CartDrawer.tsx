@@ -79,6 +79,7 @@ export default function CartDrawer({
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
                     name: 'Incredibowl', description: '餐点预订',
                     handler: (response: any) => resolve(response),
+                    callback_url: `${window.location.origin}/api/payment/fpx-callback`,
                     modal: { ondismiss: () => reject(new Error('已取消支付')) },
                     prefill: {
                         name: (userProfile?.displayName || currentUser?.displayName || ''),
@@ -117,6 +118,51 @@ export default function CartDrawer({
         setUploading(false);
     };
 
+    const buildGroupedPayloads = () => {
+        const grouped = cart.reduce((acc: any, item: any) => {
+            const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
+            if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [], subtotal: 0 };
+            acc[key].items.push(item);
+            acc[key].subtotal += (item.price * item.quantity);
+            return acc;
+        }, {});
+        const groups = Object.values(grouped) as any[];
+        const isMultiPart = groups.length > 1;
+        const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
+        let remainingPromo = promoDiscount;
+        const payloads = groups.map((group: any, index: number) => {
+            let currentPromo = 0;
+            if (promoApplied && promoDiscount > 0) {
+                if (index === groups.length - 1) { currentPromo = Number(remainingPromo.toFixed(2)); }
+                else { currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2)); remainingPromo -= currentPromo; }
+            }
+            const currentFinal = Math.max(0, group.subtotal - currentPromo);
+            return {
+                userId: currentUser!.uid,
+                userName: currentUser!.displayName || userProfile?.displayName || 'Guest',
+                userEmail: currentUser!.email || '',
+                userPhone: userProfile!.phone, userAddress: userProfile!.address,
+                items: group.items.flatMap((bundle: any) => {
+                    const arr: any[] = [{ name: bundle.dish.name, nameEn: bundle.dish.nameEn || '', price: bundle.dish.price, quantity: bundle.dishQty * bundle.quantity, image: bundle.dish.image || '' }];
+                    if (bundle.addOns) bundle.addOns.forEach((a: any) => arr.push({ name: `↳ ${a.item.name}`, nameEn: a.item.nameEn || '', price: a.item.price, quantity: a.quantity * bundle.quantity, image: a.item.image || '' }));
+                    return arr;
+                }),
+                total: currentFinal, originalTotal: group.subtotal,
+                promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
+                promoDiscount: currentPromo,
+                deliveryDate: group.date, deliveryTime: group.time,
+                paymentMethod: paymentMethod as 'qr' | 'fpx',
+                receiptUploaded, receiptUrl,
+                status: paymentMethod === 'fpx' ? 'confirmed' as const : 'pending' as const,
+                note: orderNote, isMultiPart,
+                partIndex: isMultiPart ? index + 1 : undefined,
+                totalParts: isMultiPart ? groups.length : undefined,
+                groupId: isMultiPart ? groupId : undefined,
+            };
+        });
+        return { payloads, isMultiPart, groupId };
+    };
+
     const handleCheckout = async () => {
         if (!currentUser) { onAuthOpen(); return; }
         if (!userProfile?.phone || !userProfile?.address) { onAuthOpen(); return; }
@@ -129,69 +175,46 @@ export default function CartDrawer({
         if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
 
         if (paymentMethod === 'fpx') {
+            // Pre-build payloads and save to sessionStorage BEFORE opening Razorpay.
+            // FPX online banking triggers a full-page redirect; if that happens the
+            // handler will never fire and React state is lost. The saved payload is
+            // recovered by page.tsx after the bank redirects back via /api/payment/fpx-callback.
+            const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
+            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ payloads, isMultiPart, groupId }));
             try {
                 const paymentResult = await initiateRazorpayPayment(finalTotal);
+                // handler fired → card / e-wallet completed inline (no page redirect)
                 const verifyRes = await fetch('/api/payment/verify', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); return; }
-            } catch (err: any) { alert(err.message || '支付失败，请重试'); return; }
+                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); sessionStorage.removeItem('fpx_pending_order'); return; }
+                setSubmitting(true);
+                const orderIds = await Promise.all(payloads.map((p: any) => submitOrder({
+                    ...p, razorpayPaymentId: paymentResult.razorpay_payment_id,
+                    razorpayOrderId: paymentResult.razorpay_order_id, razorpaySignature: paymentResult.razorpay_signature,
+                })));
+                sessionStorage.removeItem('fpx_pending_order');
+                setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
+                setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
+            } catch (err: any) {
+                // '已取消支付' = user dismissed modal; safe to clear saved payload.
+                // Any other error (including silent redirect) = keep it for callback recovery.
+                if (err.message === '已取消支付') sessionStorage.removeItem('fpx_pending_order');
+                alert(err.message || '支付失败，请重试');
+            }
+            setSubmitting(false);
+            return;
         }
 
+        // QR flow
         setSubmitting(true);
         try {
-            const grouped = cart.reduce((acc: any, item: any) => {
-                const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-                if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [], subtotal: 0 };
-                acc[key].items.push(item);
-                acc[key].subtotal += (item.price * item.quantity);
-                return acc;
-            }, {});
-
-            const groups = Object.values(grouped) as any[];
-            const isMultiPart = groups.length > 1;
-            const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
-            let remainingPromo = promoDiscount;
-
-            const orderIds = await Promise.all(groups.map((group, index) => {
-                let currentPromo = 0;
-                if (promoApplied && promoDiscount > 0) {
-                    if (index === groups.length - 1) { currentPromo = Number(remainingPromo.toFixed(2)); }
-                    else { currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2)); remainingPromo -= currentPromo; }
-                }
-                const currentFinal = Math.max(0, group.subtotal - currentPromo);
-                return submitOrder({
-                    userId: currentUser.uid,
-                    userName: currentUser.displayName || userProfile?.displayName || 'Guest',
-                    userEmail: currentUser.email || '',
-                    userPhone: userProfile.phone, userAddress: userProfile.address,
-                    items: group.items.flatMap((bundle: any) => {
-                        const arr: any[] = [{ name: bundle.dish.name, nameEn: bundle.dish.nameEn || '', price: bundle.dish.price, quantity: bundle.dishQty * bundle.quantity, image: bundle.dish.image || '' }];
-                        if (bundle.addOns) bundle.addOns.forEach((a: any) => arr.push({ name: `↳ ${a.item.name}`, nameEn: a.item.nameEn || '', price: a.item.price, quantity: a.quantity * bundle.quantity, image: a.item.image || '' }));
-                        return arr;
-                    }),
-                    total: currentFinal, originalTotal: group.subtotal,
-                    promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
-                    promoDiscount: currentPromo,
-                    deliveryDate: group.date, deliveryTime: group.time,
-                    paymentMethod: paymentMethod as 'qr' | 'fpx',
-                    receiptUploaded, receiptUrl,
-                    status: paymentMethod === 'fpx' ? 'confirmed' : 'pending',
-                    note: orderNote, isMultiPart,
-                    partIndex: isMultiPart ? index + 1 : undefined,
-                    totalParts: isMultiPart ? groups.length : undefined,
-                    groupId: isMultiPart ? groupId : undefined,
-                });
-            }));
-
+            const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
+            const orderIds = await Promise.all(payloads.map((p: any) => submitOrder(p)));
             setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
-            setTimeout(() => {
-                onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl('');
-                setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0);
-                onClose();
-            }, 4000);
+            setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
     };

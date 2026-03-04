@@ -19,6 +19,8 @@ import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { submitOrder } from '@/lib/orders';
+import { CheckCircle } from 'lucide-react';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -30,10 +32,58 @@ export default function V4BentoLayout() {
     const [editConfig, setEditConfig] = useState<any>(null);
     const [minDate, setMinDate] = useState<string>('');
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
+    const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => setCurrentUser(user));
         return () => unsubscribe();
+    }, []);
+
+    // Detect return from FPX bank redirect. Razorpay POSTs to /api/payment/fpx-callback
+    // which verifies the signature and redirects here with ?fpx_ok=1&fpx_pid=...&fpx_oid=...
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        const fpxOk = url.searchParams.get('fpx_ok');
+        const fpxPid = url.searchParams.get('fpx_pid');
+        const fpxOid = url.searchParams.get('fpx_oid');
+        const fpxErr = url.searchParams.get('fpx_error');
+
+        if (fpxErr) {
+            url.searchParams.delete('fpx_error');
+            window.history.replaceState({}, '', url.toString());
+            sessionStorage.removeItem('fpx_pending_order');
+            alert('FPX 支付未能完成，请重试或选择其他方式。');
+            return;
+        }
+
+        if (!fpxOk || !fpxPid || !fpxOid) return;
+
+        // Clean URL immediately
+        url.searchParams.delete('fpx_ok');
+        url.searchParams.delete('fpx_pid');
+        url.searchParams.delete('fpx_oid');
+        window.history.replaceState({}, '', url.toString());
+
+        const pendingStr = sessionStorage.getItem('fpx_pending_order');
+        if (!pendingStr) return;
+        sessionStorage.removeItem('fpx_pending_order');
+
+        try {
+            const { payloads, isMultiPart, groupId } = JSON.parse(pendingStr);
+            Promise.all(
+                payloads.map((p: any) => submitOrder({ ...p, razorpayPaymentId: fpxPid, razorpayOrderId: fpxOid }))
+            ).then((orderIds) => {
+                const successId = isMultiPart ? groupId : orderIds[0];
+                setFpxSuccessId(successId);
+                clearCart();
+                setTimeout(() => setFpxSuccessId(null), 5000);
+            }).catch((err) => {
+                console.error('FPX order submission failed:', err);
+                alert('订单提交失败，请联系客服并提供支付编号：' + fpxPid);
+            });
+        } catch (e) {
+            console.error('FPX pending order parse error:', e);
+        }
     }, []);
 
     useEffect(() => {
@@ -134,6 +184,23 @@ export default function V4BentoLayout() {
             <ErrorBoundary>
                 <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
             </ErrorBoundary>
+            {/* FPX redirect success overlay */}
+            {fpxSuccessId && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxSuccessId(null)}>
+                    <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle size={44} className="text-green-500" />
+                        </div>
+                        <h3 className="text-2xl font-black text-[#1A2D23] mb-2">FPX 支付成功！🎉</h3>
+                        <p className="text-sm text-gray-500 mb-1">
+                            订单编号：<span className="font-bold text-[#FF6B35]">#{fpxSuccessId.startsWith('GRP') ? fpxSuccessId : fpxSuccessId.slice(-6).toUpperCase()}</span>
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">订单已确认，感谢您的订购！<br />积分将在配送后自动发放。</p>
+                        <button onClick={() => setFpxSuccessId(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
+                    </div>
+                </div>
+            )}
+
             {selectedDish && (
                 <AddOnModal
                     isOpen={isAddOnOpen}
