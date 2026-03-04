@@ -173,7 +173,7 @@ export default function V4BentoLayout() {
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">
             <style jsx global>{`
-                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
                 h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
                 body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
                 .no-scrollbar::-webkit-scrollbar { display: none; }

@@ -30,7 +30,7 @@ export default function AccountPage() {
     return (
         <div className="min-h-screen bg-[#F7F9F9] font-sans text-[#2D3142]">
             <style jsx global>{`
-                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;500;700;900&display=swap');
+
                 h1, h2, h3, h4 { font-family: 'Outfit', sans-serif; }
                 body { font-family: 'Inter', sans-serif; }
             `}</style>
