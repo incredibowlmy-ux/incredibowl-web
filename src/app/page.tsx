@@ -56,13 +56,25 @@ export default function V4BentoLayout() {
         if (fpxErr) {
             url.searchParams.delete('fpx_error');
             window.history.replaceState({}, '', url.toString());
+
+            const pendingStr = sessionStorage.getItem('fpx_pending_order');
+            if (pendingStr) {
+                try {
+                    const { orderIds } = JSON.parse(pendingStr);
+                    // Cancel orphan pending orders on FPX error
+                    Promise.all((orderIds as string[]).map(id => updateOrderStatus(id, 'cancelled'))).catch(() => { });
+                } catch (e) {
+                    console.error('FPX pending order parse error during cancellation:', e);
+                }
+            }
+
             sessionStorage.removeItem('fpx_pending_order');
             alert('FPX 支付未能完成，请重试或选择其他方式。');
             return;
         }
 
         // --- Path A: via fpx-callback ---
-        const fpxOk  = url.searchParams.get('fpx_ok');
+        const fpxOk = url.searchParams.get('fpx_ok');
         const fpxPid = url.searchParams.get('fpx_pid');
         const fpxOid = url.searchParams.get('fpx_oid');
         const fpxSig = url.searchParams.get('fpx_sig');
@@ -79,8 +91,8 @@ export default function V4BentoLayout() {
         if (!pid || !oid || !sig) return;
 
         // Clean URL
-        ['fpx_ok','fpx_pid','fpx_oid','fpx_sig',
-         'razorpay_payment_id','razorpay_order_id','razorpay_signature']
+        ['fpx_ok', 'fpx_pid', 'fpx_oid', 'fpx_sig',
+            'razorpay_payment_id', 'razorpay_order_id', 'razorpay_signature']
             .forEach(k => url.searchParams.delete(k));
         window.history.replaceState({}, '', url.toString());
 
@@ -96,27 +108,27 @@ export default function V4BentoLayout() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ razorpay_payment_id: pid, razorpay_order_id: oid, razorpay_signature: sig }),
             })
-            .then(r => r.json())
-            .then(async (verifyData) => {
-                if (!verifyData.verified) {
-                    alert('支付验证失败，请联系客服并提供支付编号：' + pid);
-                    return;
-                }
-                const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
-                await Promise.all(
-                    (orderIds as string[]).map((id: string, i: number) =>
-                        updateOrderStatus(id, 'confirmed', payloads[i], payData)
-                    )
-                );
-                const successId = isMultiPart ? groupId : orderIds[0];
-                setFpxSuccessId(successId);
-                clearCart();
-                setTimeout(() => setFpxSuccessId(null), 5000);
-            })
-            .catch((err) => {
-                console.error('FPX order confirmation failed:', err);
-                alert('订单确认失败，请联系客服并提供支付编号：' + pid);
-            });
+                .then(r => r.json())
+                .then(async (verifyData) => {
+                    if (!verifyData.verified) {
+                        alert('支付验证失败，请联系客服并提供支付编号：' + pid);
+                        return;
+                    }
+                    const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
+                    await Promise.all(
+                        (orderIds as string[]).map((id: string, i: number) =>
+                            updateOrderStatus(id, 'confirmed', payloads[i], payData)
+                        )
+                    );
+                    const successId = isMultiPart ? groupId : orderIds[0];
+                    setFpxSuccessId(successId);
+                    clearCart();
+                    setTimeout(() => setFpxSuccessId(null), 5000);
+                })
+                .catch((err) => {
+                    console.error('FPX order confirmation failed:', err);
+                    alert('订单确认失败，请联系客服并提供支付编号：' + pid);
+                });
         } catch (e) {
             console.error('FPX pending order parse error:', e);
         }
