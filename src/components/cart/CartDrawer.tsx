@@ -79,6 +79,8 @@ export default function CartDrawer({
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
                     name: 'Incredibowl', description: '餐点预订',
+                    callback_url: `${window.location.origin}/api/payment/fpx-callback`,
+                    redirect: true,
                     handler: (response: any) => { resolved = true; resolve(response); },
                     modal: {
                         ondismiss: () => {
