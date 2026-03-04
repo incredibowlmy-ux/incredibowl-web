@@ -8,7 +8,7 @@ function verifyAndRedirect(
     razorpay_signature: string | null
 ) {
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
-        return NextResponse.redirect(`${origin}/?fpx_error=cancelled`);
+        return NextResponse.redirect(`${origin}/?fpx_error=cancelled`, { status: 303 });
     }
 
     const expectedSig = crypto
@@ -23,7 +23,7 @@ function verifyAndRedirect(
         expectedBuf.length !== receivedBuf.length ||
         !crypto.timingSafeEqual(expectedBuf, receivedBuf)
     ) {
-        return NextResponse.redirect(`${origin}/?fpx_error=invalid`);
+        return NextResponse.redirect(`${origin}/?fpx_error=invalid`, { status: 303 });
     }
 
     const dest = new URL("/", origin);
@@ -31,7 +31,7 @@ function verifyAndRedirect(
     dest.searchParams.set("fpx_pid", razorpay_payment_id);
     dest.searchParams.set("fpx_oid", razorpay_order_id);
     dest.searchParams.set("fpx_sig", razorpay_signature);
-    return NextResponse.redirect(dest.toString());
+    return NextResponse.redirect(dest.toString(), { status: 303 });
 }
 
 // Razorpay sends a POST (form-encoded) in production.
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         );
     } catch (err) {
         console.error("FPX callback POST error:", err);
-        return NextResponse.redirect(`${origin}/?fpx_error=1`);
+        return NextResponse.redirect(`${origin}/?fpx_error=1`, { status: 303 });
     }
 }
 
@@ -65,6 +65,6 @@ export async function GET(request: NextRequest) {
         );
     } catch (err) {
         console.error("FPX callback GET error:", err);
-        return NextResponse.redirect(`${origin}/?fpx_error=1`);
+        return NextResponse.redirect(`${origin}/?fpx_error=1`, { status: 303 });
     }
 }
