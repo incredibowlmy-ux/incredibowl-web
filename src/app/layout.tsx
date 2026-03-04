@@ -19,6 +19,28 @@ export const metadata: Metadata = {
     icon: "/favicon.png",
     apple: "/favicon.png",
   },
+  openGraph: {
+    title: "Incredibowl | Old Klang Road 邻里的家常料理",
+    description: "每天为您新鲜采购、坚持无味精烹调的“每日一味”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。",
+    url: "https://incredibowl.my",
+    siteName: "Incredibowl",
+    images: [
+      {
+        url: "/pork_potato_stew.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Incredibowl - 妈妈的味道",
+      },
+    ],
+    locale: "zh_MY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Incredibowl | Old Klang Road 邻里的家常料理",
+    description: "每天为您新鲜采购、坚持无味精烹调的“每日一味”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。",
+    images: ["/pork_potato_stew.jpg"],
+  },
 };
 
 export default function RootLayout({
