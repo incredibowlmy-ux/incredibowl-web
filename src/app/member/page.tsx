@@ -13,6 +13,7 @@ const DISH_IMAGES: Record<string, string> = {
     '纳豆月见海苔饭': '/natto_bowl.jpg',
     '香煎金黄鸡扒饭': '/chicken_chop.png',
     '山药云耳海陆双鲜': '/yam_surf_turf_egg.jpg',
+    '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.jpg',
     '招牌当归回味蒸鸡全腿': '/angelica_chicken.png',
     '马铃薯炖五花肉': '/pork_potato_stew.jpg',
     '金黄葱香煎鸡腿汤': '/scallion_chicken_soup.jpg',
