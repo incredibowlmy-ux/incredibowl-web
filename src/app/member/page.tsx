@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X } from 'lucide-react';
 
 // Dish image mapping for favorite dish display
 const DISH_IMAGES: Record<string, string> = {
@@ -40,6 +40,10 @@ export default function MemberPage() {
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [redeemedCode, setRedeemedCode] = useState('');
     const [redeeming, setRedeeming] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editPhone, setEditPhone] = useState('');
+    const [editAddress, setEditAddress] = useState('');
+    const [saving, setSaving] = useState(false);
 
     const handleRedeemPoints = async () => {
         if (!currentUser || (profileData?.points || 0) < 100) return;
@@ -79,10 +83,31 @@ export default function MemberPage() {
             ]);
             setProfileData(profile);
             setOrders(userOrders);
+            // Default edit fields
+            setEditPhone(profile?.phone || '');
+            setEditAddress(profile?.address || '');
         } catch (e) {
             console.error('Failed to load member data:', e);
         }
         setLoading(false);
+    };
+
+    const handleUpdateProfile = async () => {
+        if (!currentUser) return;
+        if (!editPhone || !editAddress) return alert('请填写手机号码和地址');
+        setSaving(true);
+        try {
+            const { updateUserProfile } = await import('@/lib/auth');
+            await updateUserProfile(currentUser.uid, {
+                phone: editPhone,
+                address: editAddress
+            });
+            setProfileData((prev: any) => ({ ...prev, phone: editPhone, address: editAddress }));
+            setIsEditing(false);
+        } catch (error) {
+            alert('保存失败，请稍后再试');
+        }
+        setSaving(false);
     };
 
     // Not logged in
@@ -183,29 +208,45 @@ export default function MemberPage() {
                     <div className="absolute bottom-10 right-10 text-7xl transform rotate-12">🥢</div>
                 </div>
                 <div className="max-w-2xl mx-auto relative">
-                    <div className="flex items-center justify-between mb-6">
-                        <Link href="/" className="inline-flex items-center gap-2 text-white/60 hover:text-white text-sm font-bold transition-colors">
-                            <ArrowLeft size={16} /> 返回首页
+                    <div className="flex items-center justify-between mb-8">
+                        <Link href="/" className="group flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl border border-white/10 text-white/90 text-sm font-bold transition-all active:scale-95 shadow-lg shadow-black/10">
+                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                            <span>返回首页</span>
                         </Link>
                         <button
                             onClick={async () => { await logout(); window.location.href = '/'; }}
-                            className="inline-flex items-center gap-1.5 text-white/40 hover:text-white text-xs font-bold transition-colors px-3 py-1.5 rounded-lg hover:bg-white/10"
+                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 backdrop-blur-md rounded-2xl border border-red-500/20 text-red-100/80 hover:text-red-100 text-xs font-bold transition-all active:scale-95 shadow-lg shadow-black/10"
                         >
-                            <LogOut size={14} /> 登出
+                            <LogOut size={14} /> 登出帐号
                         </button>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center overflow-hidden">
-                            {currentUser?.photoURL ? (
-                                <Image src={currentUser.photoURL} alt="avatar" width={64} height={64} className="rounded-2xl" />
-                            ) : (
-                                <span className="text-3xl">{(currentUser?.displayName || 'G')[0].toUpperCase()}</span>
-                            )}
+                    
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-[#FF6B35] to-[#FF8F60] p-1.5 shadow-2xl rotate-3">
+                                <div className="w-full h-full rounded-[24px] bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center overflow-hidden -rotate-3">
+                                    {currentUser?.photoURL ? (
+                                        <Image src={currentUser.photoURL} alt="avatar" width={80} height={80} className="object-cover" />
+                                    ) : (
+                                        <span className="text-4xl font-black text-white/90">{(currentUser?.displayName || 'G')[0].toUpperCase()}</span>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <h1 className="text-3xl font-black tracking-tight">{currentUser?.displayName || '亲爱的会员'}</h1>
+                                <div className="flex items-center gap-2 text-white/50 text-[10px] font-bold uppercase tracking-widest">
+                                    <Clock size={10} /> 加入第 {memberDays} 天
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-black">{currentUser?.displayName || 'Guest'}</h1>
-                            <p className="text-white/50 text-xs">{currentUser?.email}</p>
-                        </div>
+                        
+                        <button 
+                            onClick={() => setIsEditing(true)}
+                            className="p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl border border-white/10 text-white transition-all active:scale-90 flex items-center gap-2"
+                        >
+                            <Settings size={20} className="opacity-70" />
+                            <span className="text-xs font-bold">编辑资料</span>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -496,6 +537,71 @@ export default function MemberPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Edit Profile Modal */}
+                {isEditing && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => !saving && setIsEditing(false)} />
+                        <div className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                            <div className="bg-[#1A2D23] p-6 text-white text-center relative">
+                                <div className="absolute top-6 right-6">
+                                    <button onClick={() => setIsEditing(false)} className="text-white/40 hover:text-white"><X size={20} /></button>
+                                </div>
+                                <div className="w-16 h-16 bg-[#FF6B35] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#FF6B35]/20">
+                                    <Settings size={32} className="text-white" />
+                                </div>
+                                <h3 className="text-xl font-black">更新个人资料</h3>
+                                <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mt-1">Update Member Info</p>
+                            </div>
+                            <div className="p-8 space-y-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                            <Phone size={10} strokeWidth={3} /> 手机号码 Phone
+                                        </label>
+                                        <input 
+                                            type="tel" 
+                                            value={editPhone} 
+                                            onChange={(e) => setEditPhone(e.target.value)}
+                                            placeholder="例: 010-337 0197"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                            <MapPin size={10} strokeWidth={3} /> 配送地址 Address
+                                        </label>
+                                        <textarea 
+                                            value={editAddress} 
+                                            onChange={(e) => setEditAddress(e.target.value)}
+                                            placeholder="例: Pearl Point, Block B-12-3"
+                                            rows={3} 
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium resize-none"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={handleUpdateProfile}
+                                    disabled={saving}
+                                    className="w-full py-4 bg-[#FF6B35] text-white rounded-[20px] font-black shadow-lg shadow-[#FF6B35]/20 hover:bg-[#E95D31] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {saving ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <><Save size={18} /> 确认保存</>
+                                    )}
+                                </button>
+                                <button 
+                                    onClick={() => setIsEditing(false)}
+                                    disabled={saving}
+                                    className="w-full py-3 text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-gray-600 transition-colors"
+                                >
+                                    取消
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
