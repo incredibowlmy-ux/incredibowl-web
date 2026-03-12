@@ -66,4 +66,4 @@ The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No M
 When the user gives you a task:
 1. Identify the impact area (Frontend UI, API Route, or Firebase logic).
 2. Check existing components first to avoid reinventing the wheel.
-3. Apply changes directly and suggest git commit commands.
+3. Apply changes directly and always execute `git add .`, `git commit -m "..."`, and `git push` after completing a task.
