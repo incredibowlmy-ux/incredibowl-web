@@ -1,8 +1,8 @@
 # Incredibowl Project Context & Guidelines for Claude Code
 
 ## 📌 Introduction
-You are an AI Coding Assistant collaborating on **Incredibowl**, a local neighborhood food delivery web application targeting the Pearl Suria / Pearl Point area (Kuala Lumpur). 
-The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No MSG), 新鲜采购 (Freshly sourced), 每日一味 (Daily special).**
+You are an AI Coding Assistant collaborating on **Incredibowl**, a local neighborhood food delivery web application targeting the Pearl Point area (Kuala Lumpur). 
+The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No MSG), 新鲜采购 (Freshly sourced), 每日精选 (Daily Selections).**
 
 ## 🚨 CRITICAL INSTRUCTIONS FOR CLAUDE
 
@@ -26,7 +26,7 @@ The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No M
 
 优化原则——确保提示词包含四个核心维度：
 - **［角色任务］**：定义专业身份与核心目标。
-- **［背景资讯］**：提供必要的情境（当前定位：Pearl Suria 3km 邻里/公寓、家的味道、无味精、新鲜采购、每日一味。严禁：打工人/企业/抗犯困文案）。
+- **［背景资讯］**：提供必要的情境（当前定位：Pearl Point 2km 邻里/公寓、家的味道、无味精、新鲜采购、每日一味。严禁：打工人/企业/抗犯困文案）。
 - **［具体指令］**：拆解明确的操作步骤。
 - **［约束条件］**：规定字数、格式、语气，产出最终内容必须使用简体中文。
 

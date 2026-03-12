@@ -26,7 +26,7 @@ export default function TermsAndConditions() {
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">3. Delivery & Radius / 配送范围</h2>
-                        <p>Our core 3km radius includes Pearl Suria, Millerz Square, and OUG. Delivery times are estimated and may be affected by traffic/weather. / 核心 3公里配送圈包括 Pearl Suria, Millerz Square, 及 OUG。配送时间仅为预计，可能受交通/天气影响。</p>
+                        <p>Our core 3km radius includes Pearl Point, Millerz Square, and OUG. Delivery times are estimated and may be affected by traffic/weather. / 核心 3公里配送圈包括 Pearl Point, Millerz Square, 及 OUG。配送时间仅为预计，可能受交通/天气影响。</p>
                     </section>
 
                     <section>

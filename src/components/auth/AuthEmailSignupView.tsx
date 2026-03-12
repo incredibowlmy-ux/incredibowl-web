@@ -41,7 +41,7 @@ export default function AuthEmailSignupView({
                 </div>
                 <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><MapPin size={10} /> 配送地址 Address *</label>
-                    <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="例: Pearl Suria, Block B-12-3"
+                    <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="例: Pearl Point, Block B-12-3"
                         rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] resize-none" required />
                 </div>
                 <div>

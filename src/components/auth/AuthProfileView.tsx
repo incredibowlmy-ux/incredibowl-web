@@ -99,7 +99,7 @@ export default function AuthProfileView({
                     </label>
                     {editingProfile ? (
                         <textarea value={address} onChange={(e) => setAddress(e.target.value)}
-                            placeholder="例: Pearl Suria, Block B-12-3, Jalan 1/116B, OKR"
+                            placeholder="例: Pearl Point, Block B-12-3, Jalan 1/116B, OKR"
                             rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
                     ) : (
                         <p className="mt-1 px-4 py-3 bg-white rounded-xl text-sm border border-gray-100">
