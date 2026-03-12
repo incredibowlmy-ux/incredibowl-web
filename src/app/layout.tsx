@@ -42,6 +42,11 @@ export const metadata: Metadata = {
     description: "每天为您新鲜采购、坚持无味精烹调的“每日一味”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。",
     images: ["/pork_potato_stew.jpg"],
   },
+  verification: {
+    other: {
+      "facebook-domain-verification": "hgdbmiq3t1274hajwj8m1sxj889sfn",
+    },
+  },
 };
 
 export default function RootLayout({
