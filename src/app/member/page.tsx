@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon } from 'lucide-react';
 
 // Dish image mapping for favorite dish display
 const DISH_IMAGES: Record<string, string> = {
@@ -41,6 +41,7 @@ export default function MemberPage() {
     const [redeemedCode, setRedeemedCode] = useState('');
     const [redeeming, setRedeeming] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [saving, setSaving] = useState(false);
@@ -84,6 +85,7 @@ export default function MemberPage() {
             setProfileData(profile);
             setOrders(userOrders);
             // Default edit fields
+            setEditName(profile?.displayName || currentUser?.displayName || '');
             setEditPhone(profile?.phone || '');
             setEditAddress(profile?.address || '');
         } catch (e) {
@@ -94,15 +96,23 @@ export default function MemberPage() {
 
     const handleUpdateProfile = async () => {
         if (!currentUser) return;
-        if (!editPhone || !editAddress) return alert('请填写手机号码和地址');
+        if (!editName || !editPhone || !editAddress) return alert('请填写完整资料');
         setSaving(true);
         try {
             const { updateUserProfile } = await import('@/lib/auth');
+            const { updateProfile } = await import('firebase/auth');
+            
+            // 1. Update Firebase Auth Profile (for currentUser object)
+            await updateProfile(currentUser, { displayName: editName });
+            
+            // 2. Update Firestore User Document
             await updateUserProfile(currentUser.uid, {
+                displayName: editName,
                 phone: editPhone,
                 address: editAddress
             });
-            setProfileData((prev: any) => ({ ...prev, phone: editPhone, address: editAddress }));
+            
+            setProfileData((prev: any) => ({ ...prev, displayName: editName, phone: editPhone, address: editAddress }));
             setIsEditing(false);
         } catch (error) {
             alert('保存失败，请稍后再试');
@@ -555,6 +565,18 @@ export default function MemberPage() {
                             </div>
                             <div className="p-8 space-y-6">
                                 <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                            <UserIcon size={10} strokeWidth={3} /> 会员姓名 Name
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            value={editName} 
+                                            onChange={(e) => setEditName(e.target.value)}
+                                            placeholder="您的名字"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium"
+                                        />
+                                    </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <Phone size={10} strokeWidth={3} /> 手机号码 Phone
