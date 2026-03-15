@@ -65,9 +65,9 @@ export default function HeroSection() {
                         ))}
                     </ul>
                 </div>
-                <div className="w-full relative group mt-6 lg:mt-8 z-30">
-                    {/* Glowing background Layer with Breathe effect */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-[#FF6B35]/60 to-[#FF9B50]/60 rounded-[34px] animate-breathe group-hover:animate-none opacity-75 group-hover:opacity-100 transition duration-500 group-hover:blur-xl"></div>
+                <div className="w-full relative group mt-8 lg:mt-10 z-30">
+                    {/* Glowing background Layer with Strong Breathe effect */}
+                    <div className="absolute -inset-1.5 bg-gradient-to-r from-[#FF6B35]/70 to-[#FF9B50]/70 rounded-[34px] animate-breathe opacity-70 transition duration-500 group-hover:opacity-100 group-hover:blur-2xl"></div>
                     
                     <div
                         className="relative bg-[#FF6B35] rounded-[32px] p-6 md:p-7 flex flex-col justify-center cursor-pointer hover:bg-[#E95D31] transition-all duration-300 transform group-hover:-translate-y-1 border border-white/10 mt-3"

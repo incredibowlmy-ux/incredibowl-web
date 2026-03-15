@@ -44,11 +44,21 @@ body {
   font-family: var(--font-sans);
 }
 
-@keyframes breathe {
-  0%, 100% { opacity: 0.5; filter: blur(12px); transform: scale(0.98); }
-  50% { opacity: 0.8; filter: blur(20px); transform: scale(1.03); }
+@keyframes glow-breathe {
+  0%, 100% { 
+    opacity: 0.4; 
+    filter: blur(12px); 
+    transform: scale(0.96);
+    box-shadow: 0 0 15px 5px rgba(255, 107, 53, 0.2);
+  }
+  50% { 
+    opacity: 0.9; 
+    filter: blur(24px); 
+    transform: scale(1.05);
+    box-shadow: 0 0 40px 15px rgba(255, 107, 53, 0.5);
+  }
 }
 
 .animate-breathe {
-  animation: breathe 3s ease-in-out infinite;
+  animation: glow-breathe 2.5s ease-in-out infinite !important;
 }
