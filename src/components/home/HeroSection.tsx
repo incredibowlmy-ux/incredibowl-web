@@ -65,23 +65,26 @@ export default function HeroSection() {
                         ))}
                     </ul>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="w-full relative group mt-2 lg:mt-4">
+                    {/* Glowing background Layer */}
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF6B35]/60 to-[#FF9B50]/60 rounded-[34px] blur-md opacity-75 group-hover:opacity-100 transition duration-500 group-hover:blur-lg"></div>
+                    
                     <div
-                        className="bg-[#FF6B35] rounded-[32px] p-6 shadow-lg shadow-[#FF6B35]/30 flex items-center justify-between group cursor-pointer hover:bg-[#E95D31] hover:shadow-xl hover:shadow-[#FF6B35]/40 transition-all duration-300 transform hover:-translate-y-1"
+                        className="relative bg-[#FF6B35] rounded-[32px] p-6 md:p-7 flex flex-col justify-center cursor-pointer hover:bg-[#E95D31] transition-all duration-300 transform group-hover:-translate-y-1 border border-white/10"
                         onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}
                     >
-                        <div>
-                            <p className="text-xs font-black text-white/80 uppercase tracking-widest mb-1 animate-pulse">Explore Menu</p>
-                            <p className="font-extrabold text-xl md:text-2xl text-white">探索每日精选</p>
+                        <div className="flex justify-between items-center">
+                            <div className="flex flex-col items-start gap-1">
+                                <span className="inline-flex items-center gap-1.5 bg-white/20 text-white backdrop-blur-md px-3 py-1 rounded-full text-[10px] md:text-[11px] font-bold mb-2 shadow-sm border border-white/20">
+                                    <span style={{ fontSize: '14px' }}>🍲</span> 限量现煮，家的味道
+                                </span>
+                                <p className="font-extrabold text-2xl md:text-3xl text-white tracking-tight">探索每日精选</p>
+                                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mt-1">Explore Menu</p>
+                            </div>
+                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 shadow-lg shrink-0 transition-transform duration-300">
+                                <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
                         </div>
-                        <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 transition-transform duration-300 shadow-md">
-                            <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                        </div>
-                    </div>
-                    <div className="w-full flex justify-center">
-                        <p className="text-xs font-bold text-[#FF6B35]/80 bg-[#FF6B35]/10 px-4 py-1.5 rounded-full inline-flex items-center gap-1.5 border border-[#FF6B35]/20 shadow-sm">
-                            🍲 限量现煮，家的味道
-                        </p>
                     </div>
                 </div>
             </div>
