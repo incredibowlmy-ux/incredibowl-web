@@ -49,17 +49,19 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     const menuDates: Record<number, MenuDateInfo> = {};
 
     dishes.forEach(dish => {
-        // Check if it's a daily/permanent item (ID 6, 2, or 3)
-        if ([6, 2, 3].includes(dish.id)) {
-            menuDates[dish.id] = { 
-                topTag: '常驻供应 · Daily', 
-                btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`, 
-                disabled: false, 
-                actualDate: nextAvailStr 
+        // Daily/permanent items are identified by their day field, not hardcoded IDs
+        if (dish.day === 'Daily / 常驻') {
+            menuDates[dish.id] = {
+                topTag: '常驻供应 · Daily',
+                btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
+                disabled: false,
+                actualDate: nextAvailStr
             };
             return;
         }
+        // Weekly specials: dish.id must be a valid weekday (0–6)
         const targetWd = dish.id;
+        if (targetWd < 0 || targetWd > 6) return; // guard against invalid IDs
         let targetDate = new Date(now);
         targetDate.setDate(now.getDate() + 1);
         while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);
