@@ -18,7 +18,7 @@ export const weeklyMenu: MenuItem[] = [
         price: 1.00,
         image: "/natto_bowl.jpg",
         tags: ["每日限量", "人气推荐"],
-        desc: "一口下去，眼里闪着光。简单的食材，藏着意想不到的惊喜。"
+        desc: "一口下去，眼里闪着光。简单的食材，藏着意想不到的惊喜。每日限量，先到先得。"
     },
     {
         id: 6,
