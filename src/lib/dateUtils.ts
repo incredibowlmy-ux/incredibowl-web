@@ -9,8 +9,8 @@ export interface MenuDateInfo {
     actualDate: string;
 }
 
-const CUTOFF_HOUR = 22;
-const CUTOFF_MINUTE = 30;
+const CUTOFF_HOUR = 23;
+const CUTOFF_MINUTE = 0;
 
 export function formatYMD(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -49,8 +49,14 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     const menuDates: Record<number, MenuDateInfo> = {};
 
     dishes.forEach(dish => {
-        if (dish.id === 6) {
-            menuDates[dish.id] = { topTag: '常驻供应 · Daily', btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`, disabled: false, actualDate: nextAvailStr };
+        // Check if it's a daily/permanent item (ID 6, 2, or 3)
+        if ([6, 2, 3].includes(dish.id)) {
+            menuDates[dish.id] = { 
+                topTag: '常驻供应 · Daily', 
+                btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`, 
+                disabled: false, 
+                actualDate: nextAvailStr 
+            };
             return;
         }
         const targetWd = dish.id;
