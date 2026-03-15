@@ -31,6 +31,9 @@ export default function AdminPage() {
     const [vouchers, setVouchers] = useState<any[]>([]);
     const [generatingVoucher, setGeneratingVoucher] = useState(false);
     const [copiedCode, setCopiedCode] = useState('');
+    const [voucherDiscount, setVoucherDiscount] = useState(1);
+    const [voucherQty, setVoucherQty] = useState(1);
+    const [lastBatch, setLastBatch] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -91,28 +94,40 @@ export default function AdminPage() {
         }
     };
 
-    const generateVoucher = async (discountAmt: number = 1) => {
+    const generateVoucher = async (discountAmt: number, qty: number = 1) => {
         setGeneratingVoucher(true);
+        setLastBatch([]);
         try {
-            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+            const { doc, setDoc, Timestamp } = await import('firebase/firestore');
             const { db } = await import('@/lib/firebase');
-            // Generate a short unique code: IB-XXXXXX (6 alphanumeric chars)
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-            const code = `IB-${rand}`;
-            await addDoc(collection(db, 'vouchers'), {
-                code,
-                discount: discountAmt,
-                isUsed: false,
-                usedBy: '',
-                createdAt: serverTimestamp(),
-                expiresAt: null,
-            });
+            const generatedCodes: string[] = [];
+            // Expiry = now + 1 month
+            const expiresAt = new Date();
+            expiresAt.setMonth(expiresAt.getMonth() + 1);
+
+            for (let i = 0; i < qty; i++) {
+                const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                const code = `IB-${rand}`;
+                // KEY FIX: use setDoc with code as document ID so CartDrawer can find it!
+                await setDoc(doc(db, 'vouchers', code), {
+                    code,
+                    discount: discountAmt,
+                    isUsed: false,
+                    usedBy: '',
+                    createdAt: Timestamp.now(),
+                    expiresAt: Timestamp.fromDate(expiresAt),
+                });
+                generatedCodes.push(code);
+            }
+            setLastBatch(generatedCodes);
             await loadVouchers();
-            // Auto-copy to clipboard
-            navigator.clipboard.writeText(code).catch(() => {});
-            setCopiedCode(code);
-            setTimeout(() => setCopiedCode(''), 3000);
+            // Auto-copy single voucher
+            if (qty === 1) {
+                navigator.clipboard.writeText(generatedCodes[0]).catch(() => {});
+                setCopiedCode(generatedCodes[0]);
+                setTimeout(() => setCopiedCode(''), 4000);
+            }
         } catch (e) {
             alert('生成失败: ' + e);
         }
@@ -879,76 +894,147 @@ export default function AdminPage() {
 
                 {/* Vouchers Tab */}
                 {activeTab === 'vouchers' && (
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         {/* Generate Panel */}
                         <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
                             <div>
                                 <h3 className="font-black text-[#1A2D23] text-base mb-1">🎫 生成好评返券</h3>
-                                <p className="text-xs text-gray-400">每次生成一个唯一优惠码，自动写入 Firebase，点击后自动复制到剪贴板。</p>
+                                <p className="text-xs text-gray-400">生成后自动写入 Firebase，有效期 1 个月。</p>
                             </div>
-                            <div className="flex gap-3 flex-wrap">
-                                <button
-                                    onClick={() => generateVoucher(1)}
-                                    disabled={generatingVoucher}
-                                    className={`px-5 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-sm ${generatingVoucher ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] active:scale-95'}`}
-                                >
-                                    {generatingVoucher ? '生成中...' : '✨ 一键生成 RM 1 返券'}
-                                </button>
-                                <button
-                                    onClick={() => generateVoucher(2)}
-                                    disabled={generatingVoucher}
-                                    className={`px-5 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-sm border ${generatingVoucher ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-transparent' : 'bg-white text-[#1A2D23] hover:bg-gray-50 border-gray-200 active:scale-95'}`}
-                                >
-                                    生成 RM 2 券
-                                </button>
-                            </div>
-                            {copiedCode && (
-                                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 animate-in fade-in duration-300">
-                                    <CheckCircle size={18} className="text-green-500 shrink-0" />
-                                    <div>
-                                        <p className="text-sm font-black text-green-800">已生成并复制到剪贴板！</p>
-                                        <p className="text-xs text-green-600 font-mono mt-0.5">{copiedCode} · RM 1</p>
+
+                            {/* Controls */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">折扣金额 (RM)</label>
+                                    <div className="flex items-center gap-2">
+                                        {[1, 2, 3, 5].map(amt => (
+                                            <button key={amt}
+                                                onClick={() => setVoucherDiscount(amt)}
+                                                className={`flex-1 py-2 rounded-lg text-xs font-black transition-all border ${voucherDiscount === amt ? 'bg-[#FF6B35] text-white border-[#FF6B35]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                            >RM {amt}</button>
+                                        ))}
                                     </div>
+                                    <input
+                                        type="number"
+                                        min={0.5} step={0.5}
+                                        value={voucherDiscount}
+                                        onChange={e => setVoucherDiscount(Number(e.target.value))}
+                                        className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-[#FF6B35] transition-colors"
+                                        placeholder="或手动输入金额..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">批量数量</label>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        {[1, 3, 5, 10].map(q => (
+                                            <button key={q}
+                                                onClick={() => setVoucherQty(q)}
+                                                className={`flex-1 py-2 rounded-lg text-xs font-black transition-all border ${voucherQty === q ? 'bg-[#1A2D23] text-white border-[#1A2D23]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                            >{q}张</button>
+                                        ))}
+                                    </div>
+                                    <input
+                                        type="number"
+                                        min={1} max={50} step={1}
+                                        value={voucherQty}
+                                        onChange={e => setVoucherQty(Math.min(50, Math.max(1, Number(e.target.value))))}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-[#1A2D23] transition-colors"
+                                        placeholder="或手动输入..."
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => generateVoucher(voucherDiscount, voucherQty)}
+                                disabled={generatingVoucher || voucherDiscount <= 0}
+                                className={`w-full py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${generatingVoucher ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] active:scale-[0.98]'}`}
+                            >
+                                {generatingVoucher ? '生成中...' : `✨ 生成 ${voucherQty} 张 RM ${voucherDiscount} 优惠券`}
+                            </button>
+
+                            {/* Last batch result */}
+                            {lastBatch.length > 0 && (
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2">
+                                    <p className="text-xs font-black text-green-800">✅ 已生成 {lastBatch.length} 张！点一下单独复制或全部复制:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {lastBatch.map(c => (
+                                            <button key={c}
+                                                onClick={() => { navigator.clipboard.writeText(c); setCopiedCode(c); setTimeout(() => setCopiedCode(''), 2000); }}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-black transition-all border ${
+                                                    copiedCode === c ? 'bg-green-500 text-white border-green-500' : 'bg-white text-[#1A2D23] border-green-300 hover:bg-green-100'
+                                                }`}
+                                            >
+                                                {copiedCode === c ? '✓ 已复制' : c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {lastBatch.length > 1 && (
+                                        <button
+                                            onClick={() => { navigator.clipboard.writeText(lastBatch.join('\n')); setCopiedCode('__all__'); setTimeout(() => setCopiedCode(''), 2000); }}
+                                            className={`mt-1 w-full py-2 rounded-lg text-[11px] font-bold transition-colors border ${
+                                                copiedCode === '__all__' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {copiedCode === '__all__' ? '✓ 已全部复制' : '📋 一键全部复制'}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
 
                         {/* Voucher History */}
                         <div className="space-y-2">
-                            <h3 className="font-black text-[#1A2D23] text-sm px-1">历史优惠券 ({vouchers.length})</h3>
+                            <div className="flex items-center justify-between px-1">
+                                <h3 className="font-black text-[#1A2D23] text-sm">历史优惠券 ({vouchers.length})</h3>
+                                <span className="text-[10px] text-gray-400">🟢 未用 &nbsp; ⚫ 已用</span>
+                            </div>
                             {vouchers.length === 0 ? (
                                 <div className="bg-white rounded-2xl p-10 text-center text-gray-400 border border-gray-100">
                                     <p className="text-3xl mb-2">🎫</p>
                                     <p className="font-bold text-sm">还没有优惠券，点击上方按钮生成第一张！</p>
                                 </div>
-                            ) : vouchers.map((v: any) => (
-                                <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${v.isUsed ? 'border-gray-100 opacity-60' : 'border-[#FF6B35]/30 shadow-sm'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full shrink-0 ${v.isUsed ? 'bg-gray-300' : 'bg-green-400'}`} />
-                                        <div>
-                                            <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
-                                            <p className="text-[10px] text-gray-400 mt-0.5">
-                                                {v.isUsed
-                                                    ? `✅ 已使用 · ${v.usedBy?.slice(0, 8)}...`
-                                                    : '⏳ 未使用'}
-                                            </p>
+                            ) : vouchers.map((v: any) => {
+                                const expDate = v.expiresAt?.toDate?.();
+                                const isExpired = expDate && expDate < new Date();
+                                return (
+                                    <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${
+                                        v.isUsed || isExpired ? 'border-gray-100 opacity-50' : 'border-[#FF6B35]/30 shadow-sm'
+                                    }`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${
+                                                v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
+                                            }`} />
+                                            <div>
+                                                <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
+                                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                                    {v.isUsed
+                                                        ? `✅ 已使用`
+                                                        : isExpired
+                                                        ? `⏰ 已过期`
+                                                        : expDate
+                                                        ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
+                                                        : '永久有效'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <span className={`px-2 py-1 rounded-lg text-xs font-black ${
+                                                v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
+                                            }`}>
+                                                RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
+                                            </span>
+                                            {!v.isUsed && !isExpired && (
+                                                <button
+                                                    onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
+                                                    className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
+                                                >
+                                                    {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span className={`px-2 py-1 rounded-lg text-xs font-black ${v.isUsed ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'}`}>
-                                            RM {v.discount?.toFixed ? v.discount.toFixed(2) : v.discount}
-                                        </span>
-                                        {!v.isUsed && (
-                                            <button
-                                                onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
-                                                className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
-                                            >
-                                                {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
