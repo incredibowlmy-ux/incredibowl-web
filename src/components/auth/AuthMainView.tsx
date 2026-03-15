@@ -31,13 +31,6 @@ export default function AuthMainView({ loading, message, onGoogleLogin, onFacebo
                     {loading ? '连接中...' : '使用 Google 继续'}
                 </button>
 
-                <button disabled={true}
-                    className="w-full py-3.5 bg-black text-white rounded-xl flex items-center justify-center gap-3 font-bold opacity-40 cursor-not-allowed">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                    </svg>
-                    Apple ID（即将开放）
-                </button>
 
                 <button onClick={onFacebookLogin} disabled={loading}
                     className="w-full py-3.5 bg-[#1877F2] text-white rounded-xl flex items-center justify-center gap-3 font-bold hover:bg-[#1565C0] transition-all disabled:opacity-50 shadow-lg shadow-[#1877F2]/20">

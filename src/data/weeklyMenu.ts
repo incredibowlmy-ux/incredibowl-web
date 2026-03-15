@@ -32,7 +32,7 @@ export const weeklyMenu: MenuItem[] = [
     },
     {
         id: 2,
-        day: "Tue / 周二",
+        day: "Daily / 常驻",
         name: "山药云耳海陆双鲜炒",
         nameEn: "Chinese Yam & Black Fungus Surf & Turf",
         price: 18.50,
@@ -42,7 +42,7 @@ export const weeklyMenu: MenuItem[] = [
     },
     {
         id: 3,
-        day: "Wed / 周三",
+        day: "Daily / 常驻",
         name: "招牌原盅当归清蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
