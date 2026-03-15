@@ -21,16 +21,6 @@ export const weeklyMenu: MenuItem[] = [
         desc: "经典的健康选择。纳豆的鲜香配上顺滑的月见蛋，简单却极富层次。"
     },
     {
-        id: 1,
-        day: "Mon / 周一",
-        name: "香煎金黄鸡扒饭",
-        nameEn: "Pan-Fried Golden Chicken Chop Rice",
-        price: 18.50,
-        image: "/chicken_chop.png",
-        tags: ["优质蛋白", "焦香四溢"],
-        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。"
-    },
-    {
         id: 2,
         day: "Daily / 常驻",
         name: "山药云耳海陆双鲜炒",
@@ -49,6 +39,16 @@ export const weeklyMenu: MenuItem[] = [
         image: "/angelica_chicken.png",
         tags: ["补血活血", "增强免疫", "阿姨拿手"],
         desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。"
+    },
+    {
+        id: 1,
+        day: "Mon / 周一",
+        name: "香煎金黄鸡扒饭",
+        nameEn: "Pan-Fried Golden Chicken Chop Rice",
+        price: 18.50,
+        image: "/chicken_chop.png",
+        tags: ["优质蛋白", "焦香四溢"],
+        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。"
     },
     {
         id: 4,
