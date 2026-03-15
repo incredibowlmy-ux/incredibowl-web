@@ -128,17 +128,13 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 {menuDates[dish.id] ? menuDates[dish.id].topTag : dish.day}
                             </div>
                             <div className="flex flex-col items-end">
+                                <span className={`text-xs line-through mb-0.5 font-medium ${activeIdx === i ? 'text-white/40' : 'text-gray-400'}`}>RM {dish.price.toFixed(2)}</span>
                                 <p className={`font-extrabold text-xl leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {(dish.price - 1).toFixed(2)}</p>
                             </div>
                         </div>
 
                         <div className="aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-7xl mb-6 relative overflow-hidden border-4 border-transparent">
                             {dish.image.startsWith('/') ? <Image src={dish.image} alt={dish.name} fill className="object-cover" /> : dish.image}
-                            
-                            {/* Promo Tag */}
-                            <div className="absolute top-3 left-3 bg-[#FF6B35] text-white text-[10px] sm:text-xs font-black px-2.5 py-1.5 rounded-br-xl rounded-tl-xl rounded-tr-sm rounded-bl-sm shadow-lg flex items-center gap-1.5 z-10">
-                                <span className="text-sm">🎁</span> <span>尝鲜立减 RM 1</span>
-                            </div>
                         </div>
 
                         <h3 className="font-extrabold text-xl mb-1">{dish.name}</h3>
@@ -162,14 +158,22 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onOpenAddOn(dish); }}
                                         disabled={menuDates[dish.id]?.disabled}
-                                        className={`relative z-10 w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors text-sm ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-lg shadow-[#FF6B35]/20'}`}
+                                        className={`relative z-10 w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors md:text-sm text-xs ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-lg shadow-[#FF6B35]/20'}`}
                                     >
                                         {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
-                                        <span className="truncate">
-                                            {menuDates[dish.id] 
-                                                ? menuDates[dish.id].btnText.replace(`RM ${dish.price.toFixed(2)}`, `RM ${(dish.price - 1).toFixed(2)}`) 
-                                                : '加入明天的预订'}
-                                        </span>
+                                        {!menuDates[dish.id]?.disabled ? (
+                                            <div className="flex flex-col items-center leading-tight">
+                                                <div className="flex items-center gap-1.5 opacity-80 mb-0.5">
+                                                    <span>{menuDates[dish.id]?.btnText.split(' · ')[0]}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[10px] bg-white/20 px-1 py-0.5 rounded shadow-sm text-white font-black">立减 RM 1</span>
+                                                    <span className="text-sm font-black">仅需 RM {(dish.price - 1).toFixed(2)}</span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <span>{menuDates[dish.id]?.btnText}</span>
+                                        )}
                                     </button>
                                 </div>
                             </div>
