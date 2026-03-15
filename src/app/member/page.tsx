@@ -14,9 +14,9 @@ const DISH_IMAGES: Record<string, string> = {
     '香煎金黄鸡扒饭': '/chicken_chop.png',
     '山药云耳海陆双鲜': '/yam_surf_turf_egg.jpg',
     '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.jpg',
-    '招牌当归回味蒸鸡全腿': '/angelica_chicken.png',
-    '马铃薯炖五花肉': '/pork_potato_stew.jpg',
-    '金黄葱香煎鸡腿汤': '/scallion_chicken_soup.jpg',
+    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.png',
+    '马铃薯炖花肉片': '/pork_potato_stew.jpg',
+    '金黄葱香煎鸡汤': '/scallion_chicken_soup.jpg',
 };
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
