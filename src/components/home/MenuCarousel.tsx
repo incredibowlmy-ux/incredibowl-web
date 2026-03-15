@@ -167,7 +167,9 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                                 : '加入明天的预订'}
                                         </span>
                                         {!menuDates[dish.id]?.disabled && (
-                                            <span className="text-[10px] bg-[#FFF3E0] text-[#E65100] px-1.5 py-0.5 rounded shadow-sm shrink-0">已省 RM 1</span>
+                                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-gradient-to-br from-[#22c55e] to-[#16a34a] text-white text-[10px] font-black px-2 py-1 rounded-lg shadow-lg -rotate-2 ring-2 ring-white/30 tracking-wide">
+                                                💰 省 RM 1 ！
+                                            </span>
                                         )}
                                     </button>
                                 </div>
