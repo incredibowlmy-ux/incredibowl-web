@@ -277,7 +277,8 @@ export default function AddOnModal({
         return sum + section.items.reduce((s, item) => s + (quantities[item.id] || 0) * item.price, 0);
     }, 0);
 
-    const grandTotal = (dish.price * dishQty) + addOnsTotal;
+    const discountedPrice = dish.price - 1;
+    const grandTotal = (discountedPrice * dishQty) + addOnsTotal;
 
     const handleAddToCart = () => {
         const selectedAddOns = activeAddOnSections.flatMap(section =>
@@ -373,9 +374,10 @@ export default function AddOnModal({
 
                         {/* Price + Qty */}
                         <div className="flex items-center justify-between py-3 px-4 bg-white rounded-2xl border border-[#E8DFD0] mb-6">
-                            <span className="text-xl font-extrabold text-[#C76F40]">
-                                RM {dish.price.toFixed(2)}
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-xs text-[#8B7355]/60 line-through font-medium">RM {dish.price.toFixed(2)}</span>
+                                <span className="text-xl font-extrabold text-[#C76F40]">RM {(dish.price - 1).toFixed(2)}</span>
+                            </div>
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setDishQty(Math.max(1, dishQty - 1))}
@@ -573,7 +575,7 @@ export default function AddOnModal({
                     {/* Add-on summary (if any) */}
                     {addOnsTotal > 0 && (
                         <div className="flex justify-between items-center text-xs text-[#8B7355] mb-2 px-1">
-                            <span>主菜 RM {(dish.price * dishQty).toFixed(2)} + 加购 RM {addOnsTotal.toFixed(2)}</span>
+                            <span>主菜 RM {((dish.price - 1) * dishQty).toFixed(2)} + 加购 RM {addOnsTotal.toFixed(2)}</span>
                         </div>
                     )}
                     <button
