@@ -13,12 +13,12 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 999,
         day: "Daily / 常驻",
-        name: "狗屎意大利面",
-        nameEn: "Dogshit Spaghetti",
+        name: "星星之眼",
+        nameEn: "Star-Eyed Delight",
         price: 1.00,
         image: "/natto_bowl.jpg",
-        tags: ["独家秘方", "限量供应"],
-        desc: "采用祖传配方，风味独特，一试难忘。"
+        tags: ["每日限量", "人气推荐"],
+        desc: "一口下去，眼里闪着光。简单的食材，藏着意想不到的惊喜。"
     },
     {
         id: 6,
