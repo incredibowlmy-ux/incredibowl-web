@@ -24,10 +24,13 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color
 export default function AdminPage() {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
-    const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'feedbacks'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'feedbacks' | 'vouchers'>('orders');
     const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [customers, setCustomers] = useState<AppUser[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [vouchers, setVouchers] = useState<any[]>([]);
+    const [generatingVoucher, setGeneratingVoucher] = useState(false);
+    const [copiedCode, setCopiedCode] = useState('');
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -74,6 +77,46 @@ export default function AdminPage() {
             console.error('Failed to load data:', error);
         }
         setLoading(false);
+    };
+
+    const loadVouchers = async () => {
+        try {
+            const { collection, getDocs, orderBy, query } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const q = query(collection(db, 'vouchers'), orderBy('createdAt', 'desc'));
+            const snap = await getDocs(q);
+            setVouchers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        } catch (e) {
+            console.error('Failed to load vouchers', e);
+        }
+    };
+
+    const generateVoucher = async (discountAmt: number = 1) => {
+        setGeneratingVoucher(true);
+        try {
+            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            // Generate a short unique code: IB-XXXXXX (6 alphanumeric chars)
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+            const code = `IB-${rand}`;
+            await addDoc(collection(db, 'vouchers'), {
+                code,
+                discount: discountAmt,
+                isUsed: false,
+                usedBy: '',
+                createdAt: serverTimestamp(),
+                expiresAt: null,
+            });
+            await loadVouchers();
+            // Auto-copy to clipboard
+            navigator.clipboard.writeText(code).catch(() => {});
+            setCopiedCode(code);
+            setTimeout(() => setCopiedCode(''), 3000);
+        } catch (e) {
+            alert('生成失败: ' + e);
+        }
+        setGeneratingVoucher(false);
     };
 
     useEffect(() => { setCurrentPage(1); }, [filterStatus, filterDate]);
@@ -520,6 +563,12 @@ export default function AdminPage() {
                             <span className="px-1.5 py-0.5 bg-yellow-400 text-white text-[10px] font-black rounded-full leading-none">{pendingFeedbackCount}</span>
                         )}
                     </button>
+                    <button
+                        onClick={() => { setActiveTab('vouchers'); loadVouchers(); }}
+                        className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'vouchers' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        🎫 优惠券 ({vouchers.length})
+                    </button>
                 </div>
 
                 {/* Orders Tab */}
@@ -825,6 +874,82 @@ export default function AdminPage() {
                                 </div>
                             ))
                         )}
+                    </div>
+                )}
+
+                {/* Vouchers Tab */}
+                {activeTab === 'vouchers' && (
+                    <div className="space-y-4">
+                        {/* Generate Panel */}
+                        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
+                            <div>
+                                <h3 className="font-black text-[#1A2D23] text-base mb-1">🎫 生成好评返券</h3>
+                                <p className="text-xs text-gray-400">每次生成一个唯一优惠码，自动写入 Firebase，点击后自动复制到剪贴板。</p>
+                            </div>
+                            <div className="flex gap-3 flex-wrap">
+                                <button
+                                    onClick={() => generateVoucher(1)}
+                                    disabled={generatingVoucher}
+                                    className={`px-5 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-sm ${generatingVoucher ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] active:scale-95'}`}
+                                >
+                                    {generatingVoucher ? '生成中...' : '✨ 一键生成 RM 1 返券'}
+                                </button>
+                                <button
+                                    onClick={() => generateVoucher(2)}
+                                    disabled={generatingVoucher}
+                                    className={`px-5 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-sm border ${generatingVoucher ? 'bg-gray-200 text-gray-400 cursor-not-allowed border-transparent' : 'bg-white text-[#1A2D23] hover:bg-gray-50 border-gray-200 active:scale-95'}`}
+                                >
+                                    生成 RM 2 券
+                                </button>
+                            </div>
+                            {copiedCode && (
+                                <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 animate-in fade-in duration-300">
+                                    <CheckCircle size={18} className="text-green-500 shrink-0" />
+                                    <div>
+                                        <p className="text-sm font-black text-green-800">已生成并复制到剪贴板！</p>
+                                        <p className="text-xs text-green-600 font-mono mt-0.5">{copiedCode} · RM 1</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Voucher History */}
+                        <div className="space-y-2">
+                            <h3 className="font-black text-[#1A2D23] text-sm px-1">历史优惠券 ({vouchers.length})</h3>
+                            {vouchers.length === 0 ? (
+                                <div className="bg-white rounded-2xl p-10 text-center text-gray-400 border border-gray-100">
+                                    <p className="text-3xl mb-2">🎫</p>
+                                    <p className="font-bold text-sm">还没有优惠券，点击上方按钮生成第一张！</p>
+                                </div>
+                            ) : vouchers.map((v: any) => (
+                                <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${v.isUsed ? 'border-gray-100 opacity-60' : 'border-[#FF6B35]/30 shadow-sm'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-2 h-2 rounded-full shrink-0 ${v.isUsed ? 'bg-gray-300' : 'bg-green-400'}`} />
+                                        <div>
+                                            <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5">
+                                                {v.isUsed
+                                                    ? `✅ 已使用 · ${v.usedBy?.slice(0, 8)}...`
+                                                    : '⏳ 未使用'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className={`px-2 py-1 rounded-lg text-xs font-black ${v.isUsed ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'}`}>
+                                            RM {v.discount?.toFixed ? v.discount.toFixed(2) : v.discount}
+                                        </span>
+                                        {!v.isUsed && (
+                                            <button
+                                                onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
+                                                className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
+                                            >
+                                                {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
