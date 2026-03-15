@@ -77,9 +77,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
             <div className="flex items-center justify-between mb-6 px-2">
                 <div>
                     <h2 className="text-2xl font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
-                    <p className="text-xs text-[#FF6B35] font-bold mt-1.5 flex items-center gap-1">
-                        <span className="text-sm">✨</span> 全系菜单已展示立减 RM 1 内测价
-                    </p>
+                    <p className="text-xs text-gray-400 font-medium mt-1">点击或滑动切换每日精选菜单</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
@@ -153,22 +151,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         {activeIdx === i && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
-                                <div className="relative group/btn mt-2">
-                                    {/* Scarcity Bar */}
-                                    {!menuDates[dish.id]?.disabled && (
-                                        <div className="mb-3 px-1">
-                                            <div className="flex justify-between items-end mb-1.5">
-                                                <span className="text-xs font-bold text-[#FF9B50] flex items-center gap-1">
-                                                    🔥 <span className="text-white/90">快抢光了</span>
-                                                </span>
-                                                <span className="text-[10px] font-black bg-black/20 px-1.5 py-0.5 rounded text-white/90">剩余 12 / 50</span>
-                                            </div>
-                                            <div className="w-full bg-black/20 rounded-full h-1.5 overflow-hidden">
-                                                <div className="bg-gradient-to-r from-[#FF9B50] to-[#FF6B35] h-1.5 rounded-full w-[76%] rounded-r-none"></div>
-                                            </div>
-                                        </div>
-                                    )}
-                                    
+                                <div className="relative group/btn">
                                     {!menuDates[dish.id]?.disabled && (
                                         <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>
                                     )}
@@ -180,9 +163,12 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                         {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
                                         <span className="truncate">
                                             {menuDates[dish.id] 
-                                                ? menuDates[dish.id].btnText.replace(`RM ${dish.price.toFixed(2)}`, `RM ${(dish.price - 1).toFixed(2)}`) 
+                                                ? menuDates[dish.id].btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') 
                                                 : '加入明天的预订'}
                                         </span>
+                                        {!menuDates[dish.id]?.disabled && (
+                                            <span className="text-[10px] bg-[#FFF3E0] text-[#E65100] px-1.5 py-0.5 rounded shadow-sm shrink-0">已省 RM 1</span>
+                                        )}
                                     </button>
                                 </div>
                             </div>
