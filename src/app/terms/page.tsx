@@ -19,14 +19,14 @@ export default function TermsAndConditions() {
                     <section>
                         <h2 className="text-xl font-bold mb-4">2. Ordering & Cut-off / 订餐与截止</h2>
                         <ul className="list-disc ml-6 space-y-2">
-                            <li>Cut-off time: 22:30 the night before delivery. / 订餐截止：送餐前一晚 22:30。</li>
+                            <li>Cut-off time: 11:00 PM the night before delivery. / 订餐截止：送餐前一晚 11:00 PM。</li>
                             <li>Subscription orders are automated weekly. / 订阅用户每周自动排单。</li>
                         </ul>
                     </section>
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">3. Delivery & Radius / 配送范围</h2>
-                        <p>Our core 3km radius includes Pearl Point, Millerz Square, and OUG. Delivery times are estimated and may be affected by traffic/weather. / 核心 3公里配送圈包括 Pearl Point, Millerz Square, 及 OUG。配送时间仅为预计，可能受交通/天气影响。</p>
+                        <p>Our core coverage provides <b>Free Delivery</b> within a 2km radius around Pearl Point. Deliveries beyond 2km will incur an RM10 delivery fee, which is waived for orders of 10 meals or more. Delivery times are estimated and may be affected by traffic/weather. / 我们的核心配送圈为 Pearl Point 方圆 2km 内（免运费）。超出 2km 的地区运费为 RM10，满 10 份免运费。配送时间仅为预计，可能受交通/天气影响。</p>
                     </section>
 
                     <section>

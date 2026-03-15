@@ -20,7 +20,16 @@ export default function FeedbackSection() {
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
     useEffect(() => {
-        getApprovedFeedbacks().then(data => { setFeedbacks(data); setLoading(false); });
+        getApprovedFeedbacks()
+            .then(data => { 
+                setFeedbacks(data || []); 
+                setLoading(false); 
+            })
+            .catch(err => {
+                console.error("Failed to fetch feedbacks:", err);
+                setFeedbacks([]);
+                setLoading(false);
+            });
     }, []);
 
     const handleFeedbackSubmit = async (e: React.FormEvent) => {
