@@ -76,7 +76,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
         <div className="lg:col-span-12 mt-8" id="menu">
             <div className="flex items-center justify-between mb-6 px-2">
                 <div>
-                    <h2 className="text-2xl font-extrabold tracking-tight">每日一味 / Weekly Rotation</h2>
+                    <h2 className="text-2xl font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
                     <p className="text-xs text-gray-400 font-medium mt-1">点击或滑动切换每日精选菜单</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -148,14 +148,19 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         {activeIdx === i && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onOpenAddOn(dish); }}
-                                    disabled={menuDates[dish.id]?.disabled}
-                                    className={`w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors text-sm ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white'}`}
-                                >
-                                    {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
-                                    {menuDates[dish.id] ? menuDates[dish.id].btnText : '加入明天的预订'}
-                                </button>
+                                <div className="relative group/btn">
+                                    {!menuDates[dish.id]?.disabled && (
+                                        <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>
+                                    )}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onOpenAddOn(dish); }}
+                                        disabled={menuDates[dish.id]?.disabled}
+                                        className={`relative z-10 w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors text-sm ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-lg shadow-[#FF6B35]/20'}`}
+                                    >
+                                        {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
+                                        {menuDates[dish.id] ? menuDates[dish.id].btnText : '加入明天的预订'}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
