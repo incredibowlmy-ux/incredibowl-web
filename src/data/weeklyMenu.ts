@@ -11,6 +11,16 @@ export interface MenuItem {
 
 export const weeklyMenu: MenuItem[] = [
     {
+        id: 999,
+        day: "Daily / 常驻",
+        name: "狗屎意大利面",
+        nameEn: "Dogshit Spaghetti",
+        price: 1.00,
+        image: "/natto_bowl.jpg",
+        tags: ["独家秘方", "限量供应"],
+        desc: "采用祖传配方，风味独特，一试难忘。"
+    },
+    {
         id: 6,
         day: "Daily / 常驻",
         name: "纳豆月见海苔饭",
