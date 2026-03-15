@@ -130,6 +130,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 {menuDates[dish.id] ? menuDates[dish.id].topTag : dish.day}
                             </div>
                             <div className="flex flex-col items-end">
+                                <span className={`text-xs line-through mb-0.5 font-medium ${activeIdx === i ? 'text-white/40' : 'text-gray-400'}`}>RM {dish.price.toFixed(2)}</span>
                                 <p className={`font-extrabold text-xl leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {(dish.price - 1).toFixed(2)}</p>
                             </div>
                         </div>
@@ -152,7 +153,22 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         {activeIdx === i && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
-                                <div className="relative group/btn">
+                                <div className="relative group/btn mt-2">
+                                    {/* Scarcity Bar */}
+                                    {!menuDates[dish.id]?.disabled && (
+                                        <div className="mb-3 px-1">
+                                            <div className="flex justify-between items-end mb-1.5">
+                                                <span className="text-xs font-bold text-[#FF9B50] flex items-center gap-1">
+                                                    🔥 <span className="text-white/90">快抢光了</span>
+                                                </span>
+                                                <span className="text-[10px] font-black bg-black/20 px-1.5 py-0.5 rounded text-white/90">剩余 12 / 50</span>
+                                            </div>
+                                            <div className="w-full bg-black/20 rounded-full h-1.5 overflow-hidden">
+                                                <div className="bg-gradient-to-r from-[#FF9B50] to-[#FF6B35] h-1.5 rounded-full w-[76%] rounded-r-none"></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
                                     {!menuDates[dish.id]?.disabled && (
                                         <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>
                                     )}
