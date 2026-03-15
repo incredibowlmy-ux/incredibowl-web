@@ -59,7 +59,7 @@ export default function HeroSection() {
 
                     <p className="text-white/80 text-xs md:text-sm leading-relaxed mb-5">
                         Incredibowl 私厨正式开灶啦！我们不追求大批量，只坚持好品质。纯天然、0味精，每天早起巴刹采买新鲜好肉，专注精神做每天的专属菜单。严控品质，给您最踏实的家常味。<br/>
-                        <span className="text-[#FF6B35] font-black mt-2 inline-block bg-[#FF6B35]/15 px-2.5 py-1 rounded-md">每天限量 25 份，新鲜现做！</span>
+                        <span className="text-[#FF6B35] font-black mt-2 inline-block bg-[#FF6B35]/15 px-2.5 py-1 rounded-md">每天限量 50 份，新鲜现做！</span>
                     </p>
 
                     {/* Promo Box */}
