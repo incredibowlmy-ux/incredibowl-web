@@ -36,15 +36,22 @@ export default function DeliveryWidget() {
                 <div className="w-12 h-12 bg-[#FFF3E0] rounded-full flex items-center justify-center text-[#FF6B35] mb-4">
                     <MapPin size={24} />
                 </div>
-                <p className="font-extrabold text-[#1A2D23] text-sm mb-1">以 Pearl Point 为中心，</p>
-                <p className="font-extrabold text-[#1A2D23] text-sm mb-2">方圆 2 公里内的公寓邻居。</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6 border-b border-gray-100 pb-4 w-full">Within 2km along Old Klang Road</p>
+                <p className="font-extrabold text-[#1A2D23] text-sm mb-1">Pearl Point 方圆 2km 内</p>
+                <p className="font-extrabold text-green-600 text-sm mb-2"> 免运费 (Free Delivery) 🛵</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6 border-b border-gray-100 pb-4 w-full">Beyond 2km: RM10 / Free above 10 meals</p>
+
+                <div className="text-left w-full space-y-2 mb-6">
+                    <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-[#FF6B35]">📍</span>超出 2km：需补充运费</p>
+                    <p className="text-[#FF6B35] font-bold text-[10px] pl-5">(* 非免运区：满 5 份运费 RM10；满 10 份免运)</p>
+                    <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-blue-500">⏰</span>截单时间：前一晚 11:00 PM</p>
+                    <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-blue-500">🚚</span>配送时间：11am-1pm / 5:30pm-8pm</p>
+                </div>
 
                 <p className="text-xs font-bold text-gray-500 mb-1">🤔 不确定你家在不在范围内？</p>
                 <p className="text-[10px] text-gray-400 italic mb-4">Not sure if we deliver to you?</p>
 
                 <a
-                    href="https://wa.me/60103370197?text=Hi%20Auntie%21%20%E7%9C%8B%E4%BA%86%E4%BD%A0%E7%9A%84%E8%8F%9C%E5%8D%95%E6%9E%81%E5%BA%A6%E6%83%B3%E5%BF%B5%20home-cooked%20food%20%F0%9F%8D%B3%EF%BC%8C%E6%83%B3%E7%A1%AE%E8%AE%A4%E6%88%91%E8%BF%99%E8%BE%B9%E7%9A%84%20condo%20%E6%9C%89%E6%B2%A1%E6%9C%89%E5%9C%A8%20delivery%20coverage%20%E9%87%8C%E9%9D%A2%E5%91%A2%EF%BC%9F"
+                    href="https://wa.me/60103370197?text=Hi%20Auntie!%20%E7%9C%8B%E4%BA%86%E4%BD%A0%E7%9A%84%E8%8F%9C%E5%8D%95%E6%9E%81%E5%BA%A6%E6%83%B3%E5%BF%B5%20home-cooked%20food%20%EF%BC%8C%E6%83%B3%E7%A1%AE%E8%AE%A4%E6%88%91%E8%BF%99%E8%BE%B9%E7%9A%84%E5%9C%B0%E5%9D%80%E6%9C%89%E6%B2%A1%E6%9C%89%E5%9C%A8%20delivery%20coverage%20%E9%87%8C%E9%9D%A2%E5%91%A2%EF%BC%9F%0A%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80/Condo%E6%98%AF%20%EF%BC%9A"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-3.5 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20"
