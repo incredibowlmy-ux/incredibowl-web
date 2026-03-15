@@ -34,16 +34,58 @@ export default function CartDrawer({
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [promoDiscount, setPromoDiscount] = useState(0);
+    const [isCheckingPromo, setIsCheckingPromo] = useState(false);
 
     const finalTotal = Math.max(0, cartTotal - promoDiscount);
 
-    const handleApplyPromo = () => {
+    const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
-        if (code.startsWith('IB-') || code.startsWith('POINTS') || code === 'INCREDIBOWL10') {
-            setPromoDiscount(10); setPromoApplied(true); setPromoError('');
-        } else {
-            setPromoError('优惠码无效，请检查后重试'); setPromoApplied(false); setPromoDiscount(0);
+        setIsCheckingPromo(true);
+        setPromoError('');
+        try {
+            const { doc, getDoc } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const voucherRef = doc(db, 'vouchers', code);
+            const snap = await getDoc(voucherRef);
+            if (!snap.exists()) {
+                setPromoError('优惠码无效，请检查后重试');
+                setPromoApplied(false); setPromoDiscount(0);
+                return;
+            }
+            const data = snap.data();
+            if (data.isUsed) {
+                setPromoError('此优惠码已被使用');
+                setPromoApplied(false); setPromoDiscount(0);
+                return;
+            }
+            if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+                setPromoError('此优惠码已过期');
+                setPromoApplied(false); setPromoDiscount(0);
+                return;
+            }
+            const discount = typeof data.discount === 'number' ? data.discount : 1;
+            setPromoDiscount(discount);
+            setPromoApplied(true);
+            setPromoError('');
+        } catch (err) {
+            setPromoError('验证失败，请稍后再试');
+        } finally {
+            setIsCheckingPromo(false);
+        }
+    };
+
+    const markVoucherUsed = async (code: string, uid: string) => {
+        try {
+            const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            await updateDoc(doc(db, 'vouchers', code), {
+                isUsed: true,
+                usedBy: uid,
+                usedAt: serverTimestamp(),
+            });
+        } catch (e) {
+            console.warn('Failed to mark voucher used', e);
         }
     };
 
@@ -218,6 +260,7 @@ export default function CartDrawer({
                 // Step 3: Confirm all pending orders.
                 await Promise.all(orderIds.map((id, i) => updateOrderStatus(id, 'confirmed', payloads[i], payData)));
                 sessionStorage.removeItem('fpx_pending_order');
+                if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
                 setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
@@ -238,6 +281,7 @@ export default function CartDrawer({
         try {
             const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
             const orderIds = await Promise.all(payloads.map((p: any) => submitOrder(p)));
+            if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
             setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
             setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
@@ -349,8 +393,10 @@ export default function CartDrawer({
                                         <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
                                             className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
                                     ) : (
-                                        <button onClick={handleApplyPromo}
-                                            className="px-4 py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors">使用</button>
+                                        <button onClick={handleApplyPromo} disabled={isCheckingPromo}
+                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
+                                            {isCheckingPromo ? '验证中…' : '使用'}
+                                        </button>
                                     )}
                                 </div>
                                 {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
