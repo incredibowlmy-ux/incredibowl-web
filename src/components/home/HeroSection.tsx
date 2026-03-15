@@ -48,22 +48,47 @@ export default function HeroSection() {
             <div className="lg:col-span-4 flex flex-col gap-4">
                 <div className="bg-[#1A2D23] rounded-[32px] p-8 text-white flex-1 flex flex-col justify-center relative overflow-hidden">
                     <div className="w-32 h-32 bg-[#FF6B35] rounded-full blur-3xl opacity-20 absolute -top-10 -right-10" />
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-3 mb-2">
                         <div className="px-2.5 py-1 rounded-md bg-[#FF6B35] text-white text-[11px] font-black tracking-widest animate-pulse shadow-lg shadow-[#FF6B35]/20">BETA</div>
                         <h3 className="text-2xl md:text-3xl font-black text-white tracking-tight">邻里内测中</h3>
                     </div>
-                    <p className="text-white/80 text-sm md:text-base mb-6 leading-relaxed">
-                        阿姨的厨房正式开灶！首批仅开放 <span className="text-white font-bold">Pearl Point</span> 周边邻居试吃。<br />
-                        名额有限，<span className="text-[#FF6B35] font-black text-base underline decoration-[#FF6B35]/30 underline-offset-4">每天限量 25 份</span>。
+                    
+                    <h4 className="text-[#FF9B50] font-bold text-base md:text-lg mb-4 flex items-center gap-2">
+                        新店开灶，限时双重福利！🎉
+                    </h4>
+
+                    <p className="text-white/80 text-xs md:text-sm leading-relaxed mb-5">
+                        Incredibowl 私厨正式开灶啦！我们不追求大批量，只坚持好品质。纯天然、0味精，每天早起巴刹采买新鲜好肉，专注精神做每天的专属菜单。严控品质，给您最踏实的家常味。<br/>
+                        <span className="text-[#FF6B35] font-black mt-2 inline-block bg-[#FF6B35]/15 px-2.5 py-1 rounded-md">每天限量 25 份，新鲜现做！</span>
                     </p>
-                    <div className="w-full h-px bg-white/10 mb-5" />
-                    <ul className="space-y-3.5">
+
+                    {/* Promo Box */}
+                    <div className="bg-gradient-to-br from-[#FF6B35]/20 to-transparent border border-[#FF6B35]/30 rounded-2xl p-4 mb-5 shadow-inner">
+                        <p className="text-white text-xs md:text-sm font-bold mb-3">感谢首批支持的街坊，特别推出内测福利：</p>
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-[#FF9B50] font-black text-sm flex items-center gap-1.5"><span className="text-base leading-none">✨</span> 福利一：尝鲜立减</p>
+                                <p className="text-white/70 text-xs mt-0.5 ml-6">即日起至 4月15日，下单每份餐点直接立减 RM 1！</p>
+                            </div>
+                            <div>
+                                <p className="text-[#FF9B50] font-black text-sm flex items-center gap-1.5"><span className="text-base leading-none">✨</span> 福利二：好评返券</p>
+                                <p className="text-white/70 text-xs mt-0.5 ml-6">吃得开心吗？只要带图评价，即送 RM 1专属回购券（下次抵扣）！</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul className="space-y-2 mb-4">
                         {['纯天然，0 味精提鲜', '轻盐减油，吃完不口干', '每日巴刹鲜购优质肉'].map((feat, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-sm font-bold text-white/90">
-                                <CheckCircle2 size={18} className="text-[#FF6B35]" /> {feat}
+                            <li key={idx} className="flex items-center gap-2.5 text-xs md:text-sm font-bold text-white/90">
+                                <CheckCircle2 size={16} className="text-[#FF6B35]" /> {feat}
                             </li>
                         ))}
                     </ul>
+
+                    <div className="text-center font-bold text-xs md:text-sm text-white/80 mt-auto pt-2">
+                        数量有限，先到先得！<br/>
+                        <span className="text-[#FF9B50] inline-block mt-1">👇 马上点击下单，抢今天的名额</span>
+                    </div>
                 </div>
                 <div className="w-full relative group mt-8 lg:mt-10 z-30">
                     {/* Glowing background Layer with Strong Breathe effect */}
