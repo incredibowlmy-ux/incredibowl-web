@@ -65,18 +65,18 @@ export default function HeroSection() {
                         ))}
                     </ul>
                 </div>
-                <div className="w-full relative group mt-4 lg:mt-6">
+                <div className="w-full relative group mt-6 lg:mt-8 z-30">
                     {/* Glowing background Layer */}
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-[#FF6B35]/60 to-[#FF9B50]/60 rounded-[34px] blur-md opacity-75 group-hover:opacity-100 transition duration-500 group-hover:blur-xl"></div>
                     
                     <div
-                        className="relative bg-[#FF6B35] rounded-[32px] p-6 md:p-7 flex flex-col justify-center cursor-pointer hover:bg-[#E95D31] transition-all duration-300 transform group-hover:-translate-y-1 border border-white/10"
+                        className="relative bg-[#FF6B35] rounded-[32px] p-6 md:p-7 flex flex-col justify-center cursor-pointer hover:bg-[#E95D31] transition-all duration-300 transform group-hover:-translate-y-1 border border-white/10 mt-3"
                         onClick={() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' })}
                     >
                         {/* Microcopy Pill - Half outside, half inside, above the arrow */}
-                        <div className="absolute -top-3.5 right-4 md:right-6 z-10 transition-transform duration-300 transform origin-bottom group-hover:-translate-y-1">
-                            <span className="inline-flex items-center gap-1.5 bg-[#FFF3E0] text-[#E65100] px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-black shadow-lg border-2 border-white -rotate-3 group-hover:rotate-0 transition-all">
-                                <span className="text-sm">🍲</span> 限量现煮，家的味道
+                        <div className="absolute -top-4 right-3 md:right-6 z-[40] transition-transform duration-300 transform origin-bottom group-hover:-translate-y-1">
+                            <span className="inline-flex items-center gap-1 bg-[#FFF3E0] text-[#E65100] px-3 py-1.5 rounded-full text-[9px] md:text-xs font-black shadow-lg border-2 border-white -rotate-3 group-hover:rotate-0 transition-all">
+                                <span className="text-sm">🍲</span> <span className="whitespace-nowrap">限量现煮，家的味道</span>
                             </span>
                         </div>
 
@@ -86,7 +86,7 @@ export default function HeroSection() {
                                 <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mt-1">Explore Menu</p>
                             </div>
                             <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 shadow-xl shrink-0 transition-transform duration-300 mt-2">
-                                <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
+                                <ArrowRight size={20} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
                             </div>
                         </div>
                     </div>
