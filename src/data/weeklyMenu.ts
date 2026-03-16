@@ -11,16 +11,6 @@ export interface MenuItem {
 
 export const weeklyMenu: MenuItem[] = [
     {
-        id: 999,
-        day: "Daily / 常驻",
-        name: "星星之眼",
-        nameEn: "Star-Eyed Delight",
-        price: 2.00,
-        image: "/natto_bowl.jpg",
-        tags: ["每日限量", "人气推荐"],
-        desc: "一口下去，眼里闪着光。简单的食材，藏着意想不到的惊喜。每日限量，先到先得。"
-    },
-    {
         id: 6,
         day: "Daily / 常驻",
         name: "纳豆月见海苔饭",
