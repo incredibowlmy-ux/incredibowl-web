@@ -76,16 +76,14 @@ export default function CartDrawer({
     };
 
     const markVoucherUsed = async (code: string, uid: string) => {
-        try {
-            const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            await updateDoc(doc(db, 'vouchers', code), {
-                isUsed: true,
-                usedBy: uid,
-                usedAt: serverTimestamp(),
-            });
-        } catch (e) {
-            console.warn('Failed to mark voucher used', e);
+        const res = await fetch('/api/use-voucher', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voucherCode: code, userId: uid }),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            console.warn('Failed to mark voucher used:', data.error);
         }
     };
 
