@@ -101,7 +101,10 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 ref={scrollContainerRef}
                 className="flex overflow-x-auto pb-8 pt-4 no-scrollbar snap-x snap-mandatory scroll-smooth relative menu-carousel-padding"
             >
-                {Object.keys(menuDates).length === 0 && weeklyMenu.map((dish) => (
+                {Object.keys(menuDates).length === 0 && <>
+                    {/* Left Spacer */}
+                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    {weeklyMenu.map((dish) => (
                     <div key={dish.id} className="menu-item w-[300px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 mx-2 bg-white border border-gray-100">
                         <div className="flex justify-between items-start mb-6">
                             <SkeletonBlock className="h-5 w-28" />
@@ -115,8 +118,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                             <SkeletonBlock className="h-6 w-16" />
                         </div>
                     </div>
-                ))}
-                {Object.keys(menuDates).length > 0 && weeklyMenu.map((dish, i) => (
+                ))}</>}
+                {Object.keys(menuDates).length > 0 && <>
+                    {/* Left Spacer */}
+                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    {weeklyMenu.map((dish, i) => (
 
                     <div
                         key={dish.id}
@@ -177,9 +183,9 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         )}
                     </div>
                 ))}
-
-                {/* Right Spacer */}
-                <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    {/* Right Spacer */}
+                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                </>}
             </div>
         </div>
     );
