@@ -237,7 +237,8 @@ export default function CartDrawer({
                 return;
             }
             // Step 2: Save for FPX redirect recovery in page.tsx.
-            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart }));
+            const payloads = orderIds.map(() => ({ userId: currentUser!.uid, total: finalTotal / orderIds.length }));
+            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads }));
             setSubmitting(false);
 
             try {
