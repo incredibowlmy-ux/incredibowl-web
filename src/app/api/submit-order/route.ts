@@ -213,6 +213,17 @@ export async function POST(req: Request) {
       });
     }
 
+    // ── Mark voucher as used atomically after orders created ───
+    if (promoCode && serverPromoDiscount > 0) {
+      const code = promoCode.trim().toUpperCase();
+      const voucherRef = db.collection('vouchers').doc(code);
+      await voucherRef.update({
+        isUsed: true,
+        usedBy: userId,
+        usedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     return NextResponse.json({
       success: true,
       orderIds,

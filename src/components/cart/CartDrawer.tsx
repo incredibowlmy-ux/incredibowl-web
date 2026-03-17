@@ -248,7 +248,6 @@ export default function CartDrawer({
                 // Step 3: Confirm all pending orders.
                 await Promise.all(orderIds.map(id => updateOrderStatus(id, 'confirmed', { userId: currentUser!.uid, total: finalTotal / orderIds.length }, payData)));
                 sessionStorage.removeItem('fpx_pending_order');
-                if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
@@ -267,7 +266,6 @@ export default function CartDrawer({
         setSubmitting(true);
         try {
             const result = await submitOrderViaAPI();
-            if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
             setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
             setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
