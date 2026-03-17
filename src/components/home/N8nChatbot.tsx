@@ -38,45 +38,65 @@ export default function N8nChatbot() {
                     }
                 },
                 style: {
-                    // 🎨 品牌主色 (Incredibowl 活力暖橙)
-                    '--chat--color-primary': '#FF7A00',
-                    '--chat--color-primary-shade-50': '#E66E00',
+                    // 🎨 品牌主色 — 触发按钮 & 强调色 (源码: --chat--color--primary)
+                    '--chat--color--primary': '#FF7A00',
+                    '--chat--color--primary-shade-50': '#E66E00',
+                    '--chat--color--primary--shade-100': '#CC6200',
+
+                    // 🎨 次要色 — 用户气泡 & 发送按钮 (源码: --chat--color--secondary)
+                    '--chat--color--secondary': '#FF7A00',
+                    '--chat--color-secondary-shade-50': '#E66E00',
 
                     // 🔤 字体 (与网站主字体保持一致)
                     '--chat--font-family': "'Plus Jakarta Sans', 'Noto Sans SC', sans-serif",
 
-                    // 📐 窗口圆角 & 阴影 (柔和亲切 + 高级悬浮感)
+                    // 📐 通用圆角
+                    '--chat--border-radius': '12px',
+
+                    // 🪟 窗口样式
                     '--chat--window--border-radius': '16px',
-                    '--chat--window--box-shadow': '0 12px 48px rgba(0,0,0,0.15)',
 
                     // 💬 消息气泡圆角
                     '--chat--message--border-radius': '12px',
 
-                    // 🤖 Bot 气泡 (暖灰底色，温暖不刺眼)
+                    // 🤖 Bot 气泡 (暖奶白底色，温暖不刺眼)
                     '--chat--message--bot--background': '#FFF5EB',
                     '--chat--message--bot--color': '#3D3126',
+                    '--chat--message--bot--border': 'none',
 
-                    // 👤 用户气泡 (品牌橙，白字醒目)
+                    // 👤 用户气泡 (品牌橙底，白字)
                     '--chat--message--user--background': '#FF7A00',
                     '--chat--message--user--color': '#FFFFFF',
+                    '--chat--message--user--border': 'none',
 
-                    // 🔘 触发按钮 (品牌色统一)
+                    // 🏷️ 头部区域 (深色底 + 浅字)
+                    '--chat--header--background': '#1F1A15',
+                    '--chat--header--color': '#FFFFFF',
+
+                    // 🔘 触发按钮 (品牌色)
                     '--chat--toggle--background': '#FF7A00',
                     '--chat--toggle--hover--background': '#E66E00',
                     '--chat--toggle--active--background': '#CC6200',
+                    '--chat--toggle--color': '#FFFFFF',
 
                     // ⌨️ 输入区域
-                    '--chat--input--border': '1px solid #E8E0D8',
-                    '--chat--input--border-radius': '12px',
                     '--chat--input--background': '#FFFCF9',
+                    '--chat--input--text-color': '#3D3126',
 
                     // 📤 发送按钮
-                    '--chat--button--background': '#FF7A00',
-                    '--chat--button--hover--background': '#E66E00',
+                    '--chat--input--send--button--color': '#FF7A00',
+                    '--chat--input--send--button--background-hover': '#FFF0E0',
+                    '--chat--input--send--button--color-hover': '#E66E00',
 
-                    // 🏷️ 头部区域
-                    '--chat--header--background': '#FF7A00',
-                    '--chat--header--color': '#FFFFFF',
+                    // 🎯 欢迎屏按钮 (主要按钮)
+                    '--chat--button--background--primary': '#FF7A00',
+                    '--chat--button--background--primary--hover': '#E66E00',
+                    '--chat--button--color--primary': '#FFFFFF',
+                    '--chat--button--color--primary--hover': '#FFFFFF',
+
+                    // 🌤️ 聊天区域背景
+                    '--chat--body--background': '#FFF8F0',
+                    '--chat--color-light': '#FFF8F0',
                 }
             });
         `;
