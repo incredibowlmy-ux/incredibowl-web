@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MapPin, CheckCircle2, ArrowRight } from 'lucide-react';
 import { weeklyMenu } from '@/data/weeklyMenu';
+import { OPENING_PROMO } from '@/data/promoConfig';
 
 export default function HeroSection() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
@@ -68,7 +69,7 @@ export default function HeroSection() {
                         <div className="space-y-3">
                             <div>
                                 <p className="text-[#FF9B50] font-black text-sm flex items-center gap-1.5"><span className="text-base leading-none">✨</span> 福利一：尝鲜立减</p>
-                                <p className="text-white/70 text-xs mt-0.5 ml-6">即日起至 4月15日，下单每份餐点直接立减 RM 1！</p>
+                                <p className="text-white/70 text-xs mt-0.5 ml-6">即日起至 4月15日，下单每份餐点直接{OPENING_PROMO.label}！</p>
                             </div>
                             <div>
                                 <p className="text-[#FF9B50] font-black text-sm flex items-center gap-1.5"><span className="text-base leading-none">✨</span> 福利二：好评返券</p>

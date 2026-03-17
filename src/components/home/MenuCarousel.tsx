@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
+import { getDishPrice, OPENING_PROMO } from '@/data/promoConfig';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 interface MenuCarouselProps {
@@ -135,7 +136,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                             </div>
                             <div className="flex flex-col items-end">
                                 <span className={`text-xs line-through mb-0.5 font-medium ${activeIdx === i ? 'text-white/40' : 'text-gray-400'}`}>RM {dish.price.toFixed(2)}</span>
-                                <p className={`font-extrabold text-xl leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {(dish.price - 1).toFixed(2)}</p>
+                                <p className={`font-extrabold text-xl leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {getDishPrice(dish.price).toFixed(2)}</p>
                             </div>
                         </div>
 
@@ -174,7 +175,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                         </span>
                                         {!menuDates[dish.id]?.disabled && (
                                             <span className="shrink-0 inline-flex items-center gap-0.5 bg-[#FFF0A0] text-[#A05C00] text-[10px] font-black px-2 py-1 rounded-lg shadow-md -rotate-2 ring-1 ring-[#FFDB58]/60 tracking-wide border border-[#F5C842]/40">
-                                                🏷️ 立减RM1!
+                                                🏷️ {OPENING_PROMO.label}!
                                             </span>
                                         )}
                                     </button>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, X, Plus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
-import { submitOrder, updateOrderStatus } from '@/lib/orders';
+import { updateOrderStatus } from '@/lib/orders';
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import CartSuccess from './CartSuccess';
@@ -166,49 +166,47 @@ export default function CartDrawer({
         setUploading(false);
     };
 
-    const buildGroupedPayloads = () => {
-        const grouped = cart.reduce((acc: any, item: any) => {
-            const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-            if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [], subtotal: 0 };
-            acc[key].items.push(item);
-            acc[key].subtotal += (item.price * item.quantity);
-            return acc;
-        }, {});
-        const groups = Object.values(grouped) as any[];
-        const isMultiPart = groups.length > 1;
-        const groupId = `GRP-${Date.now().toString(36).toUpperCase()}`;
-        let remainingPromo = promoDiscount;
-        const payloads = groups.map((group: any, index: number) => {
-            let currentPromo = 0;
-            if (promoApplied && promoDiscount > 0) {
-                if (index === groups.length - 1) { currentPromo = Number(remainingPromo.toFixed(2)); }
-                else { currentPromo = Number(((group.subtotal / cartTotal) * promoDiscount).toFixed(2)); remainingPromo -= currentPromo; }
-            }
-            const currentFinal = Math.max(0, group.subtotal - currentPromo);
-            return {
+    /** Submit order via server-side API for price validation */
+    const submitOrderViaAPI = async () => {
+        const cartBundles = cart.map((item: any) => ({
+            dishId: item.dish.id,
+            dishQty: item.dishQty,
+            addOns: (item.addOns || []).map((a: any) => ({
+                id: a.item.id,
+                name: a.item.name,
+                nameEn: a.item.nameEn || '',
+                quantity: a.quantity,
+                image: a.item.image || '',
+            })),
+            price: item.price,
+            quantity: item.quantity,
+            selectedDate: item.selectedDate,
+            selectedTime: item.selectedTime,
+            note: item.note || '',
+        }));
+
+        const res = await fetch('/api/submit-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
                 userId: currentUser!.uid,
                 userName: currentUser!.displayName || userProfile?.displayName || 'Guest',
                 userEmail: currentUser!.email || '',
-                userPhone: userProfile!.phone, userAddress: userProfile!.address,
-                items: group.items.flatMap((bundle: any) => {
-                    const arr: any[] = [{ name: bundle.dish.name, nameEn: bundle.dish.nameEn || '', price: bundle.dish.price, quantity: bundle.dishQty * bundle.quantity, image: bundle.dish.image || '' }];
-                    if (bundle.addOns) bundle.addOns.forEach((a: any) => arr.push({ name: `↳ ${a.item.name}`, nameEn: a.item.nameEn || '', price: a.item.price, quantity: a.quantity * bundle.quantity, image: a.item.image || '' }));
-                    return arr;
-                }),
-                total: currentFinal, originalTotal: group.subtotal,
+                userPhone: userProfile!.phone,
+                userAddress: userProfile!.address,
+                cartBundles,
+                paymentMethod,
+                receiptUploaded,
+                receiptUrl: receiptUrl || undefined,
                 promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
-                promoDiscount: currentPromo,
-                deliveryDate: group.date, deliveryTime: group.time,
-                paymentMethod: paymentMethod as 'qr' | 'fpx',
-                receiptUploaded, receiptUrl,
-                status: 'pending' as const,
-                note: orderNote, isMultiPart,
-                partIndex: isMultiPart ? index + 1 : undefined,
-                totalParts: isMultiPart ? groups.length : undefined,
-                groupId: isMultiPart ? groupId : undefined,
-            };
+                promoDiscount: promoApplied ? promoDiscount : 0,
+                orderNote: orderNote || '',
+            }),
         });
-        return { payloads, isMultiPart, groupId };
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '提交订单失败');
+        return data as { orderIds: string[]; groupId: string | null; isMultiPart: boolean; serverTotal: number };
     };
 
     const handleCheckout = async () => {
@@ -223,26 +221,27 @@ export default function CartDrawer({
         if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
 
         if (paymentMethod === 'fpx') {
-            // Step 1: Write all orders to Firestore as 'pending' BEFORE opening payment.
-            // This ensures orders exist even if the page navigates away (FPX full-page redirect).
+            // Step 1: Submit orders via server-side validated API as 'pending' BEFORE opening payment.
             setSubmitting(true);
-            const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
             let orderIds: string[] = [];
+            let isMultiPart = false;
+            let groupId: string | null = null;
             try {
-                orderIds = await Promise.all(payloads.map((p: any) => submitOrder(p)));
+                const result = await submitOrderViaAPI();
+                orderIds = result.orderIds;
+                isMultiPart = result.isMultiPart;
+                groupId = result.groupId;
             } catch (err: any) {
-                alert('建立订单失败，请重试');
+                alert(err.message || '建立订单失败，请重试');
                 setSubmitting(false);
                 return;
             }
-            // Step 2: Save {orderIds, payloads} for FPX redirect recovery in page.tsx.
-            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads }));
+            // Step 2: Save for FPX redirect recovery in page.tsx.
+            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart }));
             setSubmitting(false);
 
             try {
                 const paymentResult = await initiateRazorpayPayment(finalTotal);
-                // handler fired → inline payment completed (card / e-wallet via Razorpay modal).
-                // FPX full-page redirect never reaches here; page.tsx handles that path instead.
                 const verifyRes = await fetch('/api/payment/verify', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentResult),
@@ -256,14 +255,13 @@ export default function CartDrawer({
                     razorpaySignature: paymentResult.razorpay_signature,
                 };
                 // Step 3: Confirm all pending orders.
-                await Promise.all(orderIds.map((id, i) => updateOrderStatus(id, 'confirmed', payloads[i], payData)));
+                await Promise.all(orderIds.map(id => updateOrderStatus(id, 'confirmed', { userId: currentUser!.uid, total: finalTotal / orderIds.length }, payData)));
                 sessionStorage.removeItem('fpx_pending_order');
                 if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
-                setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
+                setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
                 if (err.message === '已取消支付') {
-                    // User genuinely dismissed — cancel orphan pending orders.
                     await Promise.all(orderIds.map(id => updateOrderStatus(id, 'cancelled'))).catch(() => {});
                     sessionStorage.removeItem('fpx_pending_order');
                 } else {
@@ -274,13 +272,12 @@ export default function CartDrawer({
             return;
         }
 
-        // QR flow
+        // QR flow — also uses server-side validated API
         setSubmitting(true);
         try {
-            const { payloads, isMultiPart, groupId } = buildGroupedPayloads();
-            const orderIds = await Promise.all(payloads.map((p: any) => submitOrder(p)));
+            const result = await submitOrderViaAPI();
             if (promoApplied && promoCode && currentUser) await markVoucherUsed(promoCode.trim().toUpperCase(), currentUser.uid);
-            setOrderSuccess(isMultiPart ? groupId : orderIds[0]);
+            setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
             setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
