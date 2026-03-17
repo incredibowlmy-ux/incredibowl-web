@@ -66,15 +66,15 @@ export default function N8nChatbot() {
                 --chat--message--bot--color: #3D3126 !important;
                 --chat--message--bot--border: 1px solid rgba(0,0,0,0.04) !important;
 
-                --chat--message--user--background: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
+                --chat--message--user--background: #FF7A00 !important;
                 --chat--message--user--color: #FFFFFF !important;
                 --chat--message--user--border: none !important;
 
                 /* ═══════════════════════════════════
                    🔘 浮动按钮 (橙色 + 呼吸光晕)
                    ═══════════════════════════════════ */
-                --chat--toggle--background: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
-                --chat--toggle--hover--background: linear-gradient(135deg, #FF9933 0%, #E66E00 100%) !important;
+                --chat--toggle--background: #FF7A00 !important;
+                --chat--toggle--hover--background: #E66E00 !important;
                 --chat--toggle--active--background: #CC6200 !important;
                 --chat--toggle--color: #FFFFFF !important;
                 --chat--toggle--size: 60px !important;
@@ -96,8 +96,8 @@ export default function N8nChatbot() {
                 /* ═══════════════════════════════════
                    🎯 欢迎屏按钮
                    ═══════════════════════════════════ */
-                --chat--button--background--primary: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
-                --chat--button--background--primary--hover: linear-gradient(135deg, #FF9933 0%, #E66E00 100%) !important;
+                --chat--button--background--primary: #FF7A00 !important;
+                --chat--button--background--primary--hover: #E66E00 !important;
                 --chat--button--color--primary: #FFFFFF !important;
                 --chat--button--color--primary--hover: #FFFFFF !important;
                 --chat--button--border-radius: 12px !important;
@@ -157,13 +157,21 @@ export default function N8nChatbot() {
                 box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
             }
 
-            /* 👤 用户气泡：微妙光泽阴影 */
+            /* 👤 用户气泡：渐变背景 + 微妙光泽阴影 */
             .chat-message.chat-message-from-user:not(.chat-message-transparent) {
+                background: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
+                color: #FFFFFF !important;
                 box-shadow: 0 2px 8px rgba(255, 122, 0, 0.25) !important;
             }
+            .chat-message.chat-message-from-user p,
+            .chat-message.chat-message-from-user span,
+            .chat-message.chat-message-from-user .chat-message-markdown {
+                color: #FFFFFF !important;
+            }
 
-            /* 🔘 浮动按钮：光晕 + 呼吸动画 */
+            /* 🔘 浮动按钮：光晕 + 呼吸动画 + 渐变 */
             .chat-window-wrapper .chat-window-toggle {
+                background: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
                 box-shadow:
                     0 4px 16px rgba(255, 122, 0, 0.35),
                     0 1px 4px rgba(255, 122, 0, 0.2) !important;
@@ -171,10 +179,20 @@ export default function N8nChatbot() {
                 border: 2px solid rgba(255, 255, 255, 0.2) !important;
             }
             .chat-window-wrapper .chat-window-toggle:hover {
+                background: linear-gradient(135deg, #FF9933 0%, #E66E00 100%) !important;
                 box-shadow:
                     0 6px 24px rgba(255, 122, 0, 0.45),
                     0 2px 8px rgba(255, 122, 0, 0.3) !important;
                 animation: none !important;
+            }
+
+            /* 🎯 欢迎屏/通用主按钮渐变 */
+            .chat-button-primary {
+                background: linear-gradient(135deg, #FF8A1A 0%, #FF6B00 100%) !important;
+                border: none !important;
+            }
+            .chat-button-primary:hover {
+                background: linear-gradient(135deg, #FF9933 0%, #E66E00 100%) !important;
             }
 
             @keyframes togglePulse {
