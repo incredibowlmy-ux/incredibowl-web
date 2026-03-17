@@ -44,28 +44,18 @@ export default function CartDrawer({
         setIsCheckingPromo(true);
         setPromoError('');
         try {
-            const { doc, getDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            const voucherRef = doc(db, 'vouchers', code);
-            const snap = await getDoc(voucherRef);
-            if (!snap.exists()) {
-                setPromoError('优惠码无效，请检查后重试');
+            const res = await fetch('/api/check-voucher', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voucherCode: code }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setPromoError(data.error || '优惠码无效');
                 setPromoApplied(false); setPromoDiscount(0);
                 return;
             }
-            const data = snap.data();
-            if (data.isUsed) {
-                setPromoError('此优惠码已被使用');
-                setPromoApplied(false); setPromoDiscount(0);
-                return;
-            }
-            if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
-                setPromoError('此优惠码已过期');
-                setPromoApplied(false); setPromoDiscount(0);
-                return;
-            }
-            const discount = typeof data.discount === 'number' ? data.discount : 1;
-            setPromoDiscount(discount);
+            setPromoDiscount(data.discount);
             setPromoApplied(true);
             setPromoError('');
         } catch (err) {
