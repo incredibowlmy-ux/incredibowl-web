@@ -87,7 +87,7 @@ export default function FeedbackSection() {
                             <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
                                 <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
                                     <p className="text-[#1A2D23] font-medium leading-relaxed italic text-sm">
-                                        "{msg.text}"
+                                        &ldquo;{msg.text}&rdquo;
                                     </p>
                                     <div className="flex gap-2 justify-end mb-1">
                                         <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />

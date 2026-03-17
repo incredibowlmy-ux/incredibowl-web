@@ -33,7 +33,24 @@
       "Bash(grep -oE '.{0,20}600 kcal.{0,20}')",
       "Bash(grep -oE '.{0,10}健脾益胃.{0,30}')",
       "Bash(curl -sL https://incredibowl.my/_next/version)",
-      "Bash(curl -sI https://incredibowl.my)"
+      "Bash(curl -sI https://incredibowl.my)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(npx eslint:*)",
+      "Bash(grep -oP '\\\\S+$')",
+      "Bash(grep -oE '[a-z@/-]+$')",
+      "Bash(grep -oE \"[a-z@/-]+$\")",
+      "Bash(grep -E \"^\\\\S.*\\\\.tsx?$\")",
+      "Bash(node --input-type=module -e 'import{readFileSync}from\"\"fs\"\";const d=JSON.parse\\(readFileSync\\(\"\"/tmp/eslint_out.json\"\",\"\"utf8\"\"\\)\\);for\\(const f of d\\)for\\(const m of f.messages\\)if\\(m.severity===2\\)console.log\\(m.ruleId\\);')",
+      "Bash(node extract_rules.js)",
+      "Bash(rm eslint_out.json extract_rules.js)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/next.config.ts next.config.ts)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/eslint.config.mjs eslint.config.mjs)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/components/home/FeedbackSection.tsx src/components/home/FeedbackSection.tsx)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/components/home/HeroSection.tsx src/components/home/HeroSection.tsx)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/components/home/MenuCarousel.tsx src/components/home/MenuCarousel.tsx)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/components/menu/AddOnModal.tsx src/components/menu/AddOnModal.tsx)",
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/lib/dateUtils.ts src/lib/dateUtils.ts)"
     ]
   }
 }

@@ -369,7 +369,7 @@ export default function AddOnModal({
 
                         {/* Description */}
                         <p className="text-sm text-[#5C4A32]/80 leading-relaxed mb-4 italic">
-                            "{dish.desc}"
+                            &ldquo;{dish.desc}&rdquo;
                         </p>
 
                         {/* Price + Qty */}

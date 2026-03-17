@@ -157,7 +157,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
 
                         {activeIdx === i && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">"{dish.desc}"</p>
+                                <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">&ldquo;{dish.desc}&rdquo;</p>
                                 <div className="relative group/btn">
                                     {!menuDates[dish.id]?.disabled && (
                                         <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>

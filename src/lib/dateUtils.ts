@@ -30,7 +30,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     const now = new Date();
     const isPastCutoff = now.getHours() > CUTOFF_HOUR || (now.getHours() === CUTOFF_HOUR && now.getMinutes() >= CUTOFF_MINUTE);
 
-    let nextAvail = new Date(now);
+    const nextAvail = new Date(now);
     nextAvail.setDate(now.getDate() + (isPastCutoff ? 2 : 1));
     if (nextAvail.getDay() === 6) nextAvail.setDate(nextAvail.getDate() + 2);
     else if (nextAvail.getDay() === 0) nextAvail.setDate(nextAvail.getDate() + 1);
@@ -62,7 +62,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         // Weekly specials: dish.id must be a valid weekday (0–6)
         const targetWd = dish.id;
         if (targetWd < 0 || targetWd > 6) return; // guard against invalid IDs
-        let targetDate = new Date(now);
+        const targetDate = new Date(now);
         targetDate.setDate(now.getDate() + 1);
         while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);
 

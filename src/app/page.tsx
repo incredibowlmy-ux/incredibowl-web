@@ -12,7 +12,7 @@ import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarousel from '@/components/home/MenuCarousel';
 import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
-import FloatingChatbot from '@/components/home/FloatingChatbot';
+import N8nChatbot from '@/components/home/N8nChatbot';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
@@ -213,7 +213,7 @@ export default function V4BentoLayout() {
             </main>
 
             <Footer />
-            <FloatingChatbot />
+            <N8nChatbot />
 
             <ErrorBoundary>
                 <CartDrawer
