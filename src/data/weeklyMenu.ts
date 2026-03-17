@@ -47,7 +47,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Pan-Fried Golden Chicken Chop Rice",
         price: 18.50,
         image: "/chicken_chop.png",
-        tags: ["优质蛋白", "焦香四溢"],
+        tags: ["~780 kcal*", "高蛋白 43g+", "焦香四溢", "营养均衡", "优质蛋白"],
         desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。"
     },
     {
