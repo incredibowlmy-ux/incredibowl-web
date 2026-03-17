@@ -7,14 +7,91 @@ export default function N8nChatbot() {
         // 避免重复挂载
         if (document.getElementById('n8n-chat-style')) return;
 
-        // 加载 CSS
+        // ============================
+        // 1) 注入品牌 CSS 变量覆盖
+        //    直接覆盖 :root 的 n8n chat 默认变量
+        //    这比 createChat({ style }) 更可靠
+        // ============================
+        const brandCSS = document.createElement('style');
+        brandCSS.id = 'n8n-chat-brand-override';
+        brandCSS.textContent = `
+            :root {
+                /* 🎨 品牌主色 — 触发按钮 & 强调色 */
+                --chat--color--primary: #FF7A00 !important;
+                --chat--color--primary-shade-50: #E66E00 !important;
+                --chat--color--primary--shade-100: #CC6200 !important;
+
+                /* 🎨 次要色 — 用户气泡 & 发送按钮 */
+                --chat--color--secondary: #FF7A00 !important;
+                --chat--color-secondary-shade-50: #E66E00 !important;
+
+                /* 🔤 字体 */
+                --chat--font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif !important;
+
+                /* 📐 通用圆角 */
+                --chat--border-radius: 12px !important;
+
+                /* 🪟 窗口样式 */
+                --chat--window--border-radius: 16px !important;
+
+                /* 💬 消息气泡圆角 */
+                --chat--message--border-radius: 12px !important;
+
+                /* 🤖 Bot 气泡 (暖奶白底色) */
+                --chat--message--bot--background: #FFF5EB !important;
+                --chat--message--bot--color: #3D3126 !important;
+                --chat--message--bot--border: none !important;
+
+                /* 👤 用户气泡 (品牌橙底 + 白字) */
+                --chat--message--user--background: #FF7A00 !important;
+                --chat--message--user--color: #FFFFFF !important;
+                --chat--message--user--border: none !important;
+
+                /* 🏷️ 头部区域 (深色底 + 白字) */
+                --chat--header--background: #1F1A15 !important;
+                --chat--header--color: #FFFFFF !important;
+
+                /* 🔘 触发按钮 (品牌色) */
+                --chat--toggle--background: #FF7A00 !important;
+                --chat--toggle--hover--background: #E66E00 !important;
+                --chat--toggle--active--background: #CC6200 !important;
+                --chat--toggle--color: #FFFFFF !important;
+
+                /* ⌨️ 输入区域 */
+                --chat--input--background: #FFFCF9 !important;
+                --chat--input--text-color: #3D3126 !important;
+
+                /* 📤 发送按钮 */
+                --chat--input--send--button--color: #FF7A00 !important;
+                --chat--input--send--button--background-hover: #FFF0E0 !important;
+                --chat--input--send--button--color-hover: #E66E00 !important;
+
+                /* 🎯 欢迎屏按钮 */
+                --chat--button--background--primary: #FF7A00 !important;
+                --chat--button--background--primary--hover: #E66E00 !important;
+                --chat--button--color--primary: #FFFFFF !important;
+                --chat--button--color--primary--hover: #FFFFFF !important;
+
+                /* 🌤️ 聊天区域背景 */
+                --chat--body--background: #FFF8F0 !important;
+                --chat--footer--background: #FFF8F0 !important;
+                --chat--color-light: #FFF8F0 !important;
+            }
+        `;
+        document.head.appendChild(brandCSS);
+
+        // ============================
+        // 2) 加载 n8n Chat CSS（在品牌覆盖之后）
+        // ============================
         const link = document.createElement('link');
         link.id = 'n8n-chat-style';
         link.href = 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css';
         link.rel = 'stylesheet';
         document.head.appendChild(link);
 
-        // 加载并执行 JS Module
+        // ============================
+        // 3) 加载并执行 JS Module
+        // ============================
         const script = document.createElement('script');
         script.id = 'n8n-chat-script';
         script.type = 'module';
@@ -36,74 +113,13 @@ export default function N8nChatbot() {
                         placeholder: '请输入您的问题...',
                         sendButtonText: '发送'
                     }
-                },
-                style: {
-                    // 🎨 品牌主色 — 触发按钮 & 强调色 (源码: --chat--color--primary)
-                    '--chat--color--primary': '#FF7A00',
-                    '--chat--color--primary-shade-50': '#E66E00',
-                    '--chat--color--primary--shade-100': '#CC6200',
-
-                    // 🎨 次要色 — 用户气泡 & 发送按钮 (源码: --chat--color--secondary)
-                    '--chat--color--secondary': '#FF7A00',
-                    '--chat--color-secondary-shade-50': '#E66E00',
-
-                    // 🔤 字体 (与网站主字体保持一致)
-                    '--chat--font-family': "'Plus Jakarta Sans', 'Noto Sans SC', sans-serif",
-
-                    // 📐 通用圆角
-                    '--chat--border-radius': '12px',
-
-                    // 🪟 窗口样式
-                    '--chat--window--border-radius': '16px',
-
-                    // 💬 消息气泡圆角
-                    '--chat--message--border-radius': '12px',
-
-                    // 🤖 Bot 气泡 (暖奶白底色，温暖不刺眼)
-                    '--chat--message--bot--background': '#FFF5EB',
-                    '--chat--message--bot--color': '#3D3126',
-                    '--chat--message--bot--border': 'none',
-
-                    // 👤 用户气泡 (品牌橙底，白字)
-                    '--chat--message--user--background': '#FF7A00',
-                    '--chat--message--user--color': '#FFFFFF',
-                    '--chat--message--user--border': 'none',
-
-                    // 🏷️ 头部区域 (深色底 + 浅字)
-                    '--chat--header--background': '#1F1A15',
-                    '--chat--header--color': '#FFFFFF',
-
-                    // 🔘 触发按钮 (品牌色)
-                    '--chat--toggle--background': '#FF7A00',
-                    '--chat--toggle--hover--background': '#E66E00',
-                    '--chat--toggle--active--background': '#CC6200',
-                    '--chat--toggle--color': '#FFFFFF',
-
-                    // ⌨️ 输入区域
-                    '--chat--input--background': '#FFFCF9',
-                    '--chat--input--text-color': '#3D3126',
-
-                    // 📤 发送按钮
-                    '--chat--input--send--button--color': '#FF7A00',
-                    '--chat--input--send--button--background-hover': '#FFF0E0',
-                    '--chat--input--send--button--color-hover': '#E66E00',
-
-                    // 🎯 欢迎屏按钮 (主要按钮)
-                    '--chat--button--background--primary': '#FF7A00',
-                    '--chat--button--background--primary--hover': '#E66E00',
-                    '--chat--button--color--primary': '#FFFFFF',
-                    '--chat--button--color--primary--hover': '#FFFFFF',
-
-                    // 🌤️ 聊天区域背景
-                    '--chat--body--background': '#FFF8F0',
-                    '--chat--color-light': '#FFF8F0',
                 }
             });
         `;
         document.body.appendChild(script);
 
         return () => {
-            // 清理脚本和样式（如果需要完整卸载的话，但通常聊天插件全局驻留即可，无需销毁）
+            // 聊天插件全局驻留，无需销毁
         };
     }, []);
 
