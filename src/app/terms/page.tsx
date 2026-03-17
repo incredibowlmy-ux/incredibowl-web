@@ -8,7 +8,8 @@ export default function TermsAndConditions() {
         <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
                 <Link href="/" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
-                <h1 className="text-4xl font-black mb-10 text-[#E76F51]">Terms & Conditions / 服务条款</h1>
+                <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Terms & Conditions / 服务条款</h1>
+                <p className="text-sm opacity-60 mb-10">Effective Date / 生效日期：2026年3月17日</p>
 
                 <div className="space-y-12 leading-relaxed text-sm">
                     <section>
@@ -19,7 +20,7 @@ export default function TermsAndConditions() {
                     <section>
                         <h2 className="text-xl font-bold mb-4">2. Ordering & Cut-off / 订餐与截止</h2>
                         <ul className="list-disc ml-6 space-y-2">
-                            <li>Cut-off time: 11:00 PM the night before delivery. / 订餐截止：送餐前一晚 11:00 PM。</li>
+                            <li>Cut-off time: 11:00 PM (23:00) the night before delivery. / 订餐截止：送餐前一晚 11:00 PM（23:00）。</li>
                             <li>Subscription orders are automated weekly. / 订阅用户每周自动排单。</li>
                         </ul>
                     </section>
@@ -42,7 +43,26 @@ export default function TermsAndConditions() {
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">5. Pricing & Payments / 定价与支付</h2>
-                        <p>Prices are in RM. We accept Curlec (Online Payment) and Bank QR. No 3rd party commission fees are added. / 价格以令吉标示。支持 Curlec 及银行扫码支付。</p>
+                        <p>Prices are in RM. We accept Curlec (Online Payment) and DuitNow QR. No 3rd party commission fees are added. / 价格以令吉标示。支持 Curlec 在线支付及 DuitNow QR 扫码支付。</p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold mb-4">6. Limitation of Liability / 免责声明</h2>
+                        <ul className="list-disc ml-6 space-y-2">
+                            <li>Incredibowl is not liable for allergic reactions if the customer fails to inform us of known allergies prior to ordering. / 若顾客未在下单前告知已知过敏源，Incredibowl 不承担过敏反应的责任。</li>
+                            <li>Delivery delays caused by traffic, weather, or other force majeure events are beyond our control. We will do our best to communicate delays promptly. / 因交通、天气或其他不可抗力导致的配送延迟不在我们的控制范围内，我们会尽快通知。</li>
+                            <li>Food is prepared in a home kitchen and is intended for immediate consumption. We are not responsible for food stored improperly after delivery. / 食品在家庭厨房制作，建议即时食用。送达后因不当存放导致的问题，我方不承担责任。</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold mb-4">7. Intellectual Property / 知识产权</h2>
+                        <p>All content on the Incredibowl website — including brand name, logos, images, food photography, menu descriptions, and recipes — is the property of Incredibowl. Unauthorized reproduction or redistribution is prohibited. / Incredibowl 网站上的所有内容——包括品牌名称、标志、图片、菜品摄影、菜单描述及食谱——均为 Incredibowl 所有。未经授权禁止复制或转发。</p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold mb-4">8. Changes to Terms / 条款变更</h2>
+                        <p>We reserve the right to update these terms at any time. Changes will be reflected on this page with an updated effective date. Continued use of our service constitutes acceptance of the revised terms. / 我们保留随时更新本条款的权利。变更将在此页面更新并标注新的生效日期。继续使用我们的服务即表示接受修订后的条款。</p>
                     </section>
                 </div>
             </div>
