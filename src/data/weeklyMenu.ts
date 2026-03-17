@@ -55,7 +55,7 @@ export const weeklyMenu: MenuItem[] = [
         day: "Thu / 周四",
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
-        price: 19.90,
+        price: 18.50,
         image: "/pork_potato_stew.jpg",
         tags: ["~650 kcal*", "能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。"
