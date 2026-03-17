@@ -27,7 +27,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Chinese Yam & Black Fungus Surf & Turf",
         price: 18.50,
         image: "/chinese_yam_black_fungus_v3.jpg",
-        tags: ["~600 kcal*", "高蛋白 31g+", "海陆双蛋白", "养胃滋补", "健脾益胃", "清肺润燥"],
+        tags: ["~600 kcal*", "高蛋白 31g+", "养胃滋补", "健脾益胃", "清肺润燥"],
         desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。"
     },
     {
@@ -37,7 +37,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
         image: "/angelica_chicken.png",
-        tags: ["~680 kcal*", "高蛋白 45g+", "当归补血", "暖身滋补", "补血活血", "增强免疫", "阿姨拿手"],
+        tags: ["~680 kcal*", "高蛋白 45g+", "当归补血", "暖身滋补", "阿姨拿手"],
         desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。"
     },
     {

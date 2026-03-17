@@ -17,7 +17,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
     const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const timer = setTimeout(() => { scrollToIndex(0); }, 800);
+        const timer = setTimeout(() => { scrollToIndex(1); }, 800);
         return () => clearTimeout(timer);
     }, []);
 
