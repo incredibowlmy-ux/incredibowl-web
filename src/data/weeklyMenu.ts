@@ -57,7 +57,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
         image: "/pork_potato_stew.jpg",
-        tags: ["能量补给", "软糯入味"],
+        tags: ["~650 kcal*", "胶原满满", "汤汁拌饭三碗半", "能量补给", "软糯入味"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。"
     },
     {
@@ -67,7 +67,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Golden Scallion Pan-Fried Chicken Soup",
         price: 18.50,
         image: "/scallion_chicken_soup.jpg",
-        tags: ["清淡排毒", "治愈高汤"],
+        tags: ["~700 kcal*", "高蛋白 37g+", "驱寒暖身", "肠胃温柔乡", "清淡排毒", "治愈高汤"],
         desc: "一碗葱香清汤，洗去一周疲惫，干干净净迎周末。"
     }
 ];
