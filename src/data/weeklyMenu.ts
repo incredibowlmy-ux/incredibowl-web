@@ -37,7 +37,7 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
         image: "/angelica_chicken.png",
-        tags: ["补血活血", "增强免疫", "阿姨拿手"],
+        tags: ["~680 kcal*", "高蛋白 45g+", "当归补血", "暖身滋补", "补血活血", "增强免疫", "阿姨拿手"],
         desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。"
     },
     {
