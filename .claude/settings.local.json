@@ -26,7 +26,14 @@
       "Bash(git add src/app/api/payment/fpx-callback/route.ts)",
       "Bash(git add src/lib/orders.ts src/components/cart/CartDrawer.tsx src/app/page.tsx src/app/api/payment/fpx-callback/route.ts)",
       "Bash(npm install firebase-admin)",
-      "Bash(npm install @opentelemetry/api)"
+      "Bash(npm install @opentelemetry/api)",
+      "Bash(curl -sL https://incredibowl.my)",
+      "Bash(curl -sL https://incredibowl.my/_next/static/chunks/6c9c6f66d73570b6.js)",
+      "Bash(grep -oE '.{0,30}kcal.{0,30}')",
+      "Bash(grep -oE '.{0,20}600 kcal.{0,20}')",
+      "Bash(grep -oE '.{0,10}健脾益胃.{0,30}')",
+      "Bash(curl -sL https://incredibowl.my/_next/version)",
+      "Bash(curl -sI https://incredibowl.my)"
     ]
   }
 }
