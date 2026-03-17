@@ -5,10 +5,10 @@ import { weeklyMenu } from '@/data/weeklyMenu';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
-async function getAdminDb() {
+async function getDb() {
   if (adminDb) return adminDb;
-  const { adminFirestore } = await import('@/lib/firebase-admin');
-  adminDb = adminFirestore;
+  const { getAdminDb } = await import('@/lib/firebase-admin');
+  adminDb = getAdminDb();
   return adminDb;
 }
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
     // ── Validate voucher (if provided) ────────────────────────
     let serverPromoDiscount = 0;
-    const db = await getAdminDb();
+    const db = await getDb();
 
     if (promoCode && clientPromoDiscount > 0) {
       const code = promoCode.trim().toUpperCase();
