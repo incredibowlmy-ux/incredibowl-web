@@ -9,7 +9,9 @@ function getAdminApp(): App {
         credential: cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            privateKey: process.env.FIREBASE_PRIVATE_KEY
+                ?.replace(/^"|"$/g, '')   // 去掉首尾多余的引号
+                .replace(/\\n/g, '\n'),   // \n 文字转成真正的换行
         }),
     });
     return adminApp;
