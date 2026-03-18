@@ -19,7 +19,6 @@ import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { updateOrderStatus } from '@/lib/orders';
 import { CheckCircle } from 'lucide-react';
 
 export default function V4BentoLayout() {
@@ -62,7 +61,11 @@ export default function V4BentoLayout() {
                 try {
                     const { orderIds } = JSON.parse(pendingStr);
                     // Cancel orphan pending orders on FPX error
-                    Promise.all((orderIds as string[]).map(id => updateOrderStatus(id, 'cancelled'))).catch(() => { });
+                    fetch('/api/confirm-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds, status: 'cancelled' }),
+                    }).catch(() => { });
                 } catch (e) {
                     console.error('FPX pending order parse error during cancellation:', e);
                 }
@@ -115,11 +118,12 @@ export default function V4BentoLayout() {
                         return;
                     }
                     const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
-                    await Promise.all(
-                        (orderIds as string[]).map((id: string, i: number) =>
-                            updateOrderStatus(id, 'confirmed', payloads[i], payData)
-                        )
-                    );
+                    const confirmRes = await fetch('/api/confirm-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
+                    });
+                    if (!confirmRes.ok) throw new Error('订单确认失败');
                     const successId = isMultiPart ? groupId : orderIds[0];
                     setFpxSuccessId(successId);
                     clearCart();

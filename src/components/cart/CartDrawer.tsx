@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, X, Plus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
-import { updateOrderStatus } from '@/lib/orders';
+// updateOrderStatus moved to server-side /api/confirm-order
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import CartSuccess from './CartSuccess';
@@ -245,14 +245,23 @@ export default function CartDrawer({
                     razorpayOrderId: paymentResult.razorpay_order_id,
                     razorpaySignature: paymentResult.razorpay_signature,
                 };
-                // Step 3: Confirm all pending orders.
-                await Promise.all(orderIds.map(id => updateOrderStatus(id, 'confirmed', { userId: currentUser!.uid, total: finalTotal / orderIds.length }, payData)));
+                // Step 3: Confirm all pending orders via server-side API.
+                const confirmRes = await fetch('/api/confirm-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
+                });
+                if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || '订单确认失败');
                 sessionStorage.removeItem('fpx_pending_order');
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
                 if (err.message === '已取消支付') {
-                    await Promise.all(orderIds.map(id => updateOrderStatus(id, 'cancelled'))).catch(() => {});
+                    await fetch('/api/confirm-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds, status: 'cancelled' }),
+                    }).catch(() => {});
                     sessionStorage.removeItem('fpx_pending_order');
                 } else {
                     alert(err.message || '支付失败，请重试');

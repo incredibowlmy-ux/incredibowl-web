@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
-import { getAllOrders, updateOrderStatus, getAllUsers, OrderStatus } from '@/lib/orders';
+import { getAllOrders, getAllUsers, OrderStatus } from '@/lib/orders';
 import { getAllFeedbacks, updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
 import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, LucideIcon } from 'lucide-react';
@@ -138,7 +138,12 @@ export default function AdminPage() {
 
     const handleStatusChange = async (order: AdminOrder, newStatus: OrderStatus) => {
         try {
-            await updateOrderStatus(order.id, newStatus, order);
+            const res = await fetch('/api/confirm-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderIds: [order.id], status: newStatus }),
+            });
+            if (!res.ok) throw new Error((await res.json()).error || '操作失败');
             setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
         } catch (error) {
             alert('更新失败: ' + error);
