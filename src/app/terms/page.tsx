@@ -20,7 +20,7 @@ export default function TermsAndConditions() {
                     <section>
                         <h2 className="text-xl font-bold mb-4">2. Ordering & Cut-off / 订餐与截止</h2>
                         <ul className="list-disc ml-6 space-y-2">
-                            <li>Cut-off time: 11:00 PM (23:00) the night before delivery. / 订餐截止：送餐前一晚 11:00 PM（23:00）。</li>
+                            <li>Cut-off time: 06:00 AM on the day of delivery. / 订餐截止：送餐当天早上 06:00 AM。</li>
                             <li>Subscription orders are automated weekly. / 订阅用户每周自动排单。</li>
                         </ul>
                     </section>

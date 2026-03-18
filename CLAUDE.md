@@ -53,6 +53,7 @@ The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No M
 - `src/app/api/payment/*`: Backend routes for Razorpay `create-order` (uses lazy initialization to prevent Vercel build errors) and `verify`.
 
 ## ⚙️ Key Workflows & Known Quirks
+- **Order Cut-off**: 每天早上 06:00 截单。06:00 前的单提供当日配送，06:00 后的单提供次日起配送。
 - **Firebase Storage CORS**: DuitNow QR payments require an image upload. The bucket CORS is securely configured; do not overwrite it without checking.
 - **Razorpay Instantiation**: In Next.js API routes, Razorpay is initialized *lazily* inside the POST handler rather than at the module level. This prevents Vercel build failures when env variables aren't present at build time.
 - **Undefined Fields in Firestore**: Always sanitize custom objects before saving to Firestore to prevent `undefined` field errors (e.g., removing `undefined` from add-ons arrays).

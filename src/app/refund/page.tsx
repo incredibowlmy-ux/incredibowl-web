@@ -17,9 +17,9 @@ export default function RefundPolicy() {
                         <div className="space-y-4">
                             <p><strong>A. Cancellation / 取消：</strong></p>
                             <ul className="list-disc ml-6 space-y-2">
-                                <li>Orders must be canceled before <strong>23:00 (11:00 PM)</strong> the night before. / 必须在用餐前一晚 <strong>23:00</strong> 前取消。</li>
+                                <li>Orders must be canceled before <strong>06:00 AM</strong> on the day of delivery. / 必须在用餐当天 <strong>06:00 AM</strong> 前取消。</li>
                                 <li>Cancellations before the cutoff will receive <strong>100% Store Credit (Vouchers)</strong>, valid for <strong>30 days</strong>. No cash refunds. / 截止时间前取消可获得 <strong>100% 店铺抵用券</strong>，有效期 <strong>30天</strong>。不提供现金退款。</li>
-                                <li>No refunds or credits for cancellations after 23:00. / 23:00 后取消将不予退款或补偿。</li>
+                                <li>No refunds or credits for cancellations after 06:00 AM. / 06:00 AM 后取消将不予退款或补偿。</li>
                             </ul>
                         </div>
                     </section>
