@@ -13,17 +13,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://incredibowl.my"),
-  title: "Incredibowl | Old Klang Road 邻里的家常料理",
-  description: "每天为您新鲜采购、坚持无味精烹调的“当日精选”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。让您和家人每餐都吃得健康无负担。",
+  metadataBase: new URL("https://www.incredibowl.my"),
+  title: "Incredibowl | Pearl Point 私厨外送 · 无味精家常菜 · OKR / OUG",
+  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，OKR / OUG 一带 2km 免运。早上 6AM 截单。www.incredibowl.my",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",
   },
   openGraph: {
-    title: "Incredibowl | Old Klang Road 邻里的家常料理",
-    description: "每天为您新鲜采购、坚持无味精烹调的“当日精选”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。",
-    url: "https://incredibowl.my",
+    title: "Incredibowl | Pearl Point 私厨外送",
+    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 免运。",
+    url: "https://www.incredibowl.my",
     siteName: "Incredibowl",
     images: [
       {
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Incredibowl | Old Klang Road 邻里的家常料理",
-    description: "每天为您新鲜采购、坚持无味精烹调的“当日精选”。Incredibowl 就在 Pearl Point 附近，专注为您送上最安心的妈妈味道。",
+    title: "Incredibowl | Pearl Point 私厨外送",
+    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 免运。",
     images: ["/pork_potato_stew.jpg"],
   },
   verification: {
