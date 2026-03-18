@@ -50,7 +50,10 @@
       "Bash(cp .claude/worktrees/agent-ad60f037/src/components/home/HeroSection.tsx src/components/home/HeroSection.tsx)",
       "Bash(cp .claude/worktrees/agent-ad60f037/src/components/home/MenuCarousel.tsx src/components/home/MenuCarousel.tsx)",
       "Bash(cp .claude/worktrees/agent-ad60f037/src/components/menu/AddOnModal.tsx src/components/menu/AddOnModal.tsx)",
-      "Bash(cp .claude/worktrees/agent-ad60f037/src/lib/dateUtils.ts src/lib/dateUtils.ts)"
+      "Bash(cp .claude/worktrees/agent-ad60f037/src/lib/dateUtils.ts src/lib/dateUtils.ts)",
+      "Bash(find C:UsersUser.geminiantigravityscratchincredibowl-websrc -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(cmd /c del \"C:\\\\Users\\\\User\\\\.gemini\\\\antigravity\\\\scratch\\\\incredibowl-web\\\\.git\\\\index.lock\")",
+      "Bash(tasklist)"
     ]
   }
 }

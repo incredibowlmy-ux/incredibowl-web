@@ -66,7 +66,7 @@ export default function RefundPolicy() {
                         <h2 className="text-2xl font-bold mb-4">Contact Us / 联系我们</h2>
                         <p>For any issues, please WhatsApp us immediately. / 如需协助，请立即联系：</p>
                         <p className="text-xl font-bold mt-2">WhatsApp: 010-337 0197</p>
-                        <p className="font-bold">Email: incredibowl.my@gmail.com</p>
+                        <p className="font-bold">Email: hello@incredibowl.my</p>
                     </section>
                 </div>
             </div>

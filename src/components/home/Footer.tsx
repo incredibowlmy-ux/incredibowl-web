@@ -30,7 +30,7 @@ export default function Footer() {
                         <div className="flex justify-center gap-8 text-sm font-bold">
                             <a href="https://wa.me/60103370197" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors"><Phone size={18} /> 010-337 0197</a>
                             <span className="opacity-20 text-[#1A2D23]">|</span>
-                            <a href="mailto:incredibowl.my@gmail.com" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors">incredibowl.my@gmail.com</a>
+                            <a href="mailto:hello@incredibowl.my" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors">hello@incredibowl.my</a>
                         </div>
                         <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black">📍 Pearl Point / Millerz Square / OUG, Kuala Lumpur</p>
                     </div>

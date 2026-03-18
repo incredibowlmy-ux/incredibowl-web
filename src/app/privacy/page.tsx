@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
                         <p>You may request to view or delete your contact info at any time by contacting us: / 您可以随时通过以下方式联系我们，要求查看或删除您的联系信息：</p>
                         <ul className="list-disc ml-6 mt-2 space-y-1">
                             <li>WhatsApp: <strong>010-337 0197</strong></li>
-                            <li>Email: <strong>incredibowl.my@gmail.com</strong></li>
+                            <li>Email: <strong>hello@incredibowl.my</strong></li>
                         </ul>
                     </section>
 
