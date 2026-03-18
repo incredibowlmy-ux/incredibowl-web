@@ -51,6 +51,16 @@ export const weeklyMenu: MenuItem[] = [
         desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。"
     },
     {
+        id: 7,
+        day: "Wed / 周三",
+        name: "希腊柠香烤鸡胸",
+        nameEn: "Greek Mediterranean Lemon Chicken",
+        price: 19.90,
+        image: "/greek_lemon_chicken.png",
+        tags: ["~730 kcal*", "蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
+        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。"
+    },
+    {
         id: 4,
         day: "Thu / 周四",
         name: "马铃薯炖花肉片",
@@ -69,15 +79,5 @@ export const weeklyMenu: MenuItem[] = [
         image: "/scallion_chicken_soup.jpg",
         tags: ["~700 kcal*", "高蛋白 37g+", "驱寒暖身", "治愈高汤", "肠胃温柔乡"],
         desc: "一碗葱香清汤，洗去一周疲惫，干干净净迎周末。"
-    },
-    {
-        id: 7,
-        day: "Wed / 周三",
-        name: "希腊柠香烤鸡胸",
-        nameEn: "Greek Mediterranean Lemon Chicken",
-        price: 19.90,
-        image: "/greek_lemon_chicken.png",
-        tags: ["~730 kcal*", "蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
-        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。"
     }
 ];

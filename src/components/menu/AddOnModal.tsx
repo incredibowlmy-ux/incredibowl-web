@@ -509,7 +509,7 @@ export default function AddOnModal({
                     <div className="px-5 md:px-6 mt-6">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
-                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">每个星期三 / Every Wednesday</h3>
                         </div>
                         <div className="flex flex-col gap-3">
                             {isDaily ? (
