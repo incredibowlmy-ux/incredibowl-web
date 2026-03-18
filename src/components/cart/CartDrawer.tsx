@@ -316,13 +316,16 @@ export default function CartDrawer({
                     <div className="flex-1 p-6 space-y-4">
                         {cart.length === 0 ? (
                             <div className="text-center py-20 text-[#1A2D23]">
-                                <div className="opacity-20 mb-6">
-                                    <Utensils className="w-16 h-16 mx-auto mb-4" />
-                                    <p className="font-bold uppercase tracking-widest text-sm">还没有选中的菜品</p>
+                                <div className="mb-6 flex flex-col items-center justify-center">
+                                    <div className="w-20 h-20 bg-[#FF6B35]/5 rounded-full flex items-center justify-center mb-4">
+                                        <Utensils className="w-10 h-10 text-[#FF6B35]/60" />
+                                    </div>
+                                    <p className="font-bold text-lg mb-2 text-[#3B2A1A]">阿姨的锅已经热好了 🍳</p>
+                                    <p className="text-sm font-medium text-[#8B7355] max-w-[200px] leading-relaxed mx-auto">快去选一道今天心仪的家常菜吧！</p>
                                 </div>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
-                                    className="px-6 py-2.5 bg-[#FF6B35] text-white text-sm font-black rounded-xl hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20">
-                                    去点菜 →
+                                    className="px-8 py-3.5 bg-[#FF6B35] text-white text-base font-black rounded-2xl flex items-center justify-center gap-2 mx-auto hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/20 hover:-translate-y-1 active:scale-95">
+                                    <ShoppingBag size={18} /> 去选餐
                                 </button>
                             </div>
                         ) : (
@@ -337,22 +340,37 @@ export default function CartDrawer({
                                     if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [] };
                                     acc[key].items.push(item);
                                     return acc;
-                                }, {})).sort().map(([key, group]: any) => (
-                                    <div key={key} className="space-y-3 mb-8">
-                                        <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm">
-                                            <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center">
-                                                <Calendar size={14} className="text-[#1A2D23]" />
+                                }, {})).sort().map(([key, group]: any) => {
+                                    const d = new Date();
+                                    const ymdToday = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                                    const dTom = new Date(); dTom.setDate(dTom.getDate() + 1);
+                                    const ymdTom = `${dTom.getFullYear()}-${String(dTom.getMonth()+1).padStart(2,'0')}-${String(dTom.getDate()).padStart(2,'0')}`;
+                                    
+                                    let dateBadge = null;
+                                    if (group.date === ymdToday) {
+                                        dateBadge = <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-green-500/20">今日配送</span>;
+                                    } else if (group.date === ymdTom) {
+                                        dateBadge = <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-blue-500/20">明日配送</span>;
+                                    }
+
+                                    return (
+                                        <div key={key} className="space-y-3 mb-8">
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm overflow-hidden">
+                                                <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center shrink-0">
+                                                    <Calendar size={14} className="text-[#1A2D23]" />
+                                                </div>
+                                                <span className="text-sm font-black text-[#1A2D23] truncate">{group.date}</span>
+                                                <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold shrink-0">
+                                                    {group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}
+                                                </span>
+                                                {dateBadge && <div className="ml-auto flex items-center">{dateBadge}</div>}
                                             </div>
-                                            <span className="text-sm font-black text-[#1A2D23]">{group.date}</span>
-                                            <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold">
-                                                {group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}
-                                            </span>
+                                            {group.items.map((item: any, i: number) => (
+                                                <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} />
+                                            ))}
                                         </div>
-                                        {group.items.map((item: any, i: number) => (
-                                            <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} />
-                                        ))}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </>
                         )}
 
