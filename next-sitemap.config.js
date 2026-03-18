@@ -2,5 +2,5 @@
 module.exports = {
   siteUrl: 'https://www.incredibowl.my',
   generateRobotsTxt: true, // (optional)
-  // ...other options
+  generateIndexSitemap: false, // 禁用索引，直接输出 URL
 }
