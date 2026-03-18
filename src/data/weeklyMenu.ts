@@ -51,7 +51,7 @@ export const weeklyMenu: MenuItem[] = [
         desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。"
     },
     {
-        id: 7,
+        id: 3,
         day: "Wed / 周三",
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",

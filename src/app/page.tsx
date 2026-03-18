@@ -260,7 +260,7 @@ export default function V4BentoLayout() {
                     dish={selectedDish}
                     onAddToCart={handleAddWithAddOns}
                     defaultDate={menuDates[selectedDish.id]?.actualDate}
-                    isDaily={selectedDish.id === 6}
+                    isDaily={selectedDish.day === 'Daily / 常驻'}
                     minDate={minDate}
                     dateLabel={menuDates[selectedDish.id]?.topTag}
                     initialConfig={editConfig}

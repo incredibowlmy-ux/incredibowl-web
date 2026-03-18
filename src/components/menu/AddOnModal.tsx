@@ -509,7 +509,7 @@ export default function AddOnModal({
                     <div className="px-5 md:px-6 mt-6">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
-                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">每个星期三 / Every Wednesday</h3>
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
                         </div>
                         <div className="flex flex-col gap-3">
                             {isDaily ? (
@@ -519,7 +519,7 @@ export default function AddOnModal({
                                     </div>
                                     <input
                                         type="date"
-                                        className="w-full pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold"
+                                        className="w-full block appearance-none min-h-[46px] pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold"
                                         value={selectedDate}
                                         min={minDate}
                                         onChange={(e) => {
@@ -543,7 +543,7 @@ export default function AddOnModal({
                                     <Clock size={16} className="text-[#2D5F3E]" />
                                 </div>
                                 <select
-                                    className="w-full pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold cursor-pointer"
+                                    className="w-full block appearance-none min-h-[46px] pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold cursor-pointer"
                                     value={selectedTime}
                                     onChange={(e) => setSelectedTime(e.target.value)}
                                 >
