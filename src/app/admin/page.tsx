@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
 
-const ADMIN_EMAILS = ['hello@incredibowl.my']; // Add your email here
+const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com']; // Add your email here
 const PAGE_SIZE = 20;
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color: string; icon: LucideIcon }> = {
