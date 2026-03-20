@@ -49,9 +49,9 @@ const defaultAddOnSections: AddOnSection[] = [
         items: [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
             { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
-            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 2.50, category: 'alacarte' },
-            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
-            { id: 'extra-corn', name: '金黄甜玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
+            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'alacarte' },
+            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
+            { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
             { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.png', category: 'alacarte' },
         ]
     },
@@ -216,11 +216,18 @@ export default function AddOnModal({
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
                             { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 8.50, category: 'sides', maxQty: 3 },
-                            { id: 'edamame', name: '枝豆 (50g)', nameEn: 'Edamame', price: 2.00, category: 'sides', maxQty: 3 },
-                            { id: 'corn', name: '玉米粒 (50g)', nameEn: 'Corn', price: 2.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: 2.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'cherry-tomato', name: '小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.00, category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
+                    };
+                }
+                if (section.id === 'alacarte') {
+                    // Remove global extra-edamame and extra-corn from alacarte for this dish
+                    return {
+                        ...section,
+                        items: section.items.filter(item => item.id !== 'extra-edamame' && item.id !== 'extra-corn')
                     };
                 }
                 return section;
