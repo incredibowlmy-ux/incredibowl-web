@@ -181,10 +181,10 @@ export default function AddOnModal({
             const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'surf-turf-combo',
                 title: '✨ 鲜上加鲜！海陆澎湃大翻倍',
-                titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.90) · Max 3',
+                titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：鲜甜大虾仁 4只 + 嫩滑手撕鸡胸 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
+                extraDesc: '包含：鲜甜大虾仁 4只 + 嫩滑鸡胸块 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
                 items: [
                     { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: 11.90, category: 'combo' }
                 ]
@@ -195,7 +195,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             { id: 'extra-prawns', name: '鲜甜大虾仁 (4只)', nameEn: 'Extra Sweet Prawns (4pcs)', price: 7.00, category: 'sides', maxQty: 3 },
-                            { id: 'extra-chicken-breast', name: '嫩滑手撕鸡胸 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: 4.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-breast', name: '嫩滑鸡胸块 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: 4.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: 4.00, category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame', name: '清甜水煮毛豆 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'sides', maxQty: 3 },
@@ -473,7 +473,7 @@ export default function AddOnModal({
 
                                     {/* Section Items */}
                                     <div
-                                        className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
+                                        className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}
                                     >
                                         <div className={`border-t ${isSpecialCombo ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
                                             {section.items.map((item, itemIdx) => {
