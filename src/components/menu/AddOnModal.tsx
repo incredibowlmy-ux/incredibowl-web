@@ -176,6 +176,39 @@ export default function AddOnModal({
             return [nattoSpecial, ...customSections];
         }
 
+        // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
+        if (dish.id === 12) {
+            const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
+                id: 'surf-turf-combo',
+                title: '✨ 鲜上加鲜！海陆澎湃大翻倍',
+                titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.90) · Max 3',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：鲜甜大虾仁 4只 + 嫩滑手撕鸡胸 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
+                items: [
+                    { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: 11.90, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            { id: 'extra-prawns', name: '鲜甜大虾仁 (4只)', nameEn: 'Extra Sweet Prawns (4pcs)', price: 7.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-breast', name: '嫩滑手撕鸡胸 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: 4.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: 2.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: 4.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-edamame', name: '清甜水煮毛豆 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-corn', name: '金黄甜玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'sides', maxQty: 3 },
+                            ...section.items
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [surfTurfSpecial, ...customSections];
+        }
+
         // If it's Golden Crispy Chicken Chop (id: 1), append specific add-ons to the sides
         if (dish.id === 1) {
             return addOnSections.map(section => {
@@ -407,19 +440,20 @@ export default function AddOnModal({
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
+                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo';
 
                             return (
-                                <div key={section.id} className={`bg-white rounded-2xl border ${section.id === 'natto-combo' ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
+                                <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
                                     {/* Section Header */}
                                     <button
                                         onClick={() => toggleSection(section.id)}
-                                        className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${section.id === 'natto-combo' ? 'bg-[#FFF3E0]' : ''}`}
+                                        className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${isSpecialCombo ? 'bg-[#FFF3E0]' : ''}`}
                                     >
                                         <div className="text-left">
-                                            <h3 className={`text-sm font-extrabold ${section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
+                                            <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
                                                 {section.title}
                                             </h3>
-                                            <p className={`text-[11px] font-medium ${section.id === 'natto-combo' ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
+                                            <p className={`text-[11px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
                                                 {section.titleEn}
                                             </p>
                                             {(section as any).extraDesc && (
@@ -430,9 +464,9 @@ export default function AddOnModal({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isExpanded ? (
-                                                <ChevronUp size={18} className={section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                                <ChevronUp size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
                                             ) : (
-                                                <ChevronDown size={18} className={section.id === 'natto-combo' ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                                <ChevronDown size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
                                             )}
                                         </div>
                                     </button>
@@ -441,7 +475,7 @@ export default function AddOnModal({
                                     <div
                                         className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
                                     >
-                                        <div className={`border-t ${section.id === 'natto-combo' ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
+                                        <div className={`border-t ${isSpecialCombo ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
                                             {section.items.map((item, itemIdx) => {
                                                 const qty = quantities[item.id] || 0;
                                                 const sectionCount = getSectionSelectedCount(section);
@@ -450,7 +484,7 @@ export default function AddOnModal({
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (section.id === 'natto-combo' ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
+                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (isSpecialCombo ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
                                                     >
                                                         {/* Thumbnail */}
                                                         {item.image && (
