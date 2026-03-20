@@ -35,8 +35,6 @@ const defaultAddOnSections: AddOnSection[] = [
         minSelect: 0,
         maxSelect: 50, // High limit as we're focusing on per-item limit now
         items: [
-            { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'sides' },
-            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'sides' },
             { id: 'less-rice', name: '少饭 (150g)', nameEn: 'Less Rice', price: 0.00, category: 'sides', maxQty: 1 },
             { id: 'extra-rice', name: '加饭 (150g)', nameEn: 'Extra Rice', price: 2.00, category: 'sides' },
             { id: 'brown-rice', name: '白饭换糙米 (180g)', nameEn: 'Swap Brown Rice', price: 2.00, category: 'sides', maxQty: 1 },
@@ -49,7 +47,11 @@ const defaultAddOnSections: AddOnSection[] = [
         minSelect: 0,
         maxSelect: 30,
         items: [
-            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.50, category: 'alacarte' },
+            { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
+            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
+            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 2.50, category: 'alacarte' },
+            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
+            { id: 'extra-corn', name: '金黄甜玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
             { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.png', category: 'alacarte' },
         ]
     },
@@ -162,13 +164,10 @@ export default function AddOnModal({
                     };
                 }
                 if (section.id === 'alacarte') {
+                    // Filter out onsen-egg from alacarte because it's already in sides for natto
                     return {
                         ...section,
-                        items: [
-                            { id: 'sunny-egg-alacarte', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
-                            { id: 'potato-egg-alacarte', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
-                            ...section.items.filter(item => item.id.includes('chia-pudding'))
-                        ]
+                        items: section.items.filter(item => item.id !== 'onsen-egg')
                     };
                 }
                 return section;
@@ -176,6 +175,7 @@ export default function AddOnModal({
             return [nattoSpecial, ...customSections];
         }
 
+        // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         if (dish.id === 12) {
             const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
@@ -199,19 +199,6 @@ export default function AddOnModal({
                             { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: 4.00, category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
-                        ]
-                    };
-                }
-                if (section.id === 'alacarte') {
-                    const eggs = defaultAddOnSections.find(s => s.id === 'sides')?.items.filter(item => item.id === 'sunny-egg' || item.id === 'potato-egg').map(egg => ({...egg, category: 'alacarte', id: egg.id + '-alacarte'})) || [];
-                    
-                    return {
-                        ...section,
-                        items: [
-                            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
-                            { id: 'extra-corn', name: '玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
-                            ...eggs,
-                            ...section.items
                         ]
                     };
                 }
