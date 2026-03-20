@@ -43,7 +43,7 @@ export default function DeliveryWidget() {
                 <div className="text-left w-full space-y-2 mb-6">
                     <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-[#FF6B35]">📍</span>超出 2km：需补充运费</p>
                     <p className="text-[#FF6B35] font-bold text-[10px] pl-5">(* 非免运区：满 5 份运费 RM10；满 10 份免运)</p>
-                    <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-blue-500">⏰</span>截单时间：前一晚 11:00 PM</p>
+                    <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-blue-500">⏰</span>截单时间：每天早上 06:00 (06:00 前当日送，之后次日起送)</p>
                     <p className="text-xs font-bold text-gray-600 flex items-start gap-1"><span className="text-blue-500">🚚</span>配送时间：11am-1pm / 5:30pm-8pm</p>
                 </div>
 

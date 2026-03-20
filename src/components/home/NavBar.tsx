@@ -25,7 +25,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
         <>
             <div className="fixed top-0 w-full z-[60] bg-[#FF6B35] text-white px-3 py-1.5 text-center flex justify-center items-center shadow-md">
                 <p className="text-[10px] sm:text-xs font-black tracking-wide truncate">
-                    温馨提示：每晚 11:00 PM 截单 <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                    温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                 </p>
             </div>
             <nav className={`fixed w-full z-50 transition-all duration-500 top-[26px] sm:top-[28px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
