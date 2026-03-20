@@ -135,8 +135,8 @@ export default function AddOnModal({
     const activeAddOnSections = React.useMemo(() => {
         if (!dish) return addOnSections;
 
-        // If it's Natto Rice Bowl (id: 6), prepend a special combo section
-        if (dish.id === 6) {
+        // If it's Natto Rice Bowl (id: 11), prepend a special combo section
+        if (dish.id === 11) {
             const nattoSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'natto-combo',
                 title: '✨ 升级你的 Incredibowl！',
@@ -524,6 +524,13 @@ export default function AddOnModal({
                                         min={minDate}
                                         onChange={(e) => {
                                             const selected = e.target.value;
+                                            const selDate = new Date(selected);
+                                            // 0=Sunday, 6=Saturday
+                                            const day = selDate.getDay();
+                                            if (day === 0 || day === 6) {
+                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for Auntie's rest!)");
+                                                return;
+                                            }
                                             if (selected < (minDate || "")) {
                                                 setSelectedDate(minDate || "");
                                             } else {

@@ -11,7 +11,7 @@ export interface MenuItem {
 
 export const weeklyMenu: MenuItem[] = [
     {
-        id: 6,
+        id: 11,
         day: "Daily / 常驻",
         name: "纳豆月见海苔饭",
         nameEn: "Natto Tsukimi Seaweed Rice Bowl",
@@ -21,7 +21,7 @@ export const weeklyMenu: MenuItem[] = [
         desc: "经典的健康选择。纳豆的鲜香配上顺滑的月见蛋，简单却极富层次。"
     },
     {
-        id: 2,
+        id: 12,
         day: "Daily / 常驻",
         name: "山药云耳海陆双鲜炒",
         nameEn: "Chinese Yam & Black Fungus Surf & Turf",
@@ -31,7 +31,7 @@ export const weeklyMenu: MenuItem[] = [
         desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。"
     },
     {
-        id: 3,
+        id: 13,
         day: "Daily / 常驻",
         name: "招牌原盅当归清蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
