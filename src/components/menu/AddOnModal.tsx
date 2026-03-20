@@ -198,8 +198,19 @@ export default function AddOnModal({
                             { id: 'extra-chicken-breast', name: '嫩滑鸡胸块 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: 4.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: 4.00, category: 'sides', maxQty: 3 },
-                            { id: 'extra-edamame', name: '清甜水煮毛豆 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'sides', maxQty: 3 },
-                            { id: 'extra-corn', name: '金黄甜玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
+                        ]
+                    };
+                }
+                if (section.id === 'alacarte') {
+                    const eggs = defaultAddOnSections.find(s => s.id === 'sides')?.items.filter(item => item.id === 'sunny-egg' || item.id === 'potato-egg').map(egg => ({...egg, category: 'alacarte', id: egg.id + '-alacarte'})) || [];
+                    
+                    return {
+                        ...section,
+                        items: [
+                            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
+                            { id: 'extra-corn', name: '玉米粒 (50g)', nameEn: 'Sweet Corn (50g)', price: 3.00, category: 'alacarte', maxQty: 3 },
+                            ...eggs,
                             ...section.items
                         ]
                     };
