@@ -528,7 +528,7 @@ export default function AddOnModal({
                                             // 0=Sunday, 6=Saturday
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
-                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for Bowl Mom's rest!)");
+                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for BowlMama's rest!)");
                                                 return;
                                             }
                                             if (selected < (minDate || "")) {

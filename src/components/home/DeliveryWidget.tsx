@@ -20,7 +20,7 @@ export default function DeliveryWidget() {
                 <p className="text-white/80 font-medium text-sm leading-relaxed mb-6 max-w-xl">
                     碗妈骑着小电驴，只送家门口的邻居。<br />
                     新鲜现煮，不跑远路，味道不打折。<br />
-                    <span className="text-xs text-white/50 italic mt-1 block">Bowl Mom delivers on her trusty e-bike — only to neighbours within reach, so every meal arrives hot & fresh.</span>
+                    <span className="text-xs text-white/50 italic mt-1 block">BowlMama delivers on her trusty e-bike — only to neighbours within reach, so every meal arrives hot & fresh.</span>
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-4 text-xs font-bold text-white/90">
                     {DELIVERY_LOCATIONS.map(loc => (
@@ -51,7 +51,7 @@ export default function DeliveryWidget() {
                 <p className="text-[10px] text-gray-400 italic mb-4">Not sure if we deliver to you?</p>
 
                 <a
-                    href="https://wa.me/60103370197?text=Hi%20Bowl%20Mom!%20%E7%9C%8B%E4%BA%86%E4%BD%A0%E7%9A%84%E8%8F%9C%E5%8D%95%E6%9E%81%E5%BA%A6%E6%83%B3%E5%BF%B5%20home-cooked%20food%20%EF%BC%8C%E6%83%B3%E7%A1%AE%E8%AE%A4%E6%88%91%E8%BF%99%E8%BE%B9%E7%9A%84%E5%9C%B0%E5%9D%80%E6%9C%89%E6%B2%A1%E6%9C%89%E5%9C%A8%20delivery%20coverage%20%E9%87%8C%E9%9D%A2%E5%91%A2%EF%BC%9F%0A%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80/Condo%E6%98%AF%20%EF%BC%9A"
+                    href="https://wa.me/60103370197?text=Hi%20BowlMama!%20%E7%9C%8B%E4%BA%86%E4%BD%A0%E7%9A%84%E8%8F%9C%E5%8D%95%E6%9E%81%E5%BA%A6%E6%83%B3%E5%BF%B5%20home-cooked%20food%20%EF%BC%8C%E6%83%B3%E7%A1%AE%E8%AE%A4%E6%88%91%E8%BF%99%E8%BE%B9%E7%9A%84%E5%9C%B0%E5%9D%80%E6%9C%89%E6%B2%A1%E6%9C%89%E5%9C%A8%20delivery%20coverage%20%E9%87%8C%E9%9D%A2%E5%91%A2%EF%BC%9F%0A%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80/Condo%E6%98%AF%20%EF%BC%9A"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full py-3.5 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20"

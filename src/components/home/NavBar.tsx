@@ -23,10 +23,39 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
 
     return (
         <>
-            <div className="fixed top-0 w-full z-[60] bg-[#FF6B35] text-white px-3 py-1.5 text-center flex justify-center items-center shadow-md">
-                <p className="text-[10px] sm:text-xs font-black tracking-wide truncate">
-                    温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
-                </p>
+            <div className="fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[26px] sm:h-[28px] flex items-center">
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                    @keyframes marquee-horizontal {
+                        0% { transform: translateX(0); }
+                        100% { transform: translateX(-50%); }
+                    }
+                    .animate-marquee-mobile {
+                        animation: marquee-horizontal 15s linear infinite;
+                        display: flex;
+                        width: max-content;
+                    }
+                `}} />
+                
+                {/* Desktop Version */}
+                <div className="hidden sm:flex w-full justify-center px-3">
+                    <p className="text-xs font-black tracking-wide truncate">
+                        温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                    </p>
+                </div>
+
+                {/* Mobile Marquee Version (Larger font, animated) */}
+                <div className="sm:hidden w-full flex items-center">
+                    <div className="animate-marquee-mobile">
+                        <span className="text-[12px] font-bold tracking-wide px-4">
+                            温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                        </span>
+                        {/* Duplicate for seamless infinite loop */}
+                        <span className="text-[12px] font-bold tracking-wide px-4">
+                            温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                        </span>
+                    </div>
+                </div>
             </div>
             <nav className={`fixed w-full z-50 transition-all duration-500 top-[26px] sm:top-[28px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
