@@ -48,8 +48,8 @@ const defaultAddOnSections: AddOnSection[] = [
         maxSelect: 30,
         items: [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
-            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'alacarte' },
+            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
             { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
             { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
             { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.png', category: 'alacarte' },
@@ -156,7 +156,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: 4.90, category: 'sides' },
-                            { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: 2.50, category: 'sides' },
+                            { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'sides' },
                             { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: 2.00, category: 'sides' },
                             { id: 'soy-sauce', name: '秘制日本酱油', nameEn: 'Secret Japanese Soy Sauce', price: 1.50, category: 'sides' },
                             ...section.items.filter(item => item.id.includes('rice') && item.id !== 'brown-rice')
@@ -175,7 +175,6 @@ export default function AddOnModal({
             return [nattoSpecial, ...customSections];
         }
 
-        // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         if (dish.id === 12) {
             const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
@@ -218,7 +217,7 @@ export default function AddOnModal({
                             { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 8.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: 2.50, category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.00, category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.00, category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
