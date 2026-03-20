@@ -6,7 +6,7 @@ import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks'
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 const SEED_FEEDBACKS = [
-    { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，阿姨的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
+    { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
     { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
 ];
@@ -135,7 +135,7 @@ export default function FeedbackSection() {
                                     <textarea
                                         value={feedbackText}
                                         onChange={e => setFeedbackText(e.target.value)}
-                                        placeholder="阿姨煮的菜好吃吗？"
+                                        placeholder="碗妈煮的菜好吃吗？"
                                         rows={4}
                                         className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium resize-none"
                                         required

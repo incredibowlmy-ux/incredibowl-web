@@ -35,7 +35,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                         <Image src="/logo.png" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23]">阿姨的厨房</h1>
+                        <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23]">碗妈的厨房</h1>
                         <div className="flex items-center gap-2">
                             <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
                             <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>

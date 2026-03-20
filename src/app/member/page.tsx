@@ -209,7 +209,7 @@ export default function MemberPage() {
     const handleReorder = (order: any) => {
         // Build WhatsApp message with order details
         const items = order.items?.map((item: any) => `${item.name} x${item.quantity}`).join('\n') || '';
-        const msg = `🍛 我想再来一单！\n\n${items}\n\n总计: RM ${(order.total || 0).toFixed(2)}\n📍 地址: ${order.userAddress || ''}\n\n谢谢阿姨！`;
+        const msg = `🍛 我想再来一单！\n\n${items}\n\n总计: RM ${(order.total || 0).toFixed(2)}\n📍 地址: ${order.userAddress || ''}\n\n谢谢碗妈！`;
         window.open(`https://wa.me/60103370197?text=${encodeURIComponent(msg)}`, '_blank');
     };
 

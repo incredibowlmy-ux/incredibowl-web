@@ -40,7 +40,7 @@ export default function HeroSection() {
                         每天新鲜采购。
                     </h2>
                     <p className="text-lg md:text-xl font-medium text-[#1A2D23]/70 mb-8 max-w-md">
-                        &ldquo;没时间做菜，但要吃得健康。无味精、真材实料，阿姨每天只专注煮一道拿手好菜。&rdquo;
+                        &ldquo;没时间做菜，但要吃得健康。无味精、真材实料，碗妈每天只专注煮一道拿手好菜。&rdquo;
                     </p>
                 </div>
             </div>

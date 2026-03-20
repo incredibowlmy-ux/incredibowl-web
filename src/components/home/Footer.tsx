@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Phone } from 'lucide-react';
+import { Phone, Facebook, Instagram } from 'lucide-react';
 
 export default function Footer() {
     return (
@@ -32,7 +32,18 @@ export default function Footer() {
                             <span className="opacity-20 text-[#1A2D23]">|</span>
                             <a href="mailto:hello@incredibowl.my" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors">hello@incredibowl.my</a>
                         </div>
-                        <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black">📍 Pearl Point / Millerz Square / OUG, Kuala Lumpur</p>
+                        <div className="flex justify-center gap-6 mt-6">
+                            <a href="https://www.facebook.com/profile.php?id=61587218759550" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
+                                <Facebook size={18} />
+                            </a>
+                            <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
+                                <Instagram size={18} />
+                            </a>
+                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1 font-black text-[11px] uppercase tracking-widest">
+                                XHS
+                            </a>
+                        </div>
+                        <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black pt-2">📍 Pearl Point / Millerz Square / OUG, Kuala Lumpur</p>
                     </div>
                 </div>
 

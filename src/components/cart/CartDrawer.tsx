@@ -320,7 +320,7 @@ export default function CartDrawer({
                                     <div className="w-20 h-20 bg-[#FF6B35]/5 rounded-full flex items-center justify-center mb-4">
                                         <Utensils className="w-10 h-10 text-[#FF6B35]/60" />
                                     </div>
-                                    <p className="font-bold text-lg mb-2 text-[#3B2A1A]">阿姨的锅已经热好了 🍳</p>
+                                    <p className="font-bold text-lg mb-2 text-[#3B2A1A]">碗妈的锅已经热好了 🍳</p>
                                     <p className="text-sm font-medium text-[#8B7355] max-w-[200px] leading-relaxed mx-auto">快去选一道今天心仪的家常菜吧！</p>
                                 </div>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}

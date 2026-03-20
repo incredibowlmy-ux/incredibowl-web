@@ -528,7 +528,7 @@ export default function AddOnModal({
                                             // 0=Sunday, 6=Saturday
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
-                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for Auntie's rest!)");
+                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for Bowl Mom's rest!)");
                                                 return;
                                             }
                                             if (selected < (minDate || "")) {
@@ -570,7 +570,7 @@ export default function AddOnModal({
                         <textarea
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            placeholder="告诉阿姨你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
+                            placeholder="告诉碗妈你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
                             className="w-full h-24 p-4 bg-white rounded-2xl border border-[#E8DFD0] text-sm text-[#3B2A1A] placeholder:text-[#8B7355]/40 outline-none focus:ring-2 focus:ring-[#2D5F3E]/20 transition-all resize-none"
                         />
                     </div>
