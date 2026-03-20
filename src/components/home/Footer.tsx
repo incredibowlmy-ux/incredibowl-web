@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Phone, Facebook, Instagram } from 'lucide-react';
+import { Phone, Facebook, Instagram, Leaf, Sun, Heart, MapPin } from 'lucide-react';
 
 export default function Footer() {
     return (
@@ -43,14 +43,27 @@ export default function Footer() {
                                 XHS
                             </a>
                         </div>
-                        <p className="text-[10px] opacity-40 uppercase tracking-[0.2em] font-black pt-2">📍 Pearl Point / Millerz Square / OUG, Kuala Lumpur</p>
-                    </div>
-                </div>
+                        <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-[#E3EADA]/50 pt-10 w-full max-w-3xl mx-auto">
+                            {/* Brand Trust Signals */}
+                            <div className="flex justify-center flex-wrap gap-4 md:gap-10 text-[#1A2D23]/70 font-bold text-[11px] md:text-xs uppercase tracking-[0.2em] items-center">
+                                <span className="flex items-center gap-1.5"><Leaf size={14} className="text-[#2D5F3E]" /> No MSG</span>
+                                <span className="opacity-20 hidden md:block">•</span>
+                                <span className="flex items-center gap-1.5"><Sun size={14} className="text-[#FF6B35]" /> Daily Fresh</span>
+                                <span className="opacity-20 hidden md:block">•</span>
+                                <span className="flex items-center gap-1.5"><Heart size={14} className="text-[#C76F40]" /> Mum's Recipe</span>
+                            </div>
 
-                <div className="flex justify-center flex-wrap gap-8 md:gap-12 text-[#1A2D23]/30 font-bold text-xs uppercase tracking-[0.2em]">
-                    <span>Old Klang Road</span>
-                    <span>No MSG</span>
-                    <span>Daily Fresh</span>
+                            {/* Location/Community */}
+                            <div className="text-center mt-2">
+                                <p className="text-[10px] text-[#1A2D23]/40 uppercase tracking-[0.2em] font-black mb-2 flex justify-center items-center gap-1.5">
+                                    <MapPin size={12} className="text-[#FF6B35]" /> Serving Our Neighbours Around
+                                </p>
+                                <p className="text-[10px] md:text-xs text-[#1A2D23]/60 font-bold tracking-[0.1em] md:tracking-[0.2em] leading-relaxed">
+                                    Pearl Point · Millerz Square · OUG · Old Klang Road
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex flex-col items-center gap-2 text-[#1A2D23]/30 text-[10px] uppercase font-black tracking-widest text-center">
                     <p>&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
