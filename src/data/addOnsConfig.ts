@@ -42,7 +42,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-chicken-chop': 8.50,
   'edamame': 2.00,
   'corn': 2.00,
-  'cherry-tomato': 2.00,
+  'cherry-tomato': 2.50,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
