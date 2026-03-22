@@ -233,6 +233,25 @@ export default function AddOnModal({
             });
         }
 
+        // If it's Angelica Steamed Whole Chicken Leg (id: 13), append specific add-ons to the sides
+        if (dish.id === 13) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: 11.90, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: 21.90, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: 31.40, category: 'sides', maxQty: 1 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
         return addOnSections;
     }, [dish, addOnSections]);
 

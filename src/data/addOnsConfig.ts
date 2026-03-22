@@ -47,6 +47,11 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
   'potato-egg-alacarte': 3.50,
+
+  // ─── Angelica Chicken (id:13) specials ─────
+  'extra-herbal-leg-1': 11.90,
+  'extra-herbal-leg-2': 21.90,
+  'extra-herbal-leg-3': 31.40,
 };
 
 /**
