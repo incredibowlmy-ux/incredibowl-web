@@ -208,13 +208,24 @@ export default function AddOnModal({
 
         // If it's Golden Crispy Chicken Chop (id: 1), append specific add-ons to the sides
         if (dish.id === 1) {
-            return addOnSections.map(section => {
+            const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
+                id: 'chicken-chop-combo',
+                title: '✨ 古早味澎湃大满贯三件套',
+                titleEn: 'Ultimate Nostalgia Combo (+ RM 11.40)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
+                items: [
+                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: 11.40, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 8.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 9.90, category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: 2.50, category: 'sides', maxQty: 3 },
                             { id: 'cherry-tomato', name: '爽脆多汁小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.50, category: 'sides', maxQty: 3 },
@@ -231,6 +242,7 @@ export default function AddOnModal({
                 }
                 return section;
             });
+            return [chickenChopSpecial, ...customSections];
         }
 
         // If it's Greek Mediterranean Lemon Chicken (id: 3), prepend a special combo section
