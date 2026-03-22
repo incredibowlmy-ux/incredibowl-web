@@ -27,7 +27,7 @@ export default function TermsAndConditions() {
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">3. Delivery & Radius / 配送范围</h2>
-                        <p>Our core coverage provides <b>Free Delivery</b> within a 2km radius around Pearl Point. Deliveries beyond 2km will incur an RM10 delivery fee, which is waived for orders of 10 meals or more. / 我们的核心配送圈为 Pearl Point 方圆 2km 内（免运费）。超出 2km 的地区运费为 RM10，满 10 份免运费。</p>
+                        <p>Our core coverage provides <b>Free Delivery</b> within a 2km radius around Pearl Point. Deliveries beyond 2km require a minimum of 3 meals and will incur an RM5 delivery fee, which is waived for orders of 6 meals or more. / 我们的核心配送圈为 Pearl Point 方圆 2km 内（免运费）。超出 2km 的地区需满 3 份起送，运费为 RM5，满 6 份免运费。</p>
                         <p className="mt-2 text-[#E76F51] font-bold">Delivery Times / 配送时间：</p>
                         <ul className="list-disc ml-6 mt-1">
                             <li>Lunch / 午餐：11:00 AM - 1:00 PM</li>
