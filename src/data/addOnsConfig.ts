@@ -52,6 +52,13 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-herbal-leg-1': 11.90,
   'extra-herbal-leg-2': 21.90,
   'extra-herbal-leg-3': 31.40,
+
+  // ─── Greek Lemon Chicken (id:3) specials ───
+  'greek-protein-bomb-combo': 15.90,
+  'extra-greek-chicken-180g': 11.90,
+  'extra-aus-potato-80g': 3.50,
+  'extra-cauliflower-80g': 3.00,
+  'extra-black-olive-12g': 1.50,
 };
 
 /**

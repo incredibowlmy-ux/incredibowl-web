@@ -233,6 +233,37 @@ export default function AddOnModal({
             });
         }
 
+        // If it's Greek Mediterranean Lemon Chicken (id: 3), prepend a special combo section
+        if (dish.id === 3) {
+            const proteinBombSpecial: AddOnSection & { extraDesc?: string } = {
+                id: 'greek-combo',
+                title: '✨ 终极爆肌！蛋白质核弹三件套',
+                titleEn: 'Ultimate Protein Bomb Trio (+ RM 15.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：180g 柠香烤鸡胸 + 80g 澳洲烤薯块 + 80g 脆甜椰菜花\n“突破百克优质蛋白的终极归宿，练后快速回血、饱腹无负担。”',
+                items: [
+                    { id: 'greek-protein-bomb-combo', name: '蛋白质核弹三件套 (原价 RM 18.40)', nameEn: 'Protein Bomb Trio', price: 15.90, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            { id: 'extra-greek-chicken-180g', name: '【增肌极客】加 180g 柠香烤鸡胸', nameEn: 'Extra Lemon Chicken Breast (180g)', price: 11.90, category: 'sides', maxQty: 3 },
+                            { id: 'extra-aus-potato-80g', name: '【优质碳水】加 80g 澳洲烤薯块', nameEn: 'Extra Roasted Aus Potato (80g)', price: 3.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-cauliflower-80g', name: '【抗氧高纤】加 80g 脆甜椰菜花', nameEn: 'Extra Cauliflower (80g)', price: 3.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-black-olive-12g', name: '【地中海风味】加 12g 提鲜黑橄榄', nameEn: 'Extra Black Olive Slice (12g)', price: 1.50, category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [proteinBombSpecial, ...customSections];
+        }
+
         // If it's Angelica Steamed Whole Chicken Leg (id: 13), append specific add-ons to the sides
         if (dish.id === 13) {
             return addOnSections.map(section => {
