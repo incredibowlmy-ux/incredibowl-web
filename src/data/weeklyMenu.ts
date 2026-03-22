@@ -56,7 +56,7 @@ export const weeklyMenu: MenuItem[] = [
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",
         price: 19.90,
-        image: "/greek_lemon_chicken.png",
+        image: "/greek_lemon_chicken_v2.jpg",
         tags: ["~730 kcal*", "蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
         desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。"
     },
