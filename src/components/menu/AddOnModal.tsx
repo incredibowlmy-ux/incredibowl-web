@@ -324,6 +324,36 @@ export default function AddOnModal({
             return [scallionCombo, ...customSections];
         }
 
+        // If it's Potato Pork Belly Stew (id: 4), prepend a special combo section
+        if (dish.id === 4) {
+            const porkPotatoCombo: AddOnSection & { extraDesc?: string } = {
+                id: 'pork-potato-combo',
+                title: '✨ 薯肉双拼满足套',
+                titleEn: 'Potato & Pork Belly Duo (+ RM 11.40)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：绵密马铃薯 + 香滑花肉片\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"',
+                items: [
+                    { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 13.40)', nameEn: 'Potato & Pork Belly Duo', price: 11.40, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-potato', name: '【绵密软糯】加马铃薯', nameEn: 'Extra Potato', price: 3.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-pork-belly', name: '【浓香入味】加花肉片', nameEn: 'Extra Pork Belly Slices', price: 9.90, category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [porkPotatoCombo, ...customSections];
+        }
+
         return addOnSections;
     }, [dish, addOnSections]);
 
@@ -535,7 +565,7 @@ export default function AddOnModal({
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
-                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo' || section.id === 'scallion-combo';
+                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo' || section.id === 'scallion-combo' || section.id === 'pork-potato-combo';
 
                             return (
                                 <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
