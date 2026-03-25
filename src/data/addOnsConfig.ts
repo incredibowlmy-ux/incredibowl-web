@@ -40,7 +40,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Chicken Chop (id:1) specials ──────────
   'extra-chicken-chop': 9.90,
-  'chicken-chop-nostalgia-combo': 11.40,
+  'chicken-chop-nostalgia-combo': 12.40,
   'edamame': 2.00,
   'corn': 2.00,
   'cherry-tomato': 2.50,
@@ -48,6 +48,13 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
   'potato-egg-alacarte': 3.50,
+
+  // ─── Surf & Turf (id:12) specials ──────────
+  'surf-turf-super-combo': 11.40,
+  'extra-prawns': 7.00,
+  'extra-chicken-breast': 4.50,
+  'extra-fungus': 2.50,
+  'extra-yam': 4.00,
 
   // ─── Angelica Chicken (id:13) specials ─────
   'extra-herbal-leg-1': 11.90,
@@ -60,6 +67,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-aus-potato-80g': 3.50,
   'extra-cauliflower-80g': 3.00,
   'extra-black-olive-12g': 1.50,
+
+  // ─── Scallion Chicken Soup (id:5) specials ──
+  'scallion-soup-combo': 12.40,
+  'extra-scallion-leg-1': 11.90,
+  'extra-scallion-leg-2': 21.90,
+  'extra-scallion-leg-3': 31.40,
 };
 
 /**

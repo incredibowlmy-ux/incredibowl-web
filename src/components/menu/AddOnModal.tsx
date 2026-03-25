@@ -180,12 +180,12 @@ export default function AddOnModal({
             const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'surf-turf-combo',
                 title: '✨ 鲜上加鲜！海陆澎湃大翻倍',
-                titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.90)',
+                titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.40)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：鲜甜大虾仁 4只 + 嫩炒鸡丁 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
                 items: [
-                    { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: 11.90, category: 'combo' }
+                    { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: 11.40, category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -211,12 +211,12 @@ export default function AddOnModal({
             const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
-                titleEn: 'Ultimate Nostalgia Combo (+ RM 11.40)',
+                titleEn: 'Ultimate Nostalgia Combo (+ RM 12.40)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
                 items: [
-                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: 11.40, category: 'combo' }
+                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: 12.40, category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -293,6 +293,37 @@ export default function AddOnModal({
                 }
                 return section;
             });
+        }
+
+        // If it's Golden Scallion Pan-Fried Chicken Soup (id: 5), prepend combo + chicken leg add-ons
+        if (dish.id === 5) {
+            const scallionCombo: AddOnSection & { extraDesc?: string } = {
+                id: 'scallion-combo',
+                title: '✨ 葱汤干饭王！爆量满足三件套',
+                titleEn: 'Scallion Soup Rice King Trio (+ RM 12.40)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：香煎金鸡扒 150g + 古早味荷包蛋 + 加饭\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"',
+                items: [
+                    { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 14.40)', nameEn: 'Rice King Trio', price: 12.40, category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-scallion-leg-1', name: '【收工犒劳】多加一只葱香煎鸡腿', nameEn: 'Extra Scallion Chicken Leg (+1)', price: 11.90, category: 'sides', maxQty: 1 },
+                            { id: 'extra-scallion-leg-2', name: '【双份治愈】两只鸡腿泡汤里更暖', nameEn: 'Extra Scallion Chicken Legs (+2)', price: 21.90, category: 'sides', maxQty: 1 },
+                            { id: 'extra-scallion-leg-3', name: '【全家补补】三只鸡腿周末前一起暖胃', nameEn: 'Extra Scallion Chicken Legs (+3)', price: 31.40, category: 'sides', maxQty: 1 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [scallionCombo, ...customSections];
         }
 
         return addOnSections;
@@ -506,7 +537,7 @@ export default function AddOnModal({
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
-                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo';
+                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo' || section.id === 'scallion-combo';
 
                             return (
                                 <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
