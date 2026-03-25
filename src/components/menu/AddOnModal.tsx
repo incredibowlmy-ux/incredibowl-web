@@ -314,9 +314,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-scallion-leg-1', name: '【收工犒劳】多加一只葱香煎鸡腿', nameEn: 'Extra Scallion Chicken Leg (+1)', price: 11.90, category: 'sides', maxQty: 1 },
-                            { id: 'extra-scallion-leg-2', name: '【双份治愈】两只鸡腿泡汤里更暖', nameEn: 'Extra Scallion Chicken Legs (+2)', price: 21.90, category: 'sides', maxQty: 1 },
-                            { id: 'extra-scallion-leg-3', name: '【全家补补】三只鸡腿周末前一起暖胃', nameEn: 'Extra Scallion Chicken Legs (+3)', price: 31.40, category: 'sides', maxQty: 1 },
+                            { id: 'extra-scallion-chop-side', name: '【收工犒劳】多加一只葱香煎鸡扒', nameEn: 'Extra Scallion Chicken Chop', price: 11.90, category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };

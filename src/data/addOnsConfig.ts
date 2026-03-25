@@ -70,9 +70,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.40,
-  'extra-scallion-leg-1': 11.90,
-  'extra-scallion-leg-2': 21.90,
-  'extra-scallion-leg-3': 31.40,
+  'extra-scallion-chop-side': 11.90,
 };
 
 /**
