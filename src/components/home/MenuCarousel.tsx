@@ -118,9 +118,9 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
             >
                 {Object.keys(menuDates).length === 0 && <>
                     {/* Left Spacer */}
-                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    <div className="min-w-[calc(50%-138px)] md:min-w-[calc(50%-180px)] shrink-0" />
                     {weeklyMenu.map((dish) => (
-                    <div key={dish.id} className="menu-item w-[300px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 mx-2 bg-white border border-gray-100">
+                    <div key={dish.id} className="menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 mx-2 bg-white border border-gray-100">
                         <div className="flex justify-between items-start mb-6">
                             <SkeletonBlock className="h-5 w-28" />
                             <SkeletonBlock className="h-5 w-16" />
@@ -136,12 +136,12 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 ))}</>}
                 {Object.keys(menuDates).length > 0 && <>
                     {/* Left Spacer */}
-                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    <div className="min-w-[calc(50%-138px)] md:min-w-[calc(50%-180px)] shrink-0" />
                     {weeklyMenu.map((dish, i) => (
 
                     <div
                         key={dish.id}
-                        className={`menu-item w-[300px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-all duration-300 mx-2 ${activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-80 hover:opacity-100 cursor-pointer'}`}
+                        className={`menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-all duration-300 mx-2 ${activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-80 hover:opacity-100 cursor-pointer'}`}
                         onClick={() => scrollToIndex(i)}
                     >
                         <div className="flex justify-between items-start mb-6">
@@ -199,7 +199,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                     </div>
                 ))}
                     {/* Right Spacer */}
-                    <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
+                    <div className="min-w-[calc(50%-138px)] md:min-w-[calc(50%-180px)] shrink-0" />
                 </>}
             </div>
             {/* End of relative group */}
