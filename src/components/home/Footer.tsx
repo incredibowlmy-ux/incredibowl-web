@@ -3,6 +3,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Facebook, Instagram, Leaf, Sun, Heart, MapPin } from 'lucide-react';
 
+const XiaohongshuIcon = ({ size = 18, className = "" }: { size?: number, className?: string }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className={className}
+    >
+        <path d="M19.863 5.372h-3.413L12 12.164 7.55 5.372H4.137L10.375 15.65v2.97h3.25v-2.97l6.238-10.278Z" />
+    </svg>
+);
+
 export default function Footer() {
     return (
         <footer className="py-20 bg-white border-t border-[#E3EADA]">
@@ -39,8 +52,8 @@ export default function Footer() {
                             <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
                                 <Instagram size={18} />
                             </a>
-                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1 font-black text-[11px] uppercase tracking-widest">
-                                XHS
+                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
+                                <XiaohongshuIcon size={18} />
                             </a>
                         </div>
                         <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-[#E3EADA]/50 pt-10 w-full max-w-3xl mx-auto">

@@ -79,7 +79,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 <div>
                     <h2 className="text-2xl font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
                     <p className="text-xs text-gray-500 font-medium mt-1">
-                        <span className="md:hidden">滑动查看并每天换不一样的口味吧！</span>
+                        <span className="md:hidden">滑动并查看，每天换不一样的口味吧！</span>
                         <span className="hidden md:inline">点击左右两侧箭头，浏览更多每日精选佳肴</span>
                     </p>
                 </div>
