@@ -3,19 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Facebook, Instagram, Leaf, Sun, Heart, MapPin } from 'lucide-react';
 
-const XiaohongshuIcon = ({ size = 18, className = "" }: { size?: number, className?: string }) => (
-    <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width={size}
-        height={size}
-        viewBox="0 0 1024 1024"
-        fill="currentColor"
-        className={className}
-    >
-        <path d="M787.2 208.2H236.8c-47.4 0-85.8 38.4-85.8 85.8v436c0 47.4 38.4 85.8 85.8 85.8h550.4c47.4 0 85.8-38.4 85.8-85.8v-436c0-47.4-38.4-85.8-85.8-85.8zM425.8 616L292.6 692c-12.4 7.2-28.6 2.8-35.8-9.6s-2.8-28.6 9.6-35.8l133.2-76v-210.6c0-14.4 11.6-26 26-26s26 11.6 26 26v200.4l91.2 42.6 91.2-42.6V383c0-14.4 11.6-26 26-26s26 11.6 26 26v210.6l133.2 76c12.4 7.2 16.8 23.4 9.6 35.8s-23.4 16.8-35.8 9.6l-133.2-76V616c-13.4-3.6-26.6-8.2-39.2-13.6-1.8-.8-3.4-1.6-5-2.6L512 565l-78.8 34.8c-1.6 1-3.2 1.8-5 2.6-12.6 5.4-25.8 10-39.2 13.6V616z" />
-    </svg>
-);
-
 export default function Footer() {
     return (
         <footer className="py-20 bg-white border-t border-[#E3EADA]">
@@ -45,15 +32,15 @@ export default function Footer() {
                             <span className="opacity-20 text-[#1A2D23]">|</span>
                             <a href="mailto:hello@incredibowl.my" className="flex items-center gap-2 text-[#FF6B35] hover:text-[#E95D31] transition-colors">hello@incredibowl.my</a>
                         </div>
-                        <div className="flex justify-center gap-6 mt-6">
-                            <a href="https://www.facebook.com/profile.php?id=61587218759550" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
-                                <Facebook size={18} />
+                        <div className="flex justify-center items-center gap-6 mt-6">
+                            <a href="https://www.facebook.com/profile.php?id=61587218759550" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/fb-logo.png" alt="Facebook" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
                             </a>
-                            <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
-                                <Instagram size={18} />
+                            <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/ig-logo.png" alt="Instagram" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
                             </a>
-                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-[#E3EADA]/40 flex items-center justify-center text-[#1A2D23]/70 hover:bg-[#FF6B35] hover:text-white transition-all shadow-sm hover:-translate-y-1">
-                                <XiaohongshuIcon size={18} />
+                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/xhs-logo.png" alt="Xiaohongshu" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
                             </a>
                         </div>
                         <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-[#E3EADA]/50 pt-10 w-full max-w-3xl mx-auto">
