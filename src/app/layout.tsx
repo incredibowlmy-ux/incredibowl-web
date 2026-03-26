@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     title: "Incredibowl | Pearl Point 私厨外送",
     description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 免运。",
     url: "https://www.incredibowl.my",
-    siteName: "Incredibowl",
+    siteName: "Incredibowl Malaysia",
     images: [
       {
         url: "/pork_potato_stew.jpg",
@@ -58,6 +58,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Incredibowl Malaysia",
+              url: "https://www.incredibowl.my/"
+            })
+          }}
+        />
         <Script
           id="fb-pixel"
           strategy="afterInteractive"
