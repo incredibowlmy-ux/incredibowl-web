@@ -75,28 +75,42 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
 
     return (
         <div className="lg:col-span-12 mt-8" id="menu">
-            <div className="flex items-center justify-between mb-6 px-2">
+            <div className="flex items-center justify-between mb-6 px-4 md:px-2">
                 <div>
                     <h2 className="text-2xl font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
-                    <p className="text-xs text-gray-400 font-medium mt-1">点击或滑动切换每日精选菜单</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => scrollToIndex(activeIdx - 1)}
-                        disabled={activeIdx <= 0}
-                        className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 ${activeIdx <= 0 ? 'border-gray-100 text-gray-200 cursor-not-allowed bg-gray-50/50' : 'border-[#E3EADA] text-[#1A2D23] bg-white hover:bg-[#1A2D23] hover:text-white shadow-sm'}`}
-                    >
-                        <ChevronLeft size={22} />
-                    </button>
-                    <button
-                        onClick={() => scrollToIndex(activeIdx + 1)}
-                        disabled={activeIdx === weeklyMenu.length - 1}
-                        className={`w-11 h-11 rounded-full flex items-center justify-center border transition-all duration-300 ${activeIdx === weeklyMenu.length - 1 ? 'border-gray-100 text-gray-200 cursor-not-allowed bg-gray-50/50' : 'border-[#E3EADA] text-[#1A2D23] bg-white hover:bg-[#1A2D23] hover:text-white shadow-sm'}`}
-                    >
-                        <ChevronRight size={22} />
-                    </button>
+                    <p className="text-xs text-gray-500 font-medium mt-1">
+                        <span className="md:hidden">滑动查看并每天换不一样的口味吧！</span>
+                        <span className="hidden md:inline">点击左右两侧箭头，浏览更多每日精选佳肴</span>
+                    </p>
                 </div>
             </div>
+
+            <div className="relative group">
+                {/* Desktop Left Interactive Floating Arrow */}
+                <button
+                    onClick={() => scrollToIndex(activeIdx - 1)}
+                    disabled={activeIdx <= 0}
+                    className={`hidden md:flex absolute left-4 lg:left-8 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full items-center justify-center border border-gray-100 transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+                        activeIdx <= 0 
+                            ? 'bg-white/50 text-gray-300 cursor-not-allowed backdrop-blur-sm opacity-0' 
+                            : 'bg-white text-[#1A2D23] hover:bg-[#1A2D23] hover:text-white hover:scale-110 hover:shadow-2xl'
+                    }`}
+                >
+                    <ChevronLeft size={28} />
+                </button>
+
+                {/* Desktop Right Interactive Floating Arrow */}
+                <button
+                    onClick={() => scrollToIndex(activeIdx + 1)}
+                    disabled={activeIdx === weeklyMenu.length - 1}
+                    className={`hidden md:flex absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full items-center justify-center border border-gray-100 transition-all duration-300 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
+                        activeIdx === weeklyMenu.length - 1 
+                            ? 'bg-white/50 text-gray-300 cursor-not-allowed backdrop-blur-sm opacity-0' 
+                            : 'bg-white text-[#1A2D23] hover:bg-[#1A2D23] hover:text-white hover:scale-110 hover:shadow-2xl'
+                    }`}
+                >
+                    <ChevronRight size={28} />
+                </button>
 
             <div
                 ref={scrollContainerRef}
@@ -188,6 +202,8 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                     <div className="min-w-[calc(50%-150px)] md:min-w-[calc(50%-180px)] shrink-0" />
                 </>}
             </div>
+            {/* End of relative group */}
         </div>
-    );
+    </div>
+);
 }
