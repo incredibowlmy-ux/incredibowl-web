@@ -32,6 +32,7 @@ export default function AuthMainView({ loading, message, onGoogleLogin, onFacebo
                 </button>
 
 
+{/* 暂时移除 Facebook 登录，等待审核通过后再开启
                 <button onClick={onFacebookLogin} disabled={loading}
                     className="w-full py-3.5 bg-[#1877F2] text-white rounded-xl flex items-center justify-center gap-3 font-bold hover:bg-[#1565C0] transition-all disabled:opacity-50 shadow-lg shadow-[#1877F2]/20">
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -39,6 +40,7 @@ export default function AuthMainView({ loading, message, onGoogleLogin, onFacebo
                     </svg>
                     {loading ? '连接中...' : '使用 Facebook 继续'}
                 </button>
+                */}
 
                 <div className="relative py-1">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#E3EADA]"></div></div>
