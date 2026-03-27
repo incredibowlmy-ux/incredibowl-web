@@ -108,8 +108,8 @@ export default function HeroSection() {
 
                         <div className="flex justify-between items-center relative z-0">
                             <div className="flex flex-col items-start gap-1">
-                                <p className="font-extrabold text-2xl md:text-3xl text-white tracking-tight">探索每日精选</p>
-                                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mt-1">Explore Menu</p>
+                                <p className="font-extrabold text-2xl md:text-3xl text-white tracking-tight">立刻预定</p>
+                                <p className="text-[10px] font-black text-white/70 uppercase tracking-widest mt-1">Order Now</p>
                             </div>
                             <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white flex items-center justify-center text-[#FF6B35] group-hover:scale-110 shadow-xl shrink-0 transition-transform duration-300 mt-2">
                                 <ArrowRight size={20} strokeWidth={3} className="group-hover:translate-x-1 transition-transform" />
