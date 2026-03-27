@@ -34,7 +34,7 @@ export default function Footer() {
                         </div>
                         <div className="flex justify-center items-center gap-6 mt-6">
                             <a href="https://www.facebook.com/profile.php?id=61587218759550" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
-                                <Image src="/fb-logo.png" alt="Facebook" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
+                                <Image src="/fb-logo.png" alt="Facebook" width={46} height={46} className="w-[46px] h-[46px] object-contain scale-110" />
                             </a>
                             <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
                                 <Image src="/ig-logo.png" alt="Instagram" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
