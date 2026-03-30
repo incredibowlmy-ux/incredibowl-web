@@ -57,7 +57,11 @@
       "Bash(find . -type f -exec du -b {} +)",
       "Bash(npm install:*)",
       "Bash(node scripts/compress-images.mjs)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:pagespeed.web.dev)",
+      "Bash(node -e \":*)",
+      "Bash(rm public/logo.webp)",
+      "Bash(mv public/logo_new.webp public/logo.webp)"
     ]
   }
 }

@@ -12,7 +12,6 @@ import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarousel from '@/components/home/MenuCarousel';
 import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
-import N8nChatbot from '@/components/home/N8nChatbot';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
@@ -217,8 +216,8 @@ export default function V4BentoLayout() {
             </main>
 
             <Footer />
-            <N8nChatbot />
 
+            {isCartOpen && (
             <ErrorBoundary>
                 <CartDrawer
                     isOpen={isCartOpen}
@@ -233,6 +232,7 @@ export default function V4BentoLayout() {
                     onEditItem={handleEditCartItem}
                 />
             </ErrorBoundary>
+            )}
             <ErrorBoundary>
                 <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
             </ErrorBoundary>

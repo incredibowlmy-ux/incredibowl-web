@@ -2,7 +2,7 @@
 
 ## 📌 Introduction
 You are an AI Coding Assistant collaborating on **Incredibowl**, a local neighborhood food delivery web application targeting the Pearl Point area (Kuala Lumpur). 
-The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No MSG), 新鲜采购 (Freshly sourced), 每日精选 (Daily Selections).**
+The brand's core values are: **家的味道 (Home-cooked taste), 新鲜采购 (Freshly sourced), 每日精选 (Daily Selections).**
 
 ## 🚨 CRITICAL INSTRUCTIONS FOR CLAUDE
 
@@ -15,35 +15,46 @@ The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No M
 ### 3. 沟通风格
 采用友善且诚实的沟通方式，不须奉承用户的意见。
 
-### 4. 行动导向
-主动修复代码并提出解决方案，而不仅仅是解释问题。
-
-### 5. 回复工作流（专家优化驱动）
-在开始撰写任何回复之前，必须主动执行以下步骤：
-
-**第一步：专家优化**
-作为一名深耕 AI 领域的顾问，专精于提示词优化逻辑。将用户的输入视作「原始提示词」，并将其转化为更精确、能让模型发挥最高效能的指令。
-
-优化原则——确保提示词包含四个核心维度：
-- **［角色任务］**：定义专业身份与核心目标。
-- **［背景资讯］**：提供必要的情境（当前定位：Pearl Point 2km 邻里/公寓、家的味道、无味精、新鲜采购、每日一味。严禁：打工人/企业/抗犯困文案）。
-- **［具体指令］**：拆解明确的操作步骤。
-- **［约束条件］**：规定字数、格式、语气，产出最终内容必须使用简体中文。
-
-**第二步：直接答复**
-优化完成后，立即依照优化后的指令进行答复，产出最终内容。必须使用简体中文。
-
-### 6. 轮次提醒
-每当对话超过 20 轮，请提醒用户重新确认核心指令。
-
-## 💻 Tech Stack
-- **Framework**: Next.js 14 (App Router), React, TypeScript
-- **Styling**: Tailwind CSS, Lucide React (Icons)
-- **Database & Services**: Firebase (Firestore for orders/users, Storage for receipt uploads, Auth for Admin login)
-- **Payment Providers**: 
-  - **DuitNow QR** (Manual receipt upload to Firebase Storage)
-  - **Curlec by Razorpay** (Online payment gateway via Next.js API Routes)
-- **Deployment**: Vercel
+### 1. Plan Node Default
+- Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions) 
+- If something goes sideways, STOP and re-plan immediately don't keep pushing 
+- Use plan mode for verification steps, not just building
+- Write detailed specs upfront to reduce ambiguity
+### 2. Subagent Strategy
+- Use subagents liberally to keep main contect window clean
+- Offload research, exploration, and parallel analysis to subagents
+- For complex problens, throw more compute at it via subagents
+- One tack per subagent for focused execution
+### 3. Self-Improvement Loop
+- After ANY correction from the user: update tasks/lessons.md with the pattern
+- Write rules for yourself that prevent the same mistake
+- Ruthlessly iterate on these lessons until mistake rate drops
+- Review lessons at session start for relevant project
+### 4. Verification Before Done
+- Never mark a task complete without proving it works
+- Diff behavior between main and your changes when relevant
+- Ask yourself: "Would a staff engineer approve this?"
+- Run tests, check logs, demonstrate correctness
+### 5. Demand Elegance (Balanced)
+- For non-trivial changes: pause and ask "is there a more elegant way?"
+- If a fix feels hacky: "Knowing everything I know now, implement the elegant solution"
+- Skip this for simple, chvious fixes don't over-engineer
+- Challenge your own work before presenting it
+### 6. Autonomous Bug Fixing
+- When given a bug report: just fix it. Don't ask for hand-holding
+- Point at logs, errors, failing tests - then resolve them
+- Zero context switching required from the user
+- Go fix failing CI tests without being told how
+## Task Management
+1. **Plan First**: Write plan to tasks/todo.md with checkable items
+2. **Verify Plan**: Check in before starting implementation
+3. **Track Progress**: Mark items complete as you go
+4. **Explain Changes**: High-level summary at each step
+5. **Document Results**: Add review section to tasks/todo.md
+6. **Capture Lessons**: Update tasks/lessons.md after corrections
+## Core Principles
+- **Simplicity First**: Make every change as simple as possible. Inpact minimal code. 
+- **No Laziness**: Find root causes. No temporary fixes. Senior developer standards.
 
 ## 📂 Project Structure
 - `src/app/page.tsx`: The main landing page, containing brand copy and the menu.
@@ -51,20 +62,3 @@ The brand's core values are: **家的味道 (Home-cooked taste), 无味精 (No M
 - `src/components/cart/CartDrawer.tsx`: The core checkout component handling cart state, add-ons, user info collection, and triggering payment flows.
 - `src/lib/orders.ts` & `src/lib/firebase.ts`: Handles Firestore schemas, data injection, and sanitized document creation.
 - `src/app/api/payment/*`: Backend routes for Razorpay `create-order` (uses lazy initialization to prevent Vercel build errors) and `verify`.
-
-## ⚙️ Key Workflows & Known Quirks
-- **Order Cut-off**: 每天早上 06:00 截单。06:00 前的单提供当日配送，06:00 后的单提供次日起配送。
-- **Firebase Storage CORS**: DuitNow QR payments require an image upload. The bucket CORS is securely configured; do not overwrite it without checking.
-- **Razorpay Instantiation**: In Next.js API routes, Razorpay is initialized *lazily* inside the POST handler rather than at the module level. This prevents Vercel build failures when env variables aren't present at build time.
-- **Undefined Fields in Firestore**: Always sanitize custom objects before saving to Firestore to prevent `undefined` field errors (e.g., removing `undefined` from add-ons arrays).
-
-## 🚀 Common Commands
-- **Run dev server**: `npm run dev`
-- **Build**: `npm run build`
-- **Lint**: `npm run lint`
-
-## ✅ How to Contribute
-When the user gives you a task:
-1. Identify the impact area (Frontend UI, API Route, or Firebase logic).
-2. Check existing components first to avoid reinventing the wheel.
-3. Apply changes directly and always execute `git add .`, `git commit -m "..."`, and `git push` after completing a task.
