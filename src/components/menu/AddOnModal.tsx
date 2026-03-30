@@ -284,9 +284,9 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: 11.90, category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: 21.90, category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: 31.40, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: 14.90, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: 27.80, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: 41.40, category: 'sides', maxQty: 1 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
