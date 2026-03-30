@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
-import AuthModal from '@/components/auth/AuthModal';
-import CartDrawer from '@/components/cart/CartDrawer';
-import AddOnModal from '@/components/menu/AddOnModal';
-import { onAuthChange } from '@/lib/auth';
+import type { User as FirebaseUser } from 'firebase/auth';
+import dynamic from 'next/dynamic';
+
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
+const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
+const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
 import NavBar from '@/components/home/NavBar';
 import HeroSection from '@/components/home/HeroSection';
 import DeliveryWidget from '@/components/home/DeliveryWidget';
@@ -33,8 +34,11 @@ export default function V4BentoLayout() {
     const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = onAuthChange((user) => setCurrentUser(user));
-        return () => unsubscribe();
+        let unsubscribe: (() => void) | undefined;
+        import('@/lib/auth').then(({ onAuthChange }) => {
+            unsubscribe = onAuthChange((user) => setCurrentUser(user));
+        });
+        return () => unsubscribe?.();
     }, []);
 
     // Detect return from FPX bank redirect and confirm pending orders.
