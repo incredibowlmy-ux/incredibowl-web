@@ -56,7 +56,8 @@
       "Bash(tasklist)",
       "Bash(find . -type f -exec du -b {} +)",
       "Bash(npm install:*)",
-      "Bash(node scripts/compress-images.mjs)"
+      "Bash(node scripts/compress-images.mjs)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }
