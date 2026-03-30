@@ -11,7 +11,7 @@ export default function AuthHeader({ onClose }: { onClose: () => void }) {
                 <X size={24} />
             </button>
             <div className="w-24 h-24 mx-auto mb-5 bg-white border-2 border-[#E3EADA] rounded-full flex items-center justify-center overflow-hidden shadow-md">
-                <Image src="/logo.png" alt="Logo" width={128} height={128} className="scale-110" />
+                <Image src="/logo.webp" alt="Logo" width={128} height={128} className="scale-110" />
             </div>
             <h2 className="text-3xl font-black text-[#1A2D23]">Incredibowl</h2>
             <p className="text-xs font-bold text-[#FF6B35] uppercase tracking-widest mt-2">

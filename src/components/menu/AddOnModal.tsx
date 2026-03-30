@@ -49,10 +49,10 @@ const defaultAddOnSections: AddOnSection[] = [
         items: [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'alacarte' },
-            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.png', category: 'alacarte' },
+            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.webp', category: 'alacarte' },
             { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
             { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
-            { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.png', category: 'alacarte' },
+            { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.webp', category: 'alacarte' },
         ]
     },
     {
@@ -62,12 +62,12 @@ const defaultAddOnSections: AddOnSection[] = [
         minSelect: 0,
         maxSelect: 30,
         items: [
-            { id: 'longjing-ice', name: '龙井 (冰)', nameEn: 'Longjing Tea (Iced)', price: 3.80, image: '/tea.png', category: 'drinks' },
-            { id: 'longjing-warm', name: '龙井 (温)', nameEn: 'Longjing Tea (Warm)', price: 3.80, image: '/tea.png', category: 'drinks' },
-            { id: 'tieguanyin-ice', name: '铁观音 (冰)', nameEn: 'Tieguanyin Oolong (Iced)', price: 3.80, image: '/tea.png', category: 'drinks' },
-            { id: 'tieguanyin-warm', name: '铁观音 (温)', nameEn: 'Tieguanyin Oolong (Warm)', price: 3.80, image: '/tea.png', category: 'drinks' },
-            { id: 'shuixian-ice', name: '水仙 (冰)', nameEn: 'Shuixian Oolong (Iced)', price: 3.80, image: '/tea.png', category: 'drinks' },
-            { id: 'shuixian-warm', name: '水仙 (温)', nameEn: 'Shuixian Oolong (Warm)', price: 3.80, image: '/tea.png', category: 'drinks' },
+            { id: 'longjing-ice', name: '龙井 (冰)', nameEn: 'Longjing Tea (Iced)', price: 3.80, category: 'drinks' },
+            { id: 'longjing-warm', name: '龙井 (温)', nameEn: 'Longjing Tea (Warm)', price: 3.80, category: 'drinks' },
+            { id: 'tieguanyin-ice', name: '铁观音 (冰)', nameEn: 'Tieguanyin Oolong (Iced)', price: 3.80, category: 'drinks' },
+            { id: 'tieguanyin-warm', name: '铁观音 (温)', nameEn: 'Tieguanyin Oolong (Warm)', price: 3.80, category: 'drinks' },
+            { id: 'shuixian-ice', name: '水仙 (冰)', nameEn: 'Shuixian Oolong (Iced)', price: 3.80, category: 'drinks' },
+            { id: 'shuixian-warm', name: '水仙 (温)', nameEn: 'Shuixian Oolong (Warm)', price: 3.80, category: 'drinks' },
         ]
     },
 ];

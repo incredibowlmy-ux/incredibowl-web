@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "Incredibowl Malaysia",
     images: [
       {
-        url: "/pork_potato_stew.jpg",
+        url: "/pork_potato_stew.webp",
         width: 1200,
         height: 630,
         alt: "Incredibowl - 妈妈的味道",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Incredibowl | Pearl Point 私厨外送",
     description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 免运。",
-    images: ["/pork_potato_stew.jpg"],
+    images: ["/pork_potato_stew.webp"],
   },
   verification: {
     other: {

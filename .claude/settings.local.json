@@ -53,7 +53,10 @@
       "Bash(cp .claude/worktrees/agent-ad60f037/src/lib/dateUtils.ts src/lib/dateUtils.ts)",
       "Bash(find C:UsersUser.geminiantigravityscratchincredibowl-websrc -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
       "Bash(cmd /c del \"C:\\\\Users\\\\User\\\\.gemini\\\\antigravity\\\\scratch\\\\incredibowl-web\\\\.git\\\\index.lock\")",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(find . -type f -exec du -b {} +)",
+      "Bash(npm install:*)",
+      "Bash(node scripts/compress-images.mjs)"
     ]
   }
 }

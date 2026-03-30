@@ -10,13 +10,13 @@ import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, Che
 
 // Dish image mapping for favorite dish display
 const DISH_IMAGES: Record<string, string> = {
-    '纳豆月见海苔饭': '/natto_bowl.jpg',
-    '香煎金黄鸡扒饭': '/chicken_chop.png',
-    '山药云耳海陆双鲜': '/yam_surf_turf_egg.jpg',
-    '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.jpg',
-    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.png',
-    '马铃薯炖花肉片': '/pork_potato_stew.jpg',
-    '金黄葱香煎鸡汤': '/scallion_chicken_soup.jpg',
+    '纳豆月见海苔饭': '/natto_bowl.webp',
+    '香煎金黄鸡扒饭': '/chicken_chop.webp',
+    '山药云耳海陆双鲜': '/yam_surf_turf_egg.webp',
+    '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.webp',
+    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.webp',
+    '马铃薯炖花肉片': '/pork_potato_stew.webp',
+    '金黄葱香煎鸡汤': '/scallion_chicken_soup.webp',
 };
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {

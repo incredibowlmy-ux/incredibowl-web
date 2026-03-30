@@ -1,0 +1,14 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+
+# Host
+Host: https://www.incredibowl.my
+
+# Sitemaps
+Sitemap: https://www.incredibowl.my/sitemap.xml

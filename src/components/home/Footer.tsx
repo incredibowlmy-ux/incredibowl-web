@@ -10,7 +10,7 @@ export default function Footer() {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-gray-100 pb-12">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-white border-2 border-[#E3EADA] flex items-center justify-center overflow-hidden shadow-sm">
-                            <Image src="/logo.png" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
+                            <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                         </div>
                         <div className="text-left">
                             <span className="text-2xl font-black tracking-tighter uppercase text-[#1A2D23]">Incredibowl.my</span>

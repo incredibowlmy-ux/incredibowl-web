@@ -61,7 +61,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
             <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
                 <div className="flex items-center gap-3 md:gap-4">
                     <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
-                        <Image src="/logo.png" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
+                        <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                     </div>
                     <div>
                         <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23]">碗妈的厨房</h1>
