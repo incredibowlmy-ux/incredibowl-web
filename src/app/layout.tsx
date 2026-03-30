@@ -1,34 +1,16 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Noto_Sans_SC, Inter, Outfit } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
-  display: "swap",
 });
 
-const notoSansSC = Noto_Sans_SC({
-  variable: "--font-noto-sans-sc",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "800"],
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["300", "500", "700", "900"],
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -107,8 +89,7 @@ fbq('track', 'PageView');
         />
       </head>
       <body
-        className={`${plusJakarta.variable} ${notoSansSC.variable} ${inter.variable} ${outfit.variable} antialiased`}
-        style={{ fontFamily: "var(--font-plus-jakarta), var(--font-noto-sans-sc), sans-serif" }}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <noscript>
           <img
