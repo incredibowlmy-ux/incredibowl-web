@@ -23,9 +23,11 @@ export default function HeroSection() {
                 {/* Rotating Background Images */}
                 <div className="absolute inset-0 pointer-events-none">
                     {weeklyMenu.map((dish, i) => (
-                        <div key={dish.id} className="absolute inset-0 transition-opacity duration-[2000ms] ease-in-out" style={{ opacity: heroImgIdx === i ? 0.25 : 0 }}>
-                            <Image src={dish.image} alt="" fill className="object-cover object-center mix-blend-multiply" />
+                        heroImgIdx === i && (
+                        <div key={dish.id} className="absolute inset-0 animate-fade-in">
+                            <Image src={dish.image} alt="" fill className="object-cover object-center mix-blend-multiply opacity-25" priority={i === 0} />
                         </div>
+                        )
                     ))}
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] via-transparent to-[#E3EADA]/80 z-10" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#E3EADA] via-transparent to-transparent z-10" />
