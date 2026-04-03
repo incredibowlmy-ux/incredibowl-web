@@ -41,6 +41,24 @@ export default function V4BentoLayout() {
         return () => unsubscribe?.();
     }, []);
 
+    // Auto-cancel stale FPX pending orders (>10 min old, user likely closed browser/bank page)
+    useEffect(() => {
+        const pendingStr = sessionStorage.getItem('fpx_pending_order');
+        if (!pendingStr) return;
+        try {
+            const pending = JSON.parse(pendingStr);
+            const age = Date.now() - (pending.createdAt || 0);
+            if (pending.createdAt && age > 10 * 60 * 1000) {
+                fetch('/api/confirm-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds: pending.orderIds, status: 'cancelled' }),
+                }).catch(() => {});
+                sessionStorage.removeItem('fpx_pending_order');
+            }
+        } catch { /* ignore */ }
+    }, []);
+
     // Detect return from FPX bank redirect and confirm pending orders.
     //
     // Two possible URL shapes after redirect:
