@@ -41,7 +41,26 @@ export async function GET(req: NextRequest) {
       db.collection('feedbacks').get(),
     ]);
 
-    const orders = ordersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Auto-cancel FPX pending orders older than 10 minutes (QR orders unaffected)
+    const tenMinAgo = Date.now() - 10 * 60 * 1000;
+    const cancelPromises: Promise<any>[] = [];
+    for (const doc of ordersSnap.docs) {
+      const d = doc.data();
+      if (d.status === 'pending' && d.paymentMethod === 'fpx' && d.createdAt) {
+        const orderTime = (d.createdAt._seconds ?? d.createdAt.seconds ?? 0) * 1000;
+        if (orderTime > 0 && orderTime < tenMinAgo) {
+          cancelPromises.push(doc.ref.update({ status: 'cancelled', updatedAt: new Date() }));
+        }
+      }
+    }
+    if (cancelPromises.length > 0) await Promise.all(cancelPromises);
+
+    const orders = ordersSnap.docs.map(doc => {
+      const data = doc.data();
+      // Reflect just-cancelled orders in the response
+      const cancelled = cancelPromises.length > 0 && data.status === 'pending' && data.paymentMethod === 'fpx';
+      return { id: doc.id, ...data, ...(cancelled && (data.createdAt?._seconds ?? data.createdAt?.seconds ?? 0) * 1000 < tenMinAgo ? { status: 'cancelled' } : {}) };
+    });
     const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     const feedbacks = feedbacksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
