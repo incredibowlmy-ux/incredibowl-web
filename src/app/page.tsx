@@ -41,121 +41,98 @@ export default function V4BentoLayout() {
         return () => unsubscribe?.();
     }, []);
 
-    // Auto-cancel stale FPX pending orders (>10 min old, user likely closed browser/bank page)
+    // Handle FPX payment redirect results and cancel orphan pending orders.
+    //
+    // URL shapes after redirect:
+    //   A) ?fpx_ok=1 &fpx_pid=... &fpx_oid=... &fpx_sig=...  (success via callback)
+    //   B) ?razorpay_payment_id=... &razorpay_order_id=... &razorpay_signature=...  (direct)
+    //   C) ?fpx_error=...  (failure)
+    //   D) No FPX params but sessionStorage has pending → payment failed silently
     useEffect(() => {
+        const url = new URL(window.location.href);
         const pendingStr = sessionStorage.getItem('fpx_pending_order');
-        if (!pendingStr) return;
-        try {
-            const pending = JSON.parse(pendingStr);
-            const age = Date.now() - (pending.createdAt || 0);
-            if (pending.createdAt && age > 10 * 60 * 1000) {
+
+        // Helper: cancel pending orders
+        const cancelPending = () => {
+            if (!pendingStr) return;
+            try {
+                const { orderIds } = JSON.parse(pendingStr);
                 fetch('/api/confirm-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderIds: pending.orderIds, status: 'cancelled' }),
+                    body: JSON.stringify({ orderIds, status: 'cancelled' }),
                 }).catch(() => {});
-                sessionStorage.removeItem('fpx_pending_order');
+            } catch (e) {
+                console.error('FPX pending order cancel error:', e);
             }
-        } catch { /* ignore */ }
-    }, []);
+            sessionStorage.removeItem('fpx_pending_order');
+        };
 
-    // Detect return from FPX bank redirect and confirm pending orders.
-    //
-    // Two possible URL shapes after redirect:
-    //   A) Via /api/payment/fpx-callback (future callback_url):
-    //      ?fpx_ok=1 &fpx_pid=PAY_xxx &fpx_oid=ORD_xxx &fpx_sig=<signature>
-    //   B) Direct Razorpay redirect (no callback_url set):
-    //      ?razorpay_payment_id=PAY_xxx &razorpay_order_id=ORD_xxx &razorpay_signature=<sig>
-    //
-    // In both cases: verify signature → updateOrderStatus(pending → confirmed).
-    useEffect(() => {
-        const url = new URL(window.location.href);
-
-        // --- Error path ---
+        // --- Error path: explicit FPX failure ---
         const fpxErr = url.searchParams.get('fpx_error');
         if (fpxErr) {
             url.searchParams.delete('fpx_error');
             window.history.replaceState({}, '', url.toString());
-
-            const pendingStr = sessionStorage.getItem('fpx_pending_order');
-            if (pendingStr) {
-                try {
-                    const { orderIds } = JSON.parse(pendingStr);
-                    // Cancel orphan pending orders on FPX error
-                    fetch('/api/confirm-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderIds, status: 'cancelled' }),
-                    }).catch(() => { });
-                } catch (e) {
-                    console.error('FPX pending order parse error during cancellation:', e);
-                }
-            }
-
-            sessionStorage.removeItem('fpx_pending_order');
+            cancelPending();
             alert('FPX 支付未能完成，请重试或选择其他方式。');
             return;
         }
 
-        // --- Path A: via fpx-callback ---
+        // --- Success path: verify signature and confirm ---
         const fpxOk = url.searchParams.get('fpx_ok');
-        const fpxPid = url.searchParams.get('fpx_pid');
-        const fpxOid = url.searchParams.get('fpx_oid');
-        const fpxSig = url.searchParams.get('fpx_sig');
+        const pid = (fpxOk ? url.searchParams.get('fpx_pid') : url.searchParams.get('razorpay_payment_id'));
+        const oid = (fpxOk ? url.searchParams.get('fpx_oid') : url.searchParams.get('razorpay_order_id'));
+        const sig = (fpxOk ? url.searchParams.get('fpx_sig') : url.searchParams.get('razorpay_signature'));
 
-        // --- Path B: direct Razorpay redirect ---
-        const rzpPid = url.searchParams.get('razorpay_payment_id');
-        const rzpOid = url.searchParams.get('razorpay_order_id');
-        const rzpSig = url.searchParams.get('razorpay_signature');
+        if (pid && oid && sig) {
+            ['fpx_ok', 'fpx_pid', 'fpx_oid', 'fpx_sig',
+                'razorpay_payment_id', 'razorpay_order_id', 'razorpay_signature']
+                .forEach(k => url.searchParams.delete(k));
+            window.history.replaceState({}, '', url.toString());
 
-        const pid = (fpxOk && fpxPid) ? fpxPid : rzpPid;
-        const oid = (fpxOk && fpxOid) ? fpxOid : rzpOid;
-        const sig = (fpxOk && fpxSig) ? fpxSig : rzpSig;
+            if (!pendingStr) return;
+            sessionStorage.removeItem('fpx_pending_order');
 
-        if (!pid || !oid || !sig) return;
-
-        // Clean URL
-        ['fpx_ok', 'fpx_pid', 'fpx_oid', 'fpx_sig',
-            'razorpay_payment_id', 'razorpay_order_id', 'razorpay_signature']
-            .forEach(k => url.searchParams.delete(k));
-        window.history.replaceState({}, '', url.toString());
-
-        const pendingStr = sessionStorage.getItem('fpx_pending_order');
-        if (!pendingStr) return;
-        sessionStorage.removeItem('fpx_pending_order');
-
-        try {
-            const { orderIds, isMultiPart, groupId, payloads } = JSON.parse(pendingStr);
-            // Verify signature server-side before confirming
-            fetch('/api/payment/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ razorpay_payment_id: pid, razorpay_order_id: oid, razorpay_signature: sig }),
-            })
-                .then(r => r.json())
-                .then(async (verifyData) => {
-                    if (!verifyData.verified) {
-                        alert('支付验证失败，请联系客服并提供支付编号：' + pid);
-                        return;
-                    }
-                    const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
-                    const confirmRes = await fetch('/api/confirm-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
-                    });
-                    if (!confirmRes.ok) throw new Error('订单确认失败');
-                    const successId = isMultiPart ? groupId : orderIds[0];
-                    setFpxSuccessId(successId);
-                    clearCart();
-                    setTimeout(() => setFpxSuccessId(null), 5000);
+            try {
+                const { orderIds, isMultiPart, groupId } = JSON.parse(pendingStr);
+                fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ razorpay_payment_id: pid, razorpay_order_id: oid, razorpay_signature: sig }),
                 })
-                .catch((err) => {
-                    console.error('FPX order confirmation failed:', err);
-                    alert('订单确认失败，请联系客服并提供支付编号：' + pid);
-                });
-        } catch (e) {
-            console.error('FPX pending order parse error:', e);
+                    .then(r => r.json())
+                    .then(async (verifyData) => {
+                        if (!verifyData.verified) {
+                            alert('支付验证失败，请联系客服并提供支付编号：' + pid);
+                            return;
+                        }
+                        const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
+                        const confirmRes = await fetch('/api/confirm-order', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
+                        });
+                        if (!confirmRes.ok) throw new Error('订单确认失败');
+                        const successId = isMultiPart ? groupId : orderIds[0];
+                        setFpxSuccessId(successId);
+                        clearCart();
+                        setTimeout(() => setFpxSuccessId(null), 5000);
+                    })
+                    .catch((err) => {
+                        console.error('FPX order confirmation failed:', err);
+                        alert('订单确认失败，请联系客服并提供支付编号：' + pid);
+                    });
+            } catch (e) {
+                console.error('FPX pending order parse error:', e);
+            }
+            return;
+        }
+
+        // --- Fallback: no FPX URL params but pending order exists ---
+        // Page loaded/refreshed without payment params = payment never completed.
+        // Cancel immediately (sessionStorage is per-tab, only set during FPX flow).
+        if (pendingStr) {
+            cancelPending();
         }
     }, []);
 
