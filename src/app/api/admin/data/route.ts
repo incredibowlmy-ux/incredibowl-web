@@ -16,6 +16,8 @@ async function verifyAdmin(req: NextRequest): Promise<{ email: string } | null> 
 
   const token = authHeader.slice(7);
   try {
+    // Ensure Admin app is initialized before calling getAuth()
+    await getDb();
     const { getAuth } = await import('firebase-admin/auth');
     const decoded = await getAuth().verifyIdToken(token);
     if (!decoded.email || !ADMIN_EMAILS.includes(decoded.email)) return null;
