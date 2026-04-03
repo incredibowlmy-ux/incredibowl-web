@@ -61,7 +61,8 @@
       "WebFetch(domain:pagespeed.web.dev)",
       "Bash(node -e \":*)",
       "Bash(rm public/logo.webp)",
-      "Bash(mv public/logo_new.webp public/logo.webp)"
+      "Bash(mv public/logo_new.webp public/logo.webp)",
+      "Bash(find /c/Users/User/.gemini/antigravity/scratch/incredibowl-web/.next -name *firebase* -o -name *fbevents*)"
     ]
   }
 }

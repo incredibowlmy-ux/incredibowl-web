@@ -65,18 +65,6 @@ export default function CartDrawer({
         }
     };
 
-    const markVoucherUsed = async (code: string, uid: string) => {
-        const res = await fetch('/api/use-voucher', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ voucherCode: code, userId: uid }),
-        });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            console.warn('Failed to mark voucher used:', data.error);
-        }
-    };
-
     useEffect(() => {
         const unsubscribe = onAuthChange(async (user: User | null) => {
             setCurrentUser(user);

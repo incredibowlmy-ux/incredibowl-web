@@ -72,6 +72,19 @@ export async function POST(req: Request) {
         }
       }
 
+      // Restore voucher when cancelling an order that used one
+      if (status === 'cancelled' && orderData.promoCode && orderData.status !== 'cancelled') {
+        try {
+          const voucherRef = db.collection('vouchers').doc(orderData.promoCode);
+          const voucherSnap = await voucherRef.get();
+          if (voucherSnap.exists && voucherSnap.data()?.isUsed) {
+            await voucherRef.update({ isUsed: false, usedBy: '', usedAt: null });
+          }
+        } catch (e) {
+          console.warn('Failed to restore voucher:', e);
+        }
+      }
+
       // Update order status + optional payment data
       const updateFields: Record<string, any> = {
         status,

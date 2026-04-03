@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
 import { getDishPrice } from '@/data/promoConfig';
+import { ADD_ON_PRICES } from '@/data/addOnsConfig';
+
+/** Resolve add-on price from the centralized config (single source of truth). */
+function p(id: string, fallback: number): number {
+    return ADD_ON_PRICES[id] ?? fallback;
+}
 
 // ─── Add-on Data ────────────────────────────────────────────────────────────
 
@@ -33,11 +39,11 @@ const defaultAddOnSections: AddOnSection[] = [
         title: '配菜加购',
         titleEn: 'Add-on Sides',
         minSelect: 0,
-        maxSelect: 50, // High limit as we're focusing on per-item limit now
+        maxSelect: 50,
         items: [
-            { id: 'less-rice', name: '少饭 (150g)', nameEn: 'Less Rice', price: 0.00, category: 'sides', maxQty: 1 },
-            { id: 'extra-rice', name: '加饭 (150g)', nameEn: 'Extra Rice', price: 2.00, category: 'sides' },
-            { id: 'brown-rice', name: '白饭换糙米 (180g)', nameEn: 'Swap Brown Rice', price: 2.00, category: 'sides', maxQty: 1 },
+            { id: 'less-rice', name: '少饭 (150g)', nameEn: 'Less Rice', price: p('less-rice', 0), category: 'sides', maxQty: 1 },
+            { id: 'extra-rice', name: '加饭 (150g)', nameEn: 'Extra Rice', price: p('extra-rice', 2), category: 'sides' },
+            { id: 'brown-rice', name: '白饭换糙米 (180g)', nameEn: 'Swap Brown Rice', price: p('brown-rice', 2), category: 'sides', maxQty: 1 },
         ]
     },
     {
@@ -47,12 +53,12 @@ const defaultAddOnSections: AddOnSection[] = [
         minSelect: 0,
         maxSelect: 30,
         items: [
-            { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: 2.50, category: 'alacarte' },
-            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'alacarte' },
-            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: 3.50, image: '/potato_fried_egg.webp', category: 'alacarte' },
-            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
-            { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: 2.50, category: 'alacarte', maxQty: 3 },
-            { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: 6.90, image: '/chia_seed_pudding.webp', category: 'alacarte' },
+            { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: p('sunny-egg', 2.50), category: 'alacarte' },
+            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'alacarte' },
+            { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: p('potato-egg', 3.50), image: '/potato_fried_egg.webp', category: 'alacarte' },
+            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: p('extra-edamame', 2.50), category: 'alacarte', maxQty: 3 },
+            { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: p('extra-corn', 2.50), category: 'alacarte', maxQty: 3 },
+            { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: p('chia-pudding', 6.90), image: '/chia_seed_pudding.webp', category: 'alacarte' },
         ]
     },
     {
@@ -62,12 +68,12 @@ const defaultAddOnSections: AddOnSection[] = [
         minSelect: 0,
         maxSelect: 30,
         items: [
-            { id: 'longjing-ice', name: '龙井 (冰)', nameEn: 'Longjing Tea (Iced)', price: 3.80, category: 'drinks' },
-            { id: 'longjing-warm', name: '龙井 (温)', nameEn: 'Longjing Tea (Warm)', price: 3.80, category: 'drinks' },
-            { id: 'tieguanyin-ice', name: '铁观音 (冰)', nameEn: 'Tieguanyin Oolong (Iced)', price: 3.80, category: 'drinks' },
-            { id: 'tieguanyin-warm', name: '铁观音 (温)', nameEn: 'Tieguanyin Oolong (Warm)', price: 3.80, category: 'drinks' },
-            { id: 'shuixian-ice', name: '水仙 (冰)', nameEn: 'Shuixian Oolong (Iced)', price: 3.80, category: 'drinks' },
-            { id: 'shuixian-warm', name: '水仙 (温)', nameEn: 'Shuixian Oolong (Warm)', price: 3.80, category: 'drinks' },
+            { id: 'longjing-ice', name: '龙井 (冰)', nameEn: 'Longjing Tea (Iced)', price: p('longjing-ice', 3.80), category: 'drinks' },
+            { id: 'longjing-warm', name: '龙井 (温)', nameEn: 'Longjing Tea (Warm)', price: p('longjing-warm', 3.80), category: 'drinks' },
+            { id: 'tieguanyin-ice', name: '铁观音 (冰)', nameEn: 'Tieguanyin Oolong (Iced)', price: p('tieguanyin-ice', 3.80), category: 'drinks' },
+            { id: 'tieguanyin-warm', name: '铁观音 (温)', nameEn: 'Tieguanyin Oolong (Warm)', price: p('tieguanyin-warm', 3.80), category: 'drinks' },
+            { id: 'shuixian-ice', name: '水仙 (冰)', nameEn: 'Shuixian Oolong (Iced)', price: p('shuixian-ice', 3.80), category: 'drinks' },
+            { id: 'shuixian-warm', name: '水仙 (温)', nameEn: 'Shuixian Oolong (Warm)', price: p('shuixian-warm', 3.80), category: 'drinks' },
         ]
     },
 ];
@@ -147,7 +153,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：浓厚温泉蛋 + 脆质海苔 + 特制日本酱油\n“当酱油遇见脆爽海苔，在流心月见的温柔包裹下，瞬间唤醒纳豆沉睡的‘极鲜’灵魂。”',
                 items: [
-                    { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.0)', nameEn: 'Soulful Trio', price: 5.00, category: 'combo' }
+                    { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.0)', nameEn: 'Soulful Trio', price: p('natto-super-combo', 5), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -155,10 +161,10 @@ export default function AddOnModal({
                     return {
                         ...section,
                         items: [
-                            { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: 4.90, category: 'sides' },
-                            { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: 3.00, category: 'sides' },
-                            { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: 2.00, category: 'sides' },
-                            { id: 'soy-sauce', name: '秘制日本酱油', nameEn: 'Secret Japanese Soy Sauce', price: 1.50, category: 'sides' },
+                            { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: p('natto-side', 4.90), category: 'sides' },
+                            { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg-side', 3), category: 'sides' },
+                            { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: p('nori', 2), category: 'sides' },
+                            { id: 'soy-sauce', name: '秘制日本酱油', nameEn: 'Secret Japanese Soy Sauce', price: p('soy-sauce', 1.50), category: 'sides' },
                             ...section.items.filter(item => item.id.includes('rice') && item.id !== 'brown-rice')
                         ]
                     };
@@ -185,7 +191,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：鲜甜大虾仁 4只 + 嫩炒鸡丁 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
                 items: [
-                    { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: 11.40, category: 'combo' }
+                    { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: p('surf-turf-super-combo', 11.40), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -193,10 +199,10 @@ export default function AddOnModal({
                     return {
                         ...section,
                         items: [
-                            { id: 'extra-prawns', name: '鲜甜大虾仁 (4只)', nameEn: 'Extra Sweet Prawns (4pcs)', price: 7.00, category: 'sides', maxQty: 3 },
-                            { id: 'extra-chicken-breast', name: '嫩炒鸡丁 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: 4.50, category: 'sides', maxQty: 3 },
-                            { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: 2.50, category: 'sides', maxQty: 3 },
-                            { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: 4.00, category: 'sides', maxQty: 3 },
+                            { id: 'extra-prawns', name: '鲜甜大虾仁 (4只)', nameEn: 'Extra Sweet Prawns (4pcs)', price: p('extra-prawns', 7), category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-breast', name: '嫩炒鸡丁 (50g)', nameEn: 'Tender Shredded Chicken Breast (50g)', price: p('extra-chicken-breast', 4.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-fungus', name: '脆爽云耳 (20g)', nameEn: 'Crisp Black Fungus (20g)', price: p('extra-fungus', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-yam', name: '鲜脆山药块 (90g)', nameEn: 'Fresh Chinese Yam (90g)', price: p('extra-yam', 4), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
                         ]
                     };
@@ -216,7 +222,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
                 items: [
-                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: 12.40, category: 'combo' }
+                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.40), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -225,10 +231,10 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: 9.90, category: 'sides', maxQty: 3 },
-                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: 2.50, category: 'sides', maxQty: 3 },
-                            { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: 2.50, category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (50g)', nameEn: 'Cherry Tomato', price: 2.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: p('extra-chicken-chop', 9.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (50g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -255,7 +261,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：180g 柠香烤鸡胸 + 80g 澳洲烤薯块 + 80g 脆甜椰菜花\n“突破百克优质蛋白的终极归宿，练后快速回血、饱腹无负担。”',
                 items: [
-                    { id: 'greek-protein-bomb-combo', name: '蛋白质核弹三件套 (原价 RM 18.40)', nameEn: 'Protein Bomb Trio', price: 15.90, category: 'combo' }
+                    { id: 'greek-protein-bomb-combo', name: '蛋白质核弹三件套 (原价 RM 18.40)', nameEn: 'Protein Bomb Trio', price: p('greek-protein-bomb-combo', 15.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -263,10 +269,10 @@ export default function AddOnModal({
                     return {
                         ...section,
                         items: [
-                            { id: 'extra-greek-chicken-180g', name: '【增肌极客】加 180g 柠香烤鸡胸', nameEn: 'Extra Lemon Chicken Breast (180g)', price: 11.90, category: 'sides', maxQty: 3 },
-                            { id: 'extra-aus-potato-80g', name: '【优质碳水】加 80g 澳洲烤薯块', nameEn: 'Extra Roasted Aus Potato (80g)', price: 3.50, category: 'sides', maxQty: 3 },
-                            { id: 'extra-cauliflower-80g', name: '【抗氧高纤】加 80g 脆甜椰菜花', nameEn: 'Extra Cauliflower (80g)', price: 3.00, category: 'sides', maxQty: 3 },
-                            { id: 'extra-black-olive-12g', name: '【地中海风味】加 12g 提鲜黑橄榄', nameEn: 'Extra Black Olive Slice (12g)', price: 1.50, category: 'sides', maxQty: 3 },
+                            { id: 'extra-greek-chicken-180g', name: '【增肌极客】加 180g 柠香烤鸡胸', nameEn: 'Extra Lemon Chicken Breast (180g)', price: p('extra-greek-chicken-180g', 11.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-aus-potato-80g', name: '【优质碳水】加 80g 澳洲烤薯块', nameEn: 'Extra Roasted Aus Potato (80g)', price: p('extra-aus-potato-80g', 3.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-cauliflower-80g', name: '【抗氧高纤】加 80g 脆甜椰菜花', nameEn: 'Extra Cauliflower (80g)', price: p('extra-cauliflower-80g', 3), category: 'sides', maxQty: 3 },
+                            { id: 'extra-black-olive-12g', name: '【地中海风味】加 12g 提鲜黑橄榄', nameEn: 'Extra Black Olive Slice (12g)', price: p('extra-black-olive-12g', 1.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
                         ]
                     };
@@ -284,9 +290,9 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: 14.90, category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: 27.80, category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: 41.40, category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: p('extra-herbal-leg-1', 14.90), category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: p('extra-herbal-leg-2', 27.80), category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: p('extra-herbal-leg-3', 41.40), category: 'sides', maxQty: 1 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -305,7 +311,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：香煎金鸡扒 150g + 古早味荷包蛋 + 加饭\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"',
                 items: [
-                    { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 14.40)', nameEn: 'Rice King Trio', price: 12.40, category: 'combo' }
+                    { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 14.40)', nameEn: 'Rice King Trio', price: p('scallion-soup-combo', 12.40), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -314,7 +320,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-scallion-chop-side', name: '【收工犒劳】多加一只葱香煎鸡扒', nameEn: 'Extra Scallion Chicken Chop', price: 9.90, category: 'sides', maxQty: 3 },
+                            { id: 'extra-scallion-chop-side', name: '【收工犒劳】多加一只葱香煎鸡扒', nameEn: 'Extra Scallion Chicken Chop', price: p('extra-scallion-chop-side', 9.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -334,7 +340,7 @@ export default function AddOnModal({
                 maxSelect: 3,
                 extraDesc: '包含：绵密马铃薯 90g + 香滑花肉片 70g\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"',
                 items: [
-                    { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 13.40)', nameEn: 'Potato & Pork Belly Duo', price: 11.40, category: 'combo' }
+                    { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 13.40)', nameEn: 'Potato & Pork Belly Duo', price: p('pork-potato-duo-combo', 11.40), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -343,8 +349,8 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-potato', name: '【绵密软糯】加马铃薯 (90g)', nameEn: 'Extra Potato (90g)', price: 3.50, category: 'sides', maxQty: 3 },
-                            { id: 'extra-pork-belly', name: '【浓香入味】加花肉片 (70g)', nameEn: 'Extra Pork Belly Slices (70g)', price: 9.90, category: 'sides', maxQty: 3 },
+                            { id: 'extra-potato', name: '【绵密软糯】加马铃薯 (90g)', nameEn: 'Extra Potato (90g)', price: p('extra-potato', 3.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-pork-belly', name: '【浓香入味】加花肉片 (70g)', nameEn: 'Extra Pork Belly Slices (70g)', price: p('extra-pork-belly', 9.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };

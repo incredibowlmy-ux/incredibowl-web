@@ -25,10 +25,17 @@ export async function POST(request: NextRequest) {
             .digest("hex");
 
         // Compare signatures using constant-time comparison to prevent timing attacks
-        const isValid = crypto.timingSafeEqual(
-            Buffer.from(expectedSignature, "hex"),
-            Buffer.from(razorpay_signature, "hex")
-        );
+        const expectedBuf = Buffer.from(expectedSignature, "hex");
+        const receivedBuf = Buffer.from(razorpay_signature, "hex");
+
+        if (expectedBuf.length !== receivedBuf.length) {
+            return NextResponse.json(
+                { verified: false, error: "Invalid signature format" },
+                { status: 400 }
+            );
+        }
+
+        const isValid = crypto.timingSafeEqual(expectedBuf, receivedBuf);
 
         if (isValid) {
             return NextResponse.json({

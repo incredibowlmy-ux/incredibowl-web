@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 
 interface CartSuccessProps {
@@ -11,9 +11,14 @@ interface CartSuccessProps {
 }
 
 export default function CartSuccess({ orderSuccess, cart, userProfile, cartTotal }: CartSuccessProps) {
+    useEffect(() => {
+        if (typeof window !== 'undefined' && (window as any).fbq) {
+            (window as any).fbq('track', 'Purchase', { value: cartTotal, currency: 'MYR' });
+        }
+    }, [cartTotal]);
+
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
-            <script dangerouslySetInnerHTML={{ __html: `if(typeof window !== 'undefined' && window.fbq){fbq('track', 'Purchase', {value: ${cartTotal.toFixed(2)}, currency: 'MYR'});}` }} />
             <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" />
             <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col items-center justify-center border-l border-[#E3EADA]">
                 <div className="text-center space-y-6 p-8 animate-in zoom-in-95 duration-500">

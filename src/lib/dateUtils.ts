@@ -77,7 +77,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
             isDisabled = true;
             btnText = `今日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
         } else {
-            let prefix = diffDays === 0 && targetDate.getDate() === now.getDate() ? '今日' : '';
+            const prefix = diffDays === 0 && targetDate.getDate() === now.getDate() ? '今日' : '';
             btnText = `预订 ${prefix}${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
         }
 

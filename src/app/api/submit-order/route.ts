@@ -213,6 +213,8 @@ export async function POST(req: Request) {
       });
     }
 
+    // TODO: 优惠券在支付确认前就标记已用，FPX支付失败后优惠券会浪费。
+    // 考虑将此逻辑移至 /api/confirm-order，在支付成功后再标记。
     // ── Mark voucher as used atomically after orders created ───
     if (promoCode && serverPromoDiscount > 0) {
       const code = promoCode.trim().toUpperCase();

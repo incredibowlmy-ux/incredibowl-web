@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthChange, signInWithGoogle, logout, loginWithEmail } from '@/lib/auth';
-import { getAllOrders, getAllUsers, OrderStatus } from '@/lib/orders';
-import { getAllFeedbacks, updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
+import { OrderStatus } from '@/lib/orders';
+import { updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
 import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -73,11 +73,13 @@ export default function AdminPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [ordersData, usersData, feedbacksData] = await Promise.all([
-                getAllOrders(),
-                getAllUsers(),
-                getAllFeedbacks(),
-            ]);
+            const token = await currentUser?.getIdToken();
+            if (!token) throw new Error('未登录');
+            const res = await fetch('/api/admin/data', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) throw new Error((await res.json()).error || '数据获取失败');
+            const { orders: ordersData, users: usersData, feedbacks: feedbacksData } = await res.json();
             setOrders(ordersData as AdminOrder[]);
             setCustomers(usersData as AppUser[]);
             setFeedbacks(feedbacksData);

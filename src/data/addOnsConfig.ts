@@ -20,7 +20,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'brown-rice': 2.00,
 
   // ─── A la carte ────────────────────────────
-  'onsen-egg': 3.50,
+  'onsen-egg': 3.00,
   'chia-pudding': 6.90,
 
   // ─── Premium tea ───────────────────────────
@@ -34,7 +34,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Natto Rice (id:6) specials ────────────
   'natto-super-combo': 5.00,
   'natto-side': 4.90,
-  'onsen-egg-side': 2.50,
+  'onsen-egg-side': 3.00,
   'nori': 2.00,
   'soy-sauce': 1.50,
 
@@ -44,6 +44,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'edamame': 2.00,
   'corn': 2.00,
   'cherry-tomato': 2.50,
+  'extra-edamame-side': 2.50,
+  'extra-corn-side': 2.50,
+
+  // ─── Default a la carte ────────────────────
+  'extra-edamame': 2.50,
+  'extra-corn': 2.50,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,

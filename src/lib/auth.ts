@@ -63,6 +63,20 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
 
     if (!userSnap.exists()) {
         const ownReferralCode = 'IB-' + user.uid.slice(0, 6).toUpperCase();
+
+        // Validate referral code format and existence
+        let validatedReferral: string | null = null;
+        if (referralCode) {
+            const code = referralCode.trim().toUpperCase();
+            if (/^IB-[A-Z0-9]{4,8}$/.test(code)) {
+                const refQuery = query(collection(db, 'users'), where('referralCode', '==', code));
+                const refSnap = await getDocs(refQuery);
+                if (!refSnap.empty) {
+                    validatedReferral = code;
+                }
+            }
+        }
+
         await setDoc(userRef, {
             uid: user.uid,
             email: user.email,
@@ -71,7 +85,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             phone: phone || null,
             address: address || null,
             referralCode: ownReferralCode,
-            referredBy: referralCode || null,
+            referredBy: validatedReferral,
             referralBonusAwarded: false,
             createdAt: serverTimestamp(),
             lastLoginAt: serverTimestamp(),
