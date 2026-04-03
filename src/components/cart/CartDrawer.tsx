@@ -244,14 +244,14 @@ export default function CartDrawer({
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
             } catch (err: any) {
-                if (err.message === '已取消支付') {
-                    await fetch('/api/confirm-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderIds, status: 'cancelled' }),
-                    }).catch(() => {});
-                    sessionStorage.removeItem('fpx_pending_order');
-                } else {
+                // Cancel pending orders on any payment failure (dismiss, network error, verification fail, etc.)
+                await fetch('/api/confirm-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds, status: 'cancelled' }),
+                }).catch(() => {});
+                sessionStorage.removeItem('fpx_pending_order');
+                if (err.message !== '已取消支付') {
                     alert(err.message || '支付失败，请重试');
                 }
             }

@@ -3,10 +3,13 @@ export type { OrderItem, OrderData, OrderStatus } from '@/lib/orders';
 export type { Feedback } from '@/lib/feedbacks';
 export type { MenuItem } from '@/data/weeklyMenu';
 
-// Firestore server timestamp shape returned in client reads
+// Firestore server timestamp shape returned in client reads or Admin SDK
 export interface FirestoreTimestamp {
-    seconds: number;
+    seconds?: number;
     nanoseconds?: number;
+    // Firebase Admin SDK serializes as _seconds/_nanoseconds
+    _seconds?: number;
+    _nanoseconds?: number;
 }
 
 // An order document as returned from Firestore (OrderData + doc id + timestamps)

@@ -270,8 +270,8 @@ export default function AdminPage() {
         .sort((a, b) => {
             if (a.status === 'pending' && b.status !== 'pending') return -1;
             if (b.status === 'pending' && a.status !== 'pending') return 1;
-            const aTime = a.createdAt?.seconds ?? 0;
-            const bTime = b.createdAt?.seconds ?? 0;
+            const aTime = a.createdAt?.seconds ?? a.createdAt?._seconds ?? 0;
+            const bTime = b.createdAt?.seconds ?? b.createdAt?._seconds ?? 0;
             return bTime - aTime;
         });
 

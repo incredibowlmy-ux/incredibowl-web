@@ -22,7 +22,10 @@ export function formatMD(d: Date): string {
 
 export function formatCreatedAt(order: AdminOrder): string {
     if (!order.createdAt) return '—';
-    const ts = new Date(order.createdAt.seconds * 1000);
+    // Firebase Admin SDK serializes as _seconds; client SDK uses seconds
+    const secs = order.createdAt.seconds ?? order.createdAt._seconds;
+    if (!secs) return '—';
+    const ts = new Date(secs * 1000);
     return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
