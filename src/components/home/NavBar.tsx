@@ -31,7 +31,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                         100% { transform: translateX(-50%); }
                     }
                     .animate-marquee-mobile {
-                        animation: marquee-horizontal 15s linear infinite;
+                        animation: marquee-horizontal 35s linear infinite;
                         display: flex;
                         width: max-content;
                     }
@@ -47,11 +47,11 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                 {/* Mobile Marquee Version (Larger font, animated) */}
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile flex shrink-0 items-center">
-                        <span className="text-[12px] font-bold tracking-wide px-4 leading-none inline-block">
+                        <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                         </span>
                         {/* Duplicate for seamless infinite loop */}
-                        <span className="text-[12px] font-bold tracking-wide px-4 leading-none inline-block">
+                        <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                         </span>
                     </div>

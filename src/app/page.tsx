@@ -7,8 +7,10 @@ import dynamic from 'next/dynamic';
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
 const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
+const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), { ssr: false });
 import NavBar from '@/components/home/NavBar';
 import HeroSection from '@/components/home/HeroSection';
+import PromoBanner from '@/components/home/PromoBanner';
 import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarousel from '@/components/home/MenuCarousel';
 import FeedbackSection from '@/components/home/FeedbackSection';
@@ -204,6 +206,7 @@ export default function V4BentoLayout() {
             <main className="pt-32 pb-32 px-4 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <HeroSection />
+                    <PromoBanner />
                     <DeliveryWidget />
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
@@ -215,6 +218,8 @@ export default function V4BentoLayout() {
             </main>
 
             <Footer />
+
+            <WhatsAppFloat />
 
             {isCartOpen && (
             <ErrorBoundary>
