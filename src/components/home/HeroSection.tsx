@@ -215,7 +215,6 @@ export default function HeroSection() {
                         {/* Price + arrow */}
                         <div className="mt-auto flex items-end justify-between pt-3 border-t border-[#1A2D23]/8">
                             <p className="text-2xl md:text-3xl font-black text-[#FF6B35] tracking-tight leading-none">
-                                <span className="text-xs md:text-sm font-black text-[#1A2D23]/50 tracking-wider mr-1.5 align-middle">FROM</span>
                                 RM {finalPrice.toFixed(2)}
                             </p>
                             <div className="w-11 h-11 rounded-full bg-[#1A2D23] flex items-center justify-center text-white group-hover:bg-[#FF6B35] group-hover:scale-110 transition-all duration-300 shrink-0">
