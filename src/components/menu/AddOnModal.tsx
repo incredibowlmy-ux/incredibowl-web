@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
-import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 
 /** Resolve add-on price from the centralized config (single source of truth). */
@@ -441,8 +440,8 @@ export default function AddOnModal({
         return sum + section.items.reduce((s, item) => s + (quantities[item.id] || 0) * item.price, 0);
     }, 0);
 
-    const discountedPrice = getDishPrice(dish.price);
-    const grandTotal = (discountedPrice * dishQty) + addOnsTotal;
+    const dishPrice = dish.price;
+    const grandTotal = (dishPrice * dishQty) + addOnsTotal;
 
     const handleAddToCart = () => {
         const selectedAddOns = activeAddOnSections.flatMap(section =>
@@ -539,8 +538,7 @@ export default function AddOnModal({
                         {/* Price + Qty */}
                         <div className="flex items-center justify-between py-3 px-4 bg-white rounded-2xl border border-[#E8DFD0] mb-6">
                             <div className="flex flex-col">
-                                <span className="text-xs text-[#8B7355]/60 line-through font-medium">RM {dish.price.toFixed(2)}</span>
-                                <span className="text-xl font-extrabold text-[#C76F40]">RM {getDishPrice(dish.price).toFixed(2)}</span>
+                                <span className="text-xl font-extrabold text-[#C76F40]">RM {dish.price.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <button
@@ -747,7 +745,7 @@ export default function AddOnModal({
                     {/* Add-on summary (if any) */}
                     {addOnsTotal > 0 && (
                         <div className="flex justify-between items-center text-xs text-[#8B7355] mb-2 px-1">
-                            <span>主菜 RM {(getDishPrice(dish.price) * dishQty).toFixed(2)} + 加购 RM {addOnsTotal.toFixed(2)}</span>
+                            <span>主菜 RM {(dish.price * dishQty).toFixed(2)} + 加购 RM {addOnsTotal.toFixed(2)}</span>
                         </div>
                     )}
                     <button
