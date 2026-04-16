@@ -8,7 +8,7 @@ export const OPENING_PROMO = {
   /** Discount amount in RM per dish */
   amount: 1,
   /** Master on/off switch */
-  active: true,
+  active: false,
   /** ISO date string — promo auto-disables after this date (MYT) */
   expiresAt: '2026-04-15',
   /** Display label used in UI */
