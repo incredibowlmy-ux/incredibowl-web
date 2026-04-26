@@ -39,6 +39,11 @@ export default function AdminPage() {
     const [voucherDiscount, setVoucherDiscount] = useState(1);
     const [voucherQty, setVoucherQty] = useState(1);
     const [lastBatch, setLastBatch] = useState<string[]>([]);
+    const [customCode, setCustomCode] = useState('');
+    const [customDiscount, setCustomDiscount] = useState(5);
+    const [customExpiryMonths, setCustomExpiryMonths] = useState(1);
+    const [customError, setCustomError] = useState('');
+    const [customSuccess, setCustomSuccess] = useState('');
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -137,6 +142,46 @@ export default function AdminPage() {
             }
         } catch (e) {
             alert('生成失败: ' + e);
+        }
+        setGeneratingVoucher(false);
+    };
+
+    const createCustomVoucher = async () => {
+        setCustomError('');
+        setCustomSuccess('');
+        const code = customCode.trim().toUpperCase();
+        if (!code) { setCustomError('请输入自定义代金券码'); return; }
+        if (!/^[A-Z0-9-]{3,30}$/.test(code)) { setCustomError('代金券码只能包含字母、数字、连字符 (3-30 字符)'); return; }
+        if (customDiscount <= 0) { setCustomError('折扣金额必须大于 0'); return; }
+
+        setGeneratingVoucher(true);
+        try {
+            const { doc, setDoc, getDoc, Timestamp } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase');
+            const ref = doc(db, 'vouchers', code);
+            const existing = await getDoc(ref);
+            if (existing.exists()) {
+                setCustomError(`代金券码 ${code} 已存在`);
+                setGeneratingVoucher(false);
+                return;
+            }
+            const expiresAt = new Date();
+            expiresAt.setMonth(expiresAt.getMonth() + customExpiryMonths);
+            await setDoc(ref, {
+                code,
+                discount: customDiscount,
+                isUsed: false,
+                usedBy: '',
+                createdAt: Timestamp.now(),
+                expiresAt: Timestamp.fromDate(expiresAt),
+            });
+            setCustomSuccess(`✅ 已创建：${code} (RM ${customDiscount})`);
+            setCustomCode('');
+            navigator.clipboard.writeText(code).catch(() => {});
+            await loadVouchers();
+            setTimeout(() => setCustomSuccess(''), 5000);
+        } catch (e: any) {
+            setCustomError('创建失败: ' + (e?.message || e));
         }
         setGeneratingVoucher(false);
     };
@@ -1034,6 +1079,69 @@ export default function AdminPage() {
                                             {copiedCode === '__all__' ? '✓ 已全部复制' : '📋 一键全部复制'}
                                         </button>
                                     )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Custom Voucher Code Panel */}
+                        <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
+                            <div>
+                                <h3 className="font-black text-[#1A2D23] text-base mb-1">✨ 自定义代金券码</h3>
+                                <p className="text-xs text-gray-400">用于营销活动 / 网红派发（如 JIACHEE5）。每码限用一次。</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div className="md:col-span-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">代金券码</label>
+                                    <input
+                                        type="text"
+                                        value={customCode}
+                                        onChange={e => setCustomCode(e.target.value.toUpperCase())}
+                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-mono font-black uppercase outline-none focus:border-[#FF6B35] transition-colors tracking-wider"
+                                        placeholder="例如 JIACHEE5"
+                                        maxLength={30}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">折扣金额 (RM)</label>
+                                    <input
+                                        type="number"
+                                        min={0.5} step={0.5}
+                                        value={customDiscount}
+                                        onChange={e => setCustomDiscount(Number(e.target.value))}
+                                        className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-[#FF6B35] transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">有效期 (月)</label>
+                                <div className="flex items-center gap-2">
+                                    {[1, 3, 6, 12].map(m => (
+                                        <button key={m}
+                                            onClick={() => setCustomExpiryMonths(m)}
+                                            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all border ${customExpiryMonths === m ? 'bg-[#1A2D23] text-white border-[#1A2D23]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                        >{m} 月</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={createCustomVoucher}
+                                disabled={generatingVoucher || !customCode.trim() || customDiscount <= 0}
+                                className={`w-full py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${generatingVoucher || !customCode.trim() || customDiscount <= 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#243A2D] active:scale-[0.98]'}`}
+                            >
+                                {generatingVoucher ? '创建中...' : `✨ 创建 ${customCode || '自定义码'} (RM ${customDiscount})`}
+                            </button>
+
+                            {customError && (
+                                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-xs font-bold text-red-700">
+                                    {customError}
+                                </div>
+                            )}
+                            {customSuccess && (
+                                <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-xs font-bold text-green-800">
+                                    {customSuccess} · 已自动复制到剪贴板
                                 </div>
                             )}
                         </div>
