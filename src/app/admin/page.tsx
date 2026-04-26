@@ -36,7 +36,7 @@ export default function AdminPage() {
     const [vouchers, setVouchers] = useState<any[]>([]);
     const [generatingVoucher, setGeneratingVoucher] = useState(false);
     const [copiedCode, setCopiedCode] = useState('');
-    const [voucherDiscount, setVoucherDiscount] = useState(1);
+    const [voucherDiscount, setVoucherDiscount] = useState(3);
     const [voucherQty, setVoucherQty] = useState(1);
     const [lastBatch, setLastBatch] = useState<string[]>([]);
     const [customCode, setCustomCode] = useState('');

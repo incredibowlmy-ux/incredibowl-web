@@ -26,7 +26,7 @@ export default function PromoBanner() {
                         </p>
                         <p className="text-white/70 text-xs md:text-sm leading-relaxed mb-2">
                             新店开灶，感谢街坊支持！🎉<br />
-                            你的声音很重要，评价送 RM1。
+                            你的声音很重要，评价送 RM3。
                         </p>
                         <p className="text-white/40 text-[11px] italic leading-relaxed">
                             Thanks for your support — your voice matters.
@@ -41,10 +41,10 @@ export default function PromoBanner() {
                                 <p className="text-[#FF9B50] font-black text-sm md:text-base">好评返券</p>
                             </div>
                             <p className="text-white/85 text-xs md:text-sm leading-snug mb-2">
-                                分享你的评价（带图更好），送你 <span className="text-[#FF9B50] font-black">RM 1 回购券</span>。
+                                分享你的评价（带图更好），送你 <span className="text-[#FF9B50] font-black">RM 3 回购券</span>。
                             </p>
                             <p className="text-white/40 text-[11px] italic leading-snug">
-                                Share your review (photos appreciated), get RM 1 voucher for your next order
+                                Share your review (photos appreciated), get RM 3 voucher for your next order
                             </p>
                         </div>
                     </div>
