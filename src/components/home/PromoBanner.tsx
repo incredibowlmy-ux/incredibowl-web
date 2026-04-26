@@ -7,7 +7,7 @@ export default function PromoBanner() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
-        <div className="lg:col-span-7 mt-4">
+        <div className="lg:col-span-7 lg:col-start-6 lg:row-start-2 mt-4">
             <div className="relative bg-gradient-to-br from-[#1A2D23] via-[#243A2D] to-[#1A2D23] rounded-[32px] p-6 md:p-8 overflow-hidden border border-[#FF6B35]/15 h-full">
                 {/* Decorative blurs */}
                 <div className="w-48 h-48 bg-[#FF6B35] rounded-full blur-3xl opacity-15 absolute -top-16 -left-10 pointer-events-none" />
@@ -121,9 +121,12 @@ export default function PromoBanner() {
                             <button
                                 type="button"
                                 onClick={scrollToMenu}
-                                className="mt-5 lg:mt-0 self-start inline-flex items-center gap-2 px-5 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white text-[15px] font-bold rounded-full shadow-md shadow-[#FF6B35]/20 transition-all active:scale-95 group"
+                                className="mt-5 lg:mt-0 self-start lg:self-end inline-flex items-center gap-3 px-5 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full shadow-md shadow-[#FF6B35]/20 transition-all active:scale-95 group"
                             >
-                                <span>下单后即可获得资格</span>
+                                <div className="flex flex-col items-start">
+                                    <span className="text-[15px] font-bold leading-tight">立即下单</span>
+                                    <span className="text-[11px] font-medium text-white/75 leading-tight">赚 RM3 回购券</span>
+                                </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>
                         </div>

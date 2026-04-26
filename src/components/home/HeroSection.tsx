@@ -190,7 +190,7 @@ export default function HeroSection() {
                     className="group w-full text-left bg-white rounded-[32px] overflow-hidden shadow-lg shadow-[#1A2D23]/5 border border-[#1A2D23]/5 hover:shadow-2xl hover:shadow-[#FF6B35]/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full min-h-[460px]"
                 >
                     {/* Image area */}
-                    <div className="relative w-full h-56 md:h-64 overflow-hidden bg-[#E3EADA]">
+                    <div className="relative w-full h-56 md:h-64 lg:h-72 overflow-hidden bg-[#E3EADA]">
                         {nextSpecial && (
                             <Image
                                 src={nextSpecial.dish.image}
