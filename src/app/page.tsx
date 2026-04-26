@@ -203,7 +203,7 @@ export default function V4BentoLayout() {
                 onAuthOpen={() => setIsAuthOpen(true)}
             />
 
-            <main className="pt-32 pb-32 px-4 max-w-7xl mx-auto">
+            <main className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <HeroSection />
                     <PromoBanner />

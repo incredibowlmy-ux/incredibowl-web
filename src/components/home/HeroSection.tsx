@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone, Clock } from 'lucide-react';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 
@@ -73,7 +73,7 @@ export default function HeroSection() {
     return (
         <>
             {/* Hero Bento 1: Brand Statement + Primary CTA */}
-            <div className="lg:col-span-8 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[460px]">
+            <div className="lg:col-span-7 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[460px]">
                 {/* Rotating Background Images — pushed to right side, much dimmer */}
                 <div className="absolute inset-0 pointer-events-none">
                     {weeklyMenu.map((dish, i) => (
@@ -88,7 +88,7 @@ export default function HeroSection() {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#E3EADA] via-[#E3EADA]/20 to-transparent z-10" />
                 </div>
 
-                <div className="relative z-20 max-w-xl">
+                <div className="relative z-20 max-w-xl lg:max-w-2xl">
                     {/* Trust badges row */}
                     <div className="flex flex-wrap items-center gap-2 mb-6">
                         {/* Location badge */}
@@ -109,26 +109,26 @@ export default function HeroSection() {
                         </button>
                     </div>
 
-                    {/* Main title — Chinese big, English subtitle */}
-                    <h2 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-2 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                    {/* Main title — page H1 (was H2; brand name in NavBar should not be H1) */}
+                    <h1 className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-2 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
                         家的味道，<br />
                         每天新鲜采购。
-                    </h2>
+                    </h1>
                     <p className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-6">
                         Home-cooked Taste, Sourced Fresh Daily.
                     </p>
 
                     {/* Quote */}
-                    <p className="text-xl md:text-2xl font-semibold text-[#1A2D23]/90 leading-snug mb-2 max-w-md">
+                    <p className="text-xl md:text-2xl font-semibold text-[#1A2D23]/90 leading-snug mb-2 max-w-md lg:max-w-xl">
                         忙碌的你，值得一碗认真煮的饭。
                     </p>
-                    <p className="text-base font-semibold text-[#1A2D23]/85 leading-relaxed mb-3 max-w-md">
+                    <p className="text-base font-semibold text-[#1A2D23]/85 leading-relaxed mb-3 max-w-md lg:max-w-xl">
                         凌晨 6 点去巴刹，中午送到你手上。
                     </p>
-                    <p className="text-sm font-semibold text-[#1A2D23]/70 italic leading-snug mb-1 max-w-md">
+                    <p className="text-sm font-semibold text-[#1A2D23]/70 italic leading-snug mb-1 max-w-md lg:max-w-xl">
                         You hustle. We feed you right.
                     </p>
-                    <p className="text-[13px] font-medium text-[#1A2D23]/55 italic leading-relaxed mb-8 max-w-md">
+                    <p className="text-[13px] font-medium text-[#1A2D23]/55 italic leading-relaxed mb-8 max-w-md lg:max-w-xl">
                         At the market by 6am. At your door by noon.
                     </p>
 
@@ -149,13 +149,31 @@ export default function HeroSection() {
                     </div>
 
                     {/* How-to-order flow — bilingual, scannable */}
-                    <div className="mt-5 max-w-md">
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75">
+                    <div className="mt-5 max-w-md lg:max-w-xl">
+                        {/* Mobile: arrow flow (preserved) */}
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
                             <span>网页 / WhatsApp 下单</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>2km 免运费</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>中午送达</span>
+                        </div>
+                        {/* Desktop: icon-prefixed feature list with dot separator */}
+                        <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
+                            <span className="inline-flex items-center gap-1.5">
+                                <Smartphone size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
+                                网页 / WhatsApp 下单
+                            </span>
+                            <span className="text-[#1A2D23]/25 select-none">·</span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
+                                2km 免运费
+                            </span>
+                            <span className="text-[#1A2D23]/25 select-none">·</span>
+                            <span className="inline-flex items-center gap-1.5">
+                                <Clock size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
+                                中午送达
+                            </span>
                         </div>
                         <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 italic mt-1.5 leading-relaxed">
                             Order via web or WhatsApp · Free delivery within 2km · Arrives by noon
@@ -165,7 +183,7 @@ export default function HeroSection() {
             </div>
 
             {/* Hero Bento 2: Tomorrow's Special preview */}
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-5">
                 <button
                     type="button"
                     onClick={scrollToMenu}
@@ -215,7 +233,7 @@ export default function HeroSection() {
 
                         {/* Tags */}
                         {nextSpecial && (
-                            <div className="flex flex-wrap gap-1.5 mb-5">
+                            <div className="flex flex-wrap gap-1.5 mb-4">
                                 {nextSpecial.dish.tags.slice(0, 3).map((tag, i) => (
                                     <span key={i} className="px-2.5 py-1 bg-[#E3EADA] text-[#1A2D23]/85 rounded-full text-xs font-bold">
                                         {tag}
@@ -224,14 +242,32 @@ export default function HeroSection() {
                             </div>
                         )}
 
-                        {/* Price + arrow */}
-                        <div className="mt-auto flex items-end justify-between pt-3 border-t border-[#1A2D23]/8">
+                        {/* Chef's note — fills bottom whitespace, gives card more soul */}
+                        {nextSpecial?.dish.desc && (
+                            <p className="hidden lg:block text-[13px] text-[#1A2D23]/65 leading-relaxed italic mb-5 line-clamp-3">
+                                &ldquo;{nextSpecial.dish.desc}&rdquo;
+                            </p>
+                        )}
+
+                        {/* Mobile/Tablet: price + circle arrow (preserved) */}
+                        <div className="mt-auto flex items-end justify-between pt-3 border-t border-[#1A2D23]/8 lg:hidden">
                             <p className="text-2xl md:text-3xl font-black text-[#FF6B35] tracking-tight leading-none">
                                 RM {finalPrice.toFixed(2)}
                             </p>
                             <div className="w-11 h-11 rounded-full bg-[#1A2D23] flex items-center justify-center text-white group-hover:bg-[#FF6B35] group-hover:scale-110 transition-all duration-300 shrink-0">
                                 <ArrowRight size={18} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </div>
+                        </div>
+
+                        {/* Desktop: price + full-width secondary CTA (dark green) — pairs with primary orange CTA on left */}
+                        <div className="hidden lg:flex mt-auto flex-col gap-3.5 pt-3 border-t border-[#1A2D23]/8">
+                            <p className="text-3xl font-black text-[#FF6B35] tracking-tight leading-none">
+                                RM {finalPrice.toFixed(2)}
+                            </p>
+                            <span className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-[#1A2D23] group-hover:bg-[#243A2D] text-white rounded-xl text-[15px] font-black shadow-md shadow-[#1A2D23]/15 group-hover:shadow-lg group-hover:shadow-[#1A2D23]/25 transition-all">
+                                查看明日特餐
+                                <ArrowRight size={16} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
+                            </span>
                         </div>
                     </div>
                 </button>

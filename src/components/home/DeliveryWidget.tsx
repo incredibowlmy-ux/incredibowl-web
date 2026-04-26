@@ -5,12 +5,12 @@ const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20BowlMama!%20%E7%9C%8B%
 
 export default function DeliveryWidget() {
     return (
-        <div className="lg:col-span-12 mt-4">
-            <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm">
-                {/* Mobile: vertical (original look). Desktop: 3-column horizontal */}
-                <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-8 gap-0">
+        <div className="lg:col-span-5 mt-4">
+            <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm h-full">
+                {/* Mobile: vertical. Tablet (md): 3-col horizontal. Desktop lg+ (col-span-5 narrow): back to vertical */}
+                <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-8 lg:flex lg:flex-col lg:gap-5 lg:items-stretch gap-0">
                     {/* Block 1: Icon + Headline */}
-                    <div className="flex flex-col items-center md:items-start text-center md:text-left md:max-w-[210px]">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left md:max-w-[210px] lg:items-center lg:text-center lg:max-w-none">
                         <div className="w-12 h-12 bg-[#FFF3E0] rounded-full flex items-center justify-center text-[#FF6B35] mb-4 md:mb-3">
                             <MapPin size={24} />
                         </div>
@@ -21,11 +21,11 @@ export default function DeliveryWidget() {
                         </p>
                     </div>
 
-                    {/* Mobile divider */}
-                    <div className="md:hidden w-full border-t border-gray-100 my-6" />
+                    {/* Mobile divider (also shown on lg vertical layout) */}
+                    <div className="md:hidden lg:block w-full border-t border-gray-100 my-6 lg:my-0" />
 
                     {/* Block 2: Time details */}
-                    <div className="text-left w-full space-y-3 md:border-l md:border-r md:border-gray-100 md:px-8">
+                    <div className="text-left w-full space-y-3 md:border-l md:border-r md:border-gray-100 md:px-8 lg:border-l-0 lg:border-r-0 lg:px-0">
                         <div className="flex items-start gap-2">
                             <span className="text-blue-500 mt-0.5">⏰</span>
                             <div className="flex-1">
@@ -42,21 +42,21 @@ export default function DeliveryWidget() {
                         </div>
                     </div>
 
-                    {/* Mobile spacer */}
-                    <div className="md:hidden h-6" />
+                    {/* Mobile spacer (also lg vertical) */}
+                    <div className="md:hidden lg:block h-6 lg:h-0" />
 
                     {/* Block 3: WhatsApp CTA */}
-                    <div className="flex flex-col items-center md:items-start md:max-w-[220px]">
-                        <p className="text-xs font-bold text-gray-500 mb-1 text-center md:text-left">🤔 不确定你家在不在范围内？</p>
-                        <p className="text-xs text-gray-500 italic mb-4 text-center md:text-left">Not sure if we deliver to you?</p>
+                    <div className="flex flex-col items-center md:items-start md:max-w-[220px] lg:items-stretch lg:max-w-none">
+                        <p className="text-xs font-bold text-gray-500 mb-1 text-center md:text-left lg:text-center">🤔 不确定你家在不在范围内？</p>
+                        <p className="text-xs text-gray-500 italic mb-4 text-center md:text-left lg:text-center">Not sure if we deliver to you?</p>
 
                         <a
                             href={WHATSAPP_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-full md:w-auto md:px-6 py-3.5 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20 whitespace-nowrap"
+                            className="w-full md:w-auto md:px-6 lg:w-full lg:px-6 py-3.5 lg:py-4 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold text-base lg:text-[17px] flex justify-center items-center gap-2 lg:gap-2.5 transition-transform active:scale-95 shadow-md shadow-[#25D366]/20 whitespace-nowrap"
                         >
-                            <Phone size={16} /> WhatsApp 问碗妈
+                            <Phone size={16} className="lg:w-[18px] lg:h-[18px]" /> WhatsApp 问碗妈
                         </a>
                     </div>
                 </div>

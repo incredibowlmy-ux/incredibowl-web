@@ -103,11 +103,24 @@ export default function FeedbackSection() {
                             <MessageCircle size={18} className="text-[#1A2D23]" />
                         </div>
                         <div>
-                            <h2 className="text-[22px] font-extrabold text-[#1A2D23] leading-tight">隔壁邻居怎么说</h2>
-                            <p className="text-[13px] text-[#1A2D23]/65 font-medium leading-relaxed mt-0.5">
+                            <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight">隔壁邻居怎么说</h2>
+                            <p className="text-[13px] lg:text-base text-[#1A2D23]/65 font-medium leading-relaxed mt-0.5 lg:mt-2">
                                 Old Klang Road 邻居真实留言 · 没有网红，没有广告
                             </p>
                         </div>
+                    </div>
+                </div>
+
+                {/* Stats summary — sits between header and grid */}
+                <div className="bg-[#E3EADA] px-4 md:px-8 pb-4">
+                    <div className="bg-white/55 backdrop-blur-sm rounded-2xl px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border border-white/70">
+                        <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23]">
+                            Google <span className="text-amber-500">5.0 ★</span>
+                        </span>
+                        <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
+                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} 条真实留言</span>
+                        <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
+                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">来自 Pearl Point / Millerz / SkyVille 8 等社区</span>
                     </div>
                 </div>
 

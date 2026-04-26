@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, ChevronRight, Sparkles, Phone } from 'lucide-react';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
@@ -76,15 +76,17 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
         <div className="lg:col-span-12 mt-8" id="menu">
             <div className="flex items-center justify-between mb-6 px-4 md:px-2">
                 <div>
-                    <h2 className="text-[22px] font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
+                    <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight leading-tight">每日精选 / Weekly Rotation</h2>
                     <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
                         <span className="md:hidden">滑动并查看，每天换不一样的口味吧！</span>
-                        <span className="hidden md:inline">点击左右两侧箭头，浏览更多每日精选佳肴</span>
+                        <span className="hidden md:inline lg:hidden">点击左右两侧箭头，浏览更多每日精选佳肴</span>
+                        <span className="hidden lg:inline">本周精选 {weeklyMenu.length} 道菜，点击卡片查看详情并加入预订</span>
                     </p>
                 </div>
             </div>
 
-            <div className="relative group">
+            {/* MOBILE + TABLET — original carousel (hidden on lg+) */}
+            <div className="lg:hidden relative group">
                 {/* Desktop Left Interactive Floating Arrow */}
                 <button
                     onClick={() => scrollToIndex(activeIdx - 1)}
@@ -202,6 +204,124 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 </>}
             </div>
             {/* End of relative group */}
+        </div>
+
+        {/* DESKTOP GRID — only renders on lg+ (mobile/tablet keeps carousel above) */}
+        <div className="hidden lg:grid lg:grid-cols-3 xl:grid-cols-4 gap-5 px-2 pt-4">
+            {Object.keys(menuDates).length === 0
+                ? weeklyMenu.map((dish) => (
+                    <div key={dish.id} className="bg-white rounded-3xl p-5 border border-gray-100 flex flex-col">
+                        <div className="flex justify-between items-start mb-4">
+                            <SkeletonBlock className="h-5 w-24" />
+                            <SkeletonBlock className="h-5 w-16" />
+                        </div>
+                        <SkeletonBlock className="aspect-square w-full rounded-2xl mb-4" />
+                        <SkeletonBlock className="h-6 w-3/4 mb-2" />
+                        <SkeletonBlock className="h-4 w-1/2 mb-4" />
+                        <div className="flex gap-2 mb-4">
+                            <SkeletonBlock className="h-6 w-16" />
+                            <SkeletonBlock className="h-6 w-16" />
+                        </div>
+                        <SkeletonBlock className="h-11 w-full mt-auto" />
+                    </div>
+                ))
+                : weeklyMenu.map((dish) => {
+                    const dInfo = menuDates[dish.id];
+                    const isDisabled = !!dInfo?.disabled;
+                    return (
+                        <div
+                            key={dish.id}
+                            onClick={() => !isDisabled && onOpenAddOn(dish)}
+                            className={`group bg-white rounded-3xl p-5 border border-gray-100 transition-all duration-300 flex flex-col ${
+                                isDisabled
+                                    ? 'opacity-60 cursor-not-allowed'
+                                    : 'cursor-pointer hover:shadow-xl hover:shadow-[#1A2D23]/5 hover:-translate-y-1 hover:border-[#FF6B35]/20'
+                            }`}
+                        >
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FDFBF7] text-gray-500">
+                                    {dInfo ? dInfo.topTag : dish.day}
+                                </div>
+                                <p className="font-extrabold text-[20px] leading-none text-[#FF6B35]">
+                                    RM {dish.price.toFixed(2)}
+                                </p>
+                            </div>
+
+                            <div className="aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden">
+                                {dish.image.startsWith('/') ? (
+                                    <Image
+                                        src={dish.image}
+                                        alt={dish.name}
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                        sizes="(min-width: 1280px) 25vw, 33vw"
+                                    />
+                                ) : (
+                                    dish.image
+                                )}
+                            </div>
+
+                            <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23]">{dish.name}</h3>
+                            <h4 className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400">{dish.nameEn}</h4>
+
+                            <div className="flex flex-wrap gap-1.5 mb-5">
+                                {dish.tags.map(tag => (
+                                    <span key={tag} className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#E3EADA]/70 text-[#1A2D23]">
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
+
+                            <div className="mt-auto">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); !isDisabled && onOpenAddOn(dish); }}
+                                    disabled={isDisabled}
+                                    className={`w-full py-3.5 rounded-xl font-bold text-[15px] flex justify-center items-center gap-2 transition-colors ${
+                                        isDisabled
+                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                            : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-md shadow-[#FF6B35]/20'
+                                    }`}
+                                >
+                                    {!isDisabled && <ShoppingBag size={18} />}
+                                    <span className="truncate">
+                                        {dInfo ? dInfo.btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') : '加入明天的预订'}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })}
+
+            {/* Placeholder — fills the empty cell + WhatsApp CTA for next-week notification */}
+            {Object.keys(menuDates).length > 0 && (
+                <a
+                    href="https://wa.me/60103370197?text=Hi%20BowlMama!%20%E6%83%B3%E7%AC%AC%E4%B8%80%E6%97%B6%E9%97%B4%E6%94%B6%E5%88%B0%E4%B8%8B%E5%91%A8%E8%8F%9C%E5%8D%95%E6%9B%B4%E6%96%B0%EF%BC%8C%E5%8F%AF%E4%BB%A5%E9%80%9A%E7%9F%A5%E6%88%91%E5%90%97%EF%BC%9F"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group bg-gradient-to-br from-[#FFF3E0] to-[#FFE5C9]/70 rounded-3xl p-5 border-2 border-[#FF6B35]/30 shadow-md shadow-[#FF6B35]/10 hover:shadow-xl hover:shadow-[#FF6B35]/20 hover:-translate-y-1 hover:border-[#FF6B35]/60 flex flex-col text-center transition-all duration-300 cursor-pointer min-h-[420px] relative overflow-hidden"
+                >
+                    {/* Decorative blur */}
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF6B35] rounded-full blur-3xl opacity-15 pointer-events-none" />
+
+                    {/* Top content group — vertically centered in the space above the CTA */}
+                    <div className="relative flex-1 flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 bg-[#FF6B35]/20 group-hover:bg-[#FF6B35]/30 rounded-full flex items-center justify-center mb-4 transition-colors shadow-md shadow-[#FF6B35]/20">
+                            <Sparkles size={28} className="text-[#FF6B35]" strokeWidth={2.5} />
+                        </div>
+                        <p className="text-xs font-black text-[#FF6B35] uppercase tracking-widest mb-2">✨ 下周预告</p>
+                        <p className="text-[22px] font-extrabold text-[#1A2D23] leading-tight mb-3">Coming<br />Next Week</p>
+                        <p className="text-sm font-medium text-[#1A2D23]/70 leading-relaxed max-w-[220px]">
+                            碗妈每周更新菜单<br />
+                            <span className="text-[#1A2D23] font-bold">想第一时间收到通知？</span>
+                        </p>
+                    </div>
+
+                    {/* CTA pinned to bottom — bottom edge aligns with dish card buttons via shared p-5 */}
+                    <span className="relative self-center inline-flex items-center gap-2 px-6 py-3.5 bg-[#25D366] group-hover:bg-[#20BE5A] text-white rounded-full text-[15px] font-black shadow-lg shadow-[#25D366]/30 group-hover:shadow-[#25D366]/40 transition-all">
+                        <Phone size={15} strokeWidth={2.5} /> WhatsApp 通知我
+                    </span>
+                </a>
+            )}
         </div>
     </div>
 );

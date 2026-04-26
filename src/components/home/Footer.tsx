@@ -24,7 +24,8 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="grid md:grid-cols-1 gap-6 text-[#1A2D23]">
+                {/* Mobile: existing centered stack (preserved) */}
+                <div className="grid md:grid-cols-1 gap-6 text-[#1A2D23] lg:hidden">
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
                         <div className="flex flex-col items-center gap-2.5 max-w-xs mx-auto">
@@ -73,6 +74,77 @@ export default function Footer() {
                                     Pearl Point · Millerz Square · OUG · Old Klang Road
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop: 3-col grid */}
+                <div className="hidden lg:grid lg:grid-cols-3 lg:gap-12 lg:text-left text-[#1A2D23]">
+                    {/* Col 1: Contact + Social */}
+                    <div className="space-y-4">
+                        <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
+                        <div className="flex flex-col gap-2.5">
+                            <a
+                                href="https://wa.me/60103370197"
+                                className="min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors"
+                            >
+                                <Phone size={16} className="text-[#FF6B35] shrink-0" />
+                                <span>010-337 0197</span>
+                            </a>
+                            <a
+                                href="mailto:hello@incredibowl.my"
+                                className="min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors"
+                            >
+                                <Mail size={16} className="text-[#FF6B35] shrink-0" />
+                                <span>hello@incredibowl.my</span>
+                            </a>
+                        </div>
+                        <div className="flex items-center gap-3 pt-2">
+                            <a href="https://www.facebook.com/profile.php?id=61587218759550" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/fb-logo.png" alt="Facebook" width={42} height={42} className="w-[42px] h-[42px] object-contain scale-110" />
+                            </a>
+                            <a href="https://www.instagram.com/incredibowl_my/" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/ig-logo.png" alt="Instagram" width={36} height={36} className="w-9 h-9 object-contain" />
+                            </a>
+                            <a href="https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a" target="_blank" rel="noopener noreferrer" className="block hover:-translate-y-1 transition-transform hover:shadow-md rounded-[8px] overflow-hidden bg-white">
+                                <Image src="/xhs-logo.png" alt="Xiaohongshu" width={36} height={36} className="w-9 h-9 object-contain" />
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Col 2: Coverage */}
+                    <div className="space-y-4">
+                        <p className="text-base font-bold tracking-wide flex items-center gap-2">
+                            <MapPin size={16} className="text-[#FF6B35]" />
+                            服务范围 / Coverage
+                        </p>
+                        <div className="space-y-2 text-[14px] text-[#1A2D23]/75 font-semibold leading-relaxed">
+                            <p>Pearl Point</p>
+                            <p>Millerz Square</p>
+                            <p>OUG</p>
+                            <p>Old Klang Road</p>
+                        </div>
+                        <p className="text-[13px] text-[#1A2D23]/55 italic leading-relaxed">
+                            2km 内免运 · 满 6 份免运
+                        </p>
+                    </div>
+
+                    {/* Col 3: Brand Promise */}
+                    <div className="space-y-4">
+                        <p className="text-base font-bold tracking-wide">品质承诺 / Our Promise</p>
+                        <div className="space-y-3">
+                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
+                                <Leaf size={16} className="text-[#2D5F3E] shrink-0" />
+                                No MSG · 不加味精
+                            </p>
+                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
+                                <Sun size={16} className="text-[#FF6B35] shrink-0" />
+                                Daily Fresh · 每日新鲜采购
+                            </p>
+                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
+                                <Heart size={16} className="text-[#C76F40] shrink-0" />
+                                Mum&apos;s Recipe · 妈妈的味道
+                            </p>
                         </div>
                     </div>
                 </div>

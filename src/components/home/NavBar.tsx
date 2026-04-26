@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, User, Sparkles } from 'lucide-react';
+import { ShoppingBag, User, ChevronRight } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface NavBarProps {
@@ -64,13 +64,22 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                         <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                     </div>
                     <div>
-                        <h1 className="text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23]">碗妈的厨房</h1>
+                        {/* Brand name — semantically a link/label, not the page H1 (page H1 lives in Hero) */}
+                        <a href="/" aria-label="Incredibowl 碗妈的厨房 首页" className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">碗妈的厨房</a>
                         <div className="flex items-center gap-2">
                             <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
                             <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
                         </div>
                     </div>
                 </div>
+
+                {/* Desktop-only quick nav anchors (hidden on mobile/tablet) */}
+                <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-[#1A2D23]/75">
+                    <a href="#menu" className="hover:text-[#FF6B35] transition-colors">每日菜单</a>
+                    <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">邻居好评</a>
+                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">联系碗妈</a>
+                </nav>
+
                 <div className="flex items-center gap-2 md:gap-4">
                     {currentUser ? (
                         <>
@@ -84,8 +93,13 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                                     )}
                                 </div>
                             </a>
-                            {/* Desktop: avatar + name */}
-                            <a href="/member" className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            {/* Desktop: avatar + name + clear "go to member centre" affordance */}
+                            <a
+                                href="/member"
+                                title="进入会员中心 · 查看积分与订单"
+                                aria-label="进入会员中心"
+                                className="hidden md:flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] hover:border-[#1A2D23]/20 transition-colors group"
+                            >
                                 <div className="relative w-7 h-7 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-bold text-xs overflow-hidden">
                                     {currentUser.photoURL ? (
                                         <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
@@ -94,7 +108,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                                     )}
                                 </div>
                                 <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || '会员中心'}</span>
-                                <Sparkles size={12} className="text-[#FF6B35]" />
+                                <ChevronRight size={14} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-all" strokeWidth={2.5} />
                             </a>
                         </>
                     ) : (
