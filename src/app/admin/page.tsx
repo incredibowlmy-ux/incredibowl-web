@@ -44,6 +44,8 @@ export default function AdminPage() {
     const [customExpiryMonths, setCustomExpiryMonths] = useState(1);
     const [customError, setCustomError] = useState('');
     const [customSuccess, setCustomSuccess] = useState('');
+    const [voucherHistoryExpanded, setVoucherHistoryExpanded] = useState(false);
+    const [voucherFilter, setVoucherFilter] = useState<'all' | 'unused' | 'used'>('unused');
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -1147,59 +1149,114 @@ export default function AdminPage() {
                         </div>
 
                         {/* Voucher History */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between px-1">
-                                <h3 className="font-black text-[#1A2D23] text-sm">历史优惠券 ({vouchers.length})</h3>
-                                <span className="text-[10px] text-gray-400">🟢 未用 &nbsp; ⚫ 已用</span>
-                            </div>
-                            {vouchers.length === 0 ? (
-                                <div className="bg-white rounded-2xl p-10 text-center text-gray-400 border border-gray-100">
-                                    <p className="text-3xl mb-2">🎫</p>
-                                    <p className="font-bold text-sm">还没有优惠券，点击上方按钮生成第一张！</p>
-                                </div>
-                            ) : vouchers.map((v: any) => {
-                                const expDate = v.expiresAt?.toDate?.();
-                                const isExpired = expDate && expDate < new Date();
-                                return (
-                                    <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${
-                                        v.isUsed || isExpired ? 'border-gray-100 opacity-50' : 'border-[#FF6B35]/30 shadow-sm'
-                                    }`}>
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${
-                                                v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
-                                            }`} />
-                                            <div>
-                                                <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
-                                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                                    {v.isUsed
-                                                        ? `✅ 已使用`
-                                                        : isExpired
-                                                        ? `⏰ 已过期`
-                                                        : expDate
-                                                        ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
-                                                        : '永久有效'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <span className={`px-2 py-1 rounded-lg text-xs font-black ${
-                                                v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
-                                            }`}>
-                                                RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
+                        {(() => {
+                            const unusedCount = vouchers.filter((v: any) => !v.isUsed).length;
+                            const usedCount = vouchers.filter((v: any) => v.isUsed).length;
+                            const filteredVouchers = vouchers.filter((v: any) => {
+                                if (voucherFilter === 'unused') return !v.isUsed;
+                                if (voucherFilter === 'used') return v.isUsed;
+                                return true;
+                            });
+
+                            return (
+                                <div className="space-y-2">
+                                    {/* Collapsible Header */}
+                                    <button
+                                        onClick={() => setVoucherHistoryExpanded(prev => !prev)}
+                                        className="w-full bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base">{voucherHistoryExpanded ? '📂' : '📁'}</span>
+                                            <h3 className="font-black text-[#1A2D23] text-sm">历史优惠券 ({vouchers.length})</h3>
+                                            <span className="text-[10px] font-bold text-gray-400">
+                                                · 🟢 {unusedCount} 未用 · ⚫ {usedCount} 已用
                                             </span>
-                                            {!v.isUsed && !isExpired && (
-                                                <button
-                                                    onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
-                                                    className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
-                                                >
-                                                    {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
-                                                </button>
-                                            )}
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                        <span className={`text-gray-400 transition-transform duration-200 ${voucherHistoryExpanded ? 'rotate-180' : ''}`}>▼</span>
+                                    </button>
+
+                                    {voucherHistoryExpanded && (
+                                        <>
+                                            {/* Filter Tabs */}
+                                            <div className="flex items-center gap-2 px-1 overflow-x-auto">
+                                                {([
+                                                    { key: 'unused', label: `🟢 未用 (${unusedCount})` },
+                                                    { key: 'used', label: `⚫ 已用 (${usedCount})` },
+                                                    { key: 'all', label: `📋 全部 (${vouchers.length})` },
+                                                ] as const).map(tab => (
+                                                    <button
+                                                        key={tab.key}
+                                                        onClick={() => setVoucherFilter(tab.key)}
+                                                        className={`px-3.5 py-2 rounded-lg text-[11px] font-black shrink-0 transition-all border ${
+                                                            voucherFilter === tab.key
+                                                                ? 'bg-[#1A2D23] text-white border-[#1A2D23]'
+                                                                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                    >
+                                                        {tab.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* List */}
+                                            {filteredVouchers.length === 0 ? (
+                                                <div className="bg-white rounded-2xl p-10 text-center text-gray-400 border border-gray-100">
+                                                    <p className="text-3xl mb-2">🎫</p>
+                                                    <p className="font-bold text-sm">
+                                                        {vouchers.length === 0
+                                                            ? '还没有优惠券，点击上方按钮生成第一张！'
+                                                            : voucherFilter === 'unused'
+                                                            ? '没有未使用的优惠券'
+                                                            : '没有已使用的优惠券'}
+                                                    </p>
+                                                </div>
+                                            ) : filteredVouchers.map((v: any) => {
+                                                const expDate = v.expiresAt?.toDate?.();
+                                                const isExpired = expDate && expDate < new Date();
+                                                return (
+                                                    <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${
+                                                        v.isUsed || isExpired ? 'border-gray-100 opacity-50' : 'border-[#FF6B35]/30 shadow-sm'
+                                                    }`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-2 h-2 rounded-full shrink-0 ${
+                                                                v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
+                                                            }`} />
+                                                            <div>
+                                                                <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
+                                                                <p className="text-[10px] text-gray-400 mt-0.5">
+                                                                    {v.isUsed
+                                                                        ? `✅ 已使用`
+                                                                        : isExpired
+                                                                        ? `⏰ 已过期`
+                                                                        : expDate
+                                                                        ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
+                                                                        : '永久有效'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <span className={`px-2 py-1 rounded-lg text-xs font-black ${
+                                                                v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
+                                                            }`}>
+                                                                RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
+                                                            </span>
+                                                            {!v.isUsed && !isExpired && (
+                                                                <button
+                                                                    onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
+                                                                    className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
+                                                                >
+                                                                    {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })()}
                     </div>
                 )}
             </div>
