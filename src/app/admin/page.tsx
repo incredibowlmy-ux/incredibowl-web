@@ -45,7 +45,7 @@ export default function AdminPage() {
     const [customError, setCustomError] = useState('');
     const [customSuccess, setCustomSuccess] = useState('');
     const [voucherHistoryExpanded, setVoucherHistoryExpanded] = useState(false);
-    const [voucherFilter, setVoucherFilter] = useState<'all' | 'unused' | 'used'>('unused');
+    const [voucherFilter, setVoucherFilter] = useState<'all' | 'active' | 'used' | 'expired'>('active');
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterDate, setFilterDate] = useState<string>('');
@@ -1150,11 +1150,18 @@ export default function AdminPage() {
 
                         {/* Voucher History */}
                         {(() => {
-                            const unusedCount = vouchers.filter((v: any) => !v.isUsed).length;
+                            const now = new Date();
+                            const isExpiredV = (v: any) => {
+                                const exp = v.expiresAt?.toDate?.();
+                                return exp && exp < now;
+                            };
+                            const activeCount = vouchers.filter((v: any) => !v.isUsed && !isExpiredV(v)).length;
                             const usedCount = vouchers.filter((v: any) => v.isUsed).length;
+                            const expiredCount = vouchers.filter((v: any) => !v.isUsed && isExpiredV(v)).length;
                             const filteredVouchers = vouchers.filter((v: any) => {
-                                if (voucherFilter === 'unused') return !v.isUsed;
+                                if (voucherFilter === 'active') return !v.isUsed && !isExpiredV(v);
                                 if (voucherFilter === 'used') return v.isUsed;
+                                if (voucherFilter === 'expired') return !v.isUsed && isExpiredV(v);
                                 return true;
                             });
 
@@ -1169,7 +1176,7 @@ export default function AdminPage() {
                                             <span className="text-base">{voucherHistoryExpanded ? '📂' : '📁'}</span>
                                             <h3 className="font-black text-[#1A2D23] text-sm">历史优惠券 ({vouchers.length})</h3>
                                             <span className="text-[10px] font-bold text-gray-400">
-                                                · 🟢 {unusedCount} 未用 · ⚫ {usedCount} 已用
+                                                · 🟢 {activeCount} 可用 · ⚫ {usedCount} 已用 · 🟠 {expiredCount} 已过期
                                             </span>
                                         </div>
                                         <span className={`text-gray-400 transition-transform duration-200 ${voucherHistoryExpanded ? 'rotate-180' : ''}`}>▼</span>
@@ -1180,8 +1187,9 @@ export default function AdminPage() {
                                             {/* Filter Tabs */}
                                             <div className="flex items-center gap-2 px-1 overflow-x-auto">
                                                 {([
-                                                    { key: 'unused', label: `🟢 未用 (${unusedCount})` },
+                                                    { key: 'active', label: `🟢 可用 (${activeCount})` },
                                                     { key: 'used', label: `⚫ 已用 (${usedCount})` },
+                                                    { key: 'expired', label: `🟠 已过期 (${expiredCount})` },
                                                     { key: 'all', label: `📋 全部 (${vouchers.length})` },
                                                 ] as const).map(tab => (
                                                     <button
@@ -1205,9 +1213,13 @@ export default function AdminPage() {
                                                     <p className="font-bold text-sm">
                                                         {vouchers.length === 0
                                                             ? '还没有优惠券，点击上方按钮生成第一张！'
-                                                            : voucherFilter === 'unused'
-                                                            ? '没有未使用的优惠券'
-                                                            : '没有已使用的优惠券'}
+                                                            : voucherFilter === 'active'
+                                                            ? '没有可用的优惠券'
+                                                            : voucherFilter === 'used'
+                                                            ? '没有已使用的优惠券'
+                                                            : voucherFilter === 'expired'
+                                                            ? '没有已过期的优惠券'
+                                                            : '没有优惠券'}
                                                     </p>
                                                 </div>
                                             ) : filteredVouchers.map((v: any) => {
