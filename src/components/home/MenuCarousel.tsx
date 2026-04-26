@@ -168,27 +168,33 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         </div>
 
                         {activeIdx === i && (
-                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                <p className="text-sm font-medium text-white/80 leading-relaxed mb-6 italic">&ldquo;{dish.desc}&rdquo;</p>
-                                <div className="relative group/btn">
-                                    {!menuDates[dish.id]?.disabled && (
-                                        <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>
-                                    )}
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); onOpenAddOn(dish); }}
-                                        disabled={menuDates[dish.id]?.disabled}
-                                        className={`relative z-10 w-full py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors md:text-sm text-xs ${menuDates[dish.id]?.disabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-lg shadow-[#FF6B35]/20'}`}
-                                    >
-                                        {!menuDates[dish.id]?.disabled && <ShoppingBag size={18} />}
-                                        <span className="truncate">
-                                            {menuDates[dish.id] 
-                                                ? menuDates[dish.id].btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') 
-                                                : '加入明天的预订'}
-                                        </span>
-                                    </button>
-                                </div>
-                            </div>
+                            <p className="animate-in fade-in slide-in-from-bottom-4 duration-300 text-sm font-medium text-white/80 leading-relaxed mb-6 italic">&ldquo;{dish.desc}&rdquo;</p>
                         )}
+
+                        {/* Order button — always visible, styled by active state */}
+                        <div className="relative group/btn">
+                            {activeIdx === i && !menuDates[dish.id]?.disabled && (
+                                <div className="absolute -inset-0.5 bg-[#FF6B35] rounded-xl blur-md opacity-50 animate-breathe z-0"></div>
+                            )}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onOpenAddOn(dish); }}
+                                disabled={menuDates[dish.id]?.disabled}
+                                className={`relative z-10 w-full py-3.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all md:text-sm text-xs ${
+                                    menuDates[dish.id]?.disabled
+                                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                        : activeIdx === i
+                                            ? 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-lg shadow-[#FF6B35]/20'
+                                            : 'bg-[#FF6B35]/10 text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white'
+                                }`}
+                            >
+                                {!menuDates[dish.id]?.disabled && <ShoppingBag size={16} />}
+                                <span className="truncate">
+                                    {menuDates[dish.id]
+                                        ? menuDates[dish.id].btnText.replace(` · RM ${dish.price.toFixed(2)}`, '')
+                                        : '加入明天的预订'}
+                                </span>
+                            </button>
+                        </div>
                     </div>
                 ))}
                     {/* Right Spacer */}

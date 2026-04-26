@@ -5,11 +5,29 @@ import { MessageCircle, Plus, X } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
-const SEED_FEEDBACKS = [
+type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string };
+
+const SEED_FEEDBACKS: SeedFeedback[] = [
     { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
     { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
+    { name: "ebby cheong ⭐⭐⭐⭐⭐", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12" },
+    { name: "Curry ⭐⭐⭐⭐⭐", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29" },
 ];
+
+/** Format an ISO date string as a Chinese relative time. Returns "" if input is empty. */
+function formatRelativeCN(dateStr?: string): string {
+    if (!dateStr) return "";
+    const target = new Date(dateStr);
+    if (isNaN(target.getTime())) return "";
+    const diffDays = Math.floor((Date.now() - target.getTime()) / 86400000);
+    if (diffDays < 1) return "今天";
+    if (diffDays === 1) return "昨天";
+    if (diffDays < 7) return `${diffDays} 天前`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} 个月前`;
+    return `${Math.floor(diffDays / 365)} 年前`;
+}
 
 export default function FeedbackSection() {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -18,12 +36,15 @@ export default function FeedbackSection() {
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackText, setFeedbackText] = useState('');
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    // Defer relative-time computation to client-side to avoid SSR/CSR mismatch
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
     useEffect(() => {
         getApprovedFeedbacks()
-            .then(data => { 
-                setFeedbacks(data || []); 
-                setLoading(false); 
+            .then(data => {
+                setFeedbacks(data || []);
+                setLoading(false);
             })
             .catch(err => {
                 console.error("Failed to fetch feedbacks:", err);
@@ -51,13 +72,21 @@ export default function FeedbackSection() {
     };
 
     const allMessages = [
-        ...SEED_FEEDBACKS,
-        ...feedbacks.map(f => ({ name: f.name, text: f.text, time: f.time })),
+        ...SEED_FEEDBACKS.map(msg => ({
+            name: msg.name,
+            text: msg.text,
+            time: msg.reviewDate ? (mounted ? formatRelativeCN(msg.reviewDate) : '近期') : (msg.time || ''),
+        })),
+        ...feedbacks.map(f => ({
+            name: f.name,
+            text: f.text,
+            time: mounted && f.createdAt ? formatRelativeCN(f.createdAt) : f.time,
+        })),
     ];
 
     return (
         <>
-            <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div id="feedback" className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 scroll-mt-32">
                 <div className="md:col-span-1 bg-[#E3EADA] rounded-[32px] p-8 flex flex-col justify-center">
                     <MessageCircle size={32} className="text-[#1A2D23] mb-4" />
                     <h2 className="text-3xl font-extrabold mb-4 leading-tight">隔壁邻居<br />怎么说</h2>

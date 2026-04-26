@@ -719,7 +719,7 @@ export default function AddOnModal({
                                 >
                                     <option value="" disabled hidden>选个时间呗 / Select Time</option>
                                     <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
-                                    <option value="Dinner (6PM-8PM)">🌙 晚餐 6PM - 8PM</option>
+                                    <option value="Dinner (5PM-7:30PM)">🌙 晚餐 5PM - 7:30PM</option>
                                 </select>
                             </div>
                         </div>

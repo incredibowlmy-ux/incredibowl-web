@@ -40,7 +40,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                 {/* Desktop Version */}
                 <div className="hidden sm:flex w-full justify-center px-3">
                     <p className="text-xs font-black tracking-wide truncate">
-                        温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                     </p>
                 </div>
 
@@ -48,11 +48,11 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                         </span>
                         {/* Duplicate for seamless infinite loop */}
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                         </span>
                     </div>
                 </div>

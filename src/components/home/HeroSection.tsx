@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star } from 'lucide-react';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 
@@ -89,12 +89,24 @@ export default function HeroSection() {
                 </div>
 
                 <div className="relative z-20 max-w-xl">
-                    {/* Location badge */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 backdrop-blur-md rounded-full text-xs font-bold mb-6 text-[#1A2D23] shadow-sm">
-                        <MapPin size={12} className="text-[#FF6B35]" />
-                        <span>Old Klang Road 邻里私房菜</span>
-                        <span className="text-[#1A2D23]/40">·</span>
-                        <span className="text-[#1A2D23]/70">Pearl Point Kitchen</span>
+                    {/* Trust badges row */}
+                    <div className="flex flex-wrap items-center gap-2 mb-6">
+                        {/* Location badge */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/70 backdrop-blur-md rounded-full text-xs font-bold text-[#1A2D23] shadow-sm">
+                            <MapPin size={12} className="text-[#FF6B35]" />
+                            <span>Old Klang Road 邻里私房菜</span>
+                            <span className="text-[#1A2D23]/40">·</span>
+                            <span className="text-[#1A2D23]/70">Pearl Point Kitchen</span>
+                        </div>
+                        {/* Social proof badge → scrolls to feedback section */}
+                        <button
+                            type="button"
+                            onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35] text-white rounded-full text-xs font-bold shadow-sm hover:bg-[#E95D31] transition-colors active:scale-95"
+                        >
+                            <Star size={11} fill="currentColor" strokeWidth={0} />
+                            <span>5+ 邻居好评</span>
+                        </button>
                     </div>
 
                     {/* Main title — Chinese big, English subtitle */}
