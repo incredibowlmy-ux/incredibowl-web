@@ -76,8 +76,8 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
         <div className="lg:col-span-12 mt-8" id="menu">
             <div className="flex items-center justify-between mb-6 px-4 md:px-2">
                 <div>
-                    <h2 className="text-2xl font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
-                    <p className="text-xs text-gray-500 font-medium mt-1">
+                    <h2 className="text-[22px] font-extrabold tracking-tight">每日精选 / Weekly Rotation</h2>
+                    <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
                         <span className="md:hidden">滑动并查看，每天换不一样的口味吧！</span>
                         <span className="hidden md:inline">点击左右两侧箭头，浏览更多每日精选佳肴</span>
                     </p>
@@ -148,7 +148,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 {menuDates[dish.id] ? menuDates[dish.id].topTag : dish.day}
                             </div>
                             <div className="flex flex-col items-end">
-                                <p className={`font-extrabold text-xl leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {dish.price.toFixed(2)}</p>
+                                <p className={`font-extrabold text-[20px] leading-none ${activeIdx === i ? 'text-white' : 'text-[#FF6B35]'}`}>RM {dish.price.toFixed(2)}</p>
                             </div>
                         </div>
 
@@ -156,12 +156,12 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                             {dish.image.startsWith('/') ? <Image src={dish.image} alt={dish.name} fill className="object-cover" sizes="(max-width: 768px) 276px, 360px" /> : dish.image}
                         </div>
 
-                        <h3 className="font-extrabold text-xl mb-1">{dish.name}</h3>
-                        <h4 className={`text-sm font-medium mb-4 ${activeIdx === i ? 'text-white/60' : 'text-gray-400'}`}>{dish.nameEn}</h4>
+                        <h3 className="font-extrabold text-[22px] leading-tight mb-1">{dish.name}</h3>
+                        <h4 className={`text-sm font-medium mb-4 leading-relaxed ${activeIdx === i ? 'text-white/60' : 'text-gray-400'}`}>{dish.nameEn}</h4>
 
                         <div className="flex flex-wrap gap-2 mb-6">
                             {dish.tags.map(tag => (
-                                <span key={tag} className={`text-[10px] font-bold px-2 py-1 rounded-md ${activeIdx === i ? 'bg-[#FF6B35]/20 text-[#FF6B35]' : 'bg-[#E3EADA]/50 text-[#1A2D23]'}`}>
+                                <span key={tag} className={`text-[13px] font-bold px-2.5 py-1 rounded-md ${activeIdx === i ? 'bg-[#FF6B35]/20 text-[#FF6B35]' : 'bg-[#E3EADA]/70 text-[#1A2D23]'}`}>
                                     {tag}
                                 </span>
                             ))}

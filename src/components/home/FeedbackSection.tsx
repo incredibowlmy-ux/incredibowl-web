@@ -1,19 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Plus, X } from 'lucide-react';
+import { MessageCircle, Plus, X, ChevronDown } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
-type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string };
+type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string; isGoogle?: boolean };
 
+// Google reviews first (highest credibility), then community WhatsApp messages
 const SEED_FEEDBACKS: SeedFeedback[] = [
+    { name: "ebby cheong", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12", isGoogle: true },
+    { name: "Curry", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29", isGoogle: true },
     { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
     { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
-    { name: "ebby cheong ⭐⭐⭐⭐⭐", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12" },
-    { name: "Curry ⭐⭐⭐⭐⭐", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29" },
 ];
+
+const VISIBLE_COUNT = 3;
 
 /** Format an ISO date string as a Chinese relative time. Returns "" if input is empty. */
 function formatRelativeCN(dateStr?: string): string {
@@ -36,6 +39,7 @@ export default function FeedbackSection() {
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackText, setFeedbackText] = useState('');
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    const [expanded, setExpanded] = useState(false);
     // Defer relative-time computation to client-side to avoid SSR/CSR mismatch
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
@@ -76,62 +80,108 @@ export default function FeedbackSection() {
             name: msg.name,
             text: msg.text,
             time: msg.reviewDate ? (mounted ? formatRelativeCN(msg.reviewDate) : '近期') : (msg.time || ''),
+            isGoogle: !!msg.isGoogle,
         })),
         ...feedbacks.map(f => ({
             name: f.name,
             text: f.text,
             time: mounted && f.createdAt ? formatRelativeCN(f.createdAt) : f.time,
+            isGoogle: false,
         })),
     ];
 
+    const visibleMessages = expanded ? allMessages : allMessages.slice(0, VISIBLE_COUNT);
+    const remainingCount = allMessages.length - VISIBLE_COUNT;
+
     return (
         <>
-            <div id="feedback" className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 scroll-mt-32">
-                <div className="md:col-span-1 bg-[#E3EADA] rounded-[32px] p-8 flex flex-col justify-center">
-                    <MessageCircle size={32} className="text-[#1A2D23] mb-4" />
-                    <h2 className="text-3xl font-extrabold mb-4 leading-tight">隔壁邻居<br />怎么说</h2>
-                    <p className="text-[#1A2D23]/70 font-medium text-sm mb-6">每一条都来自 Old Klang Road 周边公寓邻居的真实 WhatsApp 留言。<br /><br />没有网红，没有广告，只有吃过的人说的真心话。</p>
-                    <button onClick={() => setIsFeedbackModalOpen(true)} className="w-full py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors flex items-center justify-center gap-2">
-                        <Plus size={18} /> 写下您的留言
-                    </button>
+            <div id="feedback" className="lg:col-span-12 mt-4 scroll-mt-32">
+                {/* Compact header — single row */}
+                <div className="bg-[#E3EADA] rounded-t-[32px] px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-white/60 flex items-center justify-center shrink-0">
+                            <MessageCircle size={18} className="text-[#1A2D23]" />
+                        </div>
+                        <div>
+                            <h2 className="text-[22px] font-extrabold text-[#1A2D23] leading-tight">隔壁邻居怎么说</h2>
+                            <p className="text-[13px] text-[#1A2D23]/65 font-medium leading-relaxed mt-0.5">
+                                Old Klang Road 邻居真实留言 · 没有网红，没有广告
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Reviews grid */}
+                <div className="bg-[#E3EADA] px-4 md:px-8 pb-6">
                     {loading ? (
-                        Array.from({ length: 4 }).map((_, idx) => (
-                            <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-                                <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4">
-                                    <SkeletonBlock className="h-4 w-full mb-2" />
-                                    <SkeletonBlock className="h-4 w-4/5 mb-2" />
-                                    <SkeletonBlock className="h-4 w-3/5" />
-                                </div>
-                                <div className="flex justify-end gap-2 mt-3 px-4">
-                                    <SkeletonBlock className="h-3 w-24" />
-                                    <SkeletonBlock className="h-3 w-12" />
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        allMessages.map((msg, idx) => (
-                            <div key={idx} className="bg-white rounded-[32px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between">
-                                <div className="bg-[#FDFBF7] p-4 rounded-tl-2xl rounded-tr-2xl rounded-br-2xl mb-4 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
-                                    <p className="text-[#1A2D23] font-medium leading-relaxed italic text-sm">
-                                        &ldquo;{msg.text}&rdquo;
-                                    </p>
-                                    <div className="flex gap-2 justify-end mb-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#1A2D23]/20" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {Array.from({ length: 3 }).map((_, idx) => (
+                                <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                                    <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-4">
+                                        <SkeletonBlock className="h-3.5 w-full mb-2" />
+                                        <SkeletonBlock className="h-3.5 w-4/5 mb-2" />
+                                        <SkeletonBlock className="h-3.5 w-3/5" />
                                     </div>
+                                    <SkeletonBlock className="h-3 w-32" />
                                 </div>
-                                <div className="text-right mt-3 text-xs text-[#1A2D23]/50 font-bold px-4 flex justify-end gap-2 items-center">
-                                    <span>— {msg.name}</span>
-                                    <span>{msg.time}</span>
-                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {visibleMessages.map((msg, idx) => (
+                                    <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col">
+                                        {/* Quote bubble */}
+                                        <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
+                                            <p className="text-[#1A2D23] font-medium leading-relaxed text-sm">
+                                                &ldquo;{msg.text}&rdquo;
+                                            </p>
+                                        </div>
+
+                                        {/* Single-line meta: stars + name · time */}
+                                        <div className="mt-auto flex items-center justify-between gap-2 px-1">
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                {msg.isGoogle && (
+                                                    <span className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                                )}
+                                                <span className="text-xs font-bold text-[#1A2D23]/75 truncate">— {msg.name}</span>
+                                            </div>
+                                            {msg.time && (
+                                                <span className="text-xs text-[#1A2D23]/45 font-medium shrink-0">{msg.time}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))
+
+                            {/* Show more / less — plain text link, lower visual weight */}
+                            {remainingCount > 0 && (
+                                <div className="mt-5 flex justify-center">
+                                    <button
+                                        onClick={() => setExpanded(prev => !prev)}
+                                        className="inline-flex items-center gap-1 text-[#1A2D23]/60 hover:text-[#1A2D23] text-sm font-semibold underline-offset-4 hover:underline transition-colors"
+                                    >
+                                        <span>{expanded ? '收起' : `展开更多 (${remainingCount} 条)`}</span>
+                                        <ChevronDown size={14} className={`transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Bottom CTA — write your own */}
+                            <div className="mt-6 flex justify-center">
+                                <button
+                                    onClick={() => setIsFeedbackModalOpen(true)}
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-colors active:scale-95"
+                                >
+                                    <Plus size={16} /> 写下您的留言
+                                </button>
+                            </div>
+                        </>
                     )}
                 </div>
+
+                {/* Bottom corner radius */}
+                <div className="bg-[#E3EADA] rounded-b-[32px] h-2" />
             </div>
 
             {/* Feedback Modal */}

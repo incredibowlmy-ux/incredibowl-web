@@ -84,9 +84,80 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "Incredibowl Malaysia",
-              url: "https://www.incredibowl.my/"
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://www.incredibowl.my/#website",
+                  name: "Incredibowl Malaysia",
+                  url: "https://www.incredibowl.my/",
+                  inLanguage: "zh-MY"
+                },
+                {
+                  "@type": "Restaurant",
+                  "@id": "https://www.incredibowl.my/#restaurant",
+                  name: "Incredibowl",
+                  alternateName: "碗妈私厨 (BowlMama)",
+                  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，OKR / OUG 一带 2km 免运。",
+                  url: "https://www.incredibowl.my/",
+                  telephone: "+60103370197",
+                  image: [
+                    "https://www.incredibowl.my/pork_potato_stew.webp",
+                    "https://www.incredibowl.my/chia_seed_pudding.webp",
+                    "https://www.incredibowl.my/potato_fried_egg.webp"
+                  ],
+                  priceRange: "RM 15-25",
+                  servesCuisine: ["Chinese", "Home-cooked", "Malaysian Chinese"],
+                  address: {
+                    "@type": "PostalAddress",
+                    streetAddress: "Pearl Point, Old Klang Road",
+                    addressLocality: "Kuala Lumpur",
+                    addressRegion: "Wilayah Persekutuan Kuala Lumpur",
+                    postalCode: "58000",
+                    addressCountry: "MY"
+                  },
+                  geo: {
+                    "@type": "GeoCoordinates",
+                    latitude: 3.1100,
+                    longitude: 101.6708
+                  },
+                  openingHoursSpecification: [
+                    {
+                      "@type": "OpeningHoursSpecification",
+                      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+                      opens: "11:00",
+                      closes: "19:30"
+                    }
+                  ],
+                  areaServed: [
+                    { "@type": "Place", name: "Pearl Point" },
+                    { "@type": "Place", name: "Meadow Park" },
+                    { "@type": "Place", name: "Millerz Square" },
+                    { "@type": "Place", name: "The Scott Garden" },
+                    { "@type": "Place", name: "D'Ivoz Residences" },
+                    { "@type": "Place", name: "Verve Suites" },
+                    { "@type": "Place", name: "The Harmony" },
+                    { "@type": "Place", name: "Platinum Arena" },
+                    { "@type": "Place", name: "Citizen 1 & 2" },
+                    { "@type": "Place", name: "Petalz" },
+                    { "@type": "Place", name: "D'Sands" },
+                    { "@type": "Place", name: "SkyVille 8 @ Benteng" }
+                  ],
+                  hasMenu: "https://www.incredibowl.my/#menu",
+                  acceptsReservations: false,
+                  paymentAccepted: ["DuitNow QR", "FPX", "Credit Card"],
+                  currenciesAccepted: "MYR",
+                  sameAs: [
+                    "https://wa.me/60103370197"
+                  ],
+                  aggregateRating: {
+                    "@type": "AggregateRating",
+                    ratingValue: "5.0",
+                    reviewCount: "2",
+                    bestRating: "5",
+                    worstRating: "1"
+                  }
+                }
+              ]
             })
           }}
         />

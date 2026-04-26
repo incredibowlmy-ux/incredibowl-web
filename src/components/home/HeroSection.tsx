@@ -102,7 +102,7 @@ export default function HeroSection() {
                         <button
                             type="button"
                             onClick={() => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35] text-white rounded-full text-xs font-bold shadow-sm hover:bg-[#E95D31] transition-colors active:scale-95"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35]/15 text-[#C84518] rounded-full text-xs font-bold shadow-sm hover:bg-[#FF6B35]/25 transition-colors active:scale-95"
                         >
                             <Star size={11} fill="currentColor" strokeWidth={0} />
                             <span>5+ 邻居好评</span>
@@ -119,16 +119,16 @@ export default function HeroSection() {
                     </p>
 
                     {/* Quote */}
-                    <p className="text-lg md:text-xl font-semibold text-[#1A2D23]/85 leading-snug mb-1 max-w-md">
+                    <p className="text-xl md:text-2xl font-semibold text-[#1A2D23]/90 leading-snug mb-2 max-w-md">
                         忙碌的你，值得一碗认真煮的饭。
                     </p>
-                    <p className="text-base md:text-lg font-medium text-[#1A2D23]/70 leading-snug mb-3 max-w-md">
+                    <p className="text-base font-semibold text-[#1A2D23]/85 leading-relaxed mb-3 max-w-md">
                         凌晨 6 点去巴刹，中午送到你手上。
                     </p>
-                    <p className="text-sm md:text-base font-semibold text-[#1A2D23]/55 italic leading-snug mb-1 max-w-md">
+                    <p className="text-sm font-semibold text-[#1A2D23]/70 italic leading-snug mb-1 max-w-md">
                         You hustle. We feed you right.
                     </p>
-                    <p className="text-xs md:text-sm font-medium text-[#1A2D23]/45 italic leading-snug mb-8 max-w-md">
+                    <p className="text-[13px] font-medium text-[#1A2D23]/55 italic leading-relaxed mb-8 max-w-md">
                         At the market by 6am. At your door by noon.
                     </p>
 
@@ -150,14 +150,14 @@ export default function HeroSection() {
 
                     {/* How-to-order flow — bilingual, scannable */}
                     <div className="mt-5 max-w-md">
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[12px] md:text-sm font-bold text-[#1A2D23]/75">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75">
                             <span>网页 / WhatsApp 下单</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>2km 免运费</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>中午送达</span>
                         </div>
-                        <p className="text-[11px] md:text-xs font-medium text-[#1A2D23]/45 italic mt-1.5 leading-snug">
+                        <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 italic mt-1.5 leading-relaxed">
                             Order via web or WhatsApp · Free delivery within 2km · Arrives by noon
                         </p>
                     </div>
@@ -184,9 +184,9 @@ export default function HeroSection() {
                         )}
                         {/* Top label */}
                         <div className="absolute top-4 left-4 z-10">
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6B35] text-white rounded-full shadow-lg shadow-[#FF6B35]/30">
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A2D23] text-white rounded-full shadow-md">
                                 <CalendarCheck size={13} strokeWidth={3} />
-                                <span className="text-[11px] font-black tracking-wider uppercase">
+                                <span className="text-xs font-black tracking-wider uppercase">
                                     {nextSpecial?.labelEn ?? "TOMORROW'S SPECIAL"}
                                 </span>
                             </div>
@@ -194,7 +194,7 @@ export default function HeroSection() {
                         {/* Date pill bottom-right */}
                         {nextSpecial && (
                             <div className="absolute bottom-3 right-3 z-10">
-                                <span className="inline-block px-2.5 py-1 bg-white/90 backdrop-blur-sm text-[#1A2D23] rounded-full text-[10px] font-black tracking-wide shadow-md">
+                                <span className="inline-block px-2.5 py-1 bg-white/90 backdrop-blur-sm text-[#1A2D23] rounded-full text-xs font-black tracking-wide shadow-md">
                                     {nextSpecial.dateLine}
                                 </span>
                             </div>
@@ -203,7 +203,7 @@ export default function HeroSection() {
 
                     {/* Content area */}
                     <div className="flex-1 p-6 md:p-7 flex flex-col">
-                        <p className="text-[10px] font-black text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
+                        <p className="text-xs font-black text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
                             {nextSpecial?.labelZh ?? '明日特餐'}
                         </p>
                         <h3 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">
@@ -217,7 +217,7 @@ export default function HeroSection() {
                         {nextSpecial && (
                             <div className="flex flex-wrap gap-1.5 mb-5">
                                 {nextSpecial.dish.tags.slice(0, 3).map((tag, i) => (
-                                    <span key={i} className="px-2 py-0.5 bg-[#E3EADA] text-[#1A2D23]/75 rounded-full text-[10px] font-bold">
+                                    <span key={i} className="px-2.5 py-1 bg-[#E3EADA] text-[#1A2D23]/85 rounded-full text-xs font-bold">
                                         {tag}
                                     </span>
                                 ))}

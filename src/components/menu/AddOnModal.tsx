@@ -522,13 +522,13 @@ export default function AddOnModal({
                             {dish.tags.map(tag => (
                                 <span
                                     key={tag}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#C76F40]/10 text-[#C76F40]"
+                                    className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#C76F40]/15 text-[#C76F40]"
                                 >
                                     {tag}
                                 </span>
                             ))}
                         </div>
-                        <p className="text-[9px] font-bold text-[#8B7355]/50 mb-4">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
+                        <p className="text-[11px] font-medium text-[#8B7355]/65 mb-4">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
 
                         {/* Description */}
                         <p className="text-sm text-[#5C4A32]/80 leading-relaxed mb-4 italic">
