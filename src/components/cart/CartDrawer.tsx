@@ -132,15 +132,44 @@ export default function CartDrawer({
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         const file = e.target.files[0];
+
+        // Guard 1: must be image
+        if (!file.type.startsWith('image/')) {
+            alert('请上传图片文件（JPG / PNG）');
+            return;
+        }
+        // Guard 2: max 5MB (must match Storage Rules size limit)
+        const MAX_BYTES = 5 * 1024 * 1024;
+        if (file.size > MAX_BYTES) {
+            alert(`图片太大（${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩后上传，最大 5MB`);
+            return;
+        }
+        // Guard 3: must be authenticated (Storage Rules 通常要求 request.auth != null)
+        if (!currentUser) {
+            alert('请先登录再上传付款凭证');
+            return;
+        }
+
         setUploading(true);
         try {
             const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
             const { storage } = await import('@/lib/firebase');
-            const storageRef = ref(storage, `receipts/${Date.now()}_${file.name}`);
-            await uploadBytes(storageRef, file);
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            const storageRef = ref(storage, `receipts/${currentUser.uid}/${Date.now()}_${safeName}`);
+            await uploadBytes(storageRef, file, { contentType: file.type });
             setReceiptUrl(await getDownloadURL(storageRef));
             setReceiptUploaded(true);
-        } catch { alert('上传失败，请重试'); }
+        } catch (err: any) {
+            console.error('[Receipt upload failed]', err);
+            const code = err?.code || '';
+            let msg = '上传失败，请重试';
+            if (code === 'storage/unauthorized') msg = '上传被拒绝（Storage 权限规则未授权）。请联系客服并截图发 WhatsApp。';
+            else if (code === 'storage/canceled') msg = '上传被取消，请重试';
+            else if (code === 'storage/retry-limit-exceeded') msg = '网络太慢，请换 Wi-Fi 重试';
+            else if (code === 'storage/quota-exceeded') msg = '存储空间已满，请联系客服';
+            else if (err?.message) msg = `上传失败：${err.message}`;
+            alert(msg);
+        }
         setUploading(false);
     };
 
