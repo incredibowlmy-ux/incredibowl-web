@@ -191,6 +191,36 @@ export default function AdminPage() {
         setGeneratingVoucher(false);
     };
 
+    const adjustVoucher = async (code: string, action: 'reset' | 'markUsed' | 'extend' | 'delete', extendDays?: number) => {
+        const labels: Record<typeof action, string> = {
+            reset: '重置使用状态',
+            markUsed: '标记为已用',
+            extend: `延期 ${extendDays || 30} 天`,
+            delete: '永久删除',
+        };
+        const reason = window.prompt(`请输入「${labels[action]}」的原因（写入审计日志）：\n\n券码：${code}`);
+        if (!reason || !reason.trim()) return;
+        if (action === 'delete' && !window.confirm(`⚠️ 永久删除券码 ${code}？\n此操作不可恢复。`)) return;
+
+        try {
+            const token = await currentUser?.getIdToken();
+            if (!token) { alert('登录已过期，请重新登录'); return; }
+            const res = await fetch('/api/admin/update-voucher', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ code, action, reason: reason.trim(), extendDays }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || '操作失败');
+                return;
+            }
+            await loadVouchers();
+        } catch (e) {
+            alert(e instanceof Error ? e.message : '网络错误');
+        }
+    };
+
     useEffect(() => { setCurrentPage(1); }, [filterStatus, filterDate]);
 
     const handleStatusChange = async (order: AdminOrder, newStatus: OrderStatus) => {
@@ -1239,41 +1269,67 @@ export default function AdminPage() {
                                             ) : filteredVouchers.map((v: any) => {
                                                 const expDate = v.expiresAt?.toDate?.();
                                                 const isExpired = expDate && expDate < new Date();
+                                                const code = v.code || v.id;
                                                 return (
-                                                    <div key={v.id} className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-3 ${
-                                                        v.isUsed || isExpired ? 'border-gray-100 opacity-50' : 'border-[#FF6B35]/30 shadow-sm'
+                                                    <div key={v.id} className={`bg-white rounded-xl p-4 border ${
+                                                        v.isUsed || isExpired ? 'border-gray-100' : 'border-[#FF6B35]/30 shadow-sm'
                                                     }`}>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-2 h-2 rounded-full shrink-0 ${
-                                                                v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
-                                                            }`} />
-                                                            <div>
-                                                                <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide">{v.code || v.id}</p>
-                                                                <p className="text-[10px] text-gray-400 mt-0.5">
-                                                                    {v.isUsed
-                                                                        ? `✅ 已使用`
-                                                                        : isExpired
-                                                                        ? `⏰ 已过期`
-                                                                        : expDate
-                                                                        ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
-                                                                        : '永久有效'}
-                                                                </p>
+                                                        <div className={`flex items-center justify-between gap-3 ${v.isUsed || isExpired ? 'opacity-60' : ''}`}>
+                                                            <div className="flex items-center gap-3 min-w-0">
+                                                                <div className={`w-2 h-2 rounded-full shrink-0 ${
+                                                                    v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
+                                                                }`} />
+                                                                <div className="min-w-0">
+                                                                    <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide truncate">{code}</p>
+                                                                    <p className="text-[10px] text-gray-400 mt-0.5">
+                                                                        {v.isUsed
+                                                                            ? `✅ 已使用${v.usedBy ? ` · ${String(v.usedBy).slice(0, 14)}${String(v.usedBy).length > 14 ? '…' : ''}` : ''}`
+                                                                            : isExpired
+                                                                            ? `⏰ 已过期`
+                                                                            : expDate
+                                                                            ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
+                                                                            : '永久有效'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className={`px-2 py-1 rounded-lg text-xs font-black ${
+                                                                    v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
+                                                                }`}>
+                                                                    RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
+                                                                </span>
+                                                                {!v.isUsed && !isExpired && (
+                                                                    <button
+                                                                        onClick={() => { navigator.clipboard.writeText(code); setCopiedCode(code); setTimeout(() => setCopiedCode(''), 2000); }}
+                                                                        className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
+                                                                    >
+                                                                        {copiedCode === code ? '✓ 已复制' : '复制'}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <span className={`px-2 py-1 rounded-lg text-xs font-black ${
-                                                                v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
-                                                            }`}>
-                                                                RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
-                                                            </span>
-                                                            {!v.isUsed && !isExpired && (
+                                                        {/* Admin actions */}
+                                                        <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-1.5">
+                                                            {v.isUsed && (
                                                                 <button
-                                                                    onClick={() => { navigator.clipboard.writeText(v.code || v.id); setCopiedCode(v.code || v.id); setTimeout(() => setCopiedCode(''), 2000); }}
-                                                                    className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
-                                                                >
-                                                                    {copiedCode === (v.code || v.id) ? '✓ 已复制' : '复制'}
-                                                                </button>
+                                                                    onClick={() => adjustVoucher(code, 'reset')}
+                                                                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold transition-colors"
+                                                                >↻ 重置使用</button>
                                                             )}
+                                                            {!v.isUsed && (
+                                                                <button
+                                                                    onClick={() => adjustVoucher(code, 'markUsed')}
+                                                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-[10px] font-bold transition-colors"
+                                                                >✓ 标记已用</button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => adjustVoucher(code, 'extend', 30)}
+                                                                className="px-2.5 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded-md text-[10px] font-bold transition-colors"
+                                                            >⏰ 延期 30 天</button>
+                                                            <button
+                                                                onClick={() => adjustVoucher(code, 'delete')}
+                                                                className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded-md text-[10px] font-bold transition-colors"
+                                                            >🗑 删除</button>
                                                         </div>
                                                     </div>
                                                 );
