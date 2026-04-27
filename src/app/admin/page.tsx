@@ -5,10 +5,11 @@ import { onAuthChange, signInWithGoogle, logout, loginWithEmail } from '@/lib/au
 import { OrderStatus } from '@/lib/orders';
 import { updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
-import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, LucideIcon } from 'lucide-react';
+import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, Pencil, LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
+import EditCustomerModal from '@/components/admin/EditCustomerModal';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com']; // Add your email here
 const PAGE_SIZE = 20;
@@ -54,6 +55,8 @@ export default function AdminPage() {
     const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
     const [customerSort, setCustomerSort] = useState<'points' | 'spent' | 'orders'>('points');
     const [currentPage, setCurrentPage] = useState(1);
+    const [editingUser, setEditingUser] = useState<AppUser | null>(null);
+    const [editToken, setEditToken] = useState<string>('');
 
     const toggleSection = (id: string) => {
         setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -917,29 +920,40 @@ export default function AdminPage() {
                                 <p className="font-bold">暂无客户</p>
                             </div>
                         ) : (
-                            sortedCustomers.map((user: any) => (
+                            sortedCustomers.map((user: AppUser) => (
                                 <div key={user.id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-                                    <div className="flex items-start justify-between">
-                                        <div>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
                                             <p className="font-black text-[#1A2D23]">{user.displayName || 'Guest'}</p>
-                                            <p className="text-xs text-gray-400">{user.email}</p>
+                                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
                                             <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                                                 {user.phone && <a href={`tel:${user.phone}`} className="flex items-center gap-1 hover:text-[#FF6B35] transition-colors"><Phone size={10} /> {user.phone}</a>}
                                                 {user.address && <span className="flex items-center gap-1"><MapPin size={10} /> {user.address}</span>}
                                             </div>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="text-right shrink-0">
                                             <p className="text-sm font-bold text-[#FF6B35]">{user.points || 0} 积分</p>
                                             <p className="text-[10px] text-gray-400">{user.totalOrders || 0} 单 · RM {(user.totalSpent || 0).toFixed(0)}</p>
                                         </div>
                                     </div>
-                                    {user.phone && (
-                                        <div className="mt-3 pt-3 border-t border-gray-100">
+                                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2 flex-wrap">
+                                        {user.phone && (
                                             <a href={`https://wa.me/${user.phone?.replace(/[^0-9]/g, '').replace(/^0/, '60')}`} target="_blank" className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 inline-flex items-center gap-1">
                                                 💬 WhatsApp
                                             </a>
-                                        </div>
-                                    )}
+                                        )}
+                                        <button
+                                            onClick={async () => {
+                                                const token = await currentUser?.getIdToken();
+                                                if (!token) { alert('登录已过期，请重新登录'); return; }
+                                                setEditToken(token);
+                                                setEditingUser(user);
+                                            }}
+                                            className="px-4 py-2 bg-[#1A2D23] text-white rounded-lg text-xs font-bold hover:bg-[#243A2D] inline-flex items-center gap-1.5"
+                                        >
+                                            <Pencil size={11} /> 编辑
+                                        </button>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -1272,6 +1286,18 @@ export default function AdminPage() {
                     </div>
                 )}
             </div>
+
+            {editingUser && (
+                <EditCustomerModal
+                    user={editingUser}
+                    token={editToken}
+                    onClose={() => setEditingUser(null)}
+                    onSaved={async () => {
+                        setEditingUser(null);
+                        await loadData();
+                    }}
+                />
+            )}
         </div>
     );
 }
