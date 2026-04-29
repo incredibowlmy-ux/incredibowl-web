@@ -72,14 +72,25 @@ export async function POST(req: Request) {
         }
       }
 
-      // Restore voucher when cancelling an order that used one
+      // Restore voucher when cancelling an order that used one.
+      // Multi-use vouchers: decrement usedCount and clear isUsed flag if it was set.
       if (status === 'cancelled' && orderData.promoCode && orderData.status !== 'cancelled') {
         try {
           const voucherRef = db.collection('vouchers').doc(orderData.promoCode);
-          const voucherSnap = await voucherRef.get();
-          if (voucherSnap.exists && voucherSnap.data()?.isUsed) {
-            await voucherRef.update({ isUsed: false, usedBy: '', usedAt: null });
-          }
+          await db.runTransaction(async (tx) => {
+            const vSnap = await tx.get(voucherRef);
+            if (!vSnap.exists) return;
+            const v = vSnap.data() || {};
+            const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+            if (used <= 0) return;
+            const nextUsed = used - 1;
+            const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+            tx.update(voucherRef, {
+              usedCount: nextUsed,
+              isUsed: nextUsed >= max,
+              ...(nextUsed === 0 ? { usedBy: '', usedAt: null } : {}),
+            });
+          });
         } catch (e) {
           console.warn('Failed to restore voucher:', e);
         }

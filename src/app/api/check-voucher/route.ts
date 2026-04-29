@@ -18,7 +18,11 @@ export async function POST(request: NextRequest) {
 
         const data = snap.data()!;
 
-        if (data.isUsed) {
+        // Multi-use voucher support: maxUses defaults to 1 for legacy vouchers,
+        // usedCount falls back to isUsed for legacy vouchers.
+        const maxUses = typeof data.maxUses === 'number' && data.maxUses > 0 ? data.maxUses : 1;
+        const usedCount = typeof data.usedCount === 'number' ? data.usedCount : (data.isUsed ? 1 : 0);
+        if (usedCount >= maxUses) {
             return NextResponse.json({ error: '此优惠码已被使用' }, { status: 400 });
         }
 
@@ -27,7 +31,8 @@ export async function POST(request: NextRequest) {
         }
 
         const discount = typeof data.discount === 'number' ? data.discount : 1;
-        return NextResponse.json({ valid: true, discount });
+        const remainingUses = maxUses - usedCount;
+        return NextResponse.json({ valid: true, discount, remainingUses, maxUses });
     } catch (err: any) {
         return NextResponse.json({ error: err.message || '验证失败' }, { status: 500 });
     }

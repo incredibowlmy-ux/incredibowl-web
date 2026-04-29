@@ -43,6 +43,7 @@ export default function AdminPage() {
     const [customCode, setCustomCode] = useState('');
     const [customDiscount, setCustomDiscount] = useState(5);
     const [customExpiryMonths, setCustomExpiryMonths] = useState(1);
+    const [customMaxUses, setCustomMaxUses] = useState(1);
     const [customError, setCustomError] = useState('');
     const [customSuccess, setCustomSuccess] = useState('');
     const [voucherHistoryExpanded, setVoucherHistoryExpanded] = useState(false);
@@ -158,6 +159,10 @@ export default function AdminPage() {
         if (!code) { setCustomError('请输入自定义代金券码'); return; }
         if (!/^[A-Z0-9-]{3,30}$/.test(code)) { setCustomError('代金券码只能包含字母、数字、连字符 (3-30 字符)'); return; }
         if (customDiscount <= 0) { setCustomError('折扣金额必须大于 0'); return; }
+        if (!Number.isInteger(customMaxUses) || customMaxUses < 1 || customMaxUses > 9999) {
+            setCustomError('使用次数必须是 1 - 9999 的整数');
+            return;
+        }
 
         setGeneratingVoucher(true);
         try {
@@ -177,10 +182,12 @@ export default function AdminPage() {
                 discount: customDiscount,
                 isUsed: false,
                 usedBy: '',
+                maxUses: customMaxUses,
+                usedCount: 0,
                 createdAt: Timestamp.now(),
                 expiresAt: Timestamp.fromDate(expiresAt),
             });
-            setCustomSuccess(`✅ 已创建：${code} (RM ${customDiscount})`);
+            setCustomSuccess(`✅ 已创建：${code} (RM ${customDiscount}${customMaxUses > 1 ? ` · ${customMaxUses} 次` : ''})`);
             setCustomCode('');
             navigator.clipboard.writeText(code).catch(() => {});
             await loadVouchers();
@@ -1172,12 +1179,39 @@ export default function AdminPage() {
                                 </div>
                             </div>
 
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-wider block mb-1.5">
+                                    使用次数 {customMaxUses > 1 && <span className="text-[#FF6B35] normal-case">· 多次共享码</span>}
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    {[1, 5, 10, 50].map(n => (
+                                        <button key={n}
+                                            onClick={() => setCustomMaxUses(n)}
+                                            className={`flex-1 py-2 rounded-lg text-xs font-black transition-all border ${customMaxUses === n ? 'bg-[#1A2D23] text-white border-[#1A2D23]' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                                        >{n === 1 ? '1 次（独占）' : `${n} 次`}</button>
+                                    ))}
+                                    <input
+                                        type="number"
+                                        min={1} max={9999} step={1}
+                                        value={customMaxUses}
+                                        onChange={e => setCustomMaxUses(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                                        className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-xs font-bold text-center outline-none focus:border-[#FF6B35] transition-colors"
+                                        title="自定义次数"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    {customMaxUses === 1
+                                        ? '单次使用 — 用完即作废（适合个人邀请码）'
+                                        : `可被使用 ${customMaxUses} 次 — 适合公开派发的活动码（如 JIACHEE5）`}
+                                </p>
+                            </div>
+
                             <button
                                 onClick={createCustomVoucher}
                                 disabled={generatingVoucher || !customCode.trim() || customDiscount <= 0}
                                 className={`w-full py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-all shadow-sm ${generatingVoucher || !customCode.trim() || customDiscount <= 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#243A2D] active:scale-[0.98]'}`}
                             >
-                                {generatingVoucher ? '创建中...' : `✨ 创建 ${customCode || '自定义码'} (RM ${customDiscount})`}
+                                {generatingVoucher ? '创建中...' : `✨ 创建 ${customCode || '自定义码'} (RM ${customDiscount}${customMaxUses > 1 ? ` · ${customMaxUses} 次` : ''})`}
                             </button>
 
                             {customError && (
@@ -1199,13 +1233,18 @@ export default function AdminPage() {
                                 const exp = v.expiresAt?.toDate?.();
                                 return exp && exp < now;
                             };
-                            const activeCount = vouchers.filter((v: any) => !v.isUsed && !isExpiredV(v)).length;
-                            const usedCount = vouchers.filter((v: any) => v.isUsed).length;
-                            const expiredCount = vouchers.filter((v: any) => !v.isUsed && isExpiredV(v)).length;
+                            const isExhaustedV = (v: any) => {
+                                const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+                                const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+                                return used >= max;
+                            };
+                            const activeCount = vouchers.filter((v: any) => !isExhaustedV(v) && !isExpiredV(v)).length;
+                            const usedCount = vouchers.filter((v: any) => isExhaustedV(v)).length;
+                            const expiredCount = vouchers.filter((v: any) => !isExhaustedV(v) && isExpiredV(v)).length;
                             const filteredVouchers = vouchers.filter((v: any) => {
-                                if (voucherFilter === 'active') return !v.isUsed && !isExpiredV(v);
-                                if (voucherFilter === 'used') return v.isUsed;
-                                if (voucherFilter === 'expired') return !v.isUsed && isExpiredV(v);
+                                if (voucherFilter === 'active') return !isExhaustedV(v) && !isExpiredV(v);
+                                if (voucherFilter === 'used') return isExhaustedV(v);
+                                if (voucherFilter === 'expired') return !isExhaustedV(v) && isExpiredV(v);
                                 return true;
                             });
 
@@ -1270,22 +1309,37 @@ export default function AdminPage() {
                                                 const expDate = v.expiresAt?.toDate?.();
                                                 const isExpired = expDate && expDate < new Date();
                                                 const code = v.code || v.id;
+                                                const maxUses = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+                                                const usedCount = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+                                                const isMultiUse = maxUses > 1;
+                                                const isExhausted = usedCount >= maxUses;
                                                 return (
                                                     <div key={v.id} className={`bg-white rounded-xl p-4 border ${
-                                                        v.isUsed || isExpired ? 'border-gray-100' : 'border-[#FF6B35]/30 shadow-sm'
+                                                        isExhausted || isExpired ? 'border-gray-100' : 'border-[#FF6B35]/30 shadow-sm'
                                                     }`}>
-                                                        <div className={`flex items-center justify-between gap-3 ${v.isUsed || isExpired ? 'opacity-60' : ''}`}>
+                                                        <div className={`flex items-center justify-between gap-3 ${isExhausted || isExpired ? 'opacity-60' : ''}`}>
                                                             <div className="flex items-center gap-3 min-w-0">
                                                                 <div className={`w-2 h-2 rounded-full shrink-0 ${
-                                                                    v.isUsed ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
+                                                                    isExhausted ? 'bg-gray-300' : isExpired ? 'bg-orange-300' : 'bg-green-400'
                                                                 }`} />
                                                                 <div className="min-w-0">
-                                                                    <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide truncate">{code}</p>
+                                                                    <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide truncate flex items-center gap-1.5">
+                                                                        {code}
+                                                                        {isMultiUse && (
+                                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${isExhausted ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
+                                                                                {usedCount}/{maxUses}
+                                                                            </span>
+                                                                        )}
+                                                                    </p>
                                                                     <p className="text-[10px] text-gray-400 mt-0.5">
-                                                                        {v.isUsed
-                                                                            ? `✅ 已使用${v.usedBy ? ` · ${String(v.usedBy).slice(0, 14)}${String(v.usedBy).length > 14 ? '…' : ''}` : ''}`
+                                                                        {isExhausted
+                                                                            ? isMultiUse
+                                                                                ? `✅ 已用完 (${maxUses}/${maxUses})`
+                                                                                : `✅ 已使用${v.usedBy ? ` · ${String(v.usedBy).slice(0, 14)}${String(v.usedBy).length > 14 ? '…' : ''}` : ''}`
                                                                             : isExpired
                                                                             ? `⏰ 已过期`
+                                                                            : isMultiUse
+                                                                            ? `还可用 ${maxUses - usedCount} 次 · 有效至 ${expDate ? expDate.toLocaleDateString('zh-MY') : '永久'}`
                                                                             : expDate
                                                                             ? `有效至 ${expDate.toLocaleDateString('zh-MY')}`
                                                                             : '永久有效'}
@@ -1294,11 +1348,11 @@ export default function AdminPage() {
                                                             </div>
                                                             <div className="flex items-center gap-2 shrink-0">
                                                                 <span className={`px-2 py-1 rounded-lg text-xs font-black ${
-                                                                    v.isUsed || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
+                                                                    isExhausted || isExpired ? 'bg-gray-100 text-gray-400' : 'bg-[#FF6B35]/10 text-[#FF6B35]'
                                                                 }`}>
                                                                     RM {typeof v.discount === 'number' ? v.discount.toFixed(2) : v.discount}
                                                                 </span>
-                                                                {!v.isUsed && !isExpired && (
+                                                                {!isExhausted && !isExpired && (
                                                                     <button
                                                                         onClick={() => { navigator.clipboard.writeText(code); setCopiedCode(code); setTimeout(() => setCopiedCode(''), 2000); }}
                                                                         className="px-3 py-1.5 bg-[#1A2D23] text-white text-[11px] font-bold rounded-lg hover:bg-[#2A3D33] transition-colors active:scale-95"
@@ -1310,13 +1364,13 @@ export default function AdminPage() {
                                                         </div>
                                                         {/* Admin actions */}
                                                         <div className="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-1.5">
-                                                            {v.isUsed && (
+                                                            {isExhausted && (
                                                                 <button
                                                                     onClick={() => adjustVoucher(code, 'reset')}
                                                                     className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-[10px] font-bold transition-colors"
                                                                 >↻ 重置使用</button>
                                                             )}
-                                                            {!v.isUsed && (
+                                                            {!isExhausted && (
                                                                 <button
                                                                     onClick={() => adjustVoucher(code, 'markUsed')}
                                                                     className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-md text-[10px] font-bold transition-colors"

@@ -104,7 +104,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: '优惠码无效' }, { status: 400 });
       }
       const vData = snap.data()!;
-      if (vData.isUsed) {
+      const vMaxUses = typeof vData.maxUses === 'number' && vData.maxUses > 0 ? vData.maxUses : 1;
+      const vUsedCount = typeof vData.usedCount === 'number' ? vData.usedCount : (vData.isUsed ? 1 : 0);
+      if (vUsedCount >= vMaxUses) {
         return NextResponse.json({ error: '优惠码已被使用' }, { status: 400 });
       }
       if (vData.expiresAt && vData.expiresAt.toDate() < new Date()) {
@@ -215,14 +217,23 @@ export async function POST(req: Request) {
 
     // TODO: 优惠券在支付确认前就标记已用，FPX支付失败后优惠券会浪费。
     // 考虑将此逻辑移至 /api/confirm-order，在支付成功后再标记。
-    // ── Mark voucher as used atomically after orders created ───
+    // ── Increment voucher usedCount atomically; mark exhausted if reached maxUses ─
     if (promoCode && serverPromoDiscount > 0) {
       const code = promoCode.trim().toUpperCase();
       const voucherRef = db.collection('vouchers').doc(code);
-      await voucherRef.update({
-        isUsed: true,
-        usedBy: userId,
-        usedAt: FieldValue.serverTimestamp(),
+      await db.runTransaction(async (tx) => {
+        const vSnap = await tx.get(voucherRef);
+        if (!vSnap.exists) return;
+        const v = vSnap.data() || {};
+        const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+        const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+        const nextUsed = used + 1;
+        tx.update(voucherRef, {
+          usedCount: nextUsed,
+          isUsed: nextUsed >= max,
+          usedBy: userId,
+          usedAt: FieldValue.serverTimestamp(),
+        });
       });
     }
 

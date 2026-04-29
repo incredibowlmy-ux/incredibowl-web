@@ -73,31 +73,36 @@ export async function POST(req: NextRequest) {
 
         const batch = db.batch();
 
+        const currentMax = typeof current.maxUses === 'number' && current.maxUses > 0 ? current.maxUses : 1;
+        const currentUsed = typeof current.usedCount === 'number' ? current.usedCount : (current.isUsed ? 1 : 0);
+
         if (action === 'reset') {
-            if (!current.isUsed) {
+            if (currentUsed === 0) {
                 return NextResponse.json({ error: '此券未被使用，无需重置' }, { status: 400 });
             }
-            const before = { isUsed: true, usedBy: current.usedBy || '', usedAt: current.usedAt || null };
+            const before = { isUsed: !!current.isUsed, usedCount: currentUsed, usedBy: current.usedBy || '', usedAt: current.usedAt || null };
             batch.update(voucherRef, {
                 isUsed: false,
+                usedCount: 0,
                 usedBy: '',
                 usedAt: FieldValue.delete(),
                 updatedAt: FieldValue.serverTimestamp(),
             });
             auditPayload.before = before;
-            auditPayload.after = { isUsed: false, usedBy: '', usedAt: null };
+            auditPayload.after = { isUsed: false, usedCount: 0, usedBy: '', usedAt: null };
         } else if (action === 'markUsed') {
-            if (current.isUsed) {
-                return NextResponse.json({ error: '此券已被标记为已用' }, { status: 400 });
+            if (currentUsed >= currentMax) {
+                return NextResponse.json({ error: '此券已被用完' }, { status: 400 });
             }
             batch.update(voucherRef, {
                 isUsed: true,
+                usedCount: currentMax,
                 usedBy: `admin:${admin.email}`,
                 usedAt: FieldValue.serverTimestamp(),
                 updatedAt: FieldValue.serverTimestamp(),
             });
-            auditPayload.before = { isUsed: false };
-            auditPayload.after = { isUsed: true, usedBy: `admin:${admin.email}` };
+            auditPayload.before = { isUsed: !!current.isUsed, usedCount: currentUsed };
+            auditPayload.after = { isUsed: true, usedCount: currentMax, usedBy: `admin:${admin.email}` };
         } else if (action === 'extend') {
             const days = Number(extendDays) > 0 ? Math.floor(Number(extendDays)) : 30;
             // Base from current expiresAt if it's still in the future, otherwise from now
@@ -118,6 +123,8 @@ export async function POST(req: NextRequest) {
                 code: codeUpper,
                 discount: current.discount,
                 isUsed: current.isUsed,
+                maxUses: currentMax,
+                usedCount: currentUsed,
                 expiresAt: current.expiresAt?.toDate ? current.expiresAt.toDate().toISOString() : null,
             };
             auditPayload.after = null;
