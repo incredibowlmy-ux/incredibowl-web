@@ -124,7 +124,7 @@ export default function FeedbackSection() {
                 </div>
 
                 {/* Reviews marquee — horizontal auto-scroll, hover to pause */}
-                <div className="bg-[#E3EADA] pb-6">
+                <div className="bg-[#E3EADA] pb-10 md:pb-12 rounded-b-[32px]">
                     {loading ? (
                         <div className="px-4 md:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {Array.from({ length: 3 }).map((_, idx) => (
@@ -191,9 +191,6 @@ export default function FeedbackSection() {
                         </>
                     )}
                 </div>
-
-                {/* Bottom corner radius */}
-                <div className="bg-[#E3EADA] rounded-b-[32px] h-2" />
             </div>
 
             {/* Feedback Modal */}
