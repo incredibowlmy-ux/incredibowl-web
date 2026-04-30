@@ -28,11 +28,11 @@ export default function PromoBanner() {
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 新店开灶，感谢街坊支持 🎉<br />
-                                你的声音很重要 — 评价送 RM3 回购券
+                                你的声音很重要 — 评价送 RM5 回购券
                             </p>
                         </div>
 
-                        {/* Middle: RM3 voucher preview — desktop only, fills mid-column visual void */}
+                        {/* Middle: RM5 voucher preview — desktop only, fills mid-column visual void */}
                         <div className="hidden lg:flex items-center gap-4 p-4 bg-gradient-to-br from-[#FF6B35]/12 via-[#FF6B35]/8 to-transparent border-2 border-dashed border-[#FF9B50]/40 rounded-2xl relative overflow-hidden">
                             {/* Decorative blur */}
                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-[#FF6B35] rounded-full blur-2xl opacity-20 pointer-events-none" />
@@ -41,10 +41,10 @@ export default function PromoBanner() {
                                 <Ticket size={14} className="text-[#FF9B50]/45" strokeWidth={2.5} />
                             </div>
 
-                            {/* RM 3 value badge */}
+                            {/* RM 5 value badge */}
                             <div className="flex-shrink-0 flex items-baseline gap-1 px-3.5 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
                                 <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider">RM</span>
-                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">3</span>
+                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">5</span>
                             </div>
 
                             {/* Details */}
@@ -75,7 +75,7 @@ export default function PromoBanner() {
                                     <p className="text-[#FF9B50] font-black text-[15px]">好评返券</p>
                                 </div>
                                 <p className="text-white/85 text-[15px] leading-relaxed">
-                                    分享你的评价，送你 <span className="text-[#FF9B50] font-black">RM 3 回购券</span>。
+                                    分享你的评价，送你 <span className="text-[#FF9B50] font-black">RM 5 回购券</span>。
                                 </p>
                             </div>
 
@@ -122,7 +122,7 @@ export default function PromoBanner() {
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-bold leading-tight">立即下单</span>
-                                    <span className="text-[11px] font-medium text-white/75 leading-tight">赚 RM3 回购券</span>
+                                    <span className="text-[11px] font-medium text-white/75 leading-tight">赚 RM5 回购券</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>

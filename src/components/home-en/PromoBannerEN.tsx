@@ -25,7 +25,7 @@ export default function PromoBannerEN() {
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 Just opened, thank you to the neighbourhood 🎉<br />
-                                Your voice matters — leave a review for an RM3 voucher
+                                Your voice matters — leave a review for an RM5 voucher
                             </p>
                         </div>
 
@@ -36,7 +36,7 @@ export default function PromoBannerEN() {
                             </div>
                             <div className="flex-shrink-0 flex items-baseline gap-1 px-3.5 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
                                 <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider">RM</span>
-                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">3</span>
+                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">5</span>
                             </div>
                             <div className="flex-1 min-w-0 relative">
                                 <p className="text-sm font-black text-white leading-tight">Voucher</p>
@@ -62,7 +62,7 @@ export default function PromoBannerEN() {
                                     <p className="text-[#FF9B50] font-black text-[15px]">Review-for-voucher</p>
                                 </div>
                                 <p className="text-white/85 text-[15px] leading-relaxed">
-                                    Share your honest review, get an <span className="text-[#FF9B50] font-black">RM 3 voucher</span>.
+                                    Share your honest review, get an <span className="text-[#FF9B50] font-black">RM 5 voucher</span>.
                                 </p>
                             </div>
 
@@ -106,7 +106,7 @@ export default function PromoBannerEN() {
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-bold leading-tight">Order now</span>
-                                    <span className="text-[11px] font-medium text-white/75 leading-tight">Earn RM 3 voucher</span>
+                                    <span className="text-[11px] font-medium text-white/75 leading-tight">Earn RM 5 voucher</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>

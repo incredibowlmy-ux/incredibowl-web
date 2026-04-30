@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, MapPin } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 export default function HeroTrustStrip() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
@@ -40,7 +40,6 @@ export default function HeroTrustStrip() {
 
                 {/* Neighborhood chip */}
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <MapPin size={13} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                     <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">邻居都在吃</span> 🍱</span>
                 </span>
             </button>

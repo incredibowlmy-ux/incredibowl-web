@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, MapPin } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 export default function HeroTrustStripEN() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
@@ -37,7 +37,6 @@ export default function HeroTrustStripEN() {
                 <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
 
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <MapPin size={13} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                     <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">neighbours love it</span> 🍱</span>
                 </span>
             </button>
