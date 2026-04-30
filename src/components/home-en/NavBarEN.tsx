@@ -116,11 +116,11 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                         <LanguageSwitcher current="en" />
 
                         {cartCount > 0 ? (
-                            /* With items — Mobile: minimal icon card; md+: dark green pill with total price */
+                            /* With items — dark-green pill always; price text only shows on md+ */
                             <button
                                 onClick={onCartOpen}
                                 aria-label={`Open cart (${cartCount} items · RM ${cartTotal.toFixed(2)})`}
-                                className="relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-white md:bg-[#1A2D23] md:hover:bg-[#243A2D] text-[#1A2D23] md:text-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 md:border-0 hover:border-[#1A2D23]/20 transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out md:active:scale-[0.97]"
+                                className="relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                             >
                                 <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
                                 <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
