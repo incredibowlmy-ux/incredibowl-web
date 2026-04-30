@@ -5,15 +5,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBag, User, ChevronRight } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
+import LanguageSwitcher from '../home/LanguageSwitcher';
 
 interface NavBarENProps {
     currentUser: FirebaseUser | null;
     cartCount: number;
+    cartTotal: number;
     onCartOpen: () => void;
     onAuthOpen: () => void;
 }
 
-export default function NavBarEN({ currentUser, cartCount, onCartOpen, onAuthOpen }: NavBarENProps) {
+export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen, onAuthOpen }: NavBarENProps) {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -39,21 +41,14 @@ export default function NavBarEN({ currentUser, cartCount, onCartOpen, onAuthOpe
                 `}} />
 
                 {/* Desktop */}
-                <div className="hidden sm:flex w-full justify-center px-3 relative">
+                <div className="hidden sm:flex w-full justify-center px-3">
                     <p className="text-xs font-black tracking-wide truncate">
                         Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> Free delivery within 2km of Pearl Point 🛵
                     </p>
-                    <Link
-                        href="/"
-                        aria-label="切换到中文"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-[10px] font-black tracking-wider rounded-md border border-white/40 hover:bg-white hover:text-[#FF6B35] transition-[background-color,color] duration-150 ease-out"
-                    >
-                        中文
-                    </Link>
                 </div>
 
                 {/* Mobile marquee */}
-                <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center relative pr-9">
+                <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile-en flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             Orders close 06:00 daily · Free delivery within 2km of Pearl Point 🛵
@@ -62,13 +57,6 @@ export default function NavBarEN({ currentUser, cartCount, onCartOpen, onAuthOpe
                             Orders close 06:00 daily · Free delivery within 2km of Pearl Point 🛵
                         </span>
                     </div>
-                    <Link
-                        href="/"
-                        aria-label="切换到中文"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center px-1.5 py-0.5 text-[10px] font-black tracking-wider rounded-md bg-white/15 backdrop-blur-sm border border-white/40"
-                    >
-                        中文
-                    </Link>
                 </div>
             </div>
             <nav className={`fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
@@ -92,33 +80,25 @@ export default function NavBarEN({ currentUser, cartCount, onCartOpen, onAuthOpe
                         <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">Contact BowlMama</a>
                     </nav>
 
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-3">
                         {currentUser ? (
                             <>
-                                <a href="/member" className="md:hidden">
-                                    <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm border-2 border-[#E3EADA] shadow-sm overflow-hidden">
-                                        {currentUser.photoURL ? (
-                                            <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
-                                        ) : (
-                                            (currentUser.displayName || 'U')[0].toUpperCase()
-                                        )}
+                                <a href="/member" aria-label="Open member centre" className="md:hidden">
+                                    <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
+                                        {(currentUser.displayName || 'U')[0].toUpperCase()}
                                     </div>
                                 </a>
                                 <a
                                     href="/member"
                                     title="Member centre · points & orders"
                                     aria-label="Open member centre"
-                                    className="hidden md:flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] hover:border-[#1A2D23]/20 transition-colors group"
+                                    className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"
                                 >
-                                    <div className="relative w-7 h-7 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-bold text-xs overflow-hidden">
-                                        {currentUser.photoURL ? (
-                                            <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
-                                        ) : (
-                                            (currentUser.displayName || 'U')[0].toUpperCase()
-                                        )}
+                                    <div className="relative w-8 h-8 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm">
+                                        {(currentUser.displayName || 'U')[0].toUpperCase()}
                                     </div>
                                     <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || 'Member'}</span>
-                                    <ChevronRight size={14} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2.5} />
+                                    <ChevronRight size={12} className="text-[#1A2D23]/30 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2} />
                                 </a>
                             </>
                         ) : (
@@ -132,14 +112,32 @@ export default function NavBarEN({ currentUser, cartCount, onCartOpen, onAuthOpe
                                 </button>
                             </>
                         )}
-                        <button onClick={onCartOpen} aria-label={cartCount > 0 ? `Open cart (${cartCount} items)` : 'Open cart'} className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out">
-                            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
-                            {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-[#FF6B35] text-white text-[10px] md:text-xs rounded-full flex items-center justify-center font-black animate-pulse shadow-md">
+
+                        <LanguageSwitcher current="en" />
+
+                        {cartCount > 0 ? (
+                            /* With items — bag + total price chip + count dot */
+                            <button
+                                onClick={onCartOpen}
+                                aria-label={`Open cart (${cartCount} items · RM ${cartTotal.toFixed(2)})`}
+                                className="relative inline-flex items-center gap-2 pl-3 pr-3.5 md:pr-4 py-2.5 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                            >
+                                <ShoppingBag className="w-4 h-4 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2.5} />
+                                <span className="font-black tabular-nums text-[13px] md:text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
+                                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#FF6B35] text-white text-[10px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-[#FDFBF7]">
                                     {cartCount}
                                 </span>
-                            )}
-                        </button>
+                            </button>
+                        ) : (
+                            /* Empty cart — minimal icon */
+                            <button
+                                onClick={onCartOpen}
+                                aria-label="Open cart"
+                                className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out"
+                            >
+                                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </nav>

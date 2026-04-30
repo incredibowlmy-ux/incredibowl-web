@@ -198,6 +198,7 @@ export default function EnglishHome() {
             <NavBarEN
                 currentUser={currentUser}
                 cartCount={cartCount}
+                cartTotal={cartTotal}
                 onCartOpen={() => setIsCartOpen(true)}
                 onAuthOpen={() => setIsAuthOpen(true)}
             />

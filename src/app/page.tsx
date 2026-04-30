@@ -201,6 +201,7 @@ export default function V4BentoLayout() {
             <NavBar
                 currentUser={currentUser}
                 cartCount={cartCount}
+                cartTotal={cartTotal}
                 onCartOpen={() => setIsCartOpen(true)}
                 onAuthOpen={() => setIsAuthOpen(true)}
             />
