@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
 
-export default function Footer() {
+export default function FooterEN() {
     return (
         <footer className="pt-20 pb-32 md:pb-36 bg-white border-t border-[#E3EADA]">
             <div className="max-w-7xl mx-auto px-6 text-center space-y-12">
@@ -20,14 +20,14 @@ export default function Footer() {
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
                         <Link href="/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
                         <Link href="/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
-                        <Link href="/refund" className="hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>
+                        <Link href="/refund" className="hover:text-[#FF6B35] transition-colors">Refund &amp; Cancellation</Link>
                     </div>
                 </div>
 
-                {/* Mobile: existing centered stack (preserved) */}
+                {/* Mobile stack */}
                 <div className="grid md:grid-cols-1 gap-6 text-[#1A2D23] lg:hidden">
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
+                        <p className="text-base font-bold tracking-wide">Contact us</p>
                         <div className="flex flex-col items-center gap-2.5 max-w-xs mx-auto">
                             <a
                                 href="https://wa.me/60103370197"
@@ -56,7 +56,6 @@ export default function Footer() {
                             </a>
                         </div>
                         <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-[#E3EADA]/50 pt-10 w-full max-w-3xl mx-auto">
-                            {/* Brand Trust Signals */}
                             <div className="flex justify-center flex-wrap gap-4 md:gap-10 text-[#1A2D23]/70 font-bold text-[11px] md:text-xs uppercase tracking-[0.2em] items-center">
                                 <span className="flex items-center gap-1.5"><Leaf size={14} className="text-[#2D5F3E]" /> No MSG</span>
                                 <span className="opacity-20 hidden md:block">•</span>
@@ -65,10 +64,9 @@ export default function Footer() {
                                 <span className="flex items-center gap-1.5"><Heart size={14} className="text-[#C76F40]" /> Mum&apos;s Recipe</span>
                             </div>
 
-                            {/* Location/Community */}
                             <div className="text-center mt-2">
                                 <p className="text-xs text-[#1A2D23]/55 uppercase tracking-[0.2em] font-bold mb-2 flex justify-center items-center gap-1.5">
-                                    <MapPin size={12} className="text-[#FF6B35]" /> Serving Our Neighbours Around
+                                    <MapPin size={12} className="text-[#FF6B35]" /> Serving our neighbours around
                                 </p>
                                 <p className="text-[13px] text-[#1A2D23]/65 font-semibold tracking-[0.1em] md:tracking-[0.15em] leading-relaxed">
                                     Pearl Point · Millerz Square · OUG · Old Klang Road
@@ -78,11 +76,10 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Desktop: 3-col grid */}
+                {/* Desktop 3-col */}
                 <div className="hidden lg:grid lg:grid-cols-3 lg:gap-12 lg:text-left text-[#1A2D23]">
-                    {/* Col 1: Contact + Social */}
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
+                        <p className="text-base font-bold tracking-wide">Contact us</p>
                         <div className="flex flex-col gap-2.5">
                             <a
                                 href="https://wa.me/60103370197"
@@ -112,11 +109,10 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    {/* Col 2: Coverage */}
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide flex items-center gap-2">
                             <MapPin size={16} className="text-[#FF6B35]" />
-                            服务范围 / Coverage
+                            Coverage area
                         </p>
                         <div className="space-y-2 text-[14px] text-[#1A2D23]/75 font-semibold leading-relaxed">
                             <p>Pearl Point</p>
@@ -125,31 +121,30 @@ export default function Footer() {
                             <p>Old Klang Road</p>
                         </div>
                         <p className="text-[13px] text-[#1A2D23]/55 italic leading-relaxed">
-                            2km 内免运 · 满 6 份免运
+                            Free within 2km · Free for 6+ orders
                         </p>
                     </div>
 
-                    {/* Col 3: Brand Promise */}
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">品质承诺 / Our Promise</p>
+                        <p className="text-base font-bold tracking-wide">Our promise</p>
                         <div className="space-y-3">
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Leaf size={16} className="text-[#2D5F3E] shrink-0" />
-                                No MSG · 不加味精
+                                No MSG
                             </p>
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Sun size={16} className="text-[#FF6B35] shrink-0" />
-                                Daily Fresh · 每日新鲜采购
+                                Daily fresh from the wet market
                             </p>
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Heart size={16} className="text-[#C76F40] shrink-0" />
-                                Mum&apos;s Recipe · 妈妈的味道
+                                Mum&apos;s recipe, mum&apos;s heart
                             </p>
                         </div>
                     </div>
                 </div>
                 <div className="flex flex-col items-center gap-1.5 text-gray-500 text-xs font-medium tracking-wide text-center leading-relaxed">
-                    <p>&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
+                    <p>&copy; 2026 Incredibowl. Home-cooked taste, sourced fresh daily.</p>
                     <p className="text-gray-400 inline-flex items-center justify-center gap-1.5">
                         <ShieldCheck size={12} className="text-[#C9A24E]" strokeWidth={2.5} aria-hidden="true" />
                         <span>Operated by Incredibowl Services 202603047882 (SA0649425-V)</span>

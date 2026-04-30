@@ -1,9 +1,9 @@
 "use client";
 
 const WHATSAPP_NUMBER = '60103370197';
-const PREFILLED_MESSAGE = 'Hi 碗妈！我想了解一下今天的菜单。';
+const PREFILLED_MESSAGE = "Hi BowlMama! I'd like to see today's menu.";
 
-export default function WhatsAppFloat() {
+export default function WhatsAppFloatEN() {
     const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILLED_MESSAGE)}`;
 
     return (
@@ -11,12 +11,10 @@ export default function WhatsAppFloat() {
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="WhatsApp 碗妈"
+            aria-label="WhatsApp BowlMama"
             className="group fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[80] flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] hover:bg-[#20BE5A] text-white shadow-2xl shadow-[#25D366]/40 hover:scale-110 active:scale-95 transition-[transform,background-color] duration-200 ease-out"
         >
-            {/* Pulse ring */}
             <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-30" />
-            {/* WhatsApp logo (inline SVG) */}
             <svg
                 viewBox="0 0 32 32"
                 className="relative w-7 h-7 md:w-8 md:h-8 fill-white"

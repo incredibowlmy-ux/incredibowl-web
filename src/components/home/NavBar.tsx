@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ShoppingBag, User, ChevronRight } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 
@@ -38,14 +39,21 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                 `}} />
                 
                 {/* Desktop Version */}
-                <div className="hidden sm:flex w-full justify-center px-3">
+                <div className="hidden sm:flex w-full justify-center px-3 relative">
                     <p className="text-xs font-black tracking-wide truncate">
                         温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                     </p>
+                    <Link
+                        href="/en"
+                        aria-label="Switch to English"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center px-2 py-0.5 text-[10px] font-black tracking-wider rounded-md border border-white/40 hover:bg-white hover:text-[#FF6B35] transition-[background-color,color] duration-150 ease-out"
+                    >
+                        EN
+                    </Link>
                 </div>
 
                 {/* Mobile Marquee Version (Larger font, animated) */}
-                <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
+                <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center relative pr-9">
                     <div className="animate-marquee-mobile flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
@@ -55,9 +63,16 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> Pearl Point 2km 内免运费 🛵
                         </span>
                     </div>
+                    <Link
+                        href="/en"
+                        aria-label="Switch to English"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center px-1.5 py-0.5 text-[10px] font-black tracking-wider rounded-md bg-white/15 backdrop-blur-sm border border-white/40"
+                    >
+                        EN
+                    </Link>
                 </div>
             </div>
-            <nav className={`fixed w-full z-50 transition-all duration-500 top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
+            <nav className={`fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
                 <div className="flex items-center gap-3 md:gap-4">
                     <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
@@ -65,7 +80,7 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                     </div>
                     <div>
                         {/* Brand name — semantically a link/label, not the page H1 (page H1 lives in Hero) */}
-                        <a href="/" aria-label="Incredibowl 碗妈的厨房 首页" className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">碗妈的厨房</a>
+                        <Link href="/" aria-label="Incredibowl 碗妈的厨房 首页" className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">碗妈的厨房</Link>
                         <div className="flex items-center gap-2">
                             <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
                             <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
@@ -108,23 +123,23 @@ export default function NavBar({ currentUser, cartCount, onCartOpen, onAuthOpen 
                                     )}
                                 </div>
                                 <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || '会员中心'}</span>
-                                <ChevronRight size={14} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-all" strokeWidth={2.5} />
+                                <ChevronRight size={14} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2.5} />
                             </a>
                         </>
                     ) : (
                         <>
                             {/* Mobile: icon-only login button */}
-                            <button onClick={onAuthOpen} className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <User size={18} className="text-[#1A2D23]" />
                             </button>
                             {/* Desktop: full login button */}
-                            <button onClick={onAuthOpen} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <User size={16} className="text-[#1A2D23]" />
                                 <span className="text-xs font-bold text-[#1A2D23]">登录 / 邻里会员</span>
                             </button>
                         </>
                     )}
-                    <button onClick={onCartOpen} className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-all">
+                    <button onClick={onCartOpen} aria-label={cartCount > 0 ? `打开购物车（${cartCount} 件）` : '打开购物车'} className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out">
                         <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
                         {cartCount > 0 && (
                             <span className="absolute -top-1 -right-1 w-5 h-5 md:w-6 md:h-6 bg-[#FF6B35] text-white text-[10px] md:text-xs rounded-full flex items-center justify-center font-black animate-pulse shadow-md">

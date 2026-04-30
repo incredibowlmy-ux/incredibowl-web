@@ -70,3 +70,40 @@ body {
 .animate-fade-in {
   animation: hero-fade-in 1.5s ease-in-out forwards;
 }
+
+@keyframes feedback-marquee-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.feedback-marquee-track {
+  animation: feedback-marquee-x linear infinite;
+  will-change: transform;
+}
+
+.feedback-marquee:hover .feedback-marquee-track,
+.feedback-marquee:focus-within .feedback-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-breathe,
+  .animate-fade-in,
+  .animate-marquee-mobile,
+  .animate-pulse,
+  .animate-ping,
+  .feedback-marquee-track {
+    animation: none !important;
+  }
+  .feedback-marquee {
+    overflow-x: auto !important;
+  }
+}

@@ -74,7 +74,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="zh-MY">
       <head>
         <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
         <link rel="preconnect" href="https://checkout.razorpay.com" />
