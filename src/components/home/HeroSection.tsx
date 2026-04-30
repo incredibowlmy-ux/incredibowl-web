@@ -105,7 +105,7 @@ export default function HeroSection() {
                             className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35]/15 text-[#C84518] rounded-full text-xs font-bold shadow-sm hover:bg-[#FF6B35]/25 transition-colors active:scale-95"
                         >
                             <Star size={11} fill="currentColor" strokeWidth={0} />
-                            <span>5+ 邻居好评</span>
+                            <span>6+ 邻居好评</span>
                         </button>
                     </div>
 

@@ -49,7 +49,7 @@ export default function PromoBannerEN() {
                             onClick={scrollToFeedback}
                             className="hidden lg:inline-flex items-center gap-1.5 self-start text-[#FF9B50] hover:text-[#FFB770] text-sm font-bold underline-offset-4 hover:underline transition-colors group"
                         >
-                            <span>Read 5+ neighbour reviews</span>
+                            <span>Read 6+ neighbour reviews</span>
                             <ArrowRight size={13} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                         </button>
                     </div>
@@ -73,7 +73,7 @@ export default function PromoBannerEN() {
                                 </div>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
-                                    <span className="text-white font-black">5+</span>
+                                    <span className="text-white font-black">6+</span>
                                     <span className="text-white/55 font-medium ml-1">Google reviews</span>
                                 </div>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
