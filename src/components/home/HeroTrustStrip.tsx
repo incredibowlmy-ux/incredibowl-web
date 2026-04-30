@@ -40,7 +40,7 @@ export default function HeroTrustStrip() {
 
                 {/* Neighborhood chip */}
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">邻居都在吃</span> 🍱</span>
+                    <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">邻居都在吃</span></span>
                 </span>
             </button>
         </div>

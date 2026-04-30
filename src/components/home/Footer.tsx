@@ -150,9 +150,9 @@ export default function Footer() {
                 </div>
                 <div className="flex flex-col items-center gap-1.5 text-gray-500 text-xs font-medium tracking-wide text-center leading-relaxed">
                     <p>&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
-                    <p className="text-gray-400 inline-flex items-center justify-center gap-1.5">
-                        <ShieldCheck size={12} className="text-[#C9A24E]" strokeWidth={2.5} aria-hidden="true" />
-                        <span>Operated by Incredibowl Services 202603047882 (SA0649425-V)</span>
+                    <p className="text-gray-400 max-w-prose">
+                        <ShieldCheck size={12} className="inline align-[-2px] text-[#C9A24E] mr-1 shrink-0" strokeWidth={2.5} aria-hidden="true" />
+                        Operated by Incredibowl Services 202603047882 (SA0649425-V)
                     </p>
                 </div>
             </div>

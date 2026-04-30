@@ -37,7 +37,7 @@ export default function HeroTrustStripEN() {
                 <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
 
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">neighbours love it</span> 🍱</span>
+                    <span>Pearl Point · Millerz · SkyVille · OUG <span className="opacity-70">neighbours love it</span></span>
                 </span>
             </button>
         </div>
