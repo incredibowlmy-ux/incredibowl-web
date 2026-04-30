@@ -104,13 +104,19 @@ export default function CutoffBanner() {
                 {/* Subtle separator */}
                 <span className="w-px h-3.5 bg-current opacity-15" aria-hidden="true" />
 
-                {/* Live ticker — tabular-nums prevents layout shift on each tick */}
-                <span className="tabular-nums tracking-tight font-black whitespace-nowrap">
-                    {pad(hoursLeft)}
-                    <span className="opacity-40 mx-0.5">:</span>
-                    {pad(minutesLeft)}
-                    <span className="opacity-40 mx-0.5">:</span>
-                    {pad(secondsLeft)}
+                {/* Live ticker — boarding-pass-style segmented key blocks (Apple Card / Stripe) */}
+                <span className="inline-flex items-center whitespace-nowrap" aria-hidden="true">
+                    <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
+                        {pad(hoursLeft)}
+                    </span>
+                    <span className="opacity-30 mx-0.5 font-bold">:</span>
+                    <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
+                        {pad(minutesLeft)}
+                    </span>
+                    <span className="opacity-30 mx-0.5 font-bold">:</span>
+                    <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
+                        {pad(secondsLeft)}
+                    </span>
                 </span>
 
                 {/* Action affordance */}
