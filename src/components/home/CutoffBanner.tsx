@@ -1,15 +1,21 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Clock, AlertCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+
+type CutoffInfo = {
+    hoursLeft: number;
+    minutesLeft: number;
+    secondsLeft: number;
+    isToday: boolean;
+};
 
 /**
- * Compute time until next 06:00 cutoff.
- * - Before today's 06:00: countdown to today 06:00 (today's lunch)
- * - After today's 06:00: countdown to tomorrow 06:00 (tomorrow's lunch)
- * Skips Sat/Sun (kitchen closed) — rolls forward to Monday 06:00 if cutoff lands on weekend.
+ * Compute time until next 06:00 cutoff. Skips Sat/Sun (kitchen closed).
+ * Pre-cutoff (00:00-05:59): countdown to today's 06:00
+ * Post-cutoff: countdown to tomorrow 06:00 (or Monday if weekend ahead)
  */
-function computeCutoff(now: Date): { hoursLeft: number; minutesLeft: number; isToday: boolean; isClosed: boolean } {
+function computeCutoff(now: Date): CutoffInfo {
     const today6am = new Date(now);
     today6am.setHours(6, 0, 0, 0);
 
@@ -24,64 +30,96 @@ function computeCutoff(now: Date): { hoursLeft: number; minutesLeft: number; isT
         isToday = false;
     }
 
-    // Roll forward over weekends — Saturday (6) or Sunday (0)
     while (cutoff.getDay() === 6 || cutoff.getDay() === 0) {
         cutoff.setDate(cutoff.getDate() + 1);
     }
 
-    const isClosed = cutoff.getDay() < 1 || cutoff.getDay() > 5;
-    const diffMs = cutoff.getTime() - now.getTime();
-    const totalMin = Math.max(0, Math.floor(diffMs / 60000));
-    const hoursLeft = Math.floor(totalMin / 60);
-    const minutesLeft = totalMin % 60;
+    const diffMs = Math.max(0, cutoff.getTime() - now.getTime());
+    const totalSec = Math.floor(diffMs / 1000);
+    const hoursLeft = Math.floor(totalSec / 3600);
+    const minutesLeft = Math.floor((totalSec % 3600) / 60);
+    const secondsLeft = totalSec % 60;
 
-    return { hoursLeft, minutesLeft, isToday, isClosed };
+    return { hoursLeft, minutesLeft, secondsLeft, isToday };
 }
 
+const pad = (n: number) => n.toString().padStart(2, '0');
+
 export default function CutoffBanner() {
-    const [info, setInfo] = useState<ReturnType<typeof computeCutoff> | null>(null);
+    const [info, setInfo] = useState<CutoffInfo | null>(null);
 
     useEffect(() => {
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const tick = () => setInfo(computeCutoff(new Date()));
         tick();
-        const id = setInterval(tick, 60_000); // update every minute
+        // 1Hz live ticker; 60s if user prefers reduced motion
+        const id = setInterval(tick, reduceMotion ? 60_000 : 1_000);
         return () => clearInterval(id);
     }, []);
+
+    const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
 
     if (!info) {
         return (
             <div className="lg:col-span-12 -mb-2 flex justify-center">
-                <div className="h-9 px-4 rounded-full bg-[#FFF3E0] border border-[#FF6B35]/20" />
+                <div className="h-9 w-72 rounded-full bg-[#FFF3E0] border border-[#FF6B35]/20" />
             </div>
         );
     }
 
-    const { hoursLeft, minutesLeft, isToday } = info;
-    const urgent = isToday && hoursLeft < 2;
+    const { hoursLeft, minutesLeft, secondsLeft, isToday } = info;
+    const totalMinLeft = hoursLeft * 60 + minutesLeft;
 
-    // Wrap text — keep the strip thin, single-line on lg+
-    const label = isToday
-        ? `今日 06:00 截单 · 还剩 ${hoursLeft}h ${minutesLeft}m · 当日中午送达`
-        : `今日已截单 · 明日 06:00 前下单 · 还剩 ${hoursLeft}h ${minutesLeft}m`;
+    // Three urgency tiers — color shifts smoothly as time decreases
+    const tier = totalMinLeft >= 240 ? 'calm' : totalMinLeft >= 60 ? 'soon' : 'urgent';
+
+    const tierClasses = {
+        calm: 'bg-[#FFF3E0] border-[#FF6B35]/25 text-[#1A2D23]/90',
+        soon: 'bg-[#FFE9C2] border-[#FF6B35]/40 text-[#C84518]',
+        urgent: 'bg-[#FFE4D6] border-[#FF6B35]/60 text-[#C84518]',
+    }[tier];
+
+    const dotClasses = {
+        calm: 'bg-[#34A853]',
+        soon: 'bg-[#FF9B50]',
+        urgent: 'bg-[#FF6B35] animate-pulse',
+    }[tier];
+
+    const label = isToday ? '今日 06:00 截单' : '明日 06:00 截单';
 
     return (
         <div className="lg:col-span-12 -mb-2 flex justify-center">
-            <div
-                role="status"
-                aria-live="polite"
-                className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border ${
-                    urgent
-                        ? 'bg-[#FFE4D6] border-[#FF6B35]/40 text-[#C84518] animate-pulse'
-                        : 'bg-[#FFF3E0] border-[#FF6B35]/25 text-[#1A2D23]/90'
-                }`}
+            <button
+                type="button"
+                onClick={scrollToMenu}
+                aria-label={`${label}，还剩 ${hoursLeft} 小时 ${minutesLeft} 分钟。点击查看菜单`}
+                className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
             >
-                {urgent ? (
-                    <AlertCircle size={13} strokeWidth={2.5} className="shrink-0" />
-                ) : (
-                    <Clock size={13} strokeWidth={2.5} className="text-[#FF6B35] shrink-0" />
-                )}
-                <span className="truncate">{label}</span>
-            </div>
+                {/* Status dot */}
+                <span className={`w-2 h-2 rounded-full shrink-0 ${dotClasses}`} aria-hidden="true" />
+
+                {/* Label */}
+                <span className="whitespace-nowrap">{label}</span>
+
+                {/* Subtle separator */}
+                <span className="w-px h-3.5 bg-current opacity-15" aria-hidden="true" />
+
+                {/* Live ticker — tabular-nums prevents layout shift on each tick */}
+                <span className="tabular-nums tracking-tight font-black whitespace-nowrap">
+                    {pad(hoursLeft)}
+                    <span className="opacity-40 mx-0.5">:</span>
+                    {pad(minutesLeft)}
+                    <span className="opacity-40 mx-0.5">:</span>
+                    {pad(secondsLeft)}
+                </span>
+
+                {/* Action affordance */}
+                <ArrowRight
+                    size={12}
+                    strokeWidth={2.5}
+                    className="shrink-0 opacity-50 group-hover:opacity-100 group-hover:translate-x-0.5 transition-[transform,opacity] duration-150 ease-out"
+                />
+            </button>
         </div>
     );
 }
