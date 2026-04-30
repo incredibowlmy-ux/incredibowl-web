@@ -123,14 +123,14 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     <LanguageSwitcher current="zh" />
 
                     {cartCount > 0 ? (
-                        /* With items — bag + total price chip + count dot */
+                        /* With items — Mobile: minimal icon card; md+: dark green pill with total price */
                         <button
                             onClick={onCartOpen}
                             aria-label={`打开购物车（${cartCount} 件 · RM ${cartTotal.toFixed(2)}）`}
-                            className="relative inline-flex items-center gap-2 pl-3 pr-3.5 md:pr-4 py-2.5 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                            className="relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-white md:bg-[#1A2D23] md:hover:bg-[#243A2D] text-[#1A2D23] md:text-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 md:border-0 hover:border-[#1A2D23]/20 transition-[background-color,border-color,box-shadow,transform] duration-150 ease-out md:active:scale-[0.97]"
                         >
-                            <ShoppingBag className="w-4 h-4 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2.5} />
-                            <span className="font-black tabular-nums text-[13px] md:text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
+                            <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
+                            <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
                             <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#FF6B35] text-white text-[10px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-[#FDFBF7]">
                                 {cartCount}
                             </span>
