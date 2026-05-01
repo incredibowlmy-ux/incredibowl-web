@@ -4,38 +4,52 @@ import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 
 type CutoffInfo = {
+    daysLeft: number;
     hoursLeft: number;
     minutesLeft: number;
     secondsLeft: number;
-    isToday: boolean;
+    label: string;
 };
+
+const EN_WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function computeCutoff(now: Date): CutoffInfo {
     const today6am = new Date(now);
     today6am.setHours(6, 0, 0, 0);
 
     let cutoff: Date;
-    let isToday: boolean;
     if (now < today6am) {
         cutoff = today6am;
-        isToday = true;
     } else {
         cutoff = new Date(today6am);
         cutoff.setDate(cutoff.getDate() + 1);
-        isToday = false;
     }
 
     while (cutoff.getDay() === 6 || cutoff.getDay() === 0) {
         cutoff.setDate(cutoff.getDate() + 1);
     }
 
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfCutoffDay = new Date(cutoff);
+    startOfCutoffDay.setHours(0, 0, 0, 0);
+    const dayDiff = Math.round(
+        (startOfCutoffDay.getTime() - startOfToday.getTime()) / 86_400_000
+    );
+
+    let label: string;
+    if (dayDiff === 0) label = "Today's cutoff · 06:00";
+    else if (dayDiff === 1) label = 'Next cutoff · 06:00 tomorrow';
+    else label = `Next cutoff · 06:00 ${EN_WEEKDAYS[cutoff.getDay()]}`;
+
     const diffMs = Math.max(0, cutoff.getTime() - now.getTime());
     const totalSec = Math.floor(diffMs / 1000);
-    const hoursLeft = Math.floor(totalSec / 3600);
+    const daysLeft = Math.floor(totalSec / 86_400);
+    const hoursLeft = Math.floor((totalSec % 86_400) / 3600);
     const minutesLeft = Math.floor((totalSec % 3600) / 60);
     const secondsLeft = totalSec % 60;
 
-    return { hoursLeft, minutesLeft, secondsLeft, isToday };
+    return { daysLeft, hoursLeft, minutesLeft, secondsLeft, label };
 }
 
 const pad = (n: number) => n.toString().padStart(2, '0');
@@ -61,8 +75,9 @@ export default function CutoffBannerEN() {
         );
     }
 
-    const { hoursLeft, minutesLeft, secondsLeft, isToday } = info;
-    const totalMinLeft = hoursLeft * 60 + minutesLeft;
+    const { daysLeft, hoursLeft, minutesLeft, secondsLeft, label } = info;
+    const totalMinLeft = daysLeft * 1440 + hoursLeft * 60 + minutesLeft;
+    const crossesDay = daysLeft > 0;
 
     const tier = totalMinLeft >= 240 ? 'calm' : totalMinLeft >= 60 ? 'soon' : 'urgent';
 
@@ -78,15 +93,13 @@ export default function CutoffBannerEN() {
         urgent: 'bg-[#FF6B35] animate-pulse',
     }[tier];
 
-    const label = isToday ? "Today's cutoff · 06:00" : "Next cutoff · 06:00 tomorrow";
-
     return (
         <div className="lg:col-span-12 -mb-2 flex justify-center">
             <button
                 type="button"
                 onClick={scrollToMenu}
-                aria-label={`${label}, ${hoursLeft}h ${minutesLeft}m left. Tap to view menu.`}
-                className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
+                aria-label={`${label}, ${crossesDay ? `${daysLeft}d ` : ''}${hoursLeft}h ${minutesLeft}m left. Tap to view menu.`}
+                className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border backdrop-blur-sm transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
             >
                 <span className={`w-2 h-2 rounded-full shrink-0 ${dotClasses}`} aria-hidden="true" />
 
@@ -94,8 +107,16 @@ export default function CutoffBannerEN() {
 
                 <span className="w-px h-3.5 bg-current opacity-15" aria-hidden="true" />
 
-                {/* Live ticker — boarding-pass-style segmented key blocks (Apple Card / Stripe) */}
+                {/* Live ticker — boarding-pass-style. <24h: HH:MM:SS · ≥24h: Dd:HH:MM */}
                 <span className="inline-flex items-center whitespace-nowrap" aria-hidden="true">
+                    {crossesDay && (
+                        <>
+                            <span className="inline-flex items-center justify-center min-w-[28px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
+                                {daysLeft}<span className="text-[9px] opacity-60 ml-0.5">d</span>
+                            </span>
+                            <span className="opacity-30 mx-0.5 font-bold">:</span>
+                        </>
+                    )}
                     <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
                         {pad(hoursLeft)}
                     </span>
@@ -103,10 +124,14 @@ export default function CutoffBannerEN() {
                     <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
                         {pad(minutesLeft)}
                     </span>
-                    <span className="opacity-30 mx-0.5 font-bold">:</span>
-                    <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
-                        {pad(secondsLeft)}
-                    </span>
+                    {!crossesDay && (
+                        <>
+                            <span className="opacity-30 mx-0.5 font-bold">:</span>
+                            <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-md bg-white/85 font-black tabular-nums tracking-tight shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(0,0,0,0.06)] border border-black/[0.04]">
+                                {pad(secondsLeft)}
+                            </span>
+                        </>
+                    )}
                 </span>
 
                 <ArrowRight
