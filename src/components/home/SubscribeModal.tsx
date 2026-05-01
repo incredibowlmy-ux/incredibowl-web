@@ -9,7 +9,7 @@ const COOLDOWN_DAYS = 7;
 const SCROLL_TRIGGER = 0.6;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后麻烦每天 push 菜单 🙏';
+const PREFILLED = 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后有新 Promo 可以通知我 🙏';
 
 export default function SubscribeModal() {
     const [open, setOpen] = useState(false);
@@ -109,10 +109,10 @@ export default function SubscribeModal() {
                         id="subscribe-modal-title"
                         className="text-xl font-black text-[#1A2D23] leading-tight mb-2"
                     >
-                        碗妈每天的菜单 · 直达你 WhatsApp
+                        加入碗妈 WhatsApp · 不错过新菜和优惠
                     </h3>
                     <p className="text-sm text-[#1A2D23]/70 leading-relaxed mb-5">
-                        加入后每晚 push 第二天菜单，首次下单立减
+                        新菜上架、限时 promo 第一时间通知。新加入立减
                         <span className="font-black text-[#FF6B35]"> RM 5</span>。Pearl Point / OUG / SkyVille 邻居都加了。
                     </p>
 

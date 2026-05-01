@@ -9,7 +9,7 @@ const COOLDOWN_DAYS = 7;
 const SCROLL_TRIGGER = 0.6;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = "Hi BowlMama! I'd like to subscribe to your daily menu via WhatsApp + grab the RM 5 first-order voucher. Thanks!";
+const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks!";
 
 export default function SubscribeModalEN() {
     const [open, setOpen] = useState(false);
@@ -103,10 +103,10 @@ export default function SubscribeModalEN() {
                         id="subscribe-modal-title-en"
                         className="text-xl font-black text-[#1A2D23] leading-tight mb-2"
                     >
-                        BowlMama&apos;s daily menu, in your WhatsApp.
+                        Don&apos;t miss BowlMama&apos;s next promo.
                     </h3>
                     <p className="text-sm text-[#1A2D23]/70 leading-relaxed mb-5">
-                        Get tomorrow&apos;s menu pushed every evening. New subscribers get
+                        We&apos;ll ping you when new dishes drop or there&apos;s a promo. New subscribers get
                         <span className="font-black text-[#FF6B35]"> RM 5 off </span>
                         their first order. Pearl Point / OUG / SkyVille neighbours are already in.
                     </p>

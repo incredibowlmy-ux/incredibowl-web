@@ -8,7 +8,7 @@ const COOLDOWN_HOURS = 24;
 const SHOW_DELAY_MS = 1500;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后麻烦每天 push 菜单 🙏';
+const PREFILLED = 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后有新 Promo 可以通知我 🙏';
 
 export default function WhatsAppStickyBar() {
     const [show, setShow] = useState(false);
@@ -61,8 +61,8 @@ export default function WhatsAppStickyBar() {
                         </svg>
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-black leading-tight truncate">加 WhatsApp 看明日菜单</span>
-                        <span className="block text-[11px] text-white/60 leading-tight truncate">首单立减 <span className="font-black text-[#FF9B50]">RM 5</span> · 每晚 push</span>
+                        <span className="block text-[13px] font-black leading-tight truncate">加 WhatsApp 不错过 promo</span>
+                        <span className="block text-[11px] text-white/60 leading-tight truncate">首单立减 <span className="font-black text-[#FF9B50]">RM 5</span> · 新菜抢先知</span>
                     </span>
                 </a>
                 <a

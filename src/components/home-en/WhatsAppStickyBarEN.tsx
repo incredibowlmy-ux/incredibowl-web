@@ -8,7 +8,7 @@ const COOLDOWN_HOURS = 24;
 const SHOW_DELAY_MS = 1500;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = "Hi BowlMama! I'd like to subscribe to your daily menu via WhatsApp + grab the RM 5 first-order voucher. Thanks!";
+const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks!";
 
 export default function WhatsAppStickyBarEN() {
     const [show, setShow] = useState(false);
@@ -60,8 +60,8 @@ export default function WhatsAppStickyBarEN() {
                         </svg>
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[13px] font-black leading-tight truncate">Tomorrow&apos;s menu, in WhatsApp</span>
-                        <span className="block text-[11px] text-white/60 leading-tight truncate"><span className="font-black text-[#FF9B50]">RM 5</span> off first order · daily push</span>
+                        <span className="block text-[13px] font-black leading-tight truncate">Don&apos;t miss the next promo</span>
+                        <span className="block text-[11px] text-white/60 leading-tight truncate"><span className="font-black text-[#FF9B50]">RM 5</span> off first order · new-dish alerts</span>
                     </span>
                 </a>
                 <a
