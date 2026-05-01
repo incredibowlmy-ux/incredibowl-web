@@ -41,13 +41,14 @@ export default function CartDrawer({
     const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
+        if (!currentUser) { onAuthOpen(); return; }
         setIsCheckingPromo(true);
         setPromoError('');
         try {
             const res = await fetch('/api/check-voucher', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ voucherCode: code }),
+                body: JSON.stringify({ voucherCode: code, userId: currentUser.uid }),
             });
             const data = await res.json();
             if (!res.ok) {

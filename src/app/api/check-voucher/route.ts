@@ -1,39 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { validateVoucher } from '@/lib/voucherValidation';
 
 export async function POST(request: NextRequest) {
     try {
-        const { voucherCode } = await request.json();
+        const { voucherCode, userId } = await request.json();
         if (!voucherCode) {
             return NextResponse.json({ error: '请输入优惠码' }, { status: 400 });
         }
 
         const db = getAdminDb();
-        const code = voucherCode.trim().toUpperCase();
-        const snap = await db.collection('vouchers').doc(code).get();
+        const result = await validateVoucher(db, voucherCode, { userId });
 
-        if (!snap.exists) {
-            return NextResponse.json({ error: '优惠码无效，请检查后重试' }, { status: 404 });
+        if (!result.ok) {
+            return NextResponse.json({ error: result.error }, { status: result.status });
         }
 
-        const data = snap.data()!;
-
-        // Multi-use voucher support: maxUses defaults to 1 for legacy vouchers,
-        // usedCount falls back to isUsed for legacy vouchers.
-        const maxUses = typeof data.maxUses === 'number' && data.maxUses > 0 ? data.maxUses : 1;
-        const usedCount = typeof data.usedCount === 'number' ? data.usedCount : (data.isUsed ? 1 : 0);
-        if (usedCount >= maxUses) {
-            return NextResponse.json({ error: '此优惠码已被使用' }, { status: 400 });
-        }
-
-        if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
-            return NextResponse.json({ error: '此优惠码已过期' }, { status: 400 });
-        }
-
-        const discount = typeof data.discount === 'number' ? data.discount : 1;
-        const remainingUses = maxUses - usedCount;
-        return NextResponse.json({ valid: true, discount, remainingUses, maxUses });
-    } catch (err: any) {
-        return NextResponse.json({ error: err.message || '验证失败' }, { status: 500 });
+        return NextResponse.json({
+            valid: true,
+            discount: result.discount,
+            remainingUses: result.remainingUses,
+            maxUses: result.maxUses,
+        });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : '验证失败';
+        return NextResponse.json({ error: msg }, { status: 500 });
     }
 }

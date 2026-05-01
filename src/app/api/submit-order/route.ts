@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu } from '@/data/weeklyMenu';
+import { validateVoucher } from '@/lib/voucherValidation';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -96,23 +97,11 @@ export async function POST(req: Request) {
     const db = await getDb();
 
     if (promoCode && clientPromoDiscount > 0) {
-      const code = promoCode.trim().toUpperCase();
-      const voucherRef = db.collection('vouchers').doc(code);
-      const snap = await voucherRef.get();
-
-      if (!snap.exists) {
-        return NextResponse.json({ error: '优惠码无效' }, { status: 400 });
+      const result = await validateVoucher(db, promoCode, { userId });
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
       }
-      const vData = snap.data()!;
-      const vMaxUses = typeof vData.maxUses === 'number' && vData.maxUses > 0 ? vData.maxUses : 1;
-      const vUsedCount = typeof vData.usedCount === 'number' ? vData.usedCount : (vData.isUsed ? 1 : 0);
-      if (vUsedCount >= vMaxUses) {
-        return NextResponse.json({ error: '优惠码已被使用' }, { status: 400 });
-      }
-      if (vData.expiresAt && vData.expiresAt.toDate() < new Date()) {
-        return NextResponse.json({ error: '优惠码已过期' }, { status: 400 });
-      }
-      serverPromoDiscount = typeof vData.discount === 'number' ? vData.discount : 1;
+      serverPromoDiscount = result.discount;
 
       // Verify client discount matches server
       if (Math.abs(serverPromoDiscount - clientPromoDiscount) > 0.02) {
@@ -217,10 +206,13 @@ export async function POST(req: Request) {
 
     // TODO: 优惠券在支付确认前就标记已用，FPX支付失败后优惠券会浪费。
     // 考虑将此逻辑移至 /api/confirm-order，在支付成功后再标记。
-    // ── Increment voucher usedCount atomically; mark exhausted if reached maxUses ─
+    // ── Increment voucher usedCount AND record on user.vouchersUsed atomically ─
+    // Per-user voucher dedup happens at the user level (vouchersUsed array);
+    // global cap stays at the voucher level (usedCount/maxUses).
     if (promoCode && serverPromoDiscount > 0) {
       const code = promoCode.trim().toUpperCase();
       const voucherRef = db.collection('vouchers').doc(code);
+      const userRef = db.collection('users').doc(userId);
       await db.runTransaction(async (tx) => {
         const vSnap = await tx.get(voucherRef);
         if (!vSnap.exists) return;
@@ -234,6 +226,11 @@ export async function POST(req: Request) {
           usedBy: userId,
           usedAt: FieldValue.serverTimestamp(),
         });
+        tx.set(
+          userRef,
+          { vouchersUsed: FieldValue.arrayUnion(code) },
+          { merge: true }
+        );
       });
     }
 

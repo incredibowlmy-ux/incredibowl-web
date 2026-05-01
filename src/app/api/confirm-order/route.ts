@@ -74,6 +74,7 @@ export async function POST(req: Request) {
 
       // Restore voucher when cancelling an order that used one.
       // Multi-use vouchers: decrement usedCount and clear isUsed flag if it was set.
+      // Also remove from the user's vouchersUsed array so per-user dedup releases.
       if (status === 'cancelled' && orderData.promoCode && orderData.status !== 'cancelled') {
         try {
           const voucherRef = db.collection('vouchers').doc(orderData.promoCode);
@@ -91,6 +92,16 @@ export async function POST(req: Request) {
               ...(nextUsed === 0 ? { usedBy: '', usedAt: null } : {}),
             });
           });
+
+          if (orderData.userId) {
+            try {
+              await db.collection('users').doc(orderData.userId).update({
+                vouchersUsed: FieldValue.arrayRemove(orderData.promoCode),
+              });
+            } catch (e) {
+              console.warn('Failed to release user voucher dedup:', e);
+            }
+          }
         } catch (e) {
           console.warn('Failed to restore voucher:', e);
         }

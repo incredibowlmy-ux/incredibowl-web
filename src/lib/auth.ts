@@ -11,6 +11,9 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, increment } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { normalizePhone } from "./phoneUtils";
+
+export { normalizePhone };
 
 // Providers
 const googleProvider = new GoogleAuthProvider();
@@ -83,10 +86,12 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             displayName: displayName || user.displayName || "Guest",
             photoURL: user.photoURL || null,
             phone: phone || null,
+            phoneNormalized: normalizePhone(phone),
             address: address || null,
             referralCode: ownReferralCode,
             referredBy: validatedReferral,
             referralBonusAwarded: false,
+            vouchersUsed: [],
             createdAt: serverTimestamp(),
             lastLoginAt: serverTimestamp(),
             totalOrders: 0,
@@ -94,19 +99,27 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             points: 0,
         });
     } else {
-        await setDoc(userRef, {
-            lastLoginAt: serverTimestamp(),
-        }, { merge: true });
+        // Backfill phoneNormalized for legacy users on every login.
+        const existing = userSnap.data();
+        const merge: Record<string, unknown> = { lastLoginAt: serverTimestamp() };
+        if (existing.phone && !existing.phoneNormalized) {
+            merge.phoneNormalized = normalizePhone(existing.phone);
+        }
+        await setDoc(userRef, merge, { merge: true });
     }
 };
 
 // Update user profile (phone, address, etc.)
 export const updateUserProfile = async (uid: string, data: { phone?: string; address?: string; displayName?: string }) => {
     const userRef = doc(db, "users", uid);
-    await updateDoc(userRef, {
+    const payload: Record<string, unknown> = {
         ...data,
         updatedAt: serverTimestamp(),
-    });
+    };
+    if (typeof data.phone === 'string') {
+        payload.phoneNormalized = normalizePhone(data.phone);
+    }
+    await updateDoc(userRef, payload);
 };
 
 // Get user profile from Firestore
