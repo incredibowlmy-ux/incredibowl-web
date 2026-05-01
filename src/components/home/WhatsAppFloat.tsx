@@ -1,10 +1,54 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+
 const WHATSAPP_NUMBER = '60103370197';
-const PREFILLED_MESSAGE = 'Hi 碗妈！我想了解一下今天的菜单。';
+
+const MESSAGES = {
+    hero:     'Hi 碗妈！我刚看到你的网站，想了解一下你的厨房和这周的菜单。',
+    menu:     'Hi 碗妈！我看了菜单，想问下明天的预订和配送细节。',
+    feedback: 'Hi 碗妈！我看了邻居的评价想试试，可以推荐一道入门菜吗？',
+} as const;
+
+type Zone = keyof typeof MESSAGES;
 
 export default function WhatsAppFloat() {
-    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILLED_MESSAGE)}`;
+    const [zone, setZone] = useState<Zone>('hero');
+
+    useEffect(() => {
+        const targets: Array<{ id: string; key: Zone }> = [
+            { id: 'menu', key: 'menu' },
+            { id: 'feedback', key: 'feedback' },
+        ];
+
+        const observers = targets
+            .map(({ id, key }) => {
+                const el = document.getElementById(id);
+                if (!el) return null;
+                const obs = new IntersectionObserver(
+                    ([entry]) => {
+                        if (entry.isIntersecting) setZone(key);
+                    },
+                    { threshold: 0.3 }
+                );
+                obs.observe(el);
+                return obs;
+            })
+            .filter((o): o is IntersectionObserver => o !== null);
+
+        // Hero fallback: when scrolled near top, snap back to hero message.
+        const onScroll = () => {
+            if (window.scrollY < 800) setZone('hero');
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+
+        return () => {
+            observers.forEach(o => o.disconnect());
+            window.removeEventListener('scroll', onScroll);
+        };
+    }, []);
+
+    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(MESSAGES[zone])}`;
 
     return (
         <a

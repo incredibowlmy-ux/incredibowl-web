@@ -93,7 +93,7 @@ export default function CutoffBanner() {
                 type="button"
                 onClick={scrollToMenu}
                 aria-label={`${label}，还剩 ${hoursLeft} 小时 ${minutesLeft} 分钟。点击查看菜单`}
-                className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
+                className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border backdrop-blur-sm transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
             >
                 {/* Status dot */}
                 <span className={`w-2 h-2 rounded-full shrink-0 ${dotClasses}`} aria-hidden="true" />

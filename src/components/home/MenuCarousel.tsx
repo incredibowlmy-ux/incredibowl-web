@@ -223,7 +223,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
 
                     <div
                         key={dish.id}
-                        className={`menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-[transform,background-color,color,box-shadow,opacity] duration-400 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] mx-2 ${activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-80 hover:opacity-100 cursor-pointer'}`}
+                        className={`menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-[transform,background-color,color,box-shadow,opacity] duration-400 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] mx-2 ${activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-90 hover:opacity-100 cursor-pointer'}`}
                         onClick={() => scrollToIndex(i)}
                     >
                         <div className="flex justify-between items-start mb-6">
