@@ -8,6 +8,8 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
 const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
 const WhatsAppFloatEN = dynamic(() => import('@/components/home-en/WhatsAppFloatEN'), { ssr: false });
+const SubscribeModalEN = dynamic(() => import('@/components/home-en/SubscribeModalEN'), { ssr: false });
+const WhatsAppStickyBarEN = dynamic(() => import('@/components/home-en/WhatsAppStickyBarEN'), { ssr: false });
 
 import NavBarEN from '@/components/home-en/NavBarEN';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
@@ -222,6 +224,8 @@ export default function EnglishHome() {
             <FooterEN />
 
             <WhatsAppFloatEN />
+            <WhatsAppStickyBarEN />
+            <SubscribeModalEN />
 
             {isCartOpen && (
             <ErrorBoundary>

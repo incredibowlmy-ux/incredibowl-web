@@ -12,7 +12,8 @@ export default function WhatsAppFloatEN() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="WhatsApp BowlMama"
-            className="group fixed bottom-5 right-5 md:bottom-7 md:right-7 z-[80] flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] hover:bg-[#20BE5A] text-white shadow-2xl shadow-[#25D366]/40 hover:scale-110 active:scale-95 transition-[transform,background-color] duration-200 ease-out"
+            style={{ bottom: 'calc(var(--sticky-bar-h, 0px) + 1.25rem)' }}
+            className="group fixed right-5 md:right-7 z-[80] flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] hover:bg-[#20BE5A] text-white shadow-2xl shadow-[#25D366]/40 hover:scale-110 active:scale-95 transition-[bottom,transform,background-color] duration-200 ease-out"
         >
             <span className="absolute inset-0 rounded-full bg-[#25D366] animate-ping opacity-30" />
             <svg

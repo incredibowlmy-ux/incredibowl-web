@@ -8,6 +8,8 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
 const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
 const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), { ssr: false });
+const SubscribeModal = dynamic(() => import('@/components/home/SubscribeModal'), { ssr: false });
+const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
 import NavBar from '@/components/home/NavBar';
 import HeroSection from '@/components/home/HeroSection';
 import CutoffBanner from '@/components/home/CutoffBanner';
@@ -225,6 +227,8 @@ export default function V4BentoLayout() {
             <Footer />
 
             <WhatsAppFloat />
+            <WhatsAppStickyBar />
+            <SubscribeModal />
 
             {isCartOpen && (
             <ErrorBoundary>
