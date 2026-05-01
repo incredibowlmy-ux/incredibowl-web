@@ -1,34 +1,20 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Noto_Sans_SC, Inter, Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans, Noto_Sans_SC } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
+  weight: ["400", "800"],
   display: "swap",
 });
 
 const notoSansSC = Noto_Sans_SC({
   variable: "--font-noto-sans-sc",
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
+  weight: ["400", "700"],
   display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "800"],
-  display: "swap",
-});
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["300", "500", "700", "900"],
-  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -181,8 +167,8 @@ fbq('track', 'PageView');
         />
       </head>
       <body
-        className={`${plusJakarta.variable} ${notoSansSC.variable} ${inter.variable} ${outfit.variable} antialiased`}
-        style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans SC', 'Inter', sans-serif" }}
+        className={`${plusJakarta.variable} ${notoSansSC.variable} antialiased`}
+        style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif" }}
       >
         <noscript>
           <img

@@ -110,21 +110,15 @@ export default function HeroSection() {
                     </div>
 
                     {/* Main title — page H1 (was H2; brand name in NavBar should not be H1) */}
-                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-2 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-5 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
                         家的味道，<br />
                         每天新鲜采购。
                     </h1>
-                    <p lang="en" className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-6">
-                        Home-cooked Taste, Sourced Fresh Daily.
-                    </p>
 
                     {/* Action-anchored sub-headline — promoted from body copy to bridge brand slogan ↔ CTA */}
-                    <p lang="zh" className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-3 max-w-md lg:max-w-xl">
+                    <p lang="zh" className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-7 max-w-md lg:max-w-xl">
                         凌晨 <span className="text-[#FF6B35]">6 点</span>去巴刹，<br className="md:hidden" />
                         中午送到你手上。
-                    </p>
-                    <p lang="en" className="text-[13px] md:text-sm font-semibold text-[#1A2D23]/55 italic leading-relaxed mb-8 max-w-md lg:max-w-xl">
-                        At the market by 6am. At your door by noon.
                     </p>
 
                     {/* CTA pair: 1 primary orange + 1 secondary outlined WhatsApp (Sonner/Linear/Vercel pattern) */}
@@ -135,7 +129,7 @@ export default function HeroSection() {
                             <button
                                 type="button"
                                 onClick={scrollToMenu}
-                                className="relative inline-flex items-center gap-3 pl-7 pr-3 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full font-black text-base md:text-lg shadow-xl shadow-[#FF6B35]/30 transition-[transform,background-color,box-shadow] duration-200 ease-out transform group-hover:-translate-y-0.5 active:scale-[0.97] active:brightness-95"
+                                className="relative inline-flex items-center gap-3 pl-8 pr-3 py-3.5 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full font-black text-base md:text-lg shadow-[0_10px_28px_-8px_rgba(255,107,53,0.55)] hover:shadow-[0_14px_32px_-6px_rgba(255,107,53,0.65)] transition-[transform,background-color,box-shadow] duration-200 ease-out transform group-hover:-translate-y-0.5 hover:scale-[1.02] active:scale-[0.97] active:brightness-95"
                             >
                                 <span lang="zh" className="tracking-tight">看明天可以吃什么</span>
                                 <span lang="en" className="hidden md:inline text-sm font-bold text-white/80">· See Tomorrow&apos;s Menu</span>
