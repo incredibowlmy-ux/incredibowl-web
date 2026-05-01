@@ -9,7 +9,8 @@ const COOLDOWN_DAYS = 7;
 const SCROLL_TRIGGER = 0.6;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks!";
+// Trailing 🍱 is a silent source tag — Carmen can tell at-a-glance this came from the modal.
+const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks! 🍱";
 
 export default function SubscribeModalEN() {
     const [open, setOpen] = useState(false);

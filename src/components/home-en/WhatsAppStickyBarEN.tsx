@@ -8,7 +8,8 @@ const COOLDOWN_HOURS = 24;
 const SHOW_DELAY_MS = 1500;
 
 const WHATSAPP_NUMBER = '60165119118';
-const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks!";
+// Trailing 🥡 is a silent source tag — Carmen can tell at-a-glance this came from the sticky bar.
+const PREFILLED = "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks! 🥡";
 
 export default function WhatsAppStickyBarEN() {
     const [show, setShow] = useState(false);
