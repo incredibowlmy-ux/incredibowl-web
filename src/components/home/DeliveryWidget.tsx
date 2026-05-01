@@ -5,7 +5,7 @@ const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20BowlMama!%20%E7%9C%8B%
 
 export default function DeliveryWidget() {
     return (
-        <div className="lg:col-span-5 lg:col-start-1 lg:row-start-4 mt-4">
+        <div className="order-last lg:order-none lg:col-span-5 lg:col-start-1 lg:row-start-4 mt-4">
             <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm h-full">
                 {/* Mobile: vertical. Tablet (md): 3-col horizontal. Desktop lg+: 2×2 grid */}
                 <div className="flex flex-col md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-8 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-5 lg:items-start gap-0">

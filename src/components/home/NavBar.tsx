@@ -26,7 +26,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
 
     return (
         <>
-            <div className="fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center">
+            <div className={`fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center transition-transform duration-300 ease-out ${scrolled ? '-translate-y-full' : 'translate-y-0'}`}>
                 <style dangerouslySetInnerHTML={{
                     __html: `
                     @keyframes marquee-horizontal {
@@ -60,10 +60,10 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     </div>
                 </div>
             </div>
-            <nav className={`fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`}>
+            <nav className={`fixed w-full z-50 transition-[top,background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out ${scrolled ? 'top-0 bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-2' : 'top-[28px] sm:top-[30px] bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-4'}`}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
                 <div className="flex items-center gap-3 md:gap-4">
-                    <div className="w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
+                    <div className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
                         <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                     </div>
                     <div>
@@ -87,7 +87,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     {currentUser ? (
                         <>
                             {/* Mobile: avatar only — brand-orange letter on transparent ring */}
-                            <a href="/member" aria-label="进入会员中心" className="md:hidden">
+                            <a href="/member" aria-label="进入会员中心" className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px]">
                                 <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
                                     {(currentUser.displayName || 'U')[0].toUpperCase()}
                                 </div>
@@ -109,7 +109,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     ) : (
                         <>
                             {/* Mobile: icon-only login button */}
-                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="md:hidden p-3 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <User size={18} className="text-[#1A2D23]" />
                             </button>
                             {/* Desktop: full login button */}
@@ -127,7 +127,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         <button
                             onClick={onCartOpen}
                             aria-label={`打开购物车（${cartCount} 件 · RM ${cartTotal.toFixed(2)}）`}
-                            className="relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                            className="relative inline-flex items-center gap-2 p-3 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                         >
                             <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
                             <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
@@ -140,7 +140,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         <button
                             onClick={onCartOpen}
                             aria-label="打开购物车"
-                            className="relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out"
+                            className="relative p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out"
                         >
                             <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
                         </button>

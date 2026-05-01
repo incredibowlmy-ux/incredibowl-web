@@ -43,7 +43,7 @@ export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
                 aria-label={current === 'zh' ? '切换语言 / Switch language' : 'Switch language / 切换语言'}
                 aria-expanded={open}
                 aria-haspopup="menu"
-                className="p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow,background-color] duration-150 ease-out"
+                className="p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow,background-color] duration-150 ease-out"
             >
                 <Globe className="w-5 h-5 md:w-[22px] md:h-[22px] text-[#1A2D23]/75" strokeWidth={2} />
             </button>
