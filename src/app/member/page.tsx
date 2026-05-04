@@ -736,9 +736,9 @@ export default function MemberPage() {
                                                         ? '✅ 你的订单全部免运'
                                                         : '配送费 RM 6 / 折后满 RM 40 免运'}
                                                 </p>
-                                                {geocodeResult.partialMatch && (
+                                                {geocodeResult.partialMatch && geocodeResult.zone === 'outside2km' && (
                                                     <p className="text-[10px] mt-1 opacity-70 italic">
-                                                        ⚠️ 系统未完全识别此地址，请确认输入是否正确
+                                                        ⚠️ Google 没找到完全匹配，按 {geocodeResult.distanceKm}km 计算运费。如有疑问 WhatsApp 联系碗妈
                                                     </p>
                                                 )}
                                             </div>
