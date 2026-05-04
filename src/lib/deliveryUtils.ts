@@ -10,8 +10,11 @@
  * not to a pre-discount cart amount that vouchers can game.
  */
 
-export const PEARL_POINT_LAT = 3.1100;
-export const PEARL_POINT_LNG = 101.6708;
+// Verified centroid (provided by Carmen via Google Maps right-click).
+// Earlier value (3.1100, 101.6708) was off by ~3km — caused all customers
+// to be measured from a point near KL Sentral instead of Pearl Point.
+export const PEARL_POINT_LAT = 3.0853475861917716;
+export const PEARL_POINT_LNG = 101.67428154483449;
 
 export const FREE_DELIVERY_RADIUS_KM = 2;
 export const FREE_DELIVERY_THRESHOLD_RM = 40; // subtotal AFTER discount

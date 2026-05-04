@@ -62,11 +62,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '请输入完整地址' }, { status: 400 });
     }
 
-    // Bias results toward Malaysia (region=my) and Kuala Lumpur (components).
+    // Bias results toward Malaysia (region=my, components=country:MY) AND a
+    // ~10km bounding box around Pearl Point, so Google prefers nearby matches
+    // over distant same-named places. Bounds is a soft bias, not a hard limit.
     const params = new URLSearchParams({
         address,
         region: 'my',
         components: 'country:MY',
+        bounds: '3.04,101.62|3.13,101.72',
         key: apiKey,
     });
 
