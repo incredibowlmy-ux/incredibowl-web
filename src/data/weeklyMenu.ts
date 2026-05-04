@@ -63,6 +63,18 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
     },
     {
+        id: 14,
+        day: "Daily / 常驻",
+        name: "酱油鸡全腿",
+        nameEn: "Soy Sauce Chicken Whole Leg",
+        price: 18.50,
+        image: "/soy_sauce_chicken_leg.webp",
+        tags: ["~720 kcal*", "高蛋白 42g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
+        tagsEn: ["~720 kcal*", "42g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
+        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
+        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
+    },
+    {
         id: 1,
         day: "Mon / 周一",
         name: "香煎金黄鸡扒饭",
