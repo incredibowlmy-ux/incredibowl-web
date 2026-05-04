@@ -2,6 +2,47 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Noto_Sans_SC } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { weeklyMenu } from "@/data/weeklyMenu";
+
+// Build Menu structured data from the live menu so Google's food rich
+// results stay in sync with the actual dishes shown on the page.
+const dailySection = {
+  "@type": "MenuSection",
+  name: "Daily / 常驻菜",
+  hasMenuItem: weeklyMenu
+    .filter(d => d.day.startsWith("Daily"))
+    .map(d => ({
+      "@type": "MenuItem",
+      name: d.name,
+      description: d.desc,
+      image: `https://www.incredibowl.my${d.image}`,
+      offers: {
+        "@type": "Offer",
+        price: d.price.toFixed(2),
+        priceCurrency: "MYR",
+        availability: "https://schema.org/InStock",
+      },
+    })),
+};
+
+const weeklySection = {
+  "@type": "MenuSection",
+  name: "Weekly Rotation / 每周轮换",
+  hasMenuItem: weeklyMenu
+    .filter(d => !d.day.startsWith("Daily"))
+    .map(d => ({
+      "@type": "MenuItem",
+      name: d.name,
+      description: d.desc,
+      image: `https://www.incredibowl.my${d.image}`,
+      offers: {
+        "@type": "Offer",
+        price: d.price.toFixed(2),
+        priceCurrency: "MYR",
+        availability: "https://schema.org/InStock",
+      },
+    })),
+};
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -128,12 +169,42 @@ export default function RootLayout({
                     { "@type": "Place", name: "D'Sands" },
                     { "@type": "Place", name: "SkyVille 8 @ Benteng" }
                   ],
-                  hasMenu: "https://www.incredibowl.my/#menu",
+                  hasMenu: {
+                    "@type": "Menu",
+                    name: "Incredibowl Daily Menu",
+                    inLanguage: ["zh-MY", "en-MY"],
+                    hasMenuSection: [dailySection, weeklySection]
+                  },
+                  serviceArea: {
+                    "@type": "GeoCircle",
+                    geoMidpoint: {
+                      "@type": "GeoCoordinates",
+                      latitude: 3.0853475861917716,
+                      longitude: 101.67428154483449
+                    },
+                    geoRadius: "5000"
+                  },
+                  potentialAction: {
+                    "@type": "OrderAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate: "https://www.incredibowl.my/",
+                      inLanguage: "zh-MY",
+                      actionPlatform: [
+                        "http://schema.org/DesktopWebPlatform",
+                        "http://schema.org/MobileWebPlatform"
+                      ]
+                    },
+                    deliveryMethod: "http://purl.org/goodrelations/v1#DeliveryModeOwnFleet"
+                  },
                   acceptsReservations: false,
                   paymentAccepted: ["DuitNow QR", "FPX", "Credit Card"],
                   currenciesAccepted: "MYR",
                   sameAs: [
-                    "https://wa.me/60103370197"
+                    "https://wa.me/60103370197",
+                    "https://www.facebook.com/profile.php?id=61587218759550",
+                    "https://www.instagram.com/incredibowl_my/",
+                    "https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a"
                   ],
                   aggregateRating: {
                     "@type": "AggregateRating",

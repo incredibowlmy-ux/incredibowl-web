@@ -6,6 +6,107 @@ Disallow: /checkout
 Disallow: /member
 Disallow: /account
 Disallow: /login
+Disallow: /api
+
+# GPTBot
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# OAI-SearchBot
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# ChatGPT-User
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# ClaudeBot
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# Claude-Web
+User-agent: Claude-Web
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# PerplexityBot
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# Google-Extended
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# Applebot-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# CCBot
+User-agent: CCBot
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
+
+# Bytespider
+User-agent: Bytespider
+Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /member
+Disallow: /account
+Disallow: /login
+Disallow: /api
 
 # Host
 Host: https://www.incredibowl.my
