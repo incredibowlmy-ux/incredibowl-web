@@ -14,15 +14,15 @@ export interface MenuItem {
 /**
  * SEO-optimised alt text for a menu item image.
  * Includes dish name + a descriptive (non-numeric) tag + locality keyword
- * to feed Google Images long-tail traffic for "Pearl Point 私厨外送" / "OKR 家常菜".
+ * to feed Google Images long-tail traffic for "Pearl Point 私厨外送" / "Old Klang Road 家常菜".
  */
 export function dishImageAlt(item: MenuItem, locale: 'zh' | 'en' = 'zh'): string {
     if (locale === 'en') {
-        return `${item.nameEn} — Incredibowl home-cooked delivery, Pearl Point / OKR Kuala Lumpur`;
+        return `${item.nameEn} — Incredibowl home-cooked delivery, Pearl Point / Old Klang Road Kuala Lumpur`;
     }
     // Prefer descriptive tags (skip numeric ones like protein gram counts).
     const descriptiveTag = item.tags?.find(t => !/^[~\d]/.test(t)) ?? '招牌家常菜';
-    return `${item.name} - ${descriptiveTag} - Pearl Point 私厨外送 · OKR 家常菜`;
+    return `${item.name} - ${descriptiveTag} - Pearl Point 私厨外送 · Old Klang Road 家常菜`;
 }
 
 export const weeklyMenu: MenuItem[] = [
