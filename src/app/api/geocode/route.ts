@@ -97,8 +97,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: '找不到这个地址，请检查后重试（建议含 condo 名 + 路名 + 邮编）' }, { status: 404 });
     }
     if (googleData.status !== 'OK' || !googleData.results?.length) {
+        // Surface the underlying Google status + message so the customer (or admin
+        // looking over their shoulder) can see exactly what's wrong, instead of a
+        // generic "try again". REQUEST_DENIED almost always = key restrictions.
         console.error('Geocode failed:', googleData.status, googleData.error_message);
-        return NextResponse.json({ error: '地址解析失败，请重试或联系客服' }, { status: 502 });
+        const friendlyMap: Record<string, string> = {
+            REQUEST_DENIED: '地图服务被拒（API key 配置或限制问题）',
+            OVER_QUERY_LIMIT: '地图服务超额',
+            INVALID_REQUEST: '请求格式错误',
+            UNKNOWN_ERROR: '地图服务临时故障，请重试',
+        };
+        const friendly = friendlyMap[googleData.status] || '地址解析失败';
+        const detail = googleData.error_message ? ` — ${googleData.error_message}` : '';
+        return NextResponse.json({
+            error: `${friendly}（${googleData.status}）${detail}`,
+            googleStatus: googleData.status,
+            googleMessage: googleData.error_message || null,
+        }, { status: 502 });
     }
 
     const top = googleData.results[0];
