@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import type { DeliveryZone } from '@/lib/deliveryUtils';
 
 // Dish image mapping for favorite dish display
 const DISH_IMAGES: Record<string, string> = {
@@ -45,6 +46,10 @@ export default function MemberPage() {
     const [editPhone, setEditPhone] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [saving, setSaving] = useState(false);
+    const [geocoding, setGeocoding] = useState(false);
+    const [geocodeResult, setGeocodeResult] = useState<{ lat: number; lng: number; distanceKm: number; zone: DeliveryZone; formattedAddress: string; partialMatch: boolean } | null>(null);
+    const [geocodeError, setGeocodeError] = useState('');
+    const [verifiedFor, setVerifiedFor] = useState('');
 
     const handleRedeemPoints = async () => {
         if (!currentUser || (profileData?.points || 0) < 100) return;
@@ -112,34 +117,101 @@ export default function MemberPage() {
         setLoading(false);
     };
 
+    // Whenever user starts editing, reset stale geocode UI state
+    useEffect(() => {
+        if (isEditing) {
+            setGeocodeResult(null);
+            setGeocodeError('');
+            setVerifiedFor('');
+        }
+    }, [isEditing]);
+
+    const addressChangedSinceProfile = editAddress.trim() !== (profileData?.address || '').trim();
+    const addressChangedSinceVerify = !!geocodeResult && editAddress.trim() !== verifiedFor;
+    // Geocode is required if either:
+    //  - user changed the address text vs what's saved, OR
+    //  - the saved profile has no addressVerifiedText yet (legacy / never verified), OR
+    //  - the geocodeResult is invalidated by a subsequent edit
+    const profileNeedsInitialVerify = !profileData?.addressVerifiedText || (profileData?.addressVerifiedText || '').trim() !== (profileData?.address || '').trim();
+    const needsGeocode = (addressChangedSinceProfile || profileNeedsInitialVerify) && (!geocodeResult || addressChangedSinceVerify);
+
+    const handleVerifyAddress = async () => {
+        if (!currentUser) return;
+        if (!editAddress || editAddress.trim().length < 10) {
+            setGeocodeError('请填写完整地址（至少 10 个字符）');
+            return;
+        }
+        setGeocoding(true);
+        setGeocodeError('');
+        setGeocodeResult(null);
+        try {
+            const token = await currentUser.getIdToken();
+            const res = await fetch('/api/geocode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ address: editAddress.trim() }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setGeocodeError(data.error || '地址验证失败');
+                return;
+            }
+            setGeocodeResult(data);
+            setVerifiedFor(editAddress.trim());
+        } catch (e) {
+            setGeocodeError(e instanceof Error ? e.message : '网络错误，请重试');
+        }
+        setGeocoding(false);
+    };
+
     const handleUpdateProfile = async () => {
         if (!currentUser) return;
         if (!editName || !editPhone || !editAddress) return alert('请填写完整资料');
-        const addressChanged = editAddress.trim() !== (profileData?.address || '').trim();
+        if (needsGeocode) {
+            setGeocodeError('请先点「📍 确认地址」验证后再保存');
+            return;
+        }
         setSaving(true);
         try {
             const { updateUserProfile } = await import('@/lib/auth');
             const { updateProfile } = await import('firebase/auth');
+            const { serverTimestamp } = await import('firebase/firestore');
 
             // 1. Update Firebase Auth Profile (for currentUser object)
             await updateProfile(currentUser, { displayName: editName });
 
-            // 2. Update Firestore User Document
-            await updateUserProfile(currentUser.uid, {
+            // 2. Update Firestore User Document — include geocode fields when present
+            const updateData: any = {
                 displayName: editName,
                 phone: editPhone,
-                address: editAddress
-            });
-
-            setProfileData((prev: any) => ({ ...prev, displayName: editName, phone: editPhone, address: editAddress }));
-            setIsEditing(false);
-
-            // If address text changed, the verified geocode is now stale and submit-order
-            // will reject the next checkout. Tell the user up-front so they're not
-            // surprised at checkout.
-            if (addressChanged) {
-                alert('✅ 资料已保存\n\n⚠️ 你刚改了地址，下次结账前请点右上角头像 → 编辑资料 → 重新点「确认地址」验证免运区，否则系统不会通过结账。');
+                address: editAddress,
+            };
+            if (geocodeResult) {
+                updateData.addressLat = geocodeResult.lat;
+                updateData.addressLng = geocodeResult.lng;
+                updateData.addressDistanceKm = geocodeResult.distanceKm;
+                updateData.deliveryZone = geocodeResult.zone;
+                updateData.addressFormatted = geocodeResult.formattedAddress;
+                updateData.addressVerifiedAt = serverTimestamp();
+                updateData.addressVerifiedText = editAddress.trim();
             }
+            await updateUserProfile(currentUser.uid, updateData);
+
+            setProfileData((prev: any) => ({
+                ...prev,
+                displayName: editName,
+                phone: editPhone,
+                address: editAddress,
+                ...(geocodeResult ? {
+                    addressLat: geocodeResult.lat,
+                    addressLng: geocodeResult.lng,
+                    addressDistanceKm: geocodeResult.distanceKm,
+                    deliveryZone: geocodeResult.zone,
+                    addressFormatted: geocodeResult.formattedAddress,
+                    addressVerifiedText: editAddress.trim(),
+                } : {}),
+            }));
+            setIsEditing(false);
         } catch (error) {
             alert('保存失败，请稍后再试');
         }
@@ -619,22 +691,72 @@ export default function MemberPage() {
                                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                                             <MapPin size={10} strokeWidth={3} /> 配送地址 Address
                                         </label>
-                                        <textarea 
-                                            value={editAddress} 
+                                        <textarea
+                                            value={editAddress}
                                             onChange={(e) => setEditAddress(e.target.value)}
-                                            placeholder="例: Pearl Point, Block B-12-3"
-                                            rows={3} 
+                                            placeholder="例: Pearl Point, Block B-12-3, Jalan 1/116B, OKR, 58000 KL"
+                                            rows={3}
                                             className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium resize-none"
                                         />
+
+                                        {/* Verify address button + result (mirrors AuthProfileView so customers can verify here too) */}
+                                        <button
+                                            type="button"
+                                            onClick={handleVerifyAddress}
+                                            disabled={geocoding || !editAddress.trim()}
+                                            className={`mt-2 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+                                                geocoding || !editAddress.trim()
+                                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                    : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'
+                                            }`}
+                                        >
+                                            {geocoding ? <><Loader2 size={14} className="animate-spin" /> 验证中…</> : '📍 确认地址 / 检查配送区'}
+                                        </button>
+
+                                        {geocodeError && (
+                                            <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5">
+                                                <AlertCircle size={12} className="mt-0.5 shrink-0" /> {geocodeError}
+                                            </div>
+                                        )}
+
+                                        {geocodeResult && !addressChangedSinceVerify && (
+                                            <div className={`mt-2 px-3 py-2.5 rounded-lg text-xs border ${
+                                                geocodeResult.zone === 'within2km'
+                                                    ? 'bg-green-50 border-green-200 text-green-700'
+                                                    : 'bg-amber-50 border-amber-200 text-amber-700'
+                                            }`}>
+                                                <p className="font-black flex items-center gap-1.5">
+                                                    <CheckCircle size={12} />
+                                                    {geocodeResult.zone === 'within2km'
+                                                        ? `免运区 · 距 Pearl Point ${geocodeResult.distanceKm}km`
+                                                        : `配送区 · 距 Pearl Point ${geocodeResult.distanceKm}km`}
+                                                </p>
+                                                <p className="text-[10px] mt-1 opacity-80 leading-snug">
+                                                    {geocodeResult.zone === 'within2km'
+                                                        ? '✅ 你的订单全部免运'
+                                                        : '配送费 RM 6 / 折后满 RM 40 免运'}
+                                                </p>
+                                                {geocodeResult.partialMatch && (
+                                                    <p className="text-[10px] mt-1 opacity-70 italic">
+                                                        ⚠️ 系统未完全识别此地址，请确认输入是否正确
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                        {addressChangedSinceVerify && (
+                                            <p className="mt-1 text-[10px] text-amber-600 font-bold">⚠️ 地址已修改，请重新点「确认地址」验证</p>
+                                        )}
                                     </div>
                                 </div>
                                 <button
                                     onClick={handleUpdateProfile}
-                                    disabled={saving}
-                                    className="w-full py-4 bg-[#FF6B35] text-white rounded-[20px] font-black shadow-lg shadow-[#FF6B35]/20 hover:bg-[#E95D31] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    disabled={saving || needsGeocode}
+                                    className="w-full py-4 bg-[#FF6B35] text-white rounded-[20px] font-black shadow-lg shadow-[#FF6B35]/20 hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : needsGeocode ? (
+                                        <><AlertCircle size={18} /> 请先确认地址</>
                                     ) : (
                                         <><Save size={18} /> 确认保存</>
                                     )}
