@@ -20,7 +20,7 @@ export function dishImageAlt(item: MenuItem, locale: 'zh' | 'en' = 'zh'): string
     if (locale === 'en') {
         return `${item.nameEn} — Incredibowl home-cooked delivery, Pearl Point / OKR Kuala Lumpur`;
     }
-    // Pick first tag that isn't a calorie/protein number (those start with ~ or digit)
+    // Prefer descriptive tags (skip numeric ones like protein gram counts).
     const descriptiveTag = item.tags?.find(t => !/^[~\d]/.test(t)) ?? '招牌家常菜';
     return `${item.name} - ${descriptiveTag} - Pearl Point 私厨外送 · OKR 家常菜`;
 }
