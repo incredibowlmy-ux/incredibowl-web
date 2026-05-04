@@ -35,7 +35,7 @@ export default function DeliveryWidget() {
                             <span className="text-blue-500 mt-0.5">🚚</span>
                             <div className="flex-1">
                                 <p className="text-[15px] font-bold text-gray-700 leading-snug">配送时间</p>
-                                <p className="text-[13px] text-gray-500 leading-relaxed mt-0.5">11AM-1PM &nbsp;·&nbsp; 4:30PM-7:30PM</p>
+                                <p className="text-[13px] text-gray-500 leading-relaxed mt-0.5">11AM-1PM &nbsp;·&nbsp; 5PM-8PM</p>
                             </div>
                         </div>
                     </div>
