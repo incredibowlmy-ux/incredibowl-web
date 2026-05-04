@@ -123,14 +123,25 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         setLoading(false);
     };
 
-    const handleUpdateProfile = async () => {
+    const handleUpdateProfile = async (geocode?: { lat: number; lng: number; distanceKm: number; zone: 'within2km' | 'outside2km'; formattedAddress: string }) => {
         if (!currentUser) return;
         if (!phone || !address) { setMessage('⚠️ 手机号码和配送地址为必填'); return; }
         if (!isValidMyPhone(phone)) { setMessage('⚠️ 手机格式不正确，例: 010-337 0197'); return; }
         if (address.trim().length < 10) { setMessage('⚠️ 请填写完整配送地址（至少 10 个字符）'); return; }
+        if (!geocode) { setMessage('⚠️ 请先点「确认地址」验证后再保存'); return; }
         setLoading(true); setMessage('');
         try {
-            const updateData: any = { phone, address };
+            const { serverTimestamp } = await import('firebase/firestore');
+            const updateData: any = {
+                phone,
+                address,
+                addressLat: geocode.lat,
+                addressLng: geocode.lng,
+                addressDistanceKm: geocode.distanceKm,
+                deliveryZone: geocode.zone,
+                addressFormatted: geocode.formattedAddress,
+                addressVerifiedAt: serverTimestamp(),
+            };
             if (referralInput.trim() && !profileData?.referredBy) updateData.referredBy = referralInput.trim().toUpperCase();
             await updateUserProfile(currentUser.uid, updateData);
             setMessage('✅ 资料已更新！');

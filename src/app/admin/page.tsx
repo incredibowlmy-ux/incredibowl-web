@@ -831,10 +831,25 @@ export default function AdminPage() {
                                                 ))}
                                             </div>
 
-                                            {/* Address & Note */}
+                                            {/* Address & Delivery zone */}
                                             <div className="flex items-start gap-2 text-xs text-gray-500">
                                                 <MapPin size={12} className="shrink-0 mt-0.5" />
-                                                <span>{order.userAddress}</span>
+                                                <div className="flex-1">
+                                                    <span>{order.userAddress}</span>
+                                                    {order.deliveryZone && (
+                                                        <div className="mt-1 flex flex-wrap gap-1.5 items-center">
+                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
+                                                                order.deliveryZone === 'within2km' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                                            }`}>
+                                                                {order.deliveryZone === 'within2km' ? '🛵 免运区' : '🛵 配送区'}
+                                                                {typeof order.deliveryDistanceKm === 'number' && ` · ${order.deliveryDistanceKm}km`}
+                                                            </span>
+                                                            {typeof order.deliveryFee === 'number' && order.deliveryFee > 0 && (
+                                                                <span className="text-[10px] font-bold text-amber-700">+RM {order.deliveryFee.toFixed(2)} 运费</span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             {order.note && (
                                                 <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">

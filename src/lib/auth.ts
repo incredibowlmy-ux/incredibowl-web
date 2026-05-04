@@ -109,8 +109,22 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
     }
 };
 
-// Update user profile (phone, address, etc.)
-export const updateUserProfile = async (uid: string, data: { phone?: string; address?: string; displayName?: string }) => {
+// Update user profile (phone, address, geocoded delivery zone, etc.)
+export const updateUserProfile = async (
+    uid: string,
+    data: {
+        phone?: string;
+        address?: string;
+        displayName?: string;
+        addressLat?: number;
+        addressLng?: number;
+        addressDistanceKm?: number;
+        deliveryZone?: 'within2km' | 'outside2km';
+        addressFormatted?: string;
+        addressVerifiedAt?: unknown;
+        referredBy?: string;
+    }
+) => {
     const userRef = doc(db, "users", uid);
     const payload: Record<string, unknown> = {
         ...data,

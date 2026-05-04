@@ -38,13 +38,16 @@ export async function POST(req: Request) {
       // Award points only when changing TO 'confirmed' from a non-confirmed status
       if (status === 'confirmed' && orderData.status !== 'confirmed' && orderData.userId) {
         const userRef = db.collection('users').doc(orderData.userId);
-        const total = orderData.total ?? 0;
+        // total = food after voucher (NOT including delivery)
+        // deliveryFee = additional charge customer paid for shipping
+        // Points are awarded on food spend only; totalSpent reflects total paid.
+        const foodAfterDiscount = orderData.total ?? 0;
+        const deliveryFee = orderData.deliveryFee ?? 0;
 
-        // Basic points: RM 1 = 1 point + update order stats
         await userRef.update({
           totalOrders: FieldValue.increment(1),
-          totalSpent: FieldValue.increment(total),
-          points: FieldValue.increment(Math.floor(total)),
+          totalSpent: FieldValue.increment(foodAfterDiscount + deliveryFee),
+          points: FieldValue.increment(Math.floor(foodAfterDiscount)),
         });
 
         // Referral bonus (only on first confirmed order)

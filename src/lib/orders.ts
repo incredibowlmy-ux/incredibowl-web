@@ -18,10 +18,13 @@ export interface OrderData {
     userPhone: string;
     userAddress: string;
     items: OrderItem[];
-    total: number;
-    originalTotal?: number;
+    total: number;          // food after voucher discount (NOT including delivery)
+    originalTotal?: number; // food before voucher (subtotal)
     promoCode?: string;
     promoDiscount?: number;
+    deliveryFee?: number;          // RM amount applied to this order doc (only on part 1 if multi-part)
+    deliveryZone?: 'within2km' | 'outside2km';
+    deliveryDistanceKm?: number;
     deliveryDate: string;
     deliveryTime: string;
     paymentMethod: 'qr' | 'fpx' | 'curlec';
@@ -95,10 +98,14 @@ export const updateOrderStatus = async (
     // If status is changing to 'confirmed', award points now!
     if (status === 'confirmed' && orderData) {
         const userRef = doc(db, "users", orderData.userId);
+        // totalSpent reflects what customer actually paid (food + delivery).
+        // Points are based on food only — customers don't earn points on shipping fees.
+        const foodAfterDiscount = orderData.total ?? 0;
+        const deliveryFee = orderData.deliveryFee ?? 0;
         await updateDoc(userRef, {
             totalOrders: increment(1),
-            totalSpent: increment(orderData.total),
-            points: increment(Math.floor(orderData.total ?? 0)), // RM 1 = 1 point
+            totalSpent: increment(foodAfterDiscount + deliveryFee),
+            points: increment(Math.floor(foodAfterDiscount)), // RM 1 (food) = 1 point
         });
 
         // Check referral bonus (only on first confirmed order)

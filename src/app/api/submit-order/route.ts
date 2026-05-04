@@ -3,6 +3,7 @@ import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
+import { calcDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -28,6 +29,7 @@ export async function POST(req: Request) {
       cartBundles, // Array of { dishId, dishQty, addOns: [{ id, quantity }], price, quantity, selectedDate, selectedTime, note }
       paymentMethod, receiptUploaded, receiptUrl,
       promoCode, promoDiscount: clientPromoDiscount,
+      clientDeliveryFee,
       orderNote,
     } = body;
 
@@ -109,6 +111,27 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Validate delivery zone + fee server-side ──────────────
+    const userSnap = await db.collection('users').doc(userId).get();
+    const userData = userSnap.exists ? userSnap.data() || {} : {};
+    const userZone = userData.deliveryZone as DeliveryZone | undefined;
+    const userDistance = typeof userData.addressDistanceKm === 'number' ? userData.addressDistanceKm : null;
+
+    if (userZone !== 'within2km' && userZone !== 'outside2km') {
+      return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证免运区）' }, { status: 400 });
+    }
+
+    const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount);
+    const serverDeliveryFee = calcDeliveryFee(userZone, subtotalAfterDiscount);
+
+    // Compare against client (defense against tampering)
+    const clientFeeNum = typeof clientDeliveryFee === 'number' ? clientDeliveryFee : 0;
+    if (Math.abs(serverDeliveryFee - clientFeeNum) > 0.02) {
+      return NextResponse.json({
+        error: `运费计算不一致，服务器: RM${serverDeliveryFee.toFixed(2)}，客户端: RM${clientFeeNum.toFixed(2)}`,
+      }, { status: 400 });
+    }
+
     // ── Group by date/time and create orders ──────────────────
     const grouped: Record<string, { date: string; time: string; bundles: any[]; subtotal: number }> = {};
 
@@ -168,11 +191,17 @@ export async function POST(req: Request) {
         }
       }
 
+      // Delivery fee is charged ONCE per submission. Apply it to part 1 only
+      // (or the single order if not multi-part). Other parts get fee 0.
+      const partDeliveryFee = i === 0 ? serverDeliveryFee : 0;
+
       const payload: Record<string, any> = {
         userId, userName, userEmail, userPhone, userAddress,
         items,
         total: finalTotal,
         originalTotal: group.subtotal,
+        deliveryFee: partDeliveryFee,
+        deliveryZone: userZone,
         deliveryDate: group.date,
         deliveryTime: group.time,
         paymentMethod,
@@ -183,6 +212,7 @@ export async function POST(req: Request) {
       };
 
       // Only add optional fields if they have values (Firestore doesn't allow undefined)
+      if (typeof userDistance === 'number') payload.deliveryDistanceKm = userDistance;
       if (receiptUrl) payload.receiptUrl = receiptUrl;
       if (promoCode) payload.promoCode = promoCode.trim().toUpperCase();
       if (currentPromo > 0) payload.promoDiscount = currentPromo;
@@ -239,7 +269,9 @@ export async function POST(req: Request) {
       orderIds,
       groupId: groupId || null,
       isMultiPart,
-      serverTotal: Math.max(0, serverCartTotal - serverPromoDiscount),
+      // serverTotal = food (after voucher) + delivery — what customer actually pays
+      serverTotal: Math.max(0, serverCartTotal - serverPromoDiscount) + serverDeliveryFee,
+      deliveryFee: serverDeliveryFee,
     });
 
   } catch (err: any) {
