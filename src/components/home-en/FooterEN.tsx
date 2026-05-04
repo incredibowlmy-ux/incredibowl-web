@@ -121,7 +121,7 @@ export default function FooterEN() {
                             <p>Old Klang Road</p>
                         </div>
                         <p className="text-[13px] text-[#1A2D23]/55 italic leading-relaxed">
-                            Free within 2km · Free for 6+ orders
+                            Free within 2km · RM 6 beyond (free over RM 40 after voucher)
                         </p>
                     </div>
 
