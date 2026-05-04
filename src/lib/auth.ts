@@ -122,6 +122,7 @@ export const updateUserProfile = async (
         deliveryZone?: 'within2km' | 'outside2km';
         addressFormatted?: string;
         addressVerifiedAt?: unknown;
+        addressVerifiedText?: string;  // verbatim text the user typed when geocoding ran
         referredBy?: string;
     }
 ) => {

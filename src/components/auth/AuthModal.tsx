@@ -141,6 +141,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 deliveryZone: geocode.zone,
                 addressFormatted: geocode.formattedAddress,
                 addressVerifiedAt: serverTimestamp(),
+                addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
             };
             if (referralInput.trim() && !profileData?.referredBy) updateData.referredBy = referralInput.trim().toUpperCase();
             await updateUserProfile(currentUser.uid, updateData);

@@ -121,6 +121,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证免运区）' }, { status: 400 });
     }
 
+    // Anti-spoof: the saved address must match the address that was actually
+    // geocoded. Catches the loophole where a customer verifies a within-2km
+    // address (free delivery), then later edits to a far address via the
+    // /member page or a direct write — bypassing the geocode flow.
+    const verifiedText = typeof userData.addressVerifiedText === 'string' ? userData.addressVerifiedText.trim() : '';
+    const currentAddress = typeof userData.address === 'string' ? userData.address.trim() : '';
+    if (!verifiedText || verifiedText !== currentAddress) {
+      return NextResponse.json({
+        error: '配送地址已修改但未重新验证。请到「个人资料 → 编辑资料」重新点「确认地址」。',
+      }, { status: 400 });
+    }
+
     const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount);
     const serverDeliveryFee = calcDeliveryFee(userZone, subtotalAfterDiscount);
 

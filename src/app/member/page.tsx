@@ -115,23 +115,31 @@ export default function MemberPage() {
     const handleUpdateProfile = async () => {
         if (!currentUser) return;
         if (!editName || !editPhone || !editAddress) return alert('请填写完整资料');
+        const addressChanged = editAddress.trim() !== (profileData?.address || '').trim();
         setSaving(true);
         try {
             const { updateUserProfile } = await import('@/lib/auth');
             const { updateProfile } = await import('firebase/auth');
-            
+
             // 1. Update Firebase Auth Profile (for currentUser object)
             await updateProfile(currentUser, { displayName: editName });
-            
+
             // 2. Update Firestore User Document
             await updateUserProfile(currentUser.uid, {
                 displayName: editName,
                 phone: editPhone,
                 address: editAddress
             });
-            
+
             setProfileData((prev: any) => ({ ...prev, displayName: editName, phone: editPhone, address: editAddress }));
             setIsEditing(false);
+
+            // If address text changed, the verified geocode is now stale and submit-order
+            // will reject the next checkout. Tell the user up-front so they're not
+            // surprised at checkout.
+            if (addressChanged) {
+                alert('✅ 资料已保存\n\n⚠️ 你刚改了地址，下次结账前请点右上角头像 → 编辑资料 → 重新点「确认地址」验证免运区，否则系统不会通过结账。');
+            }
         } catch (error) {
             alert('保存失败，请稍后再试');
         }
