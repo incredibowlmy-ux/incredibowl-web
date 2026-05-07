@@ -126,7 +126,7 @@ export default function Footer() {
                             <p>Old Klang Road</p>
                         </div>
                         <p className="text-[13px] text-[#1A2D23]/55 italic leading-relaxed">
-                            2km 内免运 · 2km 外 RM 6（折后满 RM 40 免运）
+                            2km 内免运 · 2km 外满 RM 40 免运（否则 RM 6）
                         </p>
                     </div>
 
