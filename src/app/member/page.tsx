@@ -734,7 +734,7 @@ export default function MemberPage() {
                                                 <p className="text-[10px] mt-1 opacity-80 leading-snug">
                                                     {geocodeResult.zone === 'within2km'
                                                         ? '✅ 你的订单全部免运'
-                                                        : '满 RM 40 免运 / 否则配送费 RM 6'}
+                                                        : '满 RM 40 免运 / 不到 RM 6 运费'}
                                                 </p>
                                                 {geocodeResult.partialMatch && geocodeResult.zone === 'outside2km' && (
                                                     <p className="text-[10px] mt-1 opacity-70 italic">
