@@ -19,18 +19,27 @@ export { normalizePhone };
 const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 
-// Sign in with Google
-export const signInWithGoogle = async () => {
+// Sign in with Google. referralCode is only honoured on first-time signup
+// (saveUserProfile only validates/mints when the user doc doesn't exist yet).
+export const signInWithGoogle = async (referralCode?: string) => {
     const result = await signInWithPopup(auth, googleProvider);
-    await saveUserProfile(result.user);
-    return result.user;
+    const profileResult = await saveUserProfile(result.user, undefined, undefined, undefined, referralCode);
+    return {
+        user: result.user,
+        voucherCode: profileResult?.voucherCode,
+        referralRejectedReason: profileResult?.referralRejectedReason,
+    };
 };
 
-// Sign in with Facebook
-export const signInWithFacebook = async () => {
+// Sign in with Facebook (same referral semantics as Google).
+export const signInWithFacebook = async (referralCode?: string) => {
     const result = await signInWithPopup(auth, facebookProvider);
-    await saveUserProfile(result.user);
-    return result.user;
+    const profileResult = await saveUserProfile(result.user, undefined, undefined, undefined, referralCode);
+    return {
+        user: result.user,
+        voucherCode: profileResult?.voucherCode,
+        referralRejectedReason: profileResult?.referralRejectedReason,
+    };
 };
 
 // Sign in with Email/Password

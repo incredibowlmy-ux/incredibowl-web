@@ -58,8 +58,15 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const handleGoogleLogin = async () => {
         setLoading(true); setMessage('');
         try {
-            const user = await signInWithGoogle();
-            setMessage('✅ 登录成功！');
+            const referral = referralInput.trim().toUpperCase() || undefined;
+            const { user, voucherCode, referralRejectedReason } = await signInWithGoogle(referral);
+            if (voucherCode) {
+                setMessage(`✅ 登录成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
+            } else if (referralRejectedReason) {
+                setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
+            } else {
+                setMessage('✅ 登录成功！');
+            }
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
@@ -73,8 +80,15 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const handleFacebookLogin = async () => {
         setLoading(true); setMessage('');
         try {
-            const user = await signInWithFacebook();
-            setMessage('✅ 登录成功！');
+            const referral = referralInput.trim().toUpperCase() || undefined;
+            const { user, voucherCode, referralRejectedReason } = await signInWithFacebook(referral);
+            if (voucherCode) {
+                setMessage(`✅ 登录成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
+            } else if (referralRejectedReason) {
+                setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
+            } else {
+                setMessage('✅ 登录成功！');
+            }
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
@@ -202,6 +216,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 {view === 'main' && (
                     <AuthMainView
                         loading={loading} message={message}
+                        referralInput={referralInput} setReferralInput={setReferralInput}
                         onGoogleLogin={handleGoogleLogin}
                         onFacebookLogin={handleFacebookLogin}
                         onEmailLogin={() => { setView('email-login'); setMessage(''); }}

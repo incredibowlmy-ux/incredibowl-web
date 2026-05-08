@@ -6,17 +6,32 @@ import { Mail } from 'lucide-react';
 interface AuthMainViewProps {
     loading: boolean;
     message: string;
+    referralInput: string;
+    setReferralInput: (v: string) => void;
     onGoogleLogin: () => void;
     onFacebookLogin: () => void;
     onEmailLogin: () => void;
 }
 
-export default function AuthMainView({ loading, message, onGoogleLogin, onFacebookLogin, onEmailLogin }: AuthMainViewProps) {
+export default function AuthMainView({ loading, message, referralInput, setReferralInput, onGoogleLogin, onFacebookLogin, onEmailLogin }: AuthMainViewProps) {
     return (
         <div className="p-6 space-y-4">
             <div className="text-center space-y-1">
                 <h3 className="font-bold text-[#1A2D23] text-lg">注册 / 登录</h3>
                 <p className="text-xs text-gray-500">加入我们，享受免配送费福利与每日精选菜单推送。</p>
+            </div>
+
+            {/* Referral code (new users only — login flow ignores it) */}
+            <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">🎁 推荐码 Referral Code（新用户选填）</label>
+                <input
+                    type="text"
+                    value={referralInput}
+                    onChange={(e) => setReferralInput(e.target.value)}
+                    placeholder="例: IB-A1B2C3"
+                    className="w-full mt-1 px-4 py-2.5 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30"
+                />
+                <p className="text-[10px] text-[#E65100]/50 mt-1">注册新账号时填写即可获 RM 10 首单优惠券</p>
             </div>
 
             <div className="space-y-3">
