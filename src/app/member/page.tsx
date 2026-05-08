@@ -615,15 +615,24 @@ export default function MemberPage() {
                 </div>
 
                 {/* My Vouchers */}
-                {myVouchers.length > 0 && (
-                    <div className="bg-white rounded-[32px] p-6 shadow-md border border-[#E3EADA]">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
-                                <Sparkles size={18} className="text-[#FF6B35]" />
-                                我的优惠券
-                            </h3>
-                            <span className="text-xs text-[#1A2D23]/50 font-bold">{myVouchers.length} 张可用</span>
+                <div className="bg-white rounded-[32px] p-6 shadow-md border border-[#E3EADA]">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
+                            <Sparkles size={18} className="text-[#FF6B35]" />
+                            我的优惠券
+                        </h3>
+                        <span className="text-xs text-[#1A2D23]/50 font-bold">{myVouchers.length} 张可用</span>
+                    </div>
+                    {myVouchers.length === 0 ? (
+                        <div className="bg-[#FDFBF7] border border-dashed border-[#E3EADA] rounded-xl px-4 py-6 text-center">
+                            <p className="text-sm text-[#1A2D23]/60 font-bold mb-1">暂无可用优惠券</p>
+                            <p className="text-[11px] text-[#1A2D23]/50 leading-relaxed">
+                                · 满 100 积分可兑换 RM 10 优惠券<br />
+                                · 推荐朋友注册即可获 RM 10 首单券
+                            </p>
                         </div>
+                    ) : (
+                        <>
                         <div className="space-y-2.5">
                             {myVouchers.map((v) => {
                                 const isReferral = v.source === 'referral';
@@ -665,8 +674,9 @@ export default function MemberPage() {
                             })}
                         </div>
                         <p className="text-[10px] text-[#1A2D23]/40 mt-3 text-center">结账时输入优惠码即可使用</p>
-                    </div>
-                )}
+                        </>
+                    )}
+                </div>
 
                 {/* Referral Section */}
                 <div className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] rounded-[32px] p-6 text-white shadow-2xl shadow-[#1A2D23]/20 relative overflow-hidden">
