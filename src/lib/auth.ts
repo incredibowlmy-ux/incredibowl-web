@@ -168,6 +168,24 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             merge.phoneNormalized = normalizePhone(existing.phone);
         }
         await setDoc(userRef, merge, { merge: true });
+
+        // Backfill referralCode via server (Rules block client writes to it).
+        // Users who predate the referral system have no referralCode field,
+        // which makes them invisible to /api/validate-referral.
+        if (!existing.referralCode) {
+            try {
+                const token = await user.getIdToken();
+                console.log('[saveUserProfile] backfilling referralCode for legacy user');
+                const res = await fetch('/api/init-referral-code', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                const data = await res.json();
+                console.log('[saveUserProfile] init-referral-code response', { status: res.status, data });
+            } catch (e) {
+                console.warn('[saveUserProfile] referralCode backfill failed:', e);
+            }
+        }
     }
 };
 
