@@ -172,17 +172,18 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             await updateUserProfile(currentUser.uid, updateData);
 
             // Profile is now complete (phone + verified address). Try to claim
-            // a pending referral voucher. Server gates on phone-match + ≥1
-            // order on referrer + idempotency.
+            // a pending referral voucher. Server runs the anti-abuse suite.
             const claimed = await claimReferralVoucher(currentUser);
             if (claimed?.voucherCode) {
                 setMessage(`✅ 资料已更新！🎁 你获得 RM 10 首单优惠券：${claimed.voucherCode}（30 天内首单可用）`);
+            } else if (claimed?.rejectedReason) {
+                setMessage(`✅ 资料已更新！⚠️ 推荐奖励未发放：${claimed.rejectedReason}`);
             } else {
                 setMessage('✅ 资料已更新！');
             }
             setEditingProfile(false);
             await loadProfile(currentUser.uid);
-            setTimeout(() => setMessage(''), claimed?.voucherCode ? 6000 : 2000);
+            setTimeout(() => setMessage(''), claimed?.voucherCode || claimed?.rejectedReason ? 6000 : 2000);
         } catch (error: any) {
             setMessage(`⚠️ 更新失败: ${error.message}`);
         }

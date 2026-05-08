@@ -113,6 +113,45 @@ export async function POST(req: NextRequest) {
             });
         }
 
+        // Anti-abuse: phone-uniqueness across the platform.
+        // If ANY other user with the same phoneNormalized has already claimed
+        // a referral voucher, block — this kills "10 burner Google accounts
+        // sharing the same SIM" style farming.
+        const phoneCheck = await db.collection('users')
+            .where('phoneNormalized', '==', phoneNormalized)
+            .get();
+        const phoneAlreadyClaimed = phoneCheck.docs.find(d =>
+            d.id !== auth.uid && d.data()?.referralVoucherClaimed === true
+        );
+        if (phoneAlreadyClaimed) {
+            return NextResponse.json({
+                valid: false,
+                reason: 'phone_already_claimed',
+                message: '此手机号已被其他账户领取过推荐奖励',
+            });
+        }
+
+        // Anti-abuse: address-uniqueness (Google's formatted address).
+        // Same flat / unit can only claim once. Coincidental sharing is
+        // rare (roommates / family); abuse via "same condo, 5 fake names"
+        // is much more common.
+        const addressFormatted = typeof userData.addressFormatted === 'string' ? userData.addressFormatted : null;
+        if (addressFormatted) {
+            const addrCheck = await db.collection('users')
+                .where('addressFormatted', '==', addressFormatted)
+                .get();
+            const addrAlreadyClaimed = addrCheck.docs.find(d =>
+                d.id !== auth.uid && d.data()?.referralVoucherClaimed === true
+            );
+            if (addrAlreadyClaimed) {
+                return NextResponse.json({
+                    valid: false,
+                    reason: 'address_already_claimed',
+                    message: '此地址已被其他账户领取过推荐奖励',
+                });
+            }
+        }
+
         // Mint voucher with collision retry.
         const { Timestamp, FieldValue } = await import('firebase-admin/firestore');
         const expiresAt = new Date();

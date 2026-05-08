@@ -234,6 +234,8 @@ export default function MemberPage() {
                 if (claimed?.voucherCode) {
                     alert(`🎁 推荐奖励到账！\n\nRM 10 首单优惠券：${claimed.voucherCode}\n30 天内首单可用，已加入「我的优惠券」`);
                     loadMyVouchers(currentUser);
+                } else if (claimed?.rejectedReason) {
+                    alert(`⚠️ 推荐奖励未发放\n\n原因：${claimed.rejectedReason}\n\n如有疑问请 WhatsApp 010-337 0197 联系碗妈`);
                 }
             }
 

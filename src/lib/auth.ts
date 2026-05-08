@@ -221,9 +221,12 @@ export const updateUserProfile = async (
 };
 
 // Try to claim a pending referral voucher. Server checks profile is
-// complete (phone + verified address). Returns the minted voucher code,
-// or null if not eligible / already claimed / nothing to claim.
-export const claimReferralVoucher = async (user: User): Promise<{ voucherCode?: string; alreadyClaimed?: boolean } | null> => {
+// complete (phone + verified address) and runs the anti-abuse suite
+// (phone uniqueness, address uniqueness). Returns the minted voucher,
+// already-claimed status, or a friendly rejection reason.
+export const claimReferralVoucher = async (
+    user: User,
+): Promise<{ voucherCode?: string; alreadyClaimed?: boolean; rejectedReason?: string } | null> => {
     try {
         const token = await user.getIdToken();
         const res = await fetch('/api/claim-referral-voucher', {
@@ -234,6 +237,22 @@ export const claimReferralVoucher = async (user: User): Promise<{ voucherCode?: 
         if (!res.ok) return null;
         if (data.alreadyClaimed) return { alreadyClaimed: true };
         if (data.valid && data.voucherCode) return { voucherCode: data.voucherCode };
+        if (data.reason) {
+            const reasonMap: Record<string, string> = {
+                no_referral: '未发现推荐码记录',
+                phone_missing: '请先填写手机号',
+                address_unverified: '请先确认配送地址',
+                referrer_not_found: '推荐人不存在',
+                self_referral: '不能领取自己推荐的奖励',
+                referrer_no_orders: '推荐人需先完成至少 1 笔订单',
+                phone_match: '手机号与推荐人相同',
+                phone_already_claimed: '此手机号已被其他账户领取过推荐奖励',
+                address_already_claimed: '此地址已被其他账户领取过推荐奖励',
+            };
+            return {
+                rejectedReason: (data.message as string) || reasonMap[data.reason as string] || '推荐奖励无法发放',
+            };
+        }
         return null;
     } catch (e) {
         console.warn('claimReferralVoucher failed:', e);
