@@ -112,12 +112,15 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         if (password.length < 6) { setMessage('⚠️ 密码至少需要6位'); return; }
         setLoading(true); setMessage('');
         try {
-            const { voucherCode } = await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
+            const { voucherCode, referralRejectedReason } = await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
             if (voucherCode) {
                 // Hold the success message longer so the user has time to copy
                 // their referral voucher code before the modal closes.
                 setMessage(`✅ 注册成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
                 setTimeout(() => resetAndClose(), 6000);
+            } else if (referralRejectedReason) {
+                setMessage(`✅ 注册成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
+                setTimeout(() => resetAndClose(), 5000);
             } else {
                 setMessage('✅ 注册成功！欢迎加入 Incredibowl！');
                 setTimeout(() => resetAndClose(), 1500);

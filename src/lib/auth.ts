@@ -51,7 +51,11 @@ export const registerWithEmail = async (
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(result.user, { displayName });
     const profileResult = await saveUserProfile(result.user, displayName, phone, address, referralCode);
-    return { user: result.user, voucherCode: profileResult?.voucherCode };
+    return {
+        user: result.user,
+        voucherCode: profileResult?.voucherCode,
+        referralRejectedReason: profileResult?.referralRejectedReason,
+    };
 };
 
 // Sign out
@@ -61,8 +65,9 @@ export const logout = async () => {
 
 // Save user profile to Firestore. Returns the RM 10 voucher code minted
 // by the server when a valid referral was supplied, so the caller can
-// surface it to the user.
-export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string): Promise<{ voucherCode?: string } | undefined> => {
+// surface it to the user. If a referral was attempted but rejected,
+// returns referralRejectedReason so the caller can warn the user.
+export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string): Promise<{ voucherCode?: string; referralRejectedReason?: string } | undefined> => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
@@ -75,9 +80,12 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
         // On success, the server mints a RM 10 first-order voucher for us.
         let validatedReferral: string | null = null;
         let mintedVoucherCode: string | undefined;
+        let referralRejectedReason: string | undefined;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
-            if (/^IB-[A-Z0-9]{4,8}$/.test(code)) {
+            if (!/^IB-[A-Z0-9]{4,8}$/.test(code)) {
+                referralRejectedReason = '推荐码格式不正确';
+            } else {
                 try {
                     const token = await user.getIdToken();
                     const res = await fetch('/api/validate-referral', {
@@ -95,9 +103,20 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                     if (res.ok && data.valid) {
                         validatedReferral = data.code;
                         mintedVoucherCode = data.voucherCode;
+                    } else {
+                        // Map the server reason to friendly Chinese.
+                        const reasonMap: Record<string, string> = {
+                            not_found: '推荐码不存在',
+                            self_referral: '不能使用自己的推荐码',
+                            referrer_no_orders: '推荐人需先完成至少 1 笔订单',
+                            phone_match: '推荐码无效（手机号与推荐人相同）',
+                            format: '推荐码格式不正确',
+                        };
+                        referralRejectedReason = (data.message as string) || reasonMap[data.reason as string] || '推荐码无效';
                     }
                 } catch (e) {
                     console.warn('Referral validation failed:', e);
+                    referralRejectedReason = '推荐码验证失败，请稍后到「会员中心」联系客服';
                 }
             }
         }
@@ -121,7 +140,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             points: 0,
         });
 
-        return { voucherCode: mintedVoucherCode };
+        return { voucherCode: mintedVoucherCode, referralRejectedReason };
     } else {
         // Backfill phoneNormalized for legacy users on every login.
         const existing = userSnap.data();
