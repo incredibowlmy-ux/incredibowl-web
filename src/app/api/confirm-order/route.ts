@@ -75,6 +75,45 @@ export async function POST(req: Request) {
         }
       }
 
+      // Claim voucher when transitioning TO confirmed for the first time.
+      // (Deferred from submit-order so FPX failures don't burn the voucher.)
+      if (status === 'confirmed' && orderData.status !== 'confirmed' && orderData.promoCode && orderData.userId) {
+        try {
+          const code = String(orderData.promoCode).trim().toUpperCase();
+          const voucherRef = db.collection('vouchers').doc(code);
+          const userRef = db.collection('users').doc(orderData.userId);
+          await db.runTransaction(async (tx) => {
+            const vSnap = await tx.get(voucherRef);
+            if (!vSnap.exists) return;
+            const v = vSnap.data() || {};
+            const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+            const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+            // Race guard: if voucher got fully claimed between submit and
+            // confirm (rare two-customer race on a global single-use code),
+            // we still let the order through — customer already paid — but
+            // skip the increment so we don't go past maxUses in the doc.
+            if (used >= max) {
+              console.warn(`Voucher ${code} maxed out at confirm time for order ${orderId}`);
+              return;
+            }
+            const nextUsed = used + 1;
+            tx.update(voucherRef, {
+              usedCount: nextUsed,
+              isUsed: nextUsed >= max,
+              usedBy: orderData.userId,
+              usedAt: FieldValue.serverTimestamp(),
+            });
+            tx.set(
+              userRef,
+              { vouchersUsed: FieldValue.arrayUnion(code) },
+              { merge: true }
+            );
+          });
+        } catch (e) {
+          console.warn('Failed to claim voucher on confirm:', e);
+        }
+      }
+
       // Restore voucher when cancelling an order that used one.
       // Multi-use vouchers: decrement usedCount and clear isUsed flag if it was set.
       // Also remove from the user's vouchersUsed array so per-user dedup releases.

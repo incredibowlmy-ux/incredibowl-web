@@ -3,7 +3,7 @@ import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
-import { calcDeliveryFee, tierFromDistance, type DeliveryZone } from '@/lib/deliveryUtils';
+import { resolveDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
@@ -133,27 +133,33 @@ export async function POST(req: Request) {
     if (userZone !== 'within2km' && userZone !== 'outside2km') {
       return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证配送范围）' }, { status: 400 });
     }
-    if (userDistance === null) {
-      return NextResponse.json({
-        error: '配送距离未记录，请到「个人资料 → 编辑资料」重新点「确认地址」。',
-      }, { status: 400 });
-    }
 
     // Anti-spoof: the saved address must match the address that was actually
     // geocoded. Catches the loophole where a customer verifies a within-2km
     // address (free delivery), then later edits to a far address via the
     // /member page or a direct write — bypassing the geocode flow.
-    const verifiedText = typeof userData.addressVerifiedText === 'string' ? userData.addressVerifiedText.trim() : '';
-    const currentAddress = typeof userData.address === 'string' ? userData.address.trim() : '';
-    if (!verifiedText || verifiedText !== currentAddress) {
-      return NextResponse.json({
-        error: '配送地址已修改但未重新验证。请到「个人资料 → 编辑资料」重新点「确认地址」。',
-      }, { status: 400 });
+    //
+    // Legacy users (registered before the geocode flow) won't have
+    // addressVerifiedText saved — we grandfather them in via the binary zone
+    // field rather than forcing them to re-verify.
+    const isLegacyUser = userDistance === null;
+    if (!isLegacyUser) {
+      const verifiedText = typeof userData.addressVerifiedText === 'string' ? userData.addressVerifiedText.trim() : '';
+      const currentAddress = typeof userData.address === 'string' ? userData.address.trim() : '';
+      if (!verifiedText || verifiedText !== currentAddress) {
+        return NextResponse.json({
+          error: '配送地址已修改但未重新验证。请到「个人资料 → 编辑资料」重新点「确认地址」。',
+        }, { status: 400 });
+      }
     }
 
     const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount);
-    const serverDeliveryFee = calcDeliveryFee(userDistance, subtotalAfterDiscount);
-    const serverDeliveryTier = tierFromDistance(userDistance);
+    const resolved = resolveDeliveryFee(userDistance, userZone, subtotalAfterDiscount);
+    if (!resolved) {
+      return NextResponse.json({ error: '配送地址未确认，请到「个人资料」验证地址' }, { status: 400 });
+    }
+    const serverDeliveryFee = resolved.fee;
+    const serverDeliveryTier = resolved.tier;
 
     // Compare against client (defense against tampering)
     const clientFeeNum = typeof clientDeliveryFee === 'number' ? clientDeliveryFee : 0;
@@ -266,35 +272,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // TODO: 优惠券在支付确认前就标记已用，FPX支付失败后优惠券会浪费。
-    // 考虑将此逻辑移至 /api/confirm-order，在支付成功后再标记。
-    // ── Increment voucher usedCount AND record on user.vouchersUsed atomically ─
-    // Per-user voucher dedup happens at the user level (vouchersUsed array);
-    // global cap stays at the voucher level (usedCount/maxUses).
-    if (promoCode && serverPromoDiscount > 0) {
-      const code = promoCode.trim().toUpperCase();
-      const voucherRef = db.collection('vouchers').doc(code);
-      const userRef = db.collection('users').doc(userId);
-      await db.runTransaction(async (tx) => {
-        const vSnap = await tx.get(voucherRef);
-        if (!vSnap.exists) return;
-        const v = vSnap.data() || {};
-        const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
-        const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
-        const nextUsed = used + 1;
-        tx.update(voucherRef, {
-          usedCount: nextUsed,
-          isUsed: nextUsed >= max,
-          usedBy: userId,
-          usedAt: FieldValue.serverTimestamp(),
-        });
-        tx.set(
-          userRef,
-          { vouchersUsed: FieldValue.arrayUnion(code) },
-          { merge: true }
-        );
-      });
-    }
+    // Voucher consumption (usedCount + user.vouchersUsed) is intentionally
+    // deferred to /api/confirm-order. Marking it here meant the voucher was
+    // burnt the moment a customer hit pay — even when FPX failed and the
+    // order ended up cancelled. Now we only validate at submit time;
+    // confirmation atomically claims the voucher when the order transitions
+    // to 'confirmed'.
 
     return NextResponse.json({
       success: true,

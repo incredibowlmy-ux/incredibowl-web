@@ -7,12 +7,11 @@ import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import {
-    calcDeliveryFee,
-    freeDeliveryShortfall,
-    tierFromDistance,
-    tierFeeHintZh,
+    resolveDeliveryFee,
+    resolveShortfallToFree,
     FREE_DELIVERY_THRESHOLD_RM,
     type DeliveryTier,
+    type DeliveryZone,
 } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import CartSuccess from './CartSuccess';
@@ -63,9 +62,14 @@ export default function CartDrawer({
     const distanceKm: number | null = typeof userProfile?.addressDistanceKm === 'number'
         ? userProfile.addressDistanceKm
         : null;
-    const deliveryTier: DeliveryTier | null = distanceKm !== null ? tierFromDistance(distanceKm) : null;
-    const deliveryFee = distanceKm !== null ? calcDeliveryFee(distanceKm, subtotalAfterDiscount) : 0;
-    const shortfallToFreeDelivery = distanceKm !== null ? freeDeliveryShortfall(distanceKm, subtotalAfterDiscount) : 0;
+    const userZone: DeliveryZone | null =
+        userProfile?.deliveryZone === 'within2km' || userProfile?.deliveryZone === 'outside2km'
+            ? userProfile.deliveryZone
+            : null;
+    const resolved = resolveDeliveryFee(distanceKm, userZone, subtotalAfterDiscount);
+    const deliveryTier: DeliveryTier | null = resolved?.tier ?? null;
+    const deliveryFee = resolved?.fee ?? 0;
+    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, subtotalAfterDiscount);
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
     const handleApplyPromo = async () => {

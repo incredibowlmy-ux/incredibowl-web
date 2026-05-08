@@ -143,7 +143,8 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 addressVerifiedAt: serverTimestamp(),
                 addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
             };
-            if (referralInput.trim() && !profileData?.referredBy) updateData.referredBy = referralInput.trim().toUpperCase();
+            // referredBy is intentionally not sent here — it can only be set
+            // at signup (Firestore Rules block clients from writing it later).
             await updateUserProfile(currentUser.uid, updateData);
             setMessage('✅ 资料已更新！');
             setEditingProfile(false);

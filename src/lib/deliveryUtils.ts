@@ -111,3 +111,57 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
         case 'far': return 'RM 25 配送费';
     }
 }
+
+/**
+ * Resolve fee + tier with legacy fallback.
+ *
+ * New users have addressDistanceKm saved (geocode flow) — use accurate tiers.
+ * Legacy users (registered before geocode) only have the binary deliveryZone
+ * field. Grandfather them in with the OLD pricing model so they don't get
+ * blocked at checkout demanding re-verification:
+ *   - within2km  → free  (matches new 'free' tier)
+ *   - outside2km → flat RM 6 with the RM 40 free-delivery rule  (matches 'near')
+ *
+ * Returns null if the user has neither — in that case checkout is blocked
+ * and they're prompted to verify their address.
+ */
+export function resolveDeliveryFee(
+    distanceKm: number | null | undefined,
+    zone: DeliveryZone | null | undefined,
+    subtotalAfterDiscount: number,
+): { fee: number; tier: DeliveryTier; isLegacy: boolean } | null {
+    if (typeof distanceKm === 'number') {
+        return {
+            fee: calcDeliveryFee(distanceKm, subtotalAfterDiscount),
+            tier: tierFromDistance(distanceKm),
+            isLegacy: false,
+        };
+    }
+    if (zone === 'within2km') {
+        return { fee: 0, tier: 'free', isLegacy: true };
+    }
+    if (zone === 'outside2km') {
+        return {
+            fee: subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM,
+            tier: 'near',
+            isLegacy: true,
+        };
+    }
+    return null;
+}
+
+/** Shortfall to free delivery — handles legacy fallback the same way. */
+export function resolveShortfallToFree(
+    distanceKm: number | null | undefined,
+    zone: DeliveryZone | null | undefined,
+    subtotalAfterDiscount: number,
+): number {
+    if (typeof distanceKm === 'number') {
+        return freeDeliveryShortfall(distanceKm, subtotalAfterDiscount);
+    }
+    // Legacy outside2km also honours the RM 40 rule.
+    if (zone === 'outside2km' && subtotalAfterDiscount < FREE_DELIVERY_THRESHOLD_RM) {
+        return FREE_DELIVERY_THRESHOLD_RM - subtotalAfterDiscount;
+    }
+    return 0;
+}

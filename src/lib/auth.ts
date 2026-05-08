@@ -9,7 +9,7 @@ import {
     User,
     updateProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, increment } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { normalizePhone } from "./phoneUtils";
 
@@ -67,15 +67,26 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
     if (!userSnap.exists()) {
         const ownReferralCode = 'IB-' + user.uid.slice(0, 6).toUpperCase();
 
-        // Validate referral code format and existence
+        // Validate referral code via server (Firestore Rules block client
+        // queries on other users' docs).
         let validatedReferral: string | null = null;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
             if (/^IB-[A-Z0-9]{4,8}$/.test(code)) {
-                const refQuery = query(collection(db, 'users'), where('referralCode', '==', code));
-                const refSnap = await getDocs(refQuery);
-                if (!refSnap.empty) {
-                    validatedReferral = code;
+                try {
+                    const token = await user.getIdToken();
+                    const res = await fetch('/api/validate-referral', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ code }),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.valid) validatedReferral = data.code;
+                } catch (e) {
+                    console.warn('Referral validation failed:', e);
                 }
             }
         }
