@@ -51,6 +51,8 @@ export default function MemberPage() {
     const [geocodeError, setGeocodeError] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
     const [referralStats, setReferralStats] = useState<{ referredCount: number; confirmedCount: number; pendingCount: number; pointsEarned: number } | null>(null);
+    const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string; daysLeft: number }[]>([]);
+    const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
 
     const handleRedeemPoints = async () => {
         if (!currentUser || (profileData?.points || 0) < 100 || redeeming) return;
@@ -82,6 +84,7 @@ export default function MemberPage() {
             if (user) {
                 loadData(user.uid);
                 loadReferralStats(user);
+                loadMyVouchers(user);
             }
         });
         return () => unsubscribe();
@@ -100,6 +103,27 @@ export default function MemberPage() {
         } catch (e) {
             console.warn('Failed to load referral stats:', e);
         }
+    };
+
+    const loadMyVouchers = async (user: User) => {
+        try {
+            const token = await user.getIdToken();
+            const res = await fetch('/api/my-vouchers', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            setMyVouchers(data.vouchers || []);
+        } catch (e) {
+            console.warn('Failed to load vouchers:', e);
+        }
+    };
+
+    const handleCopyVoucher = (code: string) => {
+        navigator.clipboard.writeText(code);
+        setCopiedVoucher(code);
+        setTimeout(() => setCopiedVoucher(null), 2000);
     };
 
     const loadData = async (uid: string) => {
@@ -589,6 +613,60 @@ export default function MemberPage() {
                         </>
                     )}
                 </div>
+
+                {/* My Vouchers */}
+                {myVouchers.length > 0 && (
+                    <div className="bg-white rounded-[32px] p-6 shadow-md border border-[#E3EADA]">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
+                                <Sparkles size={18} className="text-[#FF6B35]" />
+                                我的优惠券
+                            </h3>
+                            <span className="text-xs text-[#1A2D23]/50 font-bold">{myVouchers.length} 张可用</span>
+                        </div>
+                        <div className="space-y-2.5">
+                            {myVouchers.map((v) => {
+                                const isReferral = v.source === 'referral';
+                                const isPoints = v.source === 'points-redemption';
+                                const labelText = isReferral ? '推荐奖励 · 首单可用' : isPoints ? '积分兑换' : '优惠券';
+                                const accent = isReferral ? '#FF6B35' : isPoints ? '#2D5F3E' : '#C9A24E';
+                                return (
+                                    <div
+                                        key={v.code}
+                                        className="flex items-stretch border border-dashed rounded-xl overflow-hidden"
+                                        style={{ borderColor: accent }}
+                                    >
+                                        <div
+                                            className="flex flex-col items-center justify-center px-4 py-3 text-white shrink-0"
+                                            style={{ backgroundColor: accent, minWidth: '90px' }}
+                                        >
+                                            <p className="text-[9px] font-bold uppercase tracking-wider opacity-80">RM</p>
+                                            <p className="text-2xl font-black leading-none">{v.discount}</p>
+                                            <p className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">折扣</p>
+                                        </div>
+                                        <div className="flex-1 p-3 flex items-center justify-between gap-2 bg-[#FDFBF7]">
+                                            <div className="min-w-0">
+                                                <p className="font-mono font-black text-sm text-[#1A2D23] truncate">{v.code}</p>
+                                                <p className="text-[10px] font-bold mt-0.5" style={{ color: accent }}>{labelText}</p>
+                                                <p className="text-[10px] text-[#1A2D23]/50 mt-0.5">
+                                                    剩 {v.daysLeft} 天到期
+                                                    {v.daysLeft <= 7 && <span className="text-red-500 font-bold ml-1">· 即将过期</span>}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleCopyVoucher(v.code)}
+                                                className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${copiedVoucher === v.code ? 'bg-green-500 text-white' : 'bg-[#1A2D23]/5 text-[#1A2D23] hover:bg-[#1A2D23]/10'}`}
+                                            >
+                                                {copiedVoucher === v.code ? <><CheckCircle size={11} /> 已复制</> : <><Copy size={11} /> 复制</>}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <p className="text-[10px] text-[#1A2D23]/40 mt-3 text-center">结账时输入优惠码即可使用</p>
+                    </div>
+                )}
 
                 {/* Referral Section */}
                 <div className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] rounded-[32px] p-6 text-white shadow-2xl shadow-[#1A2D23]/20 relative overflow-hidden">

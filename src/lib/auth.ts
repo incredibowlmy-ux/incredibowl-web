@@ -50,8 +50,8 @@ export const registerWithEmail = async (
 ) => {
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(result.user, { displayName });
-    await saveUserProfile(result.user, displayName, phone, address, referralCode);
-    return result.user;
+    const profileResult = await saveUserProfile(result.user, displayName, phone, address, referralCode);
+    return { user: result.user, voucherCode: profileResult?.voucherCode };
 };
 
 // Sign out
@@ -59,8 +59,10 @@ export const logout = async () => {
     await signOut(auth);
 };
 
-// Save user profile to Firestore
-export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string) => {
+// Save user profile to Firestore. Returns the RM 10 voucher code minted
+// by the server when a valid referral was supplied, so the caller can
+// surface it to the user.
+export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string): Promise<{ voucherCode?: string } | undefined> => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
@@ -72,6 +74,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
         // from customers who already have ≥ 1 confirmed order.
         // On success, the server mints a RM 10 first-order voucher for us.
         let validatedReferral: string | null = null;
+        let mintedVoucherCode: string | undefined;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
             if (/^IB-[A-Z0-9]{4,8}$/.test(code)) {
@@ -89,7 +92,10 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                         }),
                     });
                     const data = await res.json();
-                    if (res.ok && data.valid) validatedReferral = data.code;
+                    if (res.ok && data.valid) {
+                        validatedReferral = data.code;
+                        mintedVoucherCode = data.voucherCode;
+                    }
                 } catch (e) {
                     console.warn('Referral validation failed:', e);
                 }
@@ -114,6 +120,8 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             totalSpent: 0,
             points: 0,
         });
+
+        return { voucherCode: mintedVoucherCode };
     } else {
         // Backfill phoneNormalized for legacy users on every login.
         const existing = userSnap.data();
