@@ -67,8 +67,10 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
     if (!userSnap.exists()) {
         const ownReferralCode = 'IB-' + user.uid.slice(0, 6).toUpperCase();
 
-        // Validate referral code via server (Firestore Rules block client
-        // queries on other users' docs).
+        // Validate referral code via server. Endpoint also enforces
+        // anti-self-referral (uid + phone match) and only accepts referrals
+        // from customers who already have ≥ 1 confirmed order.
+        // On success, the server mints a RM 10 first-order voucher for us.
         let validatedReferral: string | null = null;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
@@ -81,7 +83,10 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                             'Content-Type': 'application/json',
                             Authorization: `Bearer ${token}`,
                         },
-                        body: JSON.stringify({ code }),
+                        body: JSON.stringify({
+                            code,
+                            phoneNormalized: normalizePhone(phone) || undefined,
+                        }),
                     });
                     const data = await res.json();
                     if (res.ok && data.valid) validatedReferral = data.code;

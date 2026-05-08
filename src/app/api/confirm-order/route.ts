@@ -50,7 +50,10 @@ export async function POST(req: Request) {
           points: FieldValue.increment(Math.floor(foodAfterDiscount)),
         });
 
-        // Referral bonus (only on first confirmed order)
+        // Referral bonus (only on first confirmed order).
+        // Server-side defence-in-depth: even though /api/validate-referral
+        // checks self-referral at signup, we re-verify here in case rules
+        // ever drift or the check was bypassed.
         const userSnap = await userRef.get();
         const userData = userSnap.data();
         if (userData?.referredBy && !userData?.referralBonusAwarded) {
@@ -62,15 +65,31 @@ export async function POST(req: Request) {
 
           if (!referrerQuery.empty) {
             const referrerDoc = referrerQuery.docs[0];
-            // Award 50 points to referrer
-            await db.collection('users').doc(referrerDoc.id).update({
-              points: FieldValue.increment(50),
-            });
-            // Award 50 points to referred user + mark as awarded
-            await userRef.update({
-              points: FieldValue.increment(50),
-              referralBonusAwarded: true,
-            });
+            const referrerData = referrerDoc.data() || {};
+
+            // Block self-referral by uid (different account, but somehow
+            // the same uid — shouldn't happen but cheap to check).
+            const isSelfUid = referrerDoc.id === orderData.userId;
+            // Block phone match (same person, two SIMs / two accounts).
+            const refereePhone = userData.phoneNormalized;
+            const referrerPhone = referrerData.phoneNormalized;
+            const isSelfPhone = refereePhone && referrerPhone && refereePhone === referrerPhone;
+
+            if (!isSelfUid && !isSelfPhone) {
+              // Award 50 points to referrer
+              await db.collection('users').doc(referrerDoc.id).update({
+                points: FieldValue.increment(50),
+              });
+              // Mark awarded on referee. The referee already received their
+              // RM 10 voucher at signup — no point bonus here.
+              await userRef.update({
+                referralBonusAwarded: true,
+              });
+            } else {
+              console.warn(`Referral bonus blocked (self-referral) for order ${orderId}`);
+              // Still mark as "awarded" so we don't keep checking on every confirm.
+              await userRef.update({ referralBonusAwarded: true });
+            }
           }
         }
       }
