@@ -20,7 +20,9 @@ const googleProvider = new GoogleAuthProvider();
 const facebookProvider = new FacebookAuthProvider();
 
 // Sign in with Google. referralCode is only honoured on first-time signup
-// (saveUserProfile only validates/mints when the user doc doesn't exist yet).
+// (saveUserProfile only validates when the user doc doesn't exist yet).
+// The voucher itself is minted later by /api/claim-referral-voucher,
+// triggered after the user fills phone + verifies address.
 export const signInWithGoogle = async (referralCode?: string) => {
     console.log('[signInWithGoogle] start', { referralCode });
     const result = await signInWithPopup(auth, googleProvider);
@@ -29,7 +31,7 @@ export const signInWithGoogle = async (referralCode?: string) => {
     console.log('[signInWithGoogle] saveUserProfile returned', profileResult);
     return {
         user: result.user,
-        voucherCode: profileResult?.voucherCode,
+        referralDeferred: profileResult?.referralDeferred,
         referralRejectedReason: profileResult?.referralRejectedReason,
     };
 };
@@ -40,7 +42,7 @@ export const signInWithFacebook = async (referralCode?: string) => {
     const profileResult = await saveUserProfile(result.user, undefined, undefined, undefined, referralCode);
     return {
         user: result.user,
-        voucherCode: profileResult?.voucherCode,
+        referralDeferred: profileResult?.referralDeferred,
         referralRejectedReason: profileResult?.referralRejectedReason,
     };
 };
@@ -65,7 +67,7 @@ export const registerWithEmail = async (
     const profileResult = await saveUserProfile(result.user, displayName, phone, address, referralCode);
     return {
         user: result.user,
-        voucherCode: profileResult?.voucherCode,
+        referralDeferred: profileResult?.referralDeferred,
         referralRejectedReason: profileResult?.referralRejectedReason,
     };
 };
@@ -75,11 +77,12 @@ export const logout = async () => {
     await signOut(auth);
 };
 
-// Save user profile to Firestore. Returns the RM 10 voucher code minted
-// by the server when a valid referral was supplied, so the caller can
-// surface it to the user. If a referral was attempted but rejected,
-// returns referralRejectedReason so the caller can warn the user.
-export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string): Promise<{ voucherCode?: string; referralRejectedReason?: string } | undefined> => {
+// Save user profile to Firestore. The voucher itself is no longer minted
+// here — minting moved to /api/claim-referral-voucher and only fires after
+// the user has filled phone + verified address (anti-abuse). This function
+// just persists the relationship (referredBy) and surfaces a "deferred"
+// hint to the caller so the UI can tell the user how to claim.
+export const saveUserProfile = async (user: User, displayName?: string, phone?: string, address?: string, referralCode?: string): Promise<{ referralDeferred?: boolean; referralRejectedReason?: string } | undefined> => {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
@@ -93,7 +96,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
         // from customers who already have ≥ 1 confirmed order.
         // On success, the server mints a RM 10 first-order voucher for us.
         let validatedReferral: string | null = null;
-        let mintedVoucherCode: string | undefined;
+        let referralDeferred = false;
         let referralRejectedReason: string | undefined;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
@@ -120,7 +123,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                     console.log('[saveUserProfile] validate-referral response', { status: res.status, data });
                     if (res.ok && data.valid) {
                         validatedReferral = data.code;
-                        mintedVoucherCode = data.voucherCode;
+                        referralDeferred = true;
                     } else {
                         const reasonMap: Record<string, string> = {
                             not_found: '推荐码不存在',
@@ -159,7 +162,7 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
             points: 0,
         });
 
-        return { voucherCode: mintedVoucherCode, referralRejectedReason };
+        return { referralDeferred, referralRejectedReason };
     } else {
         // Backfill phoneNormalized for legacy users on every login.
         const existing = userSnap.data();
@@ -215,6 +218,27 @@ export const updateUserProfile = async (
         payload.phoneNormalized = normalizePhone(data.phone);
     }
     await updateDoc(userRef, payload);
+};
+
+// Try to claim a pending referral voucher. Server checks profile is
+// complete (phone + verified address). Returns the minted voucher code,
+// or null if not eligible / already claimed / nothing to claim.
+export const claimReferralVoucher = async (user: User): Promise<{ voucherCode?: string; alreadyClaimed?: boolean } | null> => {
+    try {
+        const token = await user.getIdToken();
+        const res = await fetch('/api/claim-referral-voucher', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) return null;
+        if (data.alreadyClaimed) return { alreadyClaimed: true };
+        if (data.valid && data.voucherCode) return { voucherCode: data.voucherCode };
+        return null;
+    } catch (e) {
+        console.warn('claimReferralVoucher failed:', e);
+        return null;
+    }
 };
 
 // Get user profile from Firestore

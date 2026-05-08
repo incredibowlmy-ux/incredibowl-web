@@ -225,6 +225,18 @@ export default function MemberPage() {
             }
             await updateUserProfile(currentUser.uid, updateData);
 
+            // If geocode just succeeded and the user has a pending referral
+            // voucher, this is the moment to mint it (anti-abuse: phone +
+            // verified address required first).
+            if (geocodeResult) {
+                const { claimReferralVoucher } = await import('@/lib/auth');
+                const claimed = await claimReferralVoucher(currentUser);
+                if (claimed?.voucherCode) {
+                    alert(`🎁 推荐奖励到账！\n\nRM 10 首单优惠券：${claimed.voucherCode}\n30 天内首单可用，已加入「我的优惠券」`);
+                    loadMyVouchers(currentUser);
+                }
+            }
+
             setProfileData((prev: any) => ({
                 ...prev,
                 displayName: editName,

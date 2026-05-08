@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
-import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile } from '@/lib/auth';
+import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
 import { isValidEmail, isValidMyPhone } from '@/lib/cartUtils';
@@ -60,10 +60,10 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         try {
             const referral = referralInput.trim().toUpperCase() || undefined;
             console.log('[handleGoogleLogin] click', { referralInput, referral });
-            const { user, voucherCode, referralRejectedReason } = await signInWithGoogle(referral);
-            console.log('[handleGoogleLogin] returned', { uid: user.uid, voucherCode, referralRejectedReason });
-            if (voucherCode) {
-                setMessage(`✅ 登录成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
+            const { user, referralDeferred, referralRejectedReason } = await signInWithGoogle(referral);
+            console.log('[handleGoogleLogin] returned', { uid: user.uid, referralDeferred, referralRejectedReason });
+            if (referralDeferred) {
+                setMessage('✅ 登录成功！🎁 推荐码已记录 — 填手机号 + 确认地址后即可领取 RM 10 首单优惠券');
             } else if (referralRejectedReason) {
                 setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
             } else {
@@ -83,9 +83,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         setLoading(true); setMessage('');
         try {
             const referral = referralInput.trim().toUpperCase() || undefined;
-            const { user, voucherCode, referralRejectedReason } = await signInWithFacebook(referral);
-            if (voucherCode) {
-                setMessage(`✅ 登录成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
+            const { user, referralDeferred, referralRejectedReason } = await signInWithFacebook(referral);
+            if (referralDeferred) {
+                setMessage('✅ 登录成功！🎁 推荐码已记录 — 填手机号 + 确认地址后即可领取 RM 10 首单优惠券');
             } else if (referralRejectedReason) {
                 setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
             } else {
@@ -128,11 +128,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         if (password.length < 6) { setMessage('⚠️ 密码至少需要6位'); return; }
         setLoading(true); setMessage('');
         try {
-            const { voucherCode, referralRejectedReason } = await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
-            if (voucherCode) {
-                // Hold the success message longer so the user has time to copy
-                // their referral voucher code before the modal closes.
-                setMessage(`✅ 注册成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
+            const { referralDeferred, referralRejectedReason } = await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
+            if (referralDeferred) {
+                setMessage('✅ 注册成功！🎁 推荐码已记录 — 完善资料（确认地址）后即可领取 RM 10 首单优惠券');
                 setTimeout(() => resetAndClose(), 6000);
             } else if (referralRejectedReason) {
                 setMessage(`✅ 注册成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
@@ -172,10 +170,19 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             // referredBy is intentionally not sent here — it can only be set
             // at signup (Firestore Rules block clients from writing it later).
             await updateUserProfile(currentUser.uid, updateData);
-            setMessage('✅ 资料已更新！');
+
+            // Profile is now complete (phone + verified address). Try to claim
+            // a pending referral voucher. Server gates on phone-match + ≥1
+            // order on referrer + idempotency.
+            const claimed = await claimReferralVoucher(currentUser);
+            if (claimed?.voucherCode) {
+                setMessage(`✅ 资料已更新！🎁 你获得 RM 10 首单优惠券：${claimed.voucherCode}（30 天内首单可用）`);
+            } else {
+                setMessage('✅ 资料已更新！');
+            }
             setEditingProfile(false);
             await loadProfile(currentUser.uid);
-            setTimeout(() => setMessage(''), 2000);
+            setTimeout(() => setMessage(''), claimed?.voucherCode ? 6000 : 2000);
         } catch (error: any) {
             setMessage(`⚠️ 更新失败: ${error.message}`);
         }
