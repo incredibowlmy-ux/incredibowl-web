@@ -27,7 +27,13 @@ export default function TermsAndConditions() {
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">3. Delivery & Radius / 配送范围</h2>
-                        <p><b>Free Delivery</b> within a 2km radius around Pearl Point. Beyond 2km, an RM 6 delivery fee applies — waived when your order subtotal (after any voucher discount) is RM 40 or more. / Pearl Point 方圆 2km 内 <b>免运费</b>。2km 外配送费 RM 6，折后小计满 RM 40 免运。</p>
+                        <p>Delivery fees are tiered by straight-line distance from Pearl Point: / 配送费按距 Pearl Point 直线距离分四档：</p>
+                        <ul className="list-disc ml-6 mt-1">
+                            <li><b>0–2 km</b>：Free / 免运费</li>
+                            <li><b>2–5 km</b>：RM 6 — waived when subtotal after voucher ≥ RM 40 / 折后小计满 RM 40 免运</li>
+                            <li><b>5–8 km</b>：RM 15 (flat, no free-delivery threshold) / RM 15 平价，不享免运</li>
+                            <li><b>8 km +</b>：RM 25 (flat, no free-delivery threshold) / RM 25 平价，不享免运</li>
+                        </ul>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout. / 距离由您保存的配送地址通过 Google Maps 自动测算。下单前请在个人资料中确认地址。</p>
                         <p className="mt-2 text-[#E76F51] font-bold">Delivery Times / 配送时间：</p>
                         <ul className="list-disc ml-6 mt-1">

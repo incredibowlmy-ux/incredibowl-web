@@ -9,10 +9,12 @@ import { isValidMyPhone } from '@/lib/cartUtils';
 import {
     calcDeliveryFee,
     freeDeliveryShortfall,
-    DELIVERY_FEE_OUTSIDE_RM,
+    tierFromDistance,
+    tierFeeHintZh,
     FREE_DELIVERY_THRESHOLD_RM,
-    type DeliveryZone,
+    type DeliveryTier,
 } from '@/lib/deliveryUtils';
+import { isOrderDateValid } from '@/lib/cartDateUtils';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
@@ -42,13 +44,28 @@ export default function CartDrawer({
     const [promoError, setPromoError] = useState('');
     const [promoDiscount, setPromoDiscount] = useState(0);
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+    const [staleNotice, setStaleNotice] = useState<string>('');
+
+    // Auto-clean cart items whose selectedDate has rotted (e.g. customer left
+    // the cart open overnight and the 6 AM cutoff passed).
+    useEffect(() => {
+        if (!isOpen) return;
+        const stale = cart.filter((item: any) => !isOrderDateValid(item.selectedDate).ok);
+        if (stale.length === 0) {
+            setStaleNotice('');
+            return;
+        }
+        stale.forEach((item: any) => removeFromCart(item.cartItemId));
+        setStaleNotice(`已自动移除 ${stale.length} 个过期项目（截单已过），请重新加入今日菜单`);
+    }, [isOpen, cart, removeFromCart]);
 
     const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount);
-    const deliveryZone: DeliveryZone | null = userProfile?.deliveryZone === 'within2km' || userProfile?.deliveryZone === 'outside2km'
-        ? userProfile.deliveryZone
+    const distanceKm: number | null = typeof userProfile?.addressDistanceKm === 'number'
+        ? userProfile.addressDistanceKm
         : null;
-    const deliveryFee = deliveryZone ? calcDeliveryFee(deliveryZone, subtotalAfterDiscount) : 0;
-    const shortfallToFreeDelivery = deliveryZone ? freeDeliveryShortfall(deliveryZone, subtotalAfterDiscount) : 0;
+    const deliveryTier: DeliveryTier | null = distanceKm !== null ? tierFromDistance(distanceKm) : null;
+    const deliveryFee = distanceKm !== null ? calcDeliveryFee(distanceKm, subtotalAfterDiscount) : 0;
+    const shortfallToFreeDelivery = distanceKm !== null ? freeDeliveryShortfall(distanceKm, subtotalAfterDiscount) : 0;
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
     const handleApplyPromo = async () => {
@@ -332,6 +349,12 @@ export default function CartDrawer({
 
                 {/* Scrollable body */}
                 <div className="flex-1 overflow-y-auto flex flex-col">
+                    {staleNotice && (
+                        <div className="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                            <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold text-amber-800 leading-relaxed">{staleNotice}</p>
+                        </div>
+                    )}
                     {/* Delivery address */}
                     {cart.length > 0 && (
                         <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] shrink-0">
@@ -447,7 +470,7 @@ export default function CartDrawer({
                             </div>
 
                             {/* Subtotal + delivery fee breakdown */}
-                            {currentUser && deliveryZone && (
+                            {currentUser && deliveryTier && (
                                 <div className="space-y-1.5 pb-1 border-b border-gray-100">
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">小计 {promoApplied && '（折后）'}</span>
@@ -455,7 +478,9 @@ export default function CartDrawer({
                                     </div>
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">
-                                            配送费 {deliveryZone === 'within2km' && <span className="text-green-600 font-bold">· 免运区</span>}
+                                            配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
+                                            {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–8km</span>}
+                                            {deliveryTier === 'far' && <span className="text-red-600 font-bold">· 远距离 8km+</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
                                             {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}
@@ -464,7 +489,7 @@ export default function CartDrawer({
                                     {shortfallToFreeDelivery > 0 && (
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
-                                                💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span> 即可免运（折后满 RM {FREE_DELIVERY_THRESHOLD_RM} 免费）
+                                                💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span> 即可免运（满 RM {FREE_DELIVERY_THRESHOLD_RM} 免费 · 仅限 5km 内）
                                             </p>
                                         </div>
                                     )}
@@ -497,9 +522,9 @@ export default function CartDrawer({
                                     <AlertCircle size={16} /> 请先补充手机号和地址
                                 </button>
                             )}
-                            {currentUser && userProfile?.address && !deliveryZone && (
+                            {currentUser && userProfile?.address && !deliveryTier && (
                                 <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
-                                    <AlertCircle size={16} /> 请进入个人资料确认配送地址（验证免运区）
+                                    <AlertCircle size={16} /> 请进入个人资料确认配送地址（验证配送范围）
                                 </button>
                             )}
 
@@ -528,8 +553,8 @@ export default function CartDrawer({
 
                             {/* Submit */}
                             <button onClick={handleCheckout}
-                                disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryZone}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryZone
+                                disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryTier}
+                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryTier
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                                 <CheckCircle size={22} />

@@ -5,7 +5,7 @@ import { Sparkles, LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, C
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
-import type { DeliveryZone } from '@/lib/deliveryUtils';
+import { tierFromDistance, tierFeeHintZh, tierLabelZh, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 
 interface GeocodeResult {
     lat: number;
@@ -188,30 +188,31 @@ export default function AuthProfileView({
                                 </div>
                             )}
 
-                            {geocodeResult && !addressChangedSinceVerify && (
-                                <div className={`mt-2 px-3 py-2.5 rounded-lg text-xs border ${
-                                    geocodeResult.zone === 'within2km'
-                                        ? 'bg-green-50 border-green-200 text-green-700'
-                                        : 'bg-amber-50 border-amber-200 text-amber-700'
-                                }`}>
-                                    <p className="font-black flex items-center gap-1.5">
-                                        <CheckCircle size={12} />
-                                        {geocodeResult.zone === 'within2km'
-                                            ? `免运区 · 距 Pearl Point ${geocodeResult.distanceKm}km`
-                                            : `配送区 · 距 Pearl Point ${geocodeResult.distanceKm}km`}
-                                    </p>
-                                    <p className="text-[10px] mt-1 opacity-80 leading-snug">
-                                        {geocodeResult.zone === 'within2km'
-                                            ? '✅ 你的订单全部免运'
-                                            : '满 RM 40 免运 / 不到 RM 6 运费'}
-                                    </p>
-                                    {geocodeResult.partialMatch && geocodeResult.zone === 'outside2km' && (
-                                        <p className="text-[10px] mt-1 opacity-70 italic">
-                                            ⚠️ Google 没找到完全匹配，按 {geocodeResult.distanceKm}km 计算运费。如有疑问 WhatsApp 联系碗妈
+                            {geocodeResult && !addressChangedSinceVerify && (() => {
+                                const tier: DeliveryTier = tierFromDistance(geocodeResult.distanceKm);
+                                const tierStyles: Record<DeliveryTier, string> = {
+                                    free: 'bg-green-50 border-green-200 text-green-700',
+                                    near: 'bg-amber-50 border-amber-200 text-amber-700',
+                                    mid: 'bg-orange-50 border-orange-200 text-orange-700',
+                                    far: 'bg-red-50 border-red-200 text-red-700',
+                                };
+                                return (
+                                    <div className={`mt-2 px-3 py-2.5 rounded-lg text-xs border ${tierStyles[tier]}`}>
+                                        <p className="font-black flex items-center gap-1.5">
+                                            <CheckCircle size={12} />
+                                            {tierLabelZh(tier)} · 距 Pearl Point {geocodeResult.distanceKm}km
                                         </p>
-                                    )}
-                                </div>
-                            )}
+                                        <p className="text-[10px] mt-1 opacity-80 leading-snug">
+                                            {tier === 'free' ? '✅ 你的订单全部免运' : tierFeeHintZh(tier)}
+                                        </p>
+                                        {geocodeResult.partialMatch && tier !== 'free' && (
+                                            <p className="text-[10px] mt-1 opacity-70 italic">
+                                                ⚠️ Google 没找到完全匹配，按 {geocodeResult.distanceKm}km 计算运费。如有疑问 WhatsApp 联系碗妈
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
                             {addressChangedSinceVerify && (
                                 <p className="mt-1 text-[10px] text-amber-600 font-bold">⚠️ 地址已修改，请重新点「确认地址」验证</p>
                             )}

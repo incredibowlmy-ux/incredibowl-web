@@ -15,7 +15,12 @@ export default function DeliveryWidget() {
                         <p className="font-black text-[#1A2D23] text-[15px] mb-1 leading-snug">Pearl Point 方圆 2km 内</p>
                         <p className="font-extrabold text-green-600 text-[15px] mb-3 leading-snug">免运费 🛵</p>
                         <p className="text-[13px] text-gray-500 leading-relaxed">
-                            <span className="font-semibold">2km 外：</span>满 RM 40 <span className="text-[#FF6B35] font-bold">→ 免运</span> <span className="mx-0.5 text-gray-300">·</span> 不到 <span className="text-gray-700 font-bold">RM 6</span>
+                            <span className="font-semibold">2–5km：</span>满 RM 40 <span className="text-[#FF6B35] font-bold">→ 免运</span> <span className="text-gray-300 mx-0.5">·</span> 不到 <span className="text-gray-700 font-bold">RM 6</span>
+                        </p>
+                        <p className="text-[12px] text-gray-400 leading-relaxed mt-0.5">
+                            <span className="font-semibold">5–8km：</span><span className="text-amber-600 font-bold">RM 15</span>
+                            <span className="text-gray-300 mx-1">·</span>
+                            <span className="font-semibold">8km+：</span><span className="text-red-500 font-bold">RM 25</span>
                         </p>
                     </div>
 

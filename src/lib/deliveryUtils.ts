@@ -1,26 +1,40 @@
 /**
  * Delivery zone + fee calculation, shared between client and server.
  *
- * Rules (May 2026):
- *   - Within 2km of Pearl Point  → free delivery
- *   - Beyond 2km                 → RM 6 delivery fee
- *     (waived when subtotal AFTER voucher discount ≥ RM 40)
+ * Tiers (May 2026):
+ *   0 – 2 km   → free
+ *   2 – 5 km   → RM 6   (waived when subtotal AFTER voucher ≥ RM 40)
+ *   5 – 8 km   → RM 15  (no free-delivery threshold)
+ *   8 km +     → RM 25  (no free-delivery threshold)
  *
- * "After voucher" matters: it ties free-delivery reward to actual revenue,
- * not to a pre-discount cart amount that vouchers can game.
+ * "After voucher" matters for the 2–5 km tier: it ties free delivery to
+ * actual revenue, not to a pre-discount cart amount that vouchers can game.
+ *
+ * The 5+ km tiers do NOT honour the RM 40 free rule because the operating
+ * cost (own driver + fuel + time) exceeds the voucher headroom on small
+ * orders, and applying free delivery there was a loss-making loophole.
  */
 
 // Verified centroid (provided by Carmen via Google Maps right-click).
-// Earlier value (3.1100, 101.6708) was off by ~3km — caused all customers
-// to be measured from a point near KL Sentral instead of Pearl Point.
 export const PEARL_POINT_LAT = 3.0853475861917716;
 export const PEARL_POINT_LNG = 101.67428154483449;
 
 export const FREE_DELIVERY_RADIUS_KM = 2;
-export const FREE_DELIVERY_THRESHOLD_RM = 40; // subtotal AFTER discount
-export const DELIVERY_FEE_OUTSIDE_RM = 6;
+export const NEAR_RADIUS_KM = 5;
+export const MID_RADIUS_KM = 8;
+export const FREE_DELIVERY_THRESHOLD_RM = 40; // applies to NEAR tier only
+export const DELIVERY_FEE_NEAR_RM = 6;
+export const DELIVERY_FEE_MID_RM = 15;
+export const DELIVERY_FEE_FAR_RM = 25;
 
+// Backwards-compat alias used by older imports.
+export const DELIVERY_FEE_OUTSIDE_RM = DELIVERY_FEE_NEAR_RM;
+
+/** Coarse zone label (binary), kept for UX labels and order docs. */
 export type DeliveryZone = 'within2km' | 'outside2km';
+
+/** Granular fee tier — drives pricing. */
+export type DeliveryTier = 'free' | 'near' | 'mid' | 'far';
 
 /** Great-circle distance in km using the Haversine formula. */
 export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -42,27 +56,58 @@ export function zoneFromDistance(km: number): DeliveryZone {
     return km <= FREE_DELIVERY_RADIUS_KM ? 'within2km' : 'outside2km';
 }
 
-/**
- * Calculate delivery fee in RM.
- * @param zone               'within2km' or 'outside2km'
- * @param subtotalAfterDiscount  subtotal MINUS any voucher discount
- */
-export function calcDeliveryFee(zone: DeliveryZone, subtotalAfterDiscount: number): number {
-    if (zone === 'within2km') return 0;
-    if (subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM) return 0;
-    return DELIVERY_FEE_OUTSIDE_RM;
+export function tierFromDistance(km: number): DeliveryTier {
+    if (km <= FREE_DELIVERY_RADIUS_KM) return 'free';
+    if (km <= NEAR_RADIUS_KM) return 'near';
+    if (km <= MID_RADIUS_KM) return 'mid';
+    return 'far';
 }
 
 /**
- * RM amount the customer needs to add (after discount) to qualify for free delivery.
- * Returns 0 if already qualified or within free zone.
+ * Calculate delivery fee in RM.
+ *
+ * @param distanceKm             distance from Pearl Point in km
+ * @param subtotalAfterDiscount  subtotal MINUS any voucher discount
  */
-export function freeDeliveryShortfall(zone: DeliveryZone, subtotalAfterDiscount: number): number {
-    if (zone === 'within2km') return 0;
+export function calcDeliveryFee(distanceKm: number, subtotalAfterDiscount: number): number {
+    const tier = tierFromDistance(distanceKm);
+    if (tier === 'free') return 0;
+    if (tier === 'near') {
+        return subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM;
+    }
+    if (tier === 'mid') return DELIVERY_FEE_MID_RM;
+    return DELIVERY_FEE_FAR_RM;
+}
+
+/**
+ * RM amount the customer needs to add (after discount) to qualify for free
+ * delivery — only meaningful in the 2–5 km tier. Returns 0 outside that
+ * tier (already free, or free-rule does not apply at this distance).
+ */
+export function freeDeliveryShortfall(distanceKm: number, subtotalAfterDiscount: number): number {
+    if (tierFromDistance(distanceKm) !== 'near') return 0;
     if (subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM) return 0;
     return Math.max(0, FREE_DELIVERY_THRESHOLD_RM - subtotalAfterDiscount);
 }
 
 export function zoneLabelZh(zone: DeliveryZone): string {
     return zone === 'within2km' ? '免运区（2km 内）' : '配送区（2km 外）';
+}
+
+export function tierLabelZh(tier: DeliveryTier): string {
+    switch (tier) {
+        case 'free': return '免运区（2km 内）';
+        case 'near': return '近距离（2–5km）';
+        case 'mid': return '中距离（5–8km）';
+        case 'far': return '远距离（8km 以上）';
+    }
+}
+
+export function tierFeeHintZh(tier: DeliveryTier): string {
+    switch (tier) {
+        case 'free': return '免运费';
+        case 'near': return 'RM 6 · 满 RM 40 → 免运';
+        case 'mid': return 'RM 15 配送费';
+        case 'far': return 'RM 25 配送费';
+    }
 }

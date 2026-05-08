@@ -3,7 +3,8 @@ import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
-import { calcDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
+import { calcDeliveryFee, tierFromDistance, type DeliveryZone } from '@/lib/deliveryUtils';
+import { isOrderDateValid } from '@/lib/cartDateUtils';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -42,6 +43,18 @@ export async function POST(req: Request) {
     }
     if (!paymentMethod || !['qr', 'fpx'].includes(paymentMethod)) {
       return NextResponse.json({ error: '无效支付方式' }, { status: 400 });
+    }
+
+    // ── Date validation: every bundle's selectedDate must still be valid ──
+    // Catches the stale-cart bug: customer added items yesterday with a
+    // date that's now in the past, came back today and clicked pay.
+    for (const bundle of cartBundles) {
+      const check = isOrderDateValid(bundle.selectedDate);
+      if (!check.ok) {
+        return NextResponse.json({
+          error: `购物车里有过期菜品（${check.message}）。请关闭购物车重新加入今日菜单。`,
+        }, { status: 400 });
+      }
     }
 
     // ── Build menu lookup ─────────────────────────────────────
@@ -118,7 +131,12 @@ export async function POST(req: Request) {
     const userDistance = typeof userData.addressDistanceKm === 'number' ? userData.addressDistanceKm : null;
 
     if (userZone !== 'within2km' && userZone !== 'outside2km') {
-      return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证免运区）' }, { status: 400 });
+      return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证配送范围）' }, { status: 400 });
+    }
+    if (userDistance === null) {
+      return NextResponse.json({
+        error: '配送距离未记录，请到「个人资料 → 编辑资料」重新点「确认地址」。',
+      }, { status: 400 });
     }
 
     // Anti-spoof: the saved address must match the address that was actually
@@ -134,7 +152,8 @@ export async function POST(req: Request) {
     }
 
     const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount);
-    const serverDeliveryFee = calcDeliveryFee(userZone, subtotalAfterDiscount);
+    const serverDeliveryFee = calcDeliveryFee(userDistance, subtotalAfterDiscount);
+    const serverDeliveryTier = tierFromDistance(userDistance);
 
     // Compare against client (defense against tampering)
     const clientFeeNum = typeof clientDeliveryFee === 'number' ? clientDeliveryFee : 0;
@@ -214,6 +233,7 @@ export async function POST(req: Request) {
         originalTotal: group.subtotal,
         deliveryFee: partDeliveryFee,
         deliveryZone: userZone,
+        deliveryTier: serverDeliveryTier,
         deliveryDate: group.date,
         deliveryTime: group.time,
         paymentMethod,
