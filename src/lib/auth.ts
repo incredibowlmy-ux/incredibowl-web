@@ -22,8 +22,11 @@ const facebookProvider = new FacebookAuthProvider();
 // Sign in with Google. referralCode is only honoured on first-time signup
 // (saveUserProfile only validates/mints when the user doc doesn't exist yet).
 export const signInWithGoogle = async (referralCode?: string) => {
+    console.log('[signInWithGoogle] start', { referralCode });
     const result = await signInWithPopup(auth, googleProvider);
+    console.log('[signInWithGoogle] popup ok', { uid: result.user.uid, email: result.user.email });
     const profileResult = await saveUserProfile(result.user, undefined, undefined, undefined, referralCode);
+    console.log('[signInWithGoogle] saveUserProfile returned', profileResult);
     return {
         user: result.user,
         voucherCode: profileResult?.voucherCode,
@@ -80,7 +83,9 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
+    console.log('[saveUserProfile] entry', { uid: user.uid, hasReferral: !!referralCode, referralCodeRaw: referralCode });
     if (!userSnap.exists()) {
+        console.log('[saveUserProfile] new user → will validate referral if provided');
         const ownReferralCode = 'IB-' + user.uid.slice(0, 6).toUpperCase();
 
         // Validate referral code via server. Endpoint also enforces
@@ -92,11 +97,14 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
         let referralRejectedReason: string | undefined;
         if (referralCode) {
             const code = referralCode.trim().toUpperCase();
+            console.log('[saveUserProfile] validating code', code);
             if (!/^IB-[A-Z0-9]{4,8}$/.test(code)) {
+                console.warn('[saveUserProfile] code format invalid');
                 referralRejectedReason = '推荐码格式不正确';
             } else {
                 try {
                     const token = await user.getIdToken();
+                    console.log('[saveUserProfile] POST /api/validate-referral …');
                     const res = await fetch('/api/validate-referral', {
                         method: 'POST',
                         headers: {
@@ -109,11 +117,11 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                         }),
                     });
                     const data = await res.json();
+                    console.log('[saveUserProfile] validate-referral response', { status: res.status, data });
                     if (res.ok && data.valid) {
                         validatedReferral = data.code;
                         mintedVoucherCode = data.voucherCode;
                     } else {
-                        // Map the server reason to friendly Chinese.
                         const reasonMap: Record<string, string> = {
                             not_found: '推荐码不存在',
                             self_referral: '不能使用自己的推荐码',
@@ -124,10 +132,12 @@ export const saveUserProfile = async (user: User, displayName?: string, phone?: 
                         referralRejectedReason = (data.message as string) || reasonMap[data.reason as string] || '推荐码无效';
                     }
                 } catch (e) {
-                    console.warn('Referral validation failed:', e);
+                    console.error('[saveUserProfile] referral validation threw', e);
                     referralRejectedReason = '推荐码验证失败，请稍后到「会员中心」联系客服';
                 }
             }
+        } else {
+            console.log('[saveUserProfile] no referral provided, skipping');
         }
 
         await setDoc(userRef, {

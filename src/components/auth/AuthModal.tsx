@@ -59,7 +59,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         setLoading(true); setMessage('');
         try {
             const referral = referralInput.trim().toUpperCase() || undefined;
+            console.log('[handleGoogleLogin] click', { referralInput, referral });
             const { user, voucherCode, referralRejectedReason } = await signInWithGoogle(referral);
+            console.log('[handleGoogleLogin] returned', { uid: user.uid, voucherCode, referralRejectedReason });
             if (voucherCode) {
                 setMessage(`✅ 登录成功！🎁 你获得 RM 10 首单优惠券：${voucherCode}（30 天内首单可用）`);
             } else if (referralRejectedReason) {
