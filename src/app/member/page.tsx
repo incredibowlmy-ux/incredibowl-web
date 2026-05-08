@@ -52,36 +52,21 @@ export default function MemberPage() {
     const [verifiedFor, setVerifiedFor] = useState('');
 
     const handleRedeemPoints = async () => {
-        if (!currentUser || (profileData?.points || 0) < 100) return;
+        if (!currentUser || (profileData?.points || 0) < 100 || redeeming) return;
         setRedeeming(true);
         try {
-            // Generate unique promo code
-            const code = 'POINTS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-            
-            const { doc, updateDoc, setDoc, increment, Timestamp } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            
-            // Deduct 100 points from user
-            const userRef = doc(db, 'users', currentUser.uid);
-            await updateDoc(userRef, { points: increment(-100) });
-            
-            // Generate expiry date (1 month from now)
-            const expiresAt = new Date();
-            expiresAt.setMonth(expiresAt.getMonth() + 1);
-            
-            // Write voucher to Firestore so it can be verified in Cart
-            await setDoc(doc(db, 'vouchers', code), {
-                code,
-                discount: 10,     // RM10 discount
-                isUsed: false,
-                usedBy: '',
-                createdAt: Timestamp.now(),
-                expiresAt: Timestamp.fromDate(expiresAt),
+            const token = await currentUser.getIdToken();
+            const res = await fetch('/api/redeem-points', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
             });
-            
-            // Update local state
-            setProfileData((prev: any) => ({ ...prev, points: (prev?.points || 0) - 100 }));
-            setRedeemedCode(code);
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || '兑换失败，请稍后再试');
+                return;
+            }
+            setProfileData((prev: any) => ({ ...prev, points: data.pointsAfter }));
+            setRedeemedCode(data.code);
         } catch (error) {
             console.error("Redeem error:", error);
             alert('兑换失败，请稍后再试');
