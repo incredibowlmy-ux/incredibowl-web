@@ -106,6 +106,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
         <link rel="preconnect" href="https://checkout.razorpay.com" />
         <link rel="preconnect" href="https://apis.google.com" />
+        <link rel="preconnect" href="https://www.clarity.ms" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -236,6 +238,42 @@ fbq('track', 'PageView');
             `,
           }}
         />
+        {/* Microsoft Clarity — heatmaps + session recordings (free, no quota). */}
+        <Script
+          id="ms-clarity"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(c,l,a,r,i,t,y){
+  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+})(window, document, "clarity", "script", "wohye2ojk4");
+            `,
+          }}
+        />
+        {/* Google Analytics 4 — only loads when NEXT_PUBLIC_GA_MEASUREMENT_ID is set. */}
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              id="ga4-loader"
+              strategy="lazyOnload"
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+            />
+            <Script
+              id="ga4-init"
+              strategy="lazyOnload"
+              dangerouslySetInnerHTML={{
+                __html: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+                `,
+              }}
+            />
+          </>
+        )}
       </head>
       <body
         className={`${plusJakarta.variable} ${notoSansSC.variable} antialiased`}
