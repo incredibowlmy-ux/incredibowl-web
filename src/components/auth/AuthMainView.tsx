@@ -31,7 +31,7 @@ export default function AuthMainView({ loading, message, referralInput, setRefer
                     placeholder="例: IB-A1B2C3"
                     className="w-full mt-1 px-4 py-2.5 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30"
                 />
-                <p className="text-[10px] text-[#E65100]/50 mt-1">注册新账号时填写即可获 RM 10 首单优惠券</p>
+                <p className="text-[10px] text-[#E65100]/50 mt-1">注册后完善地址（确认地图位置）即可领取 RM 10 首单优惠券</p>
             </div>
 
             <div className="space-y-3">

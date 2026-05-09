@@ -194,7 +194,7 @@ export default function AuthProfileView({
                                     free: 'bg-green-50 border-green-200 text-green-700',
                                     near: 'bg-amber-50 border-amber-200 text-amber-700',
                                     mid: 'bg-orange-50 border-orange-200 text-orange-700',
-                                    far: 'bg-red-50 border-red-200 text-red-700',
+                                    far: 'bg-orange-50 border-orange-200 text-orange-700',
                                 };
                                 return (
                                     <div className={`mt-2 px-3 py-2.5 rounded-lg text-xs border ${tierStyles[tier]}`}>
@@ -220,13 +220,32 @@ export default function AuthProfileView({
                     ) : (
                         <p className="mt-1 px-4 py-3 bg-white rounded-xl text-sm border border-gray-100">
                             {profileData?.address || <span className="text-red-400 font-bold">未填写（必填）</span>}
-                            {profileData?.deliveryZone && (
-                                <span className={`ml-2 inline-block px-2 py-0.5 rounded text-[10px] font-black ${
-                                    profileData.deliveryZone === 'within2km' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                                }`}>
-                                    {profileData.deliveryZone === 'within2km' ? '免运区' : `配送区 · ${profileData.addressDistanceKm}km`}
-                                </span>
-                            )}
+                            {(() => {
+                                // Prefer addressDistanceKm (precise tier); fall back to legacy
+                                // binary deliveryZone for users who predate the geocoding upgrade.
+                                const km = profileData?.addressDistanceKm;
+                                const tier: DeliveryTier | null =
+                                    typeof km === 'number'
+                                        ? tierFromDistance(km)
+                                        : profileData?.deliveryZone === 'within2km'
+                                            ? 'free'
+                                            : profileData?.deliveryZone === 'outside2km'
+                                                ? 'near'
+                                                : null;
+                                if (!tier) return null;
+                                const badgeStyles: Record<DeliveryTier, string> = {
+                                    free: 'bg-green-100 text-green-700',
+                                    near: 'bg-amber-100 text-amber-700',
+                                    mid: 'bg-orange-100 text-orange-700',
+                                    far: 'bg-orange-100 text-orange-700',
+                                };
+                                const distSuffix = typeof km === 'number' ? ` · ${km}km` : '';
+                                return (
+                                    <span className={`ml-2 inline-block px-2 py-0.5 rounded text-[10px] font-black ${badgeStyles[tier]}`}>
+                                        {tierLabelZh(tier)}{distSuffix}
+                                    </span>
+                                );
+                            })()}
                         </p>
                     )}
                 </div>

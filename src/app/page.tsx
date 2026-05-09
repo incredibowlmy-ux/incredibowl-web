@@ -135,10 +135,22 @@ export default function V4BentoLayout() {
         }
 
         // --- Fallback: no FPX URL params but pending order exists ---
-        // Page loaded/refreshed without payment params = payment never completed.
-        // Cancel immediately (sessionStorage is per-tab, only set during FPX flow).
+        // Page loaded/refreshed without payment params. Could be:
+        //   (a) user closed Razorpay mid-flow → safe to cancel
+        //   (b) user pressed F5 / nav while Razorpay redirect was in flight → DON'T cancel
+        // Guard with createdAt: only cancel pending older than 10 minutes (FPX
+        // normally completes in <60s). Younger pendings get left alone — the
+        // legitimate redirect path will pick them up on next load.
         if (pendingStr) {
-            cancelPending();
+            try {
+                const { createdAt } = JSON.parse(pendingStr);
+                const ageMs = typeof createdAt === 'number' ? Date.now() - createdAt : Infinity;
+                if (ageMs > 10 * 60 * 1000) {
+                    cancelPending();
+                }
+            } catch {
+                cancelPending();
+            }
         }
     }, []);
 

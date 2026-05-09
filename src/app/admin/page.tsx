@@ -9,6 +9,7 @@ import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, Refres
 import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
+import { tierFromDistance, tierLabelZh, type DeliveryTier } from '@/lib/deliveryUtils';
 import EditCustomerModal from '@/components/admin/EditCustomerModal';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com']; // Add your email here
@@ -836,19 +837,34 @@ export default function AdminPage() {
                                                 <MapPin size={12} className="shrink-0 mt-0.5" />
                                                 <div className="flex-1">
                                                     <span>{order.userAddress}</span>
-                                                    {order.deliveryZone && (
-                                                        <div className="mt-1 flex flex-wrap gap-1.5 items-center">
-                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${
-                                                                order.deliveryZone === 'within2km' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                                                            }`}>
-                                                                {order.deliveryZone === 'within2km' ? '🛵 免运区' : '🛵 配送区'}
-                                                                {typeof order.deliveryDistanceKm === 'number' && ` · ${order.deliveryDistanceKm}km`}
-                                                            </span>
-                                                            {typeof order.deliveryFee === 'number' && order.deliveryFee > 0 && (
-                                                                <span className="text-[10px] font-bold text-amber-700">+RM {order.deliveryFee.toFixed(2)} 运费</span>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    {(() => {
+                                                        // Prefer order.deliveryTier (saved at submit-order:242);
+                                                        // fall back to legacy zone for old orders.
+                                                        const km = (order as any).deliveryDistanceKm;
+                                                        const tier: DeliveryTier | null =
+                                                            (order as any).deliveryTier
+                                                                ?? (typeof km === 'number' ? tierFromDistance(km) : null)
+                                                                ?? (order.deliveryZone === 'within2km' ? 'free'
+                                                                    : order.deliveryZone === 'outside2km' ? 'near' : null);
+                                                        if (!tier) return null;
+                                                        const tierStyles: Record<DeliveryTier, string> = {
+                                                            free: 'bg-green-100 text-green-700',
+                                                            near: 'bg-amber-100 text-amber-700',
+                                                            mid: 'bg-orange-100 text-orange-700',
+                                                            far: 'bg-orange-100 text-orange-700',
+                                                        };
+                                                        return (
+                                                            <div className="mt-1 flex flex-wrap gap-1.5 items-center">
+                                                                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${tierStyles[tier]}`}>
+                                                                    🛵 {tierLabelZh(tier)}
+                                                                    {typeof km === 'number' && ` · ${km}km`}
+                                                                </span>
+                                                                {typeof order.deliveryFee === 'number' && order.deliveryFee > 0 && (
+                                                                    <span className="text-[10px] font-bold text-amber-700">+RM {order.deliveryFee.toFixed(2)} 运费</span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                             {order.note && (

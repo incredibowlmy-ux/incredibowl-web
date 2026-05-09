@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, getDoc, query, orderBy, where, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, where, serverTimestamp, doc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
 export interface OrderItem {
@@ -83,60 +83,6 @@ export const getOrdersByDate = async (date: string) => {
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// Update order status and AWARD POINTS if confirmed.
-// paymentData: optional Razorpay fields to persist on the order document.
-export const updateOrderStatus = async (
-    orderId: string,
-    status: OrderStatus,
-    orderData?: any,
-    paymentData?: { razorpayPaymentId?: string; razorpayOrderId?: string; razorpaySignature?: string }
-) => {
-    const orderRef = doc(db, "orders", orderId);
-
-    // If status is changing to 'confirmed', award points now!
-    if (status === 'confirmed' && orderData) {
-        const userRef = doc(db, "users", orderData.userId);
-        // totalSpent reflects what customer actually paid (food + delivery).
-        // Points are based on food only — customers don't earn points on shipping fees.
-        const foodAfterDiscount = orderData.total ?? 0;
-        const deliveryFee = orderData.deliveryFee ?? 0;
-        await updateDoc(userRef, {
-            totalOrders: increment(1),
-            totalSpent: increment(foodAfterDiscount + deliveryFee),
-            points: increment(Math.floor(foodAfterDiscount)), // RM 1 (food) = 1 point
-        });
-
-        // Check referral bonus (only on first confirmed order)
-        const userSnap = await getDoc(userRef);
-        const userData = userSnap.data();
-        if (userData?.referredBy && !userData?.referralBonusAwarded) {
-            const referralCode = userData.referredBy; // e.g. "IB-A1B2C3"
-            // Find the referrer by their referralCode
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("referralCode", "==", referralCode));
-            const referrerSnap = await getDocs(q);
-            if (!referrerSnap.empty) {
-                const referrerDoc = referrerSnap.docs[0];
-                // Award 50 points to referrer
-                await updateDoc(doc(db, "users", referrerDoc.id), {
-                    points: increment(50),
-                });
-                // Award 50 points to new user
-                await updateDoc(userRef, {
-                    points: increment(50),
-                    referralBonusAwarded: true,
-                });
-            }
-        }
-    }
-
-    const updateFields: Record<string, any> = { status, updatedAt: serverTimestamp() };
-    if (paymentData?.razorpayPaymentId) updateFields.razorpayPaymentId = paymentData.razorpayPaymentId;
-    if (paymentData?.razorpayOrderId) updateFields.razorpayOrderId = paymentData.razorpayOrderId;
-    if (paymentData?.razorpaySignature) updateFields.razorpaySignature = paymentData.razorpaySignature;
-    await updateDoc(orderRef, updateFields);
 };
 
 // Get all users (for admin)

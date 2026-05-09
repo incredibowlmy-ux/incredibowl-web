@@ -46,7 +46,9 @@ export default function CartDrawer({
     const [staleNotice, setStaleNotice] = useState<string>('');
 
     // Auto-clean cart items whose selectedDate has rotted (e.g. customer left
-    // the cart open overnight and the 6 AM cutoff passed).
+    // the cart open overnight and the 6 AM cutoff passed). Also reset checkout
+    // state so the user re-validates voucher + re-picks payment for the new
+    // cart (the old voucher may have expired or already been redeemed).
     useEffect(() => {
         if (!isOpen) return;
         const stale = cart.filter((item: any) => !isOrderDateValid(item.selectedDate).ok);
@@ -55,6 +57,13 @@ export default function CartDrawer({
             return;
         }
         stale.forEach((item: any) => removeFromCart(item.cartItemId));
+        setPromoCode('');
+        setPromoApplied(false);
+        setPromoDiscount(0);
+        setPromoError('');
+        setPaymentMethod('');
+        setReceiptUploaded(false);
+        setReceiptUrl('');
         setStaleNotice(`已自动移除 ${stale.length} 个过期项目（截单已过），请重新加入今日菜单`);
     }, [isOpen, cart, removeFromCart]);
 
@@ -484,7 +493,7 @@ export default function CartDrawer({
                                         <span className="text-gray-500">
                                             配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
                                             {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–8km</span>}
-                                            {deliveryTier === 'far' && <span className="text-red-600 font-bold">· 远距离 8km+</span>}
+                                            {deliveryTier === 'far' && <span className="text-orange-600 font-bold">· 远距离 8km+</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
                                             {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}
@@ -493,7 +502,7 @@ export default function CartDrawer({
                                     {shortfallToFreeDelivery > 0 && (
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
-                                                💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span> 即可免运（满 RM {FREE_DELIVERY_THRESHOLD_RM} 免费 · 仅限 5km 内）
+                                                💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span> 即可免运（满 RM {FREE_DELIVERY_THRESHOLD_RM} 免费 · 仅限 2-5km 距离）
                                             </p>
                                         </div>
                                     )}

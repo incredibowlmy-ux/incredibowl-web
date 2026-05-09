@@ -62,6 +62,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),
   title: "Incredibowl | Pearl Point 私厨外送 · 无味精家常菜 · Old Klang Road / OUG",
   description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 2km 免运。早上 6AM 截单。www.incredibowl.my",
+  alternates: {
+    canonical: "/",
+    languages: {
+      "zh-MY": "/",
+      "en-MY": "/en",
+      "x-default": "/",
+    },
+  },
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",
@@ -207,14 +215,10 @@ export default function RootLayout({
                     "https://www.facebook.com/profile.php?id=61587218759550",
                     "https://www.instagram.com/incredibowl_my/",
                     "https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a"
-                  ],
-                  aggregateRating: {
-                    "@type": "AggregateRating",
-                    ratingValue: "5.0",
-                    reviewCount: "3",
-                    bestRating: "5",
-                    worstRating: "1"
-                  }
+                  ]
+                  // aggregateRating removed: Schema.org guidelines require visible
+                  // on-page Review schema to back the rating, which we don't have.
+                  // Re-enable once a real review system is wired in.
                 }
               ]
             })

@@ -135,8 +135,19 @@ export default function EnglishHome() {
             return;
         }
 
+        // Guard with createdAt: only cancel pending orders older than 10 min.
+        // A fresh pending may belong to an in-flight Razorpay redirect — don't
+        // kill it just because the page was refreshed.
         if (pendingStr) {
-            cancelPending();
+            try {
+                const { createdAt } = JSON.parse(pendingStr);
+                const ageMs = typeof createdAt === 'number' ? Date.now() - createdAt : Infinity;
+                if (ageMs > 10 * 60 * 1000) {
+                    cancelPending();
+                }
+            } catch {
+                cancelPending();
+            }
         }
     }, []);
 
