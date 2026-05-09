@@ -252,28 +252,29 @@ fbq('track', 'PageView');
             `,
           }}
         />
-        {/* Google Analytics 4 — only loads when NEXT_PUBLIC_GA_MEASUREMENT_ID is set. */}
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <>
-            <Script
-              id="ga4-loader"
-              strategy="lazyOnload"
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-            />
-            <Script
-              id="ga4-init"
-              strategy="lazyOnload"
-              dangerouslySetInnerHTML={{
-                __html: `
+        {/* Google Analytics 4. Measurement IDs are not secrets — they're
+            included in the client-side bundle that fires every PageView,
+            so hardcoding here is functionally identical to setting an env
+            var. The env var override is kept so the ID can be swapped or
+            disabled per environment without a code change. */}
+        <Script
+          id="ga4-loader"
+          strategy="lazyOnload"
+          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-Z78ZLBH7CF'}`}
+        />
+        <Script
+          id="ga4-init"
+          strategy="lazyOnload"
+          dangerouslySetInnerHTML={{
+            __html: `
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-                `,
-              }}
-            />
-          </>
-        )}
+gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-Z78ZLBH7CF'}');
+            `,
+          }}
+        />
+
       </head>
       <body
         className={`${plusJakarta.variable} ${notoSansSC.variable} antialiased`}
