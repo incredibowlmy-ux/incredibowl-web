@@ -15,7 +15,8 @@ const DISH_IMAGES: Record<string, string> = {
     '香煎金黄鸡扒饭': '/chicken_chop.webp',
     '山药云耳海陆双鲜': '/yam_surf_turf_egg.webp',
     '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.webp',
-    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.webp',
+    '招牌原盅当归蒸鸡全腿': '/angelica_chicken.webp',
+    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.webp',  // legacy: pre-rename historical orders
     '马铃薯炖花肉片': '/pork_potato_stew.webp',
     '金黄葱香煎鸡汤': '/scallion_chicken_soup.webp',
 };

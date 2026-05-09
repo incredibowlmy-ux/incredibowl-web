@@ -53,7 +53,7 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 13,
         day: "Daily / 常驻",
-        name: "招牌原盅当归清蒸鸡全腿",
+        name: "招牌原盅当归蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
         image: "/angelica_chicken.webp",
