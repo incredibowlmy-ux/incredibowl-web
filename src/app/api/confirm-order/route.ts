@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -28,15 +29,51 @@ export async function POST(req: Request) {
     const db = await getDb();
     const { FieldValue } = await import('firebase-admin/firestore');
 
+    // Collect per-order Purchase events to fire after Firestore writes
+    // succeed. Keyed by orderId so the client can dedupe against fbq.
+    const purchaseEvents: Array<{
+      orderId: string;
+      eventId: string;
+      value: number;
+      userEmail?: string;
+      userPhone?: string;
+      userId?: string;
+      items: Array<{ id: string; quantity: number; item_price: number }>;
+    }> = [];
+
     for (const orderId of orderIds) {
       const orderRef = db.collection('orders').doc(orderId);
       const orderSnap = await orderRef.get();
       if (!orderSnap.exists) continue;
 
       const orderData = orderSnap.data()!;
+      const isFirstConfirm = status === 'confirmed' && orderData.status !== 'confirmed';
+
+      // Queue Meta CAPI Purchase event for any order transitioning to 'confirmed'
+      // for the first time (FPX flow: customer just paid; QR flow: admin
+      // marked the receipt verified). We fire after the Firestore writes
+      // settle, so a CAPI failure can't roll back the order.
+      if (isFirstConfirm) {
+        const foodAfterDiscount = orderData.total ?? 0;
+        const deliveryFee = orderData.deliveryFee ?? 0;
+        const items: Array<Record<string, unknown>> = Array.isArray(orderData.items) ? orderData.items : [];
+        purchaseEvents.push({
+          orderId,
+          eventId: `purchase_${orderId}`,
+          value: foodAfterDiscount + deliveryFee,
+          userEmail: orderData.userEmail || undefined,
+          userPhone: orderData.userPhone || undefined,
+          userId: orderData.userId || undefined,
+          items: items.map((it) => ({
+            id: String(it.name ?? ''),
+            quantity: Number(it.quantity ?? 1),
+            item_price: Number(it.price ?? 0),
+          })),
+        });
+      }
 
       // Award points only when changing TO 'confirmed' from a non-confirmed status
-      if (status === 'confirmed' && orderData.status !== 'confirmed' && orderData.userId) {
+      if (isFirstConfirm && orderData.userId) {
         const userRef = db.collection('users').doc(orderData.userId);
         // total = food after voucher (NOT including delivery)
         // deliveryFee = additional charge customer paid for shipping
@@ -96,7 +133,7 @@ export async function POST(req: Request) {
 
       // Claim voucher when transitioning TO confirmed for the first time.
       // (Deferred from submit-order so FPX failures don't burn the voucher.)
-      if (status === 'confirmed' && orderData.status !== 'confirmed' && orderData.promoCode && orderData.userId) {
+      if (isFirstConfirm && orderData.promoCode && orderData.userId) {
         try {
           const code = String(orderData.promoCode).trim().toUpperCase();
           const voucherRef = db.collection('vouchers').doc(code);
@@ -180,7 +217,46 @@ export async function POST(req: Request) {
       await orderRef.update(updateFields);
     }
 
-    return NextResponse.json({ success: true });
+    // ── Meta CAPI: Purchase ──────────────────────────────────
+    // Fire one Purchase per order that just transitioned to 'confirmed'.
+    // Each carries its own event_id so the browser fbq call can dedupe
+    // (FPX flow only — QR flow has no client present when admin confirms).
+    let capiCtx;
+    try { capiCtx = extractRequestContext(req); } catch { capiCtx = null; }
+
+    const purchaseEventIds: Record<string, string> = {};
+    for (const ev of purchaseEvents) {
+      purchaseEventIds[ev.orderId] = ev.eventId;
+      void sendCapiEvent({
+        eventName: 'Purchase',
+        eventId: ev.eventId,
+        eventSourceUrl: capiCtx?.eventSourceUrl,
+        userData: {
+          email: ev.userEmail,
+          phone: ev.userPhone,
+          externalId: ev.userId,
+          fbp: capiCtx?.fbp,
+          fbc: capiCtx?.fbc,
+          clientIpAddress: capiCtx?.clientIpAddress || '',
+          clientUserAgent: capiCtx?.clientUserAgent || '',
+        },
+        customData: {
+          currency: 'MYR',
+          value: ev.value,
+          numItems: ev.items.length,
+          contents: ev.items,
+          orderId: ev.orderId,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      // Map of { orderId: eventId } — FPX client uses this to dedup
+      // browser fbq Purchase against the server-side CAPI event we just
+      // queued. Empty for non-confirm transitions (cancelled, etc).
+      purchaseEventIds,
+    });
   } catch (err: any) {
     console.error('confirm-order error:', err);
     return NextResponse.json({ error: err.message || '操作失败' }, { status: 500 });

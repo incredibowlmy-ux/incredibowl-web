@@ -5,6 +5,7 @@ import { weeklyMenu } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { resolveDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
+import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -279,14 +280,55 @@ export async function POST(req: Request) {
     // confirmation atomically claims the voucher when the order transitions
     // to 'confirmed'.
 
+    const serverTotal = Math.max(0, serverCartTotal - serverPromoDiscount) + serverDeliveryFee;
+
+    // ── Meta CAPI: InitiateCheckout ───────────────────────────
+    // Fire ONCE per checkout action (regardless of multi-day split into
+    // multiple orders — the customer clicked "Checkout" once with intent
+    // to purchase the whole basket). event_id is used by browser fbq with
+    // the same value to dedupe. Failures are swallowed so a CAPI outage
+    // can't break checkout — we still return success to the client.
+    const checkoutEventId = `ic_${groupId || orderIds[0]}`;
+    const ctx = extractRequestContext(req);
+    const allItemsForCapi = validatedBundles.flatMap(vb => ([{
+      id: String(vb.dish.id),
+      quantity: (vb.dishQty || 1) * (vb.quantity || 1),
+      item_price: vb.serverDishPrice,
+    }]));
+    void sendCapiEvent({
+      eventName: 'InitiateCheckout',
+      eventId: checkoutEventId,
+      eventSourceUrl: ctx.eventSourceUrl,
+      userData: {
+        email: userEmail || undefined,
+        phone: userPhone,
+        externalId: userId,
+        fbp: ctx.fbp,
+        fbc: ctx.fbc,
+        clientIpAddress: ctx.clientIpAddress,
+        clientUserAgent: ctx.clientUserAgent,
+      },
+      customData: {
+        currency: 'MYR',
+        value: serverTotal,
+        numItems: validatedBundles.length,
+        contentIds: validatedBundles.map(vb => String(vb.dish.id)),
+        contents: allItemsForCapi,
+        orderId: groupId || orderIds[0],
+      },
+    });
+
     return NextResponse.json({
       success: true,
       orderIds,
       groupId: groupId || null,
       isMultiPart,
       // serverTotal = food (after voucher) + delivery — what customer actually pays
-      serverTotal: Math.max(0, serverCartTotal - serverPromoDiscount) + serverDeliveryFee,
+      serverTotal,
       deliveryFee: serverDeliveryFee,
+      // CAPI dedup key — front-end Pixel must use this same eventID
+      // when calling fbq('track', 'InitiateCheckout', ..., { eventID })
+      checkoutEventId,
     });
 
   } catch (err: any) {

@@ -258,7 +258,33 @@ export default function CartDrawer({
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || '提交订单失败');
-        return data as { orderIds: string[]; groupId: string | null; isMultiPart: boolean; serverTotal: number };
+        return data as {
+            orderIds: string[];
+            groupId: string | null;
+            isMultiPart: boolean;
+            serverTotal: number;
+            checkoutEventId?: string;
+        };
+    };
+
+    /**
+     * Fire a Pixel browser event with an eventID so it dedupes against
+     * the matching CAPI server event already fired by /api/* routes.
+     * Wrapped in a guard for SSR + ad-blocker scenarios.
+     */
+    const trackPixel = (
+        name: 'InitiateCheckout' | 'Purchase',
+        params: { value: number; currency: string },
+        eventID?: string,
+    ) => {
+        if (typeof window === 'undefined') return;
+        const fbq = (window as any).fbq;
+        if (typeof fbq !== 'function') return;
+        if (eventID) {
+            fbq('track', name, params, { eventID });
+        } else {
+            fbq('track', name, params);
+        }
     };
 
     const handleCheckout = async () => {
@@ -278,11 +304,15 @@ export default function CartDrawer({
             let orderIds: string[] = [];
             let isMultiPart = false;
             let groupId: string | null = null;
+            let checkoutEventId: string | undefined;
             try {
                 const result = await submitOrderViaAPI();
                 orderIds = result.orderIds;
                 isMultiPart = result.isMultiPart;
                 groupId = result.groupId;
+                checkoutEventId = result.checkoutEventId;
+                // Fire browser-side InitiateCheckout (deduped against CAPI by eventID)
+                trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, checkoutEventId);
             } catch (err: any) {
                 alert(err.message || '建立订单失败，请重试');
                 setSubmitting(false);
@@ -314,6 +344,19 @@ export default function CartDrawer({
                     body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
                 });
                 if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || '订单确认失败');
+                const confirmData = await confirmRes.json().catch(() => ({}));
+                // Fire browser-side Purchase per order (deduped against CAPI by eventID).
+                // Server-side CAPI events have authoritative per-order values; the
+                // value we pass here is approximate (split evenly) and gets
+                // dropped by Meta's dedup in favor of the server value.
+                const purchaseEventIds: Record<string, string> = confirmData?.purchaseEventIds || {};
+                const eventIdList = Object.values(purchaseEventIds);
+                if (eventIdList.length > 0) {
+                    const valuePerOrder = finalTotal / eventIdList.length;
+                    for (const eventId of eventIdList) {
+                        trackPixel('Purchase', { value: valuePerOrder, currency: 'MYR' }, eventId);
+                    }
+                }
                 sessionStorage.removeItem('fpx_pending_order');
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
@@ -333,10 +376,14 @@ export default function CartDrawer({
             return;
         }
 
-        // QR flow — also uses server-side validated API
+        // QR flow — also uses server-side validated API.
+        // Note: QR creates a 'pending' order (admin reviews receipt later),
+        // so we fire InitiateCheckout here, NOT Purchase. Purchase will fire
+        // server-side via CAPI when admin transitions the order to 'confirmed'.
         setSubmitting(true);
         try {
             const result = await submitOrderViaAPI();
+            trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
             setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
             setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { CheckCircle } from 'lucide-react';
 
 interface CartSuccessProps {
@@ -10,13 +10,11 @@ interface CartSuccessProps {
     cartTotal: number;
 }
 
+// Pixel tracking moved to CartDrawer where we have access to the
+// CAPI event IDs returned by /api/submit-order and /api/confirm-order
+// — needed to deduplicate browser events against the server-side
+// Conversions API events fired from those routes.
 export default function CartSuccess({ orderSuccess, cart, userProfile, cartTotal }: CartSuccessProps) {
-    useEffect(() => {
-        if (typeof window !== 'undefined' && (window as any).fbq) {
-            (window as any).fbq('track', 'Purchase', { value: cartTotal, currency: 'MYR' });
-        }
-    }, [cartTotal]);
-
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
             <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" />

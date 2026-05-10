@@ -119,6 +119,23 @@ export default function V4BentoLayout() {
                             body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
                         });
                         if (!confirmRes.ok) throw new Error('订单确认失败');
+                        // Fire Meta Pixel Purchase per order (deduped via eventID
+                        // against the CAPI events fired server-side in confirm-order).
+                        try {
+                            const confirmData = await confirmRes.clone().json();
+                            const purchaseEventIds: Record<string, string> = confirmData?.purchaseEventIds || {};
+                            const fbq = typeof window !== 'undefined' ? (window as { fbq?: (...args: unknown[]) => void }).fbq : undefined;
+                            if (fbq) {
+                                const parsed = JSON.parse(pendingStr);
+                                const payloads: Array<{ total?: number }> = Array.isArray(parsed?.payloads) ? parsed.payloads : [];
+                                for (let i = 0; i < orderIds.length; i++) {
+                                    const eventId = purchaseEventIds[orderIds[i]];
+                                    if (!eventId) continue;
+                                    const v = typeof payloads[i]?.total === 'number' ? payloads[i].total : 0;
+                                    fbq('track', 'Purchase', { value: v, currency: 'MYR' }, { eventID: eventId });
+                                }
+                            }
+                        } catch { /* tracking is best-effort */ }
                         const successId = isMultiPart ? groupId : orderIds[0];
                         setFpxSuccessId(successId);
                         clearCart();
