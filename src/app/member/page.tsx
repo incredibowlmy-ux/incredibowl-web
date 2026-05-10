@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
 import { tierFromDistance, tierFeeHintZh, tierLabelZh, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 
 // Dish image mapping for favorite dish display
@@ -54,6 +54,12 @@ export default function MemberPage() {
     const [referralStats, setReferralStats] = useState<{ referredCount: number; confirmedCount: number; pendingCount: number; pointsEarned: number } | null>(null);
     const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string; daysLeft: number }[]>([]);
     const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
+    const [mealVoucherInfo, setMealVoucherInfo] = useState<{
+        availableCount: number;
+        soonestDaysLeft: number | null;
+        expirySchedule: { date: string; count: number }[];
+        recentPurchases: { id: string; bundleId: string; voucherCount: number; amountPaid: number; status: string; createdAtMs: number }[];
+    } | null>(null);
 
     const handleRedeemPoints = async () => {
         if (!currentUser || (profileData?.points || 0) < 100 || redeeming) return;
@@ -86,6 +92,7 @@ export default function MemberPage() {
                 loadData(user.uid);
                 loadReferralStats(user);
                 loadMyVouchers(user);
+                loadMealVouchers(user);
             }
         });
         return () => unsubscribe();
@@ -118,6 +125,26 @@ export default function MemberPage() {
             setMyVouchers(data.vouchers || []);
         } catch (e) {
             console.warn('Failed to load vouchers:', e);
+        }
+    };
+
+    const loadMealVouchers = async (user: User) => {
+        try {
+            const token = await user.getIdToken();
+            const res = await fetch('/api/my-meal-vouchers', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            setMealVoucherInfo({
+                availableCount: data.availableCount || 0,
+                soonestDaysLeft: data.soonestDaysLeft ?? null,
+                expirySchedule: data.expirySchedule || [],
+                recentPurchases: data.recentPurchases || [],
+            });
+        } catch (e) {
+            console.warn('Failed to load meal vouchers:', e);
         }
     };
 
@@ -627,6 +654,75 @@ export default function MemberPage() {
                             )}
                         </>
                     )}
+                </div>
+
+                {/* Meal Voucher Wallet (餐券钱包) */}
+                <div className="bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] rounded-[32px] p-6 shadow-md border border-[#FFD6B0]/60 relative overflow-hidden">
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#FF6B35]/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#FFD54F]/15 rounded-full blur-2xl pointer-events-none" />
+
+                    <div className="relative">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
+                                <Ticket size={18} className="text-[#FF6B35]" />
+                                我的餐券钱包
+                            </h3>
+                            {mealVoucherInfo && mealVoucherInfo.availableCount > 0 && (
+                                <span className="text-[10px] text-[#1A2D23]/50 font-bold">{mealVoucherInfo.availableCount} 张可用</span>
+                            )}
+                        </div>
+
+                        {!mealVoucherInfo || mealVoucherInfo.availableCount === 0 ? (
+                            <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
+                                <p className="text-sm text-[#1A2D23]/70 font-bold mb-1">暂无餐券</p>
+                                <p className="text-[11px] text-[#1A2D23]/50 leading-relaxed mb-4">
+                                    一次买下，60 天内任吃 · 不限菜品 · 最多省 RM 37
+                                </p>
+                                <Link
+                                    href="/meal-vouchers"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF6B35] text-white rounded-xl text-xs font-bold hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20"
+                                >
+                                    <Ticket size={14} /> 购买餐券包
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="bg-white/80 backdrop-blur-md rounded-2xl p-5 border border-white shadow-sm">
+                                    <div className="flex items-baseline justify-between">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">可用餐券</p>
+                                            <p className="text-5xl font-black text-[#FF6B35] leading-none mt-1">{mealVoucherInfo.availableCount}</p>
+                                            <p className="text-[10px] text-[#1A2D23]/40 mt-1">张 · 1 张 = 1 份主餐</p>
+                                        </div>
+                                        {mealVoucherInfo.soonestDaysLeft !== null && (
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">最近到期</p>
+                                                <p className="text-2xl font-black text-[#1A2D23] mt-1">
+                                                    {mealVoucherInfo.soonestDaysLeft}
+                                                    <span className="text-xs font-bold text-[#1A2D23]/50 ml-1">天</span>
+                                                </p>
+                                                {mealVoucherInfo.soonestDaysLeft <= 7 && (
+                                                    <p className="text-[10px] text-red-500 font-bold mt-0.5">即将过期</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="mt-4 px-3 py-2 bg-[#FFF3E0] rounded-lg border border-[#FFE0B2]">
+                                        <p className="text-[11px] text-[#E65100] font-bold flex items-center gap-1.5">
+                                            <Sparkles size={12} /> 结账时勾选「用餐券抵扣」即可使用
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <Link
+                                    href="/meal-vouchers"
+                                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-bold hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                >
+                                    <Plus size={14} strokeWidth={3} /> 再买一份
+                                </Link>
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* My Vouchers */}

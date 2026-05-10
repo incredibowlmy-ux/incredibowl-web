@@ -6,6 +6,7 @@ import { validateVoucher } from '@/lib/voucherValidation';
 import { resolveDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
+import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -33,7 +34,10 @@ export async function POST(req: Request) {
       promoCode, promoDiscount: clientPromoDiscount,
       clientDeliveryFee,
       orderNote,
+      mealVouchersUsed: rawMealVouchersUsed,
+      clientMealVoucherDiscount,
     } = body;
+    const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
 
     // ── Basic validation ──────────────────────────────────────
     if (!userId || !userPhone || !userAddress) {
@@ -112,6 +116,11 @@ export async function POST(req: Request) {
     let serverPromoDiscount = 0;
     const db = await getDb();
 
+    // Mutex: meal vouchers and promo codes cannot stack on one order.
+    if (mealVouchersUsed > 0 && promoCode && clientPromoDiscount > 0) {
+      return NextResponse.json({ error: '餐券与优惠码不可同时使用，请取消其一' }, { status: 400 });
+    }
+
     if (promoCode && clientPromoDiscount > 0) {
       const result = await validateVoucher(db, promoCode, { userId });
       if (!result.ok) {
@@ -122,6 +131,36 @@ export async function POST(req: Request) {
       // Verify client discount matches server
       if (Math.abs(serverPromoDiscount - clientPromoDiscount) > 0.02) {
         return NextResponse.json({ error: '优惠金额不一致' }, { status: 400 });
+      }
+    }
+
+    // ── Validate meal voucher redemption ──────────────────────
+    let serverMealVoucherDiscount = 0;
+    if (mealVouchersUsed > 0) {
+      // Count main dish servings across cart
+      const mainDishUnitPrices: number[] = [];
+      for (const vb of validatedBundles) {
+        const units = (vb.dishQty || 1) * (vb.quantity || 1);
+        for (let k = 0; k < units; k++) mainDishUnitPrices.push(vb.serverDishPrice);
+      }
+      if (mealVouchersUsed > mainDishUnitPrices.length) {
+        return NextResponse.json({ error: `餐券数量超过主餐数量（最多 ${mainDishUnitPrices.length} 张）` }, { status: 400 });
+      }
+
+      const available = await countAvailableVouchers(db, userId);
+      if (mealVouchersUsed > available) {
+        return NextResponse.json({ error: `账户餐券不足：需要 ${mealVouchersUsed} 张，可用 ${available} 张` }, { status: 400 });
+      }
+
+      // Discount = top X most-expensive main dish unit prices (best-deal first)
+      mainDishUnitPrices.sort((a, b) => b - a);
+      serverMealVoucherDiscount = mainDishUnitPrices.slice(0, mealVouchersUsed).reduce((s, p) => s + p, 0);
+
+      const clientMV = Number(clientMealVoucherDiscount) || 0;
+      if (Math.abs(serverMealVoucherDiscount - clientMV) > 0.02) {
+        return NextResponse.json({
+          error: `餐券抵扣金额不一致，服务器: RM${serverMealVoucherDiscount.toFixed(2)}，客户端: RM${clientMV.toFixed(2)}`,
+        }, { status: 400 });
       }
     }
 
@@ -154,8 +193,13 @@ export async function POST(req: Request) {
       }
     }
 
-    const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount);
-    const resolved = resolveDeliveryFee(userDistance, userZone, subtotalAfterDiscount);
+    const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount);
+    // Free-delivery threshold check basis: cartTotal − promoDiscount only.
+    // Meal voucher redemption does NOT shrink the basis (decided 2026-05-11)
+    // — prepaid voucher revenue is already booked, so burning one to redeem
+    // a main dish shouldn't kick the customer out of the free-delivery tier.
+    const freeDeliveryBasis = Math.max(0, serverCartTotal - serverPromoDiscount);
+    const resolved = resolveDeliveryFee(userDistance, userZone, freeDeliveryBasis);
     if (!resolved) {
       return NextResponse.json({ error: '配送地址未确认，请到「个人资料」验证地址' }, { status: 400 });
     }
@@ -186,6 +230,7 @@ export async function POST(req: Request) {
     const isMultiPart = groups.length > 1;
     const groupId = isMultiPart ? `GRP-${Date.now().toString(36).toUpperCase()}` : undefined;
     let remainingPromo = serverPromoDiscount;
+    let remainingMV = serverMealVoucherDiscount;
     const orderIds: string[] = [];
     const payloads: any[] = [];
 
@@ -202,7 +247,16 @@ export async function POST(req: Request) {
           remainingPromo -= currentPromo;
         }
       }
-      const finalTotal = Math.max(0, group.subtotal - currentPromo);
+      let currentMV = 0;
+      if (serverMealVoucherDiscount > 0) {
+        if (i === groups.length - 1) {
+          currentMV = Number(remainingMV.toFixed(2));
+        } else {
+          currentMV = Number(((group.subtotal / serverCartTotal) * serverMealVoucherDiscount).toFixed(2));
+          remainingMV -= currentMV;
+        }
+      }
+      const finalTotal = Math.max(0, group.subtotal - currentPromo - currentMV);
 
       // Build items array (same format as before)
       const items: any[] = [];
@@ -262,6 +316,8 @@ export async function POST(req: Request) {
         payload.totalParts = groups.length;
         payload.groupId = groupId;
       }
+      // Meal voucher accounting (per-part RM discount only — voucherIds attach to part 1 only, populated below)
+      if (currentMV > 0) payload.mealVoucherDiscount = currentMV;
 
       const docRef = await db.collection('orders').add(payload);
       orderIds.push(docRef.id);
@@ -271,6 +327,34 @@ export async function POST(req: Request) {
       await db.collection('users').doc(userId).update({
         lastOrderAt: FieldValue.serverTimestamp(),
       });
+    }
+
+    // ── Claim meal vouchers (FIFO) — attach IDs to part 1 ─────
+    // Done AFTER order docs exist so claimed vouchers can reference orderId.
+    // On any failure, delete the orders we just created to avoid orphans.
+    //
+    // mealVoucherAllocatedRevenue is the MFRS 15 contract-liability portion
+    // recognized as revenue when these vouchers are redeemed: sum of
+    // allocatedValueRM across the claimed vouchers (= amountPaid/voucherCount
+    // for each source bundle). This lets the admin KPI compute true accrual
+    // revenue = order.total + mealVoucherAllocatedRevenue, instead of the
+    // face-value approximation that overstates revenue by the bulk discount.
+    if (mealVouchersUsed > 0) {
+      try {
+        const claimed = await claimMealVouchers(db, userId, mealVouchersUsed, orderIds[0]);
+        await db.collection('orders').doc(orderIds[0]).update({
+          mealVouchersUsed,
+          claimedMealVoucherIds: claimed.ids,
+          mealVoucherAllocatedRevenue: claimed.allocatedTotalRM,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } catch (err: any) {
+        // Roll back the just-created orders
+        for (const oid of orderIds) {
+          try { await db.collection('orders').doc(oid).delete(); } catch {}
+        }
+        return NextResponse.json({ error: err?.message || '餐券抢占失败，请重试' }, { status: 400 });
+      }
     }
 
     // Voucher consumption (usedCount + user.vouchersUsed) is intentionally

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FACE_VALUE_RM } from '@/data/mealVoucherConfig';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -35,10 +36,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = await getDb();
-    const [ordersSnap, usersSnap, feedbacksSnap] = await Promise.all([
+    const [ordersSnap, usersSnap, feedbacksSnap, mealVoucherPurchasesSnap, mealVouchersSnap] = await Promise.all([
       db.collection('orders').orderBy('createdAt', 'desc').get(),
       db.collection('users').orderBy('createdAt', 'desc').get(),
       db.collection('feedbacks').get(),
+      db.collection('mealVoucherPurchases').orderBy('createdAt', 'desc').get(),
+      db.collection('mealVouchers').get(),
     ]);
 
     // Auto-cancel FPX pending orders older than 10 minutes (QR orders unaffected)
@@ -63,8 +66,67 @@ export async function GET(req: NextRequest) {
     });
     const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     const feedbacks = feedbacksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const mealVoucherPurchases = mealVoucherPurchasesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    return NextResponse.json({ orders, users, feedbacks });
+    // ── Meal voucher liability aggregates ─────────────────────
+    // Two parallel valuations per voucher:
+    //   - Allocated value (MFRS 15 contract liability) = amountPaid / voucherCount
+    //   - Face value      (food obligation, marketing) = FACE_VALUE_RM
+    // Legacy vouchers (minted before 2026-05-11) have no allocatedValueRM —
+    // fall back to face value to avoid under-reporting liability.
+    const now = Date.now();
+    const FOURTEEN_DAYS_MS = 14 * 86_400_000;
+    let outstandingCount = 0;
+    let outstandingAllocatedRM = 0;
+    let expiringSoonCount = 0;
+    let expiringSoonAllocatedRM = 0;
+    let redeemedLifetimeCount = 0;
+    let redeemedLifetimeAllocatedRM = 0;
+    let expiredLifetimeCount = 0;
+    let expiredLifetimeAllocatedRM = 0;
+    for (const doc of mealVouchersSnap.docs) {
+      const v = doc.data() as {
+        status?: string;
+        expiresAt?: { toMillis?: () => number };
+        allocatedValueRM?: number;
+      };
+      const allocatedRM = typeof v.allocatedValueRM === 'number' ? v.allocatedValueRM : FACE_VALUE_RM;
+      const expMs = v.expiresAt?.toMillis ? v.expiresAt.toMillis() : 0;
+      const isExpired = !expMs || expMs <= now;
+      if (v.status === 'available' && !isExpired) {
+        outstandingCount++;
+        outstandingAllocatedRM += allocatedRM;
+        if (expMs - now < FOURTEEN_DAYS_MS) {
+          expiringSoonCount++;
+          expiringSoonAllocatedRM += allocatedRM;
+        }
+      } else if (v.status === 'redeemed') {
+        redeemedLifetimeCount++;
+        redeemedLifetimeAllocatedRM += allocatedRM;
+      } else if (v.status === 'expired' || (v.status === 'available' && isExpired)) {
+        expiredLifetimeCount++;
+        expiredLifetimeAllocatedRM += allocatedRM;
+      }
+    }
+    const cashCollectedLifetimeRM = mealVoucherPurchases
+      .filter((p: any) => p.status === 'paid')
+      .reduce((sum: number, p: any) => sum + (Number(p.amountPaid) || 0), 0);
+    const mealVoucherStats = {
+      outstandingCount,
+      outstandingAllocatedRM: Number(outstandingAllocatedRM.toFixed(2)),
+      outstandingFaceValueRM: Number((outstandingCount * FACE_VALUE_RM).toFixed(2)),
+      expiringSoonCount,
+      expiringSoonAllocatedRM: Number(expiringSoonAllocatedRM.toFixed(2)),
+      expiringSoonFaceValueRM: Number((expiringSoonCount * FACE_VALUE_RM).toFixed(2)),
+      redeemedLifetimeCount,
+      redeemedLifetimeAllocatedRM: Number(redeemedLifetimeAllocatedRM.toFixed(2)),
+      expiredLifetimeCount,
+      expiredLifetimeAllocatedRM: Number(expiredLifetimeAllocatedRM.toFixed(2)),
+      cashCollectedLifetimeRM: Number(cashCollectedLifetimeRM.toFixed(2)),
+      faceValuePerVoucherRM: FACE_VALUE_RM,
+    };
+
+    return NextResponse.json({ orders, users, feedbacks, mealVoucherPurchases, mealVoucherStats });
   } catch (err: any) {
     console.error('Admin data fetch error:', err);
     return NextResponse.json({ error: err.message || '数据获取失败' }, { status: 500 });

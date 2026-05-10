@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
+import { releaseMealVouchers } from '@/lib/mealVoucherUtils';
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -167,6 +168,21 @@ export async function POST(req: Request) {
           });
         } catch (e) {
           console.warn('Failed to claim voucher on confirm:', e);
+        }
+      }
+
+      // Release meal vouchers when cancelling an order that claimed any.
+      // Skips vouchers that have since expired.
+      if (
+        status === 'cancelled'
+        && orderData.status !== 'cancelled'
+        && Array.isArray(orderData.claimedMealVoucherIds)
+        && orderData.claimedMealVoucherIds.length > 0
+      ) {
+        try {
+          await releaseMealVouchers(db, orderData.claimedMealVoucherIds);
+        } catch (e) {
+          console.warn('Failed to release meal vouchers on cancel:', e);
         }
       }
 

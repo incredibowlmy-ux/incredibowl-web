@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, X, Plus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 // updateOrderStatus moved to server-side /api/confirm-order
 import { User } from 'firebase/auth';
@@ -14,6 +15,7 @@ import {
     type DeliveryZone,
 } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
+import { getDishPrice } from '@/data/promoConfig';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
@@ -44,6 +46,9 @@ export default function CartDrawer({
     const [promoDiscount, setPromoDiscount] = useState(0);
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
     const [staleNotice, setStaleNotice] = useState<string>('');
+    // Meal voucher (餐券) redemption state
+    const [availableMealVouchers, setAvailableMealVouchers] = useState(0);
+    const [mealVouchersUsed, setMealVouchersUsed] = useState(0);
 
     // Auto-clean cart items whose selectedDate has rotted (e.g. customer left
     // the cart open overnight and the 6 AM cutoff passed). Also reset checkout
@@ -64,10 +69,44 @@ export default function CartDrawer({
         setPaymentMethod('');
         setReceiptUploaded(false);
         setReceiptUrl('');
+        setMealVouchersUsed(0);
         setStaleNotice(`已自动移除 ${stale.length} 个过期项目（截单已过），请重新加入今日菜单`);
     }, [isOpen, cart, removeFromCart]);
 
-    const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount);
+    // ── Meal voucher math ──────────────────────────────────────
+    // Each main dish serving in the cart = one redeemable "slot".
+    // The discount applied = sum of the X most-expensive serving prices,
+    // so the customer always gets the best deal. Add-ons are excluded.
+    const mainDishUnitPrices: number[] = cart.flatMap((bundle: any) => {
+        const unitPrice = getDishPrice(bundle?.dish?.price ?? 0);
+        const totalUnits = (bundle?.dishQty || 1) * (bundle?.quantity || 1);
+        return Array.from({ length: totalUnits }, () => unitPrice);
+    });
+    const totalMainDishCount = mainDishUnitPrices.length;
+    const maxRedeemable = Math.min(totalMainDishCount, availableMealVouchers);
+    const cappedMealVouchersUsed = Math.min(mealVouchersUsed, maxRedeemable);
+    const sortedMainDishPricesDesc = [...mainDishUnitPrices].sort((a, b) => b - a);
+    const mealVoucherDiscount = sortedMainDishPricesDesc
+        .slice(0, cappedMealVouchersUsed)
+        .reduce((sum, p) => sum + p, 0);
+
+    // Promo code and meal vouchers are mutually exclusive per order.
+    const promoLockedByVouchers = cappedMealVouchersUsed > 0;
+    const vouchersLockedByPromo = promoApplied;
+
+    // Auto-cap the slider when cart shrinks
+    useEffect(() => {
+        if (mealVouchersUsed > maxRedeemable) {
+            setMealVouchersUsed(maxRedeemable);
+        }
+    }, [maxRedeemable, mealVouchersUsed]);
+
+    const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount - mealVoucherDiscount);
+    // Free-delivery threshold basis: cartTotal − promoDiscount only.
+    // Meal voucher does NOT count against the basis (2026-05-11 rule) —
+    // prepaid voucher revenue is already booked, so redeeming a main dish
+    // shouldn't bump the customer out of the free-delivery tier.
+    const freeDeliveryBasis = Math.max(0, cartTotal - promoDiscount);
     const distanceKm: number | null = typeof userProfile?.addressDistanceKm === 'number'
         ? userProfile.addressDistanceKm
         : null;
@@ -75,10 +114,10 @@ export default function CartDrawer({
         userProfile?.deliveryZone === 'within2km' || userProfile?.deliveryZone === 'outside2km'
             ? userProfile.deliveryZone
             : null;
-    const resolved = resolveDeliveryFee(distanceKm, userZone, subtotalAfterDiscount);
+    const resolved = resolveDeliveryFee(distanceKm, userZone, freeDeliveryBasis);
     const deliveryTier: DeliveryTier | null = resolved?.tier ?? null;
     const deliveryFee = resolved?.fee ?? 0;
-    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, subtotalAfterDiscount);
+    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, freeDeliveryBasis);
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
     const handleApplyPromo = async () => {
@@ -171,6 +210,29 @@ export default function CartDrawer({
         fetchProfile();
     }, [isOpen, currentUser]);
 
+    // Refresh available meal voucher count whenever drawer opens or auth changes
+    useEffect(() => {
+        const fetchMealVouchers = async () => {
+            if (!isOpen || !currentUser) {
+                setAvailableMealVouchers(0);
+                return;
+            }
+            try {
+                const token = await currentUser.getIdToken();
+                const res = await fetch('/api/my-meal-vouchers', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                setAvailableMealVouchers(data.availableCount || 0);
+            } catch (e) {
+                console.warn('Failed to load meal vouchers:', e);
+            }
+        };
+        fetchMealVouchers();
+    }, [isOpen, currentUser]);
+
     if (!isOpen) return null;
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -253,6 +315,8 @@ export default function CartDrawer({
                 promoDiscount: promoApplied ? promoDiscount : 0,
                 clientDeliveryFee: deliveryFee,
                 orderNote: orderNote || '',
+                mealVouchersUsed: cappedMealVouchersUsed,
+                clientMealVoucherDiscount: mealVoucherDiscount,
             }),
         });
 
@@ -359,7 +423,7 @@ export default function CartDrawer({
                 }
                 sessionStorage.removeItem('fpx_pending_order');
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
-                setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
+                setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
             } catch (err: any) {
                 // Cancel pending orders on any payment failure (dismiss, network error, verification fail, etc.)
                 await fetch('/api/confirm-order', {
@@ -385,7 +449,7 @@ export default function CartDrawer({
             const result = await submitOrderViaAPI();
             trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
             setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
-            setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); onClose(); }, 4000);
+            setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
     };
@@ -442,6 +506,29 @@ export default function CartDrawer({
                                     className="px-8 py-3.5 bg-[#FF6B35] text-white text-base font-black rounded-2xl flex items-center justify-center gap-2 mx-auto hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/20 hover:-translate-y-1 active:scale-95">
                                     <ShoppingBag size={18} /> 去选餐
                                 </button>
+
+                                {/* Meal voucher CTA — empty cart push */}
+                                <div className="mt-8 mx-auto max-w-[280px]">
+                                    <Link
+                                        href="/meal-vouchers"
+                                        onClick={onClose}
+                                        className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl p-4 hover:shadow-lg transition-all relative overflow-hidden"
+                                    >
+                                        <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
+                                        <div className="relative flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-[#FF6B35] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#FF6B35]/30">
+                                                <Ticket size={20} />
+                                            </div>
+                                            <div className="flex-1 text-left min-w-0">
+                                                <p className="text-xs font-black text-[#1A2D23]">先囤券更划算</p>
+                                                <p className="text-[10px] text-[#1A2D23]/60 font-bold leading-snug">
+                                                    20 张装省 RM 37 · 60 天有效
+                                                </p>
+                                            </div>
+                                            <span className="text-xs font-black text-[#FF6B35] group-hover:translate-x-1 transition-transform">→</span>
+                                        </div>
+                                    </Link>
+                                </div>
                             </div>
                         ) : (
                             <>
@@ -512,15 +599,16 @@ export default function CartDrawer({
                                         <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                                         <input type="text" value={promoCode}
                                             onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
-                                            placeholder="输入优惠码 / Promo Code" disabled={promoApplied}
-                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`} />
+                                            placeholder={promoLockedByVouchers ? '使用餐券中（不可叠加）' : '输入优惠码 / Promo Code'}
+                                            disabled={promoApplied || promoLockedByVouchers}
+                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : promoLockedByVouchers ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`} />
                                     </div>
                                     {promoApplied ? (
                                         <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
                                             className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
                                     ) : (
-                                        <button onClick={handleApplyPromo} disabled={isCheckingPromo}
-                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
+                                        <button onClick={handleApplyPromo} disabled={isCheckingPromo || promoLockedByVouchers}
+                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo || promoLockedByVouchers ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
                                             {isCheckingPromo ? '验证中…' : '使用'}
                                         </button>
                                     )}
@@ -529,13 +617,74 @@ export default function CartDrawer({
                                 {promoApplied && <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1"><CheckCircle size={12} /> 已减免 RM {promoDiscount.toFixed(2)}</p>}
                             </div>
 
+                            {/* Meal Voucher (餐券) — only show if user has any in wallet */}
+                            {currentUser && availableMealVouchers > 0 && totalMainDishCount > 0 && (
+                                <div className="space-y-2">
+                                    <div className={`relative bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-xl p-3 transition-opacity ${vouchersLockedByPromo ? 'opacity-50' : ''}`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 flex items-center justify-center shrink-0">
+                                                    <Ticket size={16} className="text-[#FF6B35]" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-black text-[#1A2D23] truncate">用餐券抵扣</p>
+                                                    <p className="text-[10px] text-[#1A2D23]/50 font-bold truncate">
+                                                        共 {availableMealVouchers} 张可用 · 最多抵 {maxRedeemable} 份主餐
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMealVouchersUsed(Math.max(0, cappedMealVouchersUsed - 1))}
+                                                    disabled={vouchersLockedByPromo || cappedMealVouchersUsed <= 0}
+                                                    className="w-7 h-7 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                >
+                                                    <Minus size={12} strokeWidth={3} />
+                                                </button>
+                                                <span className="w-7 text-center font-black text-base text-[#1A2D23]">
+                                                    {cappedMealVouchersUsed}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMealVouchersUsed(Math.min(maxRedeemable, cappedMealVouchersUsed + 1))}
+                                                    disabled={vouchersLockedByPromo || cappedMealVouchersUsed >= maxRedeemable}
+                                                    className="w-7 h-7 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                >
+                                                    <Plus size={12} strokeWidth={3} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {cappedMealVouchersUsed > 0 && !vouchersLockedByPromo && (
+                                            <p className="text-[10px] text-green-700 font-bold mt-2 flex items-center gap-1">
+                                                <CheckCircle size={11} /> 已抵 {cappedMealVouchersUsed} 份主餐 · 减 RM {mealVoucherDiscount.toFixed(2)}（加购需现金）
+                                            </p>
+                                        )}
+                                        {vouchersLockedByPromo && (
+                                            <p className="text-[10px] text-amber-600 font-bold mt-2">
+                                                ⚠️ 优惠码与餐券不可叠加；请先取消优惠码
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Subtotal + delivery fee breakdown */}
                             {currentUser && deliveryTier && (
                                 <div className="space-y-1.5 pb-1 border-b border-gray-100">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-gray-500">小计 {promoApplied && '（折后）'}</span>
+                                        <span className="text-gray-500">小计 {(promoApplied || cappedMealVouchersUsed > 0) && '（折后）'}</span>
                                         <span className="text-gray-700 font-bold">RM {subtotalAfterDiscount.toFixed(2)}</span>
                                     </div>
+                                    {cappedMealVouchersUsed > 0 && (
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-gray-500 flex items-center gap-1">
+                                                <Ticket size={11} className="text-[#FF6B35]" />
+                                                餐券抵扣（{cappedMealVouchersUsed} 份主餐）
+                                            </span>
+                                            <span className="text-green-600 font-bold">- RM {mealVoucherDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">
                                             配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
@@ -560,7 +709,9 @@ export default function CartDrawer({
                             <div className="flex justify-between items-baseline">
                                 <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total</span>
                                 <div className="text-right">
-                                    {promoApplied && <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>}
+                                    {(promoApplied || cappedMealVouchersUsed > 0) && (
+                                        <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
+                                    )}
                                     <span className="text-3xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
                                 </div>
                             </div>

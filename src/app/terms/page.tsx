@@ -9,7 +9,7 @@ export default function TermsAndConditions() {
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
                 <Link href="/" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
                 <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Terms & Conditions / 服务条款</h1>
-                <p className="text-sm opacity-60 mb-10">Effective Date / 生效日期：2026年3月17日</p>
+                <p className="text-sm opacity-60 mb-10">Effective Date / 生效日期：2026年5月11日</p>
 
                 <div className="space-y-12 leading-relaxed text-sm">
                     <section>
@@ -30,7 +30,7 @@ export default function TermsAndConditions() {
                         <p>Delivery fees are tiered by straight-line distance from Pearl Point: / 配送费按距 Pearl Point 直线距离分四档：</p>
                         <ul className="list-disc ml-6 mt-1">
                             <li><b>0–2 km</b>：Free / 免运费</li>
-                            <li><b>2–5 km</b>：RM 6 — waived when subtotal after voucher ≥ RM 40 / 折后小计满 RM 40 免运</li>
+                            <li><b>2–5 km</b>：RM 6 — waived when cart total ≥ RM 40 (after promo-code discount; meal-voucher redemption does NOT affect this threshold) / RM 6，使用 promo code 折后满 RM 40 即免运（餐券抵扣不影响门槛）</li>
                             <li><b>5–8 km</b>：RM 15 (flat, no free-delivery threshold) / RM 15 平价，不享免运</li>
                             <li><b>8 km +</b>：RM 25 (flat, no free-delivery threshold) / RM 25 平价，不享免运</li>
                         </ul>
@@ -54,7 +54,21 @@ export default function TermsAndConditions() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold mb-4">6. Limitation of Liability / 免责声明</h2>
+                        <h2 className="text-xl font-bold mb-4">6. Meal Voucher Bundles / 餐券预付包</h2>
+                        <p>Customers may purchase prepaid meal voucher bundles (5 / 10 / 20 vouchers per bundle) for use on future orders. The following rules govern voucher purchase and redemption: / 客户可购买预付餐券包（每包 5 / 10 / 20 张），用于后续订单抵扣。规则如下：</p>
+                        <ul className="list-disc ml-6 mt-2 space-y-2">
+                            <li><strong>1 voucher = 1 main dish</strong> (any dish from the daily menu). Add-ons such as drinks, extra sides, eggs, and similar items are <strong>not covered</strong> and require cash payment. / <strong>1 张餐券 = 1 份主餐</strong>（任意菜单菜品）。加购项（饮料、加料、蛋等）<strong>不在抵扣范围内</strong>，需现金支付。</li>
+                            <li><strong>Validity: 60 days</strong> from the date of purchase. Expired vouchers are forfeited and cannot be extended or refunded. / <strong>有效期 60 天</strong>，自购买日起算，过期作废，不可延期或退款。</li>
+                            <li><strong>Non-transferable</strong> — vouchers may only be redeemed by the purchasing account. / <strong>不可转让</strong>，仅限购买账号本人使用。</li>
+                            <li><strong>Non-refundable in cash</strong>. The only exception is when a QR-payment purchase is rejected by us due to failed verification — in that case, full cash refund within 3 working days via DuitNow. / <strong>不提供现金退款</strong>。唯一例外：QR 付款被我方因凭证不符拒绝的，3 个工作日内通过 DuitNow 全额现金退还。</li>
+                            <li><strong>Cannot be combined with promo codes</strong> (referral / points / custom codes) on the same order. / 不可与优惠码（推荐码 / 积分券 / 自定义码）同时使用。</li>
+                            <li>If an order paid with vouchers is later cancelled (per the Refund Policy), the vouchers are <strong>returned to the customer&apos;s wallet</strong> with the original expiry date preserved. / 用券订单按退款政策取消的，餐券<strong>退回钱包</strong>，原到期日保持不变。</li>
+                            <li>For the full set of rules including refund handling, see the <Link href="/refund" className="text-[#E76F51] underline">Refund Policy</Link>. / 完整规则（含退款处理）见<Link href="/refund" className="text-[#E76F51] underline">退款政策</Link>。</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 className="text-xl font-bold mb-4">7. Limitation of Liability / 免责声明</h2>
                         <ul className="list-disc ml-6 space-y-2">
                             <li>Incredibowl is not liable for allergic reactions if the customer fails to inform us of known allergies prior to ordering. / 若顾客未在下单前告知已知过敏源，Incredibowl 不承担过敏反应的责任。</li>
                             <li>Delivery delays caused by traffic, weather, or other force majeure events are beyond our control. We will do our best to communicate delays promptly. / 因交通、天气或其他不可抗力导致的配送延迟不在我们的控制范围内，我们会尽快通知。</li>
@@ -63,12 +77,12 @@ export default function TermsAndConditions() {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold mb-4">7. Intellectual Property / 知识产权</h2>
+                        <h2 className="text-xl font-bold mb-4">8. Intellectual Property / 知识产权</h2>
                         <p>All content on the Incredibowl website — including brand name, logos, images, food photography, menu descriptions, and recipes — is the property of Incredibowl. Unauthorized reproduction or redistribution is prohibited. / Incredibowl 网站上的所有内容——包括品牌名称、标志、图片、菜品摄影、菜单描述及食谱——均为 Incredibowl 所有。未经授权禁止复制或转发。</p>
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-bold mb-4">8. Changes to Terms / 条款变更</h2>
+                        <h2 className="text-xl font-bold mb-4">9. Changes to Terms / 条款变更</h2>
                         <p>We reserve the right to update these terms at any time. Changes will be reflected on this page with an updated effective date. Continued use of our service constitutes acceptance of the revised terms. / 我们保留随时更新本条款的权利。变更将在此页面更新并标注新的生效日期。继续使用我们的服务即表示接受修订后的条款。</p>
                     </section>
                 </div>

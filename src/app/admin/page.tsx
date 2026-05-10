@@ -5,7 +5,7 @@ import { onAuthChange, signInWithGoogle, logout, loginWithEmail } from '@/lib/au
 import { OrderStatus } from '@/lib/orders';
 import { updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
-import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, Pencil, LucideIcon } from 'lucide-react';
+import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, Pencil, LucideIcon, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
@@ -36,6 +36,23 @@ export default function AdminPage() {
     const [customers, setCustomers] = useState<AppUser[]>([]);
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [vouchers, setVouchers] = useState<any[]>([]);
+    const [mealVoucherPurchases, setMealVoucherPurchases] = useState<any[]>([]);
+    const [mealVoucherStats, setMealVoucherStats] = useState<{
+        outstandingCount: number;
+        outstandingAllocatedRM: number;
+        outstandingFaceValueRM: number;
+        expiringSoonCount: number;
+        expiringSoonAllocatedRM: number;
+        expiringSoonFaceValueRM: number;
+        redeemedLifetimeCount: number;
+        redeemedLifetimeAllocatedRM: number;
+        expiredLifetimeCount: number;
+        expiredLifetimeAllocatedRM: number;
+        cashCollectedLifetimeRM: number;
+        faceValuePerVoucherRM: number;
+    } | null>(null);
+    const [confirmingMvpId, setConfirmingMvpId] = useState<string | null>(null);
+    const [enlargedReceiptUrl, setEnlargedReceiptUrl] = useState<string | null>(null);
     const [generatingVoucher, setGeneratingVoucher] = useState(false);
     const [copiedCode, setCopiedCode] = useState('');
     const [voucherDiscount, setVoucherDiscount] = useState(3);
@@ -91,14 +108,40 @@ export default function AdminPage() {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (!res.ok) throw new Error((await res.json()).error || '数据获取失败');
-            const { orders: ordersData, users: usersData, feedbacks: feedbacksData } = await res.json();
+            const { orders: ordersData, users: usersData, feedbacks: feedbacksData, mealVoucherPurchases: mvpData, mealVoucherStats: mvStats } = await res.json();
             setOrders(ordersData as AdminOrder[]);
             setCustomers(usersData as AppUser[]);
             setFeedbacks(feedbacksData);
+            setMealVoucherPurchases(Array.isArray(mvpData) ? mvpData : []);
+            setMealVoucherStats(mvStats || null);
         } catch (error) {
             console.error('Failed to load data:', error);
         }
         setLoading(false);
+    };
+
+    const handleMealVoucherPurchase = async (purchaseId: string, action: 'approve' | 'reject') => {
+        if (!currentUser) return;
+        if (action === 'reject' && !confirm('确定拒绝此付款？(已转账的客户将需要联系客服退款)')) return;
+        setConfirmingMvpId(purchaseId);
+        try {
+            const token = await currentUser.getIdToken();
+            const res = await fetch('/api/admin/confirm-meal-voucher-purchase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({
+                    purchaseId,
+                    action,
+                    reason: action === 'reject' ? '后台拒绝' : undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || '操作失败');
+            await loadData();
+        } catch (e: any) {
+            alert(`操作失败: ${e.message}`);
+        }
+        setConfirmingMvpId(null);
     };
 
     const loadVouchers = async () => {
@@ -395,6 +438,15 @@ export default function AdminPage() {
     const displayLabel = statsDaysList.find(d => d.date === statsDate)?.label || '数据';
 
     const upcomingOrdersCount = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').length;
+    // MFRS 15 accrual revenue per order:
+    //   cash (order.total) + voucher allocated revenue (sum of redeemed
+    //   vouchers' allocatedValueRM, captured at claim time).
+    // For non-voucher orders this collapses to order.total (= food face value).
+    // For voucher orders, this is the precise revenue recognized at redemption
+    // — between cash (under-states by voucher revenue) and food face value
+    // (over-states by the bulk discount portion ~5–10%).
+    const orderMfrs15Revenue = (o: any) => Number(o.total ?? 0) + Number(o.mealVoucherAllocatedRevenue ?? 0);
+    const upcomingMfrs15Revenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + orderMfrs15Revenue(o), 0);
     const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + (o.total || 0), 0);
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
@@ -480,9 +532,13 @@ export default function AdminPage() {
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-green-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 收入</p>
-                        <p className="text-3xl font-black text-green-600 relative">RM {upcomingRevenue.toFixed(0)}</p>
-                        <p className="text-[8px] text-gray-300 mt-1">预计营业额</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 营业额</p>
+                        <p className="text-3xl font-black text-green-600 relative">RM {upcomingMfrs15Revenue.toFixed(0)}</p>
+                        {upcomingMfrs15Revenue > upcomingRevenue + 0.5 ? (
+                            <p className="text-[9px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
+                        ) : (
+                            <p className="text-[8px] text-gray-300 mt-1">MFRS 15 应计</p>
+                        )}
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-orange-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
@@ -528,10 +584,24 @@ export default function AdminPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className={`text-xs font-bold ${isDayExpanded ? 'text-white/60' : 'text-gray-400'}`}>{day.orders.length} 单 · RM {day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0).toFixed(0)}</span>
-                                            <Clock size={16} className={`transition-transform duration-300 ${isDayExpanded ? 'rotate-180 text-white' : 'text-gray-300'}`} />
-                                        </div>
+                                        {(() => {
+                                            const dayCash = day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0);
+                                            const dayMfrs15 = day.orders.reduce((s: number, o: any) => s + Number(o.total ?? 0) + Number((o as any).mealVoucherAllocatedRevenue ?? 0), 0);
+                                            const hasVoucherImpact = dayMfrs15 > dayCash + 0.5;
+                                            return (
+                                                <div className="flex items-center gap-4">
+                                                    <span className={`text-xs font-bold ${isDayExpanded ? 'text-white/60' : 'text-gray-400'}`}>
+                                                        {day.orders.length} 单 · RM {dayMfrs15.toFixed(0)}
+                                                        {hasVoucherImpact && (
+                                                            <span className={`ml-1 text-[10px] ${isDayExpanded ? 'text-white/40' : 'text-gray-300'}`}>
+                                                                （现金 {dayCash.toFixed(0)}）
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    <Clock size={16} className={`transition-transform duration-300 ${isDayExpanded ? 'rotate-180 text-white' : 'text-gray-300'}`} />
+                                                </div>
+                                            );
+                                        })()}
                                     </button>
 
                                     {isDayExpanded && (
@@ -733,6 +803,136 @@ export default function AdminPage() {
                 {/* Orders Tab */}
                 {activeTab === 'orders' && (
                     <div className="space-y-4">
+                        {/* Pending Meal Voucher Purchases (待审核餐券) — surface at top */}
+                        {(() => {
+                            const pendingMvps = mealVoucherPurchases.filter((p: any) =>
+                                p.status === 'pending-review' || (p.status === 'pending' && p.paymentMethod === 'qr')
+                            );
+                            if (pendingMvps.length === 0) return null;
+                            return (
+                                <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Ticket size={18} className="text-amber-700" />
+                                        <h3 className="font-black text-amber-900 text-sm">餐券购买 — 待审核 ({pendingMvps.length})</h3>
+                                    </div>
+                                    <p className="text-[11px] text-amber-700 mb-3">客户 QR 转账后等待审核，确认收款后请点「批准」即可发券。</p>
+                                    <div className="space-y-2">
+                                        {pendingMvps.map((p: any) => {
+                                            const createdMs = (p.createdAt?._seconds ?? p.createdAt?.seconds ?? 0) * 1000;
+                                            const ageMin = createdMs > 0 ? Math.floor((Date.now() - createdMs) / 60000) : 0;
+                                            const ageStr = ageMin < 60 ? `${ageMin}m` : ageMin < 1440 ? `${Math.floor(ageMin/60)}h` : `${Math.floor(ageMin/1440)}d`;
+                                            const isWorking = confirmingMvpId === p.id;
+                                            return (
+                                                <div key={p.id} className="bg-white rounded-xl p-3 border border-amber-200 flex items-center gap-3">
+                                                    {p.receiptUrl ? (
+                                                        <button
+                                                            onClick={() => setEnlargedReceiptUrl(p.receiptUrl)}
+                                                            className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 border border-gray-200 shrink-0 hover:opacity-80 transition-opacity"
+                                                        >
+                                                            { /* eslint-disable-next-line @next/next/no-img-element */ }
+                                                            <img src={p.receiptUrl} alt="receipt" className="w-full h-full object-cover" />
+                                                        </button>
+                                                    ) : (
+                                                        <div className="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-[10px] text-gray-400">无截图</div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-black text-sm text-[#1A2D23] truncate">
+                                                            {p.userName || '匿名'} · {p.voucherCount} 张
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 truncate">
+                                                            RM {Number(p.amountPaid || 0).toFixed(2)} · {p.userPhone || '—'}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400">⏰ {ageStr} 前 · #{String(p.id).slice(-6).toUpperCase()}</p>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        <button
+                                                            onClick={() => handleMealVoucherPurchase(p.id, 'reject')}
+                                                            disabled={isWorking}
+                                                            className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-200 text-[11px] font-bold hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        >
+                                                            拒绝
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleMealVoucherPurchase(p.id, 'approve')}
+                                                            disabled={isWorking}
+                                                            className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-[11px] font-bold hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                        >
+                                                            {isWorking ? '处理中…' : '批准发券'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Receipt enlarge modal */}
+                        {enlargedReceiptUrl && (
+                            <div
+                                className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4"
+                                onClick={() => setEnlargedReceiptUrl(null)}
+                            >
+                                { /* eslint-disable-next-line @next/next/no-img-element */ }
+                                <img
+                                    src={enlargedReceiptUrl}
+                                    alt="receipt full"
+                                    className="max-w-full max-h-full rounded-lg shadow-2xl"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        )}
+
+                        {/* Meal voucher liability stats — only if any activity ever */}
+                        {mealVoucherStats && (mealVoucherStats.outstandingCount > 0 || mealVoucherStats.redeemedLifetimeCount > 0 || mealVoucherStats.expiredLifetimeCount > 0) && (
+                            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-7 h-7 rounded-lg bg-[#FF6B35]/10 flex items-center justify-center">
+                                        <Ticket size={14} className="text-[#FF6B35]" />
+                                    </div>
+                                    <h3 className="font-black text-[#1A2D23] text-sm">餐券负债概况</h3>
+                                    <span className="text-[10px] text-gray-400 font-bold ml-auto">MFRS 15 · 摊销价</span>
+                                </div>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div className="bg-orange-50 rounded-xl p-3 border border-orange-100">
+                                        <p className="text-[9px] font-bold text-orange-700 uppercase tracking-wider">未核销张数</p>
+                                        <p className="text-2xl font-black text-[#FF6B35] leading-tight mt-0.5">{mealVoucherStats.outstandingCount}</p>
+                                        <p className="text-[10px] text-orange-700 font-black mt-0.5">合同负债 RM {mealVoucherStats.outstandingAllocatedRM.toFixed(2)}</p>
+                                        <p className="text-[9px] text-orange-600/60 font-bold">食物面值 RM {mealVoucherStats.outstandingFaceValueRM.toFixed(2)}</p>
+                                    </div>
+                                    <div className={`rounded-xl p-3 border ${mealVoucherStats.expiringSoonCount > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
+                                        <p className={`text-[9px] font-bold uppercase tracking-wider ${mealVoucherStats.expiringSoonCount > 0 ? 'text-red-700' : 'text-gray-500'}`}>14 天内过期</p>
+                                        <p className={`text-2xl font-black leading-tight mt-0.5 ${mealVoucherStats.expiringSoonCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                                            {mealVoucherStats.expiringSoonCount}
+                                        </p>
+                                        {mealVoucherStats.expiringSoonCount > 0 ? (
+                                            <>
+                                                <p className="text-[10px] font-black text-red-700 mt-0.5">未来 breakage RM {mealVoucherStats.expiringSoonAllocatedRM.toFixed(2)}</p>
+                                                <p className="text-[9px] font-bold text-red-600/60">食物面值 RM {mealVoucherStats.expiringSoonFaceValueRM.toFixed(2)}</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-[10px] text-gray-400 font-bold mt-0.5">无紧迫到期</p>
+                                        )}
+                                    </div>
+                                    <div className="bg-green-50 rounded-xl p-3 border border-green-100">
+                                        <p className="text-[9px] font-bold text-green-700 uppercase tracking-wider">已核销（累计）</p>
+                                        <p className="text-2xl font-black text-green-600 leading-tight mt-0.5">{mealVoucherStats.redeemedLifetimeCount}</p>
+                                        <p className="text-[10px] text-green-700 font-black mt-0.5">营业额 RM {mealVoucherStats.redeemedLifetimeAllocatedRM.toFixed(2)}</p>
+                                        <p className="text-[9px] text-green-600/60 font-bold">{mealVoucherStats.expiredLifetimeCount} 张已过期 · breakage RM {mealVoucherStats.expiredLifetimeAllocatedRM.toFixed(2)}</p>
+                                    </div>
+                                    <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                        <p className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">累计现金收入</p>
+                                        <p className="text-2xl font-black text-blue-600 leading-tight mt-0.5">RM {mealVoucherStats.cashCollectedLifetimeRM.toFixed(0)}</p>
+                                        <p className="text-[10px] text-blue-600/70 font-bold mt-0.5">已落袋（含未核销）</p>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-3 leading-relaxed">
+                                    💡 <b>合同负债</b>（按支付价分摊）是 MFRS 15 资产负债表的真实负债数字。<b>食物面值</b>是客户预期吃到的份量。两者差额 = 你给的 bulk 折扣（藏在毛利率里，不在营业额里）。<b>营业额 + breakage = 累计现金</b>，永远闭合。
+                                </p>
+                            </div>
+                        )}
+
                         {/* Status Legend */}
                         <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex flex-wrap gap-4 items-center justify-center">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">状态对应:</span>
@@ -893,10 +1093,26 @@ export default function AdminPage() {
                                                 {order.promoCode && (
                                                     <span className="px-2 py-1 rounded-lg font-bold bg-yellow-100 text-yellow-700">🏷️ {order.promoCode} (-RM{(order.promoDiscount || 0).toFixed(0)})</span>
                                                 )}
+                                                {(order as any).mealVouchersUsed > 0 && (
+                                                    <span className="px-2 py-1 rounded-lg font-bold bg-orange-100 text-orange-700">🎟️ 用 {(order as any).mealVouchersUsed} 张餐券 (-RM{((order as any).mealVoucherDiscount || 0).toFixed(2)})</span>
+                                                )}
                                             </div>
-                                            {order.promoCode && order.originalTotal && (
-                                                <p className="text-[10px] text-gray-400">原价 RM {order.originalTotal.toFixed(2)} → 优惠后 RM {(order.total || 0).toFixed(2)}</p>
-                                            )}
+                                            {/* Discount breakdown — covers promo, meal voucher, or both. */}
+                                            {(() => {
+                                                const original = (order as any).originalTotal;
+                                                const promo = order.promoDiscount || 0;
+                                                const mvDiscount = (order as any).mealVoucherDiscount || 0;
+                                                const hasAnyDiscount = (order.promoCode && original) || mvDiscount > 0;
+                                                if (!hasAnyDiscount) return null;
+                                                return (
+                                                    <p className="text-[10px] text-gray-400">
+                                                        原价 RM {(original || (order.total || 0) + promo + mvDiscount).toFixed(2)}
+                                                        {promo > 0 && <span> · 优惠码 -RM {promo.toFixed(2)}</span>}
+                                                        {mvDiscount > 0 && <span> · 餐券 -RM {mvDiscount.toFixed(2)}</span>}
+                                                        <span className="font-bold text-[#FF6B35]"> → 现金付 RM {(order.total || 0).toFixed(2)}</span>
+                                                    </p>
+                                                );
+                                            })()}
 
                                             {/* Quick Actions */}
                                             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">

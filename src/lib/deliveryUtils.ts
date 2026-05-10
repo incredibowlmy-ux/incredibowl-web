@@ -3,12 +3,17 @@
  *
  * Tiers (May 2026):
  *   0 – 2 km   → free
- *   2 – 5 km   → RM 6   (waived when subtotal AFTER voucher ≥ RM 40)
+ *   2 – 5 km   → RM 6   (waived when freeDeliveryBasis ≥ RM 40)
  *   5 – 8 km   → RM 15  (no free-delivery threshold)
  *   8 km +     → RM 25  (no free-delivery threshold)
  *
- * "After voucher" matters for the 2–5 km tier: it ties free delivery to
- * actual revenue, not to a pre-discount cart amount that vouchers can game.
+ * `freeDeliveryBasis` definition (decided 2026-05-11):
+ *   cartTotal − promoDiscount  (RM-discount codes only)
+ *   NOT subtracted: mealVoucherDiscount (prepaid meal vouchers don't game it)
+ *
+ * Rationale: meal vouchers are already paid revenue — burning one to redeem a
+ * main dish shouldn't shrink the cart back below the free-delivery threshold.
+ * RM-promo codes ARE subtracted because they reduce real revenue per order.
  *
  * The 5+ km tiers do NOT honour the RM 40 free rule because the operating
  * cost (own driver + fuel + time) exceeds the voucher headroom on small
@@ -66,28 +71,30 @@ export function tierFromDistance(km: number): DeliveryTier {
 /**
  * Calculate delivery fee in RM.
  *
- * @param distanceKm             distance from Pearl Point in km
- * @param subtotalAfterDiscount  subtotal MINUS any voucher discount
+ * @param distanceKm           distance from Pearl Point in km
+ * @param freeDeliveryBasis    cartTotal − promoDiscount  (meal voucher NOT subtracted)
  */
-export function calcDeliveryFee(distanceKm: number, subtotalAfterDiscount: number): number {
+export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): number {
     const tier = tierFromDistance(distanceKm);
     if (tier === 'free') return 0;
     if (tier === 'near') {
-        return subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM;
+        return freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM;
     }
     if (tier === 'mid') return DELIVERY_FEE_MID_RM;
     return DELIVERY_FEE_FAR_RM;
 }
 
 /**
- * RM amount the customer needs to add (after discount) to qualify for free
- * delivery — only meaningful in the 2–5 km tier. Returns 0 outside that
- * tier (already free, or free-rule does not apply at this distance).
+ * RM amount the customer needs to add to qualify for free delivery — only
+ * meaningful in the 2–5 km tier. Returns 0 outside that tier (already free,
+ * or free-rule does not apply at this distance).
+ *
+ * @param freeDeliveryBasis  cartTotal − promoDiscount  (meal voucher NOT subtracted)
  */
-export function freeDeliveryShortfall(distanceKm: number, subtotalAfterDiscount: number): number {
+export function freeDeliveryShortfall(distanceKm: number, freeDeliveryBasis: number): number {
     if (tierFromDistance(distanceKm) !== 'near') return 0;
-    if (subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM) return 0;
-    return Math.max(0, FREE_DELIVERY_THRESHOLD_RM - subtotalAfterDiscount);
+    if (freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM) return 0;
+    return Math.max(0, FREE_DELIVERY_THRESHOLD_RM - freeDeliveryBasis);
 }
 
 export function zoneLabelZh(zone: DeliveryZone): string {
@@ -128,11 +135,11 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
 export function resolveDeliveryFee(
     distanceKm: number | null | undefined,
     zone: DeliveryZone | null | undefined,
-    subtotalAfterDiscount: number,
+    freeDeliveryBasis: number,
 ): { fee: number; tier: DeliveryTier; isLegacy: boolean } | null {
     if (typeof distanceKm === 'number') {
         return {
-            fee: calcDeliveryFee(distanceKm, subtotalAfterDiscount),
+            fee: calcDeliveryFee(distanceKm, freeDeliveryBasis),
             tier: tierFromDistance(distanceKm),
             isLegacy: false,
         };
@@ -142,7 +149,7 @@ export function resolveDeliveryFee(
     }
     if (zone === 'outside2km') {
         return {
-            fee: subtotalAfterDiscount >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM,
+            fee: freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM,
             tier: 'near',
             isLegacy: true,
         };
@@ -154,14 +161,14 @@ export function resolveDeliveryFee(
 export function resolveShortfallToFree(
     distanceKm: number | null | undefined,
     zone: DeliveryZone | null | undefined,
-    subtotalAfterDiscount: number,
+    freeDeliveryBasis: number,
 ): number {
     if (typeof distanceKm === 'number') {
-        return freeDeliveryShortfall(distanceKm, subtotalAfterDiscount);
+        return freeDeliveryShortfall(distanceKm, freeDeliveryBasis);
     }
     // Legacy outside2km also honours the RM 40 rule.
-    if (zone === 'outside2km' && subtotalAfterDiscount < FREE_DELIVERY_THRESHOLD_RM) {
-        return FREE_DELIVERY_THRESHOLD_RM - subtotalAfterDiscount;
+    if (zone === 'outside2km' && freeDeliveryBasis < FREE_DELIVERY_THRESHOLD_RM) {
+        return FREE_DELIVERY_THRESHOLD_RM - freeDeliveryBasis;
     }
     return 0;
 }
