@@ -120,6 +120,11 @@ export default function CartDrawer({
     const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, freeDeliveryBasis);
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
+    // Meal vouchers fully covered the bill (no cash to collect). Skips the
+    // payment method selector + Razorpay flow entirely; we just submit the
+    // order and immediately confirm it since there's nothing to charge.
+    const isFullyCoveredByVouchers = !!currentUser && cappedMealVouchersUsed > 0 && finalTotal <= 0;
+
     const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
@@ -280,7 +285,7 @@ export default function CartDrawer({
     };
 
     /** Submit order via server-side API for price validation */
-    const submitOrderViaAPI = async () => {
+    const submitOrderViaAPI = async (overridePaymentMethod?: 'qr' | 'fpx' | 'voucher') => {
         const cartBundles = cart.map((item: any) => ({
             dishId: item.dish.id,
             dishQty: item.dishQty,
@@ -308,7 +313,7 @@ export default function CartDrawer({
                 userPhone: userProfile!.phone,
                 userAddress: userProfile!.address,
                 cartBundles,
-                paymentMethod,
+                paymentMethod: overridePaymentMethod || paymentMethod,
                 receiptUploaded,
                 receiptUrl: receiptUrl || undefined,
                 promoCode: promoApplied ? promoCode.trim().toUpperCase() : '',
@@ -360,6 +365,39 @@ export default function CartDrawer({
         if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
             alert("部分菜品未选择配送日期，请移除后重试！"); return;
         }
+
+        // Voucher-only flow: meal vouchers covered the entire bill (no cash).
+        // Mirror FPX pattern but skip Razorpay: submit creates pending order(s),
+        // then confirm flips to 'confirmed' inline. Vouchers are claimed atomically
+        // server-side; if confirm fails, vouchers stay claimed but order pending —
+        // admin can sort that rare case out.
+        if (isFullyCoveredByVouchers) {
+            setSubmitting(true);
+            try {
+                const result = await submitOrderViaAPI('voucher');
+                trackPixel('InitiateCheckout', { value: 0, currency: 'MYR' }, result.checkoutEventId);
+                const confirmRes = await fetch('/api/confirm-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ orderIds: result.orderIds, status: 'confirmed' }),
+                });
+                if (!confirmRes.ok) {
+                    throw new Error((await confirmRes.json()).error || '订单确认失败');
+                }
+                setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
+                setTimeout(() => {
+                    onClearCart(); setOrderSuccess(null); setReceiptUploaded(false);
+                    setReceiptUrl(''); setOrderNote(''); setPromoCode('');
+                    setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0);
+                    onClose();
+                }, 4000);
+            } catch (err: any) {
+                alert(err.message || '下单失败，请重试');
+            }
+            setSubmitting(false);
+            return;
+        }
+
         if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
 
         if (paymentMethod === 'fpx') {
@@ -739,33 +777,49 @@ export default function CartDrawer({
                                 </button>
                             )}
 
-                            {/* Payment method selector */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => setPaymentMethod('qr')}
-                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
-                                    <Phone size={14} /> DuitNow / QR
-                                </button>
-                                <button onClick={() => setPaymentMethod('fpx')}
-                                    className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
-                                    <CreditCard size={14} /> FPX / Card
-                                </button>
-                            </div>
+                            {/* Payment method selector — hidden when vouchers cover the bill */}
+                            {!isFullyCoveredByVouchers && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => setPaymentMethod('qr')}
+                                            className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
+                                            <Phone size={14} /> DuitNow / QR
+                                        </button>
+                                        <button onClick={() => setPaymentMethod('fpx')}
+                                            className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
+                                            <CreditCard size={14} /> FPX / Card
+                                        </button>
+                                    </div>
 
-                            {paymentMethod === 'qr' && (
-                                <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} />
+                                    {paymentMethod === 'qr' && (
+                                        <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} />
+                                    )}
+
+                                    {paymentMethod === 'fpx' && (
+                                        <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
+                                            <p className="text-xs text-[#FF6B35] font-bold">🔒 安全在线支付</p>
+                                            <p className="text-[11px] text-gray-500 mt-0.5">点击「确认下单」后将跳转至 Curlec 支付页面完成付款</p>
+                                        </div>
+                                    )}
+                                </>
                             )}
 
-                            {paymentMethod === 'fpx' && (
-                                <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
-                                    <p className="text-xs text-[#FF6B35] font-bold">🔒 安全在线支付</p>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">点击「确认下单」后将跳转至 Curlec 支付页面完成付款</p>
+                            {isFullyCoveredByVouchers && (
+                                <div className="bg-green-50 border-2 border-green-200 rounded-2xl px-4 py-3.5 animate-in fade-in duration-300">
+                                    <p className="text-sm font-black text-green-800 flex items-center gap-2">
+                                        <CheckCircle size={18} />
+                                        餐券已抵扣全部费用
+                                    </p>
+                                    <p className="text-[11px] text-green-700 font-bold mt-1 leading-relaxed">
+                                        将使用 {cappedMealVouchersUsed} 张餐券，无需额外付款。点「确认下单」即可。
+                                    </p>
                                 </div>
                             )}
 
                             {/* Submit */}
                             <button onClick={handleCheckout}
-                                disabled={submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryTier}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded) || !deliveryTier
+                                disabled={submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))}
+                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))
                                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                     : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                                 <CheckCircle size={22} />

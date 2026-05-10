@@ -54,23 +54,29 @@ export async function POST(req: Request) {
       // for the first time (FPX flow: customer just paid; QR flow: admin
       // marked the receipt verified). We fire after the Firestore writes
       // settle, so a CAPI failure can't roll back the order.
+      // Skip zero-value orders (voucher fully covered the bill) — Purchase
+      // event was already fired when customer bought the voucher bundle, so
+      // firing again on redemption would double-count in Meta ads.
       if (isFirstConfirm) {
         const foodAfterDiscount = orderData.total ?? 0;
         const deliveryFee = orderData.deliveryFee ?? 0;
-        const items: Array<Record<string, unknown>> = Array.isArray(orderData.items) ? orderData.items : [];
-        purchaseEvents.push({
-          orderId,
-          eventId: `purchase_${orderId}`,
-          value: foodAfterDiscount + deliveryFee,
-          userEmail: orderData.userEmail || undefined,
-          userPhone: orderData.userPhone || undefined,
-          userId: orderData.userId || undefined,
-          items: items.map((it) => ({
-            id: String(it.name ?? ''),
-            quantity: Number(it.quantity ?? 1),
-            item_price: Number(it.price ?? 0),
-          })),
-        });
+        const purchaseValue = foodAfterDiscount + deliveryFee;
+        if (purchaseValue > 0) {
+          const items: Array<Record<string, unknown>> = Array.isArray(orderData.items) ? orderData.items : [];
+          purchaseEvents.push({
+            orderId,
+            eventId: `purchase_${orderId}`,
+            value: purchaseValue,
+            userEmail: orderData.userEmail || undefined,
+            userPhone: orderData.userPhone || undefined,
+            userId: orderData.userId || undefined,
+            items: items.map((it) => ({
+              id: String(it.name ?? ''),
+              quantity: Number(it.quantity ?? 1),
+              item_price: Number(it.price ?? 0),
+            })),
+          });
+        }
       }
 
       // Award points only when changing TO 'confirmed' from a non-confirmed status

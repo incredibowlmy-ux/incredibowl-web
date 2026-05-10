@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     if (!cartBundles || !Array.isArray(cartBundles) || cartBundles.length === 0) {
       return NextResponse.json({ error: '购物车为空' }, { status: 400 });
     }
-    if (!paymentMethod || !['qr', 'fpx'].includes(paymentMethod)) {
+    if (!paymentMethod || !['qr', 'fpx', 'voucher'].includes(paymentMethod)) {
       return NextResponse.json({ error: '无效支付方式' }, { status: 400 });
     }
 
@@ -212,6 +212,21 @@ export async function POST(req: Request) {
       return NextResponse.json({
         error: `运费计算不一致，服务器: RM${serverDeliveryFee.toFixed(2)}，客户端: RM${clientFeeNum.toFixed(2)}`,
       }, { status: 400 });
+    }
+
+    // Voucher-only payment must satisfy: vouchers used > 0 AND zero cash due.
+    // Otherwise customer should pick QR/FPX for the cash portion (delivery fee
+    // in mid/far zones, or add-ons that vouchers don't cover).
+    if (paymentMethod === 'voucher') {
+      if (mealVouchersUsed === 0) {
+        return NextResponse.json({ error: '"餐券"支付需选择餐券抵扣' }, { status: 400 });
+      }
+      const cashDue = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount) + serverDeliveryFee;
+      if (cashDue > 0.02) {
+        return NextResponse.json({
+          error: `还需付款 RM ${cashDue.toFixed(2)}，请选择 QR 或 FPX 支付方式`,
+        }, { status: 400 });
+      }
     }
 
     // ── Group by date/time and create orders ──────────────────

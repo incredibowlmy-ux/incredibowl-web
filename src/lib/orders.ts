@@ -27,7 +27,7 @@ export interface OrderData {
     deliveryDistanceKm?: number;
     deliveryDate: string;
     deliveryTime: string;
-    paymentMethod: 'qr' | 'fpx' | 'curlec';
+    paymentMethod: 'qr' | 'fpx' | 'curlec' | 'voucher';
     receiptUploaded: boolean;
     receiptUrl?: string;
     razorpayPaymentId?: string;

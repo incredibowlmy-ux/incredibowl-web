@@ -1079,8 +1079,14 @@ export default function AdminPage() {
 
                                             {/* Payment & Promo Info */}
                                             <div className="flex flex-wrap items-center gap-2 text-xs">
-                                                <span className={`px-2 py-1 rounded-lg font-bold ${order.paymentMethod === 'qr' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                    {order.paymentMethod === 'qr' ? '💳 DuitNow QR' : '🏦 FPX/Card'}
+                                                <span className={`px-2 py-1 rounded-lg font-bold ${
+                                                    order.paymentMethod === 'qr' ? 'bg-pink-100 text-pink-700'
+                                                        : order.paymentMethod === 'voucher' ? 'bg-green-100 text-green-700'
+                                                        : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                    {order.paymentMethod === 'qr' ? '💳 DuitNow QR'
+                                                        : order.paymentMethod === 'voucher' ? '🎟️ 餐券全额抵扣'
+                                                        : '🏦 FPX/Card'}
                                                 </span>
                                                 {order.receiptUploaded && order.receiptUrl ? (
                                                     <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-lg font-bold bg-green-100 text-green-700 hover:bg-green-200 transition-colors">📷 查看凭证</a>
