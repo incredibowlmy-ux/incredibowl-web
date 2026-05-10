@@ -368,13 +368,15 @@ export default function CartDrawer({
 
         // Voucher-only flow: meal vouchers covered the entire bill (no cash).
         // Mirror FPX pattern but skip Razorpay: submit creates pending order(s),
-        // then confirm flips to 'confirmed' inline. Vouchers are claimed atomically
-        // server-side; if confirm fails, vouchers stay claimed but order pending —
-        // admin can sort that rare case out.
+        // then confirm flips to 'confirmed'. If confirm fails, we MUST roll back
+        // by cancelling the pending order — this triggers releaseMealVouchers
+        // server-side so the customer's vouchers aren't lost in limbo.
         if (isFullyCoveredByVouchers) {
             setSubmitting(true);
+            let voucherOrderIds: string[] = [];
             try {
                 const result = await submitOrderViaAPI('voucher');
+                voucherOrderIds = result.orderIds;
                 trackPixel('InitiateCheckout', { value: 0, currency: 'MYR' }, result.checkoutEventId);
                 const confirmRes = await fetch('/api/confirm-order', {
                     method: 'POST',
@@ -392,6 +394,15 @@ export default function CartDrawer({
                     onClose();
                 }, 4000);
             } catch (err: any) {
+                // Rollback: if submit succeeded but confirm failed, cancel the
+                // pending order so claimed vouchers get released back to the user.
+                if (voucherOrderIds.length > 0) {
+                    await fetch('/api/confirm-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled' }),
+                    }).catch(() => {});
+                }
                 alert(err.message || '下单失败，请重试');
             }
             setSubmitting(false);
