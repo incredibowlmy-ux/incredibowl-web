@@ -691,13 +691,13 @@ export default function MemberPage() {
                                     <div className="flex items-baseline justify-between">
                                         <div>
                                             <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">可用餐券</p>
-                                            <p className="text-5xl font-black text-[#FF6B35] leading-none mt-1">{mealVoucherInfo.availableCount}</p>
+                                            <p className="text-3xl font-black text-[#FF6B35] leading-none mt-1">{mealVoucherInfo.availableCount}</p>
                                             <p className="text-[10px] text-[#1A2D23]/40 mt-1">张 · 1 张 = 1 份主餐</p>
                                         </div>
                                         {mealVoucherInfo.soonestDaysLeft !== null && (
                                             <div className="text-right">
                                                 <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">最近到期</p>
-                                                <p className="text-2xl font-black text-[#1A2D23] mt-1">
+                                                <p className="text-xl font-black text-[#1A2D23] mt-1">
                                                     {mealVoucherInfo.soonestDaysLeft}
                                                     <span className="text-xs font-bold text-[#1A2D23]/50 ml-1">天</span>
                                                 </p>

@@ -374,10 +374,6 @@ export default function MealVoucherShopPage() {
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-[#FF6B35] mt-0.5">•</span>
-                            <span>结账时勾选「用餐券抵扣」，可一次抵多张（4 人 = 4 张券）</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                            <span className="text-[#FF6B35] mt-0.5">•</span>
                             <span><strong className="text-[#1A2D23]">加购项（饮料、加料、蛋等）</strong>不在抵扣范围内，需现金支付</span>
                         </li>
                         <li className="flex items-start gap-2">

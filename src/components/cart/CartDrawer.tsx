@@ -657,7 +657,7 @@ export default function CartDrawer({
                                         </div>
                                         {cappedMealVouchersUsed > 0 && !vouchersLockedByPromo && (
                                             <p className="text-[10px] text-green-700 font-bold mt-2 flex items-center gap-1">
-                                                <CheckCircle size={11} /> 已抵 {cappedMealVouchersUsed} 份主餐 · 减 RM {mealVoucherDiscount.toFixed(2)}（加购需现金）
+                                                <CheckCircle size={11} /> 已抵 {cappedMealVouchersUsed} 份主餐 · 减 RM {mealVoucherDiscount.toFixed(2)}<span className="lg:hidden">（加购需现金）</span>
                                             </p>
                                         )}
                                         {vouchersLockedByPromo && (
