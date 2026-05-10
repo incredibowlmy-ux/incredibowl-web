@@ -73,13 +73,24 @@ export default function MealVoucherShopPage() {
             const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
             const { storage } = await import('@/lib/firebase');
             const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-            const storageRef = ref(storage, `meal-voucher-receipts/${currentUser.uid}/${Date.now()}_${safeName}`);
+            // Reuse the existing `receipts/{uid}/...` path that already has
+            // working Storage Rules (food orders use it). Prefix `voucher_`
+            // so admin can tell apart food receipts from voucher purchase
+            // receipts when browsing storage. No Firebase Console change needed.
+            const storageRef = ref(storage, `receipts/${currentUser.uid}/voucher_${Date.now()}_${safeName}`);
             await uploadBytes(storageRef, file, { contentType: file.type });
             setReceiptUrl(await getDownloadURL(storageRef));
             setReceiptUploaded(true);
         } catch (err: any) {
-            console.error('[Receipt upload failed]', err);
-            alert(err?.message || '上传失败，请重试');
+            console.error('[Voucher receipt upload failed]', err);
+            const code = err?.code || '';
+            let msg = '上传失败，请重试';
+            if (code === 'storage/unauthorized') msg = '上传被拒绝（Storage 权限规则未授权）。请刷新页面重试，仍失败请 WhatsApp 010-337 0197';
+            else if (code === 'storage/canceled') msg = '上传被取消，请重试';
+            else if (code === 'storage/retry-limit-exceeded') msg = '网络太慢，请换 Wi-Fi 重试';
+            else if (code === 'storage/quota-exceeded') msg = '存储空间已满，请联系客服';
+            else if (err?.message) msg = `上传失败：${err.message}`;
+            alert(msg);
         }
         setUploading(false);
     };
