@@ -139,6 +139,8 @@ export async function sendCapiEvent(event: CapiEvent): Promise<{ ok: boolean; er
       console.error(`[CAPI] ${event.eventName} (${event.eventId}) → ${res.status}`, text);
       return { ok: false, error: `${res.status}: ${text}` };
     }
+    // Log success too so we can verify the call completed in Vercel logs.
+    console.log(`[CAPI] ${event.eventName} (${event.eventId}) → 200`);
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

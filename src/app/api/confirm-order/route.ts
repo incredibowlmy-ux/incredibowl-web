@@ -225,9 +225,12 @@ export async function POST(req: Request) {
     try { capiCtx = extractRequestContext(req); } catch { capiCtx = null; }
 
     const purchaseEventIds: Record<string, string> = {};
-    for (const ev of purchaseEvents) {
+    // AWAIT — fire-and-forget (`void`) gets killed by Vercel serverless when the
+    // function instance is frozen post-response. Awaiting adds ~200ms but
+    // guarantees the CAPI fetch completes before we return.
+    await Promise.allSettled(purchaseEvents.map((ev) => {
       purchaseEventIds[ev.orderId] = ev.eventId;
-      void sendCapiEvent({
+      return sendCapiEvent({
         eventName: 'Purchase',
         eventId: ev.eventId,
         eventSourceUrl: capiCtx?.eventSourceUrl,
@@ -248,7 +251,7 @@ export async function POST(req: Request) {
           orderId: ev.orderId,
         },
       });
-    }
+    }));
 
     return NextResponse.json({
       success: true,

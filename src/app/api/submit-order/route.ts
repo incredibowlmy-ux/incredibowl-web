@@ -295,7 +295,9 @@ export async function POST(req: Request) {
       quantity: (vb.dishQty || 1) * (vb.quantity || 1),
       item_price: vb.serverDishPrice,
     }]));
-    void sendCapiEvent({
+    // AWAIT — fire-and-forget gets killed by Vercel serverless when the
+    // function instance freezes post-response. Adds ~200ms, gains reliability.
+    await sendCapiEvent({
       eventName: 'InitiateCheckout',
       eventId: checkoutEventId,
       eventSourceUrl: ctx.eventSourceUrl,
