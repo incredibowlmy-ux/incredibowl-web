@@ -13,7 +13,7 @@ export default function DeliveryWidgetEN() {
                         <p className="font-black text-[#1A2D23] text-[15px] mb-1 leading-snug">Within 2km of Pearl Point</p>
                         <p className="font-extrabold text-green-600 text-[15px] mb-3 leading-snug">Free delivery 🛵</p>
                         <p className="text-[13px] text-gray-500 leading-relaxed">
-                            <span className="font-semibold">2-5km:</span> <span className="text-gray-700 font-bold">RM 6</span> <span className="mx-0.5 text-gray-300">·</span> Spend RM 20+ <span className="text-[#FF6B35] font-bold">→ free 🏘️</span>
+                            <span className="font-semibold">2-5km:</span> <span className="text-gray-700 font-bold">RM 5</span> <span className="mx-0.5 text-gray-300">·</span> Spend RM 20+ <span className="text-[#FF6B35] font-bold">→ free</span>
                         </p>
                         <p className="text-[13px] text-gray-500 leading-relaxed mt-1">
                             <span className="font-semibold">5-8km:</span> <span className="text-gray-700 font-bold">RM 15</span> <span className="text-gray-400">(RM 40+ → RM 5)</span>

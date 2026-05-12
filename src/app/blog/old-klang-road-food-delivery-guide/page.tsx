@@ -75,7 +75,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
         name: "Incredibowl 配送范围到哪里？运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2km 内免运（覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden 等）。2–5km 满 RM20 免运（邻里特惠，不到 RM6）。5–8km RM15（满 RM40 → RM5）。8km 以外 RM25（满 RM40 → RM15）。",
+          text: "Pearl Point 出发，2km 内免运（覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden 等）。2–5km 满 RM20 免运（邻里特惠，不到 RM5）。5–8km RM15（满 RM40 → RM5）。8km 以外 RM25（满 RM40 → RM15）。",
         },
       },
       {
@@ -208,7 +208,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             <li>D&apos;Sands / SkyVille 8 @ Benteng</li>
           </ul>
           <p className="mt-4">
-            <strong>运费规则</strong>：2km 内免运 · 2–5km 满 RM20 自动免运 🏘️（邻里特惠，不到 RM6）· 5–8km RM15（满 RM40 → RM5）· 8km+ RM25（满 RM40 → RM15）。每日早上 6AM 截单。
+            <strong>运费规则</strong>：2km 内免运 · 2–5km 满 RM20 自动免运（邻里特惠，不到 RM5）· 5–8km RM15（满 RM40 → RM5）· 8km+ RM25（满 RM40 → RM15）。每日早上 6AM 截单。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -233,7 +233,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Incredibowl 配送范围到哪里？运费多少？</h3>
-              <p>Pearl Point 出发，2km 内免运（涵盖 Old Klang Road 中段绝大部分公寓）。2–5km 满 RM20 自动免运 🏘️ 邻里特惠（不到 RM6）。5–8km RM15（满 RM40 自动减至 RM5），8km 以外 RM25（满 RM40 自动减至 RM15）。</p>
+              <p>Pearl Point 出发，2km 内免运（涵盖 Old Klang Road 中段绝大部分公寓）。2–5km 满 RM20 自动免运 邻里特惠（不到 RM5）。5–8km RM15（满 RM40 自动减至 RM5），8km 以外 RM25（满 RM40 自动减至 RM15）。</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 怎么下单？什么时候截单？</h3>

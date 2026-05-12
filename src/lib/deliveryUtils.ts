@@ -3,7 +3,7 @@
  *
  * Tiers (May 2026):
  *   0 – 2 km   → free
- *   2 – 5 km   → RM 6   (free  when freeDeliveryBasis ≥ RM 20 — saves RM 6)
+ *   2 – 5 km   → RM 5   (free  when freeDeliveryBasis ≥ RM 20 — saves RM 5)
  *   5 – 8 km   → RM 15  (RM 5  when freeDeliveryBasis ≥ RM 40 — saves RM 10)
  *   8 km +     → RM 25  (RM 15 when freeDeliveryBasis ≥ RM 40 — saves RM 10)
  *
@@ -41,7 +41,7 @@ export const FREE_DELIVERY_THRESHOLD_FAR_RM = 40;
 // (e.g. footer copy, EN nav) get the strictest threshold so anything we
 // haven't migrated to per-tier still shows a conservative figure.
 export const FREE_DELIVERY_THRESHOLD_RM = FREE_DELIVERY_THRESHOLD_MID_RM;
-export const DELIVERY_FEE_NEAR_RM = 6;
+export const DELIVERY_FEE_NEAR_RM = 5;
 export const DELIVERY_FEE_MID_RM = 15;
 export const DELIVERY_FEE_FAR_RM = 25;
 // Flat discount applied to mid/far when basis ≥ threshold. Near is capped
@@ -108,7 +108,7 @@ export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): 
         tier === 'mid' ? DELIVERY_FEE_MID_RM :
         DELIVERY_FEE_FAR_RM;
     const thresholdMet = freeDeliveryBasis >= thresholdForTier(tier);
-    // Near: RM 6 - RM 10 = -4 → max(0, -4) = 0 (free)
+    // Near: RM 5 - RM 10 = -5 → max(0, -5) = 0 (free)
     // Mid:  RM 15 - RM 10 = RM 5
     // Far:  RM 25 - RM 10 = RM 15
     if (thresholdMet) return Math.max(0, baseFee - DELIVERY_THRESHOLD_DISCOUNT_RM);
@@ -121,7 +121,7 @@ export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): 
  * free tier, or the basis is irrelevant.
  *
  * Threshold + benefit by tier:
- *   near → RM 20 threshold → free (saves RM 6)
+ *   near → RM 20 threshold → free (saves RM 5)
  *   mid  → RM 40 threshold → RM 5 (saves RM 10)
  *   far  → RM 40 threshold → RM 15 (saves RM 10)
  *
@@ -151,7 +151,7 @@ export function tierLabelZh(tier: DeliveryTier): string {
 export function tierFeeHintZh(tier: DeliveryTier): string {
     switch (tier) {
         case 'free': return '免运费';
-        case 'near': return `RM 6 · 满 RM ${FREE_DELIVERY_THRESHOLD_NEAR_RM} → 免运 🏘️`;
+        case 'near': return `RM 5 · 满 RM ${FREE_DELIVERY_THRESHOLD_NEAR_RM} → 免运`;
         case 'mid': return `RM 15 · 满 RM ${FREE_DELIVERY_THRESHOLD_MID_RM} → RM 5`;
         case 'far': return `RM 25 · 满 RM ${FREE_DELIVERY_THRESHOLD_FAR_RM} → RM 15`;
     }
@@ -165,7 +165,7 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
  * field. Grandfather them in with the OLD pricing model so they don't get
  * blocked at checkout demanding re-verification:
  *   - within2km  → free  (matches new 'free' tier)
- *   - outside2km → flat RM 6 with the near-tier RM 20 rule  (matches 'near')
+ *   - outside2km → flat RM 5 with the near-tier RM 20 rule  (matches 'near')
  *
  * Returns null if the user has neither — in that case checkout is blocked
  * and they're prompted to verify their address.
