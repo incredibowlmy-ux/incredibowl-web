@@ -55,8 +55,8 @@ const defaultAddOnSections: AddOnSection[] = [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: p('sunny-egg', 2.50), category: 'alacarte' },
             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'alacarte' },
             { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: p('potato-egg', 3.50), image: '/potato_fried_egg.webp', category: 'alacarte' },
-            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame (50g)', price: p('extra-edamame', 2.50), category: 'alacarte', maxQty: 3 },
-            { id: 'extra-corn', name: '金黄甜玉米 (50g)', nameEn: 'Sweet Corn (50g)', price: p('extra-corn', 2.50), category: 'alacarte', maxQty: 3 },
+            { id: 'extra-edamame', name: '清甜水煮毛豆仁 (40g)', nameEn: 'Edamame (40g)', price: p('extra-edamame', 2.50), category: 'alacarte', maxQty: 3 },
+            { id: 'extra-corn', name: '金黄甜玉米 (40g)', nameEn: 'Sweet Corn (40g)', price: p('extra-corn', 2.50), category: 'alacarte', maxQty: 3 },
             { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: p('chia-pudding', 6.90), image: '/chia_seed_pudding.webp', category: 'alacarte' },
         ]
     },
@@ -230,10 +230,10 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop', price: p('extra-chicken-chop', 9.90), category: 'sides', maxQty: 3 },
-                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (50g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
-                            { id: 'extra-corn-side', name: '金黄甜玉米 (50g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (50g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop (150g)', price: p('extra-chicken-chop', 10.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (40g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-corn-side', name: '金黄甜玉米 (40g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -319,7 +319,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-scallion-chop-side', name: '【收工犒劳】多加一只葱香煎鸡扒', nameEn: 'Extra Scallion Chicken Chop', price: p('extra-scallion-chop-side', 9.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-scallion-chop-side', name: '【收工犒劳】多加一只葱香煎鸡扒', nameEn: 'Extra Scallion Chicken Chop', price: p('extra-scallion-chop-side', 10.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };

@@ -39,7 +39,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'soy-sauce': 1.50,
 
   // ─── Chicken Chop (id:1) specials ──────────
-  'extra-chicken-chop': 9.90,
+  'extra-chicken-chop': 10.90,
   'chicken-chop-nostalgia-combo': 12.40,
   'edamame': 2.00,
   'corn': 2.00,
@@ -76,7 +76,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.40,
-  'extra-scallion-chop-side': 9.90,
+  'extra-scallion-chop-side': 10.90,
 
   // ─── Potato Pork Belly Stew (id:4) specials ──
   'pork-potato-duo-combo': 11.40,
