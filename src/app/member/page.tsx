@@ -9,16 +9,26 @@ import { getUserOrders } from '@/lib/orders';
 import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
 import { tierFromDistance, tierFeeHintZh, tierLabelZh, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 
-// Dish image mapping for favorite dish display
-const DISH_IMAGES: Record<string, string> = {
+// Legacy dish-name → image map. Only used as fallback for orders placed
+// BEFORE submit-order started persisting `item.image` on the order doc.
+// New dishes don't need to be added here — modern orders carry their own
+// image, so this table is only ever read for archive rows from that era.
+const LEGACY_DISH_IMAGES: Record<string, string> = {
     '纳豆月见海苔饭': '/natto_bowl.webp',
     '香煎金黄鸡扒饭': '/chicken_chop.webp',
     '山药云耳海陆双鲜': '/yam_surf_turf_egg.webp',
     '山药云耳海陆双鲜炒': '/chinese_yam_black_fungus_v3.webp',
     '招牌原盅当归蒸鸡全腿': '/angelica_chicken.webp',
-    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.webp',  // legacy: pre-rename historical orders
+    '招牌原盅当归清蒸鸡全腿': '/angelica_chicken.webp',
     '马铃薯炖花肉片': '/pork_potato_stew.webp',
     '金黄葱香煎鸡汤': '/scallion_chicken_soup.webp',
+};
+
+const resolveDishImage = (item: { name?: string; image?: string } | undefined): string | null => {
+    if (!item) return null;
+    if (item.image) return item.image;
+    if (item.name && LEGACY_DISH_IMAGES[item.name]) return LEGACY_DISH_IMAGES[item.name];
+    return null;
 };
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: any }> = {
@@ -346,7 +356,12 @@ export default function MemberPage() {
         });
     });
     const favDish = Object.entries(dishCount).sort((a, b) => b[1] - a[1])[0];
-    const favDishImage = favDish ? DISH_IMAGES[favDish[0]] : null;
+    // Prefer image from any historical order item carrying that name;
+    // fall back to the legacy hard-coded map only if none has one.
+    const favDishItem = favDish
+        ? orders.flatMap((o: any) => o.items || []).find((it: any) => it?.name === favDish[0])
+        : undefined;
+    const favDishImage = resolveDishImage(favDishItem) || (favDish ? LEGACY_DISH_IMAGES[favDish[0]] : null);
 
     // Reorder handler
     const handleReorder = (order: any) => {
@@ -563,8 +578,9 @@ export default function MemberPage() {
                                     const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
                                     const StIcon = st.icon;
                                     const isExpanded = expandedOrder === order.id;
-                                    const mainDish = order.items?.[0]?.name || '—';
-                                    const mainDishImage = DISH_IMAGES[mainDish];
+                                    const mainItem = order.items?.[0];
+                                    const mainDish = mainItem?.name || '—';
+                                    const mainDishImage = resolveDishImage(mainItem);
                                     const itemCount = order.items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0;
 
                                     return (
