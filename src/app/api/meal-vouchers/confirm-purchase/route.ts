@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { mintVouchersForPurchase } from '@/lib/mealVoucherUtils';
+import { claimPromoVoucher } from '@/lib/voucherValidation';
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -95,11 +96,13 @@ export async function POST(req: NextRequest) {
     // double-clicks / network retries.
     const { FieldValue } = await import('firebase-admin/firestore');
     const userRef = db.collection('users').doc(auth.uid);
+    let shouldClaimPromo = false;
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(purchaseRef);
       if (!fresh.exists) return;
       const d = fresh.data() || {};
       if (d.status === 'paid') return; // already finalized
+      shouldClaimPromo = !!d.promoCode;
       tx.update(purchaseRef, {
         status: 'paid',
         razorpayPaymentId,
@@ -111,6 +114,17 @@ export async function POST(req: NextRequest) {
         totalSpent: FieldValue.increment(Number(d.amountPaid) || 0),
       });
     });
+
+    // Burn the promo voucher only on a first-time paid transition. Wrapped
+    // in try/catch so a flaky voucher-claim doesn't fail the customer's
+    // purchase — they already paid and the vouchers are already minted.
+    if (shouldClaimPromo && purchaseData.promoCode) {
+      try {
+        await claimPromoVoucher(db, purchaseData.promoCode, auth.uid);
+      } catch (e) {
+        console.warn('Failed to claim promo voucher on meal-voucher purchase:', e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

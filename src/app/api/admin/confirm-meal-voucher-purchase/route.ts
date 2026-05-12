@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mintVouchersForPurchase } from '@/lib/mealVoucherUtils';
+import { claimPromoVoucher } from '@/lib/voucherValidation';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -89,11 +90,13 @@ export async function POST(req: NextRequest) {
     // Atomic: flip status='paid' + bump customer LTV (idempotent via
     // status guard so admin double-clicks don't double-bump).
     const userRef = db.collection('users').doc(data.userId);
+    let shouldClaimPromo = false;
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(ref);
       if (!fresh.exists) return;
       const d = fresh.data() || {};
       if (d.status === 'paid') return;
+      shouldClaimPromo = !!d.promoCode;
       tx.update(ref, {
         status: 'paid',
         approvedBy: admin.email,
@@ -104,6 +107,16 @@ export async function POST(req: NextRequest) {
         totalSpent: FieldValue.increment(Number(d.amountPaid) || 0),
       });
     });
+
+    // First-time paid transition → burn the promo voucher. Swallows
+    // failures so a flaky voucher claim doesn't block admin approval.
+    if (shouldClaimPromo && data.promoCode && data.userId) {
+      try {
+        await claimPromoVoucher(db, data.promoCode, data.userId);
+      } catch (e) {
+        console.warn('Failed to claim promo voucher on admin meal-voucher confirm:', e);
+      }
+    }
 
     return NextResponse.json({
       success: true,

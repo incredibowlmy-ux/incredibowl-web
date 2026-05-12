@@ -7,7 +7,7 @@ import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile } from '@/lib/auth';
 import {
     ArrowLeft, Ticket, CheckCircle, Sparkles, AlertCircle, Loader2,
-    CreditCard, Phone, Plus, Calendar, ShieldCheck, Clock,
+    CreditCard, Phone, Plus, Calendar, ShieldCheck, Clock, Tag,
 } from 'lucide-react';
 import { MEAL_VOUCHER_BUNDLES, MEAL_VOUCHER_VALIDITY_DAYS } from '@/data/mealVoucherConfig';
 import type { MealVoucherBundle } from '@/data/mealVoucherConfig';
@@ -27,7 +27,66 @@ export default function MealVoucherShopPage() {
     const [voucherCount, setVoucherCount] = useState(0);
     const [error, setError] = useState('');
 
+    // Promo code (RM discount voucher) — same system as checkout drawer
+    const [promoCode, setPromoCode] = useState('');
+    const [promoApplied, setPromoApplied] = useState(false);
+    const [promoDiscount, setPromoDiscount] = useState(0);
+    const [promoError, setPromoError] = useState('');
+    const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+
     const selectedBundle = MEAL_VOUCHER_BUNDLES.find(b => b.id === selectedBundleId)!;
+    // Cap discount so we never charge RM 0 (skips Razorpay min-amount issues
+    // and avoids "free meal-voucher pack" abuse). Floor at RM 0.01.
+    const cappedPromoDiscount = promoApplied
+        ? Math.min(promoDiscount, Math.max(0, selectedBundle.price - 0.01))
+        : 0;
+    const finalPrice = Math.max(0.01, selectedBundle.price - cappedPromoDiscount);
+
+    // Switching bundle invalidates the discount (the cap depends on bundle price);
+    // re-apply the code if you want it on a different pack.
+    useEffect(() => {
+        if (promoApplied) {
+            setPromoApplied(false);
+            setPromoDiscount(0);
+            setPromoError('已切换组合，请重新使用优惠码');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedBundleId]);
+
+    const handleApplyPromo = async () => {
+        const code = promoCode.trim().toUpperCase();
+        if (!code) { setPromoError('请输入优惠码'); return; }
+        if (!currentUser) { setPromoError('请先登录'); return; }
+        setIsCheckingPromo(true);
+        setPromoError('');
+        try {
+            const res = await fetch('/api/check-voucher', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ voucherCode: code, userId: currentUser.uid }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setPromoError(data.error || '优惠码无效');
+                setPromoApplied(false); setPromoDiscount(0);
+                return;
+            }
+            const discount = Number(data.discount) || 0;
+            if (discount >= selectedBundle.price) {
+                // Edge case: RM 5 discount on a RM 5 pack — would drive amount to 0.
+                setPromoError('此优惠码金额≥组合价，请选更大的组合或换码');
+                setPromoApplied(false); setPromoDiscount(0);
+                return;
+            }
+            setPromoDiscount(discount);
+            setPromoApplied(true);
+            setPromoError('');
+        } catch {
+            setPromoError('验证失败，请稍后再试');
+        } finally {
+            setIsCheckingPromo(false);
+        }
+    };
 
     useEffect(() => {
         const unsubscribe = onAuthChange(async (user) => {
@@ -120,6 +179,8 @@ export default function MealVoucherShopPage() {
                     clientPrice: selectedBundle.price,
                     paymentMethod,
                     receiptUrl: paymentMethod === 'qr' ? receiptUrl : undefined,
+                    voucherCode: promoApplied ? promoCode.trim().toUpperCase() : '',
+                    clientFinalPrice: Number(finalPrice.toFixed(2)),
                 }),
             });
             const createData = await createRes.json();
@@ -362,6 +423,68 @@ export default function MealVoucherShopPage() {
                     })}
                 </section>
 
+                {/* Promo code — same UX as checkout drawer */}
+                <section className="bg-white rounded-2xl p-5 shadow-md border border-[#E3EADA] space-y-2">
+                    <h4 className="text-sm font-black text-[#1A2D23] flex items-center gap-2">
+                        <Tag size={14} className="text-[#FF6B35]" /> 优惠码 / Promo Code
+                    </h4>
+                    <div className="flex gap-2">
+                        <div className="flex-1 relative">
+                            <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                            <input
+                                type="text"
+                                value={promoCode}
+                                onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
+                                placeholder="输入优惠码 / Promo Code"
+                                disabled={promoApplied}
+                                className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`}
+                            />
+                        </div>
+                        {promoApplied ? (
+                            <button
+                                type="button"
+                                onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); setPromoError(''); }}
+                                className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors"
+                            >
+                                取消
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={handleApplyPromo}
+                                disabled={isCheckingPromo}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}
+                            >
+                                {isCheckingPromo ? '验证中…' : '使用'}
+                            </button>
+                        )}
+                    </div>
+                    {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
+                    {promoApplied && (
+                        <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1">
+                            <CheckCircle size={12} /> 已减免 RM {cappedPromoDiscount.toFixed(2)}
+                        </p>
+                    )}
+
+                    {/* Price summary */}
+                    <div className="mt-3 pt-3 border-t border-[#E3EADA] space-y-1 text-xs">
+                        <div className="flex justify-between text-gray-500">
+                            <span>组合价</span>
+                            <span className={promoApplied ? 'line-through' : ''}>RM {selectedBundle.price.toFixed(2)}</span>
+                        </div>
+                        {promoApplied && (
+                            <div className="flex justify-between text-green-600 font-bold">
+                                <span>优惠减免</span>
+                                <span>− RM {cappedPromoDiscount.toFixed(2)}</span>
+                            </div>
+                        )}
+                        <div className="flex justify-between font-black text-[#1A2D23] text-sm pt-1">
+                            <span>实付</span>
+                            <span className="text-[#FF6B35]">RM {finalPrice.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Rules */}
                 <section className="bg-white/60 rounded-2xl p-5 border border-[#E3EADA]">
                     <h4 className="text-sm font-black text-[#1A2D23] mb-3 flex items-center gap-2">
@@ -422,7 +545,7 @@ export default function MealVoucherShopPage() {
                             </div>
                             <div className="bg-[#F5F3EF] rounded-lg px-3 py-2 text-[10px] text-[#1A2D23]/60 space-y-0.5">
                                 <p>✅ 商户：<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
-                                <p>✅ 转账金额：<strong className="text-[#1A2D23]">RM {selectedBundle.price.toFixed(2)}</strong></p>
+                                <p>✅ 转账金额：<strong className="text-[#1A2D23]">RM {finalPrice.toFixed(2)}</strong>{promoApplied && <span className="text-green-600"> （已折 RM {cappedPromoDiscount.toFixed(2)}）</span>}</p>
                                 <p>✅ 我们将在 24 小时内核对并发餐券到你的钱包</p>
                             </div>
                             {receiptUploaded && receiptUrl ? (
@@ -482,7 +605,7 @@ export default function MealVoucherShopPage() {
                     ) : (
                         <>
                             <Ticket size={20} />
-                            立即购买 · RM {selectedBundle.price.toFixed(2)}
+                            立即购买 · RM {finalPrice.toFixed(2)}
                         </>
                     )}
                 </button>

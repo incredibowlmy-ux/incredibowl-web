@@ -14,7 +14,51 @@
  */
 
 import type { Firestore } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import { normalizePhone } from './phoneUtils';
+
+/**
+ * Atomically consume one use of a promo voucher and dedupe it on the user.
+ *
+ * Mirrors the in-flight logic in /api/confirm-order so meal-voucher purchases
+ * can burn the same code when an FPX payment settles or admin approves a QR
+ * receipt. Idempotent at the caller — call sites must guard with a status
+ * transition so we don't double-claim across retries.
+ *
+ * Race-safe: if another order/purchase fully claimed the code between
+ * validate-time and confirm-time, we skip the increment but DO NOT throw —
+ * the customer already paid and we'd rather honor the order than reverse.
+ */
+export async function claimPromoVoucher(
+    db: Firestore,
+    voucherCodeRaw: string,
+    userId: string,
+): Promise<void> {
+    const code = (voucherCodeRaw || '').trim().toUpperCase();
+    if (!code || !userId) return;
+    const voucherRef = db.collection('vouchers').doc(code);
+    const userRef = db.collection('users').doc(userId);
+    await db.runTransaction(async (tx) => {
+        const vSnap = await tx.get(voucherRef);
+        if (!vSnap.exists) return;
+        const v = vSnap.data() || {};
+        const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
+        const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
+        if (used >= max) return;
+        const nextUsed = used + 1;
+        tx.update(voucherRef, {
+            usedCount: nextUsed,
+            isUsed: nextUsed >= max,
+            usedBy: userId,
+            usedAt: FieldValue.serverTimestamp(),
+        });
+        tx.set(
+            userRef,
+            { vouchersUsed: FieldValue.arrayUnion(code) },
+            { merge: true }
+        );
+    });
+}
 
 export type VoucherCheckResult =
     | {
