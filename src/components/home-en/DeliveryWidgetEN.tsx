@@ -16,7 +16,10 @@ export default function DeliveryWidgetEN() {
                             <span className="font-semibold">2-5km:</span> <span className="text-gray-700 font-bold">RM 6</span> <span className="mx-0.5 text-gray-300">·</span> Spend RM 40+ <span className="text-[#FF6B35] font-bold">→ free</span>
                         </p>
                         <p className="text-[13px] text-gray-500 leading-relaxed mt-1">
-                            <span className="font-semibold">5-8km:</span> <span className="text-gray-700 font-bold">RM 15</span> <span className="mx-0.5 text-gray-300">·</span> <span className="font-semibold">8km+:</span> <span className="text-gray-700 font-bold">RM 25</span>
+                            <span className="font-semibold">5-8km:</span> <span className="text-gray-700 font-bold">RM 15</span> <span className="text-gray-400">(RM 40+ → RM 5)</span>
+                        </p>
+                        <p className="text-[13px] text-gray-500 leading-relaxed mt-1">
+                            <span className="font-semibold">8km+:</span> <span className="text-gray-700 font-bold">RM 25</span> <span className="text-gray-400">(RM 40+ → RM 15)</span>
                         </p>
                     </div>
 

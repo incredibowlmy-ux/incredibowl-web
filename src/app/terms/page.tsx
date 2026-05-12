@@ -31,8 +31,8 @@ export default function TermsAndConditions() {
                         <ul className="list-disc ml-6 mt-1">
                             <li><b>0–2 km</b>：Free / 免运费</li>
                             <li><b>2–5 km</b>：RM 6 — waived when cart total ≥ RM 40 (after promo-code discount; meal-voucher redemption does NOT affect this threshold) / RM 6，使用 promo code 折后满 RM 40 即免运（餐券抵扣不影响门槛）</li>
-                            <li><b>5–8 km</b>：RM 15 (flat, no free-delivery threshold) / RM 15 平价，不享免运</li>
-                            <li><b>8 km +</b>：RM 25 (flat, no free-delivery threshold) / RM 25 平价，不享免运</li>
+                            <li><b>5–8 km</b>：RM 15 — reduced to RM 5 when cart total ≥ RM 40 (saves RM 10; same basis as the 2–5 km rule) / RM 15，使用 promo code 折后满 RM 40 自动减至 RM 5（省 RM 10；门槛与 2–5km 同）</li>
+                            <li><b>8 km +</b>：RM 25 — reduced to RM 15 when cart total ≥ RM 40 (saves RM 10; same basis) / RM 25，使用 promo code 折后满 RM 40 自动减至 RM 15（省 RM 10；门槛同上）</li>
                         </ul>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout. / 距离由您保存的配送地址通过 Google Maps 自动测算。下单前请在个人资料中确认地址。</p>
                         <p className="mt-2 text-[#E76F51] font-bold">Delivery Times / 配送时间：</p>

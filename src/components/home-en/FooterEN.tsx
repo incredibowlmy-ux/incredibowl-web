@@ -73,7 +73,7 @@ export default function FooterEN() {
                                 </p>
                                 <p className="text-[12px] text-[#1A2D23]/55 italic leading-relaxed mt-3 px-4">
                                     Free within 2km · 2-5km RM 6 (free over RM 40)<br />
-                                    5-8km RM 15 · 8km+ RM 25
+                                    5-8km RM 15 (RM 40+ → RM 5) · 8km+ RM 25 (RM 40+ → RM 15)
                                 </p>
                             </div>
                         </div>
@@ -126,7 +126,7 @@ export default function FooterEN() {
                         </div>
                         <p className="text-[13px] text-[#1A2D23]/55 italic leading-relaxed">
                             Free within 2km · 2-5km RM 6 (free over RM 40)<br />
-                            5-8km RM 15 · 8km+ RM 25
+                            5-8km RM 15 (RM 40+ → RM 5) · 8km+ RM 25 (RM 40+ → RM 15)
                         </p>
                     </div>
 

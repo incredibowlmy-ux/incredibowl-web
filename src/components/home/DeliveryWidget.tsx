@@ -18,9 +18,10 @@ export default function DeliveryWidget() {
                             <span className="font-semibold">2–5km：</span>满 RM 40 <span className="text-[#FF6B35] font-bold">→ 免运</span> <span className="text-gray-300 mx-0.5">·</span> 不到 <span className="text-gray-700 font-bold">RM 6</span>
                         </p>
                         <p className="text-[12px] text-gray-400 leading-relaxed mt-0.5">
-                            <span className="font-semibold">5–8km：</span><span className="text-amber-600 font-bold">RM 15</span>
-                            <span className="text-gray-300 mx-1">·</span>
-                            <span className="font-semibold">8km+：</span><span className="text-red-500 font-bold">RM 25</span>
+                            <span className="font-semibold">5–8km：</span><span className="text-amber-600 font-bold">RM 15</span> <span className="text-gray-400">(满 40 → RM 5)</span>
+                        </p>
+                        <p className="text-[12px] text-gray-400 leading-relaxed mt-0.5">
+                            <span className="font-semibold">8km+：</span><span className="text-red-500 font-bold">RM 25</span> <span className="text-gray-400">(满 40 → RM 15)</span>
                         </p>
                     </div>
 

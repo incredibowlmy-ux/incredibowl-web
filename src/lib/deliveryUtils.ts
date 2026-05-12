@@ -3,21 +3,23 @@
  *
  * Tiers (May 2026):
  *   0 – 2 km   → free
- *   2 – 5 km   → RM 6   (waived when freeDeliveryBasis ≥ RM 40)
- *   5 – 8 km   → RM 15  (no free-delivery threshold)
- *   8 km +     → RM 25  (no free-delivery threshold)
+ *   2 – 5 km   → RM 6   (free       when freeDeliveryBasis ≥ RM 40 — saves RM 6)
+ *   5 – 8 km   → RM 15  (RM 5       when freeDeliveryBasis ≥ RM 40 — saves RM 10)
+ *   8 km +     → RM 25  (RM 15      when freeDeliveryBasis ≥ RM 40 — saves RM 10)
  *
  * `freeDeliveryBasis` definition (decided 2026-05-11):
  *   cartTotal − promoDiscount  (RM-discount codes only)
  *   NOT subtracted: mealVoucherDiscount (prepaid meal vouchers don't game it)
  *
  * Rationale: meal vouchers are already paid revenue — burning one to redeem a
- * main dish shouldn't shrink the cart back below the free-delivery threshold.
- * RM-promo codes ARE subtracted because they reduce real revenue per order.
+ * main dish shouldn't shrink the cart back below the threshold. RM-promo
+ * codes ARE subtracted because they reduce real revenue per order.
  *
- * The 5+ km tiers do NOT honour the RM 40 free rule because the operating
- * cost (own driver + fuel + time) exceeds the voucher headroom on small
- * orders, and applying free delivery there was a loss-making loophole.
+ * Threshold benefit (updated 2026-05-12): the RM 40 rule now applies to ALL
+ * paid tiers, not just near. Near gets the full waiver (was already free-ish
+ * at that basket size); mid/far get a flat RM 10 off because operating cost
+ * doesn't go to zero on long routes, but a partial discount still rewards
+ * larger orders.
  */
 
 // Verified centroid (provided by Carmen via Google Maps right-click).
@@ -27,10 +29,13 @@ export const PEARL_POINT_LNG = 101.67428154483449;
 export const FREE_DELIVERY_RADIUS_KM = 2;
 export const NEAR_RADIUS_KM = 5;
 export const MID_RADIUS_KM = 8;
-export const FREE_DELIVERY_THRESHOLD_RM = 40; // applies to NEAR tier only
+export const FREE_DELIVERY_THRESHOLD_RM = 40; // applies to ALL paid tiers
 export const DELIVERY_FEE_NEAR_RM = 6;
 export const DELIVERY_FEE_MID_RM = 15;
 export const DELIVERY_FEE_FAR_RM = 25;
+// Flat discount applied to mid/far when basis ≥ threshold. Near is capped
+// to RM 0 (becomes free) via Math.max in calcDeliveryFee.
+export const DELIVERY_THRESHOLD_DISCOUNT_RM = 10;
 
 // Backwards-compat alias used by older imports.
 export const DELIVERY_FEE_OUTSIDE_RM = DELIVERY_FEE_NEAR_RM;
@@ -77,22 +82,33 @@ export function tierFromDistance(km: number): DeliveryTier {
 export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): number {
     const tier = tierFromDistance(distanceKm);
     if (tier === 'free') return 0;
-    if (tier === 'near') {
-        return freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM;
-    }
-    if (tier === 'mid') return DELIVERY_FEE_MID_RM;
-    return DELIVERY_FEE_FAR_RM;
+    const baseFee =
+        tier === 'near' ? DELIVERY_FEE_NEAR_RM :
+        tier === 'mid' ? DELIVERY_FEE_MID_RM :
+        DELIVERY_FEE_FAR_RM;
+    const thresholdMet = freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM;
+    // Near: RM 6 - RM 10 = -4 → max(0, -4) = 0 (free)
+    // Mid:  RM 15 - RM 10 = RM 5
+    // Far:  RM 25 - RM 10 = RM 15
+    if (thresholdMet) return Math.max(0, baseFee - DELIVERY_THRESHOLD_DISCOUNT_RM);
+    return baseFee;
 }
 
 /**
- * RM amount the customer needs to add to qualify for free delivery — only
- * meaningful in the 2–5 km tier. Returns 0 outside that tier (already free,
- * or free-rule does not apply at this distance).
+ * RM amount the customer needs to add to hit the RM 40 threshold and trigger
+ * the per-tier delivery discount. Returns 0 if already past threshold, in the
+ * free tier, or the basis is irrelevant.
+ *
+ * Benefit by tier:
+ *   near → free (saves RM 6)
+ *   mid  → RM 5 (saves RM 10)
+ *   far  → RM 15 (saves RM 10)
  *
  * @param freeDeliveryBasis  cartTotal − promoDiscount  (meal voucher NOT subtracted)
  */
 export function freeDeliveryShortfall(distanceKm: number, freeDeliveryBasis: number): number {
-    if (tierFromDistance(distanceKm) !== 'near') return 0;
+    const tier = tierFromDistance(distanceKm);
+    if (tier === 'free') return 0;
     if (freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM) return 0;
     return Math.max(0, FREE_DELIVERY_THRESHOLD_RM - freeDeliveryBasis);
 }
@@ -114,8 +130,8 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
     switch (tier) {
         case 'free': return '免运费';
         case 'near': return 'RM 6 · 满 RM 40 → 免运';
-        case 'mid': return 'RM 15 配送费';
-        case 'far': return 'RM 25 配送费';
+        case 'mid': return 'RM 15 · 满 RM 40 → RM 5';
+        case 'far': return 'RM 25 · 满 RM 40 → RM 15';
     }
 }
 
