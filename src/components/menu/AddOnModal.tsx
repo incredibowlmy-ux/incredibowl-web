@@ -216,12 +216,12 @@ export default function AddOnModal({
             const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
-                titleEn: 'Ultimate Nostalgia Combo (+ RM 12.40)',
+                titleEn: 'Ultimate Nostalgia Combo (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
                 items: [
-                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 14.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.40), category: 'combo' }
+                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 15.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -305,12 +305,12 @@ export default function AddOnModal({
             const scallionCombo: AddOnSection & { extraDesc?: string } = {
                 id: 'scallion-combo',
                 title: '✨ 葱汤干饭王！爆量满足三件套',
-                titleEn: 'Scallion Soup Rice King Trio (+ RM 12.40)',
+                titleEn: 'Scallion Soup Rice King Trio (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：香煎金鸡扒 150g + 古早味荷包蛋 + 加饭\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"',
                 items: [
-                    { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 14.40)', nameEn: 'Rice King Trio', price: p('scallion-soup-combo', 12.40), category: 'combo' }
+                    { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 15.40)', nameEn: 'Rice King Trio', price: p('scallion-soup-combo', 12.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -334,12 +334,12 @@ export default function AddOnModal({
             const porkPotatoCombo: AddOnSection & { extraDesc?: string } = {
                 id: 'pork-potato-combo',
                 title: '✨ 薯肉双拼满足套',
-                titleEn: 'Potato & Pork Belly Duo (+ RM 11.40)',
+                titleEn: 'Potato & Pork Belly Duo (+ RM 13.40)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：绵密马铃薯 90g + 香滑花肉片 70g\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"',
                 items: [
-                    { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 13.40)', nameEn: 'Potato & Pork Belly Duo', price: p('pork-potato-duo-combo', 11.40), category: 'combo' }
+                    { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 15.40)', nameEn: 'Potato & Pork Belly Duo', price: p('pork-potato-duo-combo', 13.40), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -349,7 +349,7 @@ export default function AddOnModal({
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
                             { id: 'extra-potato', name: '【绵密软糯】加马铃薯 (90g)', nameEn: 'Extra Potato (90g)', price: p('extra-potato', 3.50), category: 'sides', maxQty: 3 },
-                            { id: 'extra-pork-belly', name: '【浓香入味】加花肉片 (70g)', nameEn: 'Extra Pork Belly Slices (70g)', price: p('extra-pork-belly', 9.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-pork-belly', name: '【浓香入味】加花肉片 (70g)', nameEn: 'Extra Pork Belly Slices (70g)', price: p('extra-pork-belly', 11.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
