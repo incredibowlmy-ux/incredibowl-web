@@ -3,9 +3,9 @@
  *
  * Tiers (May 2026):
  *   0 – 2 km   → free
- *   2 – 5 km   → RM 6   (free       when freeDeliveryBasis ≥ RM 40 — saves RM 6)
- *   5 – 8 km   → RM 15  (RM 5       when freeDeliveryBasis ≥ RM 40 — saves RM 10)
- *   8 km +     → RM 25  (RM 15      when freeDeliveryBasis ≥ RM 40 — saves RM 10)
+ *   2 – 5 km   → RM 6   (free  when freeDeliveryBasis ≥ RM 20 — saves RM 6)
+ *   5 – 8 km   → RM 15  (RM 5  when freeDeliveryBasis ≥ RM 40 — saves RM 10)
+ *   8 km +     → RM 25  (RM 15 when freeDeliveryBasis ≥ RM 40 — saves RM 10)
  *
  * `freeDeliveryBasis` definition (decided 2026-05-11):
  *   cartTotal − promoDiscount  (RM-discount codes only)
@@ -15,11 +15,14 @@
  * main dish shouldn't shrink the cart back below the threshold. RM-promo
  * codes ARE subtracted because they reduce real revenue per order.
  *
- * Threshold benefit (updated 2026-05-12): the RM 40 rule now applies to ALL
- * paid tiers, not just near. Near gets the full waiver (was already free-ish
- * at that basket size); mid/far get a flat RM 10 off because operating cost
- * doesn't go to zero on long routes, but a partial discount still rewards
- * larger orders.
+ * Threshold benefits:
+ *   - 2026-05-12 — RM 40 rule extended to mid/far with a flat RM 10 off so
+ *     longer routes still reward larger baskets (operating cost doesn't drop
+ *     to zero out far).
+ *   - 2026-05-12 (later) — Neighbour special: 2–5 km gets a lower RM 20
+ *     threshold ("邻里特惠"). One main + 1 add-on is enough; designed to lift
+ *     near-zone order frequency. Mid/far keep RM 40 because the unit-economics
+ *     of long routes can't absorb a low-AOV waiver.
  */
 
 // Verified centroid (provided by Carmen via Google Maps right-click).
@@ -29,7 +32,15 @@ export const PEARL_POINT_LNG = 101.67428154483449;
 export const FREE_DELIVERY_RADIUS_KM = 2;
 export const NEAR_RADIUS_KM = 5;
 export const MID_RADIUS_KM = 8;
-export const FREE_DELIVERY_THRESHOLD_RM = 40; // applies to ALL paid tiers
+// Per-tier free-delivery thresholds. Near gets the neighbour-special RM 20;
+// mid/far stay at RM 40 because long-route cost can't absorb a low-AOV waiver.
+export const FREE_DELIVERY_THRESHOLD_NEAR_RM = 20;
+export const FREE_DELIVERY_THRESHOLD_MID_RM = 40;
+export const FREE_DELIVERY_THRESHOLD_FAR_RM = 40;
+// Backwards-compat: callers that still want a single "rule of thumb" number
+// (e.g. footer copy, EN nav) get the strictest threshold so anything we
+// haven't migrated to per-tier still shows a conservative figure.
+export const FREE_DELIVERY_THRESHOLD_RM = FREE_DELIVERY_THRESHOLD_MID_RM;
 export const DELIVERY_FEE_NEAR_RM = 6;
 export const DELIVERY_FEE_MID_RM = 15;
 export const DELIVERY_FEE_FAR_RM = 25;
@@ -39,6 +50,16 @@ export const DELIVERY_THRESHOLD_DISCOUNT_RM = 10;
 
 // Backwards-compat alias used by older imports.
 export const DELIVERY_FEE_OUTSIDE_RM = DELIVERY_FEE_NEAR_RM;
+
+/** Threshold (in RM) at which the given tier's delivery-fee discount kicks in. */
+export function thresholdForTier(tier: DeliveryTier): number {
+    switch (tier) {
+        case 'free': return 0;
+        case 'near': return FREE_DELIVERY_THRESHOLD_NEAR_RM;
+        case 'mid':  return FREE_DELIVERY_THRESHOLD_MID_RM;
+        case 'far':  return FREE_DELIVERY_THRESHOLD_FAR_RM;
+    }
+}
 
 /** Coarse zone label (binary), kept for UX labels and order docs. */
 export type DeliveryZone = 'within2km' | 'outside2km';
@@ -86,7 +107,7 @@ export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): 
         tier === 'near' ? DELIVERY_FEE_NEAR_RM :
         tier === 'mid' ? DELIVERY_FEE_MID_RM :
         DELIVERY_FEE_FAR_RM;
-    const thresholdMet = freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM;
+    const thresholdMet = freeDeliveryBasis >= thresholdForTier(tier);
     // Near: RM 6 - RM 10 = -4 → max(0, -4) = 0 (free)
     // Mid:  RM 15 - RM 10 = RM 5
     // Far:  RM 25 - RM 10 = RM 15
@@ -95,22 +116,23 @@ export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): 
 }
 
 /**
- * RM amount the customer needs to add to hit the RM 40 threshold and trigger
- * the per-tier delivery discount. Returns 0 if already past threshold, in the
+ * RM amount the customer needs to add to hit their tier's threshold and
+ * trigger the delivery discount. Returns 0 if already past threshold, in the
  * free tier, or the basis is irrelevant.
  *
- * Benefit by tier:
- *   near → free (saves RM 6)
- *   mid  → RM 5 (saves RM 10)
- *   far  → RM 15 (saves RM 10)
+ * Threshold + benefit by tier:
+ *   near → RM 20 threshold → free (saves RM 6)
+ *   mid  → RM 40 threshold → RM 5 (saves RM 10)
+ *   far  → RM 40 threshold → RM 15 (saves RM 10)
  *
  * @param freeDeliveryBasis  cartTotal − promoDiscount  (meal voucher NOT subtracted)
  */
 export function freeDeliveryShortfall(distanceKm: number, freeDeliveryBasis: number): number {
     const tier = tierFromDistance(distanceKm);
     if (tier === 'free') return 0;
-    if (freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM) return 0;
-    return Math.max(0, FREE_DELIVERY_THRESHOLD_RM - freeDeliveryBasis);
+    const threshold = thresholdForTier(tier);
+    if (freeDeliveryBasis >= threshold) return 0;
+    return Math.max(0, threshold - freeDeliveryBasis);
 }
 
 export function zoneLabelZh(zone: DeliveryZone): string {
@@ -129,9 +151,9 @@ export function tierLabelZh(tier: DeliveryTier): string {
 export function tierFeeHintZh(tier: DeliveryTier): string {
     switch (tier) {
         case 'free': return '免运费';
-        case 'near': return 'RM 6 · 满 RM 40 → 免运';
-        case 'mid': return 'RM 15 · 满 RM 40 → RM 5';
-        case 'far': return 'RM 25 · 满 RM 40 → RM 15';
+        case 'near': return `RM 6 · 满 RM ${FREE_DELIVERY_THRESHOLD_NEAR_RM} → 免运 🏘️`;
+        case 'mid': return `RM 15 · 满 RM ${FREE_DELIVERY_THRESHOLD_MID_RM} → RM 5`;
+        case 'far': return `RM 25 · 满 RM ${FREE_DELIVERY_THRESHOLD_FAR_RM} → RM 15`;
     }
 }
 
@@ -143,7 +165,7 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
  * field. Grandfather them in with the OLD pricing model so they don't get
  * blocked at checkout demanding re-verification:
  *   - within2km  → free  (matches new 'free' tier)
- *   - outside2km → flat RM 6 with the RM 40 free-delivery rule  (matches 'near')
+ *   - outside2km → flat RM 6 with the near-tier RM 20 rule  (matches 'near')
  *
  * Returns null if the user has neither — in that case checkout is blocked
  * and they're prompted to verify their address.
@@ -165,7 +187,7 @@ export function resolveDeliveryFee(
     }
     if (zone === 'outside2km') {
         return {
-            fee: freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_RM ? 0 : DELIVERY_FEE_NEAR_RM,
+            fee: freeDeliveryBasis >= FREE_DELIVERY_THRESHOLD_NEAR_RM ? 0 : DELIVERY_FEE_NEAR_RM,
             tier: 'near',
             isLegacy: true,
         };
@@ -182,9 +204,9 @@ export function resolveShortfallToFree(
     if (typeof distanceKm === 'number') {
         return freeDeliveryShortfall(distanceKm, freeDeliveryBasis);
     }
-    // Legacy outside2km also honours the RM 40 rule.
-    if (zone === 'outside2km' && freeDeliveryBasis < FREE_DELIVERY_THRESHOLD_RM) {
-        return FREE_DELIVERY_THRESHOLD_RM - freeDeliveryBasis;
+    // Legacy outside2km maps onto the near tier → RM 20 threshold.
+    if (zone === 'outside2km' && freeDeliveryBasis < FREE_DELIVERY_THRESHOLD_NEAR_RM) {
+        return FREE_DELIVERY_THRESHOLD_NEAR_RM - freeDeliveryBasis;
     }
     return 0;
 }

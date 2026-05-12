@@ -10,7 +10,9 @@ import { isValidMyPhone } from '@/lib/cartUtils';
 import {
     resolveDeliveryFee,
     resolveShortfallToFree,
-    FREE_DELIVERY_THRESHOLD_RM,
+    FREE_DELIVERY_THRESHOLD_NEAR_RM,
+    FREE_DELIVERY_THRESHOLD_MID_RM,
+    FREE_DELIVERY_THRESHOLD_FAR_RM,
     type DeliveryTier,
     type DeliveryZone,
 } from '@/lib/deliveryUtils';
@@ -748,9 +750,9 @@ export default function CartDrawer({
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
                                                 💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
-                                                {deliveryTier === 'near' && <> 即可免运（满 RM {FREE_DELIVERY_THRESHOLD_RM} 免费）</>}
-                                                {deliveryTier === 'mid' && <> 配送费降至 RM 5（满 RM {FREE_DELIVERY_THRESHOLD_RM} 省 RM 10）</>}
-                                                {deliveryTier === 'far' && <> 配送费降至 RM 15（满 RM {FREE_DELIVERY_THRESHOLD_RM} 省 RM 10）</>}
+                                                {deliveryTier === 'near' && <> 即可免运 🏘️ <span className="text-gray-400">（邻里特惠：满 RM {FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
+                                                {deliveryTier === 'mid' && <> 配送费降至 RM 5（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 省 RM 10）</>}
+                                                {deliveryTier === 'far' && <> 配送费降至 RM 15（满 RM {FREE_DELIVERY_THRESHOLD_FAR_RM} 省 RM 10）</>}
                                             </p>
                                         </div>
                                     )}
