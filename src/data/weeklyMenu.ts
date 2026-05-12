@@ -65,7 +65,7 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 14,
         day: "Daily / 常驻",
-        name: "酱油鸡全腿",
+        name: "阿嫲古早味酱油鸡全腿",
         nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
         image: "/soy_sauce_chicken_leg.webp",

@@ -63,9 +63,10 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-yam': 4.00,
 
   // ─── Angelica Chicken (id:13) specials ─────
-  'extra-herbal-leg-1': 14.90,
-  'extra-herbal-leg-2': 27.80,
-  'extra-herbal-leg-3': 41.40,
+  'extra-herbal-leg-1': 16.50,
+
+  // ─── Soy Sauce Chicken (id:14) specials ────
+  'extra-soy-leg-1': 16.50,
 
   // ─── Greek Lemon Chicken (id:3) specials ───
   'greek-protein-bomb-combo': 15.90,

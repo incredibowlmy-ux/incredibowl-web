@@ -289,9 +289,24 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: p('extra-herbal-leg-1', 14.90), category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-2', name: '【双份温补】加两只汤汁饱满鸡腿', nameEn: 'Extra Steamed Herbal Chicken Legs (+2)', price: p('extra-herbal-leg-2', 27.80), category: 'sides', maxQty: 1 },
-                            { id: 'extra-herbal-leg-3', name: '【全家加菜】加三只（家人一起补）', nameEn: 'Extra Steamed Herbal Chicken Legs (+3)', price: p('extra-herbal-leg-3', 41.40), category: 'sides', maxQty: 1 },
+                            { id: 'extra-herbal-leg-1', name: '【犒劳自己】多加一只暖胃全鸡腿', nameEn: 'Extra Steamed Herbal Chicken Leg (+1)', price: p('extra-herbal-leg-1', 16.50), category: 'sides', maxQty: 1 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
+        // If it's Grandma's Traditional Soy Sauce Chicken Whole Leg (id: 14), same pattern as id:13
+        if (dish.id === 14) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-soy-leg-1', name: '【犒劳自己】多加一只酱油全鸡腿', nameEn: 'Extra Soy Sauce Chicken Whole Leg (+1)', price: p('extra-soy-leg-1', 16.50), category: 'sides', maxQty: 1 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
