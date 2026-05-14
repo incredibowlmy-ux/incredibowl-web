@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone, Clock } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
 import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 
@@ -99,16 +99,9 @@ export default function HeroSectionEN() {
                         Home-cooked taste,<br />
                         sourced fresh daily.
                     </h1>
-                    <p lang="zh" className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-4">
+                    <p lang="zh" className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-8">
                         家的味道，每天新鲜采购
                     </p>
-
-                    {/* Business model clarifier — resolves "is this a shop in Pearl Point?" confusion */}
-                    <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
-                        <span>Home-Based Private Kitchen</span>
-                        <span className="text-[#C84518]/40">·</span>
-                        <span>Delivery Only</span>
-                    </div>
 
                     <p className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-3 max-w-md lg:max-w-xl">
                         At the market by <span className="text-[#FF6B35]">6 AM</span>,<br className="md:hidden" />
@@ -151,8 +144,6 @@ export default function HeroSectionEN() {
                             <span>Order via web / WhatsApp</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>Free within 2km</span>
-                            <span className="text-[#FF6B35] font-black">→</span>
-                            <span>Delivered by noon</span>
                         </div>
                         <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
                             <span className="inline-flex items-center gap-1.5">
@@ -163,11 +154,6 @@ export default function HeroSectionEN() {
                             <span className="inline-flex items-center gap-1.5">
                                 <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                                 Free delivery within 2km
-                            </span>
-                            <span className="text-[#1A2D23]/25 select-none">·</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <Clock size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                Arrives by noon
                             </span>
                         </div>
                     </div>

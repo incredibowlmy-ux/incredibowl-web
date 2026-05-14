@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone, Clock } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
 import { weeklyMenu, dishImageAlt } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
@@ -68,17 +68,10 @@ export default function HeroSection() {
                     </div>
 
                     {/* Main title — page H1 (was H2; brand name in NavBar should not be H1) */}
-                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-3 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-6 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
                         家的味道，<br />
                         每天新鲜采购。
                     </h1>
-
-                    {/* Business model clarifier — 解决「以为是 Pearl Point 店面」的疑问 */}
-                    <div lang="zh" className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
-                        <span>家庭式私厨</span>
-                        <span className="text-[#C84518]/40">·</span>
-                        <span>只接外送</span>
-                    </div>
 
                     {/* Action-anchored sub-headline — promoted from body copy to bridge brand slogan ↔ CTA */}
                     <p lang="zh" className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-7 max-w-md lg:max-w-xl">
@@ -125,8 +118,6 @@ export default function HeroSection() {
                             <span>网页 / WhatsApp 下单</span>
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>2km 免运费</span>
-                            <span className="text-[#FF6B35] font-black">→</span>
-                            <span>中午送达</span>
                         </div>
                         {/* Desktop: icon-prefixed feature list with dot separator */}
                         <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
@@ -139,14 +130,9 @@ export default function HeroSection() {
                                 <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                                 2km 免运费
                             </span>
-                            <span className="text-[#1A2D23]/25 select-none">·</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <Clock size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                中午送达
-                            </span>
                         </div>
                         <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
-                            Order via web or WhatsApp · Free delivery within 2km · Arrives by noon
+                            Order via web or WhatsApp · Free delivery within 2km
                         </p>
                     </div>
                 </div>
