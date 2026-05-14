@@ -32,28 +32,27 @@ export default function AboutBowlMamaEN() {
 
                     <div className="max-w-[640px] lg:max-w-[720px] space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[19px] leading-[1.8] text-[#1A2D23]/85 font-medium">
                         <p>
-                            BowlMama&apos;s kitchen started from a home.
+                            It all started in a home kitchen.
                         </p>
                         <p>
-                            I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, next to Pearl Point.
+                            I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, right next door to Pearl Point.
                             Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
-                            picking the freshest fish, the day&apos;s meat, vegetables still dripping with water.
+                            picking the freshest fish, the day&apos;s meat, and vegetables still cool from the morning rinse.
                         </p>
                         <p>
-                            I cook it at home, pack each box by hand.<br />
-                            Then it goes to your door via <span className="font-semibold text-[#1A2D23]">Grab delivery</span>.
+                            Everything is cooked at home and packed by hand.<br />
+                            From my door, <span className="font-semibold text-[#1A2D23]">Grab</span> takes it straight to yours.
                         </p>
                         <p className="font-bold text-[#1A2D23]">
-                            This isn&apos;t a retail shopfront business &mdash;<br />
-                            it&apos;s a neighbour making lunch and dinner for you.
+                            This isn&apos;t a restaurant. No shopfront, no dine-in &mdash;<br />
+                            just a neighbour cooking lunch and dinner for you.
                         </p>
                         <p>
-                            You won&apos;t see a shopfront with BowlMama&apos;s signboard on the street &mdash;<br />
-                            but every box came from one pair of hands in a home kitchen.
+                            That&apos;s why you won&apos;t spot a BowlMama signboard anywhere on the street.<br />
+                            But every box you open was cooked and packed by one person, in one kitchen, that same morning.
                         </p>
                         <p>
-                            If you miss the taste of home,<br />
-                            <span className="font-semibold text-[#1A2D23]">order through the website</span> or <span className="font-semibold text-[#1A2D23]">WhatsApp</span> me &mdash; either works.
+                            Miss the taste of home? <span className="font-semibold text-[#1A2D23]">Order on the website</span> or drop me a message on <span className="font-semibold text-[#1A2D23]">WhatsApp</span> &mdash; whichever&apos;s easier.
                         </p>
                     </div>
 
