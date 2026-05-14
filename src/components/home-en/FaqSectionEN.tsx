@@ -38,7 +38,10 @@ const FAQS: FaqItem[] = [
                     <li>• 5–8km &mdash; <span className="font-semibold">RM 5 over RM 40</span> (RM 15 under RM 40)</li>
                     <li>• 8–10km &mdash; <span className="font-semibold">RM 15 over RM 40</span> (RM 25 under RM 40)</li>
                 </ul>
-                <p className="mt-3">Not sure if you&apos;re in range? Just WhatsApp BowlMama.</p>
+                <p className="mt-3">
+                    Not sure if you&apos;re in range? <span className="font-bold text-[#1A2D23]">Register an account and add your address</span> &mdash;
+                    the system will instantly check your location and tell you whether we deliver and the fee.
+                </p>
             </>
         ),
     },

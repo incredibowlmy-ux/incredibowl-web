@@ -38,7 +38,10 @@ const FAQS: FaqItem[] = [
                     <li>• 5–8km —— <span className="font-semibold">满 RM 40 = RM 5</span>（不到 RM 40 = RM 15）</li>
                     <li>• 8–10km —— <span className="font-semibold">满 RM 40 = RM 15</span>（不到 RM 40 = RM 25）</li>
                 </ul>
-                <p className="mt-3">不确定家里在不在范围内？WhatsApp 问碗妈就好。</p>
+                <p className="mt-3">
+                    不确定家里在不在范围内？<span className="font-bold text-[#1A2D23]">注册账号 + 填写地址</span>，
+                    系统会自动核对位置，告诉你能不能送、运费多少。
+                </p>
             </>
         ),
     },
