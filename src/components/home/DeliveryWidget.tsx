@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MapPin, Search, Loader2, Clock, Truck, Phone, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 type Tier = 'free' | 'near' | 'mid' | 'far' | 'outside';
 
@@ -51,7 +51,7 @@ export default function DeliveryWidget() {
     return (
         <section
             aria-labelledby="delivery-heading"
-            className="lg:col-span-12 lg:row-start-3 mt-4"
+            className="lg:col-span-12 mt-4"
         >
             <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden">
                 {/* Hero strip: address checker — the headline action */}
@@ -177,8 +177,11 @@ export default function DeliveryWidget() {
                     )}
                 </div>
 
-                {/* Lower grid: tier table + cutoff/windows + WhatsApp CTA */}
-                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 items-start">
+                {/* Lower grid: tier table + cutoff/windows.
+                    WhatsApp fallback CTA removed — the checker's outside-zone result
+                    already surfaces a WhatsApp link, and the floating button +
+                    sticky bar cover the rest. */}
+                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
                     {/* Tier table */}
                     <div>
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">配送费一览</p>
@@ -223,19 +226,6 @@ export default function DeliveryWidget() {
                         </div>
                     </div>
 
-                    {/* WhatsApp fallback */}
-                    <div className="md:col-span-1 flex flex-col gap-2.5">
-                        <p className="text-[13px] font-extrabold text-[#1A2D23]">不确定能不能送？</p>
-                        <a
-                            href={WHATSAPP_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366] hover:bg-[#20BE5A] text-white rounded-xl font-bold text-[14px] transition-colors active:scale-[0.97] shadow-md shadow-[#25D366]/20"
-                        >
-                            <Phone size={15} strokeWidth={2.75} />
-                            WhatsApp 问碗妈
-                        </a>
-                    </div>
                 </div>
             </div>
         </section>

@@ -6,7 +6,7 @@ export default function HeroTrustStripEN() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
-        <div className="lg:col-span-12 lg:row-start-4 mt-2">
+        <div className="lg:col-span-12 mt-2">
             <button
                 type="button"
                 onClick={scrollToFeedback}

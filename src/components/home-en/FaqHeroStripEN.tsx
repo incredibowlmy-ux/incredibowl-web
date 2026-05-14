@@ -8,7 +8,7 @@ export default function FaqHeroStripEN() {
         <button
             type="button"
             onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
-            className="lg:col-span-12 lg:row-start-2 mt-2 group flex items-center gap-3 w-full text-left px-4 md:px-5 py-3 bg-white/70 hover:bg-white border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 rounded-full shadow-sm transition-colors"
+            className="lg:col-span-12 mt-2 group flex items-center gap-3 w-full text-left px-4 md:px-5 py-3 bg-white/70 hover:bg-white border border-[#FF6B35]/20 hover:border-[#FF6B35]/40 rounded-full shadow-sm transition-colors"
             aria-label="Jump to FAQ"
         >
             <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#FF6B35]/12 text-[#C84518]">
