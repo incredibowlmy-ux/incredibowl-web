@@ -261,9 +261,9 @@ export default function EnglishHome() {
                     <CutoffBannerEN />
                     <HeroSectionEN />
                     <HeroTrustStripEN />
-                    <FaqHeroStripEN />
                     <DeliveryWidgetEN />
                     <PromoBannerEN />
+                    <FaqHeroStripEN />
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>

@@ -270,9 +270,9 @@ export default function V4BentoLayout() {
                     <CutoffBanner />
                     <HeroSection />
                     <HeroTrustStrip />
-                    <FaqHeroStrip />
                     <DeliveryWidget />
                     <PromoBanner />
+                    <FaqHeroStrip />
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>
