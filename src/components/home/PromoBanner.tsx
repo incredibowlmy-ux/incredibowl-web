@@ -7,7 +7,7 @@ export default function PromoBanner() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
-        <div className="lg:col-span-5 mt-4">
+        <div className="lg:col-span-7 mt-4">
             <div className="relative bg-gradient-to-br from-[#1A2D23] via-[#243A2D] to-[#1A2D23] rounded-[32px] p-6 md:p-8 overflow-hidden border border-[#FF6B35]/15 h-full">
                 {/* Decorative blurs */}
                 <div className="w-48 h-48 bg-[#FF6B35] rounded-full blur-3xl opacity-15 absolute -top-16 -left-10 pointer-events-none" />

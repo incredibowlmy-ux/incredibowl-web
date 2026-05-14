@@ -51,7 +51,7 @@ export default function DeliveryWidget() {
     return (
         <section
             aria-labelledby="delivery-heading"
-            className="lg:col-span-7 mt-4"
+            className="lg:col-span-5 mt-4"
         >
             <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden">
                 {/* Hero strip: address checker — the headline action */}

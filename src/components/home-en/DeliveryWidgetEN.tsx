@@ -51,7 +51,7 @@ export default function DeliveryWidgetEN() {
     return (
         <section
             aria-labelledby="delivery-heading-en"
-            className="lg:col-span-7 mt-4"
+            className="lg:col-span-5 mt-4"
         >
             <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8">
