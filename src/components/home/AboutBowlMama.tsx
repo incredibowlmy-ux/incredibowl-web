@@ -55,7 +55,7 @@ export default function AboutBowlMama() {
                         </p>
                         <p>
                             如果你也想念家里的味道，<br />
-                            WhatsApp 告诉我想吃什么就好。
+                            <span className="font-semibold text-[#1A2D23]">网页下单</span>或 <span className="font-semibold text-[#1A2D23]">WhatsApp</span> 告诉我都可以。
                         </p>
                     </div>
 

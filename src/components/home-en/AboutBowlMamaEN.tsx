@@ -52,7 +52,7 @@ export default function AboutBowlMamaEN() {
                         </p>
                         <p>
                             If you miss the taste of home,<br />
-                            just WhatsApp me what you feel like eating.
+                            <span className="font-semibold text-[#1A2D23]">order through the website</span> or <span className="font-semibold text-[#1A2D23]">WhatsApp</span> me &mdash; either works.
                         </p>
                     </div>
 
