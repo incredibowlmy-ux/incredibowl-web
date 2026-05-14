@@ -276,13 +276,18 @@ export async function POST(req: Request) {
       // Build items array (same format as before)
       const items: any[] = [];
       for (const vb of group.bundles) {
-        items.push({
+        const dishLine: Record<string, any> = {
           name: vb.dish.name,
           nameEn: vb.dish.nameEn || '',
           price: vb.dish.price,
           quantity: (vb.dishQty || 1) * (vb.quantity || 1),
           image: vb.dish.image || '',
-        });
+        };
+        // Per-dish kitchen note from AddOnModal — admin reads items[].note
+        // for the "📝 有备注" badge and inline yellow callout per dish line.
+        const bundleNote = typeof vb.note === 'string' ? vb.note.trim() : '';
+        if (bundleNote) dishLine.note = bundleNote;
+        items.push(dishLine);
         if (vb.addOns) {
           for (const a of vb.addOns) {
             if (a.quantity > 0) {
