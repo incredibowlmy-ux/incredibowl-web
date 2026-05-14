@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { Home } from 'lucide-react';
 
 export default function AboutBowlMamaEN() {
@@ -30,35 +31,54 @@ export default function AboutBowlMamaEN() {
                         </h2>
                     </div>
 
-                    <div className="max-w-[640px] lg:max-w-[720px] space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[19px] leading-[1.8] text-[#1A2D23]/85 font-medium">
-                        <p>
-                            It all started in a home kitchen.
-                        </p>
-                        <p>
-                            I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, right next door to Pearl Point.
-                            Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
-                            picking the freshest fish, the day&apos;s meat, and vegetables still cool from the morning rinse.
-                        </p>
-                        <p>
-                            Everything is cooked at home and packed by hand.<br />
-                            From my door, <span className="font-semibold text-[#1A2D23]">Grab</span> takes it straight to yours.
-                        </p>
-                        <p className="font-bold text-[#1A2D23]">
-                            This isn&apos;t a restaurant. No shopfront, no dine-in &mdash;<br />
-                            just a neighbour cooking lunch and dinner for you.
-                        </p>
-                        <p>
-                            That&apos;s why you won&apos;t spot a BowlMama signboard anywhere on the street.<br />
-                            But every box you open was cooked and packed by one person, in one kitchen, that same morning.
-                        </p>
-                        <p>
-                            Miss the taste of home? <span className="font-semibold text-[#1A2D23]">Order on the website</span> or drop me a message on <span className="font-semibold text-[#1A2D23]">WhatsApp</span> &mdash; whichever&apos;s easier.
-                        </p>
-                    </div>
+                    {/* Desktop: 2-col grid for body + photo. Mobile: text first, photo below. */}
+                    <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-10 xl:gap-14 lg:items-start">
+                        <div className="max-w-[640px] lg:max-w-none space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[19px] leading-[1.8] text-[#1A2D23]/85 font-medium">
+                            <p>
+                                It all started in a home kitchen.
+                            </p>
+                            <p>
+                                I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, right next door to Pearl Point.
+                                Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
+                                picking the freshest fish, the day&apos;s meat, and vegetables still cool from the morning rinse.
+                            </p>
+                            <p>
+                                Everything is cooked at home and packed by hand.<br />
+                                From my door, <span className="font-semibold text-[#1A2D23]">Grab</span> takes it straight to yours.
+                            </p>
+                            <p className="font-bold text-[#1A2D23]">
+                                This isn&apos;t a restaurant. No shopfront, no dine-in &mdash;<br />
+                                just a neighbour cooking lunch and dinner for you.
+                            </p>
+                            <p>
+                                That&apos;s why you won&apos;t spot a BowlMama signboard anywhere on the street.<br />
+                                But every box you open was cooked and packed by one person, in one kitchen, that same morning.
+                            </p>
+                            <p>
+                                Miss the taste of home? <span className="font-semibold text-[#1A2D23]">Order on the website</span> or drop me a message on <span className="font-semibold text-[#1A2D23]">WhatsApp</span> &mdash; whichever&apos;s easier.
+                            </p>
 
-                    <div className="mt-8 lg:mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[19px] font-bold text-[#1A2D23]">
-                        <span className="text-[#FF6B35]">&mdash;</span>
-                        <span>BowlMama</span>
+                            <div className="!mt-8 lg:!mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[19px] font-bold text-[#1A2D23]">
+                                <span className="text-[#FF6B35]">&mdash;</span>
+                                <span>BowlMama</span>
+                            </div>
+                        </div>
+
+                        <figure className="mt-8 lg:mt-0">
+                            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md border border-[#FF6B35]/10">
+                                <Image
+                                    src="/pasar-bowlmama.jpg"
+                                    alt="BowlMama picks produce at the wet market at 6 AM"
+                                    fill
+                                    sizes="(min-width: 1024px) 360px, 100vw"
+                                    loading="lazy"
+                                    className="object-cover"
+                                />
+                            </div>
+                            <figcaption className="mt-2 text-[12px] lg:text-[13px] text-[#1A2D23]/55 italic text-center">
+                                6 AM at the wet market &mdash; picking tomatoes by hand
+                            </figcaption>
+                        </figure>
                     </div>
                 </div>
             </div>

@@ -114,7 +114,7 @@ export default function HeroSectionEN() {
                         At the market by <span className="text-[#FF6B35]">6 AM</span>,<br className="md:hidden" />
                         at your door by noon.
                     </p>
-                    <p lang="zh" className="text-[13px] md:text-sm font-semibold text-[#1A2D23]/55 italic leading-relaxed mb-8 max-w-md lg:max-w-xl">
+                    <p lang="zh" className="text-[13px] md:text-sm font-semibold text-[#1A2D23]/55 leading-relaxed mb-8 max-w-md lg:max-w-xl">
                         凌晨 6 点去巴刹，中午送到你手上
                     </p>
 

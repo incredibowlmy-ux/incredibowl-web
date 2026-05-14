@@ -1,10 +1,29 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+
 const WHATSAPP_NUMBER = '60103370197';
 const PREFILLED_MESSAGE = "Hi BowlMama! I'd like to see today's menu.";
 
 export default function WhatsAppFloatEN() {
+    const [stickyOpen, setStickyOpen] = useState(false);
+
+    // Hide while the sticky promo bar is on screen — two WhatsApp CTAs
+    // competing for the same eye real estate looked muddy.
+    useEffect(() => {
+        const onShow = () => setStickyOpen(true);
+        const onHide = () => setStickyOpen(false);
+        window.addEventListener('wa-sticky-show', onShow);
+        window.addEventListener('wa-sticky-hide', onHide);
+        return () => {
+            window.removeEventListener('wa-sticky-show', onShow);
+            window.removeEventListener('wa-sticky-hide', onHide);
+        };
+    }, []);
+
     const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILLED_MESSAGE)}`;
+
+    if (stickyOpen) return null;
 
     return (
         <a

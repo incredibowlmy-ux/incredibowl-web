@@ -145,7 +145,7 @@ export default function HeroSection() {
                                 中午送达
                             </span>
                         </div>
-                        <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 italic mt-1.5 leading-relaxed">
+                        <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
                             Order via web or WhatsApp · Free delivery within 2km · Arrives by noon
                         </p>
                     </div>

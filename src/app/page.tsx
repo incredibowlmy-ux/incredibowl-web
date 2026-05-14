@@ -13,7 +13,6 @@ const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppSticky
 import NavBar from '@/components/home/NavBar';
 import HeroSection from '@/components/home/HeroSection';
 import FaqHeroStrip from '@/components/home/FaqHeroStrip';
-import DeliveryChecker from '@/components/home/DeliveryChecker';
 import CutoffBanner from '@/components/home/CutoffBanner';
 import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
@@ -271,10 +270,9 @@ export default function V4BentoLayout() {
                     <CutoffBanner />
                     <HeroSection />
                     <FaqHeroStrip />
-                    <DeliveryChecker />
+                    <DeliveryWidget />
                     <HeroTrustStrip />
                     <PromoBanner />
-                    <DeliveryWidget />
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>

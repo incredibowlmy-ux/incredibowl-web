@@ -26,13 +26,17 @@ export default function WhatsAppStickyBar() {
         return () => clearTimeout(timer);
     }, []);
 
-    // Push WhatsAppFloat upward while sticky bar is mounted, so they don't collide.
+    // Tell WhatsAppFloat to hide while the sticky bar is on screen — two
+    // green WhatsApp affordances at the same time was muddy. CSS var stays
+    // for any legacy callers still reading it; the event drives the float.
     useEffect(() => {
         if (!show) return;
         const root = document.documentElement;
         root.style.setProperty('--sticky-bar-h', '88px');
+        window.dispatchEvent(new Event('wa-sticky-show'));
         return () => {
             root.style.removeProperty('--sticky-bar-h');
+            window.dispatchEvent(new Event('wa-sticky-hide'));
         };
     }, [show]);
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { X } from 'lucide-react';
+import { X, Gift } from 'lucide-react';
 
 const STORAGE_KEY = 'incredibowl_subscribe_modal_seen';
 const COOLDOWN_DAYS = 7;
@@ -139,7 +139,7 @@ export default function SubscribeModal() {
                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
                     {/* Voucher badge */}
                     <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF6B35] text-white text-xs font-black shadow-lg">
-                        <span className="text-sm leading-none">🎁</span>
+                        <Gift size={13} strokeWidth={2.5} />
                         <span>首单立减 RM 5</span>
                     </div>
                 </div>

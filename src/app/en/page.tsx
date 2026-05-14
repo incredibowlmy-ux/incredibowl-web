@@ -14,7 +14,6 @@ const WhatsAppStickyBarEN = dynamic(() => import('@/components/home-en/WhatsAppS
 import NavBarEN from '@/components/home-en/NavBarEN';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
 import FaqHeroStripEN from '@/components/home-en/FaqHeroStripEN';
-import DeliveryCheckerEN from '@/components/home-en/DeliveryCheckerEN';
 import CutoffBannerEN from '@/components/home-en/CutoffBannerEN';
 import HeroTrustStripEN from '@/components/home-en/HeroTrustStripEN';
 import PromoBannerEN from '@/components/home-en/PromoBannerEN';
@@ -262,10 +261,9 @@ export default function EnglishHome() {
                     <CutoffBannerEN />
                     <HeroSectionEN />
                     <FaqHeroStripEN />
-                    <DeliveryCheckerEN />
+                    <DeliveryWidgetEN />
                     <HeroTrustStripEN />
                     <PromoBannerEN />
-                    <DeliveryWidgetEN />
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>

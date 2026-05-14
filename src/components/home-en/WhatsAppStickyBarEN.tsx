@@ -30,8 +30,10 @@ export default function WhatsAppStickyBarEN() {
         if (!show) return;
         const root = document.documentElement;
         root.style.setProperty('--sticky-bar-h', '88px');
+        window.dispatchEvent(new Event('wa-sticky-show'));
         return () => {
             root.style.removeProperty('--sticky-bar-h');
+            window.dispatchEvent(new Event('wa-sticky-hide'));
         };
     }, [show]);
 

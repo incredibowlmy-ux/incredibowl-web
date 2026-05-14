@@ -14,6 +14,20 @@ type Zone = keyof typeof MESSAGES;
 
 export default function WhatsAppFloat() {
     const [zone, setZone] = useState<Zone>('hero');
+    const [stickyOpen, setStickyOpen] = useState(false);
+
+    // Hide while the sticky promo bar is on screen — two WhatsApp CTAs
+    // competing for the same eye real estate looked muddy.
+    useEffect(() => {
+        const onShow = () => setStickyOpen(true);
+        const onHide = () => setStickyOpen(false);
+        window.addEventListener('wa-sticky-show', onShow);
+        window.addEventListener('wa-sticky-hide', onHide);
+        return () => {
+            window.removeEventListener('wa-sticky-show', onShow);
+            window.removeEventListener('wa-sticky-hide', onHide);
+        };
+    }, []);
 
     useEffect(() => {
         const targets: Array<{ id: string; key: Zone }> = [
@@ -49,6 +63,8 @@ export default function WhatsAppFloat() {
     }, []);
 
     const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(MESSAGES[zone])}`;
+
+    if (stickyOpen) return null;
 
     return (
         <a
