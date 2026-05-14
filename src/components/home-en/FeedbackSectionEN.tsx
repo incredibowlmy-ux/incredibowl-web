@@ -8,6 +8,7 @@ import SkeletonBlock from '@/components/ui/SkeletonBlock';
 type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string; isGoogle?: boolean };
 
 const SEED_FEEDBACKS: SeedFeedback[] = [
+    { name: "Cheong Wei Wei", text: "味道刚刚好，分量充足，价格实惠，家的味道😊 赞👍", reviewDate: "2026-05-13", isGoogle: true },
     { name: "Jia Chee Chong (Local Guide)", text: "I ordered two meals (Herbal Chicken & Prawn) for consecutive two days. To my surprise, the chicken thigh and prawns are huge and fresh, tastes good and healthy too. Will definitely reorder :)", reviewDate: "2026-05-01", isGoogle: true },
     { name: "ebby cheong", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12", isGoogle: true },
     { name: "Curry", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29", isGoogle: true },
