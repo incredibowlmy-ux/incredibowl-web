@@ -260,9 +260,9 @@ export default function EnglishHome() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBannerEN />
                     <HeroSectionEN />
+                    <HeroTrustStripEN />
                     <FaqHeroStripEN />
                     <DeliveryWidgetEN />
-                    <HeroTrustStripEN />
                     <PromoBannerEN />
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} />

@@ -269,9 +269,9 @@ export default function V4BentoLayout() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
                     <HeroSection />
+                    <HeroTrustStrip />
                     <FaqHeroStrip />
                     <DeliveryWidget />
-                    <HeroTrustStrip />
                     <PromoBanner />
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
