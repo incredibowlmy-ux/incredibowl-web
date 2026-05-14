@@ -22,7 +22,7 @@ const FAQS: FaqItem[] = [
         q: 'Where do you cook?',
         a: (
             <>
-                From a home kitchen near Pearl Point.<br />
+                A home kitchen in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span> (next to Pearl Point).<br />
                 No walk-ins, no visits (the place is small &mdash; sorry, we can&apos;t host 🙏).
             </>
         ),
