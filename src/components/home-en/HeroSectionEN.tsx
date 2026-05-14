@@ -99,9 +99,17 @@ export default function HeroSectionEN() {
                         Home-cooked taste,<br />
                         sourced fresh daily.
                     </h1>
-                    <p lang="zh" className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-6">
+                    <p lang="zh" className="text-base md:text-lg font-bold text-[#1A2D23]/65 tracking-wide mb-4">
                         家的味道，每天新鲜采购
                     </p>
+
+                    {/* Business model clarifier — resolves "is this a shop in Pearl Point?" confusion */}
+                    <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
+                        <span aria-hidden="true">🏠</span>
+                        <span>Home-Based Private Kitchen</span>
+                        <span className="text-[#C84518]/40">·</span>
+                        <span>Delivery Only</span>
+                    </div>
 
                     <p className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-3 max-w-md lg:max-w-xl">
                         At the market by <span className="text-[#FF6B35]">6 AM</span>,<br className="md:hidden" />

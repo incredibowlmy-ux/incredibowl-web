@@ -96,7 +96,7 @@ export default function HeroSection() {
                             <MapPin size={12} className="text-[#FF6B35]" />
                             <span>Old Klang Road 邻里私房菜</span>
                             <span className="text-[#1A2D23]/40">·</span>
-                            <span className="text-[#1A2D23]/70">Pearl Point Kitchen</span>
+                            <span className="text-[#1A2D23]/70">Pearl Point Home Kitchen</span>
                         </div>
                         {/* Social proof badge → scrolls to feedback section */}
                         <button
@@ -110,10 +110,18 @@ export default function HeroSection() {
                     </div>
 
                     {/* Main title — page H1 (was H2; brand name in NavBar should not be H1) */}
-                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-5 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
+                    <h1 lang="zh" className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-3 text-[#1A2D23] drop-shadow-[0_1px_0_rgba(255,255,255,0.6)]">
                         家的味道，<br />
                         每天新鲜采购。
                     </h1>
+
+                    {/* Business model clarifier — 解决「以为是 Pearl Point 店面」的疑问 */}
+                    <div lang="zh" className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
+                        <span aria-hidden="true">🏠</span>
+                        <span>家庭式私厨</span>
+                        <span className="text-[#C84518]/40">·</span>
+                        <span>只接外送</span>
+                    </div>
 
                     {/* Action-anchored sub-headline — promoted from body copy to bridge brand slogan ↔ CTA */}
                     <p lang="zh" className="text-2xl md:text-3xl font-black text-[#1A2D23]/95 leading-snug tracking-tight mb-7 max-w-md lg:max-w-xl">

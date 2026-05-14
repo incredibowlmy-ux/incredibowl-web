@@ -18,6 +18,8 @@ import HeroTrustStripEN from '@/components/home-en/HeroTrustStripEN';
 import PromoBannerEN from '@/components/home-en/PromoBannerEN';
 import DeliveryWidgetEN from '@/components/home-en/DeliveryWidgetEN';
 import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
+import AboutBowlMamaEN from '@/components/home-en/AboutBowlMamaEN';
+import FaqSectionEN from '@/components/home-en/FaqSectionEN';
 import FeedbackSectionEN from '@/components/home-en/FeedbackSectionEN';
 import FooterEN from '@/components/home-en/FooterEN';
 
@@ -244,7 +246,13 @@ export default function EnglishHome() {
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>
                     <ErrorBoundary>
+                        <AboutBowlMamaEN />
+                    </ErrorBoundary>
+                    <ErrorBoundary>
                         <FeedbackSectionEN />
+                    </ErrorBoundary>
+                    <ErrorBoundary>
+                        <FaqSectionEN />
                     </ErrorBoundary>
                 </div>
             </main>

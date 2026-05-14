@@ -17,6 +17,8 @@ import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
 import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarousel from '@/components/home/MenuCarousel';
+import AboutBowlMama from '@/components/home/AboutBowlMama';
+import FaqSection from '@/components/home/FaqSection';
 import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
@@ -248,7 +250,13 @@ export default function V4BentoLayout() {
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
                     </ErrorBoundary>
                     <ErrorBoundary>
+                        <AboutBowlMama />
+                    </ErrorBoundary>
+                    <ErrorBoundary>
                         <FeedbackSection />
+                    </ErrorBoundary>
+                    <ErrorBoundary>
+                        <FaqSection />
                     </ErrorBoundary>
                 </div>
             </main>
