@@ -117,7 +117,6 @@ export default function HeroSection() {
 
                     {/* Business model clarifier — 解决「以为是 Pearl Point 店面」的疑问 */}
                     <div lang="zh" className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
-                        <span aria-hidden="true">🏠</span>
                         <span>家庭式私厨</span>
                         <span className="text-[#C84518]/40">·</span>
                         <span>只接外送</span>

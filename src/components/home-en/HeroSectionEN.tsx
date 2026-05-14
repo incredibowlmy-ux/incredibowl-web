@@ -105,7 +105,6 @@ export default function HeroSectionEN() {
 
                     {/* Business model clarifier — resolves "is this a shop in Pearl Point?" confusion */}
                     <div className="inline-flex items-center gap-2 mb-6 px-3 py-1.5 bg-[#FF6B35]/10 border border-[#FF6B35]/25 rounded-full text-[13px] md:text-sm font-extrabold text-[#C84518]">
-                        <span aria-hidden="true">🏠</span>
                         <span>Home-Based Private Kitchen</span>
                         <span className="text-[#C84518]/40">·</span>
                         <span>Delivery Only</span>

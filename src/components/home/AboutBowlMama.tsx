@@ -38,20 +38,21 @@ export default function AboutBowlMama() {
                             碗妈的厨房，是从一个家开始的。
                         </p>
                         <p>
-                            我住在 Pearl Point 附近，每天凌晨 <span className="font-bold text-[#FF6B35]">6 点</span>去巴刹挑食材 ——
+                            我住在 Pearl Point 隔壁的 <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>，
+                            每天凌晨 <span className="font-bold text-[#FF6B35]">6 点</span>去巴刹挑食材 ——
                             新鲜的鱼、当天的肉、还在滴水的蔬菜。
                         </p>
                         <p>
                             回家亲手煮、亲手装盒。<br />
-                            然后跟脑公一起，送到你家门口。
+                            装好之后，通过 <span className="font-semibold text-[#1A2D23]">Grab delivery</span> 送到你家门口。
                         </p>
                         <p className="font-bold text-[#1A2D23]">
                             这不是开店面的零售生意，<br />
                             是一个邻居为你做的午餐和晚餐。
                         </p>
                         <p>
-                            所以你不会找到碗妈的&ldquo;店&rdquo;——<br />
-                            但你会找到每天我亲手送出去的那一碗饭。
+                            你不会在街上看到挂着碗妈招牌的店面 ——<br />
+                            但每一盒饭，都是从一双手煮出来的。
                         </p>
                         <p>
                             如果你也想念家里的味道，<br />

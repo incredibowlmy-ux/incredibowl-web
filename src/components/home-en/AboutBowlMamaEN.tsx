@@ -35,20 +35,21 @@ export default function AboutBowlMamaEN() {
                             BowlMama&apos;s kitchen started from a home.
                         </p>
                         <p>
-                            I live near Pearl Point. Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
+                            I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, next to Pearl Point.
+                            Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
                             picking the freshest fish, the day&apos;s meat, vegetables still dripping with water.
                         </p>
                         <p>
                             I cook it at home, pack each box by hand.<br />
-                            Then together with my husband, we drop it off at your door.
+                            Then it goes to your door via <span className="font-semibold text-[#1A2D23]">Grab delivery</span>.
                         </p>
                         <p className="font-bold text-[#1A2D23]">
                             This isn&apos;t a retail shopfront business &mdash;<br />
                             it&apos;s a neighbour making lunch and dinner for you.
                         </p>
                         <p>
-                            So you won&apos;t find a &ldquo;shop&rdquo; with BowlMama&apos;s name on it &mdash;<br />
-                            but you&apos;ll find that one bowl I hand-delivered today.
+                            You won&apos;t see a shopfront with BowlMama&apos;s signboard on the street &mdash;<br />
+                            but every box came from one pair of hands in a home kitchen.
                         </p>
                         <p>
                             If you miss the taste of home,<br />
