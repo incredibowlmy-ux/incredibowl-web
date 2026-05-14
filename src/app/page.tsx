@@ -12,6 +12,8 @@ const SubscribeModal = dynamic(() => import('@/components/home/SubscribeModal'),
 const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
 import NavBar from '@/components/home/NavBar';
 import HeroSection from '@/components/home/HeroSection';
+import FaqHeroStrip from '@/components/home/FaqHeroStrip';
+import DeliveryChecker from '@/components/home/DeliveryChecker';
 import CutoffBanner from '@/components/home/CutoffBanner';
 import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
@@ -179,6 +181,31 @@ export default function V4BentoLayout() {
         setMinDate(min);
     }, []);
 
+    // Deep-link: ?prefill=tomorrow → auto-open AddOn modal for the next
+    // upcoming special. Used by retargeting ads ("Tomorrow's menu: X") so a
+    // returning visitor lands one tap from checkout instead of having to
+    // scroll-then-tap-then-tap.
+    //
+    // Only fires once menuDates is populated so disabled-date guards apply.
+    useEffect(() => {
+        if (!Object.keys(menuDates).length) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('prefill') !== 'tomorrow') return;
+
+        import('@/lib/nextSpecial').then(({ computeNextSpecial }) => {
+            const { dish } = computeNextSpecial();
+            const dInfo = menuDates[dish.id];
+            if (dInfo?.disabled) return;
+            setSelectedDish(dish);
+            setIsAddOnOpen(true);
+        });
+
+        // Strip the param so a refresh doesn't re-open the modal.
+        params.delete('prefill');
+        const next = params.toString();
+        window.history.replaceState({}, '', next ? `?${next}` : window.location.pathname);
+    }, [menuDates]);
+
     const openAddOnModal = (dish: MenuItem) => {
         const dInfo = menuDates[dish.id];
         if (dInfo && dInfo.disabled) return;
@@ -243,6 +270,8 @@ export default function V4BentoLayout() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
                     <HeroSection />
+                    <FaqHeroStrip />
+                    <DeliveryChecker />
                     <HeroTrustStrip />
                     <PromoBanner />
                     <DeliveryWidget />

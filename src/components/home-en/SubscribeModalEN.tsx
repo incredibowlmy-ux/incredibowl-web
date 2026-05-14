@@ -6,7 +6,9 @@ import { X } from 'lucide-react';
 
 const STORAGE_KEY = 'incredibowl_subscribe_modal_seen';
 const COOLDOWN_DAYS = 7;
-const SCROLL_TRIGGER = 0.6;
+// Minimum time on page before exit-intent can fire (so we don't ambush
+// instant-bouncers who hate popups anyway).
+const MIN_DWELL_MS = 8_000;
 
 const WHATSAPP_NUMBER = '60165119118';
 // Trailing 🍱 is a silent source tag — Carmen can tell at-a-glance this came from the modal.
@@ -24,17 +26,47 @@ export default function SubscribeModalEN() {
             }
         }
 
-        const onScroll = () => {
-            const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-            if (scrollable <= 0) return;
-            const fraction = window.scrollY / scrollable;
-            if (fraction >= SCROLL_TRIGGER) {
-                setOpen(true);
-                window.removeEventListener('scroll', onScroll);
-            }
+        const mountedAt = Date.now();
+        let lastScrollY = window.scrollY;
+        let lastScrollAt = mountedAt;
+        const isCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+
+        const fire = () => {
+            if (Date.now() - mountedAt < MIN_DWELL_MS) return;
+            setOpen(true);
+            cleanup();
         };
+
+        const onMouseOut = (e: MouseEvent) => {
+            if (e.clientY <= 0 && !e.relatedTarget) fire();
+        };
+
+        const onScroll = () => {
+            const now = Date.now();
+            const dy = window.scrollY - lastScrollY;
+            const dt = now - lastScrollAt;
+            const isFastUpward = dy < -60 && dt < 250;
+            const nearTop = window.scrollY < window.innerHeight * 1.5;
+            if (isFastUpward && nearTop) fire();
+            lastScrollY = window.scrollY;
+            lastScrollAt = now;
+        };
+
+        const onVisibility = () => {
+            if (document.visibilityState === 'hidden') fire();
+        };
+
+        const cleanup = () => {
+            document.removeEventListener('mouseout', onMouseOut);
+            window.removeEventListener('scroll', onScroll);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+
+        if (!isCoarsePointer) document.addEventListener('mouseout', onMouseOut);
         window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return cleanup;
     }, []);
 
     useEffect(() => {

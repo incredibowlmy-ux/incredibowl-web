@@ -6,7 +6,9 @@ import { X } from 'lucide-react';
 
 const STORAGE_KEY = 'incredibowl_subscribe_modal_seen';
 const COOLDOWN_DAYS = 7;
-const SCROLL_TRIGGER = 0.6;
+// Minimum time on page before exit-intent can fire (so we don't ambush
+// instant-bouncers who hate popups anyway).
+const MIN_DWELL_MS = 8_000;
 
 const WHATSAPP_NUMBER = '60165119118';
 // Trailing 🍱 is a silent source tag — Carmen can tell at-a-glance this came from the modal.
@@ -24,17 +26,55 @@ export default function SubscribeModal() {
             }
         }
 
-        const onScroll = () => {
-            const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-            if (scrollable <= 0) return;
-            const fraction = window.scrollY / scrollable;
-            if (fraction >= SCROLL_TRIGGER) {
-                setOpen(true);
-                window.removeEventListener('scroll', onScroll);
-            }
+        const mountedAt = Date.now();
+        let lastScrollY = window.scrollY;
+        let lastScrollAt = mountedAt;
+        const isCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+
+        const fire = () => {
+            if (Date.now() - mountedAt < MIN_DWELL_MS) return;
+            setOpen(true);
+            cleanup();
         };
+
+        // Desktop exit-intent: mouse leaves through the top of the viewport
+        // (clientY <= 0 catches the moment the cursor is about to hit the URL
+        // bar / close tab button).
+        const onMouseOut = (e: MouseEvent) => {
+            if (e.clientY <= 0 && !e.relatedTarget) fire();
+        };
+
+        // Mobile exit-intent proxy: fast upward scroll near the top of the
+        // page (user is heading back to the address bar / scroll-to-top gesture).
+        const onScroll = () => {
+            const now = Date.now();
+            const dy = window.scrollY - lastScrollY;
+            const dt = now - lastScrollAt;
+            // Upward fling: ≥ 60px in ≤ 250ms AND user is in the upper 1.5 viewports
+            const isFastUpward = dy < -60 && dt < 250;
+            const nearTop = window.scrollY < window.innerHeight * 1.5;
+            if (isFastUpward && nearTop) fire();
+            lastScrollY = window.scrollY;
+            lastScrollAt = now;
+        };
+
+        // Tab/page hide is the universal "they're leaving" signal — covers
+        // app-switch on mobile and tab-close on desktop.
+        const onVisibility = () => {
+            if (document.visibilityState === 'hidden') fire();
+        };
+
+        const cleanup = () => {
+            document.removeEventListener('mouseout', onMouseOut);
+            window.removeEventListener('scroll', onScroll);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
+
+        if (!isCoarsePointer) document.addEventListener('mouseout', onMouseOut);
         window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
+        document.addEventListener('visibilitychange', onVisibility);
+
+        return cleanup;
     }, []);
 
     useEffect(() => {

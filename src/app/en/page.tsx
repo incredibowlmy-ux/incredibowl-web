@@ -13,6 +13,8 @@ const WhatsAppStickyBarEN = dynamic(() => import('@/components/home-en/WhatsAppS
 
 import NavBarEN from '@/components/home-en/NavBarEN';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
+import FaqHeroStripEN from '@/components/home-en/FaqHeroStripEN';
+import DeliveryCheckerEN from '@/components/home-en/DeliveryCheckerEN';
 import CutoffBannerEN from '@/components/home-en/CutoffBannerEN';
 import HeroTrustStripEN from '@/components/home-en/HeroTrustStripEN';
 import PromoBannerEN from '@/components/home-en/PromoBannerEN';
@@ -176,6 +178,26 @@ export default function EnglishHome() {
         setMinDate(min);
     }, []);
 
+    // Deep-link: ?prefill=tomorrow → auto-open AddOn modal for the next
+    // upcoming special. Used by retargeting ads on the EN locale.
+    useEffect(() => {
+        if (!Object.keys(menuDates).length) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('prefill') !== 'tomorrow') return;
+
+        import('@/lib/nextSpecial').then(({ computeNextSpecial }) => {
+            const { dish } = computeNextSpecial();
+            const dInfo = menuDates[dish.id];
+            if (dInfo?.disabled) return;
+            setSelectedDish(dish);
+            setIsAddOnOpen(true);
+        });
+
+        params.delete('prefill');
+        const next = params.toString();
+        window.history.replaceState({}, '', next ? `?${next}` : window.location.pathname);
+    }, [menuDates]);
+
     const openAddOnModal = (dish: MenuItem) => {
         const dInfo = menuDates[dish.id];
         if (dInfo && dInfo.disabled) return;
@@ -239,6 +261,8 @@ export default function EnglishHome() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBannerEN />
                     <HeroSectionEN />
+                    <FaqHeroStripEN />
+                    <DeliveryCheckerEN />
                     <HeroTrustStripEN />
                     <PromoBannerEN />
                     <DeliveryWidgetEN />
