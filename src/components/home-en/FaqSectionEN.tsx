@@ -14,7 +14,7 @@ const FAQS: FaqItem[] = [
         a: (
             <>
                 No shopfront &mdash; BowlMama is a <span className="font-bold text-[#1A2D23]">home-based private kitchen, delivery only</span>.<br />
-                We cook from a home near Pearl Point and bring it to your door.
+                We cook from a home in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span> (next to Pearl Point) and bring it to your door.
             </>
         ),
     },

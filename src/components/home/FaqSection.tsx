@@ -14,7 +14,7 @@ const FAQS: FaqItem[] = [
         a: (
             <>
                 没有店面哦 —— 碗妈是<span className="font-bold text-[#1A2D23]">家庭式私厨，只接外送</span>。<br />
-                我们从 Pearl Point 附近的家里出发，煮好之后送到你家。
+                我们从 Pearl Point 隔壁的 <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span> 家里，煮好之后送到你家。
             </>
         ),
     },
