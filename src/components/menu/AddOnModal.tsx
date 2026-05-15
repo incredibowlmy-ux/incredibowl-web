@@ -57,22 +57,6 @@ const defaultAddOnSections: AddOnSection[] = [
             { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: p('potato-egg', 3.50), image: '/potato_fried_egg.webp', category: 'alacarte' },
             { id: 'extra-edamame', name: '清甜水煮毛豆仁 (40g)', nameEn: 'Edamame (40g)', price: p('extra-edamame', 2.50), category: 'alacarte', maxQty: 3 },
             { id: 'extra-corn', name: '金黄甜玉米 (40g)', nameEn: 'Sweet Corn (40g)', price: p('extra-corn', 2.50), category: 'alacarte', maxQty: 3 },
-            { id: 'chia-pudding', name: '奇亚籽布丁', nameEn: 'Chia Seed Pudding', price: p('chia-pudding', 6.90), image: '/chia_seed_pudding.webp', category: 'alacarte' },
-        ]
-    },
-    {
-        id: 'drinks',
-        title: '特选茗茶',
-        titleEn: 'Premium Chinese Tea',
-        minSelect: 0,
-        maxSelect: 30,
-        items: [
-            { id: 'longjing-ice', name: '龙井 (冰)', nameEn: 'Longjing Tea (Iced)', price: p('longjing-ice', 3.80), category: 'drinks' },
-            { id: 'longjing-warm', name: '龙井 (温)', nameEn: 'Longjing Tea (Warm)', price: p('longjing-warm', 3.80), category: 'drinks' },
-            { id: 'tieguanyin-ice', name: '铁观音 (冰)', nameEn: 'Tieguanyin Oolong (Iced)', price: p('tieguanyin-ice', 3.80), category: 'drinks' },
-            { id: 'tieguanyin-warm', name: '铁观音 (温)', nameEn: 'Tieguanyin Oolong (Warm)', price: p('tieguanyin-warm', 3.80), category: 'drinks' },
-            { id: 'shuixian-ice', name: '水仙 (冰)', nameEn: 'Shuixian Oolong (Iced)', price: p('shuixian-ice', 3.80), category: 'drinks' },
-            { id: 'shuixian-warm', name: '水仙 (温)', nameEn: 'Shuixian Oolong (Warm)', price: p('shuixian-warm', 3.80), category: 'drinks' },
         ]
     },
 ];

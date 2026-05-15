@@ -21,15 +21,6 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── A la carte ────────────────────────────
   'onsen-egg': 3.00,
-  'chia-pudding': 6.90,
-
-  // ─── Premium tea ───────────────────────────
-  'longjing-ice': 3.80,
-  'longjing-warm': 3.80,
-  'tieguanyin-ice': 3.80,
-  'tieguanyin-warm': 3.80,
-  'shuixian-ice': 3.80,
-  'shuixian-warm': 3.80,
 
   // ─── Natto Rice (id:6) specials ────────────
   'natto-super-combo': 5.00,

@@ -139,7 +139,6 @@ export default function RootLayout({
                   telephone: "+60103370197",
                   image: [
                     "https://www.incredibowl.my/pork_potato_stew.webp",
-                    "https://www.incredibowl.my/chia_seed_pudding.webp",
                     "https://www.incredibowl.my/potato_fried_egg.webp"
                   ],
                   priceRange: "RM 15-25",
