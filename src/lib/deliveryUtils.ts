@@ -1,11 +1,18 @@
 /**
  * Delivery zone + fee calculation, shared between client and server.
  *
- * Tiers (May 2026):
- *   0 – 2 km   → free
- *   2 – 5 km   → RM 5   (free  when freeDeliveryBasis ≥ RM 20 — saves RM 5)
+ * Tiers (2026-05-16 — simplified to 3 tiers):
+ *   0 – 5 km   → RM 5   (free  when freeDeliveryBasis ≥ RM 20 — saves RM 5)
  *   5 – 8 km   → RM 15  (RM 5  when freeDeliveryBasis ≥ RM 40 — saves RM 10)
  *   8 km +     → RM 25  (RM 15 when freeDeliveryBasis ≥ RM 40 — saves RM 10)
+ *
+ * Grandfathering ("existing customer didn't get affected"):
+ *   Customers whose Firestore profile `createdAt` is BEFORE
+ *   PRICING_V2_CUTOFF_MS (2026-05-16) keep the OLD 0–2 km = free tier.
+ *   Two paths:
+ *     - Geocoded existing customer at ≤ 2 km → free (resolveDeliveryFee)
+ *     - Pre-geocode legacy (deliveryZone-only) within2km → free
+ *   Customers created on/after the cutoff get the new flat 0–5 km rule.
  *
  * `freeDeliveryBasis` definition (decided 2026-05-11):
  *   cartTotal − promoDiscount  (RM-discount codes only)
@@ -15,14 +22,14 @@
  * main dish shouldn't shrink the cart back below the threshold. RM-promo
  * codes ARE subtracted because they reduce real revenue per order.
  *
- * Threshold benefits:
+ * History:
  *   - 2026-05-12 — RM 40 rule extended to mid/far with a flat RM 10 off so
- *     longer routes still reward larger baskets (operating cost doesn't drop
- *     to zero out far).
- *   - 2026-05-12 (later) — Neighbour special: 2–5 km gets a lower RM 20
- *     threshold ("邻里特惠"). One main + 1 add-on is enough; designed to lift
- *     near-zone order frequency. Mid/far keep RM 40 because the unit-economics
- *     of long routes can't absorb a low-AOV waiver.
+ *     longer routes still reward larger baskets.
+ *   - 2026-05-12 — Neighbour special: 2–5 km gets a lower RM 20 threshold.
+ *   - 2026-05-16 — Collapsed the 0–2 km free tier into the 0–5 km near tier
+ *     (flat RM 5, free at RM 20+). Cuts a price tier and aligns near-zone
+ *     unit economics. Existing customers (createdAt < cutoff) grandfathered
+ *     onto the old 0–2 km free tier via resolveDeliveryFee().
  */
 
 // Verified centroid (provided by Carmen via Google Maps right-click).
@@ -32,6 +39,14 @@ export const PEARL_POINT_LNG = 101.67428154483449;
 export const FREE_DELIVERY_RADIUS_KM = 2;
 export const NEAR_RADIUS_KM = 5;
 export const MID_RADIUS_KM = 8;
+
+// Customers whose Firestore profile `createdAt` is BEFORE this cutoff are
+// treated as "existing" and grandfathered onto the pre-2026-05-16 pricing
+// (0–2 km = free). Customers created on/after the cutoff get the new flat
+// 0–5 km @ RM 5 (free at RM 20+) rule.
+//
+// Date.UTC(year, monthIndex, day) → ms since epoch. Month is 0-indexed.
+export const PRICING_V2_CUTOFF_MS = Date.UTC(2026, 4, 16); // 2026-05-16 00:00 UTC
 // Per-tier free-delivery thresholds. Near gets the neighbour-special RM 20;
 // mid/far stay at RM 40 because long-route cost can't absorb a low-AOV waiver.
 export const FREE_DELIVERY_THRESHOLD_NEAR_RM = 20;
@@ -88,7 +103,11 @@ export function zoneFromDistance(km: number): DeliveryZone {
 }
 
 export function tierFromDistance(km: number): DeliveryTier {
-    if (km <= FREE_DELIVERY_RADIUS_KM) return 'free';
+    // Distance-based classification no longer returns 'free' — 0-5km is a
+    // single 'near' tier (RM 5, free at RM 20+). The 'free' tier value is
+    // retained in the union purely for the legacy grandfathering branch
+    // in resolveDeliveryFee() which maps within2km zone → free for users
+    // registered before the geocode flow existed.
     if (km <= NEAR_RADIUS_KM) return 'near';
     if (km <= MID_RADIUS_KM) return 'mid';
     return 'far';
@@ -141,8 +160,8 @@ export function zoneLabelZh(zone: DeliveryZone): string {
 
 export function tierLabelZh(tier: DeliveryTier): string {
     switch (tier) {
-        case 'free': return '免运区（2km 内）';
-        case 'near': return '近距离（2–5km）';
+        case 'free': return '免运区（老客户）';
+        case 'near': return '近距离（5km 内）';
         case 'mid': return '中距离（5–8km）';
         case 'far': return '远距离（8km 以上）';
     }
@@ -158,30 +177,45 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
 }
 
 /**
- * Resolve fee + tier with legacy fallback.
+ * Resolve fee + tier with legacy + grandfathering fallback.
  *
- * New users have addressDistanceKm saved (geocode flow) — use accurate tiers.
- * Legacy users (registered before geocode) only have the binary deliveryZone
- * field. Grandfather them in with the OLD pricing model so they don't get
- * blocked at checkout demanding re-verification:
- *   - within2km  → free  (matches new 'free' tier)
- *   - outside2km → flat RM 5 with the near-tier RM 20 rule  (matches 'near')
+ * Pricing changed on 2026-05-16: 0-2 km free was collapsed into 0-5 km @ RM 5
+ * (free at RM 20+). To honour "existing client remains the same":
+ *   - Customers whose Firestore createdAt < PRICING_V2_CUTOFF_MS AND who are
+ *     within 2 km keep their grandfathered free delivery.
+ *   - Customers created on/after the cutoff get the new flat 0-5 km rule.
  *
- * Returns null if the user has neither — in that case checkout is blocked
- * and they're prompted to verify their address.
+ * Legacy users (registered before the geocode flow) have only the binary
+ * deliveryZone field, no addressDistanceKm — they're always pre-cutoff so
+ * the within2km branch grandfathers them too.
+ *
+ * @param customerCreatedAtMs  user.createdAt converted to epoch ms, or null
+ *                             for anonymous/guest flow (defaults to new rule)
+ *
+ * Returns null if the user has neither distance nor zone — in that case
+ * checkout is blocked and they're prompted to verify their address.
  */
 export function resolveDeliveryFee(
     distanceKm: number | null | undefined,
     zone: DeliveryZone | null | undefined,
     freeDeliveryBasis: number,
+    customerCreatedAtMs?: number | null,
 ): { fee: number; tier: DeliveryTier; isLegacy: boolean } | null {
+    const isExistingCustomer =
+        typeof customerCreatedAtMs === 'number' && customerCreatedAtMs < PRICING_V2_CUTOFF_MS;
+
     if (typeof distanceKm === 'number') {
+        // Existing customer within 2 km → grandfathered free.
+        if (isExistingCustomer && distanceKm <= FREE_DELIVERY_RADIUS_KM) {
+            return { fee: 0, tier: 'free', isLegacy: false };
+        }
         return {
             fee: calcDeliveryFee(distanceKm, freeDeliveryBasis),
             tier: tierFromDistance(distanceKm),
             isLegacy: false,
         };
     }
+    // Legacy zone-only path: pre-geocode users are inherently "existing".
     if (zone === 'within2km') {
         return { fee: 0, tier: 'free', isLegacy: true };
     }
@@ -195,13 +229,19 @@ export function resolveDeliveryFee(
     return null;
 }
 
-/** Shortfall to free delivery — handles legacy fallback the same way. */
+/** Shortfall to free delivery — mirrors resolveDeliveryFee's grandfathering. */
 export function resolveShortfallToFree(
     distanceKm: number | null | undefined,
     zone: DeliveryZone | null | undefined,
     freeDeliveryBasis: number,
+    customerCreatedAtMs?: number | null,
 ): number {
+    const isExistingCustomer =
+        typeof customerCreatedAtMs === 'number' && customerCreatedAtMs < PRICING_V2_CUTOFF_MS;
+
     if (typeof distanceKm === 'number') {
+        // Existing within 2 km → already free, no shortfall.
+        if (isExistingCustomer && distanceKm <= FREE_DELIVERY_RADIUS_KM) return 0;
         return freeDeliveryShortfall(distanceKm, freeDeliveryBasis);
     }
     // Legacy outside2km maps onto the near tier → RM 20 threshold.

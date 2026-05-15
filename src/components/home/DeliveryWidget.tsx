@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
 
-type Tier = 'free' | 'near' | 'mid' | 'far' | 'outside';
+type Tier = 'near' | 'mid' | 'far' | 'outside';
 
 interface Result {
     tier: Tier;
@@ -116,20 +116,6 @@ export default function DeliveryWidget() {
                         </p>
                     )}
 
-                    {result && result.tier === 'free' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-green-50 border border-green-200 flex items-start gap-2.5">
-                            <CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" strokeWidth={2.5} />
-                            <div className="min-w-0">
-                                <p className="text-[14px] font-extrabold text-green-700">
-                                    免运 · 你离碗妈 {result.distanceKm} km
-                                </p>
-                                {result.formattedAddress && (
-                                    <p className="text-[12px] text-green-700/75 mt-0.5 truncate">{result.formattedAddress}</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                     {result && result.tier === 'near' && (
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-amber-50 border border-amber-200">
                             <p className="text-[14px] font-extrabold text-amber-800 flex items-center gap-1.5">
@@ -137,7 +123,7 @@ export default function DeliveryWidget() {
                                 配送费 RM {result.fee} · 离碗妈 {result.distanceKm} km
                             </p>
                             <p className="text-[12px] text-amber-800/80 mt-1">
-                                满 <span className="font-bold">RM {result.threshold}</span> 即享 <span className="font-bold">免运</span>（邻里特惠）
+                                满 <span className="font-bold">RM {result.threshold}</span> 即享 <span className="font-bold">免运</span>
                             </p>
                             {result.formattedAddress && (
                                 <p className="text-[11px] text-amber-700/60 mt-1 truncate">{result.formattedAddress}</p>
@@ -187,11 +173,7 @@ export default function DeliveryWidget() {
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">配送费一览</p>
                         <ul className="space-y-1.5 text-[13px] leading-snug">
                             <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2km 内</span></span>
-                                <span className="font-bold text-green-600">免运</span>
-                            </li>
-                            <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2–5km</span> · 邻里特惠</span>
+                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">5km 内</span></span>
                                 <span className="text-right"><span className="font-bold text-gray-700">RM 5</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">满 RM 20 免运</span></span>
                             </li>
                             <li className="flex justify-between gap-2">

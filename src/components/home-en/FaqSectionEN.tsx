@@ -33,8 +33,7 @@ const FAQS: FaqItem[] = [
             <>
                 Mainly <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span>:
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
-                    <li>• Within 2km &mdash; <span className="text-green-600 font-bold">always free</span></li>
-                    <li>• 2–5km &mdash; <span className="font-semibold">free over RM 20</span></li>
+                    <li>• Within 5km &mdash; <span className="font-semibold">RM 5</span> (<span className="text-green-600 font-bold">free over RM 20</span>)</li>
                     <li>• 5–8km &mdash; <span className="font-semibold">RM 5 over RM 40</span> (RM 15 under RM 40)</li>
                     <li>• 8–10km &mdash; <span className="font-semibold">RM 15 over RM 40</span> (RM 25 under RM 40)</li>
                 </ul>

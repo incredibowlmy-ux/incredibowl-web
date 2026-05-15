@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
 
-type Tier = 'free' | 'near' | 'mid' | 'far' | 'outside';
+type Tier = 'near' | 'mid' | 'far' | 'outside';
 
 interface Result {
     tier: Tier;
@@ -114,20 +114,6 @@ export default function DeliveryWidgetEN() {
                         </p>
                     )}
 
-                    {result && result.tier === 'free' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-green-50 border border-green-200 flex items-start gap-2.5">
-                            <CheckCircle2 size={18} className="text-green-600 mt-0.5 shrink-0" strokeWidth={2.5} />
-                            <div className="min-w-0">
-                                <p className="text-[14px] font-extrabold text-green-700">
-                                    Free delivery &middot; You&apos;re {result.distanceKm} km from us
-                                </p>
-                                {result.formattedAddress && (
-                                    <p className="text-[12px] text-green-700/75 mt-0.5 truncate">{result.formattedAddress}</p>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                     {result && result.tier === 'near' && (
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-amber-50 border border-amber-200">
                             <p className="text-[14px] font-extrabold text-amber-800 flex items-center gap-1.5">
@@ -135,7 +121,7 @@ export default function DeliveryWidgetEN() {
                                 Delivery fee RM {result.fee} &middot; {result.distanceKm} km away
                             </p>
                             <p className="text-[12px] text-amber-800/80 mt-1">
-                                Spend <span className="font-bold">RM {result.threshold}+</span> and it&apos;s <span className="font-bold">free</span> (neighbour special)
+                                Spend <span className="font-bold">RM {result.threshold}+</span> and it&apos;s <span className="font-bold">free</span>
                             </p>
                             {result.formattedAddress && (
                                 <p className="text-[11px] text-amber-700/60 mt-1 truncate">{result.formattedAddress}</p>
@@ -183,11 +169,7 @@ export default function DeliveryWidgetEN() {
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">Delivery fee at a glance</p>
                         <ul className="space-y-1.5 text-[13px] leading-snug">
                             <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">Within 2km</span></span>
-                                <span className="font-bold text-green-600">Free</span>
-                            </li>
-                            <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2–5km</span> · neighbour</span>
+                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">Within 5km</span></span>
                                 <span className="text-right"><span className="font-bold text-gray-700">RM 5</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">RM 20+ → free</span></span>
                             </li>
                             <li className="flex justify-between gap-2">

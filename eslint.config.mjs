@@ -19,6 +19,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Root-level one-off Node CLI scripts (CommonJS require, not part of Next build).
+    "extract_*.js",
+    "run_opt.js",
   ]),
 ]);
 

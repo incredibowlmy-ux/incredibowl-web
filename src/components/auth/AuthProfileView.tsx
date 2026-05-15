@@ -5,7 +5,7 @@ import { Sparkles, LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, C
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
-import { tierFromDistance, tierFeeHintZh, tierLabelZh, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
+import { tierFromDistance, tierFeeHintZh, tierLabelZh, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 
 interface GeocodeResult {
     lat: number;
@@ -189,7 +189,14 @@ export default function AuthProfileView({
                             )}
 
                             {geocodeResult && !addressChangedSinceVerify && (() => {
-                                const tier: DeliveryTier = tierFromDistance(geocodeResult.distanceKm);
+                                // Existing customer (createdAt < cutoff) within 2km → grandfathered free.
+                                const createdAtSec = profileData?.createdAt?.seconds;
+                                const isExistingCustomer =
+                                    typeof createdAtSec === 'number' && createdAtSec * 1000 < PRICING_V2_CUTOFF_MS;
+                                const tier: DeliveryTier =
+                                    isExistingCustomer && geocodeResult.distanceKm <= FREE_DELIVERY_RADIUS_KM
+                                        ? 'free'
+                                        : tierFromDistance(geocodeResult.distanceKm);
                                 const tierStyles: Record<DeliveryTier, string> = {
                                     free: 'bg-green-50 border-green-200 text-green-700',
                                     near: 'bg-amber-50 border-amber-200 text-amber-700',
@@ -223,10 +230,16 @@ export default function AuthProfileView({
                             {(() => {
                                 // Prefer addressDistanceKm (precise tier); fall back to legacy
                                 // binary deliveryZone for users who predate the geocoding upgrade.
+                                // Existing customers (createdAt < cutoff) within 2km keep 'free'.
                                 const km = profileData?.addressDistanceKm;
+                                const createdAtSec = profileData?.createdAt?.seconds;
+                                const isExistingCustomer =
+                                    typeof createdAtSec === 'number' && createdAtSec * 1000 < PRICING_V2_CUTOFF_MS;
                                 const tier: DeliveryTier | null =
                                     typeof km === 'number'
-                                        ? tierFromDistance(km)
+                                        ? (isExistingCustomer && km <= FREE_DELIVERY_RADIUS_KM
+                                            ? 'free'
+                                            : tierFromDistance(km))
                                         : profileData?.deliveryZone === 'within2km'
                                             ? 'free'
                                             : profileData?.deliveryZone === 'outside2km'

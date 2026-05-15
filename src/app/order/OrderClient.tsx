@@ -9,7 +9,6 @@ import {
     Loader2,
     Truck,
     AlertTriangle,
-    CheckCircle2,
 } from "lucide-react";
 
 const WA = "60103370197";
@@ -71,7 +70,7 @@ const DISHES = [
 ];
 
 type DeliveryResult = {
-    tier: "free" | "near" | "mid" | "far" | "outside";
+    tier: "near" | "mid" | "far" | "outside";
     distanceKm: number;
     fee?: number;
     feeAtThreshold?: number;
@@ -81,8 +80,8 @@ type DeliveryResult = {
 
 const tierWaMsg = (r: DeliveryResult, addr: string) => {
     const a = r.formattedAddress || addr;
-    if (r.tier === "free") {
-        return `Hi 碗妈！我从 FB 广告来的，地址：${a}（2 km 内 · 免运 ✓），想看今天 / 明天的菜单 🔥`;
+    if (r.tier === "near") {
+        return `Hi 碗妈！我从 FB 广告来的，地址：${a}（5 km 内 · RM 5，满 RM 20 免运 ✓），想看今天 / 明天的菜单 🔥`;
     }
     if (r.tier === "outside") {
         return `Hi 碗妈！我地址是 ${a}（离你 ${r.distanceKm} km），看看你能不能想办法送 🙏`;
@@ -175,7 +174,7 @@ export default function OrderClient() {
                         凌晨 6 点去巴刹，不加味精
                     </p>
                     <p className="text-base lg:text-lg text-[#1A2D23]/60 font-bold mb-7">
-                        <span className="text-[#1A2D23] font-black">RM 16.90 起</span> · 2 km 免运 · 私厨现煮
+                        <span className="text-[#1A2D23] font-black">RM 16.90 起</span> · 5 km 内 RM 5（满 RM 20 免运）· 私厨现煮
                     </p>
 
                     <a
@@ -275,33 +274,6 @@ export default function OrderClient() {
                         </p>
                     )}
 
-                    {checkResult && checkResult.tier === "free" && (
-                        <div className="mt-4 p-4 rounded-2xl bg-green-50 border-2 border-green-200">
-                            <div className="flex items-start gap-2.5">
-                                <CheckCircle2 size={20} className="text-green-600 mt-0.5 shrink-0" strokeWidth={2.5} />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-base font-black text-green-700">
-                                        免运 · 你离碗妈 {checkResult.distanceKm} km
-                                    </p>
-                                    {checkResult.formattedAddress && (
-                                        <p className="text-xs text-green-700/75 mt-0.5 truncate">
-                                            {checkResult.formattedAddress}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <a
-                                href={wa(tierWaMsg(checkResult, address))}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_free")}
-                                className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
-                            >
-                                WhatsApp 看菜单 →
-                            </a>
-                        </div>
-                    )}
-
                     {checkResult && checkResult.tier === "near" && (
                         <div className="mt-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-200">
                             <p className="text-base font-black text-amber-800 flex items-center gap-1.5">
@@ -309,7 +281,7 @@ export default function OrderClient() {
                                 配送费 RM {checkResult.fee} · 离碗妈 {checkResult.distanceKm} km
                             </p>
                             <p className="text-xs text-amber-800/80 mt-1.5 font-bold">
-                                满 <span className="font-black">RM {checkResult.threshold}</span> 即享 <span className="font-black">免运</span>（邻里特惠）
+                                满 <span className="font-black">RM {checkResult.threshold}</span> 即享 <span className="font-black">免运</span>
                             </p>
                             {checkResult.formattedAddress && (
                                 <p className="text-[11px] text-amber-700/60 mt-1 truncate">{checkResult.formattedAddress}</p>

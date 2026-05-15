@@ -199,7 +199,16 @@ export async function POST(req: Request) {
     // — prepaid voucher revenue is already booked, so burning one to redeem
     // a main dish shouldn't kick the customer out of the free-delivery tier.
     const freeDeliveryBasis = Math.max(0, serverCartTotal - serverPromoDiscount);
-    const resolved = resolveDeliveryFee(userDistance, userZone, freeDeliveryBasis);
+    // Pricing-v2 grandfathering: existing customers (createdAt < 2026-05-16)
+    // within 2 km keep their free delivery. Firebase Admin SDK serializes
+    // Firestore Timestamp as { _seconds, _nanoseconds }.
+    const createdAt = userData.createdAt as { _seconds?: number; seconds?: number } | undefined;
+    const customerCreatedAtMs: number | null = typeof createdAt?._seconds === 'number'
+      ? createdAt._seconds * 1000
+      : typeof createdAt?.seconds === 'number'
+        ? createdAt.seconds * 1000
+        : null;
+    const resolved = resolveDeliveryFee(userDistance, userZone, freeDeliveryBasis, customerCreatedAtMs);
     if (!resolved) {
       return NextResponse.json({ error: '配送地址未确认，请到「个人资料」验证地址' }, { status: 400 });
     }

@@ -7,7 +7,7 @@ import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
 import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
-import { tierFromDistance, tierFeeHintZh, tierLabelZh, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
+import { tierFromDistance, tierFeeHintZh, tierLabelZh, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 
 // Legacy dish-name → image map. Only used as fallback for orders placed
 // BEFORE submit-order started persisting `item.image` on the order doc.
@@ -948,7 +948,13 @@ export default function MemberPage() {
                                         )}
 
                                         {geocodeResult && !addressChangedSinceVerify && (() => {
-                                            const tier: DeliveryTier = tierFromDistance(geocodeResult.distanceKm);
+                                            const createdAtSec = profileData?.createdAt?.seconds;
+                                            const isExistingCustomer =
+                                                typeof createdAtSec === 'number' && createdAtSec * 1000 < PRICING_V2_CUTOFF_MS;
+                                            const tier: DeliveryTier =
+                                                isExistingCustomer && geocodeResult.distanceKm <= FREE_DELIVERY_RADIUS_KM
+                                                    ? 'free'
+                                                    : tierFromDistance(geocodeResult.distanceKm);
                                             const tierStyles: Record<DeliveryTier, string> = {
                                                 free: 'bg-green-50 border-green-200 text-green-700',
                                                 near: 'bg-amber-50 border-amber-200 text-amber-700',

@@ -116,10 +116,16 @@ export default function CartDrawer({
         userProfile?.deliveryZone === 'within2km' || userProfile?.deliveryZone === 'outside2km'
             ? userProfile.deliveryZone
             : null;
-    const resolved = resolveDeliveryFee(distanceKm, userZone, freeDeliveryBasis);
+    // Existing-customer grandfathering: createdAt comes from Firestore as
+    // { seconds, nanoseconds }. Convert to epoch ms; null for guest flow.
+    const customerCreatedAtMs: number | null =
+        typeof userProfile?.createdAt?.seconds === 'number'
+            ? userProfile.createdAt.seconds * 1000
+            : null;
+    const resolved = resolveDeliveryFee(distanceKm, userZone, freeDeliveryBasis, customerCreatedAtMs);
     const deliveryTier: DeliveryTier | null = resolved?.tier ?? null;
     const deliveryFee = resolved?.fee ?? 0;
-    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, freeDeliveryBasis);
+    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, freeDeliveryBasis, customerCreatedAtMs);
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
     // Meal vouchers fully covered the bill (no cash to collect). Skips the
@@ -750,7 +756,7 @@ export default function CartDrawer({
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
                                                 💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
-                                                {deliveryTier === 'near' && <> 即可免运 <span className="text-gray-400">（邻里特惠：满 RM {FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
+                                                {deliveryTier === 'near' && <> 即可免运 <span className="text-gray-400">（满 RM {FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
                                                 {deliveryTier === 'mid' && <> 配送费降至 RM 5（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 省 RM 10）</>}
                                                 {deliveryTier === 'far' && <> 配送费降至 RM 15（满 RM {FREE_DELIVERY_THRESHOLD_FAR_RM} 省 RM 10）</>}
                                             </p>

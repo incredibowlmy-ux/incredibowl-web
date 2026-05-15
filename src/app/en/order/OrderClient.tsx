@@ -9,7 +9,6 @@ import {
     Loader2,
     Truck,
     AlertTriangle,
-    CheckCircle2,
 } from "lucide-react";
 
 const WA = "60103370197";
@@ -67,7 +66,7 @@ const DISHES = [
 ];
 
 type DeliveryResult = {
-    tier: "free" | "near" | "mid" | "far" | "outside";
+    tier: "near" | "mid" | "far" | "outside";
     distanceKm: number;
     fee?: number;
     feeAtThreshold?: number;
@@ -77,8 +76,8 @@ type DeliveryResult = {
 
 const tierWaMsg = (r: DeliveryResult, addr: string) => {
     const a = r.formattedAddress || addr;
-    if (r.tier === "free") {
-        return `Hi BowlMama! I came from your FB ad. My address: ${a} (within 2 km · free delivery ✓). I'd like to see today's / tomorrow's menu 🔥`;
+    if (r.tier === "near") {
+        return `Hi BowlMama! I came from your FB ad. My address: ${a} (within 5 km · RM 5, free over RM 20 ✓). I'd like to see today's / tomorrow's menu 🔥`;
     }
     if (r.tier === "outside") {
         return `Hi BowlMama! My address is ${a} (${r.distanceKm} km away). Can you see if there's a way to deliver? 🙏`;
@@ -171,7 +170,7 @@ export default function OrderClient() {
                         6 AM market run · no MSG
                     </p>
                     <p className="text-base lg:text-lg text-[#1A2D23]/60 font-bold mb-7">
-                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Free within 2 km · Fresh-cooked
+                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Free over RM 20 · Fresh-cooked
                     </p>
 
                     <a
@@ -271,33 +270,6 @@ export default function OrderClient() {
                         </p>
                     )}
 
-                    {checkResult && checkResult.tier === "free" && (
-                        <div className="mt-4 p-4 rounded-2xl bg-green-50 border-2 border-green-200">
-                            <div className="flex items-start gap-2.5">
-                                <CheckCircle2 size={20} className="text-green-600 mt-0.5 shrink-0" strokeWidth={2.5} />
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-base font-black text-green-700">
-                                        Free delivery · {checkResult.distanceKm} km from BowlMama
-                                    </p>
-                                    {checkResult.formattedAddress && (
-                                        <p className="text-xs text-green-700/75 mt-0.5 truncate">
-                                            {checkResult.formattedAddress}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <a
-                                href={wa(tierWaMsg(checkResult, address))}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_free")}
-                                className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
-                            >
-                                WhatsApp to see menu →
-                            </a>
-                        </div>
-                    )}
-
                     {checkResult && checkResult.tier === "near" && (
                         <div className="mt-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-200">
                             <p className="text-base font-black text-amber-800 flex items-center gap-1.5">
@@ -305,7 +277,7 @@ export default function OrderClient() {
                                 Delivery fee RM {checkResult.fee} · {checkResult.distanceKm} km away
                             </p>
                             <p className="text-xs text-amber-800/80 mt-1.5 font-bold">
-                                Spend <span className="font-black">RM {checkResult.threshold}</span> for <span className="font-black">free delivery</span> (neighbourhood deal)
+                                Spend <span className="font-black">RM {checkResult.threshold}</span> for <span className="font-black">free delivery</span>
                             </p>
                             {checkResult.formattedAddress && (
                                 <p className="text-[11px] text-amber-700/60 mt-1 truncate">{checkResult.formattedAddress}</p>
