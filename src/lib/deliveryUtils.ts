@@ -176,6 +176,24 @@ export function tierFeeHintZh(tier: DeliveryTier): string {
     }
 }
 
+export function tierLabelEn(tier: DeliveryTier): string {
+    switch (tier) {
+        case 'free': return 'Free zone (legacy customer)';
+        case 'near': return 'Near (within 5km)';
+        case 'mid': return 'Mid (5–8km)';
+        case 'far': return 'Far (8km+)';
+    }
+}
+
+export function tierFeeHintEn(tier: DeliveryTier): string {
+    switch (tier) {
+        case 'free': return 'Free delivery';
+        case 'near': return `RM 5 · free over RM ${FREE_DELIVERY_THRESHOLD_NEAR_RM}`;
+        case 'mid': return `RM 15 · RM 5 over RM ${FREE_DELIVERY_THRESHOLD_MID_RM}`;
+        case 'far': return `RM 25 · RM 15 over RM ${FREE_DELIVERY_THRESHOLD_FAR_RM}`;
+    }
+}
+
 /**
  * Resolve fee + tier with legacy + grandfathering fallback.
  *

@@ -2,10 +2,29 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Globe, Check } from 'lucide-react';
 
 interface LanguageSwitcherProps {
     current: 'zh' | 'en';
+}
+
+// Pages that exist in BOTH /zh and /en variants. Toggle preserves the
+// current page for these; for any other path (admin, blog, terms, refund,
+// privacy, meal-vouchers) the switcher falls back to the locale homepage so
+// we don't ship users into a 404.
+const BILINGUAL_ROUTES = new Set(['', '/order', '/member']);
+
+function computeTargets(pathname: string | null): { zhHref: string; enHref: string } {
+    // Strip /en prefix to get the "shared" path; '' === root.
+    const shared = pathname?.startsWith('/en')
+        ? pathname.replace(/^\/en/, '')
+        : pathname || '';
+    const isMirrored = BILINGUAL_ROUTES.has(shared);
+    return {
+        zhHref: isMirrored ? (shared || '/') : '/',
+        enHref: isMirrored ? `/en${shared}` : '/en',
+    };
 }
 
 /**
@@ -16,6 +35,8 @@ interface LanguageSwitcherProps {
 export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+    const { zhHref, enHref } = computeTargets(pathname);
 
     useEffect(() => {
         if (!open) return;
@@ -54,7 +75,7 @@ export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
                     className="absolute right-0 top-full mt-2 min-w-[160px] bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
                 >
                     <Link
-                        href="/"
+                        href={zhHref}
                         role="menuitem"
                         onClick={() => setOpen(false)}
                         className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[#1A2D23] hover:bg-[#FDFBF7] transition-colors ${current === 'zh' ? 'bg-[#FFF3E0]/40' : ''}`}
@@ -63,7 +84,7 @@ export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
                         {current === 'zh' && <Check size={14} className="text-[#FF6B35]" strokeWidth={3} aria-label="current" />}
                     </Link>
                     <Link
-                        href="/en"
+                        href={enHref}
                         role="menuitem"
                         onClick={() => setOpen(false)}
                         className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[#1A2D23] hover:bg-[#FDFBF7] transition-colors border-t border-gray-100 ${current === 'en' ? 'bg-[#FFF3E0]/40' : ''}`}
