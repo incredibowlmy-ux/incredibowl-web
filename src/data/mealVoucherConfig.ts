@@ -9,6 +9,10 @@
  *  - 5  vouchers @ RM 92.50  (face value, 0% off — entry tier)
  *  - 10 vouchers @ RM 175.75 (~5% off, save RM 9.25)
  *  - 20 vouchers @ RM 333.00 (~10% off, save RM 37.00)
+ *
+ * Validity (decided 2026-05-16):
+ *  - 5  / 10 张装：30 天（鼓励频次，避免囤货沉睡）
+ *  - 20    张装：60 天（重度用户多给一倍时间消耗）
  */
 
 export interface MealVoucherBundle {
@@ -19,14 +23,13 @@ export interface MealVoucherBundle {
   faceValue: number;      // voucherCount × FACE_VALUE_RM
   savings: number;        // faceValue - price
   savingsPercent: number; // 0–100
+  validityDays: number;   // days until each voucher in this bundle expires
   label: string;
   highlight?: string;
 }
 
 /** Reference price for a single main dish (used to display "savings"). */
 export const FACE_VALUE_RM = 18.50;
-
-export const MEAL_VOUCHER_VALIDITY_DAYS = 60;
 
 /** Hard policy: vouchers + RM-promo codes are mutually exclusive per order. */
 export const VOUCHERS_BLOCK_PROMO_CODE = true;
@@ -35,6 +38,7 @@ function buildBundle(
   id: '5' | '10' | '20',
   voucherCount: number,
   price: number,
+  validityDays: number,
   highlight?: string,
 ): MealVoucherBundle {
   const faceValue = voucherCount * FACE_VALUE_RM;
@@ -49,17 +53,29 @@ function buildBundle(
     faceValue,
     savings,
     savingsPercent,
+    validityDays,
     label: `${voucherCount} 张餐券`,
     highlight,
   };
 }
 
 export const MEAL_VOUCHER_BUNDLES: MealVoucherBundle[] = [
-  buildBundle('5',  5,  92.50),
-  buildBundle('10', 10, 175.75, '人气之选'),
-  buildBundle('20', 20, 333.00, '最划算'),
+  buildBundle('5',  5,  92.50,  30),
+  buildBundle('10', 10, 175.75, 30, '人气之选'),
+  buildBundle('20', 20, 333.00, 60, '最划算'),
 ];
 
 export function getBundle(bundleId: string): MealVoucherBundle | undefined {
   return MEAL_VOUCHER_BUNDLES.find(b => b.id === bundleId);
+}
+
+/**
+ * Validity for a given bundle. Falls back to the longest configured validity
+ * (60 days) when the bundle ID can't be resolved — safer to over-grant than
+ * silently expire a real customer's voucher.
+ */
+export function getValidityDaysForBundle(bundleId: string): number {
+  const b = getBundle(bundleId);
+  if (b) return b.validityDays;
+  return Math.max(...MEAL_VOUCHER_BUNDLES.map(x => x.validityDays));
 }

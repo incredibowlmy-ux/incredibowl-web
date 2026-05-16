@@ -68,7 +68,7 @@ export default function RefundPolicy() {
                             <p><strong>A. Voucher Purchase / 餐券购买：</strong></p>
                             <ul className="list-disc ml-6 space-y-2">
                                 <li>Meal voucher bundles (5 / 10 / 20 vouchers) are <strong>prepaid and non-refundable in cash</strong>. / 餐券包（5 / 10 / 20 张装）为<strong>预付商品，不提供现金退款</strong>。</li>
-                                <li>Vouchers are valid for <strong>60 days</strong> from the purchase date. Expired vouchers are forfeited; no extensions or partial refunds. / 餐券自购买日起有效期 <strong>60 天</strong>，过期作废，不可延期或退款。</li>
+                                <li>Validity depends on the bundle: <strong>5-pack and 10-pack are valid for 30 days</strong>; <strong>20-pack is valid for 60 days</strong> from the purchase date. Expired vouchers are forfeited; no extensions or partial refunds. / 有效期按组合不同：<strong>5 张装和 10 张装有效期 30 天</strong>；<strong>20 张装有效期 60 天</strong>，自购买日起算，过期作废，不可延期或退款。</li>
                                 <li>Vouchers are <strong>non-transferable</strong> — they can only be used by the account that purchased them. / 餐券<strong>不可转让</strong>，仅限购买账号本人使用。</li>
                                 <li>If a QR-payment voucher purchase is <strong>rejected by us</strong> due to failed verification (e.g., receipt mismatch), we will issue a <strong>100% cash refund</strong> via DuitNow within 3 working days. / 若 QR 付款的餐券购买被我方<strong>拒绝</strong>（如凭证不符），我们将在 3 个工作日内通过 DuitNow <strong>100% 现金退还</strong>。</li>
                             </ul>

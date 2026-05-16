@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
-import { getBundle, MEAL_VOUCHER_VALIDITY_DAYS } from '@/data/mealVoucherConfig';
+import { getBundle } from '@/data/mealVoucherConfig';
 import { validateBundleClientPrice } from '@/lib/mealVoucherUtils';
 import { validateVoucher } from '@/lib/voucherValidation';
 
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       originalPrice: bundle.price,
       promoCode: voucherCode || '',
       promoDiscount: voucherDiscount,
-      validityDays: MEAL_VOUCHER_VALIDITY_DAYS,
+      validityDays: bundle.validityDays,
       paymentMethod,
       // FPX flow → 'pending' until confirm-purchase verifies signature
       // QR  flow → 'pending-review' until admin confirms manually

@@ -689,7 +689,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                     {t.mealVoucherTagline}
                                 </p>
                                 <Link
-                                    href="/meal-vouchers"
+                                    href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF6B35] text-white rounded-xl text-xs font-bold hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20"
                                 >
                                     <Ticket size={14} /> {t.buyMealVoucher}
@@ -725,7 +725,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                 </div>
 
                                 <Link
-                                    href="/meal-vouchers"
+                                    href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
                                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-bold hover:bg-[#FF6B35] hover:text-white transition-colors"
                                 >
                                     <Plus size={14} strokeWidth={3} /> {t.buyMore}

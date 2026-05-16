@@ -13,7 +13,7 @@ interface LanguageSwitcherProps {
 // current page for these; for any other path (admin, blog, terms, refund,
 // privacy, meal-vouchers) the switcher falls back to the locale homepage so
 // we don't ship users into a 404.
-const BILINGUAL_ROUTES = new Set(['', '/order', '/member']);
+const BILINGUAL_ROUTES = new Set(['', '/order', '/member', '/meal-vouchers']);
 
 function computeTargets(pathname: string | null): { zhHref: string; enHref: string } {
     // Strip /en prefix to get the "shared" path; '' === root.

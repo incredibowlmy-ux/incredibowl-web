@@ -15,7 +15,7 @@
 
 import type { Firestore } from 'firebase-admin/firestore';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { MEAL_VOUCHER_VALIDITY_DAYS, getBundle, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
+import { getBundle, getValidityDaysForBundle, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
 
 export interface MintInput {
   userId: string;
@@ -51,8 +51,19 @@ export async function mintVouchersForPurchase(
   const purchasedAt = input.purchasedAtMs
     ? Timestamp.fromMillis(input.purchasedAtMs)
     : Timestamp.now();
+  // Validity is per-bundle: 5/10 → 30 days, 20 → 60 days.
+  // Resolve from bundleId on the purchase doc; if a legacy doc is missing
+  // bundleId, fall back to the explicit validityDays field, then to the
+  // longest-configured validity (safer to over-grant than expire prematurely).
+  const bundleId = typeof existingData.bundleId === 'string' ? existingData.bundleId : '';
+  const legacyValidity = Number(existingData.validityDays);
+  const validityDays = getBundle(bundleId)
+    ? getValidityDaysForBundle(bundleId)
+    : (Number.isFinite(legacyValidity) && legacyValidity > 0
+        ? legacyValidity
+        : getValidityDaysForBundle(''));
   const expiresAt = Timestamp.fromMillis(
-    purchasedAt.toMillis() + MEAL_VOUCHER_VALIDITY_DAYS * 86_400_000,
+    purchasedAt.toMillis() + validityDays * 86_400_000,
   );
 
   // MFRS 15 / IFRS 15 transaction-price allocation:
