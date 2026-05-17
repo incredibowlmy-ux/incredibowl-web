@@ -210,7 +210,7 @@ export default function AuthProfileView({
                                             {tierLabelZh(tier)} · 距 Pearl Point {geocodeResult.distanceKm}km
                                         </p>
                                         <p className="text-[10px] mt-1 opacity-80 leading-snug">
-                                            {tier === 'free' ? '✅ 你的订单全部免运' : tierFeeHintZh(tier)}
+                                            {tier === 'free' ? '✅ 你的订单全部免运' : tierFeeHintZh(tier, geocodeResult.distanceKm)}
                                         </p>
                                         {geocodeResult.partialMatch && tier !== 'free' && (
                                             <p className="text-[10px] mt-1 opacity-70 italic">

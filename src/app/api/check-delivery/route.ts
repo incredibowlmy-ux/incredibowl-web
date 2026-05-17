@@ -3,7 +3,7 @@ import {
     distanceFromPearlPointKm,
     tierFromDistance,
     calcDeliveryFee,
-    thresholdForTier,
+    thresholdForDistance,
     type DeliveryTier,
 } from '@/lib/deliveryUtils';
 
@@ -140,10 +140,12 @@ export async function POST(req: NextRequest) {
 
     const tier: DeliveryTier = tierFromDistance(distanceKm);
     // Preview fees at two cart sizes: an empty cart (full fee) and at the
-    // tier's threshold (discounted fee). The widget shows both — "today RM 5"
-    // vs "spend RM 20 and it's free" is a strong nudge.
+    // distance-resolved threshold (discounted fee). The widget shows both —
+    // "today RM 5" vs "spend RM 20 / 30 and it's free" is a strong nudge.
+    // thresholdForDistance() resolves the split near tier (RM 20 inner /
+    // RM 30 outer); mid/far are tier-uniform.
     const feeNow = calcDeliveryFee(distanceKm, 0);
-    const threshold = thresholdForTier(tier);
+    const threshold = thresholdForDistance(distanceKm);
     const feeAtThreshold = calcDeliveryFee(distanceKm, threshold);
 
     return NextResponse.json({

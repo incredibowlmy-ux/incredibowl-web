@@ -75,7 +75,7 @@ export default function Footer() {
                                     Pearl Point · Millerz Square · OUG · Old Klang Road
                                 </p>
                                 <p className="text-[12px] text-[#1A2D23]/55 leading-relaxed mt-3 px-4">
-                                    5km 内 RM 5（满 RM 20 → 免运）<br />
+                                    2.5km 内 RM 5（满 RM 20 → 免运）· 2.5–5km RM 5（满 RM 30 → 免运）<br />
                                     5–8km RM 15（满 40 → RM 5） · 8km+ RM 25（满 40 → RM 15）
                                 </p>
                             </div>
@@ -130,7 +130,7 @@ export default function Footer() {
                             <p>Old Klang Road</p>
                         </div>
                         <p className="text-[13px] text-[#1A2D23]/55 leading-relaxed">
-                            5km 内 RM 5（满 RM 20 → 免运）<br />
+                            2.5km 内 RM 5（满 RM 20 → 免运）· 2.5–5km RM 5（满 RM 30 → 免运）<br />
                             5–8km RM 15（满 40 → RM 5） · 8km+ RM 25（满 40 → RM 15）
                         </p>
                     </div>

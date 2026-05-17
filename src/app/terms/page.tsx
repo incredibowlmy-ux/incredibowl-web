@@ -27,10 +27,11 @@ export default function TermsAndConditions() {
 
                     <section>
                         <h2 className="text-xl font-bold mb-4">3. Delivery & Radius / 配送范围</h2>
-                        <p>Delivery fees are tiered by straight-line distance from Pearl Point: / 配送费按距 Pearl Point 直线距离分三档：</p>
+                        <p>Delivery fees are tiered by straight-line distance from Pearl Point: / 配送费按距 Pearl Point 直线距离分档：</p>
                         <ul className="list-disc ml-6 mt-1">
-                            <li><b>0–5 km</b>：RM 5 — waived when cart total ≥ RM 20 (after promo-code discount; meal-voucher redemption does NOT affect this threshold) / RM 5，使用 promo code 折后满 RM 20 即免运（餐券抵扣不影响门槛）</li>
-                            <li><b>5–8 km</b>：RM 15 — reduced to RM 5 when cart total ≥ RM 40 (saves RM 10; same basis as the 0–5 km rule) / RM 15，使用 promo code 折后满 RM 40 自动减至 RM 5（省 RM 10；同一计算基础）</li>
+                            <li><b>0–2.5 km</b>：RM 5 — waived when cart total ≥ RM 20 (after promo-code discount; meal-voucher redemption does NOT affect this threshold) / RM 5，使用 promo code 折后满 RM 20 即免运（餐券抵扣不影响门槛）</li>
+                            <li><b>2.5–5 km</b>：RM 5 — waived when cart total ≥ RM 30 (same basis as above) / RM 5，使用 promo code 折后满 RM 30 即免运（同一计算基础）</li>
+                            <li><b>5–8 km</b>：RM 15 — reduced to RM 5 when cart total ≥ RM 40 (saves RM 10; same basis) / RM 15，使用 promo code 折后满 RM 40 自动减至 RM 5（省 RM 10；同一计算基础）</li>
                             <li><b>8 km +</b>：RM 25 — reduced to RM 15 when cart total ≥ RM 40 (saves RM 10; same basis) / RM 25，使用 promo code 折后满 RM 40 自动减至 RM 15（省 RM 10；同一计算基础）</li>
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier. / 2026-05-16 之前注册的老客户，2 km 内沿用旧的免运政策。</p>

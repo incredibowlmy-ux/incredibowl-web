@@ -67,8 +67,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [page, setPage] = useState(0);
     const [copied, setCopied] = useState(false);
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-    const [redeemedCode, setRedeemedCode] = useState('');
-    const [redeeming, setRedeeming] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
@@ -88,28 +86,9 @@ export default function MemberView({ locale }: { locale: Locale }) {
         recentPurchases: { id: string; bundleId: string; voucherCount: number; amountPaid: number; status: string; createdAtMs: number }[];
     } | null>(null);
 
-    const handleRedeemPoints = async () => {
-        if (!currentUser || (profileData?.points || 0) < 100 || redeeming) return;
-        setRedeeming(true);
-        try {
-            const token = await currentUser.getIdToken();
-            const res = await fetch('/api/redeem-points', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                alert(data.error || t.redeemFailed);
-                return;
-            }
-            setProfileData((prev: any) => ({ ...prev, points: data.pointsAfter }));
-            setRedeemedCode(data.code);
-        } catch (error) {
-            console.error("Redeem error:", error);
-            alert(t.redeemFailed);
-        }
-        setRedeeming(false);
-    };
+    // Points redemption removed 2026-05-17 — see tasks/points-sunset-plan.md.
+    // Endpoint /api/redeem-points and dict keys (redeemNow, redeeming, etc.)
+    // will be removed in Phase 2 on 2026-05-31.
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -452,62 +431,28 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] h-3 rounded-full transition-all duration-700" style={{ width: `${pointsProgress}%` }}></div>
                     </div>
 
-                    {(profileData?.points || 0) >= 100 ? (
-                        <div className="mt-3">
-                            {!redeemedCode ? (
-                                <div className="bg-gradient-to-br from-[#FFF3E0] via-[#FFECB3] to-[#FFE0B2] rounded-2xl p-5 border border-[#FFD54F]/50 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#FF6B35]/10 rounded-full blur-2xl" />
-                                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-[#FFD54F]/20 rounded-full blur-xl" />
-
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-12 h-12 bg-white/80 rounded-2xl flex items-center justify-center text-2xl shadow-sm animate-bounce">
-                                                🎁
-                                            </div>
-                                            <div>
-                                                <p className="font-black text-[#E65100] text-sm">{t.pointsThresholdReached}</p>
-                                                <p className="text-[11px] text-[#E65100]/60">{t.pointsThresholdSubtitle}</p>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={handleRedeemPoints}
-                                            disabled={redeeming}
-                                            className="w-full py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/30 active:scale-[0.98]"
-                                        >
-                                            <Sparkles size={16} />
-                                            {redeeming ? t.redeeming : t.redeemNow}
-                                        </button>
-                                        <p className="text-[10px] text-[#E65100]/40 text-center mt-2">{t.pointsAfterRedeem(Math.max(0, (profileData?.points || 0) - 100))}</p>
-                                    </div>
+                    {/* Points sunset notice — replaces redemption UI from 2026-05-17.
+                        Redemption is paused immediately; full system retires 2026-05-31.
+                        All historical balances were migrated to permanent RM vouchers
+                        (see scripts/migrate-points-to-vouchers.ts). */}
+                    <div className="mt-3 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 rounded-2xl p-5 border border-amber-200/60 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-200/30 rounded-full blur-2xl" />
+                        <div className="relative z-10 space-y-2">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-xl shadow-sm flex-shrink-0">
+                                    💛
                                 </div>
-                            ) : (
-                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-200 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/30 rounded-full blur-2xl" />
-                                    <div className="relative z-10 space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                                <CheckCircle size={18} className="text-green-600" />
-                                            </div>
-                                            <p className="font-black text-green-700 text-sm">{t.redeemSuccess}</p>
-                                        </div>
-                                        <div className="bg-white rounded-xl p-4 border border-green-200 text-center">
-                                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">{t.yourCode}</p>
-                                            <p className="font-mono font-black text-2xl text-[#FF6B35] tracking-[0.15em] mb-2">{redeemedCode}</p>
-                                            <button
-                                                onClick={() => { navigator.clipboard.writeText(redeemedCode); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                                                className="px-5 py-2 bg-[#1A2D23] text-white rounded-lg text-xs font-bold hover:bg-[#2A3D33] transition-colors"
-                                            >
-                                                {copied ? `✅ ${t.copied}` : `📋 ${t.copyCode}`}
-                                            </button>
-                                        </div>
-                                        <p className="text-[10px] text-green-600/70 text-center">{t.pasteCodeHint}</p>
-                                    </div>
+                                <div className="flex-1">
+                                    <p className="font-black text-amber-900 text-sm mb-1">{t.pointsSunsetTitle}</p>
+                                    <p className="text-[12px] text-amber-900/80 leading-relaxed">{t.pointsSunsetBody}</p>
                                 </div>
-                            )}
+                            </div>
+                            <div className="bg-white/60 rounded-xl px-3 py-2 mt-2">
+                                <p className="text-[11px] text-amber-900/70 leading-relaxed">{t.pointsSunsetTimeline}</p>
+                            </div>
+                            <p className="text-[10px] text-amber-900/50 text-center pt-1">{t.pointsSunsetCta}</p>
                         </div>
-                    ) : (
-                        <p className="text-[11px] text-gray-400">{t.pointsNeedMore(Math.max(100 - (profileData?.points || 0), 0))}</p>
-                    )}
+                    </div>
                 </div>
 
                 {/* Stats Grid */}
@@ -959,7 +904,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                         {tierLabel(tier)} · {t.distanceFromPearlPoint(geocodeResult.distanceKm)}
                                                     </p>
                                                     <p className="text-[10px] mt-1 opacity-80 leading-snug">
-                                                        {tier === 'free' ? t.allOrdersFreeShipping : tierFeeHint(tier)}
+                                                        {tier === 'free' ? t.allOrdersFreeShipping : tierFeeHint(tier, geocodeResult.distanceKm)}
                                                     </p>
                                                     {geocodeResult.partialMatch && tier !== 'free' && (
                                                         <p className="text-[10px] mt-1 opacity-70 italic">

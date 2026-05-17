@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Old Klang Road 食物外送完整指南 — Pearl Point 家常便当",
-    description: "Old Klang Road、Pearl Point、OUG 一带家常菜外送指南。无味精、每天巴刹现煮、5km 内 RM 5（满 RM 20 免运）。",
+    description: "Old Klang Road、Pearl Point、OUG 一带家常菜外送指南。无味精、每天巴刹现煮、5km 内 RM 5（满 RM 20-30 免运）。",
     url: "https://www.incredibowl.my/blog/old-klang-road-food-delivery-guide",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -75,7 +75,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
         name: "Incredibowl 配送范围到哪里？运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，5km 内 RM 5（满 RM 20 免运，覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG、Old Klang Road 中段绝大部分公寓）。5–8km RM 15（满 RM 40 → RM 5）。8km 以外 RM 25（满 RM 40 → RM 15）。",
+          text: "Pearl Point 出发，2.5km 内 RM 5（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运）。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG、Old Klang Road 中段绝大部分公寓。5–8km RM 15（满 RM 40 → RM 5）。8km 以外 RM 25（满 RM 40 → RM 15）。",
         },
       },
       {
@@ -208,7 +208,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             <li>D&apos;Sands / SkyVille 8 @ Benteng</li>
           </ul>
           <p className="mt-4">
-            <strong>运费规则</strong>：5km 内 RM 5（满 RM 20 自动免运）· 5–8km RM 15（满 RM 40 → RM 5）· 8km+ RM 25（满 RM 40 → RM 15）。每日早上 6AM 截单。
+            <strong>运费规则</strong>：2.5km 内 RM 5（满 RM 20 自动免运）· 2.5–5km RM 5（满 RM 30 自动免运）· 5–8km RM 15（满 RM 40 → RM 5）· 8km+ RM 25（满 RM 40 → RM 15）。每日早上 6AM 截单。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -233,7 +233,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Incredibowl 配送范围到哪里？运费多少？</h3>
-              <p>Pearl Point 出发，5km 内 RM 5（满 RM 20 自动免运，涵盖 Old Klang Road 中段绝大部分公寓）。5–8km RM 15（满 RM 40 自动减至 RM 5），8km 以外 RM 25（满 RM 40 自动减至 RM 15）。</p>
+              <p>Pearl Point 出发，2.5km 内 RM 5（满 RM 20 自动免运），2.5–5km RM 5（满 RM 30 自动免运，涵盖 Old Klang Road 中段绝大部分公寓）。5–8km RM 15（满 RM 40 自动减至 RM 5），8km 以外 RM 25（满 RM 40 自动减至 RM 15）。</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 怎么下单？什么时候截单？</h3>
@@ -250,7 +250,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
               想试试今天的家常便当？
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              Pearl Point 出发 · 5km 内 RM 5（满 RM 20 免运）· 不加味精 · 每天巴刹采购
+              Pearl Point 出发 · 5km 内 RM 5（满 RM 20-30 免运）· 不加味精 · 每天巴刹采购
             </p>
             <Link
               href="/"

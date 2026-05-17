@@ -100,7 +100,7 @@ export default function BlogIndex() {
           </p>
           <h3 className="text-2xl font-black mb-3">想试试今天的菜单？</h3>
           <p className="text-[#1A2D23]/70 mb-4">
-            Pearl Point 出发，5km 内 RM 5（满 RM 20 免运）。
+            Pearl Point 出发，5km 内 RM 5（满 RM 20-30 免运）。
           </p>
           <Link
             href="/"

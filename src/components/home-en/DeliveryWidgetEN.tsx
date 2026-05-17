@@ -169,8 +169,12 @@ export default function DeliveryWidgetEN() {
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">Delivery fee at a glance</p>
                         <ul className="space-y-1.5 text-[13px] leading-snug">
                             <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">Within 5km</span></span>
+                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">Within 2.5km</span></span>
                                 <span className="text-right"><span className="font-bold text-gray-700">RM 5</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">RM 20+ → free</span></span>
+                            </li>
+                            <li className="flex justify-between gap-2">
+                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2.5–5km</span></span>
+                                <span className="text-right"><span className="font-bold text-gray-700">RM 5</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">RM 30+ → free</span></span>
                             </li>
                             <li className="flex justify-between gap-2">
                                 <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">5–8km</span></span>
