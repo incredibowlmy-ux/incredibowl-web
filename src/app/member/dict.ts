@@ -96,9 +96,12 @@ interface MemberDictShape {
     noPromoVouchersLine2: string;
     voucherLabelReferral: string;
     voucherLabelPoints: string;
+    voucherLabelPointsMigration: string;
+    voucherLabelReferrerBonus: string;
     voucherLabelGeneric: string;
     voucherDiscountLabel: string;
     voucherDaysLeft: (n: number) => string;
+    voucherPermanent: string;
     voucherExpiringSoon: string;
     voucherCopy: string;
     voucherCopied: string;
@@ -225,9 +228,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         noPromoVouchersLine2: '· 推荐朋友注册即可获 RM 10 首单券',
         voucherLabelReferral: '推荐奖励 · 首单可用',
         voucherLabelPoints: '积分兑换',
+        voucherLabelPointsMigration: '积分转换 · 永久有效',
+        voucherLabelReferrerBonus: '推荐人奖励 · 永久有效',
         voucherLabelGeneric: '优惠券',
         voucherDiscountLabel: '折扣',
         voucherDaysLeft: (n) => `剩 ${n} 天到期`,
+        voucherPermanent: '永久有效 · 无低消',
         voucherExpiringSoon: '· 即将过期',
         voucherCopy: '复制',
         voucherCopied: '已复制',
@@ -353,9 +359,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         noPromoVouchersLine2: '· Refer a friend to earn a RM 10 first-order voucher',
         voucherLabelReferral: 'Referral bonus · First order',
         voucherLabelPoints: 'Points redemption',
+        voucherLabelPointsMigration: 'Points migration · Never expires',
+        voucherLabelReferrerBonus: 'Referrer reward · Never expires',
         voucherLabelGeneric: 'Voucher',
         voucherDiscountLabel: 'Off',
         voucherDaysLeft: (n) => `${n} days left`,
+        voucherPermanent: 'Never expires · No min spend',
         voucherExpiringSoon: '· expiring soon',
         voucherCopy: 'Copy',
         voucherCopied: 'Copied',

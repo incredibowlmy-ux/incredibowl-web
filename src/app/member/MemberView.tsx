@@ -77,7 +77,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [geocodeError, setGeocodeError] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
     const [referralStats, setReferralStats] = useState<{ referredCount: number; confirmedCount: number; pendingCount: number; pointsEarned: number } | null>(null);
-    const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string; daysLeft: number }[]>([]);
+    const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string | null; daysLeft: number | null }[]>([]);
     const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
     const [mealVoucherInfo, setMealVoucherInfo] = useState<{
         availableCount: number;
@@ -701,10 +701,24 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         <>
                         <div className="space-y-2.5">
                             {myVouchers.map((v) => {
+                                // Source → label + accent color. Permanent sources (migration,
+                                // referrer-bonus) use the deep-green accent like the old
+                                // points redemption to signal "long-term value".
                                 const isReferral = v.source === 'referral';
                                 const isPoints = v.source === 'points-redemption';
-                                const labelText = isReferral ? t.voucherLabelReferral : isPoints ? t.voucherLabelPoints : t.voucherLabelGeneric;
-                                const accent = isReferral ? '#FF6B35' : isPoints ? '#2D5F3E' : '#C9A24E';
+                                const isMigration = v.source === 'points-migration-2026-05';
+                                const isReferrerBonus = v.source === 'referrer-bonus';
+                                const labelText =
+                                    isReferral ? t.voucherLabelReferral
+                                    : isPoints ? t.voucherLabelPoints
+                                    : isMigration ? t.voucherLabelPointsMigration
+                                    : isReferrerBonus ? t.voucherLabelReferrerBonus
+                                    : t.voucherLabelGeneric;
+                                const accent =
+                                    isReferral ? '#FF6B35'
+                                    : (isPoints || isMigration || isReferrerBonus) ? '#2D5F3E'
+                                    : '#C9A24E';
+                                const isPermanent = v.daysLeft === null;
                                 return (
                                     <div
                                         key={v.code}
@@ -724,8 +738,14 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                 <p className="font-mono font-black text-sm text-[#1A2D23] truncate">{v.code}</p>
                                                 <p className="text-[10px] font-bold mt-0.5" style={{ color: accent }}>{labelText}</p>
                                                 <p className="text-[10px] text-[#1A2D23]/50 mt-0.5">
-                                                    {t.voucherDaysLeft(v.daysLeft)}
-                                                    {v.daysLeft <= 7 && <span className="text-red-500 font-bold ml-1">{t.voucherExpiringSoon}</span>}
+                                                    {isPermanent ? (
+                                                        <span className="text-emerald-700 font-bold">💎 {t.voucherPermanent}</span>
+                                                    ) : (
+                                                        <>
+                                                            {t.voucherDaysLeft(v.daysLeft!)}
+                                                            {v.daysLeft! <= 7 && <span className="text-red-500 font-bold ml-1">{t.voucherExpiringSoon}</span>}
+                                                        </>
+                                                    )}
                                                 </p>
                                             </div>
                                             <button

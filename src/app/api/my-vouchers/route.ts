@@ -26,8 +26,10 @@ interface MyVoucher {
     code: string;
     discount: number;
     source: string;
-    expiresAt: string;
-    daysLeft: number;
+    // null = permanent voucher (no expiresAt field on the doc).
+    // Used by points-migration-2026-05 and referrer-bonus vouchers.
+    expiresAt: string | null;
+    daysLeft: number | null;
 }
 
 /**
@@ -64,22 +66,33 @@ export async function POST(req: NextRequest) {
             const usedCount = typeof v.usedCount === 'number' ? v.usedCount : 0;
             if (usedCount >= maxUses) continue;
 
+            // Missing expiresAt = permanent voucher (points-migration / referrer-bonus
+            // sources from the 2026-05 sunset). Matches voucherValidation.ts:88
+            // which skips the expiry check when the field is absent.
             const expiresAtMs = v.expiresAt?.toMillis ? v.expiresAt.toMillis() : null;
-            if (!expiresAtMs || expiresAtMs <= now) continue;
+            const isPermanent = expiresAtMs === null;
+            if (!isPermanent && expiresAtMs! <= now) continue;
 
-            const daysLeft = Math.max(0, Math.ceil((expiresAtMs - now) / 86_400_000));
+            const daysLeft = isPermanent
+                ? null
+                : Math.max(0, Math.ceil((expiresAtMs! - now) / 86_400_000));
 
             vouchers.push({
                 code: doc.id,
                 discount: typeof v.discount === 'number' ? v.discount : 0,
                 source: typeof v.source === 'string' ? v.source : 'voucher',
-                expiresAt: new Date(expiresAtMs).toISOString(),
+                expiresAt: isPermanent ? null : new Date(expiresAtMs!).toISOString(),
                 daysLeft,
             });
         }
 
-        // Soonest-expiring first.
-        vouchers.sort((a, b) => a.daysLeft - b.daysLeft);
+        // Soonest-expiring first; permanent vouchers sink to the bottom.
+        vouchers.sort((a, b) => {
+            if (a.daysLeft === null && b.daysLeft === null) return 0;
+            if (a.daysLeft === null) return 1;
+            if (b.daysLeft === null) return -1;
+            return a.daysLeft - b.daysLeft;
+        });
 
         return NextResponse.json({ vouchers });
     } catch (err) {
