@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Old Klang Road 食物外送完整指南 — Pearl Point 家常便当",
-    description: "Old Klang Road、Pearl Point、OUG 一带家常菜外送指南。无味精、每天巴刹现煮、5km 内 RM 5（满 RM 20-30 免运）。",
+    description: "Old Klang Road、Pearl Point、OUG 一带家常菜外送指南。无味精、每天巴刹现煮、2.5km 内 RM 5（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。",
     url: "https://www.incredibowl.my/blog/old-klang-road-food-delivery-guide",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -250,7 +250,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
               想试试今天的家常便当？
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              Pearl Point 出发 · 5km 内 RM 5（满 RM 20-30 免运）· 不加味精 · 每天巴刹采购
+              Pearl Point 出发 · 2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30 免运 · 不加味精 · 每天巴刹采购
             </p>
             <Link
               href="/"

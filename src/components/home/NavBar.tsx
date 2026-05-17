@@ -43,7 +43,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 {/* Desktop Version */}
                 <div className="hidden sm:flex w-full justify-center px-3">
                     <p className="text-xs font-black tracking-wide truncate">
-                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 5km 内 RM 5（满 RM 20-30 免运）· 远区 RM 15 起
+                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30 免运 · 远区 RM 15 起
                     </p>
                 </div>
 
@@ -51,11 +51,11 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 5km 内 RM 5（满 RM 20-30 免运）· 远区 RM 15 起
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30 免运 · 远区 RM 15 起
                         </span>
                         {/* Duplicate for seamless infinite loop */}
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 5km 内 RM 5（满 RM 20-30 免运）· 远区 RM 15 起
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30 免运 · 远区 RM 15 起
                         </span>
                     </div>
                 </div>

@@ -143,7 +143,7 @@ export default function HeroSectionEN() {
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
                             <span>Order via web / WhatsApp</span>
                             <span className="text-[#FF6B35] font-black">→</span>
-                            <span>Free from RM 20+ (within 5km)</span>
+                            <span>Within 2.5km free over RM 20 · 2.5–5km free over RM 30</span>
                         </div>
                         <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
                             <span className="inline-flex items-center gap-1.5">
@@ -153,7 +153,7 @@ export default function HeroSectionEN() {
                             <span className="text-[#1A2D23]/25 select-none">·</span>
                             <span className="inline-flex items-center gap-1.5">
                                 <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                Free delivery from RM 20+ (within 5km)
+                                Within 2.5km free over RM 20 · 2.5–5km free over RM 30
                             </span>
                         </div>
                     </div>
