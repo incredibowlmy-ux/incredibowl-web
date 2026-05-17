@@ -28,14 +28,18 @@
 - [x] `src/app/member/MemberView.tsx` — 兑换按钮禁用 + 通知文案「积分已转换为永久 voucher，请查 WhatsApp」
 - [x] `src/app/member/dict.ts` — 新增 ZH + EN 通知文案
 
-### 迁移（admin API 路由 — 方案 B，避免本地凭证）
-- [x] API 路由 `src/app/api/admin/migrate-points/route.ts`（POST `{mode: 'dry-run' | 'commit'}`，admin email 守卫，60s timeout）
-- [x] Admin UI 页面 `src/app/admin/migrate-points/page.tsx`（dry-run 按钮 / 输入 `CONFIRM` 解锁 commit / 预览表 / 下载 JSON）
-- [ ] **老板执行**：`git push` → 等 Vercel deploy → 访问 https://www.incredibowl.my/admin/migrate-points（登录 admin email）
-  - 步骤 1：点「Dry-run」→ 检查预览表的姓名/积分/RM/code，确认没问题
-  - 步骤 2：输入 `CONFIRM` 解锁红色 Commit 按钮 → 点击 → 等待完成
-  - 步骤 3：点「下载 messages.json」→ 文件里每个客户的 phone + 完整 WhatsApp 文案
-  - 步骤 4：用 mail merge 或手动逐条发 WhatsApp
+### 报告（admin 只读工具 — 2026-05-18 改版）
+**改版原因**：老板要逐个判断、自己手动 WhatsApp + 自己手动建 voucher。工具改成纯报告，**不自动写 Firestore**。
+
+- [x] API 路由 `src/app/api/admin/migrate-points/route.ts`（POST，admin email 守卫）— 只读，返回所有 points>0 客户 + 建议 RM + 建议 code + 现成 WhatsApp 文案
+- [x] Admin UI `src/app/admin/migrate-points/page.tsx` — 报告表 + 每行「复制 WhatsApp」按钮 + 导出 CSV/JSON
+- [x] `users.points` 字段**不会**被修改（保留余额做审计）
+- [ ] **老板执行**（每次需要时都可重复跑）：
+  - 步骤 1：访问 https://www.incredibowl.my/admin/migrate-points（admin email 登录）
+  - 步骤 2：看报告表，每行有姓名 / 电话 / 积分 / 建议 RM / 建议 code（`LP[NAME][RM]`）
+  - 步骤 3：要给客户 voucher → 到 `/admin` Vouchers tab 用 custom voucher 表单**手动创建**这个 code（discount = 报告里的 RM）
+  - 步骤 4：回到本页点「复制 WhatsApp」→ 贴到客户 WhatsApp 发出去
+  - 步骤 5：客户结账时输入 code，存在的就生效
 
 ---
 

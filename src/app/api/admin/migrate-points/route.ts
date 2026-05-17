@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// One-shot migration: convert every customer's loyalty points balance into
-// a permanent RM voucher, then zero out the balance. Decided 2026-05-17.
-// See tasks/points-sunset-plan.md for the full rollout plan.
+// Read-only points report. Returns every customer with points > 0, plus
+// the suggested RM amount, suggested voucher code, and a ready-to-paste
+// WhatsApp message. The admin handles voucher creation manually using the
+// existing admin voucher tools — this endpoint never writes to Firestore.
 //
-// Mode 'dry-run' (default): read-only. Returns the would-be voucher list,
-// collisions, and per-customer WhatsApp messages — writes NOTHING.
-// Mode 'commit': for each candidate, runs a transaction that creates the
-// voucher doc and zeros user.points. Returns the same payload but with
-// status='created' / 'failed' per row.
+// Decided 2026-05-18 (sunset rolled back from auto-commit to report-only:
+// the boss wants per-customer judgement before minting any voucher).
 //
 // Phase 2 (2026-05-31): delete this route + the /admin/migrate-points page.
+// See tasks/points-sunset-plan.md.
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -21,7 +20,7 @@ const CORS_HEADERS = {
   'Access-Control-Max-Age': '86400',
 };
 
-export const maxDuration = 60; // Vercel: allow up to 60s for the batch.
+export const maxDuration = 60;
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -55,8 +54,6 @@ async function verifyAdmin(req: NextRequest): Promise<{ email: string } | null> 
   }
 }
 
-const VOUCHER_SOURCE = 'points-migration-2026-05';
-
 function sanitizeName(raw: unknown): string {
   if (typeof raw !== 'string') return '';
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -66,9 +63,6 @@ function buildCode(nameClean: string, rm: number): string {
   return `LP${nameClean}${rm}`;
 }
 
-// Mirrors the customer-facing WhatsApp template the boss is going to send.
-// Kept here (not in a shared util) so the route is self-contained — when
-// Phase 2 deletes this file in 2026-05-31, the template goes with it.
 function buildMessage({
   displayName,
   points,
@@ -117,35 +111,15 @@ type Candidate = {
  * POST /api/admin/migrate-points
  * Auth: admin email (Bearer Firebase ID token)
  *
- * Body: { mode: 'dry-run' | 'commit' }
- *
- * Returns:
- *   {
- *     mode, summary,
- *     candidates: Candidate[],
- *     skipped: { uid, displayName, email, points, reason }[],
- *     collisions: { code, uids[] }[],           // batch-internal dupes
- *     existingCodeConflicts: { code, uid }[],   // code already in vouchers/
- *     results: { ...Candidate, status: 'created' | 'failed', error?: string }[],
- *   }
+ * Read-only. Returns the full points report. Body is ignored (kept POST
+ * to match the existing admin Bearer-token plumbing).
  */
 export async function POST(req: NextRequest) {
   const admin = await verifyAdmin(req);
   if (!admin) return corsify(NextResponse.json({ error: '未授权访问' }, { status: 403 }));
 
-  let mode: 'dry-run' | 'commit' = 'dry-run';
-  try {
-    const body = await req.json();
-    if (body?.mode === 'commit') mode = 'commit';
-  } catch {
-    // Empty / non-JSON body → default to dry-run.
-  }
-
   try {
     const db = await getDb();
-    const { Timestamp } = await import('firebase-admin/firestore');
-
-    // 1. Pull every user.
     const snap = await db.collection('users').get();
 
     const candidates: Candidate[] = [];
@@ -184,127 +158,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Detect within-batch code collisions.
-    const codeMap = new Map<string, string>();
-    const collisions: { code: string; uids: string[] }[] = [];
-    for (const c of candidates) {
-      const prev = codeMap.get(c.code);
-      if (prev) {
-        const existing = collisions.find(x => x.code === c.code);
-        if (existing) existing.uids.push(c.uid);
-        else collisions.push({ code: c.code, uids: [prev, c.uid] });
-      } else {
-        codeMap.set(c.code, c.uid);
-      }
-    }
-
-    // 3. Check Firestore for pre-existing voucher codes (parallel for speed).
-    const existsChecks = await Promise.all(
-      candidates.map(c => db.collection('vouchers').doc(c.code).get()),
-    );
-    const existingCodeConflicts: { code: string; uid: string }[] = [];
-    candidates.forEach((c, i) => {
-      if (existsChecks[i].exists) existingCodeConflicts.push({ code: c.code, uid: c.uid });
-    });
-
-    const totalPoints = candidates.reduce((s, c) => s + c.pointsBefore, 0);
-    const totalVoucherRM = candidates.reduce((s, c) => s + c.voucherRM, 0);
+    // Sort by points DESC so the biggest balances come first.
+    candidates.sort((a, b) => b.pointsBefore - a.pointsBefore);
 
     const summary = {
       eligibleCustomers: candidates.length,
       skipped: skipped.length,
-      totalPoints,
-      totalVoucherRM,
-      batchCollisions: collisions.length,
-      existingCodeConflicts: existingCodeConflicts.length,
+      totalPoints: candidates.reduce((s, c) => s + c.pointsBefore, 0),
+      totalVoucherRM: candidates.reduce((s, c) => s + c.voucherRM, 0),
     };
 
-    // 4. Abort if any collisions — must be resolved manually before commit.
-    if (collisions.length > 0 || existingCodeConflicts.length > 0) {
-      return corsify(NextResponse.json({
-        ok: false,
-        mode,
-        error: 'CODE_COLLISION',
-        summary,
-        candidates,
-        skipped,
-        collisions,
-        existingCodeConflicts,
-      }, { status: 409 }));
-    }
-
-    if (mode === 'dry-run') {
-      return corsify(NextResponse.json({
-        ok: true,
-        mode,
-        summary,
-        candidates,
-        skipped,
-        collisions,
-        existingCodeConflicts,
-        results: [],
-      }));
-    }
-
-    // 5. COMMIT — parallel per-customer transactions.
-    const now = Timestamp.now();
-    const results: (Candidate & { status: 'created' | 'failed'; error?: string })[] = [];
-
-    await Promise.all(candidates.map(async (c) => {
-      const voucherRef = db.collection('vouchers').doc(c.code);
-      const userRef = db.collection('users').doc(c.uid);
-      try {
-        await db.runTransaction(async (tx) => {
-          const [vSnap, uSnap] = await Promise.all([tx.get(voucherRef), tx.get(userRef)]);
-          if (vSnap.exists) throw new Error('VOUCHER_ALREADY_EXISTS');
-          if (!uSnap.exists) throw new Error('USER_DISAPPEARED');
-          const live = uSnap.data() || {};
-          const livePoints = Number(live.points || 0);
-          if (livePoints !== c.pointsBefore) {
-            throw new Error(`POINTS_DRIFTED (was ${c.pointsBefore}, now ${livePoints})`);
-          }
-
-          tx.set(voucherRef, {
-            code: c.code,
-            discount: c.voucherRM,
-            isUsed: false,
-            usedBy: '',
-            source: VOUCHER_SOURCE,
-            redeemedBy: c.uid,
-            migratedFromPoints: c.pointsBefore,
-            createdAt: now,
-            // No expiresAt → permanent (voucherValidation.ts skips check).
-          });
-          tx.update(userRef, {
-            points: 0,
-            pointsMigratedAt: now,
-            pointsMigratedToVoucher: c.code,
-            pointsMigratedRM: c.voucherRM,
-          });
-        });
-        results.push({ ...c, status: 'created' });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        results.push({ ...c, status: 'failed', error: msg });
-      }
-    }));
-
-    const created = results.filter(r => r.status === 'created').length;
-    const failed = results.filter(r => r.status === 'failed').length;
-
     return corsify(NextResponse.json({
-      ok: failed === 0,
-      mode,
-      summary: { ...summary, created, failed },
+      ok: true,
+      summary,
       candidates,
       skipped,
-      collisions,
-      existingCodeConflicts,
-      results,
     }));
   } catch (err) {
-    console.error('migrate-points error:', err);
-    const msg = err instanceof Error ? err.message : '迁移失败';
+    console.error('migrate-points report error:', err);
+    const msg = err instanceof Error ? err.message : '查询失败';
     return corsify(NextResponse.json({ ok: false, error: msg }, { status: 500 }));
   }
 }
