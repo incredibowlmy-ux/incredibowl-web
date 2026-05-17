@@ -41,6 +41,12 @@ interface MemberDictShape {
     pasteCodeHint: string;
     redeemFailed: string;
 
+    // Points sunset notice (2026-05-17 → 2026-05-31)
+    pointsSunsetTitle: string;
+    pointsSunsetBody: string;
+    pointsSunsetTimeline: string;
+    pointsSunsetCta: string;
+
     // Stats grid
     statsTotalOrders: string;
     statsTotalSpent: string;
@@ -169,6 +175,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         pasteCodeHint: '结账时粘贴此优惠码即可减免 RM10',
         redeemFailed: '兑换失败，请稍后再试',
 
+        // ── 积分系统下线公告（2026-05-17 起，5/31 系统正式下线）──
+        pointsSunsetTitle: '积分系统即将下线',
+        pointsSunsetBody: '碗妈在简化奖励制度——餐券（5/10/20 packs）会是主要的省钱方式（最多省 10%）。你的积分已转换成永久 voucher，code 已通过 WhatsApp 发送给你 💛',
+        pointsSunsetTimeline: '📌 即日起：积分暂停兑换  📌 5月31日：积分系统正式下线',
+        pointsSunsetCta: '没收到 WhatsApp？请 call 010-337 0197',
+
         statsTotalOrders: '总订单',
         statsTotalSpent: '累计消费',
         statsFavCount: '最爱点数',
@@ -290,6 +302,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         copied: 'Copied',
         pasteCodeHint: 'Paste this code at checkout for RM 10 off',
         redeemFailed: 'Redemption failed. Please try again later.',
+
+        // ── Points sunset notice (effective 2026-05-17, full shutdown 2026-05-31) ──
+        pointsSunsetTitle: 'Points are being retired',
+        pointsSunsetBody: 'We\'re simplifying rewards — meal voucher bundles (5/10/20 packs) are now the main way to save (up to 10% off). Your points have been converted to a permanent voucher and the code was sent to you on WhatsApp 💛',
+        pointsSunsetTimeline: '📌 Now: redemption paused  📌 May 31: points system fully retired',
+        pointsSunsetCta: 'Didn\'t get the WhatsApp? Please call 010-337 0197',
 
         statsTotalOrders: 'Orders',
         statsTotalSpent: 'Total spent',

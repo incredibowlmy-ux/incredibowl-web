@@ -79,25 +79,29 @@ export async function POST(req: Request) {
         }
       }
 
-      // Award points only when changing TO 'confirmed' from a non-confirmed status
+      // Update order count + spend on first confirm.
+      // Points earning was sunset on 2026-05-17 — orders no longer accrue
+      // points. Existing balances were migrated to permanent RM vouchers
+      // (see scripts/migrate-points-to-vouchers.ts and
+      // tasks/points-sunset-plan.md).
       if (isFirstConfirm && orderData.userId) {
         const userRef = db.collection('users').doc(orderData.userId);
-        // total = food after voucher (NOT including delivery)
-        // deliveryFee = additional charge customer paid for shipping
-        // Points are awarded on food spend only; totalSpent reflects total paid.
         const foodAfterDiscount = orderData.total ?? 0;
         const deliveryFee = orderData.deliveryFee ?? 0;
 
         await userRef.update({
           totalOrders: FieldValue.increment(1),
           totalSpent: FieldValue.increment(foodAfterDiscount + deliveryFee),
-          points: FieldValue.increment(Math.floor(foodAfterDiscount)),
         });
 
         // Referral bonus (only on first confirmed order).
         // Server-side defence-in-depth: even though /api/validate-referral
         // checks self-referral at signup, we re-verify here in case rules
         // ever drift or the check was bypassed.
+        //
+        // Reward changed 2026-05-17: was 50 points, now a permanent RM 5
+        // voucher (no expiry, no min spend). Matches the post-sunset
+        // policy where vouchers replace points entirely.
         const userSnap = await userRef.get();
         const userData = userSnap.data();
         if (userData?.referredBy && !userData?.referralBonusAwarded) {
@@ -120,12 +124,9 @@ export async function POST(req: Request) {
             const isSelfPhone = refereePhone && referrerPhone && refereePhone === referrerPhone;
 
             if (!isSelfUid && !isSelfPhone) {
-              // Award 50 points to referrer
-              await db.collection('users').doc(referrerDoc.id).update({
-                points: FieldValue.increment(50),
-              });
+              await mintReferrerVoucher(db, referrerDoc.id, orderId);
               // Mark awarded on referee. The referee already received their
-              // RM 10 voucher at signup — no point bonus here.
+              // RM 10 voucher at signup — referrer now also gets a voucher.
               await userRef.update({
                 referralBonusAwarded: true,
               });
@@ -286,4 +287,59 @@ export async function POST(req: Request) {
     console.error('confirm-order error:', err);
     return NextResponse.json({ error: err.message || '操作失败' }, { status: 500 });
   }
+}
+
+// ── Referrer reward voucher ───────────────────────────────────
+// Mints a permanent RM 5 voucher for the referrer when their referee makes
+// their first confirmed order. Replaces the old "50 points" reward (sunset
+// 2026-05-17). Permanent = no expiresAt field — voucherValidation.ts skips
+// the expiry check when the field is absent.
+//
+// Idempotency is provided by the caller setting `referralBonusAwarded = true`
+// on the referee's user doc — we only get called once per referee.
+const REFERRER_VOUCHER_AMOUNT_RM = 5;
+const REFERRER_VOUCHER_CODE_RETRIES = 5;
+
+function generateReferrerVoucherCode(): string {
+  return 'REFBONUS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+}
+
+async function mintReferrerVoucher(
+  db: FirebaseFirestore.Firestore,
+  referrerUid: string,
+  triggeringOrderId: string,
+): Promise<void> {
+  const { Timestamp } = await import('firebase-admin/firestore');
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < REFERRER_VOUCHER_CODE_RETRIES; attempt++) {
+    const code = generateReferrerVoucherCode();
+    const voucherRef = db.collection('vouchers').doc(code);
+    try {
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(voucherRef);
+        if (snap.exists) throw new Error('CODE_COLLISION');
+        tx.set(voucherRef, {
+          code,
+          discount: REFERRER_VOUCHER_AMOUNT_RM,
+          isUsed: false,
+          usedBy: '',
+          source: 'referrer-bonus',
+          redeemedBy: referrerUid,
+          triggeringOrderId,
+          createdAt: Timestamp.now(),
+          // No expiresAt — permanent.
+        });
+      });
+      return;
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'CODE_COLLISION') continue;
+      throw err;
+    }
+  }
+  console.error(
+    `mintReferrerVoucher: code collision retries exhausted for referrer ${referrerUid}`,
+    lastError,
+  );
 }
