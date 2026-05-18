@@ -99,6 +99,18 @@ export default function AdminPage() {
         }
     }, [currentUser]);
 
+    // When a specific date chip is selected, auto-expand that day's section
+    // (and both meal slots) so the click does something visible immediately.
+    useEffect(() => {
+        if (statsDate === '7days') return;
+        setExpandedSections(prev => ({
+            ...prev,
+            [statsDate]: true,
+            [`${statsDate}-lunch`]: true,
+            [`${statsDate}-dinner`]: true,
+        }));
+    }, [statsDate]);
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -450,13 +462,16 @@ export default function AdminPage() {
     const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + (o.total || 0), 0);
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
-    // Build upcoming days (today + next 7 days)
+    // Build upcoming days (today + next 7 days). When a specific date chip
+    // is selected, narrow the preview to just that date so the chip click
+    // actually changes what you see below.
     const upcomingDays: { dateStr: string; label: string; orders: AdminOrder[] }[] = [];
     const dayLabels = ['今天', '明天', '后天', '大后天'];
     for (let i = 0; i <= 7; i++) {
         const d = new Date();
         d.setDate(d.getDate() + i);
         const dateStr = formatDateStr(d);
+        if (statsDate !== '7days' && statsDate !== dateStr) continue;
         const dayOrders = orders.filter(o => o.deliveryDate === dateStr && o.status !== 'cancelled');
         if (dayOrders.length > 0) {
             const label = i <= 3 ? `${dayLabels[i]} (${dateStr})` : dateStr;
