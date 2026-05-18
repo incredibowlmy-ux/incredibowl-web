@@ -1,0 +1,161 @@
+{
+  "name": "Daily Prep → BowlMama WhatsApp (06:30 KL)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-630-kl",
+      "name": "Cron 06:30 KL",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 400],
+      "notes": "Daily at 06:30 Asia/Kuala_Lumpur. Set timezone in n8n global settings (Settings → General → Timezone) OR on this node's 'Trigger Timezone' if available, else cron runs in UTC."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.incredibowl.my/api/n8n/daily-prep",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false,
+        "sendQuery": false,
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-fetch-prep",
+      "name": "Fetch Daily Prep",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Incredibowl N8N API Key"
+        }
+      },
+      "notes": "Uses Header Auth credential. Create it in n8n: Credentials → New → Header Auth → Name='Authorization', Value='Bearer <YOUR_N8N_API_KEY>'. IMPORTANT: hit www.incredibowl.my (not incredibowl.my) — apex 307-redirects and curl/n8n drops Authorization across the hop."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Shape the API response into 6 named template variables that\n// match the WhatsApp template 'daily_prep_summary'. Order MUST stay\n// in sync with template body: {{1}} date, {{2}} lunch count, {{3}}\n// lunch list, {{4}} dinner count, {{5}} dinner list, {{6}} notes.\n//\n// WhatsApp template parameters reject empty strings and trim trailing\n// newlines, so we coerce numbers to strings and fall back to '无'.\n\nconst data = $input.first().json;\n\nconst safe = (s) => {\n  if (s === undefined || s === null) return '无';\n  const str = String(s).trim();\n  return str.length > 0 ? str : '无';\n};\n\nreturn [{\n  json: {\n    var1: safe(data.date),\n    var2: safe(data.lunch?.count ?? 0),\n    var3: safe(data.lunch?.summaryText),\n    var4: safe(data.dinner?.count ?? 0),\n    var5: safe(data.dinner?.summaryText),\n    var6: safe(data.notesText),\n    // also pass through raw for debugging\n    _raw: data,\n  }\n}];\n"
+      },
+      "id": "code-format-vars",
+      "name": "Format Template Vars",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "notes": "Maps endpoint JSON → 6 template variables. Edit here if you change the WhatsApp template later."
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "REPLACE_WITH_YOUR_PHONE_NUMBER_ID",
+        "recipientPhoneNumber": "REPLACE_WITH_BOWLMAMA_PHONE_60XXXXXXXXX",
+        "messageType": "template",
+        "templateName": "daily_prep_summary",
+        "templateLanguage": "zh_CN",
+        "components": {
+          "componentsUi": [
+            {
+              "type": "body",
+              "bodyParameters": {
+                "parametersUi": [
+                  { "type": "text", "text": "={{ $json.var1 }}" },
+                  { "type": "text", "text": "={{ $json.var2 }}" },
+                  { "type": "text", "text": "={{ $json.var3 }}" },
+                  { "type": "text", "text": "={{ $json.var4 }}" },
+                  { "type": "text", "text": "={{ $json.var5 }}" },
+                  { "type": "text", "text": "={{ $json.var6 }}" }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "id": "wa-send-template",
+      "name": "Send WhatsApp Template",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [920, 400],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "REPLACE_WITH_WA_CREDENTIAL_ID",
+          "name": "Incredibowl WhatsApp Business Cloud"
+        }
+      },
+      "notes": "Send template message. WhatsApp Cloud API requires the recipient to have messaged your WABA within 30 days (BowlMama needs to send 'Hi' once for opt-in). Phone Number ID comes from Meta Business Suite → WhatsApp Manager → Phone numbers. Template MUST be APPROVED before this works."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Surface failures clearly. Replace this with a Slack/Email node\n// hooked to your own number if you want push notifications on failure.\nconst err = $input.first().json;\nconsole.error('[daily-prep] WhatsApp send failed', JSON.stringify(err));\nreturn [{ json: { error: err } }];\n"
+      },
+      "id": "code-error-log",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 600],
+      "notes": "Catch-all error logger. Swap for Slack/Email/Telegram node to actually be notified when 06:30 push fails. Right now this only writes to n8n execution logs."
+    }
+  ],
+  "connections": {
+    "Cron 06:30 KL": {
+      "main": [
+        [
+          { "node": "Fetch Daily Prep", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Daily Prep": {
+      "main": [
+        [
+          { "node": "Format Template Vars", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Template Vars": {
+      "main": [
+        [
+          { "node": "Send WhatsApp Template", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Send WhatsApp Template": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "tags": [
+    { "name": "incredibowl" },
+    { "name": "production" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "pinData": {}
+}
