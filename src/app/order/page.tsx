@@ -4,7 +4,7 @@ import OrderClient from "./OrderClient";
 export const metadata: Metadata = {
     title: "Pearl Point 私厨外送 · 午晚两餐送到 | Incredibowl",
     description:
-        "凌晨 6 点去巴刹，午餐 11:30AM 或晚餐 5PM 送到你手上。RM 16.90 起，2.5km 内 RM 5（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。WhatsApp 一句话下单，不需要注册。Pearl Point / Old Klang Road / OUG。",
+        "凌晨 6 点去巴刹，午餐 11:30AM 或晚餐 5PM 送到你手上。RM 16.90 起，2km 内 RM 3（满 RM 20 免运）· 2–5km RM 5（满 RM 30 免运）。WhatsApp 一句话下单，不需要注册。Pearl Point / Old Klang Road / OUG。",
     alternates: {
         canonical: "/order",
         languages: {

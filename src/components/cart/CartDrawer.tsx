@@ -13,7 +13,6 @@ import {
     thresholdForDistance,
     FREE_DELIVERY_THRESHOLD_NEAR_RM,
     FREE_DELIVERY_THRESHOLD_MID_RM,
-    FREE_DELIVERY_THRESHOLD_FAR_RM,
     type DeliveryTier,
     type DeliveryZone,
 } from '@/lib/deliveryUtils';
@@ -747,7 +746,6 @@ export default function CartDrawer({
                                         <span className="text-gray-500">
                                             配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
                                             {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–8km</span>}
-                                            {deliveryTier === 'far' && <span className="text-orange-600 font-bold">· 远距离 8km+</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
                                             {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}
@@ -759,7 +757,6 @@ export default function CartDrawer({
                                                 💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
                                                 {deliveryTier === 'near' && <> 即可免运 <span className="text-gray-400">（满 RM {distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
                                                 {deliveryTier === 'mid' && <> 配送费降至 RM 5（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 省 RM 10）</>}
-                                                {deliveryTier === 'far' && <> 配送费降至 RM 15（满 RM {FREE_DELIVERY_THRESHOLD_FAR_RM} 省 RM 10）</>}
                                             </p>
                                         </div>
                                     )}

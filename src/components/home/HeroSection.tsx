@@ -117,7 +117,7 @@ export default function HeroSection() {
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
                             <span>网页 / WhatsApp 下单</span>
                             <span className="text-[#FF6B35] font-black">→</span>
-                            <span>2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30</span>
+                            <span>2km 内 RM 3（满 20 免运）· 2–5km 满 30 免运</span>
                         </div>
                         {/* Desktop: icon-prefixed feature list with dot separator */}
                         <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
@@ -128,11 +128,11 @@ export default function HeroSection() {
                             <span className="text-[#1A2D23]/25 select-none">·</span>
                             <span className="inline-flex items-center gap-1.5">
                                 <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                2.5km 内 满 RM 20 免运 · 2.5–5km 满 RM 30
+                                2km 内 RM 3（满 20 免运）· 2–5km 满 30 免运
                             </span>
                         </div>
                         <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
-                            Within 2.5km free over RM 20 · 2.5–5km free over RM 30
+                            Within 2km RM 3 (free over RM 20) · 2–5km free over RM 30
                         </p>
                     </div>
                 </div>

@@ -81,7 +81,7 @@ type DeliveryResult = {
 const tierWaMsg = (r: DeliveryResult, addr: string) => {
     const a = r.formattedAddress || addr;
     if (r.tier === "near") {
-        return `Hi 碗妈！我从 FB 广告来的，地址：${a}（5km 内 · RM 5，2.5km 内满 RM 20 / 2.5-5km 满 RM 30 免运 ✓），想看今天 / 明天的菜单 🔥`;
+        return `Hi 碗妈！我从 FB 广告来的，地址：${a}（5km 内 · 2km 内 RM 3 满 20 免运 / 2–5km RM 5 满 30 免运 ✓），想看今天 / 明天的菜单 🔥`;
     }
     if (r.tier === "outside") {
         return `Hi 碗妈！我地址是 ${a}（离你 ${r.distanceKm} km），看看你能不能想办法送 🙏`;
@@ -174,7 +174,7 @@ export default function OrderClient() {
                         凌晨 6 点去巴刹，不加味精
                     </p>
                     <p className="text-base lg:text-lg text-[#1A2D23]/60 font-bold mb-7">
-                        <span className="text-[#1A2D23] font-black">RM 16.90 起</span> · 2.5km 内满 RM 20 / 2.5–5km 满 RM 30 免运 · 私厨现煮
+                        <span className="text-[#1A2D23] font-black">RM 16.90 起</span> · 2km 内 RM 3 满 20 免运 / 2–5km 满 30 免运 · 私厨现煮
                     </p>
 
                     <a
