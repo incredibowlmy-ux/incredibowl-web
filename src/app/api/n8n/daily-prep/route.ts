@@ -81,13 +81,24 @@ function aggregate(orders: FirestoreOrder[]): {
   return { count: orders.length, items, summaryText };
 }
 
+// Drop admin bookkeeping markers like "手动录入 · whatsapp" so the
+// WhatsApp brief to BowlMama only carries real cooking-relevant requests.
+// If a customer requirement is ever co-mingled into the same note string
+// it will also be dropped — that's a deliberate forcing function to keep
+// admin tags and customer asks in separate fields.
+const isAdminBookkeepingNote = (note: string) => /手动录入/.test(note);
+
 function collectNotes(orders: FirestoreOrder[]): { notes: string[]; notesText: string } {
   const notes: string[] = [];
   for (const o of orders) {
     const who = o.userName || '客户';
-    if (o.note) notes.push(`${who}：${o.note}`);
+    if (o.note && !isAdminBookkeepingNote(o.note)) {
+      notes.push(`${who}：${o.note}`);
+    }
     for (const it of o.items || []) {
-      if (it.note) notes.push(`${who}（${it.name}）：${it.note}`);
+      if (it.note && !isAdminBookkeepingNote(it.note)) {
+        notes.push(`${who}（${it.name}）：${it.note}`);
+      }
     }
   }
   return { notes, notesText: notes.length ? notes.join('；') : '无' };
