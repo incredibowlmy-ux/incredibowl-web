@@ -71,10 +71,21 @@ export default function FooterEN() {
                                 <p className="text-[13px] text-[#1A2D23]/65 font-semibold tracking-[0.1em] md:tracking-[0.15em] leading-relaxed">
                                     Pearl Point · Millerz Square · OUG · Old Klang Road
                                 </p>
-                                <p className="text-[12px] text-[#1A2D23]/55 leading-relaxed mt-3 px-4">
-                                    Within 2km RM 3 (free over RM 20) · 2–5km RM 5 (free over RM 30)<br />
-                                    5–8km RM 15 (RM 40+ → RM 5) · Beyond 8km — not delivered
-                                </p>
+                                <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[280px] space-y-1">
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">Within 2km</span>
+                                        <span><span className="font-bold">RM 3</span> · free over 20</span>
+                                    </li>
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">2–5km</span>
+                                        <span><span className="font-bold">RM 5</span> · free over 30</span>
+                                    </li>
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">5–8km</span>
+                                        <span><span className="font-bold">RM 15</span> · 40+ → RM 5</span>
+                                    </li>
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">Beyond 8km — not delivered</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -124,10 +135,21 @@ export default function FooterEN() {
                             <p>OUG</p>
                             <p>Old Klang Road</p>
                         </div>
-                        <p className="text-[13px] text-[#1A2D23]/55 leading-relaxed">
-                            Within 2km RM 3 (free over RM 20) · 2–5km RM 5 (free over RM 30)<br />
-                            5–8km RM 15 (RM 40+ → RM 5) · Beyond 8km — not delivered
-                        </p>
+                        <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[280px]">
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">Within 2km</span>
+                                <span><span className="font-bold">RM 3</span> · free over 20</span>
+                            </li>
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">2–5km</span>
+                                <span><span className="font-bold">RM 5</span> · free over 30</span>
+                            </li>
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">5–8km</span>
+                                <span><span className="font-bold">RM 15</span> · 40+ → RM 5</span>
+                            </li>
+                            <li className="text-[11px] text-[#1A2D23]/40 italic pt-1">Beyond 8km — not delivered</li>
+                        </ul>
                     </div>
 
                     <div className="space-y-4">

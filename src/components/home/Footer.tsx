@@ -74,10 +74,21 @@ export default function Footer() {
                                 <p className="text-[13px] text-[#1A2D23]/65 font-semibold tracking-[0.1em] md:tracking-[0.15em] leading-relaxed">
                                     Pearl Point · Millerz Square · OUG · Old Klang Road
                                 </p>
-                                <p className="text-[12px] text-[#1A2D23]/55 leading-relaxed mt-3 px-4">
-                                    2km 内 RM 3（满 RM 20 → 免运）· 2–5km RM 5（满 RM 30 → 免运）<br />
-                                    5–8km RM 15（满 40 → RM 5）· 8km 以外暂不配送
-                                </p>
+                                <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[260px] space-y-1">
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">2km 内</span>
+                                        <span><span className="font-bold">RM 3</span> · 满 20 免运</span>
+                                    </li>
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">2–5km</span>
+                                        <span><span className="font-bold">RM 5</span> · 满 30 免运</span>
+                                    </li>
+                                    <li className="flex justify-between gap-3">
+                                        <span className="font-semibold text-[#1A2D23]/80">5–8km</span>
+                                        <span><span className="font-bold">RM 15</span> · 满 40 → RM 5</span>
+                                    </li>
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">8km 以外暂不配送</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -129,10 +140,21 @@ export default function Footer() {
                             <p>OUG</p>
                             <p>Old Klang Road</p>
                         </div>
-                        <p className="text-[13px] text-[#1A2D23]/55 leading-relaxed">
-                            2km 内 RM 3（满 RM 20 → 免运）· 2–5km RM 5（满 RM 30 → 免运）<br />
-                            5–8km RM 15（满 40 → RM 5）· 8km 以外暂不配送
-                        </p>
+                        <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[260px]">
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">2km 内</span>
+                                <span><span className="font-bold">RM 3</span> · 满 20 免运</span>
+                            </li>
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">2–5km</span>
+                                <span><span className="font-bold">RM 5</span> · 满 30 免运</span>
+                            </li>
+                            <li className="flex justify-between gap-3">
+                                <span className="font-semibold text-[#1A2D23]/80">5–8km</span>
+                                <span><span className="font-bold">RM 15</span> · 满 40 → RM 5</span>
+                            </li>
+                            <li className="text-[11px] text-[#1A2D23]/40 italic pt-1">8km 以外暂不配送</li>
+                        </ul>
                     </div>
 
                     {/* Col 3: Brand Promise */}
