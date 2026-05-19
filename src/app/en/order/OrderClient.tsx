@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Image from "next/image";
 import {
     ChevronDown,
@@ -17,15 +17,29 @@ const fireLead = (source: string, value = 0) => {
     if (typeof window === "undefined") return;
     const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
     if (typeof fbq === "function") {
-        fbq("track", "Lead", {
-            content_name: source,
-            value,
-            currency: "MYR",
-        });
+        fbq(
+            "track",
+            "Lead",
+            { content_name: source, value, currency: "MYR" },
+            { eventID: `lead_${source}_${Date.now()}` },
+        );
     }
     const gtag = (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag;
     if (typeof gtag === "function") {
         gtag("event", "whatsapp_click", { source, value });
+    }
+};
+
+const fireViewContent = () => {
+    if (typeof window === "undefined") return;
+    const fbq = (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq;
+    if (typeof fbq === "function") {
+        fbq(
+            "track",
+            "ViewContent",
+            { content_name: "Order Landing", content_category: "menu", currency: "MYR" },
+            { eventID: `view_${Date.now()}_${Math.random().toString(36).slice(2, 7)}` },
+        );
     }
 };
 
@@ -114,6 +128,10 @@ export default function OrderClient() {
     const [checkResult, setCheckResult] = useState<DeliveryResult | null>(null);
     const [checkError, setCheckError] = useState("");
     const [faqOpen, setFaqOpen] = useState<number | null>(0);
+
+    useEffect(() => {
+        fireViewContent();
+    }, []);
 
     const checkDelivery = async (e: FormEvent) => {
         e.preventDefault();
