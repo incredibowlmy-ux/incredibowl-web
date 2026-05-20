@@ -47,15 +47,16 @@ function todayInKL(): string {
   }).format(new Date());
 }
 
-// Classify a delivery time string as lunch vs dinner. Manually entered
-// orders only carry a numeric time like "19:00", so the old "contains
-// 'dinner'?" check misclassified them all as lunch. Now:
-//   1. explicit "dinner"/"晚" → dinner
-//   2. explicit "lunch"/"午"  → lunch
-//   3. HH:MM with hour >= 17  → dinner
-//   4. anything else          → lunch (default for ambiguous / empty)
+// Classify a delivery time string as lunch vs dinner.
+//   1. explicit mealType field (set by manual orders from local dashboard) wins
+//   2. "dinner"/"晚" keyword → dinner
+//   3. "lunch"/"午"  keyword → lunch
+//   4. HH:MM with hour >= 17 → dinner
+//   5. anything else         → lunch (default for ambiguous / empty)
 // KEEP IN SYNC with splitMealTime() in src/app/admin/page.tsx.
-function isLunchOrder(o: { deliveryTime?: string }): boolean {
+function isLunchOrder(o: { deliveryTime?: string; mealType?: 'lunch' | 'dinner' | null }): boolean {
+  if (o.mealType === 'lunch') return true;
+  if (o.mealType === 'dinner') return false;
   const t = (o.deliveryTime || '').toLowerCase();
   if (t.includes('dinner') || t.includes('晚')) return false;
   if (t.includes('lunch') || t.includes('午')) return true;
@@ -64,11 +65,32 @@ function isLunchOrder(o: { deliveryTime?: string }): boolean {
   return true;
 }
 
+// Orders come in two shapes:
+//   (A) web cart: flat items[], add-ons are own rows with "↳ <name>" prefix
+//   (B) local dashboard manual entry: items[i].addOns = [{id,label,price,quantity}]
+//       — main dish stays a regular item, add-ons live in a nested array.
+// We handle both: ↳-prefixed flat rows go into the add-on bucket, AND any
+// nested addOns array on a main item also goes into the add-on bucket.
+interface FirestoreOrderItemAddOn {
+  id?: string;
+  label?: string;
+  name?: string;
+  price?: number;
+  quantity?: number;
+}
+interface FirestoreOrderItem {
+  name: string;
+  quantity: number;
+  note?: string;
+  addOns?: FirestoreOrderItemAddOn[];
+}
 interface FirestoreOrder {
   userName?: string;
   deliveryTime?: string;
+  mealType?: 'lunch' | 'dinner' | null;
+  isManual?: boolean;
   status?: string;
-  items?: { name: string; quantity: number; note?: string }[];
+  items?: FirestoreOrderItem[];
   note?: string;
 }
 
@@ -92,10 +114,19 @@ function aggregate(orders: FirestoreOrder[]): {
     for (const it of o.items || []) {
       const qty = it.quantity || 0;
       if (isAddOnItem(it.name)) {
+        // Web flat format: ↳-prefixed row is itself an add-on.
         const key = stripAddOnPrefix(it.name);
         addOnCounts[key] = (addOnCounts[key] || 0) + qty;
       } else {
         mainCounts[it.name] = (mainCounts[it.name] || 0) + qty;
+        // Manual nested format: walk the addOns array attached to this main.
+        for (const a of it.addOns || []) {
+          const label = a.label || a.name || a.id || '加料';
+          const aQty = a.quantity || 0;
+          if (aQty > 0) {
+            addOnCounts[label] = (addOnCounts[label] || 0) + aQty;
+          }
+        }
       }
     }
   }
