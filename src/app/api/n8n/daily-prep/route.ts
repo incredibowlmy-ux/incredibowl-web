@@ -47,12 +47,21 @@ function todayInKL(): string {
   }).format(new Date());
 }
 
+// Classify a delivery time string as lunch vs dinner. Manually entered
+// orders only carry a numeric time like "19:00", so the old "contains
+// 'dinner'?" check misclassified them all as lunch. Now:
+//   1. explicit "dinner"/"晚" → dinner
+//   2. explicit "lunch"/"午"  → lunch
+//   3. HH:MM with hour >= 17  → dinner
+//   4. anything else          → lunch (default for ambiguous / empty)
+// KEEP IN SYNC with splitMealTime() in src/app/admin/page.tsx.
 function isLunchOrder(o: { deliveryTime?: string }): boolean {
-  // Mirror admin/page.tsx splitMealTime: anything not explicitly dinner
-  // counts as lunch (covers missing field, legacy orders, "Lunch 12pm",
-  // "午餐", etc).
   const t = (o.deliveryTime || '').toLowerCase();
-  return !t.includes('dinner') && !t.includes('晚');
+  if (t.includes('dinner') || t.includes('晚')) return false;
+  if (t.includes('lunch') || t.includes('午')) return true;
+  const m = t.match(/(\d{1,2}):\d{2}/);
+  if (m && parseInt(m[1], 10) >= 17) return false;
+  return true;
 }
 
 interface FirestoreOrder {

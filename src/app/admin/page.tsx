@@ -479,10 +479,21 @@ export default function AdminPage() {
         }
     }
 
-    // Helper: split orders into lunch and dinner
+    // Helper: split orders into lunch and dinner. Manual orders only
+    // carry a numeric time like "19:00" — the old "contains dinner?"
+    // check missed them. Now also parses HH:MM and treats hour >= 17
+    // as dinner. KEEP IN SYNC with isLunchOrder() in
+    // src/app/api/n8n/daily-prep/route.ts.
     const splitMealTime = (dayOrders: AdminOrder[]) => {
-        const lunch = dayOrders.filter(o => !o.deliveryTime || o.deliveryTime.toLowerCase().includes('lunch') || o.deliveryTime.includes('午'));
-        const dinner = dayOrders.filter(o => o.deliveryTime && (o.deliveryTime.toLowerCase().includes('dinner') || o.deliveryTime.includes('晚')));
+        const isDinner = (o: AdminOrder) => {
+            const t = (o.deliveryTime || '').toLowerCase();
+            if (t.includes('dinner') || t.includes('晚')) return true;
+            if (t.includes('lunch') || t.includes('午')) return false;
+            const m = t.match(/(\d{1,2}):\d{2}/);
+            return !!(m && parseInt(m[1], 10) >= 17);
+        };
+        const dinner = dayOrders.filter(isDinner);
+        const lunch = dayOrders.filter(o => !isDinner(o));
         return { lunch, dinner };
     };
 
