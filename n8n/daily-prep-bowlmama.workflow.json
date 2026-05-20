@@ -52,53 +52,40 @@
     },
     {
       "parameters": {
-        "jsCode": "// Shape the API response into 6 named template variables that\n// match the WhatsApp template 'daily_prep_summary'. Order MUST stay\n// in sync with template body: {{1}} date, {{2}} lunch count, {{3}}\n// lunch list, {{4}} dinner count, {{5}} dinner list, {{6}} notes.\n//\n// WhatsApp template parameters reject empty strings and trim trailing\n// newlines, so we coerce numbers to strings and fall back to '无'.\n\nconst data = $input.first().json;\n\nconst safe = (s) => {\n  if (s === undefined || s === null) return '无';\n  const str = String(s).trim();\n  return str.length > 0 ? str : '无';\n};\n\nreturn [{\n  json: {\n    var1: safe(data.date),\n    var2: safe(data.lunch?.count ?? 0),\n    var3: safe(data.lunch?.summaryText),\n    var4: safe(data.dinner?.count ?? 0),\n    var5: safe(data.dinner?.summaryText),\n    var6: safe(data.notesText),\n    // also pass through raw for debugging\n    _raw: data,\n  }\n}];\n"
+        "jsCode": "// Build the complete Meta Cloud API payload here as a JS object so\n// the HTTP node only needs JSON.stringify($json.payload). Avoids the\n// newline-in-JSON parse error that happens when summaryText (which\n// contains real \\n chars from the prep list) is naively substituted\n// into a JSON string template via n8n expression — raw newlines are\n// invalid inside JSON string literals.\n\nconst data = $input.first().json;\n\nconst safe = (s) => {\n  if (s === undefined || s === null) return '无';\n  const str = String(s).trim();\n  return str.length > 0 ? str : '无';\n};\n\n// Test recipient: your own phone. Change to BowlMama's number after\n// the first manual Execute Workflow round-trip confirms the template\n// renders correctly.\nconst RECIPIENT = '60165119118';\n\nconst payload = {\n  messaging_product: 'whatsapp',\n  to: RECIPIENT,\n  type: 'template',\n  template: {\n    name: 'daily_prep_summary',\n    language: { code: 'zh_CN' },\n    components: [\n      {\n        type: 'body',\n        parameters: [\n          { type: 'text', text: safe(data.date) },\n          { type: 'text', text: safe(data.lunch?.count ?? 0) },\n          { type: 'text', text: safe(data.lunch?.summaryText) },\n          { type: 'text', text: safe(data.dinner?.count ?? 0) },\n          { type: 'text', text: safe(data.dinner?.summaryText) },\n          { type: 'text', text: safe(data.notesText) },\n        ],\n      },\n    ],\n  },\n};\n\nreturn [{ json: { payload, _raw: data } }];\n"
       },
       "id": "code-format-vars",
-      "name": "Format Template Vars",
+      "name": "Build Meta Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [680, 400],
-      "notes": "Maps endpoint JSON → 6 template variables. Edit here if you change the WhatsApp template later."
+      "notes": "Builds the complete Meta Cloud API payload as a JS object. Change RECIPIENT here to switch between test (your phone) and prod (BowlMama)."
     },
     {
       "parameters": {
-        "operation": "send",
-        "phoneNumberId": "REPLACE_WITH_YOUR_PHONE_NUMBER_ID",
-        "recipientPhoneNumber": "REPLACE_WITH_BOWLMAMA_PHONE_60XXXXXXXXX",
-        "messageType": "template",
-        "templateName": "daily_prep_summary",
-        "templateLanguage": "zh_CN",
-        "components": {
-          "componentsUi": [
-            {
-              "type": "body",
-              "bodyParameters": {
-                "parametersUi": [
-                  { "type": "text", "text": "={{ $json.var1 }}" },
-                  { "type": "text", "text": "={{ $json.var2 }}" },
-                  { "type": "text", "text": "={{ $json.var3 }}" },
-                  { "type": "text", "text": "={{ $json.var4 }}" },
-                  { "type": "text", "text": "={{ $json.var5 }}" },
-                  { "type": "text", "text": "={{ $json.var6 }}" }
-                ]
-              }
-            }
-          ]
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/REPLACE_WITH_YOUR_PHONE_NUMBER_ID/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "timeout": 30000
         }
       },
       "id": "wa-send-template",
       "name": "Send WhatsApp Template",
-      "type": "n8n-nodes-base.whatsApp",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [920, 400],
       "credentials": {
-        "whatsAppApi": {
-          "id": "REPLACE_WITH_WA_CREDENTIAL_ID",
-          "name": "Incredibowl WhatsApp Business Cloud"
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_WA_TOKEN_CREDENTIAL_ID",
+          "name": "Incredibowl WhatsApp Token"
         }
       },
-      "notes": "Send template message. WhatsApp Cloud API requires the recipient to have messaged your WABA within 30 days (BowlMama needs to send 'Hi' once for opt-in). Phone Number ID comes from Meta Business Suite → WhatsApp Manager → Phone numbers. Template MUST be APPROVED before this works."
+      "notes": "Raw HTTP POST to Meta Cloud API. Built-in n8n WhatsApp node doesn't support template messages in v2.14, so we hit the API directly. The body is JSON.stringify of the JS object built in the previous node — avoids n8n expression substitution mangling newlines inside JSON string literals."
     },
     {
       "parameters": {
@@ -123,11 +110,11 @@
     "Fetch Daily Prep": {
       "main": [
         [
-          { "node": "Format Template Vars", "type": "main", "index": 0 }
+          { "node": "Build Meta Payload", "type": "main", "index": 0 }
         ]
       ]
     },
-    "Format Template Vars": {
+    "Build Meta Payload": {
       "main": [
         [
           { "node": "Send WhatsApp Template", "type": "main", "index": 0 }
