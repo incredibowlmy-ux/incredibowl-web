@@ -479,13 +479,16 @@ export default function AdminPage() {
         }
     }
 
-    // Helper: split orders into lunch and dinner. Manual orders only
-    // carry a numeric time like "19:00" — the old "contains dinner?"
-    // check missed them. Now also parses HH:MM and treats hour >= 17
-    // as dinner. KEEP IN SYNC with isLunchOrder() in
+    // Helper: split orders into lunch and dinner. Honours explicit
+    // mealType (set by local-dashboard manual orders) first, then the
+    // dinner/晚/lunch/午 keywords, then HH:MM parsing (>=17 = dinner).
+    // KEEP IN SYNC with isLunchOrder() in
     // src/app/api/n8n/daily-prep/route.ts.
     const splitMealTime = (dayOrders: AdminOrder[]) => {
         const isDinner = (o: AdminOrder) => {
+            const mt = (o as any).mealType;
+            if (mt === 'dinner') return true;
+            if (mt === 'lunch') return false;
             const t = (o.deliveryTime || '').toLowerCase();
             if (t.includes('dinner') || t.includes('晚')) return true;
             if (t.includes('lunch') || t.includes('午')) return false;
@@ -497,12 +500,20 @@ export default function AdminPage() {
         return { lunch, dinner };
     };
 
-    // Helper: calculate summary of all dishes in a day's meal
+    // Helper: calculate summary of all dishes in a day's meal. Includes
+    // both the flat ↳-prefixed add-ons (web cart) AND the nested
+    // item.addOns[] shape used by manual orders from the local HTML
+    // dashboard — so brown-rice / less-rice swaps show in prep totals.
     const getPrepSummary = (mealOrders: AdminOrder[]) => {
         const counts: Record<string, number> = {};
         mealOrders.forEach(o => {
             o.items?.forEach((item: any) => {
                 counts[item.name] = (counts[item.name] || 0) + (item.quantity || 0);
+                (item.addOns || []).forEach((a: any) => {
+                    const label = a.label || a.name || a.id || '加料';
+                    const q = Number(a.quantity) || 0;
+                    if (q > 0) counts[`↳ ${label}`] = (counts[`↳ ${label}`] || 0) + q;
+                });
             });
         });
         return Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -684,6 +695,16 @@ export default function AdminPage() {
                                                                                             <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
                                                                                             <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                                                         </div>
+                                                                                        {(item.addOns || []).map((a: any, ai: number) => {
+                                                                                            const price = Number(a.price) || 0;
+                                                                                            const qty = Number(a.quantity) || 1;
+                                                                                            return (
+                                                                                                <div key={`a${ai}`} className="flex justify-between">
+                                                                                                    <span className="text-gray-400 pl-3">↳ {a.label || a.name || a.id || '加料'} x{qty}</span>
+                                                                                                    <span className="text-gray-300">{price > 0 ? `RM ${(price * qty).toFixed(2)}` : '免费'}</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
                                                                                         {item.note && (
                                                                                             <div className="ml-3 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[10px] text-yellow-800 font-bold">
                                                                                                 📝 {item.note}
@@ -761,6 +782,16 @@ export default function AdminPage() {
                                                                                             <span className={item.name.includes('↳') ? 'text-gray-400 pl-3' : 'font-bold text-gray-600'}>{item.name} x{item.quantity}</span>
                                                                                             <span className="text-gray-300">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                                                         </div>
+                                                                                        {(item.addOns || []).map((a: any, ai: number) => {
+                                                                                            const price = Number(a.price) || 0;
+                                                                                            const qty = Number(a.quantity) || 1;
+                                                                                            return (
+                                                                                                <div key={`a${ai}`} className="flex justify-between">
+                                                                                                    <span className="text-gray-400 pl-3">↳ {a.label || a.name || a.id || '加料'} x{qty}</span>
+                                                                                                    <span className="text-gray-300">{price > 0 ? `RM ${(price * qty).toFixed(2)}` : '免费'}</span>
+                                                                                                </div>
+                                                                                            );
+                                                                                        })}
                                                                                         {item.note && (
                                                                                             <div className="ml-3 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[10px] text-yellow-800 font-bold">
                                                                                                 📝 {item.note}
@@ -1049,6 +1080,16 @@ export default function AdminPage() {
                                                             <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
                                                             <span className="font-bold">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                         </div>
+                                                        {(item.addOns || []).map((a: any, ai: number) => {
+                                                            const price = Number(a.price) || 0;
+                                                            const qty = Number(a.quantity) || 1;
+                                                            return (
+                                                                <div key={`a${ai}`} className="flex justify-between text-sm pl-3">
+                                                                    <span className="text-gray-400">↳ {a.label || a.name || a.id || '加料'} <span className="text-gray-400">x{qty}</span></span>
+                                                                    <span className="text-gray-400">{price > 0 ? `RM ${(price * qty).toFixed(2)}` : '免费'}</span>
+                                                                </div>
+                                                            );
+                                                        })}
                                                         {item.note && (
                                                             <div className="ml-2 mt-0.5 mb-1 px-2 py-1 bg-yellow-50 border-l-2 border-yellow-400 rounded-r text-[11px] text-yellow-800 font-bold">
                                                                 📝 {item.note}
