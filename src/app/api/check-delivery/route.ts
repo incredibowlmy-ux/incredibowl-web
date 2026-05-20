@@ -31,11 +31,11 @@ type Bucket = { count: number; resetAt: number };
 const buckets = new Map<string, Bucket>();
 const RATE_LIMIT_MAX = 8;
 const RATE_LIMIT_WINDOW_MS = 60_000;
-// Distance beyond which we tell the user we don't deliver. Tightened from
-// 10 → 8 km on 2026-05-18: the 8 km+ tier had 0 actual customers and was
-// carrying UI/code overhead. Anything past 8 km gets the WhatsApp catering
-// fallback in the widget.
-const MAX_DELIVERY_KM = 8;
+// Distance beyond which we tell the user we don't deliver. Tightened
+// 10 → 8 km on 2026-05-18 (removed empty 8 km+ tier), then 8 → 7.5 km on
+// 2026-05-19 (last 500 m never had customers; matches actual route reach).
+// Anything past 7.5 km gets the WhatsApp catering fallback in the widget.
+const MAX_DELIVERY_KM = 7.5;
 
 function getClientIp(req: NextRequest): string {
     const xff = req.headers.get('x-forwarded-for');
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     const { lat, lng } = top.geometry.location;
     const distanceKm = distanceFromPearlPointKm(lat, lng);
 
-    // Outside the 8km service ceiling: tell them honestly, offer WhatsApp.
+    // Outside the 7.5km service ceiling: tell them honestly, offer WhatsApp.
     if (distanceKm > MAX_DELIVERY_KM) {
         return NextResponse.json({
             tier: 'outside' as const,

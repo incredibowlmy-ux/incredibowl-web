@@ -61,7 +61,7 @@ const notoSansSC = Noto_Sans_SC({
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),
   title: "Incredibowl | Pearl Point 私厨外送 · 无味精家常菜 · Old Klang Road / OUG",
-  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 2km 内 RM 3（满 RM 20 免运）· 2–5km RM 5（满 RM 30 免运）。早上 6AM 截单。www.incredibowl.my",
+  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。早上 6AM 截单。www.incredibowl.my",
   alternates: {
     canonical: "/",
     languages: {
@@ -76,7 +76,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Incredibowl | Pearl Point 私厨外送",
-    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 内 RM 3（满 RM 20 免运）· 2–5km RM 5（满 RM 30 免运）。",
+    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。",
     url: "https://www.incredibowl.my",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Incredibowl | Pearl Point 私厨外送",
-    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2km 内 RM 3（满 RM 20 免运）· 2–5km RM 5（满 RM 30 免运）。",
+    description: "不加味精，每天巴刹新鲜现煮。Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。",
     images: ["https://www.incredibowl.my/pork_potato_stew.webp"],
   },
   verification: {
@@ -134,7 +134,7 @@ export default function RootLayout({
                   "@id": "https://www.incredibowl.my/#restaurant",
                   name: "Incredibowl",
                   alternateName: "碗妈私厨 (BowlMama)",
-                  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 2km 内 RM 3（满 RM 20 免运）· 2–5km RM 5（满 RM 30 免运）。",
+                  description: "吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。",
                   url: "https://www.incredibowl.my/",
                   telephone: "+60103370197",
                   image: [

@@ -33,10 +33,10 @@ const FAQS: FaqItem[] = [
             <>
                 主要送 <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span> 一带：
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
-                    <li>• 2km 内 —— <span className="font-semibold">RM 3</span>（满 RM 20 <span className="text-green-600 font-bold">免运</span>）</li>
-                    <li>• 2–5km —— <span className="font-semibold">RM 5</span>（满 RM 30 <span className="text-green-600 font-bold">免运</span>）</li>
-                    <li>• 5–8km —— <span className="font-semibold">满 RM 40 = RM 5</span>（不到 RM 40 = RM 15）</li>
-                    <li>• 8km 以外 —— 暂不配送，公司订餐请 WhatsApp 询价</li>
+                    <li>• 2.5km 内 —— <span className="font-semibold">RM 3</span>（满 RM 20 <span className="text-green-600 font-bold">免运</span>）</li>
+                    <li>• 2.5–5km —— <span className="font-semibold">RM 5</span>（满 RM 30 <span className="text-green-600 font-bold">免运</span>）</li>
+                    <li>• 5–7.5km —— <span className="font-semibold">满 RM 40 = RM 5</span>（不到 RM 40 = RM 15）</li>
+                    <li>• 7.5km 以外 —— 暂不配送，公司订餐请 WhatsApp 询价</li>
                 </ul>
                 <p className="mt-3">
                     不确定家里在不在范围内？<span className="font-bold text-[#1A2D23]">注册账号 + 填写地址</span>，

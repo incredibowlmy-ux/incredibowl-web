@@ -745,7 +745,7 @@ export default function CartDrawer({
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">
                                             配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
-                                            {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–8km</span>}
+                                            {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–7.5km</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
                                             {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}

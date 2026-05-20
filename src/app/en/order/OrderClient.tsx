@@ -91,7 +91,7 @@ type DeliveryResult = {
 const tierWaMsg = (r: DeliveryResult, addr: string) => {
     const a = r.formattedAddress || addr;
     if (r.tier === "near") {
-        return `Hi BowlMama! I came from your FB ad. My address: ${a} (within 5km · RM 3 free over RM 20 within 2km / RM 5 free over RM 30 within 2–5km ✓). I'd like to see today's / tomorrow's menu 🔥`;
+        return `Hi BowlMama! I came from your FB ad. My address: ${a} (within 5km · RM 3 free over RM 20 within 2.5km / RM 5 free over RM 30 within 2.5–5km ✓). I'd like to see today's / tomorrow's menu 🔥`;
     }
     if (r.tier === "outside") {
         return `Hi BowlMama! My address is ${a} (${r.distanceKm} km away). Can you see if there's a way to deliver? 🙏`;
@@ -188,7 +188,7 @@ export default function OrderClient() {
                         6 AM market run · no MSG
                     </p>
                     <p className="text-base lg:text-lg text-[#1A2D23]/60 font-bold mb-7">
-                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Within 2km RM 3 (free over 20) / 2–5km free over 30 · Fresh-cooked
+                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Within 2.5km RM 3 (free over 20) / 2.5–5km free over 30 · Fresh-cooked
                     </p>
 
                     <a

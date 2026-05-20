@@ -1,15 +1,15 @@
 /**
  * Delivery zone + fee calculation, shared between client and server.
  *
- * Tiers (2026-05-18 — competitive repositioning):
- *   0   – 2   km → RM 3  (free  when freeDeliveryBasis ≥ RM 20 — saves RM 3)
- *   2   – 5   km → RM 5  (free  when freeDeliveryBasis ≥ RM 30 — saves RM 5)
- *   5   – 8   km → RM 15 (RM 5  when freeDeliveryBasis ≥ RM 40 — saves RM 10)
- *   8 km +       → not served (was RM 25 — 0 actual customers, removed)
+ * Tiers (2026-05-19 — boundary tweak: inner widened, mid ceiling tightened):
+ *   0   – 2.5 km → RM 3  (free  when freeDeliveryBasis ≥ RM 20 — saves RM 3)
+ *   2.5 – 5   km → RM 5  (free  when freeDeliveryBasis ≥ RM 30 — saves RM 5)
+ *   5   – 7.5 km → RM 15 (RM 5  when freeDeliveryBasis ≥ RM 40 — saves RM 10)
+ *   7.5 km +     → not served (geocode rejects upstream)
  *
- * Both inner-near (0–2 km) and outer-near (2–5 km) report tier === 'near' to
- * keep downstream UI simple; both fee AND threshold are resolved by distance
- * via feeForDistance(km) + thresholdForDistance(km).
+ * Both inner-near (0–2.5 km) and outer-near (2.5–5 km) report tier === 'near'
+ * to keep downstream UI simple; both fee AND threshold are resolved by
+ * distance via feeForDistance(km) + thresholdForDistance(km).
  *
  * Grandfathering ("existing customer didn't get affected"):
  *   Customers whose Firestore profile `createdAt` is BEFORE
@@ -45,6 +45,10 @@
  *     sells RM 2 city-wide; we can't price-war but can shrink the premium).
  *     Inner-near radius tightened 2.5 → 2 km to align with grandfather radius.
  *     8 km+ tier removed (0 actual customers, was carrying UI/code overhead).
+ *   - 2026-05-19 — Boundary tweak: inner-near widened back 2 → 2.5 km (the
+ *     RM 3 邻里特惠 should cover the obvious immediate-neighbour zone, not
+ *     just a token 2 km radius). Mid ceiling tightened 8 → 7.5 km (matches
+ *     actual route reach; the last 500 m never had customers anyway).
  */
 
 // Verified centroid (provided by Carmen via Google Maps right-click).
@@ -52,12 +56,15 @@ export const PEARL_POINT_LAT = 3.0853475861917716;
 export const PEARL_POINT_LNG = 101.67428154483449;
 
 export const FREE_DELIVERY_RADIUS_KM = 2;
-// Inner near (0–2 km) gets RM 3 / RM 20 threshold (邻里特惠 — neighbour radius
-// matches grandfather radius). Outer near (2–5 km) gets RM 5 / RM 30 threshold.
-// Both report tier === 'near' — fee + threshold resolved by distance.
-export const INNER_NEAR_RADIUS_KM = 2;
+// Inner near (0–2.5 km) gets RM 3 / RM 20 threshold (邻里特惠). Outer near
+// (2.5–5 km) gets RM 5 / RM 30 threshold. Both report tier === 'near' —
+// fee + threshold resolved by distance. NOTE: INNER_NEAR_RADIUS_KM (2.5)
+// is intentionally wider than FREE_DELIVERY_RADIUS_KM (2). The latter is
+// the grandfather radius for pre-2026-05-16 customers (they stay free);
+// the former is the new-rule邻里特惠 zone.
+export const INNER_NEAR_RADIUS_KM = 2.5;
 export const NEAR_RADIUS_KM = 5;
-export const MID_RADIUS_KM = 8;
+export const MID_RADIUS_KM = 7.5;
 
 // Customers whose Firestore profile `createdAt` is BEFORE this cutoff are
 // treated as "existing" and grandfathered onto the pre-2026-05-16 pricing
@@ -67,9 +74,9 @@ export const MID_RADIUS_KM = 8;
 // Date.UTC(year, monthIndex, day) → ms since epoch. Month is 0-indexed.
 export const PRICING_V2_CUTOFF_MS = Date.UTC(2026, 4, 16); // 2026-05-16 00:00 UTC
 // Per-distance free-delivery thresholds.
-// Inner near (0–2 km): RM 20 — neighbour-special, one main + one add-on hits it.
-// Outer near (2–5 km): RM 30 — slightly bigger basket for the longer ride.
-// Mid (5–8 km): RM 40 — long-route cost can't absorb a low-AOV waiver.
+// Inner near (0–2.5 km): RM 20 — neighbour-special, one main + one add-on hits it.
+// Outer near (2.5–5 km): RM 30 — slightly bigger basket for the longer ride.
+// Mid (5–7.5 km): RM 40 — long-route cost can't absorb a low-AOV waiver.
 export const FREE_DELIVERY_THRESHOLD_NEAR_RM = 20;
 export const FREE_DELIVERY_THRESHOLD_OUTER_NEAR_RM = 30;
 export const FREE_DELIVERY_THRESHOLD_MID_RM = 40;
@@ -77,9 +84,9 @@ export const FREE_DELIVERY_THRESHOLD_MID_RM = 40;
 // (e.g. footer copy, EN nav) get the strictest threshold so anything we
 // haven't migrated to per-tier still shows a conservative figure.
 export const FREE_DELIVERY_THRESHOLD_RM = FREE_DELIVERY_THRESHOLD_MID_RM;
-// Per-distance base fees. Inner near (0–2 km) RM 3 —邻里特惠. Outer near
-// (2–5 km) RM 5. Mid (5–8 km) RM 15. 8 km+ is not served (see MAX_DELIVERY_KM
-// in /api/check-delivery).
+// Per-distance base fees. Inner near (0–2.5 km) RM 3 —邻里特惠. Outer near
+// (2.5–5 km) RM 5. Mid (5–7.5 km) RM 15. 7.5 km+ is not served (see
+// MAX_DELIVERY_KM in /api/check-delivery).
 export const DELIVERY_FEE_INNER_NEAR_RM = 3;
 export const DELIVERY_FEE_OUTER_NEAR_RM = 5;
 export const DELIVERY_FEE_MID_RM = 15;
@@ -100,7 +107,7 @@ export const DELIVERY_FEE_OUTSIDE_RM = DELIVERY_FEE_OUTER_NEAR_RM;
  * Threshold (in RM) at which the given tier's delivery-fee discount kicks in.
  *
  * Note: the 'near' tier has a split threshold (RM 20 for 0–2 km, RM 30 for
- * 2–5 km). This function returns the *inner* (RM 20) threshold by default —
+ * 2.5–5 km). This function returns the *inner* (RM 20) threshold by default —
  * use thresholdForDistance(km) when distance is known for the accurate
  * per-user threshold. 'far' is legacy (never produced by tierFromDistance
  * anymore) and falls back to the mid threshold.
@@ -155,12 +162,12 @@ export function zoneFromDistance(km: number): DeliveryZone {
 }
 
 export function tierFromDistance(km: number): DeliveryTier {
-    // Distance-based classification returns 'near' (0–5 km) or 'mid' (5–8 km).
+    // Distance-based classification returns 'near' (0–5 km) or 'mid' (5–7.5 km).
     // 'free' is retained in the type for the legacy grandfathering branch in
     // resolveDeliveryFee() (within2km zone → free for pre-geocode users).
     // 'far' is retained in the type for backward compat with stored order
     // documents written before 2026-05-18, but is never produced here —
-    // > 8 km is rejected upstream in /api/check-delivery (MAX_DELIVERY_KM=8).
+    // > 7.5 km is rejected upstream in /api/check-delivery (MAX_DELIVERY_KM=7.5).
     if (km <= NEAR_RADIUS_KM) return 'near';
     return 'mid';
 }
@@ -174,8 +181,8 @@ export function tierFromDistance(km: number): DeliveryTier {
 export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): number {
     const tier = tierFromDistance(distanceKm);
     if (tier === 'free') return 0;
-    // Both fee AND threshold resolve from distance — inner-near (0–2 km) RM 3
-    // / RM 20, outer-near (2–5 km) RM 5 / RM 30, mid (5–8 km) RM 15 / RM 40.
+    // Both fee AND threshold resolve from distance — inner-near (0–2.5 km) RM 3
+    // / RM 20, outer-near (2.5–5 km) RM 5 / RM 30, mid (5–7.5 km) RM 15 / RM 40.
     const baseFee = feeForDistance(distanceKm);
     const thresholdMet = freeDeliveryBasis >= thresholdForDistance(distanceKm);
     // Inner near: RM 3 - RM 10 = -7  → max(0, -7) = 0 (free, saves RM 3)
@@ -191,10 +198,10 @@ export function calcDeliveryFee(distanceKm: number, freeDeliveryBasis: number): 
  * tier, or the basis is irrelevant.
  *
  * Threshold + benefit by distance:
- *   0–2 km   → RM 20 threshold → free (saves RM 3)
- *   2–5 km   → RM 30 threshold → free (saves RM 5)
- *   5–8 km   → RM 40 threshold → RM 5 (saves RM 10)
- *   8 km +   → not served (geocode rejects upstream)
+ *   0–2.5 km  → RM 20 threshold → free (saves RM 3)
+ *   2.5–5 km  → RM 30 threshold → free (saves RM 5)
+ *   5–7.5 km  → RM 40 threshold → RM 5 (saves RM 10)
+ *   7.5 km +  → not served (geocode rejects upstream)
  *
  * @param freeDeliveryBasis  cartTotal − promoDiscount  (meal voucher NOT subtracted)
  */
@@ -214,7 +221,7 @@ export function tierLabelZh(tier: DeliveryTier): string {
     switch (tier) {
         case 'free': return '免运区（老客户）';
         case 'near': return '近距离（5km 内）';
-        case 'mid': return '中距离（5–8km）';
+        case 'mid': return '中距离（5–7.5km）';
         // Legacy — never produced by tierFromDistance since 2026-05-18; shown
         // only for old order documents stored with tier:'far' (8 km+).
         case 'far': return '远距离（旧规则）';
@@ -250,7 +257,7 @@ export function tierLabelEn(tier: DeliveryTier): string {
     switch (tier) {
         case 'free': return 'Free zone (legacy customer)';
         case 'near': return 'Near (within 5km)';
-        case 'mid': return 'Mid (5–8km)';
+        case 'mid': return 'Mid (5–7.5km)';
         // Legacy — never produced by tierFromDistance since 2026-05-18.
         case 'far': return 'Far (legacy 8km+ order)';
     }

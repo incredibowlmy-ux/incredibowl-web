@@ -33,10 +33,10 @@ const FAQS: FaqItem[] = [
             <>
                 Mainly <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span>:
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
-                    <li>• Within 2km &mdash; <span className="font-semibold">RM 3</span> (<span className="text-green-600 font-bold">free over RM 20</span>)</li>
-                    <li>• 2–5km &mdash; <span className="font-semibold">RM 5</span> (<span className="text-green-600 font-bold">free over RM 30</span>)</li>
-                    <li>• 5–8km &mdash; <span className="font-semibold">RM 5 over RM 40</span> (RM 15 under RM 40)</li>
-                    <li>• Beyond 8km &mdash; not currently delivered. WhatsApp us for catering quotes.</li>
+                    <li>• Within 2.5km &mdash; <span className="font-semibold">RM 3</span> (<span className="text-green-600 font-bold">free over RM 20</span>)</li>
+                    <li>• 2.5–5km &mdash; <span className="font-semibold">RM 5</span> (<span className="text-green-600 font-bold">free over RM 30</span>)</li>
+                    <li>• 5–7.5km &mdash; <span className="font-semibold">RM 5 over RM 40</span> (RM 15 under RM 40)</li>
+                    <li>• Beyond 7.5km &mdash; not currently delivered. WhatsApp us for catering quotes.</li>
                 </ul>
                 <p className="mt-3">
                     Not sure if you&apos;re in range? <span className="font-bold text-[#1A2D23]">Register an account and add your address</span> &mdash;
