@@ -72,22 +72,53 @@ interface FirestoreOrder {
   note?: string;
 }
 
+// Web cart flow stores add-ons as items with name prefix "↳ " so they
+// appear indented under the main dish in admin views. We separate them
+// here so BowlMama's brief surfaces customizations (糙米 / 少饭) as a
+// distinct "加料" section instead of mixing into the main dish list.
+const isAddOnItem = (name: string) => /^↳/.test(name);
+const stripAddOnPrefix = (name: string) => name.replace(/^↳\s*/, '');
+
 function aggregate(orders: FirestoreOrder[]): {
   count: number;
+  mains: [string, number][];
+  addOns: [string, number][];
   items: [string, number][];
   summaryText: string;
 } {
-  const counts: Record<string, number> = {};
+  const mainCounts: Record<string, number> = {};
+  const addOnCounts: Record<string, number> = {};
   for (const o of orders) {
     for (const it of o.items || []) {
-      counts[it.name] = (counts[it.name] || 0) + (it.quantity || 0);
+      const qty = it.quantity || 0;
+      if (isAddOnItem(it.name)) {
+        const key = stripAddOnPrefix(it.name);
+        addOnCounts[key] = (addOnCounts[key] || 0) + qty;
+      } else {
+        mainCounts[it.name] = (mainCounts[it.name] || 0) + qty;
+      }
     }
   }
-  const items = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const summaryText = items.length
-    ? items.map(([name, qty]) => `• ${name} x${qty}`).join('\n')
-    : '无';
-  return { count: orders.length, items, summaryText };
+  const mains = Object.entries(mainCounts).sort((a, b) => b[1] - a[1]);
+  const addOns = Object.entries(addOnCounts).sort((a, b) => b[1] - a[1]);
+  const fmt = (arr: [string, number][]) => arr.map(([n, q]) => `${n} ×${q}`).join('，');
+
+  let summaryText: string;
+  if (mains.length === 0 && addOns.length === 0) {
+    summaryText = '无';
+  } else {
+    const mainPart = mains.length ? fmt(mains) : '';
+    const addOnPart = addOns.length ? `${mains.length ? ' ｜' : ''}加料：${fmt(addOns)}` : '';
+    summaryText = mainPart + addOnPart;
+  }
+
+  return {
+    count: orders.length,
+    mains,
+    addOns,
+    items: mains.concat(addOns), // backward-compat: combined list
+    summaryText,
+  };
 }
 
 // Drop admin bookkeeping markers like "手动录入 · whatsapp" so the
@@ -106,7 +137,9 @@ function collectNotes(orders: FirestoreOrder[]): { notes: string[]; notesText: s
     }
     for (const it of o.items || []) {
       if (it.note && !isAdminBookkeepingNote(it.note)) {
-        notes.push(`${who}（${it.name}）：${it.note}`);
+        // Strip ↳ prefix so "Andrea（白饭换糙米）" reads cleaner than
+        // "Andrea（↳ 白饭换糙米）" in case an add-on carries a note.
+        notes.push(`${who}（${stripAddOnPrefix(it.name)}）：${it.note}`);
       }
     }
   }
