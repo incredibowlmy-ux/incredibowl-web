@@ -141,7 +141,7 @@ export default function SubscribeModalEN() {
                     <p className="text-sm text-[#1A2D23]/70 leading-relaxed mb-5">
                         We&apos;ll ping you when new dishes drop or there&apos;s a promo. New subscribers get
                         <span className="font-black text-[#FF6B35]"> RM 5 off </span>
-                        their first order. Pearl Point / OUG / SkyVille neighbours are already in.
+                        their first order. Pearl Point / OUG / Citizen 1 & 2 neighbours are already in.
                     </p>
 
                     <a

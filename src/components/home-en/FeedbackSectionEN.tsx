@@ -15,7 +15,7 @@ const SEED_FEEDBACKS: SeedFeedback[] = [
     { name: "Jia Chee Chong (Local Guide)", text: "I ordered two meals (Herbal Chicken & Prawn) for consecutive two days. To my surprise, the chicken thigh and prawns are huge and fresh, tastes good and healthy too. Will definitely reorder :)", reviewDate: "2026-05-01", isGoogle: true },
     { name: "ebby cheong", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12", isGoogle: true },
     { name: "Curry", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29", isGoogle: true },
-    { name: "Little Jack (SkyVille 8 @ Benteng)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "11:42 AM" },
+    { name: "Little Jack (Citizen 1 & 2)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "11:42 AM" },
     { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "12:15 PM" },
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "Yesterday" },
 ];
@@ -118,7 +118,7 @@ export default function FeedbackSectionEN() {
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
                         <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} real reviews</span>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">From Pearl Point / Millerz / SkyVille 8 and nearby</span>
+                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">From Pearl Point / Millerz / Citizen 1 & 2 and nearby</span>
                     </div>
                 </div>
 

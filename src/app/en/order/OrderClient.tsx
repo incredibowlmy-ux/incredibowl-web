@@ -210,7 +210,7 @@ export default function OrderClient() {
 
                     <div className="grid grid-cols-3 gap-2 mt-6">
                         <div className="text-center">
-                            <p className="text-2xl lg:text-3xl font-black text-[#FF6B35] leading-none">6+</p>
+                            <p className="text-2xl lg:text-3xl font-black text-[#FF6B35] leading-none">10+</p>
                             <p className="text-[10px] lg:text-xs font-bold text-[#1A2D23]/60 mt-1.5">Neighbour reviews</p>
                         </div>
                         <div className="text-center">

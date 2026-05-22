@@ -154,7 +154,7 @@ export default function SubscribeModal() {
                     </h3>
                     <p className="text-sm text-[#1A2D23]/70 leading-relaxed mb-5">
                         新菜上架、限时 promo 第一时间通知。新加入立减
-                        <span className="font-black text-[#FF6B35]"> RM 5</span>。Pearl Point / OUG / SkyVille 邻居都加了。
+                        <span className="font-black text-[#FF6B35]"> RM 5</span>。Pearl Point / OUG / Citizen 1 & 2 邻居都加了。
                     </p>
 
                     <a
