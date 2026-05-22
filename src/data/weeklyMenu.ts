@@ -103,7 +103,7 @@ export const weeklyMenu: MenuItem[] = [
         day: "Thu / 周四",
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
-        price: 18.50,
+        price: 19.90,
         image: "/pork_potato_stew.webp",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
