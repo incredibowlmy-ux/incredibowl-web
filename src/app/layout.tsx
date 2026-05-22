@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.png",
-    apple: "/favicon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "Incredibowl | Pearl Point 私厨外送",
