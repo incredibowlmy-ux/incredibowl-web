@@ -9,6 +9,9 @@ type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: st
 
 // Google reviews first (highest credibility), then community WhatsApp messages
 const SEED_FEEDBACKS: SeedFeedback[] = [
+    { name: "Shian weixianter", text: "The food was delicious it tasted just like comfort food. It was right up my alley not greasy at all, and the ingredients were super fresh! I'd also feel completely comfortable letting my kids eat here. Definitely order again!", reviewDate: "2026-05-22", isGoogle: true },
+    { name: "Betsy Hehe", text: "應該會是個常客了。很好吃! 是真的有家常菜的味道。吃完了也没有很口渴。若要意见，可能加一些青菜会比较好。生的青菜。哈哈。我觉得我会继续order。加送的菜也好吃，可能我也爱吃山药，我不吃鸡胸肉的也吃了，而且分量刚刚好。太饿了沒有拍照 下次補上。", reviewDate: "2026-05-21", isGoogle: true },
+    { name: "Edison Heng", text: "谢谢碗妈 ❤️ 真的很好吃，很有家的味道。也谢谢你们送的小菜，很惊喜 😊 以后有机会一定会回来支持！", reviewDate: "2026-05-21", isGoogle: true },
     { name: "Cheong Wei Wei", text: "味道刚刚好，分量充足，价格实惠，家的味道😊 赞👍", reviewDate: "2026-05-13", isGoogle: true },
     { name: "Jia Chee Chong (Local Guide)", text: "I ordered two meals (Herbal Chicken & Prawn) for consecutive two days. To my surprise, the chicken thigh and prawns are huge and fresh, tastes good and healthy too. Will definitely reorder :)", reviewDate: "2026-05-01", isGoogle: true },
     { name: "ebby cheong", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12", isGoogle: true },
@@ -36,6 +39,7 @@ export default function FeedbackSection() {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+    const [selectedReview, setSelectedReview] = useState<{ name: string; text: string; time: string; isGoogle: boolean } | null>(null);
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackText, setFeedbackText] = useState('');
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
@@ -150,17 +154,23 @@ export default function FeedbackSection() {
                                     className="feedback-marquee-track flex gap-4 w-max"
                                     style={{ animationDuration: `${marqueeDurationSec}s` }}
                                 >
-                                    {marqueeMessages.map((msg, idx) => (
+                                    {marqueeMessages.map((msg, idx) => {
+                                        const isLong = msg.text.length > 90;
+                                        return (
                                         <div
                                             key={idx}
                                             aria-hidden={idx >= allMessages.length}
-                                            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0"
+                                            onClick={isLong ? () => setSelectedReview(msg) : undefined}
+                                            className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0${isLong ? ' cursor-pointer hover:border-[#C9985C]/50 transition-colors' : ''}`}
                                         >
                                             {/* Quote bubble */}
                                             <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
                                                 <p className="text-[#1A2D23] font-medium leading-relaxed text-sm line-clamp-5">
                                                     &ldquo;{msg.text}&rdquo;
                                                 </p>
+                                                {isLong && (
+                                                    <span className="inline-block mt-1.5 text-xs font-bold text-[#C9985C]">阅读全文 →</span>
+                                                )}
                                             </div>
 
                                             {/* Single-line meta: stars + name · time */}
@@ -176,7 +186,8 @@ export default function FeedbackSection() {
                                                 )}
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -193,6 +204,32 @@ export default function FeedbackSection() {
                     )}
                 </div>
             </div>
+
+            {/* Full review reader modal — opened by tapping a long review card */}
+            {selectedReview && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={() => setSelectedReview(null)}></div>
+                    <div className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
+                            <button onClick={() => setSelectedReview(null)} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                                <X size={20} />
+                            </button>
+                            <div className="flex items-center gap-2 mb-4 pr-12">
+                                {selectedReview.isGoogle && (
+                                    <span className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                )}
+                                <span className="text-sm font-black text-[#1A2D23]">{selectedReview.name}</span>
+                                {selectedReview.time && (
+                                    <span className="text-xs text-[#1A2D23]/45 font-medium">· {selectedReview.time}</span>
+                                )}
+                            </div>
+                            <p className="text-[#1A2D23] font-medium leading-relaxed text-[15px] whitespace-pre-line">
+                                &ldquo;{selectedReview.text}&rdquo;
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Feedback Modal */}
             {isFeedbackModalOpen && (
