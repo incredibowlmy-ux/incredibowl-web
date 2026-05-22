@@ -354,7 +354,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
             </div>
             <style jsx global>{`
 
-                body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
+                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
             `}</style>
 
             {/* Header */}

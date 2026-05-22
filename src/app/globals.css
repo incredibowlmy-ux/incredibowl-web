@@ -34,7 +34,7 @@
   --color-incredibowl-text: var(--foreground);
   --color-twine: var(--twine);
 
-  --font-sans: 'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragino Sans GB", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
 }
 
 body {

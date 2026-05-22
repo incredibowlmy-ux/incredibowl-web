@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Noto_Sans_SC } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { weeklyMenu } from "@/data/weeklyMenu";
@@ -51,12 +51,12 @@ const plusJakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-const notoSansSC = Noto_Sans_SC({
-  variable: "--font-noto-sans-sc",
-  weight: ["400", "700"],
-  display: "swap",
-  preload: false,
-});
+// Chinese text uses the device-native CJK font stack (PingFang SC on iOS,
+// Microsoft YaHei on Windows, Noto Sans CJK on Android) instead of loading
+// next/font Noto Sans SC. The Google-hosted CJK font fans out into ~30 unicode
+// subset woff2 files (~1.6 MB, 4.6s critical path on mobile) — system fonts
+// render the same clean sans CJK at zero download cost.
+const CJK_STACK = `"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragino Sans GB", "Source Han Sans SC"`;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),
@@ -111,11 +111,15 @@ export default function RootLayout({
   return (
     <html lang="zh-MY">
       <head>
+        {/* Keep eager preconnects ≤4 (PageSpeed flags more). Only the deferred-auth
+            origins stay as preconnect; the lazyOnload analytics + on-demand Razorpay
+            origins use the cheaper dns-prefetch so they don't hold idle sockets that
+            compete with the critical render path. */}
         <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
-        <link rel="preconnect" href="https://checkout.razorpay.com" />
         <link rel="preconnect" href="https://apis.google.com" />
-        <link rel="preconnect" href="https://www.clarity.ms" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://checkout.razorpay.com" />
+        <link rel="dns-prefetch" href="https://www.clarity.ms" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -280,8 +284,8 @@ gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-Z78ZLBH7CF'}')
 
       </head>
       <body
-        className={`${plusJakarta.variable} ${notoSansSC.variable} antialiased`}
-        style={{ fontFamily: "'Plus Jakarta Sans', 'Noto Sans SC', system-ui, -apple-system, sans-serif" }}
+        className={`${plusJakarta.variable} antialiased`}
+        style={{ fontFamily: `'Plus Jakarta Sans', ${CJK_STACK}, system-ui, -apple-system, sans-serif` }}
       >
         <noscript>
           <img

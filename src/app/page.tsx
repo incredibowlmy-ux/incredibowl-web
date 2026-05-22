@@ -44,10 +44,31 @@ export default function V4BentoLayout() {
 
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
-        import('@/lib/auth').then(({ onAuthChange }) => {
-            unsubscribe = onAuthChange((user) => setCurrentUser(user));
-        });
-        return () => unsubscribe?.();
+        let cancelled = false;
+        const initAuth = () => {
+            if (cancelled) return;
+            import('@/lib/auth').then(({ onAuthChange }) => {
+                if (cancelled) return;
+                unsubscribe = onAuthChange((user) => setCurrentUser(user));
+            });
+        };
+        // Defer Firebase Auth init off the critical path. The ~90KB auth iframe +
+        // getProjectConfig roundtrip otherwise loads on every page view — even for
+        // visitors who never sign in — adding seconds to first load. NavBar renders
+        // the logged-out state until this resolves a moment later.
+        const w = window as typeof window & {
+            requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+            cancelIdleCallback?: (handle: number) => void;
+        };
+        const handle = w.requestIdleCallback
+            ? w.requestIdleCallback(initAuth, { timeout: 3000 })
+            : window.setTimeout(initAuth, 1500);
+        return () => {
+            cancelled = true;
+            if (w.cancelIdleCallback) w.cancelIdleCallback(handle);
+            else clearTimeout(handle);
+            unsubscribe?.();
+        };
     }, []);
 
     // Handle FPX payment redirect results and cancel orphan pending orders.
@@ -239,8 +260,8 @@ export default function V4BentoLayout() {
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">
             <style jsx global>{`
 
-                h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
-                body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; }
+                h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
                 .menu-carousel-padding {
