@@ -16,21 +16,27 @@ export interface NextSpecial {
  * handler in page.tsx can share the exact same dish.
  */
 export function computeNextSpecial(): NextSpecial {
-    const now = new Date();
-    const isPastCutoff = now.getHours() >= 6;
+    // Compute against Asia/Kuala_Lumpur wall-clock (UTC+8, no DST) so the result
+    // is identical on the server (runs in UTC) and the client (any timezone).
+    // This lets HeroSection render the special during SSR for a stable, early
+    // LCP without a hydration mismatch. We shift the UTC instant by +8h and read
+    // the UTC getters, which then reflect MYT wall-clock time.
+    const MYT_OFFSET_MS = 8 * 60 * 60 * 1000;
+    const now = new Date(Date.now() + MYT_OFFSET_MS);
+    const isPastCutoff = now.getUTCHours() >= 6;
 
     const next = new Date(now);
-    next.setDate(now.getDate() + (isPastCutoff ? 1 : 0));
-    if (next.getDay() === 6) next.setDate(next.getDate() + 2);
-    else if (next.getDay() === 0) next.setDate(next.getDate() + 1);
+    next.setUTCDate(now.getUTCDate() + (isPastCutoff ? 1 : 0));
+    if (next.getUTCDay() === 6) next.setUTCDate(next.getUTCDate() + 2);
+    else if (next.getUTCDay() === 0) next.setUTCDate(next.getUTCDate() + 1);
 
-    const targetWd = next.getDay();
+    const targetWd = next.getUTCDay();
     const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
     const fallback = weeklyMenu.find(d => d.id === 13) ?? weeklyMenu[0];
     const dish = weeklySpecial ?? fallback;
 
-    const nowMid = new Date(now).setHours(0, 0, 0, 0);
-    const nextMid = new Date(next).setHours(0, 0, 0, 0);
+    const nowMid = new Date(now).setUTCHours(0, 0, 0, 0);
+    const nextMid = new Date(next).setUTCHours(0, 0, 0, 0);
     const diff = Math.round((nextMid - nowMid) / 86400000);
 
     const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -41,7 +47,7 @@ export function computeNextSpecial(): NextSpecial {
     if (diff === 1) { labelZh = '明日特餐'; labelEn = "TOMORROW'S SPECIAL"; }
     else if (diff === 2) { labelZh = '后日特餐'; labelEn = "DAY AFTER SPECIAL"; }
 
-    const dateLine = `${next.getMonth() + 1}月${next.getDate()}日 · ${wdCn[targetWd]} / ${wdEn[targetWd]}`;
+    const dateLine = `${next.getUTCMonth() + 1}月${next.getUTCDate()}日 · ${wdCn[targetWd]} / ${wdEn[targetWd]}`;
 
     return { dish, labelZh, labelEn, dateLine };
 }

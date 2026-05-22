@@ -9,10 +9,14 @@ import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
 
 export default function HeroSection() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
+    // Computed client-side: the page is statically prerendered, and the special
+    // is date-dependent, so computing it during render would bake the build-day
+    // special into the static HTML and mismatch on hydration the next day. The
+    // stable LCP anchor is instead the date-independent first rotating bg image
+    // (priority + small sizes below).
     const [nextSpecial, setNextSpecial] = useState<NextSpecial | null>(null);
 
     useEffect(() => {
-        // Compute on client to avoid SSR hydration mismatch (uses new Date())
         setNextSpecial(computeNextSpecial());
     }, []);
 
@@ -37,7 +41,7 @@ export default function HeroSection() {
                     {weeklyMenu.map((dish, i) => (
                         heroImgIdx === i && (
                             <div key={dish.id} className="absolute inset-0 animate-fade-in">
-                                <Image src={dish.image} alt="" fill className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority={i === 0} />
+                                <Image src={dish.image} alt="" fill sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority={i === 0} />
                             </div>
                         )
                     ))}
