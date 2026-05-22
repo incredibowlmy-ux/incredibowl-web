@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
     ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year
+    // The smallest default deviceSize is 640, so small slots (e.g. the ~228px
+    // menu thumbnails) were forced to fetch w=640. Add 256/384 candidates so
+    // standard-DPR devices can pick a tighter width. No quality change.
+    deviceSizes: [256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
   async headers() {
     return [

@@ -31,5 +31,14 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "//browserslist": "Modern target so SWC stops injecting polyfills (Array.at, Object.hasOwn, flat/flatMap, fromEntries, trimStart/End) for browsers that already support them natively. Covers Safari/iOS 15.4+ (Mar 2022) and current Chrome/Firefox/Edge — drops only browsers older than that.",
+  "browserslist": [
+    "chrome >= 93",
+    "edge >= 93",
+    "firefox >= 90",
+    "safari >= 15.4",
+    "ios_saf >= 15.4",
+    "not dead"
+  ]
 }

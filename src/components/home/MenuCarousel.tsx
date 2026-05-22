@@ -236,7 +236,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         </div>
 
                         <div className="aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-7xl mb-6 relative overflow-hidden border-4 border-transparent">
-                            {dish.image.startsWith('/') ? <Image src={dish.image} alt={dishImageAlt(dish)} fill className="object-cover" sizes="(max-width: 768px) 276px, 360px" /> : dish.image}
+                            {dish.image.startsWith('/') ? <Image src={dish.image} alt={dishImageAlt(dish)} fill className="object-cover" sizes="(max-width: 768px) 228px, 312px" /> : dish.image}
                         </div>
 
                         <h3 className="font-extrabold text-[22px] leading-tight mb-1">{dish.name}</h3>
