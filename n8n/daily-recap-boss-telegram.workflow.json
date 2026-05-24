@@ -1,0 +1,146 @@
+{
+  "name": "Daily Recap → Boss Telegram (21:00 KL)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-2100-kl",
+      "name": "Cron 21:00 KL",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 400],
+      "notes": "Daily at 21:00 Asia/Kuala_Lumpur. Dinner deliveries done by 19:00, so all of today's orders are settled by 21:00."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.incredibowl.my/api/n8n/daily-recap",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false,
+        "sendQuery": false,
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-fetch-recap",
+      "name": "Fetch Daily Recap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Incredibowl N8N API Key"
+        }
+      },
+      "notes": "Reuses the same N8N API Key Header Auth credential. IMPORTANT: hit www.incredibowl.my (not incredibowl.my)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Telegram HTML message for the owner's end-of-day recap.\n// Endpoint already returns pre-formatted single-line summary strings; we\n// just stack them under bold section headers.\n\nconst data = $input.first().json;\n\nconst esc = (s) => String(s ?? '无')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst lines = [\n  `📊 <b>Incredibowl 当日复盘</b> — ${esc(data.today)}`,\n  '',\n  '🍱 <b>今日订单</b>',\n  esc(data.todaySummary),\n  '',\n  '💳 <b>餐券销售</b>',\n  esc(data.voucherSalesSummary),\n  '',\n  '👥 <b>今日客户</b>',\n  esc(data.customerSummary),\n  '',\n  '📅 <b>明日预览</b>',\n  esc(data.tomorrowSummary),\n  '',\n  '⚠️ <b>明日关键备注</b>',\n  esc(data.tomorrowCriticalNotesText),\n  '',\n  '—— Incredibowl 自动复盘',\n];\n\nreturn [{ json: { text: lines.join('\\n'), _raw: data } }];\n"
+      },
+      "id": "code-build-message",
+      "name": "Build Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "notes": "Composes the boss recap message. Edit format here — no template approval, changes live next day."
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "REPLACE_WITH_BOSS_CHAT_ID",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_notification": false
+        }
+      },
+      "id": "tg-send-message",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_TELEGRAM_CREDENTIAL_ID",
+          "name": "Incredibowl Telegram Bot"
+        }
+      },
+      "notes": "Reuses the same Telegram Bot credential as daily-prep. chatId is boss's personal chat with the bot."
+    },
+    {
+      "parameters": {
+        "jsCode": "const err = $input.first().json;\nconsole.error('[daily-recap-tg] Telegram send failed', JSON.stringify(err));\nreturn [{ json: { error: err } }];\n"
+      },
+      "id": "code-error-log",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 600]
+    }
+  ],
+  "connections": {
+    "Cron 21:00 KL": {
+      "main": [
+        [
+          { "node": "Fetch Daily Recap", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Daily Recap": {
+      "main": [
+        [
+          { "node": "Build Telegram Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Telegram Message": {
+      "main": [
+        [
+          { "node": "Send Telegram Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Send Telegram Message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "tags": [
+    { "name": "incredibowl" },
+    { "name": "production" },
+    { "name": "telegram" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "pinData": {}
+}

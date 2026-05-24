@@ -1,0 +1,148 @@
+{
+  "name": "Daily Recap → Boss WhatsApp (21:00 KL)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 21 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-2100-kl",
+      "name": "Cron 21:00 KL",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 400],
+      "notes": "Daily at 21:00 Asia/Kuala_Lumpur. Dinner deliveries are done by 19:00 so all of today's orders are settled by 21:00. Set timezone in n8n global settings (Settings → General → Timezone) OR on this node's Trigger Timezone, else cron runs in UTC."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.incredibowl.my/api/n8n/daily-recap",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false,
+        "sendQuery": false,
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-fetch-recap",
+      "name": "Fetch Daily Recap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Incredibowl N8N API Key"
+        }
+      },
+      "notes": "Reuses the same N8N API Key Header Auth credential as the daily-prep workflow. IMPORTANT: hit www.incredibowl.my (not incredibowl.my) — apex 307-redirects and drops Authorization across the hop."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the complete Meta Cloud API payload here as a JS object so\n// the HTTP node only needs JSON.stringify($json.payload). Same pattern\n// as the daily-prep workflow — see that file for the full rationale.\n\nconst data = $input.first().json;\n\nconst safe = (s) => {\n  if (s === undefined || s === null) return '无';\n  const str = String(s)\n    .replace(/\\n/g, ' / ')\n    .replace(/\\t/g, ' ')\n    .replace(/\\s{5,}/g, '    ')\n    .trim();\n  return str.length > 0 ? str : '无';\n};\n\n// Owner's own number — this push is for the boss, not BowlMama.\nconst RECIPIENT = '60165119118';\n\nconst payload = {\n  messaging_product: 'whatsapp',\n  to: RECIPIENT,\n  type: 'template',\n  template: {\n    name: 'daily_recap_boss',\n    language: { code: 'zh_CN' },\n    components: [\n      {\n        type: 'body',\n        parameters: [\n          { type: 'text', text: safe(data.today) },\n          { type: 'text', text: safe(data.todaySummary) },\n          { type: 'text', text: safe(data.voucherSalesSummary) },\n          { type: 'text', text: safe(data.customerSummary) },\n          { type: 'text', text: safe(data.tomorrowSummary) },\n          { type: 'text', text: safe(data.tomorrowCriticalNotesText) },\n        ],\n      },\n    ],\n  },\n};\n\nreturn [{ json: { payload, _raw: data } }];\n"
+      },
+      "id": "code-format-vars",
+      "name": "Build Meta Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "notes": "Builds Meta Cloud API payload for the daily_recap_boss template. Template body has 6 parameters: {{1}}=date, {{2}}=todaySummary, {{3}}=voucherSalesSummary, {{4}}=customerSummary, {{5}}=tomorrowSummary, {{6}}=tomorrowCriticalNotesText."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v18.0/REPLACE_WITH_YOUR_PHONE_NUMBER_ID/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.payload) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "wa-send-template",
+      "name": "Send WhatsApp Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [920, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_WA_TOKEN_CREDENTIAL_ID",
+          "name": "Incredibowl WhatsApp Token"
+        }
+      },
+      "notes": "Raw HTTP POST to Meta Cloud API. Reuses the Incredibowl WhatsApp Token credential created for daily-prep. Phone Number ID must be the same WABA's prod phone (otherwise #132001 template-not-exist)."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Surface failures clearly. Replace this with a Slack/Email node\n// hooked to your own number if you want push notifications on failure.\nconst err = $input.first().json;\nconsole.error('[daily-recap] WhatsApp send failed', JSON.stringify(err));\nreturn [{ json: { error: err } }];\n"
+      },
+      "id": "code-error-log",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 600],
+      "notes": "Catch-all error logger. Same as daily-prep — currently only writes to n8n execution logs. Swap for Slack/Email/Telegram node when health-alert work is done."
+    }
+  ],
+  "connections": {
+    "Cron 21:00 KL": {
+      "main": [
+        [
+          { "node": "Fetch Daily Recap", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Daily Recap": {
+      "main": [
+        [
+          { "node": "Build Meta Payload", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Meta Payload": {
+      "main": [
+        [
+          { "node": "Send WhatsApp Template", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Send WhatsApp Template": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "tags": [
+    { "name": "incredibowl" },
+    { "name": "production" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "pinData": {}
+}

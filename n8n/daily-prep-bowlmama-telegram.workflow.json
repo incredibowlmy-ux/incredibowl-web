@@ -1,0 +1,146 @@
+{
+  "name": "Daily Prep → BowlMama Telegram (06:30 KL)",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "trigger-630-kl",
+      "name": "Cron 06:30 KL",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [200, 400],
+      "notes": "Daily at 06:30 Asia/Kuala_Lumpur. Set timezone in n8n global settings (Settings → General → Timezone) OR on this node's Trigger Timezone, else cron runs in UTC."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.incredibowl.my/api/n8n/daily-prep",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": false,
+        "sendQuery": false,
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "http-fetch-prep",
+      "name": "Fetch Daily Prep",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Incredibowl N8N API Key"
+        }
+      },
+      "notes": "Same N8N API Key Header Auth credential as before. IMPORTANT: hit www.incredibowl.my (not incredibowl.my) — apex 307-redirects drop the Authorization header."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a single Telegram HTML message. Telegram (unlike WhatsApp)\n// has no template approval — we can ship rich multi-line markup with\n// bold section headers and arbitrary newlines.\n//\n// Sections:\n//   1. Per-order detail (data.lunch.ordersText / data.dinner.ordersText)\n//      — endpoint returns this multi-line, already grouped by customer\n//      with attached add-ons indented.\n//   2. Aggregate roll-up (data.lunch.summaryText / data.dinner.summaryText)\n//      — single-line dish totals so BowlMama doesn't have to mentally sum.\n//   3. Notes — critical ⚠️ first, regular after.\n//   4. Ingredient procurement list.\n\nconst data = $input.first().json;\n\n// HTML-escape user-supplied content so a stray '<' in a customer note\n// doesn't break Telegram's HTML parser. Newlines in ordersText survive\n// — HTML escaping does not touch \\n.\nconst esc = (s) => String(s ?? '无')\n  .replace(/&/g, '&amp;')\n  .replace(/</g, '&lt;')\n  .replace(/>/g, '&gt;');\n\nconst lunchCount = data.lunch?.count ?? 0;\nconst dinnerCount = data.dinner?.count ?? 0;\n// ordersText is the new per-order multi-line view; falls back to\n// summaryText if endpoint hasn't been redeployed with the new field yet.\nconst lunchOrders = esc(data.lunch?.ordersText ?? data.lunch?.summaryText);\nconst dinnerOrders = esc(data.dinner?.ordersText ?? data.dinner?.summaryText);\nconst lunchSummary = esc(data.lunch?.summaryText);\nconst dinnerSummary = esc(data.dinner?.summaryText);\nconst notesText = esc(data.notesText);\nconst ingredientText = esc(data.ingredientText);\n\nconst lines = [\n  `🍳 <b>早安 BowlMama</b> — ${esc(data.date)}`,\n  '',\n  `🌞 <b>午餐</b> (${lunchCount} 单)`,\n  '',\n  lunchOrders,\n  '',\n  `🌙 <b>晚餐</b> (${dinnerCount} 单)`,\n  '',\n  dinnerOrders,\n  '',\n  '📊 <b>今日汇总</b>',\n  `午餐：${lunchSummary}`,\n  `晚餐：${dinnerSummary}`,\n  '',\n  '📝 <b>备注</b>',\n  notesText,\n  '',\n  '🛒 <b>今日采购</b>',\n  ingredientText,\n  '',\n  '—— Incredibowl 厨房系统',\n];\n\nreturn [{ json: { text: lines.join('\\n'), _raw: data } }];\n"
+      },
+      "id": "code-build-message",
+      "name": "Build Telegram Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "notes": "Composes the full Telegram HTML message in JS. Edit message structure here — no Meta template approval needed, changes go live immediately on next cron."
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "REPLACE_WITH_BOWLMAMA_CHAT_ID",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "parse_mode": "HTML",
+          "disable_notification": false
+        }
+      },
+      "id": "tg-send-message",
+      "name": "Send Telegram Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [920, 400],
+      "credentials": {
+        "telegramApi": {
+          "id": "REPLACE_WITH_TELEGRAM_CREDENTIAL_ID",
+          "name": "Incredibowl Telegram Bot"
+        }
+      },
+      "notes": "Send via Telegram Bot API. chatId is BowlMama's personal chat with the bot — get it via https://api.telegram.org/bot<TOKEN>/getUpdates after she sends the bot any message. parse_mode=HTML so <b> tags render bold."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Surface failures. Telegram returns 400 if chatId hasn't messaged the\n// bot first, or 401 if token is wrong. Right now this only writes to\n// the n8n execution log — swap for an email node if you want push alerts.\nconst err = $input.first().json;\nconsole.error('[daily-prep-tg] Telegram send failed', JSON.stringify(err));\nreturn [{ json: { error: err } }];\n"
+      },
+      "id": "code-error-log",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 600]
+    }
+  ],
+  "connections": {
+    "Cron 06:30 KL": {
+      "main": [
+        [
+          { "node": "Fetch Daily Prep", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch Daily Prep": {
+      "main": [
+        [
+          { "node": "Build Telegram Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Build Telegram Message": {
+      "main": [
+        [
+          { "node": "Send Telegram Message", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Send Telegram Message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "",
+    "timezone": "Asia/Kuala_Lumpur"
+  },
+  "tags": [
+    { "name": "incredibowl" },
+    { "name": "production" },
+    { "name": "telegram" }
+  ],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": ""
+  },
+  "pinData": {}
+}
