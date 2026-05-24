@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { animate, useMotionValue } from 'framer-motion';
 import { ShoppingBag, ChevronLeft, ChevronRight, Sparkles, Phone } from 'lucide-react';
 import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
+import { computeNextSpecial } from '@/lib/nextSpecial';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
 interface MenuCarouselProps {
@@ -23,9 +24,21 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
     const lastMoveTime = useRef(0);
     const lastMoveX = useRef(0);
 
+    // Reorder: [tomorrow's special, ...other orderable, ...cutoff-disabled].
+    // On SSR/initial render (menuDates empty) we keep the source order so the
+    // skeleton DOM matches what hydrates after the client computes menuDates.
+    const sortedMenu = useMemo(() => {
+        if (!Object.keys(menuDates).length) return weeklyMenu;
+        const tomorrowsId = computeNextSpecial().dish.id;
+        const tomorrows = weeklyMenu.filter(d => d.id === tomorrowsId);
+        const others = weeklyMenu.filter(d => d.id !== tomorrowsId && !menuDates[d.id]?.disabled);
+        const disabled = weeklyMenu.filter(d => menuDates[d.id]?.disabled);
+        return [...tomorrows, ...others, ...disabled];
+    }, [menuDates]);
+
     const scrollToIndex = (index: number) => {
         const container = scrollContainerRef.current;
-        if (!container || index < 0 || index >= weeklyMenu.length) return;
+        if (!container || index < 0 || index >= sortedMenu.length) return;
 
         const menuItems = Array.from(container.children).filter(child =>
             child instanceof HTMLElement && child.classList.contains('menu-item')
@@ -54,9 +67,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
     };
 
     useEffect(() => {
-        const timer = setTimeout(() => { scrollToIndex(1); }, 800);
+        // Center on tomorrow's special (index 0 after sortedMenu reorder).
+        // Wait long enough that menuDates has populated and the reordered DOM is laid out.
+        const timer = setTimeout(() => { scrollToIndex(0); }, 800);
         return () => clearTimeout(timer);
-    }, []);
+    }, [sortedMenu]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -85,7 +100,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 }
             });
 
-            if (closestIdx !== activeIdx && closestIdx < weeklyMenu.length) {
+            if (closestIdx !== activeIdx && closestIdx < sortedMenu.length) {
                 setActiveIdx(closestIdx);
             }
         };
@@ -138,10 +153,10 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
         // Determine snap target by velocity + nearest item
         const flingThreshold = 350; // px/s
         let nextIdx = activeIdx;
-        if (v < -flingThreshold) nextIdx = Math.min(weeklyMenu.length - 1, activeIdx + 1);
+        if (v < -flingThreshold) nextIdx = Math.min(sortedMenu.length - 1, activeIdx + 1);
         else if (v > flingThreshold) nextIdx = Math.max(0, activeIdx - 1);
 
-        if (nextIdx !== activeIdx && nextIdx >= 0 && nextIdx < weeklyMenu.length) {
+        if (nextIdx !== activeIdx && nextIdx >= 0 && nextIdx < sortedMenu.length) {
             scrollToIndex(nextIdx);
         } else {
             // No fling — let native snap handle, but trigger by dispatching a tiny scroll event
@@ -180,9 +195,9 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 {/* Desktop Right Interactive Floating Arrow */}
                 <button
                     onClick={() => scrollToIndex(activeIdx + 1)}
-                    disabled={activeIdx === weeklyMenu.length - 1}
+                    disabled={activeIdx === sortedMenu.length - 1}
                     className={`hidden md:flex absolute right-4 lg:right-8 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full items-center justify-center border border-gray-100 transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-out shadow-[0_8px_30px_rgb(0,0,0,0.12)] ${
-                        activeIdx === weeklyMenu.length - 1 
+                        activeIdx === sortedMenu.length - 1
                             ? 'bg-white/50 text-gray-300 cursor-not-allowed backdrop-blur-sm opacity-0' 
                             : 'bg-white text-[#1A2D23] hover:bg-[#1A2D23] hover:text-white hover:scale-110 hover:shadow-2xl'
                     }`}
@@ -219,11 +234,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                 {Object.keys(menuDates).length > 0 && <>
                     {/* Left Spacer */}
                     <div className="min-w-[calc(50%-138px)] md:min-w-[calc(50%-180px)] shrink-0" />
-                    {weeklyMenu.map((dish, i) => (
+                    {sortedMenu.map((dish, i) => (
 
                     <div
                         key={dish.id}
-                        className={`menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-[transform,background-color,color,box-shadow,opacity] duration-400 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] mx-2 ${activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-90 hover:opacity-100 cursor-pointer'}`}
+                        className={`menu-item w-[276px] md:w-[360px] snap-center shrink-0 rounded-[32px] p-6 transition-[transform,background-color,color,box-shadow,opacity] duration-400 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] mx-2 ${menuDates[dish.id]?.disabled ? 'bg-gray-50 text-gray-400 border border-gray-100 scale-90 opacity-50' : activeIdx === i ? 'bg-[#1A2D23] text-white shadow-2xl scale-100 transform -translate-y-2' : 'bg-white text-[#1A2D23] border border-gray-100 scale-95 opacity-90 hover:opacity-100 cursor-pointer'}`}
                         onClick={() => scrollToIndex(i)}
                     >
                         <div className="flex justify-between items-start mb-6">
@@ -235,7 +250,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                             </div>
                         </div>
 
-                        <div className="aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-7xl mb-6 relative overflow-hidden border-4 border-transparent">
+                        <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-7xl mb-6 relative overflow-hidden border-4 border-transparent ${menuDates[dish.id]?.disabled ? 'grayscale' : ''}`}>
                             {dish.image.startsWith('/') ? <Image src={dish.image} alt={dishImageAlt(dish)} fill className="object-cover" sizes="(max-width: 768px) 228px, 312px" /> : dish.image}
                         </div>
 
@@ -306,7 +321,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                         <SkeletonBlock className="h-11 w-full mt-auto" />
                     </div>
                 ))
-                : weeklyMenu.map((dish) => {
+                : sortedMenu.map((dish) => {
                     const dInfo = menuDates[dish.id];
                     const isDisabled = !!dInfo?.disabled;
                     return (
@@ -315,7 +330,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                             onClick={() => !isDisabled && onOpenAddOn(dish)}
                             className={`group bg-white rounded-3xl p-5 border border-gray-100 transition-[transform,box-shadow,border-color,opacity] duration-300 ease-out flex flex-col ${
                                 isDisabled
-                                    ? 'opacity-60 cursor-not-allowed'
+                                    ? 'opacity-50 cursor-not-allowed'
                                     : 'cursor-pointer hover:shadow-xl hover:shadow-[#1A2D23]/5 hover:-translate-y-1 hover:border-[#FF6B35]/20 active:scale-[0.99]'
                             }`}
                         >
@@ -328,7 +343,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 </p>
                             </div>
 
-                            <div className="aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden">
+                            <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
                                 {dish.image.startsWith('/') ? (
                                     <Image
                                         src={dish.image}
