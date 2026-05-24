@@ -410,7 +410,12 @@ export async function GET(req: NextRequest) {
     const lunchOrders = allOrders.filter(isLunchOrder);
     const dinnerOrders = allOrders.filter(o => !isLunchOrder(o));
 
-    const ingredients = aggregateIngredients(allOrders);
+    // Aggregate per-meal so BowlMama can prep lunch and dinner separately.
+    // Total (allOrders) kept for the procurement-trip view, since she shops
+    // once a day with the combined list.
+    const lunchIngredients = aggregateIngredients(lunchOrders);
+    const dinnerIngredients = aggregateIngredients(dinnerOrders);
+    const totalIngredients = aggregateIngredients(allOrders);
     const lunchSummary = summarizeOrders(lunchOrders);
     const dinnerSummary = summarizeOrders(dinnerOrders);
 
@@ -421,15 +426,20 @@ export async function GET(req: NextRequest) {
         ...aggregate(lunchOrders),
         orders: lunchSummary.orders,
         ordersText: lunchSummary.ordersText,
+        ingredients: lunchIngredients.lines,
+        ingredientText: lunchIngredients.text,
       },
       dinner: {
         ...aggregate(dinnerOrders),
         orders: dinnerSummary.orders,
         ordersText: dinnerSummary.ordersText,
+        ingredients: dinnerIngredients.lines,
+        ingredientText: dinnerIngredients.text,
       },
       ...collectNotes(allOrders),
-      ingredients: ingredients.lines,
-      ingredientText: ingredients.text,
+      // Top-level ingredients = all-day total (backward compat + procurement view)
+      ingredients: totalIngredients.lines,
+      ingredientText: totalIngredients.text,
     });
   } catch (err) {
     console.error('[n8n/daily-prep] fetch failed:', err);
