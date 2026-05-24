@@ -2,7 +2,7 @@
  * Dish → ingredient mapping table for daily prep ingredient aggregation.
  *
  * Used by /api/n8n/daily-prep to turn the order list ("希腊柠香烤鸡胸 ×5") into
- * a procurement-ready ingredient summary ("鸡胸肉 1.2kg；蛋 7 颗；糙米 540g")
+ * a procurement-ready ingredient summary ("鸡胸肉 1.2kg；鸡蛋(生) 7颗；糙米 540g")
  * so BowlMama gets a shop-this-list instead of a math problem.
  *
  * Conventions:
@@ -54,7 +54,8 @@ export const dishRecipes: DishRecipe[] = [
     name: '纳豆月见海苔饭',
     ingredients: [
       { name: '纳豆', qty: 1, unit: '盒' },
-      { name: '蛋', qty: 2, unit: '颗' },
+      // "月见" 在日式饭里 = 生鸡蛋打在饭上吃；归到鸡蛋(生)桶
+      { name: '鸡蛋(生)', qty: 2, unit: '颗' },
       { name: '海苔', qty: 3, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '酱油', qty: 20, unit: 'ml' },
@@ -68,7 +69,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '虾', qty: 4, unit: '只' },
       { name: '鸡胸肉', qty: 65, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
-      { name: '蛋', qty: 1, unit: '颗' },
+      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '葱', qty: 1, unit: 'g' },
     ],
   },
@@ -127,7 +128,7 @@ export const dishRecipes: DishRecipe[] = [
     ingredients: [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
-      { name: '蛋', qty: 1, unit: '颗' },
+      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '葱', qty: 40, unit: 'g' },
       { name: '时蔬', qty: 50, unit: 'g' },
     ],
@@ -154,13 +155,17 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // 少饭 / less-rice intentionally absent — it's a subtraction, not addition
 
   // ─── Egg add-ons ───────────────────────────────────────────
-  '荷包蛋': [{ name: '蛋', qty: 1, unit: '颗' }],
-  '温泉蛋': [{ name: '蛋', qty: 1, unit: '颗' }],
+  // 三种蛋分桶（备餐时知道要做几个荷包/温泉/拌饭用生蛋）：
+  //   荷包蛋 = sunny-side-up，单独煎好放上桌
+  //   温泉蛋 = onsen 低温慢煮，单独做好放上桌
+  //   鸡蛋(生) = 打散用于炒/煮/拌（炒蛋 / 鸡汤 / 月见盖饭）
+  '荷包蛋': [{ name: '荷包蛋', qty: 1, unit: '颗' }],
+  '温泉蛋': [{ name: '温泉蛋', qty: 1, unit: '颗' }],
 
   // ─── Broccoli egg side ────────────────────────────────────
   '蒜蓉西兰花炒蛋': [
     { name: '西兰花', qty: 200, unit: 'g' },
-    { name: '蛋', qty: 3, unit: '颗' },
+    { name: '鸡蛋(生)', qty: 3, unit: '颗' },
   ],
 
   // ─── Generic sides (40g format) ───────────────────────────
