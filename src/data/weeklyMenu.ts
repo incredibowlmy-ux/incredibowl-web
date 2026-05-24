@@ -51,18 +51,6 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
     },
     {
-        id: 13,
-        day: "Daily / 常驻",
-        name: "招牌原盅当归蒸鸡全腿",
-        nameEn: "Angelica Steamed Whole Chicken Leg",
-        price: 18.50,
-        image: "/angelica_chicken.webp",
-        tags: ["高蛋白 45g+", "当归补血", "暖身滋补", "碗妈拿手", "一抹归香入魂深"],
-        tagsEn: ["45g+ protein", "Angelica blood tonic", "Warming", "BowlMama signature", "Soul-warming"],
-        desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。",
-        descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
-    },
-    {
         id: 14,
         day: "Daily / 常驻",
         name: "阿嫲古早味酱油鸡全腿",
@@ -85,6 +73,18 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
         desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
         descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
+    },
+    {
+        id: 2,
+        day: "Tue / 周二",
+        name: "招牌原盅当归蒸鸡全腿",
+        nameEn: "Angelica Steamed Whole Chicken Leg",
+        price: 18.50,
+        image: "/angelica_chicken.webp",
+        tags: ["高蛋白 45g+", "当归补血", "暖身滋补", "碗妈拿手", "一抹归香入魂深"],
+        tagsEn: ["45g+ protein", "Angelica blood tonic", "Warming", "BowlMama signature", "Soul-warming"],
+        desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。",
+        descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
     },
     {
         id: 3,

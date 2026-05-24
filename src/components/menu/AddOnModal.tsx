@@ -55,6 +55,7 @@ const defaultAddOnSections: AddOnSection[] = [
             { id: 'sunny-egg', name: '荷包蛋', nameEn: 'Sunny Side Up Egg', price: p('sunny-egg', 2.50), category: 'alacarte' },
             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'alacarte' },
             { id: 'potato-egg', name: '马铃薯煎蛋', nameEn: 'Potato Fried Egg', price: p('potato-egg', 3.50), image: '/potato_fried_egg.webp', category: 'alacarte' },
+            { id: 'broccoli-egg', name: '蒜蓉西兰花炒蛋', nameEn: 'Garlic Broccoli with Soft-Scrambled Egg', price: p('broccoli-egg', 9.90), image: '/broccoli_egg.webp', category: 'alacarte', maxQty: 3 },
             { id: 'extra-edamame', name: '清甜水煮毛豆仁 (40g)', nameEn: 'Edamame (40g)', price: p('extra-edamame', 2.50), category: 'alacarte', maxQty: 3 },
             { id: 'extra-corn', name: '金黄甜玉米 (40g)', nameEn: 'Sweet Corn (40g)', price: p('extra-corn', 2.50), category: 'alacarte', maxQty: 3 },
         ]
@@ -265,8 +266,8 @@ export default function AddOnModal({
             return [proteinBombSpecial, ...customSections];
         }
 
-        // If it's Angelica Steamed Whole Chicken Leg (id: 13), append specific add-ons to the sides
-        if (dish.id === 13) {
+        // If it's Angelica Steamed Whole Chicken Leg (Tuesday special, id: 2), append specific add-ons to the sides
+        if (dish.id === 2) {
             return addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {

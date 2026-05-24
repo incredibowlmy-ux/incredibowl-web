@@ -9,8 +9,8 @@ export interface NextSpecial {
 
 /**
  * Compute the next available special dish based on the 06:00 cutoff.
- * Skips weekends. Falls back to the signature daily dish (id 13) if no
- * weekly special exists for the next available weekday (e.g., Tuesday).
+ * Skips weekends. Falls back to the signature daily Soy Sauce Chicken (id 14)
+ * if no weekly special exists for the next available weekday.
  *
  * Lives in /lib so both HeroSection (display) and the deep-link prefill
  * handler in page.tsx can share the exact same dish.
@@ -32,7 +32,7 @@ export function computeNextSpecial(): NextSpecial {
 
     const targetWd = next.getUTCDay();
     const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
-    const fallback = weeklyMenu.find(d => d.id === 13) ?? weeklyMenu[0];
+    const fallback = weeklyMenu.find(d => d.id === 14) ?? weeklyMenu[0];
     const dish = weeklySpecial ?? fallback;
 
     const nowMid = new Date(now).setUTCHours(0, 0, 0, 0);

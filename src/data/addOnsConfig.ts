@@ -41,6 +41,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Default a la carte ────────────────────
   'extra-edamame': 2.50,
   'extra-corn': 2.50,
+  'broccoli-egg': 9.90,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
@@ -53,7 +54,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-fungus': 2.50,
   'extra-yam': 4.00,
 
-  // ─── Angelica Chicken (id:13) specials ─────
+  // ─── Angelica Chicken (Tuesday special, id:2) specials ─────
   'extra-herbal-leg-1': 16.50,
 
   // ─── Soy Sauce Chicken (id:14) specials ────

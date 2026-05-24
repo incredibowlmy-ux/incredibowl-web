@@ -23,7 +23,7 @@ function computeNextSpecial(): NextSpecial {
 
     const targetWd = next.getDay();
     const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
-    const fallback = weeklyMenu.find(d => d.id === 13) ?? weeklyMenu[0];
+    const fallback = weeklyMenu.find(d => d.id === 14) ?? weeklyMenu[0];
     const dish = weeklySpecial ?? fallback;
 
     const nowMid = new Date(now).setHours(0, 0, 0, 0);
