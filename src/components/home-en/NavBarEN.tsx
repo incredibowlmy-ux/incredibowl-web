@@ -43,7 +43,7 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                 {/* Desktop */}
                 <div className="hidden sm:flex w-full justify-center px-3">
                     <p className="text-xs font-black tracking-wide truncate">
-                        Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 15+
+                        Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 12 (free over 45)
                     </p>
                 </div>
 
@@ -51,10 +51,10 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile-en flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            Orders close 06:00 · Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 15+
+                            Orders close 06:00 · Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 12 (free over 45)
                         </span>
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            Orders close 06:00 · Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 15+
+                            Orders close 06:00 · Within 2.5km RM 3 (free over 20) · 2.5–5km free over 30 · 5–7.5km RM 12 (free over 45)
                         </span>
                     </div>
                 </div>

@@ -756,7 +756,7 @@ export default function CartDrawer({
                                             <p className="text-[11px] font-bold text-amber-700">
                                                 💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
                                                 {deliveryTier === 'near' && <> 即可免运 <span className="text-gray-400">（满 RM {distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
-                                                {deliveryTier === 'mid' && <> 配送费降至 RM 5（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 省 RM 10）</>}
+                                                {deliveryTier === 'mid' && <> 即可免运 <span className="text-gray-400">（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 免运）</span></>}
                                             </p>
                                         </div>
                                     )}

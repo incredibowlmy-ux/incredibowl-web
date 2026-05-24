@@ -182,7 +182,7 @@ export default function DeliveryWidget() {
                             </li>
                             <li className="flex justify-between gap-2">
                                 <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">5–7.5km</span></span>
-                                <span className="text-right"><span className="font-bold text-gray-700">RM 15</span><br /><span className="text-[11px] text-amber-600 font-bold">满 RM 40 → RM 5</span></span>
+                                <span className="text-right"><span className="font-bold text-gray-700">RM 12</span><br /><span className="text-[11px] text-amber-600 font-bold">满 RM 45 免运</span></span>
                             </li>
                         </ul>
                     </div>

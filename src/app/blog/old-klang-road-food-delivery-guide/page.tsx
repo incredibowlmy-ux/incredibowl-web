@@ -75,7 +75,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
         name: "Incredibowl 配送范围到哪里？运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运）。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG、Old Klang Road 中段绝大部分公寓。5–7.5km RM 15（满 RM 40 → RM 5）。7.5km 以外暂不配送，公司订餐可 WhatsApp 询价。",
+          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运）。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG、Old Klang Road 中段绝大部分公寓。5–7.5km RM 12（满 RM 45 免运）。7.5km 以外暂不配送，公司订餐可 WhatsApp 询价。",
         },
       },
       {
@@ -208,7 +208,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             <li>D&apos;Sands / SkyVille 8 @ Benteng</li>
           </ul>
           <p className="mt-4">
-            <strong>运费规则</strong>：2.5km 内 RM 3（满 RM 20 自动免运）· 2.5–5km RM 5（满 RM 30 自动免运）· 5–7.5km RM 15（满 RM 40 → RM 5）· 7.5km 以外暂不配送（公司订餐 WhatsApp 询价）。每日早上 6AM 截单。
+            <strong>运费规则</strong>：2.5km 内 RM 3（满 RM 20 自动免运）· 2.5–5km RM 5（满 RM 30 自动免运）· 5–7.5km RM 12（满 RM 45 自动免运）· 7.5km 以外暂不配送（公司订餐 WhatsApp 询价）。每日早上 6AM 截单。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -233,7 +233,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Incredibowl 配送范围到哪里？运费多少？</h3>
-              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 自动免运），2.5–5km RM 5（满 RM 30 自动免运，涵盖 Old Klang Road 中段绝大部分公寓）。5–7.5km RM 15（满 RM 40 自动减至 RM 5）。7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。</p>
+              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 自动免运），2.5–5km RM 5（满 RM 30 自动免运，涵盖 Old Klang Road 中段绝大部分公寓）。5–7.5km RM 12（满 RM 45 自动免运）。7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 怎么下单？什么时候截单？</h3>

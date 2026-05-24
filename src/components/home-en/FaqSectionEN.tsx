@@ -35,7 +35,7 @@ const FAQS: FaqItem[] = [
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
                     <li>• Within 2.5km &mdash; <span className="font-semibold">RM 3</span> (<span className="text-green-600 font-bold">free over RM 20</span>)</li>
                     <li>• 2.5–5km &mdash; <span className="font-semibold">RM 5</span> (<span className="text-green-600 font-bold">free over RM 30</span>)</li>
-                    <li>• 5–7.5km &mdash; <span className="font-semibold">RM 5 over RM 40</span> (RM 15 under RM 40)</li>
+                    <li>• 5–7.5km &mdash; <span className="font-semibold">RM 12</span> (<span className="text-green-600 font-bold">free over RM 45</span>)</li>
                     <li>• Beyond 7.5km &mdash; not currently delivered. WhatsApp us for catering quotes.</li>
                 </ul>
                 <p className="mt-3">

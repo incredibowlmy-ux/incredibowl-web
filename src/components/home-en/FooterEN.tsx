@@ -82,7 +82,7 @@ export default function FooterEN() {
                                     </li>
                                     <li className="flex justify-between gap-3">
                                         <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                        <span><span className="font-bold">RM 15</span> · 40+ → RM 5</span>
+                                        <span><span className="font-bold">RM 12</span> · 45+ → free</span>
                                     </li>
                                     <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">Beyond 7.5km — not delivered</li>
                                 </ul>
@@ -146,7 +146,7 @@ export default function FooterEN() {
                             </li>
                             <li className="flex justify-between gap-3">
                                 <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                <span><span className="font-bold">RM 15</span> · 40+ → RM 5</span>
+                                <span><span className="font-bold">RM 12</span> · 45+ → free</span>
                             </li>
                             <li className="text-[11px] text-[#1A2D23]/40 italic pt-1">Beyond 7.5km — not delivered</li>
                         </ul>
