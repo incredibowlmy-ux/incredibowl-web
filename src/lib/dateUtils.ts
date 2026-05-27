@@ -1,4 +1,5 @@
 import { MenuItem } from '@/data/weeklyMenu';
+import { isDishBlockedOn } from '@/data/blockedDates';
 import { AdminOrder } from '@/types';
 
 // Shape of per-dish date info computed for the menu
@@ -68,6 +69,13 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         const targetDate = new Date(now);
         // Do not add +1 forcefully anymore, allow today
         while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);
+
+        // Skip explicitly blocked dates for this dish (boss-stopped / sold-out).
+        // Roll +7 to the next same-weekday occurrence; cap iterations defensively.
+        let blockSafety = 26;
+        while (blockSafety-- > 0 && isDishBlockedOn(dish.id, formatYMD(targetDate))) {
+            targetDate.setDate(targetDate.getDate() + 7);
+        }
 
         const cutoffForTarget = new Date(targetDate);
         // Cutoff is ON the same day 

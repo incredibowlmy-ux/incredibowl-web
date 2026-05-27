@@ -1,4 +1,5 @@
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
+import { isDishBlockedOn } from '@/data/blockedDates';
 
 export interface NextSpecial {
     dish: MenuItem;
@@ -29,6 +30,25 @@ export function computeNextSpecial(): NextSpecial {
     next.setUTCDate(now.getUTCDate() + (isPastCutoff ? 1 : 0));
     if (next.getUTCDay() === 6) next.setUTCDate(next.getUTCDate() + 2);
     else if (next.getUTCDay() === 0) next.setUTCDate(next.getUTCDate() + 1);
+
+    // If the weekly special on `next` is explicitly blocked on that date,
+    // advance day-by-day (skipping weekends) until we find a non-blocked day.
+    // Hero then shows the next genuinely-available special (labels adjust to
+    // 今日 / 明日 / 后日 / explicit date automatically below).
+    const ymdUTC = (d: Date) =>
+        `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    let skipSafety = 14;
+    while (skipSafety-- > 0) {
+        const wd = next.getUTCDay();
+        const wkly = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === wd);
+        if (wkly && isDishBlockedOn(wkly.id, ymdUTC(next))) {
+            next.setUTCDate(next.getUTCDate() + 1);
+            if (next.getUTCDay() === 6) next.setUTCDate(next.getUTCDate() + 2);
+            else if (next.getUTCDay() === 0) next.setUTCDate(next.getUTCDate() + 1);
+            continue;
+        }
+        break;
+    }
 
     const targetWd = next.getUTCDay();
     const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
