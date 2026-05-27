@@ -7,7 +7,8 @@
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:dashboard": "node scripts/sync-dashboard.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

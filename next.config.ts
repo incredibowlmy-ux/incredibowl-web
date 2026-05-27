@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        // Internal ops dashboard — Firebase admin auth gated, URL obscured.
+        // No browser cache so updates land immediately + robots block.
+        // Single-segment :slug (no `*`) is the path-to-regexp v6 syntax Next 16 expects.
+        source: '/dashboard-:slug.html',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
+        ],
+      },
+      {
         // Security headers for all routes
         source: '/(.*)',
         headers: [
