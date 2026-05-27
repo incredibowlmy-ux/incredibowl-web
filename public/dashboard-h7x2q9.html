@@ -68,6 +68,8 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overflow: hidden;
+            /* dvh keeps content from being clipped under the mobile browser chrome */
+            min-height: 100dvh;
         }
 
         .display { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: -0.02em; font-weight: 800; }
@@ -206,7 +208,24 @@
             display: grid;
             grid-template-columns: var(--sidebar-w) 1fr;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
+        }
+
+        /* Sidebar backdrop — only visible on mobile when sidebar is open. */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 30, 25, 0.42);
+            backdrop-filter: blur(2px);
+            z-index: 90;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .sidebar-backdrop.show {
+            display: block;
+            opacity: 1;
         }
 
         /* SIDEBAR */
@@ -892,7 +911,7 @@
             vertical-align: middle;
         }
 
-        /* MOBILE */
+        /* MOBILE — tablet & narrow desktop (<= 900px) */
         @media (max-width: 900px) {
             .app { grid-template-columns: 1fr; }
             .sidebar {
@@ -906,13 +925,116 @@
                 box-shadow: var(--shadow-xl);
             }
             .sidebar.open { transform: translateX(0); }
-            .topbar { padding: 16px 20px; }
-            .topbar-left h2 { font-size: 20px; }
-            .content { padding: 18px 16px 60px; }
-            .card { padding: 18px 16px; }
+
+            /* Topbar wraps to 2 rows: title row + action row that horizontal-scrolls if needed */
+            .topbar {
+                padding: 14px 16px;
+                flex-wrap: wrap;
+                row-gap: 10px;
+            }
+            .topbar-left h2 { font-size: 19px; }
+            .topbar-left .topbar-sub { font-size: 12px; margin-top: 2px; }
+            .topbar-right {
+                width: 100%;
+                gap: 8px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 2px;
+                /* hide scrollbar but keep it scrollable */
+                scrollbar-width: none;
+            }
+            .topbar-right::-webkit-scrollbar { display: none; }
+            .topbar-right > * { flex-shrink: 0; }
+
+            .content { padding: 16px 14px 48px; }
+            .card { padding: 16px 14px; }
+            .card + .card { margin-top: 14px; }
+            .card-header { margin-bottom: 14px; }
+
             .date-picker { padding: 3px; }
             .date-btn { padding: 6px 10px; font-size: 12px; }
             .form-row { grid-template-columns: 1fr; gap: 6px; }
+
+            .section-head { flex-wrap: wrap; gap: 8px; margin: 22px 0 12px; }
+            .section-head h3 { font-size: 15px; }
+
+            /* Modal full-screen-ish on tablet */
+            .modal { max-width: 100%; border-radius: 16px; }
+            .modal-backdrop { padding: 12px; }
+            .modal-body { padding: 18px 18px; }
+            .modal-header { padding: 16px 18px; }
+            .modal-footer { padding: 12px 18px; flex-wrap: wrap; }
+        }
+
+        /* PHONE — narrow (<= 600px) */
+        @media (max-width: 600px) {
+            .topbar { padding: 12px 14px; }
+            .topbar-left h2 { font-size: 17px; }
+            .topbar-left .topbar-sub { font-size: 11px; }
+
+            /* Compact action buttons — keep the icons but trim the labels */
+            .add-order-btn { padding: 8px 12px; font-size: 12px; gap: 4px; }
+            .add-order-btn .plus { font-size: 14px; }
+
+            .content { padding: 14px 12px 48px; }
+            .card { padding: 14px 12px; border-radius: 14px; }
+
+            /* KPI dial-down so values fit single column */
+            .kpi { padding: 14px 16px; }
+            .kpi-label { font-size: 11px; }
+            .kpi-value { font-size: 24px; margin-top: 6px; }
+            .kpi-currency { font-size: 13px; }
+            .kpi.big { padding: 16px 18px; }
+            .kpi.big .kpi-value { font-size: 28px; }
+            .kpi-grid { gap: 10px; margin-bottom: 14px; }
+
+            /* Order rows wrap onto 2 lines — date+amount header, customer+status below */
+            .order-row {
+                grid-template-columns: 1fr auto auto;
+                grid-template-areas:
+                    "date date amount"
+                    "cust cust status"
+                    "act  act  act";
+                row-gap: 4px;
+                padding: 10px;
+            }
+            .order-row .order-date { grid-area: date; }
+            .order-row .order-amount { grid-area: amount; text-align: right; }
+            .order-row > div:nth-child(2) { grid-area: cust; }
+            .order-row .order-status-pill { grid-area: status; justify-self: end; }
+            .order-row .order-actions { grid-area: act; justify-content: flex-end; padding-top: 2px; }
+
+            /* Customer rows shrink */
+            .customer-row {
+                grid-template-columns: 24px 1fr auto;
+                gap: 8px;
+                padding: 8px 10px;
+            }
+            .customer-orders { display: none; } /* free up space for spent */
+            .customer-spent { font-size: 12px; }
+            .customer-name { font-size: 12px; }
+
+            /* Login card less padding on phones */
+            .login-screen { padding: 16px; }
+            .login-card { padding: 32px 24px; border-radius: 18px; }
+            .login-card h1 { font-size: 22px; }
+            .login-mark { width: 48px; height: 48px; margin-bottom: 20px; font-size: 24px; }
+
+            /* Modal: 2-col stays only when explicitly safe; collapse modal-row-3 */
+            .modal-row-3 { grid-template-columns: 1fr 1fr; }
+            .channel-pill { padding: 7px 12px; font-size: 11px; }
+
+            /* Tables stay scrollable but font slightly smaller */
+            table.dt th, table.dt td { padding: 9px 10px; font-size: 12px; }
+
+            /* Section head: stack title + segment control */
+            .section-head { margin: 18px 0 10px; }
+
+            /* Card headers: when title block sits next to a `.seg` filter, stack them */
+            .card-header { flex-wrap: wrap; }
+
+            /* Shrink toast so it doesn't dominate the screen */
+            .toast { left: 12px; right: 12px; bottom: 12px; text-align: center; }
         }
 
         .mobile-menu-btn {
@@ -923,6 +1045,7 @@
             border: 1px solid var(--border-strong);
             align-items: center; justify-content: center;
             margin-right: 8px;
+            flex-shrink: 0;
         }
         @media (max-width: 900px) { .mobile-menu-btn { display: inline-flex; } }
     </style>
@@ -951,6 +1074,8 @@
 
     <!-- ═══════════════ APP ═══════════════ -->
     <div id="app" class="app hidden">
+        <!-- Tap-to-close backdrop, visible only when sidebar is .open on mobile -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-brand">
@@ -5656,6 +5781,7 @@ incredibowl.my`,
             }, 60);
 
             $('#sidebar').classList.remove('open');
+            $('#sidebarBackdrop')?.classList.remove('show');
         }
 
         $$('.nav-item').forEach(b => b.addEventListener('click', () => switchPage(b.dataset.page)));
@@ -6524,10 +6650,27 @@ incredibowl.my`,
             }
         });
 
-        // Mobile menu
+        // Mobile menu — toggle sidebar + matching backdrop
+        function setSidebarOpen(open) {
+            $('#sidebar').classList.toggle('open', open);
+            $('#sidebarBackdrop')?.classList.toggle('show', open);
+        }
         $('#mobileMenuBtn')?.addEventListener('click', () => {
-            $('#sidebar').classList.toggle('open');
+            const isOpen = $('#sidebar').classList.contains('open');
+            setSidebarOpen(!isOpen);
         });
+        $('#sidebarBackdrop')?.addEventListener('click', () => setSidebarOpen(false));
+
+        // Resize charts on orientation/viewport change (mobile rotate, address-bar collapse)
+        let resizeRaf = 0;
+        function resizeAllCharts() {
+            if (resizeRaf) cancelAnimationFrame(resizeRaf);
+            resizeRaf = requestAnimationFrame(() => {
+                Object.values(state.charts || {}).forEach(c => c && c.resize());
+            });
+        }
+        window.addEventListener('resize', resizeAllCharts);
+        window.addEventListener('orientationchange', resizeAllCharts);
 
         // Recent orders filter
         $$('#recentFilter button').forEach(b => b.addEventListener('click', () => {
