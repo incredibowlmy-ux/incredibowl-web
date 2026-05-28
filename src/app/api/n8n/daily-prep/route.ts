@@ -87,6 +87,8 @@ interface FirestoreOrderItem {
 }
 interface FirestoreOrder {
   userName?: string;
+  userAddress?: string;
+  userPhone?: string;
   deliveryTime?: string;
   mealType?: 'lunch' | 'dinner' | null;
   isManual?: boolean;
@@ -178,6 +180,7 @@ interface OrderMain {
 }
 interface OrderSummary {
   userName: string;
+  userAddress: string;
   deliveryTime: string;
   mains: OrderMain[];
 }
@@ -214,6 +217,7 @@ function summarizeOrders(orders: FirestoreOrder[]): {
     }
     summaries.push({
       userName: o.userName || '客户',
+      userAddress: (o.userAddress || '').trim(),
       deliveryTime: o.deliveryTime || '',
       mains,
     });
@@ -223,16 +227,28 @@ function summarizeOrders(orders: FirestoreOrder[]): {
     return { orders: [], ordersText: '无' };
   }
 
+  // Mimics BowlMama's handwritten notebook layout:
+  //   1. 12:00 · KL Leong
+  //      📍 316 Taman Desa
+  //      1) 香煎金黄鸡扒饭 ×4
+  //         + 白饭换糙米
+  // — time prominently after the order number, address on its own line so
+  // BowlMama can spot the delivery target at a glance while packing, and
+  // numbered items mirror how she actually writes orders on paper.
   const lines: string[] = [];
   summaries.forEach((s, idx) => {
     const time = formatTime(s.deliveryTime);
-    lines.push(`${idx + 1}. ${s.userName}${time ? ` · ${time}` : ''}`);
-    for (const m of s.mains) {
-      lines.push(`   • ${m.name}${m.qty > 1 ? ` ×${m.qty}` : ''}`);
-      for (const a of m.addOns) {
-        lines.push(`     + ${a.name}${a.qty > 1 ? ` ×${a.qty}` : ''}`);
-      }
+    const head = time ? `${time} · ${s.userName}` : s.userName;
+    lines.push(`${idx + 1}. ${head}`);
+    if (s.userAddress) {
+      lines.push(`   📍 ${s.userAddress}`);
     }
+    s.mains.forEach((m, mIdx) => {
+      lines.push(`   ${mIdx + 1}) ${m.name}${m.qty > 1 ? ` ×${m.qty}` : ''}`);
+      for (const a of m.addOns) {
+        lines.push(`      + ${a.name}${a.qty > 1 ? ` ×${a.qty}` : ''}`);
+      }
+    });
     if (idx < summaries.length - 1) lines.push('');
   });
   return { orders: summaries, ordersText: lines.join('\n') };
