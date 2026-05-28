@@ -42,6 +42,13 @@ export interface IngredientLine {
 export interface DishRecipe {
   /** Exact match to MenuItem.name in weeklyMenu.ts */
   name: string;
+  /**
+   * 2-character display name used in the daily-prep order matrix
+   * (Telegram <pre> grid). Keeping it 2 CJK chars = 4 visual cells
+   * keeps the matrix narrow enough to fit on mobile without horizontal
+   * scrolling. Optional — falls back to the first 2 chars of `name`.
+   */
+  shortName?: string;
   ingredients: IngredientLine[];
 }
 
@@ -52,6 +59,7 @@ export interface DishRecipe {
 export const dishRecipes: DishRecipe[] = [
   {
     name: '纳豆月见海苔饭',
+    shortName: '纳豆',
     ingredients: [
       { name: '纳豆', qty: 1, unit: '盒' },
       { name: '温泉蛋', qty: 2, unit: '颗' },
@@ -62,6 +70,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '山药云耳海陆双鲜炒',
+    shortName: '山药',
     ingredients: [
       { name: '山药', qty: 100, unit: 'g' },
       { name: '云耳', qty: 4, unit: 'g' },
@@ -74,6 +83,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '阿嫲古早味酱油鸡全腿',
+    shortName: '酱鸡',
     ingredients: [
       { name: '鸡全腿', qty: 1, unit: '只' },
       { name: '白饭', qty: 80, unit: 'g' },
@@ -82,6 +92,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '香煎金黄鸡扒饭',
+    shortName: '鸡扒',
     ingredients: [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
@@ -92,6 +103,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '招牌原盅当归蒸鸡全腿',
+    shortName: '归鸡',
     ingredients: [
       { name: '鸡全腿', qty: 1, unit: '只' },
       { name: '当归', qty: 3, unit: 'g' },
@@ -101,6 +113,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '希腊柠香烤鸡胸',
+    shortName: '希胸',
     ingredients: [
       { name: '鸡胸肉', qty: 200, unit: 'g' },
       // TODO_CONFIRM: 柠檬 user wrote "1/5g" — interpreted as 5g.
@@ -114,6 +127,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '马铃薯炖花肉片',
+    shortName: '花肉',
     ingredients: [
       { name: '五花肉', qty: 125, unit: 'g' },
       { name: '马铃薯', qty: 100, unit: 'g' },
@@ -124,6 +138,7 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     name: '金黄葱香煎鸡汤',
+    shortName: '葱汤',
     ingredients: [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
@@ -222,4 +237,18 @@ export function getRecipeForDish(dishName: string): DishRecipe | undefined {
 
 export function getAddOnRecipe(label: string): IngredientLine[] | undefined {
   return addOnRecipes[label];
+}
+
+/**
+ * Look up the 2-char display name for the daily-prep order matrix.
+ * Falls back to the first 2 chars of the full name if no shortName
+ * configured — so a new dish added to weeklyMenu.ts before its recipe
+ * lands here still renders in the grid (just less prettily).
+ */
+export function getDishShortName(dishName: string): string {
+  const recipe = recipeByName.get(dishName);
+  if (recipe?.shortName) return recipe.shortName;
+  // Best-effort fallback: first 2 CJK chars
+  const chars = Array.from(dishName);
+  return chars.slice(0, 2).join('') || dishName;
 }

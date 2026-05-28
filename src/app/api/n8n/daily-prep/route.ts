@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecipeForDish, getAddOnRecipe, IngredientLine } from '@/data/dishIngredients';
+import { getRecipeForDish, getAddOnRecipe, getDishShortName, IngredientLine } from '@/data/dishIngredients';
 
 /**
  * GET /api/n8n/daily-prep
@@ -263,6 +263,106 @@ function summarizeOrders(orders: FirestoreOrder[]): {
   return { orders: summaries, ordersText: lines.join('\n') };
 }
 
+// Excel-style pivot matrix BowlMama can scan at a glance:
+//   - rows = customers (one per order)
+//   - cols = dishes (only those ordered today, sorted by popularity)
+//   - cells = quantity (×N) or '·' placeholder
+//   - last col = aggregated add-ons for that customer (comma-joined)
+//
+// Output is space-aligned monospace TEXT. Caller wraps in <pre> for
+// Telegram so the alignment renders. Chinese characters count as 2 visual
+// cells, ASCII as 1 — we measure visualWidth() and pad accordingly.
+//
+// Header style:
+//   客户        鸡扒  山药  花肉  加料
+//   KL Leong    ×4    ·     ·     糙米
+//   Andrea      ·     ×1    ·     西兰花炒蛋
+function visualWidth(s: string): number {
+  let w = 0;
+  for (const c of s) {
+    const code = c.codePointAt(0) || 0;
+    // CJK Unified Ideographs + Compat + Symbols + Fullwidth + Hangul ranges
+    if ((code >= 0x4E00 && code <= 0x9FFF) ||
+        (code >= 0x3400 && code <= 0x4DBF) ||
+        (code >= 0xFF00 && code <= 0xFFEF) ||
+        (code >= 0x3000 && code <= 0x303F) ||
+        (code >= 0x2E80 && code <= 0x2FFF)) {
+      w += 2;
+    } else {
+      w += 1;
+    }
+  }
+  return w;
+}
+function padRight(s: string, w: number): string {
+  return s + ' '.repeat(Math.max(0, w - visualWidth(s)));
+}
+
+function buildOrderMatrix(orders: FirestoreOrder[]): string {
+  if (orders.length === 0) return '无';
+
+  // Walk each order, accumulating dish counts (by shortName) and add-ons.
+  type Row = { name: string; counts: Record<string, number>; addOns: string[] };
+  const rows: Row[] = [];
+  const dishTotals: Record<string, number> = {};
+
+  for (const o of orders) {
+    const counts: Record<string, number> = {};
+    const addOns: string[] = [];
+    for (const it of o.items || []) {
+      const qty = it.quantity || 0;
+      if (qty <= 0) continue;
+      if (isAddOnItem(it.name)) {
+        const label = stripAddOnPrefix(it.name);
+        addOns.push(qty > 1 ? `${label}×${qty}` : label);
+      } else {
+        const short = getDishShortName(it.name);
+        counts[short] = (counts[short] || 0) + qty;
+        dishTotals[short] = (dishTotals[short] || 0) + qty;
+        for (const a of it.addOns || []) {
+          const label = a.label || a.name || a.id || '加料';
+          const aQty = a.quantity || 0;
+          if (aQty > 0) addOns.push(aQty > 1 ? `${label}×${aQty}` : label);
+        }
+      }
+    }
+    rows.push({ name: o.userName || '客户', counts, addOns });
+  }
+
+  // Dish columns sorted by total quantity desc (most-ordered first).
+  const dishes = Object.keys(dishTotals).sort((a, b) => dishTotals[b] - dishTotals[a]);
+  if (dishes.length === 0) return '无';
+
+  const hasAddOns = rows.some(r => r.addOns.length > 0);
+
+  // Column widths. Dish cols min 4 visual cells (= 2 CJK or 4 ASCII).
+  const nameW = Math.max(visualWidth('客户'), ...rows.map(r => visualWidth(r.name)));
+  const dishW: Record<string, number> = {};
+  for (const d of dishes) {
+    const cellWidths = rows.map(r => visualWidth(r.counts[d] ? `×${r.counts[d]}` : '·'));
+    dishW[d] = Math.max(visualWidth(d), 4, ...cellWidths);
+  }
+  const addOnW = hasAddOns
+    ? Math.max(visualWidth('加料'), ...rows.map(r => visualWidth(r.addOns.join(', '))))
+    : 0;
+
+  const headerCells: string[] = [padRight('客户', nameW)];
+  for (const d of dishes) headerCells.push(padRight(d, dishW[d]));
+  if (hasAddOns) headerCells.push(padRight('加料', addOnW));
+
+  const rowLines = rows.map(r => {
+    const cells: string[] = [padRight(r.name, nameW)];
+    for (const d of dishes) {
+      const c = r.counts[d];
+      cells.push(padRight(c ? `×${c}` : '·', dishW[d]));
+    }
+    if (hasAddOns) cells.push(r.addOns.length ? r.addOns.join(', ') : '·');
+    return cells.join('  ');
+  });
+
+  return [headerCells.join('  '), ...rowLines].join('\n');
+}
+
 // Aggregate raw ingredient quantities across all of today's orders, so
 // BowlMama gets a procurement list ("鸡胸肉 1.2kg；蛋 7 颗") instead of
 // having to mentally multiply each dish × portion × add-on adjustments.
@@ -451,6 +551,7 @@ export async function GET(req: NextRequest) {
         ...aggregate(lunchOrders),
         orders: lunchSummary.orders,
         ordersText: lunchSummary.ordersText,
+        matrixText: buildOrderMatrix(lunchOrders),
         ingredients: lunchIngredients.lines,
         ingredientText: lunchIngredients.text,
       },
@@ -458,6 +559,7 @@ export async function GET(req: NextRequest) {
         ...aggregate(dinnerOrders),
         orders: dinnerSummary.orders,
         ordersText: dinnerSummary.ordersText,
+        matrixText: buildOrderMatrix(dinnerOrders),
         ingredients: dinnerIngredients.lines,
         ingredientText: dinnerIngredients.text,
       },
