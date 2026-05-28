@@ -871,6 +871,29 @@
         }
         .order-row:last-child { border-bottom: none; }
         .order-row:hover { background: var(--bg-subtle); }
+
+        /* Voucher-paid orders get a golden left bar — distinguishes RM-0-cash
+         * accrual revenue rows from cash-collecting rows at a glance. */
+        .order-row.voucher-order {
+            position: relative;
+            padding-left: 16px;
+        }
+        .order-row.voucher-order::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            border-radius: 2px;
+            background: linear-gradient(180deg, #C9985C, #E0B47A);
+        }
+
+        /* When hovering one row, dim non-matching rows and tint same-customer ones */
+        .orders-list[data-hover-phone]:not([data-hover-phone=""]) .order-row { opacity: 0.45; }
+        .orders-list[data-hover-phone]:not([data-hover-phone=""]) .order-row.same-customer { opacity: 1; }
+        .order-row.same-customer { background: rgba(201, 152, 92, 0.10); }
+        .order-row.same-customer:hover { background: rgba(201, 152, 92, 0.18); }
         .order-actions { display: flex; gap: 4px; }
         .order-action-btn {
             width: 28px; height: 28px;
@@ -1269,12 +1292,21 @@
                         <div class="card-header">
                             <div>
                                 <div class="card-title">最近订单</div>
-                                <div class="card-sub">最新 15 笔（含手动录入）</div>
+                                <div class="card-sub">默认按下单时间倒序；选「今天/明天/午/晚」时按送达时间升序</div>
                             </div>
-                            <div class="seg" id="recentFilter">
-                                <button class="active" data-filter="all">全部</button>
-                                <button data-filter="web">网站</button>
-                                <button data-filter="manual">手动</button>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px">
+                                <div class="seg" id="recentFilter">
+                                    <button class="active" data-filter="all">全部</button>
+                                    <button data-filter="web">网站</button>
+                                    <button data-filter="manual">手动</button>
+                                </div>
+                                <div class="seg" id="recentDeliveryFilter">
+                                    <button class="active" data-dfilter="all">全部</button>
+                                    <button data-dfilter="today">今天</button>
+                                    <button data-dfilter="tomorrow">明天</button>
+                                    <button data-dfilter="lunch">🟠 午</button>
+                                    <button data-dfilter="dinner">🟣 晚</button>
+                                </div>
                             </div>
                         </div>
                         <div id="recentOrdersList" class="orders-list"></div>
@@ -3398,12 +3430,33 @@ incredibowl.my`,
         }
 
         let recentFilter = 'all';
+        let recentDeliveryFilter = 'all'; // 'all' | 'today' | 'tomorrow' | 'lunch' | 'dinner'
         function renderRecentOrders() {
             // Use full filteredOrders (not just paid) so recent shows everything
-            const all = filteredOrders().slice(0, 50);
-            const filtered = recentFilter === 'all' ? all
+            const all = filteredOrders().slice(0, 80);
+            let filtered = recentFilter === 'all' ? all
                 : recentFilter === 'manual' ? all.filter(o => o.isManual)
                 : all.filter(o => !o.isManual);
+
+            // Delivery-axis filter (orthogonal to source filter)
+            const todayKey = ymdKey(new Date());
+            const tomorrowDate = new Date(); tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+            const tomorrowKey = ymdKey(tomorrowDate);
+            const df = recentDeliveryFilter;
+            if (df === 'today') filtered = filtered.filter(o => o.deliveryDate === todayKey);
+            else if (df === 'tomorrow') filtered = filtered.filter(o => o.deliveryDate === tomorrowKey);
+            else if (df === 'lunch') filtered = filtered.filter(o => mealType(o) === 'lunch');
+            else if (df === 'dinner') filtered = filtered.filter(o => mealType(o) === 'dinner');
+
+            // When a delivery filter is active, sort ASC by delivery date+time (prep order).
+            // Otherwise keep createdAt-desc (existing behavior — already sorted upstream).
+            if (df !== 'all') {
+                filtered = filtered.slice().sort((a, b) => {
+                    const ka = (a.deliveryDate || '') + ' ' + (a.deliveryTime || '');
+                    const kb = (b.deliveryDate || '') + ' ' + (b.deliveryTime || '');
+                    return ka.localeCompare(kb);
+                });
+            }
             const top15 = filtered.slice(0, 15);
 
             if (top15.length === 0) {
@@ -3470,8 +3523,10 @@ incredibowl.my`,
                            ${mealLabel ? `<span class="meal-chip" style="${mealBg}">${mealLabel}</span>` : ''}
                        </div>`
                     : '';
+                const phoneNorm = normalizePhone(o.userPhone);
+                const voucherClass = mvUsed > 0 ? ' voucher-order' : '';
                 return `
-                    <div class="order-row" data-id="${o.id}">
+                    <div class="order-row${voucherClass}" data-id="${o.id}" data-phone="${escapeHtml(phoneNorm)}">
                         <div class="order-date-col">
                             <div class="order-date">${dateStr}</div>
                             ${deliveryHtml}
@@ -6720,13 +6775,40 @@ incredibowl.my`,
         window.addEventListener('resize', resizeAllCharts);
         window.addEventListener('orientationchange', resizeAllCharts);
 
-        // Recent orders filter
+        // Recent orders filter — source (web/manual)
         $$('#recentFilter button').forEach(b => b.addEventListener('click', () => {
             $$('#recentFilter button').forEach(x => x.classList.remove('active'));
             b.classList.add('active');
             recentFilter = b.dataset.filter;
             renderRecentOrders();
         }));
+
+        // Recent orders filter — delivery axis (today/tomorrow/lunch/dinner)
+        $$('#recentDeliveryFilter button').forEach(b => b.addEventListener('click', () => {
+            $$('#recentDeliveryFilter button').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            recentDeliveryFilter = b.dataset.dfilter;
+            renderRecentOrders();
+        }));
+
+        // Same-customer hover highlight — delegated so re-renders don't need re-binding
+        (function wireOrderRowHover() {
+            const list = $('#recentOrdersList');
+            if (!list) return;
+            list.addEventListener('mouseover', (e) => {
+                const row = e.target.closest('.order-row');
+                if (!row) return;
+                const phone = row.dataset.phone || '';
+                list.dataset.hoverPhone = phone;
+                list.querySelectorAll('.order-row').forEach(r => {
+                    r.classList.toggle('same-customer', !!phone && (r.dataset.phone || '') === phone);
+                });
+            });
+            list.addEventListener('mouseleave', () => {
+                list.dataset.hoverPhone = '';
+                list.querySelectorAll('.order-row.same-customer').forEach(r => r.classList.remove('same-customer'));
+            });
+        })();
 
         // Collapsible cards — click header to toggle.
         // Skip toggle when clicking buttons / inputs inside the header (e.g. "+ 加菜品").
