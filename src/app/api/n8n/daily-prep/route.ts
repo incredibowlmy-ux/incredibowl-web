@@ -227,29 +227,38 @@ function summarizeOrders(orders: FirestoreOrder[]): {
     return { orders: [], ordersText: '无' };
   }
 
-  // Mimics BowlMama's handwritten notebook layout:
-  //   1. 12:00 · KL Leong
-  //      📍 316 Taman Desa
-  //      1) 香煎金黄鸡扒饭 ×4
+  // Card-per-order layout (table-like row borders for mobile). Each
+  // order becomes a visually distinct block separated by ━━━ so BowlMama
+  // can scan rows like she scans her notebook:
+  //
+  //   ━━━━━━━━━━━━━━━━━━━━
+  //   #1  ·  12:00
+  //   👤 KL Leong
+  //   📍 316 Taman Desa
+  //   🍱 1) 香煎金黄鸡扒饭 ×4
   //         + 白饭换糙米
-  // — time prominently after the order number, address on its own line so
-  // BowlMama can spot the delivery target at a glance while packing, and
-  // numbered items mirror how she actually writes orders on paper.
+  //
+  // The leading row of ━ chars renders consistently in Telegram across
+  // iOS / Android / web — better than <table> (Telegram HTML doesn't
+  // support table tags) or <pre> (Chinese chars in monospace align badly).
+  const sep = '━━━━━━━━━━━━━━━━━━━━';
   const lines: string[] = [];
   summaries.forEach((s, idx) => {
+    if (idx > 0) lines.push('');
+    lines.push(sep);
     const time = formatTime(s.deliveryTime);
-    const head = time ? `${time} · ${s.userName}` : s.userName;
-    lines.push(`${idx + 1}. ${head}`);
+    lines.push(`#${idx + 1}${time ? `  ·  ${time}` : ''}`);
+    lines.push(`👤 ${s.userName}`);
     if (s.userAddress) {
-      lines.push(`   📍 ${s.userAddress}`);
+      lines.push(`📍 ${s.userAddress}`);
     }
     s.mains.forEach((m, mIdx) => {
-      lines.push(`   ${mIdx + 1}) ${m.name}${m.qty > 1 ? ` ×${m.qty}` : ''}`);
+      const lead = mIdx === 0 ? '🍱 ' : '    ';
+      lines.push(`${lead}${mIdx + 1}) ${m.name}${m.qty > 1 ? ` ×${m.qty}` : ''}`);
       for (const a of m.addOns) {
-        lines.push(`      + ${a.name}${a.qty > 1 ? ` ×${a.qty}` : ''}`);
+        lines.push(`       + ${a.name}${a.qty > 1 ? ` ×${a.qty}` : ''}`);
       }
     });
-    if (idx < summaries.length - 1) lines.push('');
   });
   return { orders: summaries, ordersText: lines.join('\n') };
 }
