@@ -1487,6 +1487,21 @@
                         </div>
                     </div>
 
+                    <div class="card collapsible" data-collapsible>
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">退款追踪</div>
+                                <div class="card-sub">总退款 · 退款率 · 最近 5 笔 · 净营收已自动扣</div>
+                            </div>
+                            <div class="collapse-icon">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="refundSummary"></div>
+                        </div>
+                    </div>
+
                     <div class="grid-2">
                         <div class="card" id="cardGrossMargin">
                             <div class="card-header"><div><div class="card-title">毛利 / 毛利率</div><div class="card-sub">（基于菜品成本价）</div></div></div>
@@ -2156,6 +2171,50 @@
                 <div class="modal-footer-actions">
                     <button type="button" class="btn ghost" id="dfmCancelBtn">取消</button>
                     <button type="button" class="btn" id="dfmSaveBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════ REFUND MODAL ═══════════ -->
+    <div id="refundModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:420px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">💸 标记退款</div>
+                    <div class="modal-subtitle">已退给客户的金额 · 会从净营收里扣</div>
+                </div>
+                <button class="modal-close" id="rfmCloseBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px;margin-bottom:16px;font-size:13px;line-height:1.7">
+                    <div><span style="color:var(--text-muted)">客户：</span><strong id="rfmCustomer">—</strong></div>
+                    <div><span style="color:var(--text-muted)">订单总额：</span><span class="mono" id="rfmOrderTotal">—</span></div>
+                    <div id="rfmCurrent" style="display:none"><span style="color:var(--danger)">当前已退：</span><span class="mono" id="rfmCurrentAmount">—</span></div>
+                </div>
+                <div class="modal-row">
+                    <label>退款金额 (RM) *</label>
+                    <input type="number" id="rfmAmount" step="0.10" min="0" placeholder="0.00" />
+                    <div style="margin-top:4px;font-size:11px;color:var(--text-muted)">填 0 = 撤销退款标记</div>
+                </div>
+                <div class="modal-row">
+                    <label>原因（必填）</label>
+                    <textarea id="rfmReason" rows="3" placeholder="例：客户反馈太咸 / 配送迟到 / 重复扣款 ..."></textarea>
+                </div>
+                <div class="modal-row">
+                    <label>状态</label>
+                    <select id="rfmStatus">
+                        <option value="completed">已完成（钱已退回）</option>
+                        <option value="pending">处理中（还没退）</option>
+                    </select>
+                </div>
+                <div id="rfmError" class="login-error hidden" style="margin-top:10px"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-hint">退款记录显示在 预算 → 退款追踪</div>
+                <div class="modal-footer-actions">
+                    <button type="button" class="btn ghost" id="rfmCancelBtn">取消</button>
+                    <button type="button" class="btn danger" id="rfmSaveBtn">保存</button>
                 </div>
             </div>
         </div>
@@ -3632,9 +3691,20 @@ incredibowl.my`,
                 const deliveryBtn = `<button type="button" class="order-action-btn delivery-edit-btn" data-id="${o.id}" title="标记配送区（我方成本统计）">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                 </button>`;
+                // C8: refund button — available on ALL orders. If already refunded,
+                // shows a red "Refunded" badge instead so user can see at a glance.
+                const refundAmt = Number(o.refundAmount) || 0;
+                const refundBtn = refundAmt > 0
+                    ? `<button type="button" class="order-action-btn refund-edit-btn" data-id="${o.id}" title="已退款 RM ${refundAmt.toFixed(2)} · 点击修改" style="background:var(--danger-soft);color:var(--danger)">
+                        <span style="font-size:10px;font-weight:700">RF</span>
+                    </button>`
+                    : `<button type="button" class="order-action-btn refund-edit-btn" data-id="${o.id}" title="标记退款">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
+                    </button>`;
                 const actions = o.isManual
                     ? `<div class="order-actions">
                             ${deliveryBtn}
+                            ${refundBtn}
                             <button type="button" class="order-action-btn edit-order-btn" data-id="${o.id}" title="编辑">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>
@@ -3642,7 +3712,7 @@ incredibowl.my`,
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                             </button>
                         </div>`
-                    : `<div class="order-actions">${deliveryBtn}</div>`;
+                    : `<div class="order-actions">${deliveryBtn}${refundBtn}</div>`;
                 const deliveryHtml = deliveryStr || mealLabel
                     ? `<div class="order-delivery" title="送达日期与时段">
                            ${deliveryStr ? `<span class="dl-date">送 ${deliveryStr}</span>` : ''}
@@ -5008,6 +5078,7 @@ incredibowl.my`,
 
             renderMealVoucherKPIs(orders);
             renderVoucherCohort();
+            renderRefundSummary(orders);
 
             // ─── Per-order packaging + payment fees (computed early so breakdown table + net profit can use) ───
             let totalPackaging = 0;
@@ -5179,9 +5250,20 @@ incredibowl.my`,
                 ` : ''}
             `;
 
+            // C8: Refunds within range — sum + count for KPI + net deduction
+            let totalRefunds = 0;
+            let refundedOrderCount = 0;
+            orders.forEach(o => {
+                const r = Number(o.refundAmount) || 0;
+                if (r > 0) {
+                    totalRefunds += r;
+                    refundedOrderCount += 1;
+                }
+            });
+
             // ─── Net Profit ───
             const fixedCostInRange = computeFixedCostsInRange();
-            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - voucherDiscountTotal;
+            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - voucherDiscountTotal - totalRefunds;
             const netMarginPct = totalRevenue ? netProfit / totalRevenue : null;
 
             $('#netProfit').innerHTML = `
@@ -5197,6 +5279,7 @@ incredibowl.my`,
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− Razorpay 手续费</span><span class="num">${fmt.rm(totalPaymentFee)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 营销开支</span><span class="num">${fmt.rm(totalSpend)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− Voucher 折扣</span><span class="num">${fmt.rm(voucherDiscountTotal)}</span></div>
+                    <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 退款</span><span class="num">${fmt.rm(totalRefunds)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 固定成本</span><span class="num">${fmt.rm(fixedCostInRange)}</span></div>
                     <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:8px;border-top:1px solid var(--border);margin-top:6px"><span>= 净利润</span><span class="num" style="color:${netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt.rm(netProfit)}</span></div>
                 </div>
@@ -5287,6 +5370,57 @@ incredibowl.my`,
         // Two distinct views per MFRS 15:
         //   1. Sales card → cash inflow + contract liability creation (purchase event)
         //   2. Liability card → outstanding allocated value (point-in-time snapshot)
+        // C8: 退款追踪 — summary card. Lists total refunded, refund rate, recent 5.
+        function renderRefundSummary(orders) {
+            const refunded = orders.filter(o => Number(o.refundAmount) > 0);
+            const totalRefunded = refunded.reduce((s, o) => s + Number(o.refundAmount), 0);
+            const refundRate = orders.length > 0 ? refunded.length / orders.length : 0;
+            const recent = [...refunded]
+                .sort((a, b) => {
+                    const da = tsToDate(a.refundedAt) || tsToDate(a.createdAt) || new Date(0);
+                    const db = tsToDate(b.refundedAt) || tsToDate(b.createdAt) || new Date(0);
+                    return db - da;
+                })
+                .slice(0, 5);
+
+            if (refunded.length === 0) {
+                $('#refundSummary').innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">这段时间没有退款 ✓</div>`;
+                return;
+            }
+
+            $('#refundSummary').innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px">
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted)">总退款</div>
+                        <div class="num display" style="font-size:24px;font-weight:800;color:var(--danger)">${fmt.rm(totalRefunded)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted)">退款单数</div>
+                        <div class="num display" style="font-size:24px;font-weight:800">${refunded.length}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted)">退款率</div>
+                        <div class="num display" style="font-size:24px;font-weight:800;color:${refundRate < 0.02 ? 'var(--success)' : refundRate < 0.05 ? 'var(--warning)' : 'var(--danger)'}">${(refundRate * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600">最近 5 笔</div>
+                ${recent.map(o => {
+                    const dt = tsToDate(o.refundedAt) || tsToDate(o.createdAt);
+                    const dateStr = dt ? `${dt.getMonth() + 1}/${dt.getDate()}` : '—';
+                    return `
+                        <div style="display:grid;grid-template-columns:60px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);font-size:12px">
+                            <div class="mono" style="color:var(--text-muted)">${dateStr}</div>
+                            <div>
+                                <div style="font-weight:600">${escapeHtml(o.userName || '匿名')}</div>
+                                <div style="font-size:11px;color:var(--text-muted);line-height:1.4">${escapeHtml(o.refundReason || '—')}</div>
+                            </div>
+                            <div class="num" style="font-weight:700;color:var(--danger)">−${fmt.rm(Number(o.refundAmount))}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+        }
+
         // C3: 餐券 cohort — group purchases by paidAt month. For each cohort:
         // - customers: distinct userIds in cohort
         // - avg days to first redemption (per user, find first order with mealVouchersUsed>0 after paidAt)
@@ -8609,13 +8743,107 @@ incredibowl.my`,
             }
         });
 
-        // Edit / Delete / Delivery buttons inside recent orders list (delegated since list re-renders)
+        // ─── C8: Refund modal ───
+        const rfmModal = $('#refundModal');
+        let rfmEditingId = null;
+        function openRefundModal(order) {
+            rfmEditingId = order.id;
+            $('#rfmCustomer').textContent = order.userName || '匿名';
+            const total = (Number(order.total) || 0) + (Number(order.deliveryFee) || 0);
+            $('#rfmOrderTotal').textContent = fmt.rm(total);
+            const cur = Number(order.refundAmount) || 0;
+            if (cur > 0) {
+                $('#rfmCurrent').style.display = 'block';
+                $('#rfmCurrentAmount').textContent = fmt.rm(cur);
+                $('#rfmAmount').value = cur.toFixed(2);
+                $('#rfmReason').value = order.refundReason || '';
+                $('#rfmStatus').value = order.refundStatus || 'completed';
+            } else {
+                $('#rfmCurrent').style.display = 'none';
+                $('#rfmAmount').value = '';
+                $('#rfmReason').value = '';
+                $('#rfmStatus').value = 'completed';
+            }
+            $('#rfmError').classList.add('hidden');
+            rfmModal.classList.remove('hidden');
+            setTimeout(() => $('#rfmAmount').focus(), 100);
+        }
+        function closeRefundModal() {
+            rfmModal.classList.add('hidden');
+            rfmEditingId = null;
+        }
+        $('#rfmCloseBtn').addEventListener('click', closeRefundModal);
+        $('#rfmCancelBtn').addEventListener('click', closeRefundModal);
+        rfmModal.addEventListener('click', (e) => { if (e.target === rfmModal) closeRefundModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !rfmModal.classList.contains('hidden')) closeRefundModal();
+        });
+        $('#rfmSaveBtn').addEventListener('click', async () => {
+            if (!rfmEditingId) return;
+            const errEl = $('#rfmError');
+            errEl.classList.add('hidden');
+            const amount = parseFloat($('#rfmAmount').value);
+            const reason = $('#rfmReason').value.trim();
+            const status = $('#rfmStatus').value;
+            if (isNaN(amount) || amount < 0) {
+                errEl.textContent = '金额要是 ≥ 0 的数字';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (amount > 0 && !reason) {
+                errEl.textContent = '请填写退款原因';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            const btn = $('#rfmSaveBtn');
+            btn.disabled = true;
+            btn.textContent = '保存中...';
+            try {
+                const update = amount === 0 ? {
+                    refundAmount: null,
+                    refundReason: null,
+                    refundStatus: null,
+                    refundedAt: null,
+                    updatedAt: serverTimestamp(),
+                } : {
+                    refundAmount: amount,
+                    refundReason: reason,
+                    refundStatus: status,
+                    refundedAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                };
+                await updateDoc(doc(db, 'orders', rfmEditingId), update);
+                const idx = state.orders.findIndex(o => o.id === rfmEditingId);
+                if (idx >= 0) {
+                    state.orders[idx] = { ...state.orders[idx], ...update };
+                }
+                toast(amount === 0 ? '已撤销退款标记' : `已记录退款 RM ${amount.toFixed(2)}`, 'success');
+                closeRefundModal();
+                renderAll();
+            } catch (err) {
+                console.error('[Refund save]', err);
+                errEl.textContent = '保存失败：' + err.message;
+                errEl.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '保存';
+            }
+        });
+
+        // Edit / Delete / Delivery / Refund buttons inside recent orders list (delegated)
         document.addEventListener('click', async (e) => {
             const dfmBtn = e.target.closest('.delivery-edit-btn');
             if (dfmBtn) {
                 const id = dfmBtn.dataset.id;
                 const order = state.orders.find(o => o.id === id);
                 if (order) openDeliveryFeeModal(order);
+                return;
+            }
+            const rfBtn = e.target.closest('.refund-edit-btn');
+            if (rfBtn) {
+                const id = rfBtn.dataset.id;
+                const order = state.orders.find(o => o.id === id);
+                if (order) openRefundModal(order);
                 return;
             }
             const editBtn = e.target.closest('.edit-order-btn');
