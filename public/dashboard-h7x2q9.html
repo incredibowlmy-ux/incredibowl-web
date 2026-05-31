@@ -4537,11 +4537,18 @@ incredibowl.my`,
             const addonCostById = {};
             (state.addons || []).forEach(a => { addonCostById[a.id] = Number(a.costPrice) || 0; });
 
+            // Build addon name lookup so the "缺成本" panel can show readable names
+            const addonNameById = {};
+            (state.addons || []).forEach(a => { addonNameById[a.id] = a.name || a.id; });
+
             let totalCOGS = 0;
             let totalCOGSAddons = 0;  // tracked separately for "其中 add-on 成本 RM X" hint
             let cogsCovered = 0;  // # orders with at least 1 item with cost > 0
             let cogsMissing = 0;
             const cogsMissingOrders = []; // { id, userName, dateStr, missingDishes:[name] }
+            // B3: track add-ons with 0 cost across all orders so user can fill them in.
+            // Key = addon id; value = { name, occurrences, totalQty }
+            const addonsMissingCost = new Map();
             orders.forEach(o => {
                 let orderCOGS = 0;
                 let hadCost = false;
@@ -4559,6 +4566,17 @@ incredibowl.my`,
                         const aCost = (addonCostById[a.id] || 0) * aQty;
                         orderCOGS += aCost;
                         totalCOGSAddons += aCost;
+                        // B3: flag add-ons with 0 cost (either id missing from map or costPrice = 0)
+                        if (a.id && (addonCostById[a.id] || 0) === 0) {
+                            const entry = addonsMissingCost.get(a.id) || {
+                                name: addonNameById[a.id] || a.label || a.name || a.id,
+                                occurrences: 0,
+                                totalQty: 0,
+                            };
+                            entry.occurrences += 1;
+                            entry.totalQty += aQty;
+                            addonsMissingCost.set(a.id, entry);
+                        }
                     });
                 });
                 totalCOGS += orderCOGS;
@@ -4614,6 +4632,30 @@ incredibowl.my`,
                           </details>`
                     : '所有菜都有成本数据'
                 }</div>
+                ${addonsMissingCost.size > 0 ? `
+                    <div style="margin-top:6px;font-size:11px;color:var(--text-muted)">
+                        <details style="cursor:pointer">
+                            <summary style="list-style:none;outline:none">
+                                <span style="color:var(--warning);font-weight:600;border-bottom:1px dashed currentColor">${addonsMissingCost.size} 个加点还没填成本</span>
+                                <span style="color:var(--text-muted)">（默认按 RM 0 算，毛利偏高）</span>
+                            </summary>
+                            <div style="margin-top:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px;font-size:11.5px;line-height:1.6;color:var(--text-secondary)">
+                                ${[...addonsMissingCost.entries()]
+                                    .sort((a, b) => b[1].totalQty - a[1].totalQty)
+                                    .map(([id, info]) => `
+                                        <div style="padding:6px 0;border-bottom:1px dashed var(--border);display:flex;justify-content:space-between;align-items:center">
+                                            <div>
+                                                <strong>${escapeHtml(info.name)}</strong>
+                                                <span class="mono" style="color:var(--text-muted);font-size:10px;margin-left:6px">${escapeHtml(id)}</span>
+                                            </div>
+                                            <div class="mono" style="color:var(--text-muted)">出现 ${info.occurrences} 次 · 共 ${info.totalQty} 份</div>
+                                        </div>
+                                    `).join('')}
+                                <div style="margin-top:8px;color:var(--text-muted)">去 设置 → 配料 / Add-on 成本管理 填上面这些项的成本价</div>
+                            </div>
+                        </details>
+                    </div>
+                ` : ''}
             `;
 
             // ─── Net Profit ───
