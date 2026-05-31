@@ -1402,6 +1402,17 @@
                     <div class="card">
                         <div class="card-header">
                             <div>
+                                <div class="card-title">客户流失预警 + 召回清单</div>
+                                <div class="card-sub">按距离最近一单的天数分组 · 点 pill 看名单 + 一键复制 WA 召回文案</div>
+                            </div>
+                        </div>
+                        <div id="churnPills" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"></div>
+                        <div id="churnList"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
                                 <div class="card-title">月度 Cohort 留存矩阵</div>
                                 <div class="card-sub">每月新客在后续月份的复购比例（M1 = 注册后第 1 个月再下单的比例）</div>
                             </div>
@@ -4043,6 +4054,102 @@ incredibowl.my`,
             });
         }
 
+        // C2: 客户流失预警 + 召回清单 — bucket every customer by daysSinceLastOrder.
+        // Stub users (from voucher purchases never used) and test accounts are
+        // included to match memory; user can filter manually via WA copy templates.
+        const CHURN_BUCKETS = [
+            { id: 'active',  label: '🟢 活跃', range: [0, 7],   color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+            { id: 'cooling', label: '🟡 冷却', range: [8, 14],  color: '#F59E0B', bg: 'rgba(245,158,11,0.14)' },
+            { id: 'risk',    label: '🟠 流失风险', range: [15, 30], color: '#EA580C', bg: 'rgba(234,88,12,0.14)' },
+            { id: 'lost',    label: '🔴 已流失', range: [31, Infinity], color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+        ];
+        let churnActiveBucket = null;
+
+        function renderChurnAlert() {
+            // Per-customer aggregate: name, phone, lastOrderDate, orderCount, totalSpent
+            const byCustomer = new Map();
+            paidOrders(state.orders).forEach(o => {
+                const phone = normalizePhone(o.userPhone);
+                if (!phone || phone.length < 7) return;
+                const d = tsToDate(o.createdAt);
+                if (!d) return;
+                const entry = byCustomer.get(phone) || {
+                    phone,
+                    name: o.userName || '匿名',
+                    lastOrder: d,
+                    firstOrder: d,
+                    orderCount: 0,
+                    totalSpent: 0,
+                };
+                if (d > entry.lastOrder) {
+                    entry.lastOrder = d;
+                    if (o.userName) entry.name = o.userName;
+                }
+                if (d < entry.firstOrder) entry.firstOrder = d;
+                entry.orderCount += 1;
+                entry.totalSpent += orderAccrualRevenue(o) + (o.deliveryFee || 0);
+                byCustomer.set(phone, entry);
+            });
+
+            const today = startOfDay(new Date());
+            const customers = [...byCustomer.values()].map(c => ({
+                ...c,
+                daysSince: Math.max(0, Math.floor((today - startOfDay(c.lastOrder)) / 86400000)),
+            }));
+
+            const bucketed = {};
+            CHURN_BUCKETS.forEach(b => bucketed[b.id] = []);
+            customers.forEach(c => {
+                for (const b of CHURN_BUCKETS) {
+                    if (c.daysSince >= b.range[0] && c.daysSince <= b.range[1]) {
+                        bucketed[b.id].push(c);
+                        break;
+                    }
+                }
+            });
+
+            $('#churnPills').innerHTML = CHURN_BUCKETS.map(b => {
+                const count = bucketed[b.id].length;
+                const isActive = churnActiveBucket === b.id;
+                return `<button class="churn-pill" data-bucket="${b.id}" style="
+                    padding:10px 16px;border-radius:12px;border:2px solid ${isActive ? b.color : 'transparent'};
+                    background:${b.bg};color:${b.color};font-size:13px;font-weight:700;cursor:pointer;
+                    display:inline-flex;flex-direction:column;align-items:center;gap:2px;min-width:110px;
+                ">
+                    <span>${b.label}</span>
+                    <span style="font-size:18px;font-weight:800">${count}</span>
+                    <span style="font-size:10px;opacity:0.8;font-weight:500">${b.range[1] === Infinity ? `${b.range[0]}+ 天` : `${b.range[0]}-${b.range[1]} 天`}</span>
+                </button>`;
+            }).join('');
+
+            // Render list if a bucket is active
+            if (churnActiveBucket) {
+                const bucket = CHURN_BUCKETS.find(b => b.id === churnActiveBucket);
+                const list = bucketed[churnActiveBucket].sort((a, b) => b.totalSpent - a.totalSpent);
+                if (list.length === 0) {
+                    $('#churnList').innerHTML = `<div class="empty-state" style="padding:20px"><div class="empty-state-msg">这一组没有客户</div></div>`;
+                } else {
+                    $('#churnList').innerHTML = `
+                        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">${list.length} 位客户 · 按累计消费排序 · 点 📋 一键复制 WA 文案</div>
+                        ${list.map(c => `
+                            <div style="display:grid;grid-template-columns:1fr 100px 100px 100px 40px;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;border-bottom:1px solid var(--border)">
+                                <div>
+                                    <div style="font-size:13px;font-weight:600">${escapeHtml(c.name)}</div>
+                                    <div class="mono" style="font-size:11px;color:var(--text-muted)">${escapeHtml(c.phone)}</div>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-muted)">${c.daysSince} 天前</div>
+                                <div class="num" style="font-size:11px;color:var(--text-muted)">${c.orderCount} 单</div>
+                                <div class="num" style="font-size:13px;font-weight:700;color:${bucket.color}">${fmt.rm(c.totalSpent)}</div>
+                                <button type="button" class="churn-wa-btn" data-phone="${escapeHtml(c.phone)}" data-name="${escapeHtml(c.name)}" data-days="${c.daysSince}" title="复制 WA 文案" style="background:transparent;cursor:pointer;font-size:16px">📋</button>
+                            </div>
+                        `).join('')}
+                    `;
+                }
+            } else {
+                $('#churnList').innerHTML = `<div style="padding:14px;background:var(--bg-subtle);border-radius:8px;font-size:12px;color:var(--text-muted);text-align:center">点上面的分组看客户名单</div>`;
+            }
+        }
+
         // C5: 同期对比 — today vs same weekday last week + same date last month.
         // Always operates on state.orders (lifetime), ignores state.range, so the
         // comparison is honest no matter what filter is active above.
@@ -4449,6 +4556,7 @@ incredibowl.my`,
         //   4. RETENTION PAGE
         // ═══════════════════════════════════════════════════════════════
         function renderRetention() {
+            renderChurnAlert();
             // KPIs — group by customerKey (phone-based dedup)
             const ordersByUser = {};
             paidOrders().forEach(o => {
@@ -7164,6 +7272,28 @@ incredibowl.my`,
             recentDeliveryFilter = b.dataset.dfilter;
             renderRecentOrders();
         }));
+
+        // C2: 客户流失 pills + WA copy buttons (delegated so re-renders survive)
+        document.addEventListener('click', (e) => {
+            const pill = e.target.closest('.churn-pill');
+            if (pill) {
+                const bid = pill.dataset.bucket;
+                churnActiveBucket = (churnActiveBucket === bid) ? null : bid;
+                renderChurnAlert();
+                return;
+            }
+            const waBtn = e.target.closest('.churn-wa-btn');
+            if (waBtn) {
+                const name = waBtn.dataset.name;
+                const phone = waBtn.dataset.phone;
+                const days = waBtn.dataset.days;
+                const tmpl = `嗨 ${name}！很久没看到你的订单啦 (${days} 天)🍱 这周新菜上线了，要不要尝一份？👉 https://incredibowl.my`;
+                navigator.clipboard.writeText(tmpl).then(() => {
+                    toast(`已复制 ${name} 的 WA 文案`, 'success');
+                }).catch(() => toast('复制失败', 'error'));
+                return;
+            }
+        });
 
         // Same-customer hover highlight — delegated so re-renders don't need re-binding
         (function wireOrderRowHover() {
