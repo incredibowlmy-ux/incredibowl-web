@@ -2994,6 +2994,9 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         async function loadAllData() {
             showLoading('正在拉取数据...');
+            // Track silent migration failures so we can surface a single summary
+            // toast at the end instead of users wondering why something didn't sync.
+            const migrationErrors = [];
             try {
                 const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap] = await Promise.all([
                     getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
@@ -3037,7 +3040,8 @@ incredibowl.my`,
                             });
                         }
                     } catch (e) {
-                        console.warn('Menu auto-seed skipped (likely permission):', e.message);
+                        console.error('Menu auto-seed failed:', e);
+                        migrationErrors.push(`菜单初始化: ${e.message}`);
                     }
                 }
 
@@ -3054,7 +3058,8 @@ incredibowl.my`,
                             item.costPrice = excelCost;
                             migrated++;
                         } catch (e) {
-                            console.warn(`Cost backfill failed for ${item.name}:`, e.message);
+                            console.error(`Cost backfill failed for ${item.name}:`, e);
+                            migrationErrors.push(`成本回填 (${item.name}): ${e.message}`);
                         }
                     }
                 }
@@ -3078,7 +3083,8 @@ incredibowl.my`,
                             item.name = canon;
                             renamed++;
                         } catch (e) {
-                            console.warn(`Rename failed for ${item.name}:`, e.message);
+                            console.error(`Rename failed for ${item.name}:`, e);
+                            migrationErrors.push(`改名 (${item.name}): ${e.message}`);
                         }
                     }
                 }
@@ -3096,7 +3102,8 @@ incredibowl.my`,
                             await setDoc(doc(db, 'addons', a.id), newDoc);
                             existingAddons.set(a.id, { id: a.id, ...newDoc });
                         } catch (e) {
-                            console.warn(`Addon seed for ${a.id} failed:`, e.message);
+                            console.error(`Addon seed for ${a.id} failed:`, e);
+                            migrationErrors.push(`Add-on 初始化 (${a.name}): ${e.message}`);
                             // Still expose in-memory so UI works even without write perm
                             existingAddons.set(a.id, { id: a.id, ...newDoc });
                         }
@@ -3108,7 +3115,10 @@ incredibowl.my`,
                             try {
                                 await setDoc(doc(db, 'addons', a.id), { name: a.name, price: a.price, category: a.category, updatedAt: Timestamp.now() }, { merge: true });
                                 cur.name = a.name; cur.price = a.price; cur.category = a.category;
-                            } catch {}
+                            } catch (e) {
+                                console.error(`Addon refresh for ${a.id} failed:`, e);
+                                migrationErrors.push(`Add-on 元数据 (${a.name}): ${e.message}`);
+                            }
                         }
                     }
                 }
@@ -3162,6 +3172,11 @@ incredibowl.my`,
                 $('#sysVoucherCount').textContent = state.vouchers.length;
 
                 renderAll();
+                // Surface accumulated migration failures (B8). Single toast so
+                // user knows something silent went sideways — details in console.
+                if (migrationErrors.length > 0) {
+                    setTimeout(() => toast(`⚠️ ${migrationErrors.length} 个后台同步失败（看 console 详情）`, 'error'), 1500);
+                }
             } catch (e) {
                 console.error(e);
                 toast('❌ 数据加载失败：' + e.message, 'error');
