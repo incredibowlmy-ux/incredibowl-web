@@ -20,7 +20,8 @@ function translateTopTag(tag: string): string {
         '明日特餐': "Tomorrow's special",
         '后日特餐': 'Day-after special',
         '已截单': 'Closed',
-        '常驻': 'Daily',
+        '周一至五 · Mon–Fri': 'Mon–Fri', // desktop passes the full topTag
+        '周一至五': 'Mon–Fri',           // mobile passes the part before ' · '
         '周一': 'Mon',
         '周二': 'Tue',
         '周三': 'Wed',

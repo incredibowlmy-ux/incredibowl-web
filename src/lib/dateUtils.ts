@@ -57,7 +57,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         // Daily/permanent items are identified by their day field, not hardcoded IDs
         if (dish.day === 'Daily / 常驻') {
             menuDates[dish.id] = {
-                topTag: '常驻供应 · Daily',
+                topTag: '周一至五 · Mon–Fri',
                 btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                 disabled: false,
                 actualDate: nextAvailStr
