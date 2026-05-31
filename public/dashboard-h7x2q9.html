@@ -1235,6 +1235,11 @@
                 <div class="page active" id="page-revenue">
                     <div class="kpi-grid" id="revenueKpis"></div>
 
+                    <div class="card" id="periodCompareCard">
+                        <div class="card-header"><div><div class="card-title">同期对比 · 今日 vs 上周一日 / 上月一日</div><div class="card-sub">不受日期范围切换影响 · 帮你看真实的同期增长 / 衰退</div></div></div>
+                        <div id="periodCompareGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+                    </div>
+
                     <div class="grid-2">
                         <div class="card">
                             <div class="card-header"><div><div class="card-title">午餐 vs 晚餐</div><div class="card-sub">按 deliveryTime 自动分类（11-15 = 午，17-22 = 晚）</div></div></div>
@@ -3370,6 +3375,7 @@ incredibowl.my`,
                 ${kpi('活跃客户', fmt.int(activeCustomers), delta(activeCustomers, prevCust), `下过单的不重复客户`)}
             `;
 
+            renderPeriodCompare();
             renderMealSplit(orders);
             renderChannelSplit(orders);
             renderRevenueTrend(orders);
@@ -4035,6 +4041,73 @@ incredibowl.my`,
                     itemStyle: { borderRadius: 6, borderColor: '#FAF8F4', borderWidth: 2 },
                 }],
             });
+        }
+
+        // C5: 同期对比 — today vs same weekday last week + same date last month.
+        // Always operates on state.orders (lifetime), ignores state.range, so the
+        // comparison is honest no matter what filter is active above.
+        function renderPeriodCompare() {
+            const today = startOfDay(new Date());
+            const aggregateForDate = (targetStart, targetEnd) => {
+                let rev = 0, count = 0;
+                paidOrders(state.orders).forEach(o => {
+                    const d = tsToDate(o.createdAt);
+                    if (!d) return;
+                    if (d >= targetStart && d < targetEnd) {
+                        rev += orderAccrualRevenue(o) + (o.deliveryFee || 0);
+                        count += 1;
+                    }
+                });
+                return { rev, count };
+            };
+            const dayWindow = (anchor) => {
+                const s = startOfDay(anchor);
+                const e = new Date(s); e.setDate(s.getDate() + 1);
+                return [s, e];
+            };
+
+            const [todayS, todayE] = dayWindow(today);
+            const todayStats = aggregateForDate(todayS, todayE);
+
+            const wow = new Date(today); wow.setDate(today.getDate() - 7);
+            const [wowS, wowE] = dayWindow(wow);
+            const wowStats = aggregateForDate(wowS, wowE);
+
+            const mom = new Date(today); mom.setMonth(today.getMonth() - 1);
+            const [momS, momE] = dayWindow(mom);
+            const momStats = aggregateForDate(momS, momE);
+
+            const fmtDate = d => `${d.getMonth() + 1}/${d.getDate()}`;
+            const card = (label, anchorDate, baseStats) => {
+                const revDelta = baseStats.rev > 0 ? (todayStats.rev - baseStats.rev) / baseStats.rev : null;
+                const cntDelta = baseStats.count > 0 ? (todayStats.count - baseStats.count) / baseStats.count : null;
+                const pill = (d, label) => {
+                    if (d == null) return `<span style="font-size:11px;color:var(--text-muted)">${label} —</span>`;
+                    const up = d >= 0;
+                    const cls = up ? 'pos' : 'neg';
+                    const arrow = up ? '▲' : '▼';
+                    return `<span class="${cls}" style="font-size:11px;font-weight:600">${arrow} ${(Math.abs(d) * 100).toFixed(0)}% ${label}</span>`;
+                };
+                return `
+                    <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px">
+                        <div style="display:flex;justify-content:space-between;align-items:baseline">
+                            <div>
+                                <div style="font-size:12px;color:var(--text-muted);font-weight:600">${label}</div>
+                                <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${fmtDate(anchorDate)} → ${fmtDate(today)}</div>
+                            </div>
+                            <div style="text-align:right">
+                                <div class="num" style="font-size:16px;font-weight:700">${fmt.rm(baseStats.rev)} → ${fmt.rm(todayStats.rev)}</div>
+                                <div style="margin-top:4px">${pill(revDelta, '营收')} <span style="margin:0 4px">·</span> ${pill(cntDelta, '订单')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            $('#periodCompareGrid').innerHTML = `
+                ${card('上周同一天', wow, wowStats)}
+                ${card('上月同一日', mom, momStats)}
+            `;
         }
 
         // C7: per-dish 净利润 Top 10 — sum(quantity × (effectivePrice - costPrice)).
