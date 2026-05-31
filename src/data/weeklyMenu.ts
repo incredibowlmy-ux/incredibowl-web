@@ -53,14 +53,14 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 14,
         day: "Daily / 常驻",
-        name: "阿嫲古早味酱油鸡全腿",
-        nameEn: "Soy Sauce Chicken Whole Leg",
+        name: "香煎金黄鸡扒饭",
+        nameEn: "Pan-Fried Golden Chicken Chop Rice",
         price: 18.50,
-        image: "/soy_sauce_chicken_leg.webp",
-        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
-        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
-        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
-        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
+        image: "/chicken_chop.webp",
+        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
+        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
+        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
+        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
     },
     {
         id: 13,
@@ -77,14 +77,14 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 1,
         day: "Mon / 周一",
-        name: "香煎金黄鸡扒饭",
-        nameEn: "Pan-Fried Golden Chicken Chop Rice",
+        name: "阿嫲古早味酱油鸡全腿",
+        nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
-        image: "/chicken_chop.webp",
-        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
-        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
-        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
-        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
+        image: "/soy_sauce_chicken_leg.webp",
+        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
+        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
+        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
+        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
         id: 2,

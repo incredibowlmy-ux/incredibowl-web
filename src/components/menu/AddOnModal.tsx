@@ -196,8 +196,8 @@ export default function AddOnModal({
             return [surfTurfSpecial, ...customSections];
         }
 
-        // If it's Golden Crispy Chicken Chop (id: 1), append specific add-ons to the sides
-        if (dish.id === 1) {
+        // If it's Golden Crispy Chicken Chop (now daily, id: 14), append specific add-ons to the sides
+        if (dish.id === 14) {
             const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
@@ -283,8 +283,8 @@ export default function AddOnModal({
             });
         }
 
-        // If it's Grandma's Traditional Soy Sauce Chicken Whole Leg (id: 14), same pattern as id:13
-        if (dish.id === 14) {
+        // If it's Grandma's Traditional Soy Sauce Chicken Whole Leg (now Monday special, id: 1), same pattern as id:13
+        if (dish.id === 1) {
             return addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {

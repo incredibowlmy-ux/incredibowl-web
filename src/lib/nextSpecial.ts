@@ -10,7 +10,7 @@ export interface NextSpecial {
 
 /**
  * Compute the next available special dish based on the 06:00 cutoff.
- * Skips weekends. Falls back to the signature daily Soy Sauce Chicken (id 14)
+ * Skips weekends. Falls back to the signature daily Chicken Chop (id 14)
  * if no weekly special exists for the next available weekday.
  *
  * Lives in /lib so both HeroSection (display) and the deep-link prefill
