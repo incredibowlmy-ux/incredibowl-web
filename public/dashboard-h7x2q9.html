@@ -2858,7 +2858,8 @@ incredibowl.my`,
         };
 
         const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-        const startOfWeek = d => { const x = startOfDay(d); x.setDate(x.getDate() - x.getDay()); return x; };
+        // Monday-first week (matches MY business habit; getDay() returns 0=Sun..6=Sat)
+        const startOfWeek = d => { const x = startOfDay(d); const dow = (x.getDay() + 6) % 7; x.setDate(x.getDate() - dow); return x; };
         const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
         const ymKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const ymdKey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -2913,6 +2914,20 @@ incredibowl.my`,
         });
 
         $('#logoutBtn').addEventListener('click', async () => {
+            // Wipe in-memory state so the next user on this browser can't read
+            // the previous admin's orders/customers via devtools console.
+            disposeAllCharts();
+            state.orders = [];
+            state.users = [];
+            state.vouchers = [];
+            state.mealVoucherPurchases = [];
+            state.mealVouchers = [];
+            state.spend = {};
+            state.fixedCosts = {};
+            state.menu = [];
+            state.addons = [];
+            state.leads = [];
+            state.promo = null;
             await signOut(auth);
         });
 
@@ -3273,6 +3288,16 @@ incredibowl.my`,
             const chart = echarts.init(el, null, { renderer: 'canvas' });
             state.charts[id] = chart;
             return chart;
+        }
+
+        // Dispose all chart instances + drop references. Call on logout or full
+        // state reset so ECharts releases canvas / listeners (the per-chart
+        // `.clear()` in getChart only blanks data, doesn't free memory).
+        function disposeAllCharts() {
+            for (const id of Object.keys(state.charts || {})) {
+                try { state.charts[id]?.dispose(); } catch {}
+            }
+            state.charts = {};
         }
 
         window.addEventListener('resize', () => {
