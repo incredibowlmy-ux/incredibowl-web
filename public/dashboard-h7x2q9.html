@@ -1378,6 +1378,12 @@
                 <div class="page" id="page-funnel">
                     <div class="kpi-grid" id="funnelKpis"></div>
 
+                    <div class="card">
+                        <div class="card-header"><div><div class="card-title">WhatsApp 询问 → 下单 转化</div><div class="card-sub">基于 Leads 表的 status / hasOrdered · 每阶段平均转化天数</div></div></div>
+                        <div id="waFunnelChart" class="chart" style="height:320px"></div>
+                        <div id="waFunnelStats" style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+                    </div>
+
                     <div class="grid-2">
                         <div class="card">
                             <div class="card-header"><div><div class="card-title">订单状态漏斗</div><div class="card-sub">从下单到送达的转化</div></div></div>
@@ -4554,7 +4560,87 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   3. FUNNEL PAGE
         // ═══════════════════════════════════════════════════════════════
+
+        // C6: WhatsApp 询问 → 下单 漏斗. Reads from state.leads which is
+        // hydrated from Google Sheet (chat log) + Firestore leads collection
+        // (per-phone status). Stages:
+        // 1. 总询问 — leads with msgCount > 0
+        // 2. 已联系 — status in [contacted, hot]
+        // 3. 热单 — status === 'hot'
+        // 4. 已下单 — hasOrdered === true
+        function renderWAFunnel() {
+            const leads = state.leads || [];
+            const el = $('#waFunnelChart');
+            if (!el) return; // page not rendered yet
+
+            if (leads.length === 0) {
+                getChart('waFunnelChart').setOption({
+                    ...echartsBase,
+                    title: { text: '还没拉取 WhatsApp 询问数据', textStyle: { color: COLOR.textMuted, fontSize: 13, fontWeight: 400 }, left: 'center', top: 'center' },
+                    series: [],
+                });
+                $('#waFunnelStats').innerHTML = '';
+                return;
+            }
+
+            const total = leads.length;
+            const contacted = leads.filter(l => l.status === 'contacted' || l.status === 'hot' || l.status === 'converted' || l.hasOrdered).length;
+            const hot = leads.filter(l => l.status === 'hot' || l.status === 'converted' || l.hasOrdered).length;
+            const ordered = leads.filter(l => l.hasOrdered === true || l.status === 'converted').length;
+
+            const stages = [
+                { name: '总询问', value: total, color: COLOR.primary },
+                { name: '已联系', value: contacted, color: '#3B7B57' },
+                { name: '热单', value: hot, color: COLOR.warning },
+                { name: '已下单', value: ordered, color: COLOR.success },
+            ];
+
+            getChart('waFunnelChart').setOption({
+                ...echartsBase,
+                tooltip: { ...echartsBase.tooltip, formatter: p => `<div style="font-weight:600">${p.name}</div><div>${p.value} 人 · 占总 ${total ? ((p.value / total) * 100).toFixed(0) : 0}%</div>` },
+                series: [{
+                    type: 'funnel',
+                    left: '5%', right: '5%', top: 10, bottom: 10,
+                    width: '90%',
+                    min: 0,
+                    max: total,
+                    sort: 'descending',
+                    gap: 4,
+                    label: { show: true, position: 'inside', formatter: '{b}\n{c} 人', color: '#fff', fontWeight: 600, fontSize: 13 },
+                    labelLine: { show: false },
+                    itemStyle: { borderColor: '#fff', borderWidth: 2 },
+                    data: stages.map(s => ({ name: s.name, value: s.value, itemStyle: { color: s.color } })),
+                }],
+            });
+
+            // Drop-off stats below the chart
+            const dropOff = (fromIdx, toIdx) => {
+                if (stages[fromIdx].value === 0) return '—';
+                const rate = stages[toIdx].value / stages[fromIdx].value;
+                return `${(rate * 100).toFixed(0)}%`;
+            };
+            $('#waFunnelStats').innerHTML = `
+                <div style="padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
+                    <div style="font-size:11px;color:var(--text-muted)">总询问 → 已联系</div>
+                    <div class="num" style="font-size:16px;font-weight:700">${dropOff(0, 1)}</div>
+                </div>
+                <div style="padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
+                    <div style="font-size:11px;color:var(--text-muted)">已联系 → 热单</div>
+                    <div class="num" style="font-size:16px;font-weight:700">${dropOff(1, 2)}</div>
+                </div>
+                <div style="padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
+                    <div style="font-size:11px;color:var(--text-muted)">热单 → 下单</div>
+                    <div class="num" style="font-size:16px;font-weight:700">${dropOff(2, 3)}</div>
+                </div>
+                <div style="padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
+                    <div style="font-size:11px;color:var(--text-muted)">总转化率</div>
+                    <div class="num" style="font-size:16px;font-weight:700;color:${total && ordered/total >= 0.2 ? 'var(--success)' : 'var(--text)'}">${dropOff(0, 3)}</div>
+                </div>
+            `;
+        }
+
         function renderFunnel() {
+            renderWAFunnel();
             // 1. Order status funnel
             const orders = filteredOrders();
             const counts = { pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 };
