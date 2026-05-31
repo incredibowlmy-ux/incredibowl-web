@@ -41,7 +41,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Default a la carte ────────────────────
   'extra-edamame': 2.50,
   'extra-corn': 2.50,
-  'broccoli-egg': 9.90,
+  'broccoli-egg': 10.90,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
@@ -71,7 +71,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'scallion-soup-combo': 12.90,
   'extra-scallion-chop-side': 10.90,
 
-  // ─── Potato Pork Belly Stew (id:4) specials ──
+  // ─── Potato Pork Belly Stew (now daily, id:13) specials ──
   'pork-potato-duo-combo': 13.40,
   'extra-potato': 3.50,
   'extra-pork-belly': 11.90,

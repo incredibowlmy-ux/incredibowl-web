@@ -63,6 +63,18 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
+        id: 13,
+        day: "Daily / 常驻",
+        name: "马铃薯炖花肉片",
+        nameEn: "Home-style Pork Belly Slices & Potato Stew",
+        price: 19.90,
+        image: "/pork_potato_stew.webp",
+        tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
+        tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
+        desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
+        descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
+    },
+    {
         id: 1,
         day: "Mon / 周一",
         name: "香煎金黄鸡扒饭",
@@ -101,14 +113,14 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 4,
         day: "Thu / 周四",
-        name: "马铃薯炖花肉片",
-        nameEn: "Home-style Pork Belly Slices & Potato Stew",
+        name: "绍兴酒蒸花肉",
+        nameEn: "Shaoxing Wine Steamed Pork Belly",
         price: 19.90,
-        image: "/pork_potato_stew.webp",
-        tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
-        tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
-        desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
-        descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
+        image: "/shaoxing_pork_belly.webp",
+        tags: ["绍兴酒香", "姜丝提鲜", "蒸香软嫩", "偏肥·肥香控真爱"],
+        tagsEn: ["Shaoxing wine aroma", "Ginger-infused", "Steamed & tender", "Rich & fatty"],
+        desc: "选偏肥的五花部位，绍兴酒香顺着姜丝蒸进肉里，肥香软糯、入口即化。爱这口肥香的会上瘾；偏好瘦口的朋友这道可能不合。",
+        descEn: "Made with the fattier cut of pork belly — Shaoxing wine and ginger steamed deep into the meat, rich and melt-in-your-mouth. If you love that fatty, silky bite you'll adore it; if you prefer lean, this one may not be for you."
     },
     {
         id: 5,

@@ -9,8 +9,7 @@
 // Past dates are harmless (no match against future serve dates) but feel free to prune.
 
 export const BLOCKED_DATES: Record<number, string[]> = {
-    // 4 = 马铃薯炖花肉片 (周四特餐)
-    4: ['2026-05-28'],
+    // 4 = 绍兴酒蒸花肉 (周四特餐)。马铃薯炖花肉片自 2026-05-31 改为常驻日常菜。
 };
 
 export function isDishBlockedOn(dishId: number, ymd: string): boolean {

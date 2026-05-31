@@ -293,3 +293,32 @@ mealVoucherPurchases/{purchaseId}
 - [ ] 后台 admin 拒绝 → purchase status=cancelled，无券 mint
 - [ ] 60 天后到期券不再出现在 wallet 计数里
 
+---
+
+# 菜单改动 2026-05-31
+
+## 背景
+老板要求三处菜单调整。关键耦合：周特餐 `id` = 星期几数字（周四=4，见 nextSpecial.ts / dateUtils.ts）；加购弹窗 `dish.id===4` 绑定薯肉双拼套餐；日常菜靠 `day==='Daily / 常驻'` 识别；配料表按菜名匹配。
+
+## 任务
+- [ ] 1. 图片：海报 png → public/shaoxing_pork_belly.webp（**占位**，老板稍后换干净食物图）
+- [ ] 2. weeklyMenu.ts：马铃薯炖花肉片 改 `day:"Daily / 常驻"`, `id:4 → id:13`
+- [ ] 3. weeklyMenu.ts：新增 绍兴酒蒸花肉 `id:4, day:"Thu / 周四"`, price 19.90（诚实标注偏肥）
+- [ ] 4. AddOnModal.tsx:333 `dish.id===4` → `dish.id===13`（薯肉双拼套跟随马铃薯）
+- [ ] 5. AddOnModal.tsx:58 broccoli-egg 默认价 9.90 → 10.90（⚠️ 后台远程配置若有覆盖则前端以远程为准）
+- [ ] 6. dishIngredients.ts：新增 绍兴酒蒸花肉 记录（份量留空 ingredients:[]，待老板给克数）
+- [x] 1. 图片：海报 png → public/shaoxing_pork_belly.webp（占位 270KB，待换干净食物图）
+- [x] 2. weeklyMenu.ts：马铃薯 → Daily/常驻, id 13
+- [x] 3. weeklyMenu.ts：新增 绍兴酒蒸花肉 id 4 周四 RM 19.90（desc 诚实标注偏肥）
+- [x] 4. AddOnModal.tsx：双拼套餐 id===4 → id===13
+- [x] 5. **真正改价点 = addOnsConfig.ts**：broccoli-egg 9.90 → 10.90（AddOnModal fallback 是死代码，已同步）
+- [x] 6. dishIngredients.ts：绍兴酒 记录，ingredients:[] 待克数
+- [x] 7. blockedDates.ts：清理过期 id4 封锁 + 更新注释
+- [x] 验证：tsc --noEmit 通过；next build 成功；id 全唯一，周四=绍兴酒
+
+## Review
+- 关键发现：西兰花炒蛋改价的单一真相源是 `src/data/addOnsConfig.ts`（前端+服务端 submit-order 共用），不是 AddOnModal 的 fallback。只改 fallback 会被覆盖且服务端校验仍按旧价。
+- id 耦合处理：周特餐靠 id=星期几，故绍兴酒必须 id 4；马铃薯转日常改 id 13，并同步 AddOnModal `dish.id===13` 让薯肉双拼套餐继续跟随。
+- 待办（不阻塞上线）：① 绍兴酒干净正方食物图替换占位海报；② 碗妈提供绍兴酒 per-serving 克数补 dishIngredients（否则采购汇总不列此菜）。
+- 未触碰：blog SEO 配图、public/dashboard-h7x2q9.html（独立后台，非本次范围）。
+

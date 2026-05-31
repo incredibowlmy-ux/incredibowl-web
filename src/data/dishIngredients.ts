@@ -137,6 +137,21 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
+    name: '绍兴酒蒸花肉',
+    shortName: '绍肉',
+    // 仅列生鲜采购项（与本表惯例一致）。完整配方另含绍兴酒/麻油/鱼露/蚝油/糖/
+    // 白胡椒等瓶装常备调味品，按惯例不计入每日采购汇总。
+    // 五花肉用「顶级无皮五花肉」独立 SKU（与马铃薯那道的「五花肉」分开采购）。
+    // 白饭存 80g 生米采购重（碗妈表给的 180g 是熟饭，约合 80g 生米，对齐其他菜）。
+    ingredients: [
+      { name: '顶级无皮五花肉', qty: 90, unit: 'g' },
+      { name: '西兰花', qty: 50, unit: 'g' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: '姜', qty: 10, unit: 'g' },
+      { name: '葱', qty: 5, unit: 'g' },
+    ],
+  },
+  {
     name: '金黄葱香煎鸡汤',
     shortName: '葱汤',
     ingredients: [
