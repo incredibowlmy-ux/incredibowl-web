@@ -4874,12 +4874,22 @@ incredibowl.my`,
             if (state.range === 'all') {
                 return Object.values(state.fixedCosts).reduce((s, m) => s + sumMonth(m), 0);
             }
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - Number(state.range));
-            const cutoffMonth = startOfMonth(cutoff);
+            // B4 fix: pro-rata each month by the # of days that overlap the range.
+            // Previously we attributed the FULL month if it touched the cutoff at all,
+            // so e.g. range=7 days on June 5 attributed all of June's rent + utilities.
+            // Now June 1-5 gets 5/30 of June's fixed cost.
+            const today = startOfDay(new Date());
+            const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + 1); // exclusive
+            const rangeStart = new Date(today); rangeStart.setDate(rangeStart.getDate() - Number(state.range) + 1);
             return Object.entries(state.fixedCosts).reduce((s, [k, v]) => {
-                const md = new Date(k + '-01');
-                return md >= cutoffMonth ? s + sumMonth(v) : s;
+                const monthStart = new Date(k + '-01');
+                const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+                const daysInMonth = Math.round((monthEnd - monthStart) / 86400000);
+                const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
+                const overlapEnd = monthEnd < rangeEnd ? monthEnd : rangeEnd;
+                const overlapDays = Math.max(0, Math.round((overlapEnd - overlapStart) / 86400000));
+                if (overlapDays === 0) return s;
+                return s + sumMonth(v) * (overlapDays / daysInMonth);
             }, 0);
         }
 
