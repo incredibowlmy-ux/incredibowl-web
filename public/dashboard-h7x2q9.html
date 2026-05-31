@@ -1235,6 +1235,11 @@
                 <div class="page active" id="page-revenue">
                     <div class="kpi-grid" id="revenueKpis"></div>
 
+                    <div class="card" id="forecastCard">
+                        <div class="card-header"><div><div class="card-title">未来 7 天 · 预测 vs 已确认</div><div class="card-sub">基于同 weekday 过去 4 周均值 · 仅可见性参考 · 不进备料</div></div></div>
+                        <div id="forecastTable"></div>
+                    </div>
+
                     <div class="card" id="periodCompareCard">
                         <div class="card-header"><div><div class="card-title">同期对比 · 今日 vs 上周一日 / 上月一日</div><div class="card-sub">不受日期范围切换影响 · 帮你看真实的同期增长 / 衰退</div></div></div>
                         <div id="periodCompareGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
@@ -3386,6 +3391,7 @@ incredibowl.my`,
                 ${kpi('活跃客户', fmt.int(activeCustomers), delta(activeCustomers, prevCust), `下过单的不重复客户`)}
             `;
 
+            renderDailyForecast();
             renderPeriodCompare();
             renderMealSplit(orders);
             renderChannelSplit(orders);
@@ -4052,6 +4058,93 @@ incredibowl.my`,
                     itemStyle: { borderRadius: 6, borderColor: '#FAF8F4', borderWidth: 2 },
                 }],
             });
+        }
+
+        // C1: 每日预测 — for each of next 7 days, predict = avg same-weekday orders
+        // over the previous 4 same-weekdays. Already-confirmed = orders with that
+        // deliveryDate already in the system (status in confirmed/preparing/delivered).
+        // Visibility-only card; does NOT feed into 备料 / n8n.
+        function renderDailyForecast() {
+            const today = startOfDay(new Date());
+
+            // Pre-aggregate orders by deliveryDate string and weekday for fast lookup
+            const ordersByDeliveryDate = {};
+            const ordersByPastWeekday = {}; // 0..6 → array of {date: ymdKey, count}
+            for (let i = 0; i < 7; i++) ordersByPastWeekday[i] = new Map();
+
+            paidOrders(state.orders).forEach(o => {
+                if (o.deliveryDate) {
+                    ordersByDeliveryDate[o.deliveryDate] = (ordersByDeliveryDate[o.deliveryDate] || 0) + 1;
+                    const dt = new Date(o.deliveryDate + 'T00:00:00');
+                    if (!isNaN(dt)) {
+                        const wd = (dt.getDay() + 6) % 7; // Mon-first
+                        const k = ymdKey(dt);
+                        const m = ordersByPastWeekday[wd];
+                        m.set(k, (m.get(k) || 0) + 1);
+                    }
+                }
+            });
+
+            // Include in-flight orders too (preparing/confirmed) — they're committed
+            state.orders.forEach(o => {
+                if (!o.deliveryDate) return;
+                if (o.status !== 'preparing' && o.status !== 'confirmed' && o.status !== 'delivered') return;
+                // double-count guard: ordersByDeliveryDate already includes paidOrders.
+                // For 'preparing' that PAID_STATUSES no longer counts (B2), add manually.
+                if (o.status === 'preparing') {
+                    ordersByDeliveryDate[o.deliveryDate] = (ordersByDeliveryDate[o.deliveryDate] || 0) + 1;
+                }
+            });
+
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            const rows = [];
+            for (let i = 0; i < 7; i++) {
+                const target = new Date(today); target.setDate(today.getDate() + i);
+                const targetKey = ymdKey(target);
+                const wd = (target.getDay() + 6) % 7;
+
+                // Predict: average count over last 4 same-weekdays (excluding the target itself)
+                const past = [...ordersByPastWeekday[wd].entries()]
+                    .filter(([k]) => k < targetKey)
+                    .sort((a, b) => b[0].localeCompare(a[0]))
+                    .slice(0, 4);
+                const predicted = past.length > 0
+                    ? Math.round(past.reduce((s, [, c]) => s + c, 0) / past.length)
+                    : null;
+
+                const confirmed = ordersByDeliveryDate[targetKey] || 0;
+                const gap = predicted == null ? null : predicted - confirmed;
+
+                rows.push({ target, targetKey, wd, predicted, confirmed, gap, samples: past.length });
+            }
+
+            const fmtDate = d => `${d.getMonth() + 1}/${d.getDate()}`;
+            $('#forecastTable').innerHTML = `
+                <div style="display:grid;grid-template-columns:60px 70px 1fr 1fr 1fr;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border-strong);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
+                    <div>日期</div><div>星期</div>
+                    <div class="r" style="text-align:right">预测</div>
+                    <div class="r" style="text-align:right">已确认</div>
+                    <div class="r" style="text-align:right">差距</div>
+                </div>
+                ${rows.map((r, i) => {
+                    const todayLabel = i === 0 ? ' <span style="font-size:10px;color:var(--text-muted)">(今天)</span>' : i === 1 ? ' <span style="font-size:10px;color:var(--text-muted)">(明天)</span>' : '';
+                    const gapColor = r.gap == null ? 'var(--text-muted)'
+                        : r.gap > 0 ? 'var(--warning)'
+                        : r.gap < 0 ? 'var(--success)' : 'var(--text-muted)';
+                    const gapText = r.gap == null ? '—' : r.gap > 0 ? `还差 ${r.gap}` : r.gap < 0 ? `超出 ${-r.gap}` : '刚好';
+                    const predText = r.predicted == null ? '—' : `${r.predicted}`;
+                    const sampleHint = r.predicted == null ? '<span style="font-size:10px;color:var(--text-muted)">数据不足</span>' : `<span style="font-size:10px;color:var(--text-muted)">基于 ${r.samples} 周</span>`;
+                    return `
+                        <div style="display:grid;grid-template-columns:60px 70px 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px">
+                            <div class="mono" style="font-weight:600">${fmtDate(r.target)}${todayLabel}</div>
+                            <div style="font-size:12px;color:var(--text-muted)">${days[r.wd]}</div>
+                            <div class="num r" style="text-align:right">${predText} <div>${sampleHint}</div></div>
+                            <div class="num r" style="text-align:right;font-weight:700">${r.confirmed}</div>
+                            <div class="num r" style="text-align:right;color:${gapColor};font-weight:700">${gapText}</div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
         }
 
         // C2: 客户流失预警 + 召回清单 — bucket every customer by daysSinceLastOrder.
