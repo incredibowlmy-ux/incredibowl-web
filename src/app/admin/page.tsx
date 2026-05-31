@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
 import { tierFromDistance, tierLabelZh, type DeliveryTier } from '@/lib/deliveryUtils';
+import { canonicalDishName } from '@/lib/dishAliases';
 import EditCustomerModal from '@/components/admin/EditCustomerModal';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com']; // Add your email here
@@ -121,7 +122,17 @@ export default function AdminPage() {
             });
             if (!res.ok) throw new Error((await res.json()).error || '数据获取失败');
             const { orders: ordersData, users: usersData, feedbacks: feedbacksData, mealVoucherPurchases: mvpData, mealVoucherStats: mvStats } = await res.json();
-            setOrders(ordersData as AdminOrder[]);
+            // Normalize dish names to their canonical (full) form so manual-order
+            // short names (e.g. "酱油鸡全腿") merge with web-cart full names in the
+            // kitchen-prep summary and per-order list. See src/lib/dishAliases.ts.
+            const normalizedOrders = (ordersData as AdminOrder[]).map((o: any) => (
+                Array.isArray(o.items)
+                    ? { ...o, items: o.items.map((it: any) => (
+                        it && typeof it.name === 'string' ? { ...it, name: canonicalDishName(it.name) } : it
+                    )) }
+                    : o
+            ));
+            setOrders(normalizedOrders as AdminOrder[]);
             setCustomers(usersData as AppUser[]);
             setFeedbacks(feedbacksData);
             setMealVoucherPurchases(Array.isArray(mvpData) ? mvpData : []);
