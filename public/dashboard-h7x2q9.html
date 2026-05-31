@@ -1274,6 +1274,17 @@
 
                     <div class="grid-2">
                         <div class="card">
+                            <div class="card-header"><div><div class="card-title">净利 Top 10</div><div class="card-sub">主菜 · 卖得多 ≠ 赚得多 · 跳过没填成本的</div></div></div>
+                            <div id="topDishProfitChart" class="chart" style="height:280px"></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">送达时段热力</div><div class="card-sub">按 deliveryDate × deliveryTime · 备餐节奏视角</div></div></div>
+                            <div id="deliveryHeatmapChart" class="chart" style="height:260px"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
                             <div class="card-header"><div><div class="card-title">食物 vs 配送费</div><div class="card-sub">营收结构拆分</div></div></div>
                             <div id="splitChart" class="chart" style="height:280px"></div>
                         </div>
@@ -3363,6 +3374,8 @@ incredibowl.my`,
             renderChannelSplit(orders);
             renderRevenueTrend(orders);
             renderSplitChart(foodRev, deliveryRev);
+            renderTopDishProfit(orders);
+            renderDeliveryHeatmap(orders);
             renderTopDishes(orders);
             renderTopAddons(orders);
             renderHeatmap(orders);
@@ -3960,6 +3973,138 @@ incredibowl.my`,
                     data,
                     label: { show: max < 50, color: '#fff', fontSize: 11, fontWeight: 600, formatter: p => p.value[2] || '' },
                     itemStyle: { borderRadius: 6, borderColor: '#FAF8F4', borderWidth: 2 },
+                }],
+            });
+        }
+
+        // C4: 送达时段热力 — by deliveryDate weekday × deliveryTime hour bucket.
+        // Mirrors renderHeatmap but tells the kitchen-prep story instead of the
+        // ordering-pattern story. Orders without deliveryDate/deliveryTime are skipped.
+        function renderDeliveryHeatmap(orders) {
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']; // Mon-first
+            const hours = ['11-12', '12-13', '13-14', '17-18', '18-19', '19-20', '20+'];
+            const hBucket = h => {
+                if (h >= 11 && h < 12) return 0;
+                if (h >= 12 && h < 13) return 1;
+                if (h >= 13 && h < 15) return 2;
+                if (h >= 17 && h < 18) return 3;
+                if (h >= 18 && h < 19) return 4;
+                if (h >= 19 && h < 20) return 5;
+                if (h >= 20) return 6;
+                return -1;
+            };
+
+            const grid = {};
+            orders.forEach(o => {
+                if (!o.deliveryDate) return;
+                const d = new Date(o.deliveryDate + 'T00:00:00');
+                if (isNaN(d)) return;
+                const t = String(o.deliveryTime || '');
+                const m = t.match(/^(\d{1,2})/);
+                if (!m) return;
+                const hh = parseInt(m[1], 10);
+                const hb = hBucket(hh);
+                if (hb < 0) return;
+                // Monday-first weekday index
+                const dow = (d.getDay() + 6) % 7;
+                const k = `${dow},${hb}`;
+                grid[k] = (grid[k] || 0) + 1;
+            });
+
+            const data = [];
+            let max = 0;
+            for (let dow = 0; dow < 7; dow++) {
+                for (let h = 0; h < 7; h++) {
+                    const v = grid[`${dow},${h}`] || 0;
+                    if (v > max) max = v;
+                    data.push([h, dow, v]);
+                }
+            }
+
+            getChart('deliveryHeatmapChart').setOption({
+                ...echartsBase,
+                tooltip: { ...echartsBase.tooltip, formatter: p => `${days[p.value[1]]} · ${hours[p.value[0]]}<br/><strong>${p.value[2]} 单要送</strong>` },
+                grid: { left: 60, right: 30, top: 10, bottom: 50 },
+                xAxis: { type: 'category', data: hours, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.textMuted, fontSize: 11 }, splitArea: { show: false } },
+                yAxis: { type: 'category', data: days, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.text, fontSize: 11 }, splitArea: { show: false } },
+                visualMap: { min: 0, max: Math.max(max, 1), calculable: false, show: false, inRange: { color: ['#F4F1EB', COLOR.success, COLOR.primary] } },
+                series: [{
+                    type: 'heatmap',
+                    data,
+                    label: { show: max < 50, color: '#fff', fontSize: 11, fontWeight: 600, formatter: p => p.value[2] || '' },
+                    itemStyle: { borderRadius: 6, borderColor: '#FAF8F4', borderWidth: 2 },
+                }],
+            });
+        }
+
+        // C7: per-dish 净利润 Top 10 — sum(quantity × (effectivePrice - costPrice)).
+        // Skip dishes with costPrice = 0 to avoid the "profit = full price" illusion.
+        function renderTopDishProfit(orders) {
+            const addonNames = new Set((state.addons || []).map(a => a.name));
+            const profitByDish = new Map(); // canonical name → { qty, profit, unitMargin }
+
+            orders.forEach(o => {
+                (o.items || []).forEach(it => {
+                    if (typeof it.name === 'string' && it.name.startsWith('↳')) return;
+                    if (addonNames.has(it.name)) return;
+                    const menu = findMenuByName(it.name);
+                    if (!menu) return;
+                    const cost = Number(menu.costPrice) || 0;
+                    if (cost <= 0) return; // skip un-costed dishes
+                    const unitPrice = effectiveItemPrice(it);
+                    if (unitPrice <= 0) return;
+                    const qty = it.quantity || 0;
+                    const unitMargin = unitPrice - cost;
+                    const name = canonicalDishName(it.name);
+                    const entry = profitByDish.get(name) || { qty: 0, profit: 0, unitMargin };
+                    entry.qty += qty;
+                    entry.profit += unitMargin * qty;
+                    entry.unitMargin = unitMargin; // last-seen; assumed stable per dish
+                    profitByDish.set(name, entry);
+                });
+            });
+
+            const sorted = [...profitByDish.entries()]
+                .sort((a, b) => b[1].profit - a[1].profit)
+                .slice(0, 10);
+
+            if (sorted.length === 0) {
+                getChart('topDishProfitChart').setOption({
+                    ...echartsBase,
+                    title: { text: '暂无成本数据 · 去 设置 → 菜单管理 填成本价', textStyle: { color: COLOR.textMuted, fontSize: 13, fontWeight: 400 }, left: 'center', top: 'center' },
+                    series: [],
+                });
+                return;
+            }
+
+            const display = sorted.slice().reverse();
+            const labels = display.map(([n]) => n);
+            const profits = display.map(([, r]) => Number(r.profit.toFixed(2)));
+            const qtys = display.map(([, r]) => r.qty);
+            const margins = display.map(([, r]) => Number(r.unitMargin.toFixed(2)));
+
+            getChart('topDishProfitChart').setOption({
+                ...echartsBase,
+                grid: { left: 10, right: 50, top: 10, bottom: 20, containLabel: true },
+                tooltip: {
+                    ...echartsBase.tooltip,
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    formatter: p => {
+                        const i = p[0].dataIndex;
+                        return `<div style="font-weight:600">${labels[i]}</div><div class="num">净利 ${fmt.rm(profits[i])}</div><div style="color:${COLOR.textMuted};font-size:11px">卖了 ${qtys[i]} 份 · 单份净利 ${fmt.rm(margins[i])}</div>`;
+                    },
+                },
+                xAxis: { type: 'value', axisLine: { show: false }, axisLabel: { color: COLOR.textMuted, fontSize: 11, formatter: fmt.rmShort }, splitLine: { lineStyle: { color: COLOR.grid, type: 'dashed' } } },
+                yAxis: { type: 'category', data: labels, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.text, fontSize: 12 } },
+                series: [{
+                    type: 'bar',
+                    data: profits,
+                    itemStyle: {
+                        color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: COLOR.success }, { offset: 1, color: '#34D399' }] },
+                        borderRadius: [0, 6, 6, 0],
+                    },
+                    barMaxWidth: 18,
                 }],
             });
         }
