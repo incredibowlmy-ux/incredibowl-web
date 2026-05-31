@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecipeForDish, getAddOnRecipe, getDishShortName, IngredientLine } from '@/data/dishIngredients';
+import { getRecipeForDish, getAddOnRecipe, getDishShortName, getAddOnShortName, IngredientLine } from '@/data/dishIngredients';
+import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
 
 /**
  * GET /api/n8n/daily-prep
@@ -93,9 +94,13 @@ interface FirestoreOrder {
   mealType?: 'lunch' | 'dinner' | null;
   isManual?: boolean;
   status?: string;
+  paymentMethod?: 'qr' | 'fpx' | 'curlec' | 'voucher';
+  /** Firestore Timestamp serialized — admin SDK returns this with _seconds/_nanoseconds. */
+  createdAt?: { _seconds?: number; seconds?: number };
   items?: FirestoreOrderItem[];
   note?: string;
 }
+
 
 // Web cart flow stores add-ons as items with name prefix "↳ " so they
 // appear indented under the main dish in admin views. We separate them
@@ -301,39 +306,52 @@ function padRight(s: string, w: number): string {
 function buildOrderMatrix(orders: FirestoreOrder[]): string {
   if (orders.length === 0) return '无';
 
-  // Walk each order, accumulating dish counts (by shortName) and add-ons.
-  type Row = { name: string; counts: Record<string, number>; addOns: string[] };
+  // Walk each order, accumulating dish counts (by shortName) and add-on
+  // counts (also by shortName, so same add-on across multiple parent
+  // dishes collapses into one "糙米×2" instead of "糙米, 糙米").
+  type Row = { name: string; counts: Record<string, number>; addOns: Record<string, number> };
   const rows: Row[] = [];
   const dishTotals: Record<string, number> = {};
 
   for (const o of orders) {
     const counts: Record<string, number> = {};
-    const addOns: string[] = [];
+    const addOnCounts: Record<string, number> = {};
     for (const it of o.items || []) {
       const qty = it.quantity || 0;
       if (qty <= 0) continue;
       if (isAddOnItem(it.name)) {
-        const label = stripAddOnPrefix(it.name);
-        addOns.push(qty > 1 ? `${label}×${qty}` : label);
+        const short = getAddOnShortName(stripAddOnPrefix(it.name));
+        addOnCounts[short] = (addOnCounts[short] || 0) + qty;
       } else {
         const short = getDishShortName(it.name);
         counts[short] = (counts[short] || 0) + qty;
         dishTotals[short] = (dishTotals[short] || 0) + qty;
         for (const a of it.addOns || []) {
-          const label = a.label || a.name || a.id || '加料';
+          const rawLabel = a.label || a.name || a.id || '加料';
           const aQty = a.quantity || 0;
-          if (aQty > 0) addOns.push(aQty > 1 ? `${label}×${aQty}` : label);
+          if (aQty > 0) {
+            const short = getAddOnShortName(rawLabel);
+            addOnCounts[short] = (addOnCounts[short] || 0) + aQty;
+          }
         }
       }
     }
-    rows.push({ name: o.userName || '客户', counts, addOns });
+    rows.push({ name: o.userName || '客户', counts, addOns: addOnCounts });
   }
 
   // Dish columns sorted by total quantity desc (most-ordered first).
   const dishes = Object.keys(dishTotals).sort((a, b) => dishTotals[b] - dishTotals[a]);
   if (dishes.length === 0) return '无';
 
-  const hasAddOns = rows.some(r => r.addOns.length > 0);
+  // Render each row's add-ons as "name×N" tokens (×N suffix only when > 1),
+  // joined by ", ". Empty addOns → '·' placeholder.
+  const formatAddOns = (m: Record<string, number>): string => {
+    const entries = Object.entries(m);
+    if (entries.length === 0) return '·';
+    return entries.map(([n, q]) => (q > 1 ? `${n}×${q}` : n)).join(', ');
+  };
+  const renderedAddOns: string[] = rows.map(r => formatAddOns(r.addOns));
+  const hasAddOns = renderedAddOns.some(s => s !== '·');
 
   // Column widths. Dish cols min 4 visual cells (= 2 CJK or 4 ASCII).
   const nameW = Math.max(visualWidth('客户'), ...rows.map(r => visualWidth(r.name)));
@@ -343,20 +361,20 @@ function buildOrderMatrix(orders: FirestoreOrder[]): string {
     dishW[d] = Math.max(visualWidth(d), 4, ...cellWidths);
   }
   const addOnW = hasAddOns
-    ? Math.max(visualWidth('加料'), ...rows.map(r => visualWidth(r.addOns.join(', '))))
+    ? Math.max(visualWidth('加料'), ...renderedAddOns.map(visualWidth))
     : 0;
 
   const headerCells: string[] = [padRight('客户', nameW)];
   for (const d of dishes) headerCells.push(padRight(d, dishW[d]));
   if (hasAddOns) headerCells.push(padRight('加料', addOnW));
 
-  const rowLines = rows.map(r => {
+  const rowLines = rows.map((r, idx) => {
     const cells: string[] = [padRight(r.name, nameW)];
     for (const d of dishes) {
       const c = r.counts[d];
       cells.push(padRight(c ? `×${c}` : '·', dishW[d]));
     }
-    if (hasAddOns) cells.push(r.addOns.length ? r.addOns.join(', ') : '·');
+    if (hasAddOns) cells.push(renderedAddOns[idx]);
     return cells.join('  ');
   });
 
@@ -437,30 +455,6 @@ function aggregateIngredients(orders: FirestoreOrder[]): {
   return { lines, text };
 }
 
-// Drop admin bookkeeping markers like "手动录入 · whatsapp" so the
-// WhatsApp brief to BowlMama only carries real cooking-relevant requests.
-// If a customer requirement is ever co-mingled into the same note string
-// it will also be dropped — that's a deliberate forcing function to keep
-// admin tags and customer asks in separate fields.
-const isAdminBookkeepingNote = (note: string) => /手动录入/.test(note);
-
-// Notes a missed instruction would actually hurt the customer: allergies,
-// hard "don't" constraints, vegetarian / dietary, urgency. Keep this list
-// tight — every false-positive trains BowlMama to ignore the ⚠️ flag.
-// Anything matching here gets surfaced FIRST in notesText with a ⚠️
-// prefix so it survives a glance-read on a phone.
-const CRITICAL_NOTE_PATTERNS = [
-  /过敏|敏感|allergy|allergic/i,
-  /不要|不能|不吃|别加|别放|别用/,
-  /无糖|无油|无盐|无麻|走油|少油/,
-  /素食|全素|蛋奶素|vegan|vegetarian/i,
-  /戒口|忌口|禁忌/,
-  /婴儿|宝宝|孕妇/,
-  /急|赶时间|提前|urgent|asap/i,
-];
-const isCriticalNote = (note: string) =>
-  CRITICAL_NOTE_PATTERNS.some(rx => rx.test(note));
-
 function collectNotes(orders: FirestoreOrder[]): {
   notes: string[];
   notesText: string;
@@ -528,9 +522,10 @@ export async function GET(req: NextRequest) {
       .where('deliveryDate', '==', date)
       .get();
 
+    const nowMs = Date.now();
     const allOrders = snap.docs
       .map(d => d.data() as FirestoreOrder)
-      .filter(o => o.status !== 'cancelled');
+      .filter(o => o.status !== 'cancelled' && !isStaleFpxPending(o, nowMs));
 
     const lunchOrders = allOrders.filter(isLunchOrder);
     const dinnerOrders = allOrders.filter(o => !isLunchOrder(o));

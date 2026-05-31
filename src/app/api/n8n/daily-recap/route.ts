@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FACE_VALUE_RM } from '@/data/mealVoucherConfig';
+import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
 
 /**
  * GET /api/n8n/daily-recap
@@ -65,6 +66,8 @@ interface OrderShape {
   deliveryFee?: number;
   mealType?: 'lunch' | 'dinner' | null;
   status?: string;
+  paymentMethod?: 'qr' | 'fpx' | 'curlec' | 'voucher';
+  createdAt?: { _seconds?: number; seconds?: number };
   total?: number;
   mealVouchersUsed?: number;
   mealVoucherAllocatedRevenue?: number;
@@ -81,21 +84,6 @@ function isLunchOrder(o: OrderShape): boolean {
   if (m && parseInt(m[1], 10) >= 17) return false;
   return true;
 }
-
-// KEEP IN SYNC with CRITICAL_NOTE_PATTERNS in
-// src/app/api/n8n/daily-prep/route.ts.
-const CRITICAL_NOTE_PATTERNS = [
-  /过敏|敏感|allergy|allergic/i,
-  /不要|不能|不吃|别加|别放|别用/,
-  /无糖|无油|无盐|无麻|走油|少油/,
-  /素食|全素|蛋奶素|vegan|vegetarian/i,
-  /戒口|忌口|禁忌/,
-  /婴儿|宝宝|孕妇/,
-  /急|赶时间|提前|urgent|asap/i,
-];
-const isCriticalNote = (note: string) =>
-  CRITICAL_NOTE_PATTERNS.some(rx => rx.test(note));
-const isAdminBookkeepingNote = (note: string) => /手动录入/.test(note);
 
 function collectCriticalNotes(orders: OrderShape[]): string[] {
   const out: string[] = [];
@@ -175,7 +163,11 @@ export async function GET(req: NextRequest) {
     ]);
 
     const allOrders: OrderShape[] = ordersSnap.docs.map(d => d.data() as OrderShape);
-    const validOrders = allOrders.filter(o => o.status !== 'cancelled');
+    const nowMs = Date.now();
+    // Same filter daily-prep applies: cancelled OUT + stale-FPX-pending OUT.
+    const validOrders = allOrders.filter(
+      o => o.status !== 'cancelled' && !isStaleFpxPending(o, nowMs),
+    );
 
     const todayOrders = validOrders.filter(o => o.deliveryDate === today);
     const tomorrowOrders = validOrders.filter(o => o.deliveryDate === tomorrow);
@@ -240,6 +232,50 @@ export async function GET(req: NextRequest) {
     const tomorrowLunch = tomorrowOrders.filter(isLunchOrder).length;
     const tomorrowDinner = tomorrowOrders.length - tomorrowLunch;
     const tomorrowCriticalNotes = collectCriticalNotes(tomorrowOrders);
+    const tomorrowVouchersUsed = tomorrowOrders.reduce(
+      (s, o) => s + (Number(o.mealVouchersUsed) || 0),
+      0,
+    );
+
+    // ── Yesterday comparison ────────────────────────────────────
+    // Same metric set as today, so boss can see "今天比昨天多/少了 N 单".
+    const yesterday = shiftDate(today, -1);
+    const yesterdayOrders = validOrders.filter(o => o.deliveryDate === yesterday);
+    const ydOrderCount = yesterdayOrders.length;
+    const ydCashRM = yesterdayOrders.reduce(
+      (s, o) => s + (Number(o.total) || 0) + (Number(o.deliveryFee) || 0),
+      0,
+    );
+
+    // ── Last 7 days (rolling, including today) ──────────────────
+    // Rolling window beats Mon-Sun ISO weeks for boss's purposes —
+    // every recap shows the same "past 7 days" frame regardless of
+    // which weekday it fires.
+    const weekStart = shiftDate(today, -6);
+    const last7DaysOrders = validOrders.filter(
+      o => !!o.deliveryDate && o.deliveryDate >= weekStart && o.deliveryDate <= today,
+    );
+    const w7OrderCount = last7DaysOrders.length;
+    const w7CashRM = last7DaysOrders.reduce(
+      (s, o) => s + (Number(o.total) || 0) + (Number(o.deliveryFee) || 0),
+      0,
+    );
+    const w7UniqueCustomers = new Set(
+      last7DaysOrders.map(o => o.userId).filter(Boolean) as string[],
+    ).size;
+
+    // ── Today total cash IN (orders + delivery + voucher sales) ──
+    // This is the "money walked through the door today" number.
+    // Voucher sales contribute cash even though MFRS 15 says it's a
+    // contract liability — boss looks at this for till reconciliation.
+    const todayTotalCashRM = cashRevenueRM + deliveryRevenueRM + voucherSalesCashRM;
+
+    // ── Cancelled order detail (when > 0) ────────────────────────
+    // Just the customer names dedupe'd + capped at 5 — boss can dig
+    // deeper in the dashboard if anything looks off.
+    const cancelledNames = Array.from(
+      new Set(cancelledToday.map(o => o.userName || '客户')),
+    ).slice(0, 5);
 
     // ── Pre-formatted single-line summary strings ───────────────
     // WhatsApp template variables can't contain newlines/tabs/5+ spaces,
@@ -267,9 +303,40 @@ export async function GET(req: NextRequest) {
     const tomorrowSummary = scrubForTemplate(
       tomorrowOrders.length === 0
         ? `📅 ${tomorrow}：暂无订单`
-        : `📅 ${tomorrow}：${tomorrowOrders.length} 单（午 ${tomorrowLunch} / 晚 ${tomorrowDinner})` +
+        : `📅 ${tomorrow}：${tomorrowOrders.length} 单（午 ${tomorrowLunch} / 晚 ${tomorrowDinner}）` +
+            (tomorrowVouchersUsed > 0 ? ` ｜餐券抵 ${tomorrowVouchersUsed} 张` : '') +
             (tomorrowCriticalNotes.length > 0 ? ` ｜⚠️ 关键备注 ${tomorrowCriticalNotes.length} 条` : ''),
     );
+
+    // ── New summary strings for the expanded recap ──────────────
+    // 💵 Total cash IN — clean one-line: "RM TOTAL = 订单 + 配送 + 餐券销售"
+    const todayCashInflowSummary = scrubForTemplate(
+      `💵 现金 ${fmtRM(todayTotalCashRM)}` +
+        ` ｜订单 ${fmtRM(cashRevenueRM)}` +
+        (deliveryRevenueRM > 0 ? ` + 配送 ${fmtRM(deliveryRevenueRM)}` : '') +
+        (voucherSalesCashRM > 0 ? ` + 餐券销售 ${fmtRM(voucherSalesCashRM)}` : ''),
+    );
+
+    // Yesterday delta — pure numbers, no emoji-only output (always visible
+    // even when yesterday was zero, so trend is clear).
+    const dCount = todayOrders.length - ydOrderCount;
+    const dCash = (cashRevenueRM + deliveryRevenueRM) - ydCashRM;
+    const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+    const yesterdaySummary = scrubForTemplate(
+      `📈 昨日 ${yesterday}：${ydOrderCount} 单 ｜${fmtRM(ydCashRM)}` +
+        ` ｜对比今天：${sign(dCount)} 单 / ${dCash >= 0 ? '+' : ''}${fmtRM(dCash).replace('RM ', 'RM ')}`,
+    );
+
+    const last7DaysSummary = scrubForTemplate(
+      `📊 近 7 天（${weekStart}~${today}）：${w7OrderCount} 单 ｜${fmtRM(w7CashRM)} ｜${w7UniqueCustomers} 客户`,
+    );
+
+    const cancelledDetailSummary = cancelledToday.length === 0
+      ? '无'
+      : scrubForTemplate(
+          `❌ 取消 ${cancelledToday.length} 单：${cancelledNames.join('、')}` +
+            (cancelledToday.length > cancelledNames.length ? '…' : ''),
+        );
 
     return NextResponse.json({
       today,
@@ -288,14 +355,28 @@ export async function GET(req: NextRequest) {
       voucherSalesCount,
       voucherSalesCashRM,
       voucherSalesNewVouchersIssued,
+      // — total cash IN today (orders + delivery + voucher sales)
+      todayTotalCashRM: Number(todayTotalCashRM.toFixed(2)),
       // — customers
       uniqueCustomerCount,
       newCustomerCount: newCustomerNames.length,
       newCustomerNames,
+      // — cancelled detail
+      cancelledNames,
+      // — yesterday compare
+      yesterdayDate: yesterday,
+      yesterdayOrderCount: ydOrderCount,
+      yesterdayCashRM: Number(ydCashRM.toFixed(2)),
+      // — last 7 days rolling
+      weekStart,
+      last7DaysOrderCount: w7OrderCount,
+      last7DaysCashRM: Number(w7CashRM.toFixed(2)),
+      last7DaysUniqueCustomers: w7UniqueCustomers,
       // — tomorrow preview
       tomorrowOrderCount: tomorrowOrders.length,
       tomorrowLunchCount: tomorrowLunch,
       tomorrowDinnerCount: tomorrowDinner,
+      tomorrowVouchersUsed,
       tomorrowCriticalNoteCount: tomorrowCriticalNotes.length,
       tomorrowCriticalNotes,
       tomorrowCriticalNotesText: tomorrowCriticalNotes.length
@@ -303,8 +384,12 @@ export async function GET(req: NextRequest) {
         : '无',
       // — pre-formatted summary strings (drop straight into template params)
       todaySummary,
+      todayCashInflowSummary,
       voucherSalesSummary,
       customerSummary,
+      yesterdaySummary,
+      last7DaysSummary,
+      cancelledDetailSummary,
       tomorrowSummary,
     });
   } catch (err) {

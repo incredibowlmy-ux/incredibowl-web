@@ -267,3 +267,67 @@ export function getDishShortName(dishName: string): string {
   const chars = Array.from(dishName);
   return chars.slice(0, 2).join('') || dishName;
 }
+
+/**
+ * Short display names for add-ons in the matrix view. Multiple cart
+ * labels can collapse to the same short name (e.g. both the Greek meal
+ * "【优质碳水】加马铃薯 (90g)" and the Pork Belly meal "【绵密软糯】加马铃薯
+ * (90g)" become "马铃薯") — that's intentional, BowlMama preps potato
+ * once regardless of which parent dish it ships with.
+ */
+export const addOnShortNames: Record<string, string> = {
+  // Rice swaps
+  '白饭换糙米 (180g)': '糙米',
+  '换糙米': '糙米',
+  '加饭 (150g)': '加饭',
+  '加饭': '加饭',
+  '少饭 (150g)': '少饭',
+  '少饭': '少饭',
+
+  // Eggs
+  '荷包蛋': '荷包',
+  '温泉蛋': '温泉',
+  '马铃薯煎蛋': '薯蛋',
+  '蒜蓉西兰花炒蛋': '西兰花蛋',
+
+  // Generic 40g sides
+  '清甜水煮毛豆仁 (40g)': '毛豆',
+  '金黄甜玉米 (40g)': '玉米',
+  '爽脆多汁小番茄 (40g)': '番茄',
+
+  // Natto menu
+  '健康发酵纳豆': '纳豆',
+  '海苔': '海苔',
+  '秘制日本酱油': '酱油',
+
+  // Surf & Turf
+  '鲜甜大虾仁 (4只)': '大虾',
+  '嫩炒鸡丁 (50g)': '鸡丁',
+  '脆爽云耳 (20g)': '云耳',
+  '鲜脆山药块 (90g)': '山药',
+
+  // Chicken Chop
+  '加香煎金鸡扒 (150g)': '加鸡扒',
+
+  // Greek Lemon Chicken
+  '【增肌极客】加柠香烤鸡胸 (180g)': '柠胸',
+  '【优质碳水】加马铃薯 (90g)': '马铃薯',
+  '【抗氧高纤】加脆甜椰菜花 (80g)': '椰菜花',
+  '【地中海风味】加提鲜黑橄榄 (12g)': '黑橄榄',
+
+  // Chicken leg specials
+  '【犒劳自己】多加一只暖胃全鸡腿': '加鸡腿',
+  '【犒劳自己】多加一只酱油全鸡腿': '加酱腿',
+  '【收工犒劳】多加一只葱香煎鸡扒': '加鸡扒',
+
+  // Pork belly stew
+  '【绵密软糯】加马铃薯 (90g)': '马铃薯',
+  '【浓香入味】加花肉片 (70g)': '花肉',
+};
+
+export function getAddOnShortName(label: string): string {
+  if (addOnShortNames[label]) return addOnShortNames[label];
+  // Best-effort: strip any 【...】 prefix and any trailing (XYg) suffix,
+  // then take the result. Better than nothing for new add-ons.
+  return label.replace(/^【[^】]+】/, '').replace(/\s*\([^)]*\)$/, '').trim() || label;
+}
