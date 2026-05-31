@@ -5,7 +5,7 @@ import { onAuthChange, signInWithGoogle, logout, loginWithEmail } from '@/lib/au
 import { OrderStatus } from '@/lib/orders';
 import { updateFeedbackStatus, deleteFeedback, Feedback } from '@/lib/feedbacks';
 import { User } from 'firebase/auth';
-import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, Pencil, LucideIcon, Ticket } from 'lucide-react';
+import { ShoppingBag, Users, CheckCircle, Clock, Truck, XCircle, ChefHat, RefreshCw, ArrowLeft, Phone, MapPin, FileText, LogOut, MessageCircle, Trash2, Pencil, LucideIcon, Ticket, ChevronDown, Search, X, Download } from 'lucide-react';
 import Link from 'next/link';
 import { AdminOrder, AppUser } from '@/types';
 import { formatCreatedAt } from '@/lib/dateUtils';
@@ -77,6 +77,9 @@ export default function AdminPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [editingUser, setEditingUser] = useState<AppUser | null>(null);
     const [editToken, setEditToken] = useState<string>('');
+    const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+    const [orderSearch, setOrderSearch] = useState('');
+    const [customerSearch, setCustomerSearch] = useState('');
 
     const toggleSection = (id: string) => {
         setExpandedSections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -183,7 +186,7 @@ export default function AdminPage() {
         setGeneratingVoucher(true);
         setLastBatch([]);
         try {
-            const { doc, setDoc, Timestamp } = await import('firebase/firestore');
+            const { doc, setDoc, getDoc, Timestamp } = await import('firebase/firestore');
             const { db } = await import('@/lib/firebase');
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             const generatedCodes: string[] = [];
@@ -192,8 +195,16 @@ export default function AdminPage() {
             expiresAt.setMonth(expiresAt.getMonth() + 1);
 
             for (let i = 0; i < qty; i++) {
-                const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-                const code = `IB-${rand}`;
+                // Generate a code that doesn't already exist — guards against the
+                // (rare) random collision silently overwriting a live voucher.
+                let code = '';
+                for (let attempt = 0; attempt < 8; attempt++) {
+                    const rand = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                    const candidate = `IB-${rand}`;
+                    const snap = await getDoc(doc(db, 'vouchers', candidate));
+                    if (!snap.exists()) { code = candidate; break; }
+                }
+                if (!code) throw new Error('生成唯一券码失败，请重试');
                 // KEY FIX: use setDoc with code as document ID so CartDrawer can find it!
                 await setDoc(doc(db, 'vouchers', code), {
                     code,
@@ -295,9 +306,14 @@ export default function AdminPage() {
         }
     };
 
-    useEffect(() => { setCurrentPage(1); }, [filterStatus, filterDate]);
+    useEffect(() => { setCurrentPage(1); }, [filterStatus, filterDate, orderSearch]);
 
     const handleStatusChange = async (order: AdminOrder, newStatus: OrderStatus) => {
+        if (newStatus === 'cancelled' && !window.confirm(`确定取消订单 #${order.id.slice(-6).toUpperCase()}（${order.userName}）？\n此操作不可恢复。`)) return;
+        const prevStatus = order.status;
+        setStatusUpdatingId(order.id);
+        // Optimistic update
+        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
         try {
             const res = await fetch('/api/confirm-order', {
                 method: 'POST',
@@ -305,10 +321,42 @@ export default function AdminPage() {
                 body: JSON.stringify({ orderIds: [order.id], status: newStatus }),
             });
             if (!res.ok) throw new Error((await res.json()).error || '操作失败');
-            setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
         } catch (error) {
+            // Roll back on failure so the UI never lies about server state
+            setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: prevStatus } : o));
             alert('更新失败: ' + error);
+        } finally {
+            setStatusUpdatingId(null);
         }
+    };
+
+    // Export currently-filtered orders to a CSV file (opens download).
+    const exportOrdersCsv = (rows: AdminOrder[]) => {
+        if (rows.length === 0) { alert('当前没有可导出的订单'); return; }
+        const esc = (v: any) => {
+            const s = String(v ?? '');
+            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+        const header = ['订单号', '状态', '客户', '电话', '配送日期', '时段', '菜品', '总额RM', '支付方式', '地址', '备注'];
+        const lines = rows.map((o: any) => [
+            `#${String(o.id).slice(-6).toUpperCase()}`,
+            STATUS_CONFIG[o.status as OrderStatus]?.labelCn || o.status,
+            o.userName, o.userPhone, o.deliveryDate, o.deliveryTime,
+            (o.items || []).map((it: any) => `${it.name}x${it.quantity}`).join(' / '),
+            (o.total || 0).toFixed(2),
+            o.paymentMethod === 'qr' ? 'DuitNow QR' : o.paymentMethod === 'voucher' ? '餐券' : 'FPX/Card',
+            o.userAddress, o.note || '',
+        ].map(esc).join(','));
+        // BOM so Excel reads UTF-8 Chinese correctly
+        const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const d = new Date();
+        const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        a.download = `incredibowl-orders-${stamp}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     // Auth check
@@ -406,19 +454,37 @@ export default function AdminPage() {
 
     // Derived counts
     const pendingFeedbackCount = feedbacks.filter(f => f.status === 'PENDING').length;
+    const pendingMvpCount = mealVoucherPurchases.filter((p: any) =>
+        p.status === 'pending-review' || (p.status === 'pending' && p.paymentMethod === 'qr')
+    ).length;
 
-    // Sorted customers
-    const sortedCustomers = [...customers].sort((a, b) => {
-        if (customerSort === 'points') return (b.points || 0) - (a.points || 0);
-        if (customerSort === 'spent') return (b.totalSpent || 0) - (a.totalSpent || 0);
-        return (b.totalOrders || 0) - (a.totalOrders || 0);
-    });
+    // Sorted + filtered customers
+    const customerQuery = customerSearch.trim().toLowerCase();
+    const sortedCustomers = [...customers]
+        .filter(u => {
+            if (!customerQuery) return true;
+            return (
+                (u.displayName || '').toLowerCase().includes(customerQuery) ||
+                (u.email || '').toLowerCase().includes(customerQuery) ||
+                (u.phone || '').toLowerCase().includes(customerQuery)
+            );
+        })
+        .sort((a, b) => {
+            if (customerSort === 'points') return (b.points || 0) - (a.points || 0);
+            if (customerSort === 'spent') return (b.totalSpent || 0) - (a.totalSpent || 0);
+            return (b.totalOrders || 0) - (a.totalOrders || 0);
+        });
 
     // Filter + sort orders: pending first, then newest first
+    const orderQuery = orderSearch.trim().toLowerCase();
     const filteredOrders = orders
         .filter(order => {
             if (filterStatus !== 'all' && order.status !== filterStatus) return false;
             if (filterDate && order.deliveryDate !== filterDate) return false;
+            if (orderQuery) {
+                const hay = `${order.userName || ''} ${order.userPhone || ''} ${order.id || ''}`.toLowerCase();
+                if (!hay.includes(orderQuery)) return false;
+            }
             return true;
         })
         .sort((a, b) => {
@@ -570,29 +636,29 @@ export default function AdminPage() {
                         <div className="absolute top-0 right-0 w-16 h-16 bg-yellow-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">待确认</p>
                         <p className="text-3xl font-black text-yellow-600 relative">{pendingCount}</p>
-                        <p className="text-[8px] text-gray-300 mt-1">需尽快处理</p>
+                        <p className="text-[10px] text-gray-300 mt-1">需尽快处理</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 订单</p>
                         <p className="text-3xl font-black text-blue-600 relative">{upcomingOrdersCount}</p>
-                        <p className="text-[8px] text-gray-300 mt-1">有效订单数</p>
+                        <p className="text-[10px] text-gray-300 mt-1">有效订单数</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-green-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 营业额</p>
                         <p className="text-3xl font-black text-green-600 relative">RM {upcomingMfrs15Revenue.toFixed(0)}</p>
                         {upcomingMfrs15Revenue > upcomingRevenue + 0.5 ? (
-                            <p className="text-[9px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
+                            <p className="text-[10px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
                         ) : (
-                            <p className="text-[8px] text-gray-300 mt-1">MFRS 15 应计</p>
+                            <p className="text-[10px] text-gray-300 mt-1">MFRS 15 应计</p>
                         )}
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-orange-50 rounded-bl-full opacity-50 group-hover:scale-110 transition-transform" />
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 客户</p>
                         <p className="text-3xl font-black text-[#FF6B35] relative">{upcomingCustomersCount}</p>
-                        <p className="text-[8px] text-gray-300 mt-1">去重客户数</p>
+                        <p className="text-[10px] text-gray-300 mt-1">去重客户数</p>
                     </div>
                 </div>
 
@@ -646,7 +712,7 @@ export default function AdminPage() {
                                                             </span>
                                                         )}
                                                     </span>
-                                                    <Clock size={16} className={`transition-transform duration-300 ${isDayExpanded ? 'rotate-180 text-white' : 'text-gray-300'}`} />
+                                                    <ChevronDown size={16} className={`transition-transform duration-300 ${isDayExpanded ? 'rotate-180 text-white' : 'text-gray-300'}`} />
                                                 </div>
                                             );
                                         })()}
@@ -662,7 +728,7 @@ export default function AdminPage() {
                                                         className="w-full px-4 py-3 flex items-center justify-between bg-amber-50/50 hover:bg-amber-50 transition-colors"
                                                     >
                                                         <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs font-black flex items-center gap-2">🌞 午餐 ({lunch.length} 单)</span>
-                                                        <Clock size={14} className={`text-amber-300 transition-transform ${expandedSections[`${day.dateStr}-lunch`] ? 'rotate-180' : ''}`} />
+                                                        <ChevronDown size={14} className={`text-amber-400 transition-transform ${expandedSections[`${day.dateStr}-lunch`] ? 'rotate-180' : ''}`} />
                                                     </button>
 
                                                     {expandedSections[`${day.dateStr}-lunch`] && (
@@ -691,11 +757,11 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
-                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-black shrink-0 animate-pulse">📝 有备注</span>}
+                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-black shrink-0 animate-pulse">📝 有备注</span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
-                                                                                <Clock size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
+                                                                                <ChevronDown size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
                                                                             </div>
                                                                         </button>
                                                                         {expandedOrders[o.id] && (
@@ -727,7 +793,7 @@ export default function AdminPage() {
                                                                                     <div className="mt-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
                                                                                         <span className="text-base">⚠️</span>
                                                                                         <div>
-                                                                                            <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                                                            <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
                                                                                             <p className="text-xs font-bold text-orange-700 mt-0.5">{o.note}</p>
                                                                                         </div>
                                                                                     </div>
@@ -749,7 +815,7 @@ export default function AdminPage() {
                                                         className="w-full px-4 py-3 flex items-center justify-between bg-indigo-50/50 hover:bg-indigo-50 transition-colors border-t border-gray-100"
                                                     >
                                                         <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-black flex items-center gap-2">🌙 晚餐 ({dinner.length} 单)</span>
-                                                        <Clock size={14} className={`text-indigo-300 transition-transform ${expandedSections[`${day.dateStr}-dinner`] ? 'rotate-180' : ''}`} />
+                                                        <ChevronDown size={14} className={`text-indigo-400 transition-transform ${expandedSections[`${day.dateStr}-dinner`] ? 'rotate-180' : ''}`} />
                                                     </button>
 
                                                     {expandedSections[`${day.dateStr}-dinner`] && (
@@ -778,11 +844,11 @@ export default function AdminPage() {
                                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${o.status === 'pending' ? 'bg-yellow-400' : o.status === 'confirmed' ? 'bg-blue-400' : o.status === 'preparing' ? 'bg-purple-400' : 'bg-green-400'}`} />
                                                                                 <span className="font-bold text-[#1A2D23] truncate">{o.userName}</span>
                                                                                 <span className="text-gray-400 text-[10px] shrink-0">{o.items?.length || 0} 项</span>
-                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-black shrink-0 animate-pulse">📝 有备注</span>}
+                                                                                {(o.note || o.items?.some((it: any) => it.note)) && <span className="px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded text-[10px] font-black shrink-0 animate-pulse">📝 有备注</span>}
                                                                             </div>
                                                                             <div className="flex items-center gap-3">
                                                                                 <span className="font-black text-[#FF6B35] shrink-0">RM {(o.total || 0).toFixed(2)}</span>
-                                                                                <Clock size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
+                                                                                <ChevronDown size={12} className={`text-gray-300 transition-transform ${expandedOrders[o.id] ? 'rotate-180' : ''}`} />
                                                                             </div>
                                                                         </button>
                                                                         {expandedOrders[o.id] && (
@@ -814,7 +880,7 @@ export default function AdminPage() {
                                                                                     <div className="mt-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
                                                                                         <span className="text-base">⚠️</span>
                                                                                         <div>
-                                                                                            <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                                                            <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
                                                                                             <p className="text-xs font-bold text-orange-700 mt-0.5">{o.note}</p>
                                                                                         </div>
                                                                                     </div>
@@ -865,6 +931,9 @@ export default function AdminPage() {
                         className={`px-5 py-2.5 shrink-0 rounded-xl font-bold text-sm flex items-center gap-2 transition-colors ${activeTab === 'vouchers' ? 'bg-[#1A2D23] text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}
                     >
                         🎫 优惠券 ({vouchers.length})
+                        {pendingMvpCount > 0 && (
+                            <span className="px-1.5 py-0.5 bg-amber-400 text-white text-[10px] font-black rounded-full leading-none">{pendingMvpCount}</span>
+                        )}
                     </button>
                 </div>
 
@@ -942,6 +1011,13 @@ export default function AdminPage() {
                                 className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4"
                                 onClick={() => setEnlargedReceiptUrl(null)}
                             >
+                                <button
+                                    onClick={() => setEnlargedReceiptUrl(null)}
+                                    aria-label="关闭"
+                                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
                                 { /* eslint-disable-next-line @next/next/no-img-element */ }
                                 <img
                                     src={enlargedReceiptUrl}
@@ -964,33 +1040,33 @@ export default function AdminPage() {
                                 </div>
                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                     <div className="bg-orange-50 rounded-xl p-3 border border-orange-100">
-                                        <p className="text-[9px] font-bold text-orange-700 uppercase tracking-wider">未核销张数</p>
+                                        <p className="text-[10px] font-bold text-orange-700 uppercase tracking-wider">未核销张数</p>
                                         <p className="text-2xl font-black text-[#FF6B35] leading-tight mt-0.5">{mealVoucherStats.outstandingCount}</p>
                                         <p className="text-[10px] text-orange-700 font-black mt-0.5">合同负债 RM {mealVoucherStats.outstandingAllocatedRM.toFixed(2)}</p>
-                                        <p className="text-[9px] text-orange-600/60 font-bold">食物面值 RM {mealVoucherStats.outstandingFaceValueRM.toFixed(2)}</p>
+                                        <p className="text-[10px] text-orange-600/60 font-bold">食物面值 RM {mealVoucherStats.outstandingFaceValueRM.toFixed(2)}</p>
                                     </div>
                                     <div className={`rounded-xl p-3 border ${mealVoucherStats.expiringSoonCount > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>
-                                        <p className={`text-[9px] font-bold uppercase tracking-wider ${mealVoucherStats.expiringSoonCount > 0 ? 'text-red-700' : 'text-gray-500'}`}>14 天内过期</p>
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${mealVoucherStats.expiringSoonCount > 0 ? 'text-red-700' : 'text-gray-500'}`}>14 天内过期</p>
                                         <p className={`text-2xl font-black leading-tight mt-0.5 ${mealVoucherStats.expiringSoonCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                                             {mealVoucherStats.expiringSoonCount}
                                         </p>
                                         {mealVoucherStats.expiringSoonCount > 0 ? (
                                             <>
                                                 <p className="text-[10px] font-black text-red-700 mt-0.5">未来 breakage RM {mealVoucherStats.expiringSoonAllocatedRM.toFixed(2)}</p>
-                                                <p className="text-[9px] font-bold text-red-600/60">食物面值 RM {mealVoucherStats.expiringSoonFaceValueRM.toFixed(2)}</p>
+                                                <p className="text-[10px] font-bold text-red-600/60">食物面值 RM {mealVoucherStats.expiringSoonFaceValueRM.toFixed(2)}</p>
                                             </>
                                         ) : (
                                             <p className="text-[10px] text-gray-400 font-bold mt-0.5">无紧迫到期</p>
                                         )}
                                     </div>
                                     <div className="bg-green-50 rounded-xl p-3 border border-green-100">
-                                        <p className="text-[9px] font-bold text-green-700 uppercase tracking-wider">已核销（累计）</p>
+                                        <p className="text-[10px] font-bold text-green-700 uppercase tracking-wider">已核销（累计）</p>
                                         <p className="text-2xl font-black text-green-600 leading-tight mt-0.5">{mealVoucherStats.redeemedLifetimeCount}</p>
                                         <p className="text-[10px] text-green-700 font-black mt-0.5">营业额 RM {mealVoucherStats.redeemedLifetimeAllocatedRM.toFixed(2)}</p>
-                                        <p className="text-[9px] text-green-600/60 font-bold">{mealVoucherStats.expiredLifetimeCount} 张已过期 · breakage RM {mealVoucherStats.expiredLifetimeAllocatedRM.toFixed(2)}</p>
+                                        <p className="text-[10px] text-green-600/60 font-bold">{mealVoucherStats.expiredLifetimeCount} 张已过期 · breakage RM {mealVoucherStats.expiredLifetimeAllocatedRM.toFixed(2)}</p>
                                     </div>
                                     <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
-                                        <p className="text-[9px] font-bold text-blue-700 uppercase tracking-wider">累计现金收入</p>
+                                        <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">累计现金收入</p>
                                         <p className="text-2xl font-black text-blue-600 leading-tight mt-0.5">RM {mealVoucherStats.cashCollectedLifetimeRM.toFixed(0)}</p>
                                         <p className="text-[10px] text-blue-600/70 font-bold mt-0.5">已落袋（含未核销）</p>
                                     </div>
@@ -1016,6 +1092,31 @@ export default function AdminPage() {
                                     <span className="text-[11px] font-bold text-gray-500">{s.label}</span>
                                 </div>
                             ))}
+                        </div>
+
+                        {/* Search + Export */}
+                        <div className="flex flex-wrap gap-2 items-center">
+                            <div className="relative flex-1 min-w-[200px]">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                                <input
+                                    type="text"
+                                    value={orderSearch}
+                                    onChange={(e) => setOrderSearch(e.target.value)}
+                                    placeholder="搜索姓名 / 电话 / 订单号…"
+                                    className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-white border border-gray-200 outline-none focus:border-[#FF6B35] transition-colors"
+                                />
+                                {orderSearch && (
+                                    <button onClick={() => setOrderSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => exportOrdersCsv(filteredOrders)}
+                                className="px-3 py-2 rounded-lg text-xs font-bold bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 inline-flex items-center gap-1.5 shrink-0"
+                            >
+                                <Download size={14} /> 导出 CSV
+                            </button>
                         </div>
 
                         {/* Filters */}
@@ -1149,7 +1250,7 @@ export default function AdminPage() {
                                                 <div className="px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
                                                     <span className="text-base">⚠️</span>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
+                                                        <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest">订单备注</p>
                                                         <p className="text-sm font-bold text-orange-700 mt-0.5">{order.note}</p>
                                                     </div>
                                                 </div>
@@ -1202,21 +1303,21 @@ export default function AdminPage() {
                                             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                                                 {order.status === 'pending' && (
                                                     <>
-                                                        <button onClick={() => handleStatusChange(order, 'confirmed')} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex items-center gap-1">
+                                                        <button onClick={() => handleStatusChange(order, 'confirmed')} disabled={statusUpdatingId === order.id} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold hover:bg-blue-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <CheckCircle size={12} /> 确认付款
                                                         </button>
-                                                        <button onClick={() => handleStatusChange(order, 'cancelled')} className="px-4 py-2 bg-red-100 text-red-500 rounded-lg text-xs font-bold hover:bg-red-200 flex items-center gap-1">
+                                                        <button onClick={() => handleStatusChange(order, 'cancelled')} disabled={statusUpdatingId === order.id} className="px-4 py-2 bg-red-100 text-red-500 rounded-lg text-xs font-bold hover:bg-red-200 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                                             <XCircle size={12} /> 取消
                                                         </button>
                                                     </>
                                                 )}
                                                 {order.status === 'confirmed' && (
-                                                    <button onClick={() => handleStatusChange(order, 'preparing')} className="px-4 py-2 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 flex items-center gap-1">
+                                                    <button onClick={() => handleStatusChange(order, 'preparing')} disabled={statusUpdatingId === order.id} className="px-4 py-2 bg-purple-500 text-white rounded-lg text-xs font-bold hover:bg-purple-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                                         <ChefHat size={12} /> 开始准备
                                                     </button>
                                                 )}
                                                 {order.status === 'preparing' && (
-                                                    <button onClick={() => handleStatusChange(order, 'delivered')} className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 flex items-center gap-1">
+                                                    <button onClick={() => handleStatusChange(order, 'delivered')} disabled={statusUpdatingId === order.id} className="px-4 py-2 bg-green-500 text-white rounded-lg text-xs font-bold hover:bg-green-600 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
                                                         <Truck size={12} /> 已送达
                                                     </button>
                                                 )}
@@ -1260,6 +1361,22 @@ export default function AdminPage() {
                 {/* Customers Tab */}
                 {activeTab === 'customers' && (
                     <div className="space-y-3">
+                        {/* Search */}
+                        <div className="relative">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                            <input
+                                type="text"
+                                value={customerSearch}
+                                onChange={(e) => setCustomerSearch(e.target.value)}
+                                placeholder="搜索姓名 / 邮箱 / 电话…"
+                                className="w-full pl-9 pr-9 py-2 rounded-lg text-sm bg-white border border-gray-200 outline-none focus:border-[#FF6B35] transition-colors"
+                            />
+                            {customerSearch && (
+                                <button onClick={() => setCustomerSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
                         {/* Sort Controls */}
                         <div className="flex gap-2 items-center">
                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">排序:</span>
@@ -1657,7 +1774,7 @@ export default function AdminPage() {
                                                                     <p className="font-mono font-black text-[#1A2D23] text-sm tracking-wide truncate flex items-center gap-1.5">
                                                                         {code}
                                                                         {isMultiUse && (
-                                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${isExhausted ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
+                                                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ${isExhausted ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
                                                                                 {usedCount}/{maxUses}
                                                                             </span>
                                                                         )}
