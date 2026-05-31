@@ -2307,7 +2307,7 @@
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
             { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Daily', active: true },
             { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Daily', active: true },
-            { id: 14, name: '酱油鸡全腿', nameEn: 'Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Daily', active: true },
+            { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },
             { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Thu', active: true },
@@ -2651,6 +2651,7 @@ incredibowl.my`,
             '招牌原盅当归清蒸鸡全腿': '招牌原盅当归蒸鸡全腿',
             '招牌虫草当归清蒸鸡全腿': '招牌原盅当归蒸鸡全腿',
             '招牌虫草当归蒸鸡全腿':   '招牌原盅当归蒸鸡全腿',
+            '酱油鸡全腿':             '阿嫲古早味酱油鸡全腿',
         };
         function canonicalDishName(name) {
             if (!name) return name;
@@ -3044,6 +3045,30 @@ incredibowl.my`,
                 }
                 if (migrated > 0) {
                     setTimeout(() => toast(`已从 Excel 自动填入 ${migrated} 道菜的成本价`, 'success'), 800);
+                }
+
+                // ─── Migration: rename any menu doc whose name is an alias key
+                //     to its canonical form (DISH_ALIASES). Runs once per renamed
+                //     dish; no-op afterwards. Keeps dashboard name in sync with
+                //     the webapp's weeklyMenu / dishAliases. ───
+                let renamed = 0;
+                for (const item of state.menu) {
+                    const canon = DISH_ALIASES[item.name];
+                    if (canon && canon !== item.name) {
+                        try {
+                            await setDoc(doc(db, 'menu', String(item.id)), {
+                                name: canon,
+                                updatedAt: Timestamp.now(),
+                            }, { merge: true });
+                            item.name = canon;
+                            renamed++;
+                        } catch (e) {
+                            console.warn(`Rename failed for ${item.name}:`, e.message);
+                        }
+                    }
+                }
+                if (renamed > 0) {
+                    setTimeout(() => toast(`已统一 ${renamed} 道菜名（跟前台菜单一致）`, 'success'), 1000);
                 }
 
                 // Load addons from Firestore. Merge any new seed entries (so newly defined add-ons
