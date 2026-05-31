@@ -13,8 +13,10 @@ async function getDb() {
 /**
  * POST /api/confirm-order
  *
- * Confirms an order (or cancels it) and awards points + referral bonus.
- * Uses Firebase Admin SDK so it bypasses Firestore security rules.
+ * Confirms or cancels an order. On first confirm: bumps totalOrders /
+ * totalSpent, mints a permanent RM 5 voucher for the referrer (if any),
+ * claims the promo voucher used at checkout, and fires the Meta CAPI
+ * Purchase event. Uses Firebase Admin SDK so it bypasses Firestore rules.
  */
 export async function POST(req: Request) {
   try {
@@ -79,11 +81,6 @@ export async function POST(req: Request) {
         }
       }
 
-      // Update order count + spend on first confirm.
-      // Points earning was sunset on 2026-05-17 — orders no longer accrue
-      // points. Existing balances were migrated to permanent RM vouchers
-      // (see scripts/migrate-points-to-vouchers.ts and
-      // tasks/points-sunset-plan.md).
       if (isFirstConfirm && orderData.userId) {
         const userRef = db.collection('users').doc(orderData.userId);
         const foodAfterDiscount = orderData.total ?? 0;
@@ -94,14 +91,11 @@ export async function POST(req: Request) {
           totalSpent: FieldValue.increment(foodAfterDiscount + deliveryFee),
         });
 
-        // Referral bonus (only on first confirmed order).
-        // Server-side defence-in-depth: even though /api/validate-referral
-        // checks self-referral at signup, we re-verify here in case rules
-        // ever drift or the check was bypassed.
-        //
-        // Reward changed 2026-05-17: was 50 points, now a permanent RM 5
-        // voucher (no expiry, no min spend). Matches the post-sunset
-        // policy where vouchers replace points entirely.
+        // Referral bonus (only on first confirmed order). Server-side
+        // defence-in-depth: even though /api/validate-referral checks
+        // self-referral at signup, we re-verify here in case rules drift
+        // or the check was bypassed. Reward is a permanent RM 5 voucher
+        // for the referrer (no expiry, no min spend).
         const userSnap = await userRef.get();
         const userData = userSnap.data();
         if (userData?.referredBy && !userData?.referralBonusAwarded) {

@@ -95,7 +95,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                             {/* Desktop: brand-orange avatar + name + thin chevron, transparent pill */}
                             <a
                                 href="/member"
-                                title="进入会员中心 · 查看积分与订单"
+                                title="进入会员中心 · 查看订单与 voucher"
                                 aria-label="进入会员中心"
                                 className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"
                             >

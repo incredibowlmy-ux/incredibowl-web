@@ -90,7 +90,7 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                                 </a>
                                 <a
                                     href="/member"
-                                    title="Member centre · points & orders"
+                                    title="Member centre · orders & vouchers"
                                     aria-label="Open member centre"
                                     className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"
                                 >

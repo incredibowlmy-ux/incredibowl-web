@@ -345,7 +345,7 @@ export default function V4BentoLayout() {
                         <p className="text-sm text-gray-500 mb-1">
                             订单编号：<span className="font-bold text-[#FF6B35]">#{fpxSuccessId.startsWith('GRP') ? fpxSuccessId : fpxSuccessId.slice(-6).toUpperCase()}</span>
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">订单已确认，感谢您的订购！<br />积分将在配送后自动发放。</p>
+                        <p className="text-xs text-gray-400 mt-2">订单已确认，感谢您的订购！</p>
                         <button onClick={() => setFpxSuccessId(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
                     </div>
                 </div>

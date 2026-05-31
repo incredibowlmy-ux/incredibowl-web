@@ -86,10 +86,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
         recentPurchases: { id: string; bundleId: string; voucherCount: number; amountPaid: number; status: string; createdAtMs: number }[];
     } | null>(null);
 
-    // Points redemption removed 2026-05-17 — see tasks/points-sunset-plan.md.
-    // Endpoint /api/redeem-points and dict keys (redeemNow, redeeming, etc.)
-    // will be removed in Phase 2 on 2026-05-31.
-
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
             setCurrentUser(user);
@@ -312,7 +308,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const memberDays = profileData?.createdAt?.seconds
         ? Math.floor((Date.now() / 1000 - profileData.createdAt.seconds) / 86400)
         : 0;
-    const pointsProgress = Math.min(((profileData?.points || 0) / 100) * 100, 100);
 
     const referralCode = profileData?.referralCode || ('IB-' + (currentUser?.uid?.slice(0, 6).toUpperCase() || 'XXXXXX'));
     const shareText = t.referralShareText(referralCode);
@@ -416,45 +411,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
             </header>
 
             <div className="max-w-2xl mx-auto px-4 -mt-20 relative z-10 space-y-6 pb-12">
-                {/* Points Card */}
-                <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-6 shadow-xl shadow-black/5 border border-white">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-[#FF6B35]/10 rounded-xl flex items-center justify-center">
-                                <Sparkles size={16} className="text-[#FF6B35]" />
-                            </div>
-                            <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">{t.myPoints}</span>
-                        </div>
-                        <span className="text-3xl font-black text-[#FF6B35]">{profileData?.points || 0}</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
-                        <div className="bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] h-3 rounded-full transition-all duration-700" style={{ width: `${pointsProgress}%` }}></div>
-                    </div>
-
-                    {/* Points sunset notice — replaces redemption UI from 2026-05-17.
-                        Redemption is paused immediately; full system retires 2026-05-31.
-                        All historical balances were migrated to permanent RM vouchers
-                        (see scripts/migrate-points-to-vouchers.ts). */}
-                    <div className="mt-3 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 rounded-2xl p-5 border border-amber-200/60 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-24 h-24 bg-amber-200/30 rounded-full blur-2xl" />
-                        <div className="relative z-10 space-y-2">
-                            <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-white/80 rounded-2xl flex items-center justify-center text-xl shadow-sm flex-shrink-0">
-                                    💛
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-black text-amber-900 text-sm mb-1">{t.pointsSunsetTitle}</p>
-                                    <p className="text-[12px] text-amber-900/80 leading-relaxed">{t.pointsSunsetBody}</p>
-                                </div>
-                            </div>
-                            <div className="bg-white/60 rounded-xl px-3 py-2 mt-2">
-                                <p className="text-[11px] text-amber-900/70 leading-relaxed">{t.pointsSunsetTimeline}</p>
-                            </div>
-                            <p className="text-[10px] text-amber-900/50 text-center pt-1">{t.pointsSunsetCta}</p>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Stats Grid */}
                 <div className="grid grid-cols-4 gap-3">
                     <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
@@ -801,7 +757,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
                         {referralStats && referralStats.referredCount > 0 ? (
                             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <div className="grid grid-cols-3 gap-3 text-center">
+                                <div className="grid grid-cols-2 gap-3 text-center">
                                     <div>
                                         <p className="text-2xl font-black text-white">{referralStats.referredCount}</p>
                                         <p className="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">{t.statFriendsRegistered}</p>
@@ -809,10 +765,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                     <div>
                                         <p className="text-2xl font-black text-green-400">{referralStats.confirmedCount}</p>
                                         <p className="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">{t.statFirstOrders}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-black text-[#FF6B35]">+{referralStats.pointsEarned}</p>
-                                        <p className="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">{t.statPointsEarned}</p>
                                     </div>
                                 </div>
                                 {referralStats.pendingCount > 0 && (

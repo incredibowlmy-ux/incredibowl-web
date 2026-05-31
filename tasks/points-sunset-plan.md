@@ -43,34 +43,34 @@
 
 ---
 
-## Phase 2 — 5月31日（积分系统正式下线那天）
+## Phase 2 — 2026-05-18 完成（提前于原计划 5/31 执行）
 
-### UI 清理（ZH + EN 都要改）
-- [ ] `src/components/auth/AuthProfileView.tsx` — 移除个人页积分显示 + 推荐码积分文案（line ~125, 132, 261）
-- [ ] `src/components/auth/AuthModal.tsx:266` — 移除注册框底部「赚积分」宣传
-- [ ] `src/app/member/MemberView.tsx`：
-  - 移除「我的积分」区块（progress bar、redeem 按钮、阈值文案）
-  - 移除「推荐统计」中的 `pointsEarned` 卡片（line ~849）— 改成显示推荐 voucher 数量
-- [ ] `src/app/member/dict.ts` — 删除 ZH + EN 的积分相关 keys：`myPoints`、`pointsNeedMore`、`pointsThresholdReached`、`redeemNow`、`redeeming`、`redeemSuccess`、`redeemFailed`、`pointsAfterRedeem`、`pointsThresholdSubtitle`、`pointsEarned` 等
-- [ ] 检查 `src/app/page.tsx` / landing page 是否有「下单赚积分」之类的营销文案，全部移除
+### UI 清理 ✅
+- [x] `src/components/auth/AuthProfileView.tsx` — 移除「我的积分」dashboard；推荐码 hint「双方各获 50 积分」改成「永久 RM 5 voucher」；Sparkles 图标 import 移除
+- [x] `src/components/auth/AuthModal.tsx` — 注册框底部宣传「RM 1 = 1 积分 · 推荐好友获 50 积分 · 100 积分兑 RM10」改成「🎁 推荐好友 · 双方各得永久 RM 5 voucher」；Sparkles import 移除
+- [x] `src/app/member/MemberView.tsx`：
+  - 整张「我的积分」卡片删除（progress bar、sunset 通知、计算逻辑）
+  - 「推荐统计」从 3 列改 2 列（删 `pointsEarned`）
+  - referBonusPoints 改成「永久 RM 5 voucher」/「a permanent RM 5 voucher」
+- [x] `src/app/member/dict.ts` — 删除 ZH + EN 的所有积分 keys（`myPoints`、`pointsNeedMore`、`pointsThresholdReached`、`pointsThresholdSubtitle`、`redeemNow`、`redeeming`、`pointsAfterRedeem`、`redeemSuccess`、`yourCode`、`copyCode`、`pasteCodeHint`、`redeemFailed`、`statPointsEarned`、`pointsSunsetTitle/Body/Timeline/Cta`）；只保留 `copied`（推荐码分享按钮还在用）
+- [x] `src/app/page.tsx` + `src/app/en/page.tsx` — FPX 成功弹窗「积分将在配送后自动发放」/「Points will be issued after delivery」整行删除
+- [x] `src/components/home/NavBar.tsx` + `src/components/home-en/NavBarEN.tsx` — 会员入口 tooltip「积分与订单」改成「订单与 voucher」/「orders & vouchers」
 
-### Backend 清理
-- [ ] 删除 `src/app/api/redeem-points/route.ts`（整个文件）
-- [ ] 删除 `src/app/api/admin/migrate-points/route.ts`（一次性迁移 endpoint，跑完就删）
-- [ ] 删除 `src/app/admin/migrate-points/page.tsx`（对应的 admin UI 页面）
-- [ ] `src/app/api/confirm-order/route.ts` — 删除 Phase 1 留下的「已移除积分赚取」注释，让代码彻底干净
-- [ ] 检查 `src/app/admin/page.tsx` 是否还显示积分余额列，移除
-- [ ] 检查 `src/lib/orders.ts` / firestore schema 注释是否还提到 `points`，更新
+### Backend 清理 ✅
+- [x] 删除整个 `src/app/api/redeem-points/route.ts` + 文件夹
+- [x] `src/app/api/confirm-order/route.ts` — 删除过渡注释，POST 注释更新成 referrer voucher 描述
+- [x] `src/app/api/my-vouchers/route.ts` — 永久 voucher 支持（之前的 bugfix）
 
-### 数据
-- [ ] 用 Firestore console 跑一次 query 确认 `users.points` 全部 ≤ 0（Phase 1 应该已经归零）
-- [ ] **不要**删 `users.points` 字段（保留审计），但确认没人读它了
-- [ ] **不要**删旧的 `vouchers` doc（POINTS-XXX、LP-XXX）— 客户还要用
+### 保留（不删）
+- ✅ `users.points` Firestore 字段（审计保留，没人读了但不删）
+- ✅ 旧的 `vouchers` doc（POINTS-XXX、LP-XXX、REFBONUS-XXX）— 客户还要用
+- ✅ `src/app/api/admin/migrate-points/route.ts` + `src/app/admin/migrate-points/page.tsx` — 你还在用来查客户积分 → WhatsApp（短期内保留，等所有人 WhatsApp 完再删）
+- ✅ `voucherLabelPoints` / `voucherLabelPointsMigration` / `voucherLabelReferrerBonus` 等 dict keys — 显示历史 voucher 标签时还在用
+- ✅ confirm-order 里推荐人 mint RM 5 voucher 的逻辑（替代了 50 积分奖励）
 
-### 验证
-- [ ] 跑 `next build` 确认没有死代码导致 import 错误
-- [ ] 浏览器测一遍：注册 / 下单 / member 页 / admin 页，确认完全没有积分字眼
-- [ ] WhatsApp 客户通知「积分系统已下线，所有 voucher 仍然永久有效」（可选，看 5/31 当天情况）
+### 待办
+- [ ] 老板用完 `/admin/migrate-points` 后告诉我，我把这个工具也删掉
+- [ ] （可选）跑 `next build` 验证生产环境编译无 import 错误
 
 ---
 

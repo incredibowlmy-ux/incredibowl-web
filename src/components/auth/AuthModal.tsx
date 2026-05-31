@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
 import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
@@ -263,7 +262,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
 
                 <div className="p-3 bg-[#E3EADA]/30 text-center border-t border-[#E3EADA]">
                     <p className="text-[10px] font-bold text-[#1A2D23]/50 flex items-center justify-center gap-1 uppercase tracking-wider">
-                        <Sparkles size={12} /> RM 1 = 1 积分 · 推荐好友获 50 积分 · 100 积分兑 RM10
+                        🎁 推荐好友 · 双方各得永久 RM 5 voucher
                     </p>
                 </div>
             </div>

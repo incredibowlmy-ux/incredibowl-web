@@ -26,26 +26,8 @@ interface MemberDictShape {
     daysJoined: (n: number) => string;
     editProfile: string;
 
-    // Points
-    myPoints: string;
-    pointsNeedMore: (n: number) => string;
-    pointsThresholdReached: string;
-    pointsThresholdSubtitle: string;
-    redeemNow: string;
-    redeeming: string;
-    pointsAfterRedeem: (n: number) => string;
-    redeemSuccess: string;
-    yourCode: string;
-    copyCode: string;
+    // Shared copy button label (used by referral-code share section)
     copied: string;
-    pasteCodeHint: string;
-    redeemFailed: string;
-
-    // Points sunset notice (2026-05-17 → 2026-05-31)
-    pointsSunsetTitle: string;
-    pointsSunsetBody: string;
-    pointsSunsetTimeline: string;
-    pointsSunsetCta: string;
 
     // Stats grid
     statsTotalOrders: string;
@@ -119,7 +101,6 @@ interface MemberDictShape {
     copyCopyText: string;
     statFriendsRegistered: string;
     statFirstOrders: string;
-    statPointsEarned: string;
     pendingFriendsReminder: (n: number) => string;
     referEmptyHint: string;
     referralShareText: (code: string) => string;
@@ -164,25 +145,7 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         daysJoined: (n) => `加入第 ${n} 天`,
         editProfile: '编辑资料',
 
-        myPoints: '我的积分',
-        pointsNeedMore: (n) => `再累积 ${n} 分即可兑换 RM10 优惠`,
-        pointsThresholdReached: '恭喜！积分已达标',
-        pointsThresholdSubtitle: '你可以用 100 积分兑换 RM10 优惠码',
-        redeemNow: '立即兑换 RM10 优惠码',
-        redeeming: '生成优惠码中...',
-        pointsAfterRedeem: (n) => `兑换后将扣除 100 积分 · 剩余 ${n} 分`,
-        redeemSuccess: '兑换成功！🎉',
-        yourCode: '你的优惠码',
-        copyCode: '复制优惠码',
         copied: '已复制',
-        pasteCodeHint: '结账时粘贴此优惠码即可减免 RM10',
-        redeemFailed: '兑换失败，请稍后再试',
-
-        // ── 积分系统下线公告（2026-05-17 起，5/31 系统正式下线）──
-        pointsSunsetTitle: '积分系统即将下线',
-        pointsSunsetBody: '碗妈在简化奖励制度——餐券（5/10/20 packs）会是主要的省钱方式（最多省 10%）。你的积分已转换成永久 voucher，code 已通过 WhatsApp 发送给你 💛',
-        pointsSunsetTimeline: '📌 即日起：积分暂停兑换  📌 5月31日：积分系统正式下线',
-        pointsSunsetCta: '没收到 WhatsApp？请 call 010-337 0197',
 
         statsTotalOrders: '总订单',
         statsTotalSpent: '累计消费',
@@ -243,14 +206,13 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         referBlurbBeforeBonus: '朋友用你的推荐码注册即获 ',
         referBonusVoucher: 'RM 10 优惠券',
         referBlurbMid: '（首单可用）；朋友完成首单后你再得 ',
-        referBonusPoints: '50 积分',
+        referBonusPoints: '永久 RM 5 voucher',
         referBlurbAfterBonus: '。',
         referralCodeLabel: '推荐码',
         copyCodeBtn: '复制码',
         copyCopyText: '复制文案',
         statFriendsRegistered: '朋友注册',
         statFirstOrders: '已下首单',
-        statPointsEarned: '已得积分',
         pendingFriendsReminder: (n) => `💡 还有 ${n} 位朋友未下单 — 提醒一下？`,
         referEmptyHint: '把推荐码发给朋友，他们注册时填上即可使用。',
         referralShareText: (code) =>
@@ -295,25 +257,7 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         daysJoined: (n) => `${n} days as a member`,
         editProfile: 'Edit profile',
 
-        myPoints: 'My points',
-        pointsNeedMore: (n) => `Earn ${n} more points to redeem RM 10 off`,
-        pointsThresholdReached: '🎉 You hit the threshold!',
-        pointsThresholdSubtitle: 'Redeem 100 points for a RM 10 voucher code',
-        redeemNow: 'Redeem RM 10 voucher now',
-        redeeming: 'Generating code...',
-        pointsAfterRedeem: (n) => `100 points will be deducted · ${n} points remaining`,
-        redeemSuccess: 'Redeemed! 🎉',
-        yourCode: 'Your voucher code',
-        copyCode: 'Copy code',
         copied: 'Copied',
-        pasteCodeHint: 'Paste this code at checkout for RM 10 off',
-        redeemFailed: 'Redemption failed. Please try again later.',
-
-        // ── Points sunset notice (effective 2026-05-17, full shutdown 2026-05-31) ──
-        pointsSunsetTitle: 'Points are being retired',
-        pointsSunsetBody: 'We\'re simplifying rewards — meal voucher bundles (5/10/20 packs) are now the main way to save (up to 10% off). Your points have been converted to a permanent voucher and the code was sent to you on WhatsApp 💛',
-        pointsSunsetTimeline: '📌 Now: redemption paused  📌 May 31: points system fully retired',
-        pointsSunsetCta: 'Didn\'t get the WhatsApp? Please call 010-337 0197',
 
         statsTotalOrders: 'Orders',
         statsTotalSpent: 'Total spent',
@@ -374,14 +318,13 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         referBlurbBeforeBonus: 'Friends who register with your code get a ',
         referBonusVoucher: 'RM 10 voucher',
         referBlurbMid: ' (first order). After their first order, you earn ',
-        referBonusPoints: '50 points',
+        referBonusPoints: 'a permanent RM 5 voucher',
         referBlurbAfterBonus: '.',
         referralCodeLabel: 'Referral code',
         copyCodeBtn: 'Copy code',
         copyCopyText: 'Copy share text',
         statFriendsRegistered: 'Registered',
         statFirstOrders: 'First orders',
-        statPointsEarned: 'Points earned',
         pendingFriendsReminder: (n) => `💡 ${n} friend${n === 1 ? '' : 's'} haven't ordered yet — nudge them?`,
         referEmptyHint: 'Share your code with friends — they enter it when signing up.',
         referralShareText: (code) =>

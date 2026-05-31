@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
@@ -107,13 +107,11 @@ export default function AuthProfileView({
                 <p className="text-xs text-gray-500">{currentUser.email}</p>
             </div>
 
-            {/* Points Dashboard */}
+            {/* Order summary (replaces the legacy points dashboard) */}
             {profileData === null ? (
                 <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 space-y-3">
                     <SkeletonBlock className="h-3 w-20 bg-white/20" />
-                    <SkeletonBlock className="h-8 w-28 bg-white/20" />
-                    <SkeletonBlock className="h-2 w-full bg-white/20" />
-                    <SkeletonBlock className="h-3 w-40 bg-white/20" />
+                    <SkeletonBlock className="h-6 w-32 bg-white/20" />
                     <div className="flex gap-4 pt-3 border-t border-white/10">
                         <SkeletonBlock className="h-6 w-12 bg-white/20" />
                         <SkeletonBlock className="h-6 w-16 bg-white/20" />
@@ -121,16 +119,10 @@ export default function AuthProfileView({
                 </div>
             ) : (
                 <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 text-white">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">我的积分</span>
-                        <Sparkles size={14} className="text-[#FF6B35]" />
+                    <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">订单概要</span>
                     </div>
-                    <div className="text-3xl font-black mb-1">{profileData?.points || 0} <span className="text-sm font-bold opacity-50">分</span></div>
-                    <div className="w-full bg-white/20 rounded-full h-2 mb-2">
-                        <div className="bg-[#FF6B35] h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(((profileData?.points || 0) / 100) * 100, 100)}%` }}></div>
-                    </div>
-                    <p className="text-[10px] opacity-60">累积 100 积分可兑换 RM10 优惠</p>
-                    <div className="flex gap-4 mt-4 pt-3 border-t border-white/10">
+                    <div className="flex gap-4 mt-3 pt-3 border-t border-white/10">
                         <div>
                             <p className="text-lg font-black">{profileData?.totalOrders || 0}</p>
                             <p className="text-[9px] opacity-50 uppercase">总订单</p>
@@ -271,7 +263,7 @@ export default function AuthProfileView({
                         <input type="text" value={referralInput} onChange={(e) => setReferralInput(e.target.value)}
                             placeholder="朋友的推荐码，例: IB-A1B2C3"
                             className="w-full mt-1 px-4 py-3 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30" />
-                        <p className="text-[10px] text-[#E65100]/50 mt-1">填写推荐码，首次下单确认后双方各获 50 积分</p>
+                        <p className="text-[10px] text-[#E65100]/50 mt-1">填写推荐码，首次下单确认后双方各获永久 RM 5 voucher</p>
                     </div>
                 )}
             </div>

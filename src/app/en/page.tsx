@@ -315,7 +315,7 @@ export default function EnglishHome() {
                         <p className="text-sm text-gray-500 mb-1">
                             Order ID: <span className="font-bold text-[#FF6B35]">#{fpxSuccessId.startsWith('GRP') ? fpxSuccessId : fpxSuccessId.slice(-6).toUpperCase()}</span>
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">Order confirmed, thank you!<br />Points will be issued after delivery.</p>
+                        <p className="text-xs text-gray-400 mt-2">Order confirmed, thank you!</p>
                         <button onClick={() => setFpxSuccessId(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">OK</button>
                     </div>
                 </div>
