@@ -4027,14 +4027,18 @@ incredibowl.my`,
                 return md >= startOfMonth(cutoff) ? s + m.spend : s;
             }, 0);
 
-            const newUsersInRange = fUsers.length;
-            // Build a lookup of user.id -> customerKey so we can match phone-based first-order map
-            const userKey = (u) => {
-                const phone = normalizePhone(u.phone);
-                return (phone && phone.length >= 7) ? 'p:' + phone : 'u:' + u.id;
-            };
-            const firstOrderInRange = fUsers.filter(u => firstOrderByCustomer[userKey(u)]).length;
-            const blendedCAC = newUsersInRange ? totalSpend / newUsersInRange : null;
+            // B1 fix: "新客" = customers whose FIRST EVER paid order's date is in range.
+            // Previously this used fUsers.length (signups in range) which inflates the
+            // denominator with people who registered but never bought, making CAC look
+            // misleadingly cheap. The signup count is still shown separately for context.
+            const signupsInRange = fUsers.length;
+            let firstOrderInRange;
+            if (state.range === 'all') {
+                firstOrderInRange = Object.keys(firstOrderByCustomer).length;
+            } else {
+                const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - Number(state.range));
+                firstOrderInRange = Object.values(firstOrderByCustomer).filter(v => v.d >= cutoff).length;
+            }
             const effectiveCAC = firstOrderInRange ? totalSpend / firstOrderInRange : null;
             const totalRevInRange = fOrders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
             const aovInRange = fOrders.length ? totalRevInRange / fOrders.length : 0;
@@ -4042,8 +4046,8 @@ incredibowl.my`,
 
             $('#cacKpis').innerHTML = `
                 ${kpi('Meta Ads 总花费', fmt.rm(totalSpend), null, '当前时间窗内')}
-                ${kpi('新客数', fmt.int(newUsersInRange), null, `其中 ${firstOrderInRange} 完成首单`)}
-                ${kpi('Blended CAC', blendedCAC == null ? '—' : fmt.rm(blendedCAC), null, '花费 ÷ 所有新客')}
+                ${kpi('真正首单新客', fmt.int(firstOrderInRange), null, `（注册数 ${signupsInRange}，含未购买）`)}
+                ${kpi('CAC', effectiveCAC == null ? '—' : fmt.rm(effectiveCAC), null, '花费 ÷ 真正完成首单的新客')}
                 ${kpi('Payback 单数', paybackOrders == null ? '—' : paybackOrders.toFixed(2), null, '收回 CAC 需要的订单数（基于 AOV）')}
             `;
 
