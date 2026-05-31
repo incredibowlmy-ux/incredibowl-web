@@ -2620,7 +2620,10 @@ incredibowl.my`,
             month: d => d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'short' }),
         };
 
-        const PAID_STATUSES = new Set(['confirmed', 'preparing', 'delivered']);
+        // "preparing" intentionally excluded: webhook race conditions could leave a
+        // not-yet-settled order in this state. Revenue should only count confirmed +
+        // delivered. Recent-orders list still shows preparing via filteredOrders().
+        const PAID_STATUSES = new Set(['confirmed', 'delivered']);
 
         // ═══════════════════════════════════════════════════════════════
         //   DOMAIN HELPERS
