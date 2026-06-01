@@ -1236,7 +1236,7 @@
                     <div class="kpi-grid" id="revenueKpis"></div>
 
                     <div class="card" id="forecastCard">
-                        <div class="card-header"><div><div class="card-title">未来 7 天 · 预测 vs 已确认</div><div class="card-sub">基于同 weekday 过去 4 周均值 · 仅可见性参考 · 不进备料</div></div></div>
+                        <div class="card-header"><div><div class="card-title">未来 7 天 · 预测 vs 已确认（单数 + 营收）</div><div class="card-sub">基于同 weekday 过去 4 周均值 · 仅可见性参考 · 不进备料</div></div></div>
                         <div id="forecastTable"></div>
                     </div>
 
@@ -2811,6 +2811,7 @@ incredibowl.my`,
             '马铃薯煎蛋': 'potato-egg',
             '清甜水煮毛豆仁 (50g)': 'extra-edamame',                 // also alias of extra-edamame-side
             '金黄甜玉米 (50g)': 'extra-corn',                        // also alias of extra-corn-side
+            '金黄甜玉米 (40g)': 'extra-corn',                        // webapp uses 40g — alias to same canonical
             '奇亚籽布丁': 'chia-pudding',
             // 茶饮
             '龙井 (冰)': 'longjing-ice',
@@ -2844,6 +2845,7 @@ incredibowl.my`,
             '爽脆多汁小番茄 (50g)': 'cherry-tomato',
             // 希腊鸡胸 specials
             '【增肌极客】加 180g 柠香烤鸡胸': 'extra-greek-chicken-180g',
+            '【增肌极客】加柠香烤鸡胸 (180g)': 'extra-greek-chicken-180g',  // newer webapp format
             '【优质碳水】加 80g 澳洲烤薯块': 'extra-aus-potato-80g',
             '【抗氧高纤】加 80g 脆甜椰菜花': 'extra-cauliflower-80g',
             '【地中海风味】加 12g 提鲜黑橄榄': 'extra-black-olive-12g',
@@ -4151,40 +4153,42 @@ incredibowl.my`,
             });
         }
 
-        // C1: 每日预测 — for each of next 7 days, predict = avg same-weekday orders
-        // over the previous 4 same-weekdays. Already-confirmed = orders with that
-        // deliveryDate already in the system (status in confirmed/preparing/delivered).
+        // C1: 每日预测 — for each of next 7 days, predict order count + revenue based
+        // on avg same-weekday over the previous 4 same-weekdays. Already-confirmed =
+        // count + sum of orderAccrualRevenue for orders with that deliveryDate.
         // Visibility-only card; does NOT feed into 备料 / n8n.
         function renderDailyForecast() {
             const today = startOfDay(new Date());
 
-            // Pre-aggregate orders by deliveryDate string and weekday for fast lookup
-            const ordersByDeliveryDate = {};
-            const ordersByPastWeekday = {}; // 0..6 → array of {date: ymdKey, count}
-            for (let i = 0; i < 7; i++) ordersByPastWeekday[i] = new Map();
+            // Pre-aggregate: per deliveryDate → { count, rev }
+            const byDeliveryDate = {};
+            // Per past weekday → Map<ymdKey, { count, rev }>
+            const byPastWeekday = {};
+            for (let i = 0; i < 7; i++) byPastWeekday[i] = new Map();
 
-            paidOrders(state.orders).forEach(o => {
-                if (o.deliveryDate) {
-                    ordersByDeliveryDate[o.deliveryDate] = (ordersByDeliveryDate[o.deliveryDate] || 0) + 1;
-                    const dt = new Date(o.deliveryDate + 'T00:00:00');
-                    if (!isNaN(dt)) {
-                        const wd = (dt.getDay() + 6) % 7; // Mon-first
-                        const k = ymdKey(dt);
-                        const m = ordersByPastWeekday[wd];
-                        m.set(k, (m.get(k) || 0) + 1);
-                    }
-                }
+            const allRelevant = state.orders.filter(o => {
+                if (!o.deliveryDate) return false;
+                if (o.status === 'cancelled' || o.status === 'pending') return false;
+                return true;
             });
 
-            // Include in-flight orders too (preparing/confirmed) — they're committed
-            state.orders.forEach(o => {
-                if (!o.deliveryDate) return;
-                if (o.status !== 'preparing' && o.status !== 'confirmed' && o.status !== 'delivered') return;
-                // double-count guard: ordersByDeliveryDate already includes paidOrders.
-                // For 'preparing' that PAID_STATUSES no longer counts (B2), add manually.
-                if (o.status === 'preparing') {
-                    ordersByDeliveryDate[o.deliveryDate] = (ordersByDeliveryDate[o.deliveryDate] || 0) + 1;
-                }
+            allRelevant.forEach(o => {
+                const dt = new Date(o.deliveryDate + 'T00:00:00');
+                if (isNaN(dt)) return;
+                const k = ymdKey(dt);
+                const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
+
+                const cur = byDeliveryDate[o.deliveryDate] || { count: 0, rev: 0 };
+                cur.count += 1;
+                cur.rev += rev;
+                byDeliveryDate[o.deliveryDate] = cur;
+
+                const wd = (dt.getDay() + 6) % 7;
+                const m = byPastWeekday[wd];
+                const prev = m.get(k) || { count: 0, rev: 0 };
+                prev.count += 1;
+                prev.rev += rev;
+                m.set(k, prev);
             });
 
             const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -4194,47 +4198,62 @@ incredibowl.my`,
                 const targetKey = ymdKey(target);
                 const wd = (target.getDay() + 6) % 7;
 
-                // Predict: average count over last 4 same-weekdays (excluding the target itself)
-                const past = [...ordersByPastWeekday[wd].entries()]
+                // Take past samples strictly before target date; latest 4 only
+                const past = [...byPastWeekday[wd].entries()]
                     .filter(([k]) => k < targetKey)
                     .sort((a, b) => b[0].localeCompare(a[0]))
                     .slice(0, 4);
-                const predicted = past.length > 0
-                    ? Math.round(past.reduce((s, [, c]) => s + c, 0) / past.length)
-                    : null;
 
-                const confirmed = ordersByDeliveryDate[targetKey] || 0;
-                const gap = predicted == null ? null : predicted - confirmed;
+                let predictedCount = null, predictedRev = null;
+                if (past.length > 0) {
+                    predictedCount = Math.round(past.reduce((s, [, v]) => s + v.count, 0) / past.length);
+                    predictedRev = past.reduce((s, [, v]) => s + v.rev, 0) / past.length;
+                }
 
-                rows.push({ target, targetKey, wd, predicted, confirmed, gap, samples: past.length });
+                const actual = byDeliveryDate[targetKey] || { count: 0, rev: 0 };
+                const gapCount = predictedCount == null ? null : predictedCount - actual.count;
+                const gapRev = predictedRev == null ? null : predictedRev - actual.rev;
+
+                rows.push({
+                    target, targetKey, wd,
+                    predictedCount, predictedRev,
+                    actualCount: actual.count, actualRev: actual.rev,
+                    gapCount, gapRev,
+                    samples: past.length,
+                });
             }
 
             const fmtDate = d => `${d.getMonth() + 1}/${d.getDate()}`;
             $('#forecastTable').innerHTML = `
-                <div style="display:grid;grid-template-columns:60px 70px 1fr 1fr 1fr;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border-strong);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
+                <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--border-strong);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600">
                     <div>日期</div><div>星期</div>
-                    <div class="r" style="text-align:right">预测</div>
+                    <div class="r" style="text-align:right">预测单数</div>
                     <div class="r" style="text-align:right">已确认</div>
-                    <div class="r" style="text-align:right">差距</div>
+                    <div class="r" style="text-align:right">预测营收</div>
+                    <div class="r" style="text-align:right">已确认营收</div>
                 </div>
                 ${rows.map((r, i) => {
                     const todayLabel = i === 0 ? ' <span style="font-size:10px;color:var(--text-muted)">(今天)</span>' : i === 1 ? ' <span style="font-size:10px;color:var(--text-muted)">(明天)</span>' : '';
-                    const gapColor = r.gap == null ? 'var(--text-muted)'
-                        : r.gap > 0 ? 'var(--warning)'
-                        : r.gap < 0 ? 'var(--success)' : 'var(--text-muted)';
-                    const gapText = r.gap == null ? '—' : r.gap > 0 ? `还差 ${r.gap}` : r.gap < 0 ? `超出 ${-r.gap}` : '刚好';
-                    const predText = r.predicted == null ? '—' : `${r.predicted}`;
-                    const sampleHint = r.predicted == null ? '<span style="font-size:10px;color:var(--text-muted)">数据不足</span>' : `<span style="font-size:10px;color:var(--text-muted)">基于 ${r.samples} 周</span>`;
+                    const sampleHint = r.predictedCount == null ? '<div style="font-size:10px;color:var(--text-muted)">数据不足</div>' : `<div style="font-size:10px;color:var(--text-muted)">基于 ${r.samples} 周</div>`;
+                    const countColor = r.gapCount == null ? 'var(--text)' : r.gapCount > 0 ? 'var(--warning)' : r.gapCount < 0 ? 'var(--success)' : 'var(--text)';
+                    const revColor = r.gapRev == null ? 'var(--text)' : r.gapRev > 0 ? 'var(--warning)' : r.gapRev < 0 ? 'var(--success)' : 'var(--text)';
                     return `
-                        <div style="display:grid;grid-template-columns:60px 70px 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px">
+                        <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px">
                             <div class="mono" style="font-weight:600">${fmtDate(r.target)}${todayLabel}</div>
                             <div style="font-size:12px;color:var(--text-muted)">${days[r.wd]}</div>
-                            <div class="num r" style="text-align:right">${predText} <div>${sampleHint}</div></div>
-                            <div class="num r" style="text-align:right;font-weight:700">${r.confirmed}</div>
-                            <div class="num r" style="text-align:right;color:${gapColor};font-weight:700">${gapText}</div>
+                            <div class="num r" style="text-align:right">
+                                ${r.predictedCount == null ? '—' : r.predictedCount}
+                                ${sampleHint}
+                            </div>
+                            <div class="num r" style="text-align:right;font-weight:700;color:${countColor}">${r.actualCount}</div>
+                            <div class="num r" style="text-align:right">${r.predictedRev == null ? '—' : fmt.rmShort(r.predictedRev)}</div>
+                            <div class="num r" style="text-align:right;font-weight:700;color:${revColor}">${fmt.rmShort(r.actualRev)}</div>
                         </div>
                     `;
                 }).join('')}
+                <div style="margin-top:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
+                    <strong>读法</strong>：已确认 &lt; 预测 → 还需要补单（绿表示已超出预测）。营收差距大 + 单数差距小 → 客单价拉胯，可推套餐 / 加点。
+                </div>
             `;
         }
 
