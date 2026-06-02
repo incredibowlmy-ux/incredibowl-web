@@ -1,351 +1,48 @@
-# Incredibowl 数据看板 — 实施计划
+# 手动录入单加「地址 + 自动距离」(dashboard)
 
 ## 目标
-在 `C:\Users\User\Desktop\Incredibowl Services\` 建立一个**全新独立**的 HTML dashboard 文件，双击即可打开，连接同一个 Firestore 项目。
+让 dashboard 手动录入的订单，在 admin 卡片上和网站自动单一样显示：
+完整地址 + 精确公里数 + 距离档位（近距离/中距离…）。
 
-## 文件清单
-- [ ] `incredibowl-dashboard.html` — 主 dashboard 文件
-- [ ] `GA4-setup-guide.md` — GA4 配置 step-by-step（Phase 2）
-- [ ] `start-dashboard.bat` — 一键启动（如需 local server）
+## 根因
+`public/dashboard-h7x2q9.html` 手动表单没有地址输入框，保存时 `userAddress: ''`、
+无 `deliveryDistanceKm`、无 `deliveryTier`。admin 卡片（src/app/admin/page.tsx:1214-1246）
+靠这三个字段渲染地址+距离标签，所以手动单只剩被当成 free 的「免运区（老客户）」。
 
-## 模块清单（6 个 tab）
-1. [ ] 📊 **营收 Revenue**
-   - KPI 卡片：总营收 / 平均客单价 / 订单数 / 活跃客户
-   - 趋势图：日 / 周 / 月切换
-   - 食物 vs 配送费拆分
-   - 畅销菜 Top 10
-2. [ ] 💰 **CAC 获客成本**
-   - KPI：总花费 / 新客数 / Blended CAC / 回本周期
-   - 月度 CAC 趋势图
-   - 月度明细表
-3. [ ] 🪜 **转化漏斗 Funnel**
-   - 订单状态漏斗（pending → confirmed → preparing → delivered）
-   - 客户旅程漏斗（注册 → 1 单 → 2 单 → 3 单 → 5+ 单）
-4. [ ] 🔁 **复购留存 Retention**
-   - 月度 cohort 留存矩阵热力图
-   - 整体复购率 / 平均订单数/人
-   - 复购率趋势
-5. [ ] 📈 **预算效率 Budget**（独立 3 卡）
-   - 营销 ROI = 营收 ÷ Meta Ads 花费
-   - Voucher ROI = 用券订单营收 ÷ 折扣总额
-   - 配送补贴 = 配送费 - 实际成本（按区分）
-6. [ ] ⚙️ **设置 Settings**
-   - Meta Ads 月度花费输入（→ Firestore `marketingSpend/{YYYY-MM}`）
-   - 配送成本默认值（→ Firestore `dashboardConfig/delivery`）
-     - ≤ 2km 自送：默认 RM 2
-     - \> 2km 自送：默认 RM 5
-   - GA4 集成占位（Phase 2）
+## 方案（用户选定：输入地址 → 自动算距离）
+复用现成公开接口 `POST /api/check-delivery`（无需 auth，同源），
+返回 `{ tier, distanceKm, fee, formattedAddress }`，和网站自动单同一套 Google 地图算法。
 
-## 数据架构（新增 Firestore collections）
+## 改动清单（全部在 dashboard-h7x2q9.html）
+- [ ] 1. HTML：手动订单 modal 加「配送地址」输入框 + 「算距离」按钮 + 结果预览行
+- [ ] 2. JS：geocodeManualAddress() 调 /api/check-delivery，存 state.moDistanceResolved；
+        自动同步 moZone；建议运费回填（仅当运费仍为 0）
+- [ ] 3. JS：地址 input/Enter 监听（改地址→失效，Enter→触发）
+- [ ] 4. JS：openOrderModal 重置区清空地址 + state.moDistanceResolved
+- [ ] 5. JS：编辑模式回填 userAddress + 从已存 km/tier 还原 state
+- [ ] 6. JS：保存时 orderData.userAddress + deliveryDistanceKm + deliveryTier
+- [ ] 7. 处理 >7.5km「outside」：仍可保存，按 far 记，预览警告
 
-### `marketingSpend/{YYYY-MM}`
-```
-{
-  month: "2026-04",
-  meta: 200,           // RM
-  whatsapp: 0,         // organic, default 0
-  other: 0,
-  notes: "",
-  updatedAt: Timestamp
-}
-```
+## 验证
+- [ ] 真实地址 → 预览 km+档位 → 保存 → admin 卡片显示地址 + 「🛵 xx · X.XXkm」
+- [ ] 不点算距离直接保存 → 地址照存、不写 km、不报错
+- [ ] 编辑已有手动单 → 地址/距离回填，重存不丢
 
-### `dashboardConfig/delivery`
-```
-{
-  within2kmCost: 2,    // RM per delivery
-  outside2kmCost: 5,
-  updatedAt: Timestamp
-}
-```
+## Review（2026-06-02 完成代码）
+全部 7 处改动落在 public/dashboard-h7x2q9.html：
+1. ✅ 手动 modal 加 #moAddress 输入框 + #moGeocodeBtn「算距离」+ #moDistancePreview
+2. ✅ geocodeManualAddress() 调 ADMIN_API_BASE+/api/check-delivery（公开无 auth、同源）
+3. ✅ 地址 Enter 触发 / input 改动失效重算
+4. ✅ openOrderModal 重置区清空地址 + state.moDistanceResolved
+5. ✅ 编辑模式回填 userAddress + 从已存 km/tier 还原（重存不丢；updateDoc 会带上新字段）
+6. ✅ 保存写 userAddress + deliveryDistanceKm + deliveryTier（admin/page.tsx 直接读这俩渲染）
+7. ✅ outside(>7.5km) 按 far 记 + 警告，仍可保存
 
-## 设计规范
-- **风格**：浅色 + 品牌深绿 (#1A2D23) accent + 暖金 (#C9985C)
-- **字体**：Inter (body) + Plus Jakarta Sans (headings) + JetBrains Mono (numbers)
-- **图表**：Apache ECharts 5（CDN）
-- **认证**：Firebase Auth email/password（管理员 whitelist）
+设计取舍：
+- 运费只在仍为 0 时自动回填建议值，绝不覆盖老板手填的运费
+- deliveryZone（成本会计用）随 tier 自动同步：free→within2km，其余→outside2km
+- 不点「算距离」也能存，只是不写距离字段（地址照存）
 
-## 认证策略
-- Email/password 登录（避免 OAuth popup 在 file:// 不工作）
-- Whitelist：`incredibowl.my@gmail.com`、`hello@incredibowl.my`
-- 非管理员登录直接拒绝并 sign out
-
-## CAC 归因方法（Phase 1 简化）
-- 新客 = 当月 `users.createdAt` 在该月内的用户
-- Meta Ads 花费 = 用户在 Settings 输入的当月数值
-- WhatsApp 群当 organic 零成本（不计入 Paid CAC，单独标记）
-- CAC = 月花费 ÷ 当月新客数（含完成首单的）
-- **真 Paid CAC** = 月花费 ÷ 当月**完成首单的**新客数（Phase 2 GA4 接入后可拆 paid vs organic）
-
-## 配送补贴逻辑
-对每个 `confirmed`/`preparing`/`delivered` 订单：
-- 实际成本 = config[deliveryZone]
-- 收入 = `order.deliveryFee || 0`
-- 净额 = 收入 − 成本（负数 = 你补贴的）
-
-特别标注：「免运费 ≥RM40 outside2km」订单 = 营销补贴成本（应计入 marketing budget 一并审视）
-
-## 验收标准
-- [ ] 双击文件能登录并加载数据
-- [ ] 5 个核心 tab + 1 个 settings tab 都能正常显示
-- [ ] 图表交互流畅，移动端可读（mobile responsive）
-- [ ] 配送默认值与营销开支可保存到 Firestore 并跨设备同步
-- [ ] 视觉品质对得起品牌（不是「draft 感」）
-
----
-
-## Review（待补）
-完成后在此追加实施总结。
-
----
-
-# 推荐券防滥用 — 手机号验证（Phase 2）
-
-## 背景
-当前推荐券（RM 10 首单优惠券）防护链：
-1. ✅ 推荐人手机号 ≠ 被推荐人（防直接自荐）
-2. ✅ 手机号全平台唯一（每号只能领 1 次推荐券）
-3. ✅ Google 标准化地址全平台唯一（每地址只能领 1 次）
-4. ✅ Voucher 延后到 profile 完成（手机+确认地址）后才发
-
-## 仍存在的洞
-**用户可以编任意未被使用过的假手机号 + 假地址**，绕过 #2 和 #3。我们没验证手机号真实有效。
-
-## 选项（按优先级）
-
-### Option A: 推荐券限定最低订单（推荐先做）
-- 在 voucher 上加 `minOrderAmount: 30` 字段
-- `/api/check-voucher` 验证小计 ≥ 30 才放行
-- 工作量：约 30 分钟
-- **效果**：abuser 即使薅 10 张券，每张要花 RM 20+ 才能兑现，经济动机消失
-- **零成本**
-
-### Option B: 推荐人发券数量上限
-- 推荐人最多发 N 张券（建议 10）
-- 用户文档加 `referralVouchersIssued` 计数器
-- 推荐人发券前先查计数，≥10 拒绝
-- 工作量：约 20 分钟
-- **效果**：限制单个推荐人能造成的最大损失
-- **零成本**
-
-### Option C: WhatsApp 手动验证
-- 客户填手机号后，你手动从客服 WhatsApp 发个验证码
-- 客户输入验证码才放行
-- **客户摩擦高**，扩展性差
-- 不推荐
-
-### Option D: SMS OTP（Firebase Phone Auth）
-- 客户填手机号 → 系统自动发 SMS 验证码 → 客户输入 → 验证通过
-- Firebase Phone Auth 免费 10K SMS / 月，超过 $0.06/SMS
-- 工作量：约 4-6 小时（前后端 + UI 集成）
-- **效果**：彻底堵死假号洞
-- **成本**：免费配额内不花钱；超过后约 RM 0.27/SMS
-
-### Option E: WhatsApp Business API 验证
-- 类似 OTP 但通过 WhatsApp 发码（费率比 SMS 便宜）
-- 需要 Meta Business 账号 + WhatsApp Business API
-- 工作量：约 6-8 小时
-- **效果**：与 SMS OTP 相当
-- **成本**：约 RM 0.05-0.10/条（按 conversation 计费）
-
-## 实施顺序建议
-1. **立即做**：Option A + B（一起 < 1 小时，零成本）
-2. **观察 1-2 个月**：看 abuse 模式
-3. **如有需要**：实施 Option D（Firebase Phone Auth 最简单）
-4. **如成本敏感**：考虑 Option E（WhatsApp Business API）
-
-## 触发条件（什么时候做 Phase 2）
-- 看到同一推荐人 1 周内出 ≥ 50 张推荐券
-- 看到同一 IP 短时间内多个新账号
-- 看到 voucher 兑现率明显低于预期（abuser 拿了不用）
-- 客户客诉 / 收入不符
-
----
-
-# 方案 1：餐券预付包（Meal Voucher Bundle）
-
-> 决定日期：2026-05-10
-> 详细策略与 5 方案对比见 memory/project_meal_subscription_strategy.md
-
-## 🎯 产品规则（已锁定）
-
-- **1 张餐券 = 1 份主餐**（任意主餐，不分日 / 不分品项）
-- 用户预付现金购买"券包"（5 / 10 / 20 张三档）
-- 结账时勾选"用券抵扣"，可一次抵多张（例：4 人 → 4 张券）
-- **券只抵主餐价格；add-on（饮料、加料、蛋等）必须现金支付** — 用户明确指示
-- 券有效期：购买日起 **60 天**
-- 不可退现金（终售；过期归零）
-- 不可叠加现有 RM 折扣券（推荐券 / 积分券） — 一单只能选其一
-
-## 🏗️ 架构决策（已锁定）
-
-### 数据模型 — **独立的 `mealVouchers` 集合 + 每张券一个 doc**
-
-理由：
-1. 现有 `vouchers` 集合是 RM 折扣型（推荐券、积分兑换券）；餐券语义完全不同（实物兑换权）
-2. 每张券独立 doc → 支持 FIFO 兑换、批次到期、独立审计、订单取消时可恢复单张
-
-```
-mealVouchers/{voucherId}
-  userId: string
-  purchaseId: string         // 关联到 mealVoucherPurchases doc
-  purchasedAt: Timestamp
-  expiresAt: Timestamp        // purchasedAt + 60 days
-  status: 'available' | 'redeemed' | 'expired' | 'refunded'
-  redeemedOrderId?: string
-  redeemedAt?: Timestamp
-```
-
-```
-mealVoucherPurchases/{purchaseId}
-  userId, userName, userEmail, userPhone
-  bundleId: '5' | '10' | '20'
-  voucherCount: number
-  amountPaid: number          // RM
-  paymentMethod: 'qr' | 'fpx'
-  razorpayPaymentId?, razorpayOrderId?, razorpaySignature?
-  receiptUploaded, receiptUrl?
-  status: 'pending' | 'paid' | 'cancelled'
-  voucherIds: string[]         // populate on confirm
-  createdAt, paidAt, updatedAt
-```
-
-### 与现有结账流的接入方式
-
-不动现有 promo code 通道。在 `CartDrawer` 里新增独立的"餐券抵扣"区块：
-- 显示"你有 N 张可用餐券"
-- 滑块 / 加减按钮选择本次使用 X 张（X ≤ min(主餐数量, N)）
-- 服务器端 `/api/submit-order` 接收 `mealVoucherUsed: X`，atomically claim X 张最早到期的券
-- 价格计算：`mealVoucherDiscount = sum(被抵的 X 个最贵主餐的服务器价)`（用户最划算）
-- 与现有 promo code 二选一（互斥）
-
-## 📋 实施清单
-
-### Phase 1 — 数据层（基础设施）
-- [ ] 创建 `src/data/mealVoucherConfig.ts` — 中央定价配置 + 60 天有效期
-- [ ] 创建 `src/lib/mealVoucherValidation.ts` — server-side claim/release 逻辑
-- [ ] Firestore Security Rules — 用户只读自己的 vouchers，不可写
-
-### Phase 2 — 购买流（API + UI）
-- [ ] `POST /api/meal-vouchers/create-purchase` — 创建 pending purchase doc + Razorpay order
-- [ ] `POST /api/meal-vouchers/confirm-purchase` — 验证 Razorpay 签名 → mint N 张 vouchers + 更新 purchase status='paid'
-- [ ] `POST /api/meal-vouchers/qr-confirm` — QR 付款受理（admin 后台审核 receipt 后 manual confirm）
-- [ ] `GET /api/my-meal-vouchers` — 返回用户当前可用券数 + 最近到期日
-- [ ] 新建购买入口页面 `src/app/meal-vouchers/page.tsx` — 三档卡片 + 价值说明 + Razorpay/QR 支付
-- [ ] 在 `member/page.tsx` 加"我的餐券钱包"区块
-
-### Phase 3 — 结账抵扣流
-- [ ] `CartDrawer.tsx` 加"用餐券抵扣"区块（仅当用户有可用券时显示）
-- [ ] 抵扣逻辑：选 X 张 → 减去最贵的 X 个主餐价格 → 重算 finalTotal
-- [ ] 更新 `/api/submit-order`：接收 `mealVoucherUsed: X`，FIFO 抢券，重新计算 server total
-- [ ] 更新 `/api/confirm-order`：将抢的券 status 从 `available` 改为 `redeemed`
-- [ ] 订单取消时 → 恢复券 status 回 `available`（除非已过期）
-
-### Phase 4 — 后台 + 边缘场景
-- [ ] Admin dashboard 加"餐券负债"指标：未核销总张数 × 平均主餐价
-- [ ] Cron 任务（或惰性）：每日把 `expiresAt < now` 的券 status 从 `available` 改为 `expired`
-- [ ] Admin 用户列表 → 显示每个用户的可用券数
-
-### Phase 5 — 验证 & 文档
-- [ ] 完整 E2E 走查：购买 → 结账抵扣 → 取消恢复 → 过期处理
-- [ ] 更新 README / CLAUDE.md（如需要）
-- [ ] 更新 `tasks/lessons.md`（若发现新模式）
-
-## ⚠️ 待用户决定（在 AskUserQuestion 中确认）
-
-1. **券价定档** — 菜价范围 RM 16.90–19.90（主流 18.50）
-2. （其他默认：60 天有效期、不可叠加 promo、入口仅在 member 页）
-
-## ✅ Review（2026-05-11 完成实施）
-
-### 已上线功能
-- ✅ **Phase 1 数据层**：`src/data/mealVoucherConfig.ts`（5/10/20 张定价 + 60 天有效期）+ `src/lib/mealVoucherUtils.ts`（mint / claim FIFO / release 三个核心 helper）
-- ✅ **Phase 2 购买流**：`/api/meal-vouchers/create-purchase`、`/api/meal-vouchers/confirm-purchase`、`/api/my-meal-vouchers` API + `/meal-vouchers` 买券页（FPX + QR 两种支付方式）
-- ✅ **Phase 2b UI**：member 页加「我的餐券钱包」区块（橘金渐变卡片，显示张数 + 最近到期日）
-- ✅ **Phase 3 结账抵扣**：CartDrawer 加「用餐券抵扣」加减器（FIFO 抵最贵主餐）+ submit-order 服务端校验 + 抢券 + confirm-order 取消时释放券
-- ✅ **Phase 4 后台**：admin/data 加 mealVoucherPurchases + `/api/admin/confirm-meal-voucher-purchase` + admin 订单 tab 顶部加 QR 待审核 banner（一键批准/拒绝 + 凭证放大查看）
-- ✅ **Phase 5 验证**：`tsc --noEmit` 通过，`next build` 成功，lint 仅有原项目风格 `any` warnings
-
-### 关键定价（已确认）
-- 5 张 = RM 92.50（面值，0% off — 入门档）
-- 10 张 = RM 175.75（~5% off，省 RM 9.25）
-- 20 张 = RM 333.00（~10% off，省 RM 37.00）
-
-### 关键设计原则
-1. **餐券 ≠ RM 折扣券** — 独立的 `mealVouchers` 集合，每张券单独 doc，状态机 `available → redeemed → (released back to available on cancel)`，不与现有 `vouchers` 表混淆
-2. **抢券时机** — submit-order 时原子抢，避免双 tab 抢券竞态；FPX 失败时通过现有 `fpx-callback` 取消订单 → confirm-order 释放
-3. **mutex** — 券与 promo code 一单只能选其一，前后端都强校验
-4. **抵扣算法** — 服务端按"主餐单价 desc，取前 X"算抵扣，最大化客户优惠
-5. **加购不抵** — add-on 价格不在抵扣分母里，必须现金；用户明确指示
-
-### Defer / 待后续观察
-- **Firestore Rules**：`mealVouchers` / `mealVoucherPurchases` 仍是默认拒绝（所有读写走 admin SDK API），客户端从来不直接查这两个集合，安全。如未来要做客户端实时订阅，需补 rules
-- **Admin 餐券负债指标**：dashboard 待办（未核销总张数 × FACE_VALUE_RM）
-- **Cron 过期券处理**：当前是惰性处理（claim 时校验、my-meal-vouchers 计数时排除）。如需把过期 doc 显式标 `expired` 改 status，可后续加 cron
-- **多日 cart 的券分配**：当前 voucherIds 全挂在 part 1，多日订单部分取消时只 release part 1 的券；这是合理的折中（多日 + 用券是少见场景）
-
-### 测试 checklist（手动验证清单 — 上线前请走一遍）
-- [ ] 新用户买 10 张装（FPX）→ 跳 Razorpay → 付款 → 钱包显示 10 张 / 60 天到期
-- [ ] 同一用户结账下 4 份主餐 + 2 个加购 → 拉到 4 张券 → Total 等于 add-on 总额 + delivery
-- [ ] 拉到 1 张券 + 输入 promo code → 报「不可同时使用」
-- [ ] FPX 支付被取消 → 订单 cancelled → 钱包券回滚为 available
-- [ ] 买 5 张装（QR）→ 上传截图 → 后台 admin tab 顶部出现 banner → admin 批准 → 钱包到账 5 张
-- [ ] 后台 admin 拒绝 → purchase status=cancelled，无券 mint
-- [ ] 60 天后到期券不再出现在 wallet 计数里
-
----
-
-# 菜单改动 2026-05-31
-
-## 背景
-老板要求三处菜单调整。关键耦合：周特餐 `id` = 星期几数字（周四=4，见 nextSpecial.ts / dateUtils.ts）；加购弹窗 `dish.id===4` 绑定薯肉双拼套餐；日常菜靠 `day==='Daily / 常驻'` 识别；配料表按菜名匹配。
-
-## 任务
-- [ ] 1. 图片：海报 png → public/shaoxing_pork_belly.webp（**占位**，老板稍后换干净食物图）
-- [ ] 2. weeklyMenu.ts：马铃薯炖花肉片 改 `day:"Daily / 常驻"`, `id:4 → id:13`
-- [ ] 3. weeklyMenu.ts：新增 绍兴酒蒸花肉 `id:4, day:"Thu / 周四"`, price 19.90（诚实标注偏肥）
-- [ ] 4. AddOnModal.tsx:333 `dish.id===4` → `dish.id===13`（薯肉双拼套跟随马铃薯）
-- [ ] 5. AddOnModal.tsx:58 broccoli-egg 默认价 9.90 → 10.90（⚠️ 后台远程配置若有覆盖则前端以远程为准）
-- [ ] 6. dishIngredients.ts：新增 绍兴酒蒸花肉 记录（份量留空 ingredients:[]，待老板给克数）
-- [x] 1. 图片：海报 png → public/shaoxing_pork_belly.webp（占位 270KB，待换干净食物图）
-- [x] 2. weeklyMenu.ts：马铃薯 → Daily/常驻, id 13
-- [x] 3. weeklyMenu.ts：新增 绍兴酒蒸花肉 id 4 周四 RM 19.90（desc 诚实标注偏肥）
-- [x] 4. AddOnModal.tsx：双拼套餐 id===4 → id===13
-- [x] 5. **真正改价点 = addOnsConfig.ts**：broccoli-egg 9.90 → 10.90（AddOnModal fallback 是死代码，已同步）
-- [x] 6. dishIngredients.ts：绍兴酒 记录，ingredients:[] 待克数
-- [x] 7. blockedDates.ts：清理过期 id4 封锁 + 更新注释
-- [x] 验证：tsc --noEmit 通过；next build 成功；id 全唯一，周四=绍兴酒
-
-## Review
-- 关键发现：西兰花炒蛋改价的单一真相源是 `src/data/addOnsConfig.ts`（前端+服务端 submit-order 共用），不是 AddOnModal 的 fallback。只改 fallback 会被覆盖且服务端校验仍按旧价。
-- id 耦合处理：周特餐靠 id=星期几，故绍兴酒必须 id 4；马铃薯转日常改 id 13，并同步 AddOnModal `dish.id===13` 让薯肉双拼套餐继续跟随。
-- 待办（不阻塞上线）：① 绍兴酒干净正方食物图替换占位海报；② 碗妈提供绍兴酒 per-serving 克数补 dishIngredients（否则采购汇总不列此菜）。
-
----
-
-# Admin 网页后台 UI/UX 改进 2026-06-01
-
-## 背景
-用户要求审查 https://www.incredibowl.my/admin（= src/app/admin/page.tsx，1744 行单组件）并「do all these」。
-手动建单/卖券有意分工在本地 incredibowl-dashboard.html，网页 admin 不做手动操作，不改。
-
-## 已完成（全部在 src/app/admin/page.tsx）
-- [x] P0 字号下限：消除全部 `text-[8px]`/`text-[9px]`，统一到 `text-[10px]`（手机可读性）
-- [x] P0 折叠箭头：日/午/晚/订单展开的 `Clock` 旋转 → `ChevronDown`（语义正确）
-- [x] P0 取消订单二次确认 + 状态更新乐观更新/失败回滚/按钮 loading 禁用（防误触+不撒谎）
-- [x] P1 订单搜索框（姓名/电话/订单号）+ 客户搜索框（姓名/邮箱/电话）
-- [x] P1 优惠券 Tab 加「待审核餐券」数字角标（与留言角标一致）
-- [x] P1 快速生成券码加 getDoc 查重，防 Math.random 碰撞静默覆盖
-- [x] P1 收据放大弹窗加右上角 X 关闭按钮
-- [x] P2 订单导出 CSV 按钮（UTF-8 BOM，Excel 中文正常）
-- [x] 验证：npx tsc --noEmit → 退出码 0；Grep 确认无残留小字号/Clock 折叠图标
-
-## 有意未做（需另行决策）
-- 优惠券「生成」全面迁服务端 API（现客户端直写、缺审计日志）—— 安全模型改动，单独立项；本次只补查重
-- 1744 行单组件拆分 + useMemo —— 大重构，零用户可见收益，盲改风险高，先不动
-- 原生 confirm/prompt/alert 全面换自定义 toast/modal —— 体验项，需弹窗系统，暂缓
-- emoji 与 lucide 图标风格统一 —— 品牌取舍，待定
-
-## Review
-单文件改动：新增 4 图标（ChevronDown/Search/X/Download）、3 state、1 函数（exportOrdersCsv）。
-未触后端/数据结构/移动端逻辑。建议本地 npm run dev 实测：搜索、取消确认、CSV、收据关闭、餐券角标。
+待老板线上冒烟（需登录 + Google Maps key，本地跑不了）：
+- [ ] 真实地址 → 预览 km+档位 → 保存 → admin 卡片显示地址 + 「🛵 xx · X.XXkm」
+- [ ] 编辑现有 #4HLRLZ → 补地址 → 重存 → 卡片从「免运区」变精确距离

@@ -2044,6 +2044,16 @@
                     <button type="button" id="moAddItemBtn" class="btn ghost sm" style="margin-top:8px">+ 加一项</button>
                 </div>
 
+                <!-- ─── 配送地址 → 自动算距离（复用网站 /api/check-delivery）─── -->
+                <div class="modal-row">
+                    <label>配送地址（填了自动算距离，和网站同一套地图）</label>
+                    <div style="display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:start">
+                        <input type="text" id="moAddress" maxlength="200" placeholder="例：Pearl Suria Residence, Jalan Awan ... 或 condo 名 + 邮编" />
+                        <button type="button" id="moGeocodeBtn" class="btn ghost sm" style="height:38px">算距离</button>
+                    </div>
+                    <div id="moDistancePreview" style="margin-top:6px;font-size:11px;color:var(--text-muted);line-height:1.5">填完整地址 → 点「算距离」自动填公里数 + 运费档位（不填也能存，但卡片不显示距离）</div>
+                </div>
+
                 <div class="modal-row-3">
                     <div>
                         <label>食物总额 (RM) *</label>
@@ -2055,7 +2065,7 @@
                         <input type="number" id="moDelivery" step="0.50" min="0" value="0" />
                     </div>
                     <div>
-                        <label>距离</label>
+                        <label>档位（地址自动）</label>
                         <select id="moZone">
                             <option value="within2km">≤ 2km</option>
                             <option value="outside2km">&gt; 2km</option>
@@ -8397,6 +8407,12 @@ incredibowl.my`,
             $('#moZone').value = 'within2km';
             $('#moTotal').dataset.userTouched = '';
 
+            // Reset address → distance state
+            $('#moAddress').value = '';
+            state.moDistanceResolved = null;
+            $('#moDistancePreview').textContent = '填完整地址 → 点「算距离」自动填公里数 + 运费档位（不填也能存，但卡片不显示距离）';
+            $('#moDistancePreview').style.color = 'var(--text-muted)';
+
             // Reset item rows
             $('#moItemRows').innerHTML = '';
 
@@ -8424,6 +8440,21 @@ incredibowl.my`,
                 $('#moTotal').dataset.userTouched = '1'; // don't auto-recompute
                 $('#moDelivery').value = (orderToEdit.deliveryFee || 0).toFixed(2);
                 $('#moZone').value = orderToEdit.deliveryZone || 'within2km';
+
+                // Address + previously-resolved distance (so re-saving keeps km/tier without re-geocoding)
+                $('#moAddress').value = orderToEdit.userAddress || '';
+                if (typeof orderToEdit.deliveryDistanceKm === 'number') {
+                    const t = orderToEdit.deliveryTier
+                        || (orderToEdit.deliveryZone === 'within2km' ? 'free' : 'near');
+                    state.moDistanceResolved = {
+                        distanceKm: orderToEdit.deliveryDistanceKm,
+                        tier: t,
+                        formattedAddress: orderToEdit.userAddress || '',
+                    };
+                    const tl = t === 'free' ? '免运区' : t === 'near' ? '近距离' : t === 'mid' ? '中距离' : '远距离';
+                    $('#moDistancePreview').innerHTML = `已存：<strong>${orderToEdit.deliveryDistanceKm}km</strong> · ${tl}（改地址可重算）`;
+                    $('#moDistancePreview').style.color = 'var(--success)';
+                }
 
                 const orderDate = tsToDate(orderToEdit.createdAt);
                 if (orderDate) $('#moDate').value = orderDate.toISOString().slice(0, 10);
@@ -9306,6 +9337,67 @@ incredibowl.my`,
             }
         });
 
+        // ─── Address → distance (reuse public /api/check-delivery; same Google geocode as webapp) ───
+        // Result lives on state.moDistanceResolved = { distanceKm, tier, formattedAddress } or null.
+        async function geocodeManualAddress() {
+            const addr = $('#moAddress').value.trim();
+            const preview = $('#moDistancePreview');
+            if (addr.length < 4) {
+                state.moDistanceResolved = null;
+                preview.textContent = '⚠ 请填完整地址（建议含 condo 名 + 路名 / 邮编）';
+                preview.style.color = 'var(--warning)';
+                $('#moAddress').focus();
+                return;
+            }
+            const btn = $('#moGeocodeBtn');
+            btn.disabled = true; btn.textContent = '算...';
+            try {
+                const res = await fetch(`${ADMIN_API_BASE}/api/check-delivery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: addr }),
+                });
+                let data; try { data = await res.json(); } catch { data = {}; }
+                if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+                const km = Number(data.distanceKm);
+                const tierLabel = { free: '免运区', near: '近距离', mid: '中距离', far: '远距离' };
+                if (data.tier === 'outside') {
+                    // Beyond 7.5km service ceiling — still recordable (boss may have delivered anyway).
+                    state.moDistanceResolved = { distanceKm: km, tier: 'far', formattedAddress: data.formattedAddress || addr };
+                    $('#moZone').value = 'outside2km';
+                    preview.innerHTML = `⚠ <strong>${km}km</strong> · 超出 7.5km 常规配送范围 · 仍可保存（按远距离记）`;
+                    preview.style.color = 'var(--warning)';
+                } else {
+                    state.moDistanceResolved = { distanceKm: km, tier: data.tier, formattedAddress: data.formattedAddress || addr };
+                    $('#moZone').value = data.tier === 'free' ? 'within2km' : 'outside2km';
+                    const fee = Number(data.fee) || 0;
+                    preview.innerHTML = `✓ ${escapeHtml(data.formattedAddress || addr)} · <strong>${km}km</strong> · ${tierLabel[data.tier] || data.tier} · 建议运费 RM ${fee.toFixed(2)}`;
+                    preview.style.color = 'var(--success)';
+                    // Auto-fill delivery fee only if still untouched (0) — never clobber a typed fee.
+                    const dEl = $('#moDelivery');
+                    if ((parseFloat(dEl.value) || 0) === 0) dEl.value = fee.toFixed(2);
+                }
+            } catch (e) {
+                state.moDistanceResolved = null;
+                preview.textContent = '✗ ' + e.message;
+                preview.style.color = 'var(--danger)';
+            } finally {
+                btn.disabled = false; btn.textContent = '算距离';
+            }
+        }
+        $('#moGeocodeBtn').addEventListener('click', geocodeManualAddress);
+        $('#moAddress').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); geocodeManualAddress(); }
+        });
+        // Editing the address after a resolve makes the stored km/tier stale.
+        $('#moAddress').addEventListener('input', () => {
+            if (state.moDistanceResolved) {
+                state.moDistanceResolved = null;
+                $('#moDistancePreview').textContent = '地址已改 → 点「算距离」重新计算';
+                $('#moDistancePreview').style.color = 'var(--warning)';
+            }
+        });
+
         // ═══════════════════════════════════════════════════════════════
         //   SELL VOUCHER MODAL
         // ═══════════════════════════════════════════════════════════════
@@ -9540,7 +9632,7 @@ incredibowl.my`,
                 userName: name,
                 userPhone: phoneRaw,
                 userEmail: '',
-                userAddress: '',
+                userAddress: (state.moDistanceResolved && state.moDistanceResolved.formattedAddress) || $('#moAddress').value.trim() || '',
                 items,
                 total: cashFoodTotal,
                 originalTotal: total,
@@ -9558,6 +9650,13 @@ incredibowl.my`,
                 createdAt: Timestamp.fromDate(dateObj),
                 updatedAt: serverTimestamp(),
             };
+            // Geocoded distance → makes the admin card show address + "🛵 近距离 · X.XXkm"
+            // identical to a webapp order (admin/page.tsx reads deliveryTier + deliveryDistanceKm).
+            if (state.moDistanceResolved && typeof state.moDistanceResolved.distanceKm === 'number') {
+                orderData.deliveryDistanceKm = state.moDistanceResolved.distanceKm;
+                orderData.deliveryTier = state.moDistanceResolved.tier;
+            }
+
             // Voucher discount marker (top X most-expensive main dish unit prices)
             // — actual claim happens after order doc is created via the redemption API
             if (vouchersUsed > 0) {
