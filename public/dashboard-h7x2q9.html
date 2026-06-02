@@ -7857,6 +7857,9 @@ incredibowl.my`,
                 .agg-t { font-weight:700; margin-bottom:4px; }
                 .agg-row { margin:2px 0; }
                 .agg-l { display:inline-block; min-width:42px; font-weight:700; color:#555; }
+                .ing { border:1px solid #cdebd0; background:#f3fbf4; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.5; }
+                .ing-t { font-weight:800; color:#1a7a3a; }
+                .ingfail { color:#c0392b; font-size:12px; margin-bottom:10px; }
                 .order { border:1px solid #ccc; border-radius:8px; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
                 .ohead { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px; }
                 .chk { font-size:18px; line-height:1; }
@@ -7938,11 +7941,14 @@ incredibowl.my`,
                 </div>`;
             }
 
-            function mealSection(title, orders) {
+            function mealSection(title, orders, ingredientText) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
                 const agg = aggregate(sorted);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
+                const ingHtml = (ingredientText && ingredientText !== '无')
+                    ? `<div class="ing"><span class="ing-t">🛒 食材清单</span> ${escP(ingredientText)}</div>`
+                    : '';
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -7950,11 +7956,12 @@ incredibowl.my`,
                         <div class="agg-row"><span class="agg-l">主菜</span>${agg.dishesHtml}</div>
                         <div class="agg-row"><span class="agg-l">配料</span>${agg.addonsHtml}</div>
                     </div>
+                    ${ingHtml}
                     ${sorted.map(orderCard).join('')}
                 </section>`;
             }
 
-            function buildHtml(dateStr, orders) {
+            function buildHtml(dateStr, orders, ing) {
                 const lunch = orders.filter(o => mealType(o) === 'lunch');
                 const dinner = orders.filter(o => mealType(o) === 'dinner');
                 const other = orders.filter(o => mealType(o) === 'unknown');
@@ -7962,25 +7969,38 @@ incredibowl.my`,
                 const dd = new Date(dateStr + 'T00:00:00');
                 if (!isNaN(dd)) weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dd.getDay()];
                 const printedAt = new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-                const body = mealSection('🟠 午餐', lunch) + mealSection('🟣 晚餐', dinner) + mealSection('其他 / 未分类', other);
+                // ing = { lunch:{ingredientText}, dinner:{ingredientText} } from /api/admin/daily-prep, or null on failure.
+                const ingFail = ing ? '' : '<div class="ingfail">⚠️ 食材清单加载失败（菜品/备餐汇总不受影响）— 检查网络后重新打印</div>';
+                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch && ing.lunch.ingredientText)
+                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner && ing.dinner.ingredientText)
+                    + mealSection('其他 / 未分类', other, '');
                 return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
                     <header class="sheet-head">
                         <div class="brand">Incredibowl 备餐单</div>
                         <div class="meta">${escP(dateStr)}（${weekday}）· 共 ${orders.length} 单 · 午 ${lunch.length} / 晚 ${dinner.length}${other.length ? ` / 其他 ${other.length}` : ''}</div>
                         <div class="printed">打印于 ${escP(printedAt)}</div>
                     </header>
+                    ${ingFail}
                     ${body || '<p class="empty">这一天暂无订单。</p>'}
                 </body></html>`;
             }
 
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const dateStr = dateInput.value || ymdKey(new Date());
                 const orders = (state.orders || []).filter(o => o.deliveryDate === dateStr && o.status !== 'cancelled');
                 if (orders.length === 0) { toast(`${dateStr} 暂无订单`, 'error'); return; }
+                // Open the window SYNCHRONOUSLY (inside the click gesture) so the
+                // popup blocker doesn't kill it after the await below.
                 const w = window.open('', '_blank', 'width=860,height=1000');
                 if (!w) { toast('打印窗口被浏览器拦截，请允许弹窗后重试', 'error'); return; }
+                w.document.write('<!DOCTYPE html><meta charset="utf-8"><body style="font-family:sans-serif;padding:24px;color:#444">备餐单生成中…（正在算食材清单）</body>');
+                // Ingredient roll-up from the server — SAME recipe data as n8n's daily prep.
+                // Degrade gracefully: if it fails, still print dishes + per-order detail.
+                let ing = null;
+                try { ing = await callAdminAPI('/api/admin/daily-prep', { date: dateStr }); }
+                catch (e) { console.warn('[prep-sheet] ingredient fetch failed:', e && e.message); }
                 w.document.open();
-                w.document.write(buildHtml(dateStr, orders));
+                w.document.write(buildHtml(dateStr, orders, ing));
                 w.document.close();
                 w.focus();
                 setTimeout(() => { try { w.print(); } catch (e) {} }, 400);

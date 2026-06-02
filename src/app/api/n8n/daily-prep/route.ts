@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRecipeForDish, getAddOnRecipe, getDishShortName, getAddOnShortName, IngredientLine } from '@/data/dishIngredients';
+import { getDishShortName, getAddOnShortName } from '@/data/dishIngredients';
+import { aggregateIngredients, isLunchOrder } from '@/lib/prepIngredients';
 import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
 
 /**
@@ -47,24 +48,6 @@ function todayInKL(): string {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date());
-}
-
-// Classify a delivery time string as lunch vs dinner.
-//   1. explicit mealType field (set by manual orders from local dashboard) wins
-//   2. "dinner"/"晚" keyword → dinner
-//   3. "lunch"/"午"  keyword → lunch
-//   4. HH:MM with hour >= 17 → dinner
-//   5. anything else         → lunch (default for ambiguous / empty)
-// KEEP IN SYNC with splitMealTime() in src/app/admin/page.tsx.
-function isLunchOrder(o: { deliveryTime?: string; mealType?: 'lunch' | 'dinner' | null }): boolean {
-  if (o.mealType === 'lunch') return true;
-  if (o.mealType === 'dinner') return false;
-  const t = (o.deliveryTime || '').toLowerCase();
-  if (t.includes('dinner') || t.includes('晚')) return false;
-  if (t.includes('lunch') || t.includes('午')) return true;
-  const m = t.match(/(\d{1,2}):\d{2}/);
-  if (m && parseInt(m[1], 10) >= 17) return false;
-  return true;
 }
 
 // Orders come in two shapes:
@@ -379,80 +362,6 @@ function buildOrderMatrix(orders: FirestoreOrder[]): string {
   });
 
   return [headerCells.join('  '), ...rowLines].join('\n');
-}
-
-// Aggregate raw ingredient quantities across all of today's orders, so
-// BowlMama gets a procurement list ("鸡胸肉 1.2kg；蛋 7 颗") instead of
-// having to mentally multiply each dish × portion × add-on adjustments.
-//
-// Returns a single all-day list (not split by lunch/dinner) because
-// procurement happens once a day — the dish-level summaryText already
-// gives the meal split, this is the buy-once-cook-twice view.
-//
-// Resilient to missing recipes: dishes without a recipe entry in
-// dishIngredients.ts are silently skipped. Adding a recipe later
-// automatically picks up retroactively — no migration needed.
-//
-// Units: groups by (name, unit) tuple. Same ingredient with two units
-// (e.g. "鸡胸肉 g" vs "鸡胸肉 块") stays separate intentionally — both
-// reflect how BowlMama actually procures.
-//
-// Output formatting: weight-style units (g / ml) auto-convert to kg / L
-// once over 1000, because "1.2kg" reads faster than "1200g" on a phone.
-function aggregateIngredients(orders: FirestoreOrder[]): {
-  lines: { name: string; qty: number; unit: string }[];
-  text: string;
-} {
-  // Key by `${name} ${unit}` so duplicate ingredient names with
-  // different units don't collide.
-  const counts = new Map<string, { name: string; qty: number; unit: string }>();
-  const bump = (line: IngredientLine, multiplier: number) => {
-    const key = `${line.name} ${line.unit}`;
-    const cur = counts.get(key);
-    if (cur) cur.qty += line.qty * multiplier;
-    else counts.set(key, { name: line.name, qty: line.qty * multiplier, unit: line.unit });
-  };
-
-  for (const o of orders) {
-    for (const it of o.items || []) {
-      const qty = it.quantity || 0;
-      if (qty <= 0) continue;
-      if (isAddOnItem(it.name)) {
-        const recipe = getAddOnRecipe(stripAddOnPrefix(it.name));
-        if (recipe) recipe.forEach(line => bump(line, qty));
-      } else {
-        const dishRecipe = getRecipeForDish(it.name);
-        if (dishRecipe) dishRecipe.ingredients.forEach(line => bump(line, qty));
-        // Nested add-ons on the same row (manual order schema)
-        for (const a of it.addOns || []) {
-          const label = a.label || a.name || a.id || '';
-          const aQty = a.quantity || 0;
-          if (!label || aQty <= 0) continue;
-          const addOnRecipe = getAddOnRecipe(label);
-          if (addOnRecipe) addOnRecipe.forEach(line => bump(line, aQty));
-        }
-      }
-    }
-  }
-
-  // Format each line. Weight units auto-promote to kg / L over 1000 so
-  // BowlMama's eye lands on the magnitude faster.
-  const formatQty = (qty: number, unit: string): string => {
-    if (unit === 'g' && qty >= 1000) return `${(qty / 1000).toFixed(qty % 1000 === 0 ? 0 : 2)}kg`;
-    if (unit === 'ml' && qty >= 1000) return `${(qty / 1000).toFixed(qty % 1000 === 0 ? 0 : 2)}L`;
-    // Drop trailing .00 for cleaner display
-    const rounded = Number(qty.toFixed(2));
-    const str = Number.isInteger(rounded) ? String(rounded) : rounded.toString();
-    return `${str}${unit}`;
-  };
-
-  const lines = Array.from(counts.values())
-    .sort((a, b) => a.name.localeCompare(b.name, 'zh'));
-  const text = lines.length === 0
-    ? '无'
-    : lines.map(l => `${l.name} ${formatQty(l.qty, l.unit)}`).join('；');
-
-  return { lines, text };
 }
 
 function collectNotes(orders: FirestoreOrder[]): {
