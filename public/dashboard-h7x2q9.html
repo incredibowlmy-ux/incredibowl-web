@@ -2424,6 +2424,7 @@
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Thu', active: true },
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: true },
+            { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -2479,6 +2480,7 @@
             { id: 'onsen-egg',                   name: '温泉蛋',                                price: 3.00,  category: '单点' },
             { id: 'potato-egg',                  name: '马铃薯煎蛋',                            price: 3.50,  category: '单点' },
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
+            { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (40g)',                  price: 2.50,  category: '单点' },
             { id: 'extra-corn',                  name: '金黄甜玉米 (40g)',                      price: 2.50,  category: '单点' },
             { id: 'chia-pudding',                name: '奇亚籽布丁',                            price: 6.90,  category: '单点' },
@@ -3180,6 +3182,32 @@ incredibowl.my`,
                         console.error('Menu auto-seed failed:', e);
                         migrationErrors.push(`菜单初始化: ${e.message}`);
                     }
+                }
+
+                // ─── Migration: backfill any MENU_SEED entry missing from Firestore
+                //     (e.g. newly added 绍兴酒蒸花肉 周四特餐). Runs once per missing
+                //     id; no-op afterwards. Keeps dashboard dropdown in sync when we
+                //     ship new dishes via MENU_SEED. ───
+                let seededNew = 0;
+                const existingMenuIds = new Set(state.menu.map(m => String(m.id)));
+                for (const m of MENU_SEED) {
+                    if (existingMenuIds.has(String(m.id))) continue;
+                    const costPrice = MENU_COSTS_FROM_EXCEL[String(m.id)] ?? 0;
+                    try {
+                        await setDoc(doc(db, 'menu', String(m.id)), {
+                            ...m, costPrice,
+                            createdAt: Timestamp.now(),
+                            updatedAt: Timestamp.now(),
+                        });
+                        state.menu.push({ ...m, id: String(m.id), costPrice });
+                        seededNew++;
+                    } catch (e) {
+                        console.error(`New seed dish ${m.name} failed:`, e);
+                        migrationErrors.push(`新增菜品 (${m.name}): ${e.message}`);
+                    }
+                }
+                if (seededNew > 0) {
+                    setTimeout(() => toast(`已新增 ${seededNew} 道菜到菜单（手动订单下拉可选）`, 'success'), 900);
                 }
 
                 // ─── Migration: backfill costPrice from Excel costing for any menu doc still at 0 ───
@@ -8000,6 +8028,7 @@ incredibowl.my`,
                 { id: 'sunny-egg',          label: '荷包蛋', price: 2.50 },
                 { id: 'potato-egg',         label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',       label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',         label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',      label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',         label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
@@ -8025,6 +8054,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',             label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',            label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',          label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',            label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',         label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',            label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',          label: '奇亚籽布丁', price: 6.90 },
@@ -8048,6 +8078,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',          label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',         label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',       label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',         label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',      label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',         label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
@@ -8068,6 +8099,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
@@ -8092,6 +8124,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
                 { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
@@ -8115,6 +8148,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
@@ -8138,6 +8172,7 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
@@ -8160,10 +8195,31 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
+                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
+                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
+                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
+                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
+                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
+                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+            ],
+            '2': [
+                // 绍兴酒蒸花肉（周四特餐）— webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
                 { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
                 { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
