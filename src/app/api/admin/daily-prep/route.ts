@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { aggregateIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
+import { buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
 
 /**
  * POST /api/admin/daily-prep
@@ -78,13 +78,16 @@ export async function POST(req: NextRequest) {
       .map(d => d.data() as PrepOrder)
       .filter(o => o.status !== 'cancelled');
 
-    const lunch = orders.filter(isLunchOrder);
-    const dinner = orders.filter(o => !isLunchOrder(o));
+    const lunchOrders = orders.filter(isLunchOrder);
+    const dinnerOrders = orders.filter(o => !isLunchOrder(o));
+    // Per-dish ingredient lists with the cook-once rule applied (马铃薯炖肉 etc.
+    // roll into lunch). Order counts stay per-meal; only the ingredients move.
+    const { lunch, dinner } = buildDailyPrepIngredients(lunchOrders, dinnerOrders);
 
     return corsify(NextResponse.json({
       date,
-      lunch: { count: lunch.length, ingredientText: aggregateIngredients(lunch).text },
-      dinner: { count: dinner.length, ingredientText: aggregateIngredients(dinner).text },
+      lunch: { count: lunchOrders.length, groups: lunch.groups, addOnText: lunch.addOnText },
+      dinner: { count: dinnerOrders.length, groups: dinner.groups, addOnText: dinner.addOnText },
     }));
   } catch (err) {
     console.error('[admin/daily-prep] failed:', err);

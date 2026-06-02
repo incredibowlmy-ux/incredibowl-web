@@ -7859,8 +7859,10 @@ incredibowl.my`,
                 .agg-t { font-weight:700; margin-bottom:4px; }
                 .agg-row { margin:2px 0; }
                 .agg-l { display:inline-block; min-width:42px; font-weight:700; color:#555; }
-                .ing { border:1px solid #cdebd0; background:#f3fbf4; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.5; }
-                .ing-t { font-weight:800; color:#1a7a3a; }
+                .ing { border:1px solid #cdebd0; background:#f3fbf4; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.55; }
+                .ing-t { font-weight:800; color:#1a7a3a; margin-bottom:3px; }
+                .ing-row { margin:3px 0; }
+                .ing-d { color:#15803d; font-weight:800; }
                 .ingfail { color:#c0392b; font-size:12px; margin-bottom:10px; }
                 .order { border:1px solid #ccc; border-radius:8px; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
                 .ohead { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px; }
@@ -7943,14 +7945,25 @@ incredibowl.my`,
                 </div>`;
             }
 
-            function mealSection(title, orders, ingredientText) {
+            // Render the per-dish ingredient list (with cook-once dishes marked 全天).
+            // ingMeal = { groups:[{dish,servings,allDay,text}], addOnText } from the server, or null.
+            function renderIngredients(ingMeal) {
+                if (!ingMeal) return '';
+                const groups = ingMeal.groups || [];
+                const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
+                if (!groups.length && !hasAddOn) return '';
+                const rows = groups.map(g =>
+                    `<div class="ing-row"><b class="ing-d">【${escP(g.dish)} ×${g.servings}${g.allDay ? ' · 全天' : ''}】</b> ${escP(g.text)}</div>`).join('');
+                const addOnRow = hasAddOn ? `<div class="ing-row"><b class="ing-d">加料</b> ${escP(ingMeal.addOnText)}</div>` : '';
+                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${addOnRow}</div>`;
+            }
+
+            function mealSection(title, orders, ingMeal) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
                 const agg = aggregate(sorted);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
-                const ingHtml = (ingredientText && ingredientText !== '无')
-                    ? `<div class="ing"><span class="ing-t">🛒 食材清单</span> ${escP(ingredientText)}</div>`
-                    : '';
+                const ingHtml = renderIngredients(ingMeal);
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -7973,9 +7986,9 @@ incredibowl.my`,
                 const printedAt = new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
                 // ing = { lunch:{ingredientText}, dinner:{ingredientText} } from /api/admin/daily-prep, or null on failure.
                 const ingFail = ing ? '' : '<div class="ingfail">⚠️ 食材清单加载失败（菜品/备餐汇总不受影响）— 检查网络后重新打印</div>';
-                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch && ing.lunch.ingredientText)
-                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner && ing.dinner.ingredientText)
-                    + mealSection('其他 / 未分类', other, '');
+                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch)
+                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner)
+                    + mealSection('其他 / 未分类', other, null);
                 return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
                     <header class="sheet-head">
                         <div class="brand">Incredibowl 备餐单</div>
