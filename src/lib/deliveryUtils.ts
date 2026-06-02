@@ -342,6 +342,77 @@ export function resolveDeliveryFee(
     return null;
 }
 
+/**
+ * Per-delivery fee for a multi-day / multi-slot order.
+ *
+ * An order can split into several deliveries — one per (date + lunch/dinner)
+ * group — each of which is a separate kitchen trip. Each trip is charged
+ * independently: its own basis is judged against its own distance threshold,
+ * so a RM 25 lunch and a RM 25 dinner on different days each pay their own
+ * fee rather than being combined into one basis that clears the threshold.
+ *
+ * Promo discount (RM-codes) is allocated across groups proportionally to each
+ * group's food subtotal, with the LAST group absorbing the rounding remainder.
+ * This allocation is byte-for-byte identical to the order-document promo split
+ * in /api/submit-order, so the per-group basis (subtotal − allocated promo)
+ * matches on both client and server. Meal vouchers are NOT subtracted from the
+ * basis (same rule as calcDeliveryFee — prepaid voucher revenue is booked).
+ *
+ * CRITICAL: client (CartDrawer) and server (submit-order) MUST both call this
+ * with the SAME group ordering and the SAME totals, or the server's anti-tamper
+ * fee comparison (tolerance RM 0.02) will reject the order.
+ *
+ * @param groupSubtotals  food subtotal per delivery group, in a stable order
+ * @param cartTotal       sum of all group subtotals (denominator for promo split)
+ * @param promoDiscount   total RM-promo discount to spread across groups
+ * @returns fees[] (aligned to groupSubtotals), total (sum), tier (same for all
+ *          groups — distance-driven), and resolvable (false ⇒ address not
+ *          confirmed, callers should block checkout)
+ */
+export function calcPerDeliveryFees(
+    groupSubtotals: number[],
+    cartTotal: number,
+    promoDiscount: number,
+    distanceKm: number | null | undefined,
+    zone: DeliveryZone | null | undefined,
+    customerCreatedAtMs?: number | null,
+): { fees: number[]; bases: number[]; total: number; tier: DeliveryTier | null; resolvable: boolean } {
+    const fees: number[] = [];
+    const bases: number[] = [];
+    let tier: DeliveryTier | null = null;
+    let resolvable = groupSubtotals.length === 0; // empty cart: nothing to block on
+    let remainingPromo = promoDiscount;
+
+    for (let i = 0; i < groupSubtotals.length; i++) {
+        // Proportional promo split — identical to the order-doc split in
+        // submit-order: every group but the last gets a rounded proportional
+        // slice; the last group absorbs whatever's left.
+        let groupPromo = 0;
+        if (promoDiscount > 0 && cartTotal > 0) {
+            if (i === groupSubtotals.length - 1) {
+                groupPromo = Number(remainingPromo.toFixed(2));
+            } else {
+                groupPromo = Number(((groupSubtotals[i] / cartTotal) * promoDiscount).toFixed(2));
+                remainingPromo -= groupPromo;
+            }
+        }
+        const basis = Math.max(0, groupSubtotals[i] - groupPromo);
+        bases.push(basis);
+        const resolved = resolveDeliveryFee(distanceKm, zone, basis, customerCreatedAtMs);
+        if (resolved) {
+            fees.push(resolved.fee);
+            tier = resolved.tier;
+            resolvable = true;
+        } else {
+            // Address not confirmed (no distance + no zone). Fee can't be
+            // computed; push 0 and let the caller block on resolvable=false.
+            fees.push(0);
+        }
+    }
+
+    return { fees, bases, total: fees.reduce((sum, f) => sum + f, 0), tier, resolvable };
+}
+
 /** Shortfall to free delivery — mirrors resolveDeliveryFee's grandfathering. */
 export function resolveShortfallToFree(
     distanceKm: number | null | undefined,

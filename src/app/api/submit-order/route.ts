@@ -3,7 +3,7 @@ import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
-import { resolveDeliveryFee, type DeliveryZone } from '@/lib/deliveryUtils';
+import { calcPerDeliveryFees, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
@@ -194,11 +194,6 @@ export async function POST(req: Request) {
     }
 
     const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount);
-    // Free-delivery threshold check basis: cartTotal − promoDiscount only.
-    // Meal voucher redemption does NOT shrink the basis (decided 2026-05-11)
-    // — prepaid voucher revenue is already booked, so burning one to redeem
-    // a main dish shouldn't kick the customer out of the free-delivery tier.
-    const freeDeliveryBasis = Math.max(0, serverCartTotal - serverPromoDiscount);
     // Pricing-v2 grandfathering: existing customers (createdAt < 2026-05-16)
     // within 2 km keep their free delivery. Firebase Admin SDK serializes
     // Firestore Timestamp as { _seconds, _nanoseconds }.
@@ -208,12 +203,41 @@ export async function POST(req: Request) {
       : typeof createdAt?.seconds === 'number'
         ? createdAt.seconds * 1000
         : null;
-    const resolved = resolveDeliveryFee(userDistance, userZone, freeDeliveryBasis, customerCreatedAtMs);
-    if (!resolved) {
+
+    // ── Group by date/time — each (date + lunch/dinner) group is ONE delivery
+    //    (one kitchen trip) and is charged its own delivery fee. ───────────
+    const grouped: Record<string, { date: string; time: string; bundles: any[]; subtotal: number }> = {};
+    for (const vb of validatedBundles) {
+      const key = `${vb.selectedDate || '未定'}|${vb.selectedTime || 'Lunch'}`;
+      if (!grouped[key]) {
+        grouped[key] = { date: vb.selectedDate || '未定', time: vb.selectedTime || 'Lunch', bundles: [], subtotal: 0 };
+      }
+      grouped[key].bundles.push(vb);
+      grouped[key].subtotal += vb.serverBundleTotal;
+    }
+    const groups = Object.values(grouped);
+    const isMultiPart = groups.length > 1;
+    const groupId = isMultiPart ? `GRP-${Date.now().toString(36).toUpperCase()}` : undefined;
+
+    // Per-delivery fee: each group's basis (subtotal − its proportional promo
+    // share; meal voucher NOT subtracted) is judged against its own distance
+    // threshold. Promo split here is byte-identical to the order-doc split in
+    // the write loop below, and to CartDrawer's client-side call, so the
+    // anti-tamper comparison further down passes.
+    const perDelivery = calcPerDeliveryFees(
+      groups.map(g => g.subtotal),
+      serverCartTotal,
+      serverPromoDiscount,
+      userDistance,
+      userZone,
+      customerCreatedAtMs,
+    );
+    if (!perDelivery.resolvable) {
       return NextResponse.json({ error: '配送地址未确认，请到「个人资料」验证地址' }, { status: 400 });
     }
-    const serverDeliveryFee = resolved.fee;
-    const serverDeliveryTier = resolved.tier;
+    const serverDeliveryFee = perDelivery.total;
+    const serverDeliveryTier = perDelivery.tier;
+    const partDeliveryFees = perDelivery.fees;
 
     // Compare against client (defense against tampering)
     const clientFeeNum = typeof clientDeliveryFee === 'number' ? clientDeliveryFee : 0;
@@ -238,21 +262,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Group by date/time and create orders ──────────────────
-    const grouped: Record<string, { date: string; time: string; bundles: any[]; subtotal: number }> = {};
-
-    for (const vb of validatedBundles) {
-      const key = `${vb.selectedDate || '未定'}|${vb.selectedTime || 'Lunch'}`;
-      if (!grouped[key]) {
-        grouped[key] = { date: vb.selectedDate || '未定', time: vb.selectedTime || 'Lunch', bundles: [], subtotal: 0 };
-      }
-      grouped[key].bundles.push(vb);
-      grouped[key].subtotal += vb.serverBundleTotal;
-    }
-
-    const groups = Object.values(grouped);
-    const isMultiPart = groups.length > 1;
-    const groupId = isMultiPart ? `GRP-${Date.now().toString(36).toUpperCase()}` : undefined;
+    // ── Create one order doc per delivery group (grouped above) ──────────
     let remainingPromo = serverPromoDiscount;
     let remainingMV = serverMealVoucherDiscount;
     const orderIds: string[] = [];
@@ -312,9 +322,9 @@ export async function POST(req: Request) {
         }
       }
 
-      // Delivery fee is charged ONCE per submission. Apply it to part 1 only
-      // (or the single order if not multi-part). Other parts get fee 0.
-      const partDeliveryFee = i === 0 ? serverDeliveryFee : 0;
+      // Each delivery group carries its OWN fee (one fee per kitchen trip),
+      // judged against this group's basis. Aligned to `groups` order.
+      const partDeliveryFee = partDeliveryFees[i];
 
       const payload: Record<string, any> = {
         userId, userName, userEmail, userPhone, userAddress,

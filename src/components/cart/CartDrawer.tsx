@@ -8,7 +8,7 @@ import { onAuthChange, getUserProfile } from '@/lib/auth';
 import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import {
-    resolveDeliveryFee,
+    calcPerDeliveryFees,
     resolveShortfallToFree,
     thresholdForDistance,
     FREE_DELIVERY_THRESHOLD_NEAR_RM,
@@ -104,11 +104,6 @@ export default function CartDrawer({
     }, [maxRedeemable, mealVouchersUsed]);
 
     const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount - mealVoucherDiscount);
-    // Free-delivery threshold basis: cartTotal − promoDiscount only.
-    // Meal voucher does NOT count against the basis (2026-05-11 rule) —
-    // prepaid voucher revenue is already booked, so redeeming a main dish
-    // shouldn't bump the customer out of the free-delivery tier.
-    const freeDeliveryBasis = Math.max(0, cartTotal - promoDiscount);
     const distanceKm: number | null = typeof userProfile?.addressDistanceKm === 'number'
         ? userProfile.addressDistanceKm
         : null;
@@ -122,10 +117,44 @@ export default function CartDrawer({
         typeof userProfile?.createdAt?.seconds === 'number'
             ? userProfile.createdAt.seconds * 1000
             : null;
-    const resolved = resolveDeliveryFee(distanceKm, userZone, freeDeliveryBasis, customerCreatedAtMs);
-    const deliveryTier: DeliveryTier | null = resolved?.tier ?? null;
-    const deliveryFee = resolved?.fee ?? 0;
-    const shortfallToFreeDelivery = resolveShortfallToFree(distanceKm, userZone, freeDeliveryBasis, customerCreatedAtMs);
+    // Each (date + lunch/dinner) group is a separate delivery (one kitchen
+    // trip) and pays its own fee. Group the cart in the SAME order the server
+    // does (cart array order → insertion order), so the per-group fees match
+    // and the server's anti-tamper check passes. Meal voucher does NOT count
+    // against the basis (2026-05-11 rule) — calcPerDeliveryFees uses
+    // cartTotal − promoDiscount only.
+    const deliveryGroups = (() => {
+        const grouped: Record<string, { date: string; time: string; subtotal: number }> = {};
+        for (const item of cart) {
+            const date = item.selectedDate || '未定';
+            const time = item.selectedTime || 'Lunch';
+            const key = `${date}|${time}`;
+            if (!grouped[key]) grouped[key] = { date, time, subtotal: 0 };
+            grouped[key].subtotal += (item.price || 0) * (item.quantity || 1);
+        }
+        return Object.values(grouped);
+    })();
+    const perDelivery = calcPerDeliveryFees(
+        deliveryGroups.map(g => g.subtotal),
+        cartTotal,
+        promoDiscount,
+        distanceKm,
+        userZone,
+        customerCreatedAtMs,
+    );
+    const deliveryTier: DeliveryTier | null = perDelivery.tier;
+    const deliveryFee = perDelivery.total;
+    // Per-delivery breakdown (fee + shortfall-to-free) for the multi-day UI.
+    const deliveryBreakdown = deliveryGroups.map((g, i) => ({
+        date: g.date,
+        time: g.time,
+        fee: perDelivery.fees[i] ?? 0,
+        shortfall: resolveShortfallToFree(distanceKm, userZone, perDelivery.bases[i] ?? 0, customerCreatedAtMs),
+    }));
+    const isMultiDelivery = deliveryGroups.length > 1;
+    // Single-delivery shortfall (existing UX). For multi-delivery we render the
+    // per-group breakdown instead.
+    const shortfallToFreeDelivery = deliveryBreakdown.length === 1 ? deliveryBreakdown[0].shortfall : 0;
     const finalTotal = subtotalAfterDiscount + deliveryFee;
 
     // Meal vouchers fully covered the bill (no cash to collect). Skips the
@@ -746,12 +775,37 @@ export default function CartDrawer({
                                         <span className="text-gray-500">
                                             配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
                                             {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–7.5km</span>}
+                                            {isMultiDelivery && <span className="text-gray-400">· {deliveryGroups.length} 趟配送</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
                                             {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}
                                         </span>
                                     </div>
-                                    {shortfallToFreeDelivery > 0 && (
+                                    {/* Multi-day: each delivery is a separate trip charged on its own
+                                        basis — show the per-trip breakdown so the customer understands
+                                        why the total isn't a single combined fee. */}
+                                    {isMultiDelivery && (
+                                        <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-md space-y-1">
+                                            {deliveryBreakdown.map((d, i) => {
+                                                const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date.slice(5) : d.date;
+                                                const timeLabel = d.time === 'Dinner' ? '晚餐' : '午餐';
+                                                return (
+                                                    <div key={i} className="flex justify-between items-center text-[11px]">
+                                                        <span className="text-gray-500">
+                                                            🛵 {dateLabel} {timeLabel}
+                                                            {d.shortfall > 0 && (
+                                                                <span className="text-amber-600"> · 差 RM {d.shortfall.toFixed(2)} 免运</span>
+                                                            )}
+                                                        </span>
+                                                        <span className={`font-bold ${d.fee === 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                                                            {d.fee === 0 ? '免费' : `+ RM ${d.fee.toFixed(2)}`}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                    {!isMultiDelivery && shortfallToFreeDelivery > 0 && (
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
                                                 💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
