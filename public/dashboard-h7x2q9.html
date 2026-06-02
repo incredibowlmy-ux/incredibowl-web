@@ -7951,11 +7951,12 @@ incredibowl.my`,
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
                 const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
-                if (!groups.length && !hasAddOn) return '';
+                if (!groups.length && !hasAddOn && !ingMeal.riceText) return '';
                 const rows = groups.map(g =>
                     `<div class="ing-row"><b class="ing-d">【${escP(g.dish)} ×${g.servings}${g.allDay ? ' · 全天' : ''}】</b> ${escP(g.text)}</div>`).join('');
+                const riceRow = ingMeal.riceText ? `<div class="ing-row"><b class="ing-d">白饭（统一煮）</b> ${escP(ingMeal.riceText)}</div>` : '';
                 const addOnRow = hasAddOn ? `<div class="ing-row"><b class="ing-d">加料</b> ${escP(ingMeal.addOnText)}</div>` : '';
-                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${addOnRow}</div>`;
+                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${addOnRow}</div>`;
             }
 
             function mealSection(title, orders, ingMeal) {

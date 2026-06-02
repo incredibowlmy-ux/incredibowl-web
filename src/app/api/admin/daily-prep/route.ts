@@ -86,8 +86,8 @@ export async function POST(req: NextRequest) {
 
     return corsify(NextResponse.json({
       date,
-      lunch: { count: lunchOrders.length, groups: lunch.groups, addOnText: lunch.addOnText },
-      dinner: { count: dinnerOrders.length, groups: dinner.groups, addOnText: dinner.addOnText },
+      lunch: { count: lunchOrders.length, groups: lunch.groups, riceText: lunch.riceText, addOnText: lunch.addOnText },
+      dinner: { count: dinnerOrders.length, groups: dinner.groups, riceText: dinner.riceText, addOnText: dinner.addOnText },
     }));
   } catch (err) {
     console.error('[admin/daily-prep] failed:', err);

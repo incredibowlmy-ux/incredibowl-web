@@ -112,20 +112,35 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
 
 // ─── Per-dish view (dashboard 打印备餐单) ──────────────────────────────
 
-// Aggregate ingredients grouped PER MAIN DISH, with add-ons collapsed into one
-// combined bucket. Same ingredient across two dishes (e.g. 马铃薯 in 炖肉 vs
-// 烤鸡胸) stays separate — each dish carries its own line.
+// Universal staple — cooked as one rice batch, not per dish. Pulled out of every
+// dish's line and shown as a single per-meal 白饭 total (NOT moved by cook-once,
+// since rice is cooked fresh each meal even for cook-once dishes' plates).
+const UNIVERSAL_STAPLE = '白饭';
+
+// Strip the marketing prefix 【...】 and the (Xg) suffix so an add-on source tag
+// reads short, e.g. "【增肌极客】加柠香烤鸡胸 (180g)" → "加柠香烤鸡胸".
+const cleanAddOnLabel = (s: string) => s.replace(/^【[^】]*】/, '').replace(/\s*\([^)]*\)\s*$/, '').trim() || s;
+
+interface AddOnAgg { name: string; unit: string; bySource: Map<string, number> }
+
+// Aggregate ingredients grouped PER MAIN DISH. Same ingredient across two dishes
+// (马铃薯 in 炖肉 vs 烤鸡胸) stays separate — each dish carries its own line.
+// 白饭 is pulled into a per-meal `rice` total. Add-ons keep per-source quantities
+// so an overlapping ingredient (鸡胸肉 from 嫩炒鸡丁 vs 增肌加鸡胸) can be split.
 function aggregateByDish(orders: PrepOrder[]): {
   mains: Map<string, { servings: number; lines: Map<string, Line> }>;
-  addOns: Map<string, Line>;
+  addOns: Map<string, AddOnAgg>;
+  rice: number;
 } {
   const mains = new Map<string, { servings: number; lines: Map<string, Line> }>();
-  const addOns = new Map<string, Line>();
-  const bumpInto = (map: Map<string, Line>, line: IngredientLine, mult: number) => {
+  const addOns = new Map<string, AddOnAgg>();
+  let rice = 0;
+  const addAddOn = (line: IngredientLine, mult: number, source: string) => {
+    if (line.name === UNIVERSAL_STAPLE) { rice += line.qty * mult; return; }
     const key = `${line.name} ${line.unit}`;
-    const cur = map.get(key);
-    if (cur) cur.qty += line.qty * mult;
-    else map.set(key, { name: line.name, qty: line.qty * mult, unit: line.unit });
+    let cur = addOns.get(key);
+    if (!cur) { cur = { name: line.name, unit: line.unit, bySource: new Map() }; addOns.set(key, cur); }
+    cur.bySource.set(source, (cur.bySource.get(source) || 0) + line.qty * mult);
   };
   for (const o of orders) {
     for (const it of o.items || []) {
@@ -133,43 +148,67 @@ function aggregateByDish(orders: PrepOrder[]): {
       if (qty <= 0) continue;
       if (isAddOnItem(it.name)) {
         const r = getAddOnRecipe(stripAddOnPrefix(it.name));
-        if (r) r.forEach(l => bumpInto(addOns, l, qty));
+        if (r) r.forEach(l => addAddOn(l, qty, cleanAddOnLabel(stripAddOnPrefix(it.name))));
       } else {
         const recipe = getRecipeForDish(it.name);
         if (recipe) {
           let g = mains.get(it.name);
           if (!g) { g = { servings: 0, lines: new Map() }; mains.set(it.name, g); }
           g.servings += qty;
-          recipe.ingredients.forEach(l => bumpInto(g.lines, l, qty));
+          recipe.ingredients.forEach(l => {
+            if (l.name === UNIVERSAL_STAPLE) { rice += l.qty * qty; return; }
+            const key = `${l.name} ${l.unit}`;
+            const cur = g!.lines.get(key);
+            if (cur) cur.qty += l.qty * qty;
+            else g!.lines.set(key, { name: l.name, qty: l.qty * qty, unit: l.unit });
+          });
         }
         for (const a of it.addOns || []) {
           const label = a.label || a.name || a.id || '';
           const aQty = a.quantity || 0;
           if (!label || aQty <= 0) continue;
           const ar = getAddOnRecipe(label);
-          if (ar) ar.forEach(l => bumpInto(addOns, l, aQty));
+          if (ar) ar.forEach(l => addAddOn(l, aQty, cleanAddOnLabel(label)));
         }
       }
     }
   }
-  return { mains, addOns };
+  return { mains, addOns, rice };
+}
+
+// Format the add-on bucket. An ingredient from a SINGLE add-on shows plain
+// ("糙米 90g"); one coming from MULTIPLE add-ons is split with its source tag
+// ("鸡胸肉 65g（嫩炒鸡丁）· 鸡胸肉 200g（加柠香烤鸡胸）") so the boss preps each
+// correctly — different add-ons mean different cooking.
+function formatAddOns(addOns: Map<string, AddOnAgg>): string {
+  const tokens: string[] = [];
+  for (const { name, unit, bySource } of addOns.values()) {
+    if (bySource.size <= 1) {
+      const qty = [...bySource.values()].reduce((s, q) => s + q, 0);
+      tokens.push(`${name} ${formatQty(qty, unit)}`);
+    } else {
+      for (const [label, qty] of bySource) tokens.push(`${name} ${formatQty(qty, unit)}（${label}）`);
+    }
+  }
+  return tokens.length ? tokens.join(' · ') : '—';
 }
 
 export interface DishIngredientGroup {
   dish: string;
   servings: number;
   allDay: boolean;   // true when a cook-once dish rolled into lunch
-  text: string;      // "鸡胸肉 1.2kg · 马铃薯 600g · ..."
+  text: string;      // "鸡胸肉 1.2kg · 马铃薯 600g · ..." (白饭 excluded)
 }
 export interface MealIngredients {
   groups: DishIngredientGroup[];
+  riceText: string;  // total 白饭 for the meal, '' when none
   addOnText: string;
 }
 
 /**
  * Build per-dish ingredient lists for lunch + dinner, applying the cook-once
- * rule: COOK_ONCE_DISHES' dinner ingredients merge into lunch and drop from
- * dinner. Order counts are NOT moved — only the ingredient roll-up.
+ * rule: COOK_ONCE_DISHES' dinner dish-ingredients merge into lunch and drop
+ * from dinner. Order counts and 白饭 (per-meal rice batch) are NOT moved.
  */
 export function buildDailyPrepIngredients(lunchOrders: PrepOrder[], dinnerOrders: PrepOrder[]): {
   lunch: MealIngredients;
@@ -203,7 +242,7 @@ export function buildDailyPrepIngredients(lunchOrders: PrepOrder[], dinnerOrders
       }));
 
   return {
-    lunch: { groups: toGroups(L.mains), addOnText: formatLines([...L.addOns.values()]) },
-    dinner: { groups: toGroups(D.mains), addOnText: formatLines([...D.addOns.values()]) },
+    lunch: { groups: toGroups(L.mains), riceText: L.rice > 0 ? formatQty(L.rice, 'g') : '', addOnText: formatAddOns(L.addOns) },
+    dinner: { groups: toGroups(D.mains), riceText: D.rice > 0 ? formatQty(D.rice, 'g') : '', addOnText: formatAddOns(D.addOns) },
   };
 }
