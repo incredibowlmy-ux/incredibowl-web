@@ -2106,6 +2106,15 @@
                     <input type="text" id="moNote" maxlength="200" placeholder="例：朋友介绍 / 节日特别订单" />
                 </div>
 
+                <!-- ─── 总额汇总（实时：食物 − 餐券 − 优惠 + 运费）─── -->
+                <div class="modal-row" id="moSummaryBox" style="padding:12px 14px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.3);border-radius:10px">
+                    <div id="moSummaryLines" style="font-size:12px;color:var(--text-muted);line-height:1.8"></div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding-top:8px;border-top:1px solid rgba(16,185,129,0.25)">
+                        <span style="font-size:13px;font-weight:700;color:var(--text)">客户实付总额</span>
+                        <span id="moSummaryGrand" style="font-size:20px;font-weight:800;color:var(--success)">RM 0.00</span>
+                    </div>
+                </div>
+
                 <div id="moError" class="login-error hidden" style="margin-top:10px"></div>
             </form>
             <div class="modal-footer">
@@ -8397,6 +8406,7 @@ incredibowl.my`,
             if (!totalInput.dataset.userTouched) {
                 totalInput.value = total > 0 ? total.toFixed(2) : '';
             }
+            if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
         }
 
         function openOrderModal(orderToEdit = null) {
@@ -8517,6 +8527,7 @@ incredibowl.my`,
             applyVoucherPromoMutex();
 
             $('#moError').classList.add('hidden');
+            refreshOrderSummary();
             modal.classList.remove('hidden');
             setTimeout(() => $('#moName').focus(), 100);
         }
@@ -9239,6 +9250,32 @@ incredibowl.my`,
         });
         $('#moTotal').addEventListener('input', refreshVoucherPreview);
 
+        // ─── Live order summary: 食物 − 餐券 − 优惠 + 运费 = 客户实付总额 ───
+        function refreshOrderSummary() {
+            const box = $('#moSummaryBox');
+            if (!box) return;
+            const foodTotal = parseFloat($('#moTotal').value) || 0;
+            const deliveryFee = parseFloat($('#moDelivery').value) || 0;
+            const vouchersUsed = parseInt($('#moVouchersUsed').value, 10) || 0;
+            // Voucher discount only counts what's actually usable (1 voucher = 1 main dish).
+            const prices = collectMainDishUnitPrices();
+            const usableVouchers = Math.min(vouchersUsed, prices.length);
+            const mvDiscount = computeMealVoucherDiscount(usableVouchers);
+            const promoDiscount = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
+            const cashFood = Math.max(0, foodTotal - mvDiscount - promoDiscount);
+            const grand = cashFood + deliveryFee;
+
+            const row = (label, val) => `<div style="display:flex;justify-content:space-between"><span>${label}</span><span>${val}</span></div>`;
+            const lines = [row('食物总额', `RM ${foodTotal.toFixed(2)}`)];
+            if (mvDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎫 餐券抵扣 ×${usableVouchers}</span><span>− RM ${mvDiscount.toFixed(2)}</span></div>`);
+            if (promoDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎟 优惠码 ${escapeHtml((state.moPromoValidated && state.moPromoValidated.code) || '')}</span><span>− RM ${promoDiscount.toFixed(2)}</span></div>`);
+            lines.push(row('🛵 配送费', deliveryFee > 0 ? `+ RM ${deliveryFee.toFixed(2)}` : '免费'));
+            $('#moSummaryLines').innerHTML = lines.join('');
+            $('#moSummaryGrand').textContent = `RM ${grand.toFixed(2)}`;
+        }
+        // One form-level listener covers typing in 金额 / 运费 / 餐券张数 / 菜品下拉 / 数量.
+        $('#manualOrderForm').addEventListener('input', refreshOrderSummary);
+
         // ─── Promo code (RM-promo) — mutex with meal vouchers ──────────
         // Validated state lives on `state.moPromoValidated` = { code, discount } or null
         state.moPromoValidated = null;
@@ -9271,6 +9308,7 @@ incredibowl.my`,
                 voucherInput.value = '0';
                 refreshVoucherPreview();
             }
+            if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
         }
 
         async function validatePromoCode() {
@@ -9377,6 +9415,7 @@ incredibowl.my`,
                     const dEl = $('#moDelivery');
                     if ((parseFloat(dEl.value) || 0) === 0) dEl.value = fee.toFixed(2);
                 }
+                if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
             } catch (e) {
                 state.moDistanceResolved = null;
                 preview.textContent = '✗ ' + e.message;
