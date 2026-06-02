@@ -1,5 +1,17 @@
 # Lessons learned
 
+## 2026-06-02 — scratch 工作区会冲掉未提交改动，改完立刻 commit
+
+**现象：** 在 `.gemini/antigravity/scratch/incredibowl-web` 改了 dashboard 文件 7 处，Edit 全部成功、Grep 当场能搜到。但稍后跑 `git status` 发现该文件「干净」、改动全没了；HEAD 从 `a79f6d6` 跳到 `ac1798a`（工作区在我编辑后做了一次 git 同步/拉新提交，把未提交的工作树改动冲掉）。todo.md 侥幸幸存，dashboard 被覆盖。
+
+**根因：** 这个 scratch 路径不是稳定工作区，会被外部同步/reset。未提交（uncommitted）的工作树改动随时可能蒸发。
+
+**给自己的规则：**
+- 在 `scratch/` 路径下，**每完成一组逻辑改动就立刻 `git add && git commit`**，别攒着等用户说 push。
+- push/验证前先 `git diff --stat <file>` 确认 git 真的看到改动；只靠 Edit 返回成功 + Grep 搜到**不够**（工具的文件视图可能比 git 工作区滞后或被回退）。
+- 如果发现改动消失：别慌，重做后**立即提交**抢在下一次同步前锁住。
+
+
 ## 2026-05-11 — Discount mechanisms must handle the zero-total edge case
 
 **Bug:** Customer with 5+ meal vouchers redeems 5 main dishes in free-delivery zone → cart total = RM 0.00, but UI still required them to select QR/FPX and upload a receipt. "确认下单" button was permanently disabled because it required `paymentMethod` to be set.
