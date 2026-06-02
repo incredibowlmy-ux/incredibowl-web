@@ -8429,8 +8429,17 @@ incredibowl.my`,
 
             // Voucher / promo orders are immutable — claim is already done and editing
             // would corrupt the per-voucher allocated revenue accounting / voucher consumption state.
-            if (orderToEdit && Number(orderToEdit.mealVouchersUsed) > 0) {
-                toast('餐券订单不可编辑（已扣券）— 请删除后重新录入', 'error');
+            // Detect a voucher order by ANY claim marker: mealVouchersUsed may be absent on
+            // older / webapp orders, so also check the discount + claimed-id list. Re-editing
+            // such an order double-discounts (food field is post-discount, voucher recomputes
+            // off full main-dish price) → must delete + re-enter instead (delete auto-releases).
+            const hasVoucherClaim = orderToEdit && (
+                Number(orderToEdit.mealVouchersUsed) > 0 ||
+                Number(orderToEdit.mealVoucherDiscount) > 0 ||
+                (Array.isArray(orderToEdit.claimedMealVoucherIds) && orderToEdit.claimedMealVoucherIds.length > 0)
+            );
+            if (hasVoucherClaim) {
+                toast('餐券订单不可编辑（已扣券，改了会搞乱餐券会计）— 请删除后重新录入，删除会自动退回餐券', 'error');
                 return;
             }
             if (orderToEdit && orderToEdit.promoCode) {
@@ -8447,7 +8456,9 @@ incredibowl.my`,
                 $('#moName').value = orderToEdit.userName || '';
                 $('#moPhone').value = orderToEdit.userPhone || '';
                 $('#moNote').value = (orderToEdit.note || '').replace(/^手动录入 · \w+$/, '');
-                $('#moTotal').value = (orderToEdit.total || 0).toFixed(2);
+                // Use the food FACE value (originalTotal), not the post-discount cash total —
+                // otherwise the live summary subtracts the voucher/promo discount a 2nd time.
+                $('#moTotal').value = ((orderToEdit.originalTotal ?? orderToEdit.total) || 0).toFixed(2);
                 $('#moTotal').dataset.userTouched = '1'; // don't auto-recompute
                 $('#moDelivery').value = (orderToEdit.deliveryFee || 0).toFixed(2);
                 $('#moZone').value = orderToEdit.deliveryZone || 'within2km';
