@@ -1328,6 +1328,10 @@
                                     <button data-dfilter="lunch">🟠 午</button>
                                     <button data-dfilter="dinner">🟣 晚</button>
                                 </div>
+                                <div style="display:flex;gap:6px;align-items:center">
+                                    <input type="date" id="prepSheetDate" style="font-size:12px;padding:4px 6px" title="选择要打印备餐单的送达日期" />
+                                    <button class="btn sm" id="printPrepBtn" title="打印当天备餐单（厨房汇总 + 逐单明细）">🖨️ 打印备餐单</button>
+                                </div>
                             </div>
                         </div>
                         <div id="recentOrdersList" class="orders-list"></div>
@@ -7828,6 +7832,160 @@ incredibowl.my`,
             recentDeliveryFilter = b.dataset.dfilter;
             renderRecentOrders();
         }));
+
+        // ═══════════════════════════════════════════════════════════════
+        //   PREP SHEET — printable daily order sheet (kitchen aggregate + per-order)
+        //   Opens a clean white-background window and triggers print.
+        // ═══════════════════════════════════════════════════════════════
+        (function initPrepSheet() {
+            const dateInput = $('#prepSheetDate');
+            const btn = $('#printPrepBtn');
+            if (!dateInput || !btn) return;
+            // Default to tomorrow — boss preps tonight for tomorrow's deliveries.
+            const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+            dateInput.value = ymdKey(tmr);
+
+            const PREP_CSS = `
+                * { box-sizing:border-box; }
+                body { font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; color:#111; margin:0; padding:16px; background:#fff; font-size:13px; line-height:1.45; }
+                .sheet-head { border-bottom:2px solid #111; padding-bottom:8px; margin-bottom:12px; }
+                .brand { font-size:20px; font-weight:800; }
+                .meta { font-size:14px; font-weight:600; margin-top:2px; }
+                .printed { font-size:11px; color:#666; }
+                .meal > h2 { font-size:16px; margin:14px 0 6px; padding:5px 8px; background:#f0f0f0; border-left:4px solid #FF6B35; }
+                .agg { border:1px dashed #999; border-radius:6px; padding:8px 10px; margin-bottom:10px; background:#fafafa; }
+                .agg-t { font-weight:700; margin-bottom:4px; }
+                .agg-row { margin:2px 0; }
+                .agg-l { display:inline-block; min-width:42px; font-weight:700; color:#555; }
+                .order { border:1px solid #ccc; border-radius:8px; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
+                .ohead { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px; }
+                .chk { font-size:18px; line-height:1; }
+                .code { font-family:monospace; font-weight:700; }
+                .oname { font-weight:800; font-size:15px; }
+                .ophone { color:#222; }
+                .otime { margin-left:auto; font-weight:700; }
+                .items { margin:4px 0; }
+                .dish { margin:1px 0; }
+                .addon { margin-left:18px; color:#444; }
+                .inote { color:#b45309; font-weight:600; }
+                .addr { font-size:12px; color:#333; margin-top:3px; }
+                .pay { margin-top:3px; font-size:13px; }
+                .collect { color:#c00; font-weight:800; }
+                .paid { color:#0a7a0a; }
+                .orem { margin-top:4px; padding:4px 6px; background:#fff7d6; border:1px solid #f0d000; border-radius:4px; font-weight:700; }
+                .empty { font-size:14px; color:#888; }
+                @page { size:A4; margin:12mm; }
+                @media print { .order { page-break-inside:avoid; } .meal > h2 { page-break-after:avoid; } }
+            `;
+
+            const escP = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+            const shortCode = (o) => '#' + String(o.id || '').slice(-6).toUpperCase();
+
+            function payInfo(o) {
+                const cash = (Number(o.total) || 0) + (Number(o.deliveryFee) || 0);
+                const mvUsed = Number(o.mealVouchersUsed) || 0;
+                const method = (o.paymentMethod || '').toLowerCase();
+                if (!o.isManual) return { collect: false, html: `<span class="paid">✅ 已付（网站）RM ${cash.toFixed(2)}</span>` };
+                if (method === 'voucher' || (mvUsed > 0 && cash < 0.01)) return { collect: false, html: `<span class="paid">🎫 餐券全额（${mvUsed} 张）· 无需收钱</span>` };
+                if (method === 'cash') return { collect: true, html: `<span class="collect">💵 收现金 RM ${cash.toFixed(2)}</span>` };
+                if (o.receiptUploaded) return { collect: false, html: `<span class="paid">✅ 已付（${escP(method.toUpperCase())}）RM ${cash.toFixed(2)}</span>` };
+                return { collect: true, html: `<span class="collect">⚠️ 待收 RM ${cash.toFixed(2)}（${escP(method.toUpperCase())} 未上传凭证）</span>` };
+            }
+
+            function distLine(o) {
+                if (o.deliveryZone === null) return '🏠 自取（不配送）';
+                const addr = (o.userAddress || '').trim() || '（无地址）';
+                const km = o.deliveryDistanceKm;
+                const tier = o.deliveryTier || (o.deliveryZone === 'within2km' ? 'free' : o.deliveryZone === 'outside2km' ? 'near' : '');
+                const tl = tier === 'free' ? '免运区' : tier === 'near' ? '近距离' : tier === 'mid' ? '中距离' : tier === 'far' ? '远距离' : '';
+                const dist = (typeof km === 'number' ? `${km}km` : '') + (tl ? ` ${tl}` : '');
+                return `📍 ${escP(addr)}${dist.trim() ? ' · ' + dist.trim() : ''}`;
+            }
+
+            function aggregate(orders) {
+                const dishes = new Map(), addons = new Map();
+                orders.forEach(o => normalizeOrderItems(o).forEach(it => {
+                    const name = canonicalDishName(it.name);
+                    if (name) dishes.set(name, (dishes.get(name) || 0) + (Number(it.quantity) || 1));
+                    (it.addOns || []).forEach(a => {
+                        const lbl = a.label || a.name || a.id || '加料';
+                        addons.set(lbl, (addons.get(lbl) || 0) + (Number(a.quantity) || 1));
+                    });
+                }));
+                const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escP(k)} <b>×${v}</b>`).join(' · ');
+                return { dishesHtml: fmt(dishes) || '—', addonsHtml: fmt(addons) || '无' };
+            }
+
+            function orderCard(o) {
+                const itemsHtml = normalizeOrderItems(o).map(it => {
+                    const main = `<div class="dish">• <b>${Number(it.quantity) || 1}×</b> ${escP(canonicalDishName(it.name))}${it.note ? ` <span class="inote">📝 ${escP(it.note)}</span>` : ''}</div>`;
+                    const adds = (it.addOns || []).map(a => `<div class="addon">＋ ${escP(a.label || a.name || a.id || '加料')} ×${Number(a.quantity) || 1}</div>`).join('');
+                    return main + adds;
+                }).join('') || '—';
+                const note = (o.note || '').trim();
+                return `<div class="order">
+                    <div class="ohead">
+                        <span class="chk">☐</span>
+                        <span class="code">${shortCode(o)}</span>
+                        <span class="oname">${escP(o.userName || '—')}</span>
+                        <span class="ophone">📞 ${escP(o.userPhone || '—')}</span>
+                        <span class="otime">⏰ ${escP(o.deliveryTime || '—')}</span>
+                    </div>
+                    <div class="items">${itemsHtml}</div>
+                    <div class="addr">${distLine(o)}</div>
+                    <div class="pay">${payInfo(o).html}</div>
+                    ${note ? `<div class="orem">📝 备注：${escP(note)}</div>` : ''}
+                </div>`;
+            }
+
+            function mealSection(title, orders) {
+                if (!orders.length) return '';
+                const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
+                const agg = aggregate(sorted);
+                const collectN = sorted.filter(o => payInfo(o).collect).length;
+                return `<section class="meal">
+                    <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
+                    <div class="agg">
+                        <div class="agg-t">🧑‍🍳 备餐汇总</div>
+                        <div class="agg-row"><span class="agg-l">主菜</span>${agg.dishesHtml}</div>
+                        <div class="agg-row"><span class="agg-l">配料</span>${agg.addonsHtml}</div>
+                    </div>
+                    ${sorted.map(orderCard).join('')}
+                </section>`;
+            }
+
+            function buildHtml(dateStr, orders) {
+                const lunch = orders.filter(o => mealType(o) === 'lunch');
+                const dinner = orders.filter(o => mealType(o) === 'dinner');
+                const other = orders.filter(o => mealType(o) === 'unknown');
+                let weekday = '';
+                const dd = new Date(dateStr + 'T00:00:00');
+                if (!isNaN(dd)) weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dd.getDay()];
+                const printedAt = new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+                const body = mealSection('🟠 午餐', lunch) + mealSection('🟣 晚餐', dinner) + mealSection('其他 / 未分类', other);
+                return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
+                    <header class="sheet-head">
+                        <div class="brand">Incredibowl 备餐单</div>
+                        <div class="meta">${escP(dateStr)}（${weekday}）· 共 ${orders.length} 单 · 午 ${lunch.length} / 晚 ${dinner.length}${other.length ? ` / 其他 ${other.length}` : ''}</div>
+                        <div class="printed">打印于 ${escP(printedAt)}</div>
+                    </header>
+                    ${body || '<p class="empty">这一天暂无订单。</p>'}
+                </body></html>`;
+            }
+
+            btn.addEventListener('click', () => {
+                const dateStr = dateInput.value || ymdKey(new Date());
+                const orders = (state.orders || []).filter(o => o.deliveryDate === dateStr && o.status !== 'cancelled');
+                if (orders.length === 0) { toast(`${dateStr} 暂无订单`, 'error'); return; }
+                const w = window.open('', '_blank', 'width=860,height=1000');
+                if (!w) { toast('打印窗口被浏览器拦截，请允许弹窗后重试', 'error'); return; }
+                w.document.open();
+                w.document.write(buildHtml(dateStr, orders));
+                w.document.close();
+                w.focus();
+                setTimeout(() => { try { w.print(); } catch (e) {} }, 400);
+            });
+        })();
 
         // C2: 客户流失 pills + WA copy buttons (delegated so re-renders survive)
         document.addEventListener('click', (e) => {
