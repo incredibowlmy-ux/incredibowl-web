@@ -2039,6 +2039,12 @@
                 </div>
 
                 <div class="modal-row">
+                    <label>偏好送达时间</label>
+                    <select id="moDeliveryTime" style="width:100%"></select>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:3px">午餐 11:30 AM–2:00 PM · 晚餐 5:30 PM–8:00 PM（每 30 分钟）· 随餐别自动切换</div>
+                </div>
+
+                <div class="modal-row">
                     <label>菜品（选择 + 数量）</label>
                     <div id="moItemRows"></div>
                     <button type="button" id="moAddItemBtn" class="btn ghost sm" style="margin-top:8px">+ 加一项</button>
@@ -8523,6 +8529,9 @@ incredibowl.my`,
             $$('#moMealPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.meal === selectedMeal));
             $$('#moPaymentPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.payment === selectedPayment));
 
+            // Preferred delivery time — edit: restore saved (cross-group ok); new: meal default.
+            populateDeliveryTime(selectedMeal, orderToEdit ? (orderToEdit.deliveryTime || '') : null, !!orderToEdit);
+
             // Reset voucher fields (existing orders' voucher state isn't editable here — vouchers
             // are immutable once claimed; admin should delete+recreate the order to redo)
             $('#moVouchersUsed').value = '0';
@@ -9088,6 +9097,43 @@ incredibowl.my`,
             });
         });
 
+        // ─── Preferred delivery-time slots (30-min intervals) ───
+        // Lunch 11:30 AM–2:00 PM · Dinner 5:30 PM–8:00 PM. Values are 24h HH:MM
+        // (stored on order.deliveryTime; analytics split lunch/dinner at 15:00).
+        const MO_TIME_SLOTS = {
+            lunch:  ['11:30', '12:00', '12:30', '13:00', '13:30', '14:00'],
+            dinner: ['17:30', '18:00', '18:30', '19:00', '19:30', '20:00'],
+        };
+        const MO_TIME_DEFAULT = { lunch: '12:30', dinner: '19:00' };
+        function moTo12h(t) {
+            const [h, m] = t.split(':').map(Number);
+            const ap = h < 12 ? 'AM' : 'PM';
+            const h12 = h % 12 === 0 ? 12 : h % 12;
+            return `${h12}:${String(m).padStart(2, '0')} ${ap}`;
+        }
+        // Fill #moDeliveryTime for the given meal. keepValue: try to preserve it.
+        // allowCrossGroup: if keepValue belongs to the OTHER meal's slots (e.g. editing
+        // an order whose meal is auto), show both groups so it stays selectable.
+        function populateDeliveryTime(meal, keepValue, allowCrossGroup) {
+            const sel = $('#moDeliveryTime');
+            if (!sel) return;
+            let mode = (meal === 'lunch' || meal === 'dinner') ? meal : 'auto';
+            if (allowCrossGroup && keepValue && mode !== 'auto' && !MO_TIME_SLOTS[mode].includes(keepValue)) {
+                mode = 'auto';
+            }
+            const opt = (t) => `<option value="${t}">${moTo12h(t)}</option>`;
+            let html;
+            if (mode === 'lunch' || mode === 'dinner') {
+                html = MO_TIME_SLOTS[mode].map(opt).join('');
+            } else {
+                html = `<optgroup label="午餐 11:30 AM–2:00 PM">${MO_TIME_SLOTS.lunch.map(opt).join('')}</optgroup>`
+                     + `<optgroup label="晚餐 5:30 PM–8:00 PM">${MO_TIME_SLOTS.dinner.map(opt).join('')}</optgroup>`;
+            }
+            sel.innerHTML = html;
+            const valid = keepValue && [...sel.options].some(o => o.value === keepValue);
+            sel.value = valid ? keepValue : (MO_TIME_DEFAULT[meal] || '12:30');
+        }
+
         // Meal pill selection
         document.addEventListener('click', (e) => {
             const target = e.target.closest('#moMealPills .channel-pill');
@@ -9095,6 +9141,8 @@ incredibowl.my`,
             $$('#moMealPills .channel-pill').forEach(x => x.classList.remove('active'));
             target.classList.add('active');
             selectedMeal = target.dataset.meal;
+            // Repopulate time slots for the chosen meal (strict — keep current only if valid).
+            populateDeliveryTime(selectedMeal, $('#moDeliveryTime').value, false);
         });
 
         // Payment pill selection
@@ -9764,7 +9812,7 @@ incredibowl.my`,
                 deliveryFee,
                 deliveryZone: zone,
                 deliveryDate: date,
-                deliveryTime: selectedMeal === 'lunch' ? '12:30' : selectedMeal === 'dinner' ? '19:00' : '12:00',
+                deliveryTime: $('#moDeliveryTime').value || (selectedMeal === 'lunch' ? '12:30' : selectedMeal === 'dinner' ? '19:00' : '12:00'),
                 paymentMethod: selectedPayment,
                 receiptUploaded: true,
                 status: 'delivered',
