@@ -8420,6 +8420,7 @@ incredibowl.my`,
             // Reset address → distance state
             $('#moAddress').value = '';
             state.moDistanceResolved = null;
+            state.moDeliveryAuto = false;  // becomes true once a distance resolves (geocode / profile)
             $('#moDistancePreview').textContent = '填完整地址 → 点「算距离」自动填公里数 + 运费档位（不填也能存，但卡片不显示距离）';
             $('#moDistancePreview').style.color = 'var(--text-muted)';
 
@@ -8527,6 +8528,7 @@ incredibowl.my`,
             applyVoucherPromoMutex();
 
             $('#moError').classList.add('hidden');
+            autofillAddressFromProfile();  // edit/old orders with no address → pull from profile
             refreshOrderSummary();
             modal.classList.remove('hidden');
             setTimeout(() => $('#moName').focus(), 100);
@@ -9162,6 +9164,49 @@ incredibowl.my`,
             return { userId: u.id, displayName: u.displayName || '', availableVouchers };
         }
 
+        // Full user doc by phone (registered webapp account) — for pulling saved address.
+        function findUserDocByPhone(phoneRaw) {
+            const normalized = dashboardNormalizePhone(phoneRaw);
+            if (!normalized) return null;
+            return (state.users || []).find(x => x.phoneNormalized === normalized) || null;
+        }
+
+        // Auto-fill the delivery address from the customer's registered webapp profile
+        // so the boss doesn't re-type it. Only fills when the address box is EMPTY —
+        // never clobbers a manually-typed address or an order's own saved address.
+        // User doc carries: address, addressDistanceKm (geocoded), deliveryZone.
+        function autofillAddressFromProfile() {
+            const addrEl = $('#moAddress');
+            if (addrEl.value.trim()) return;            // don't overwrite existing
+            const u = findUserDocByPhone($('#moPhone').value.trim());
+            if (!u) return;
+            const addr = (u.address || '').trim();
+            if (!addr) return;
+            addrEl.value = addr;
+            const preview = $('#moDistancePreview');
+            const km = typeof u.addressDistanceKm === 'number' ? u.addressDistanceKm : null;
+            if (km !== null) {
+                const tier = km <= 5 ? 'near' : 'mid';   // mirrors deliveryUtils.tierFromDistance
+                state.moDistanceResolved = { distanceKm: km, tier, formattedAddress: addr, fromProfile: true };
+                state.moDeliveryAuto = true;             // fee follows free-above-threshold rule
+                $('#moZone').value = u.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
+                const foodTotal = parseFloat($('#moTotal').value) || 0;
+                const promoD = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
+                const feeNow = moDeliveryFeeForKm(km, foodTotal - promoD);
+                const thr = moThresholdForKm(km);
+                preview.innerHTML = `📇 用账号注册地址 · <strong>${km}km</strong> · ${tier === 'near' ? '近距离' : '中距离'} · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
+            } else {
+                // Legacy account: has address but no geocoded distance. Keep address + zone,
+                // let admin card derive the tier from zone. No km stored.
+                const zone = u.deliveryZone || 'within2km';
+                $('#moZone').value = zone;
+                state.moDistanceResolved = { distanceKm: null, formattedAddress: addr, fromProfile: true };
+                preview.textContent = `📇 用账号注册地址（账号无精确距离，按档位 ${zone === 'within2km' ? '≤2km' : '>2km'} 记，可点「算距离」补精确公里）`;
+            }
+            preview.style.color = 'var(--success)';
+            if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
+        }
+
         // Live update of "可用 X 张" hint as user types phone in order modal
         function refreshOrderVoucherHint() {
             const hint = $('#moVoucherAvailable');
@@ -9235,6 +9280,7 @@ incredibowl.my`,
 
         $('#moPhone').addEventListener('input', () => {
             refreshOrderVoucherHint();
+            autofillAddressFromProfile();  // pull saved address when phone matches a registered customer
             // Phone changed → invalidate any prior promo validation (might no longer be eligible per-user)
             if (state.moPromoValidated) {
                 state.moPromoValidated = null;
@@ -9250,10 +9296,34 @@ incredibowl.my`,
         });
         $('#moTotal').addEventListener('input', refreshVoucherPreview);
 
+        // ─── Customer delivery-fee rule — MIRRORS src/lib/deliveryUtils.ts ───
+        // Binary step by distance: basis ≥ threshold → free, else base fee.
+        // basis = 食物总额 − 优惠码折扣 (meal voucher NOT subtracted).
+        // ≤2.5km RM3/免RM20 · ≤5km RM5/免RM30 · 5–7.5km RM12/免RM45.
+        // Keep in sync with deliveryUtils — see memory project_free_delivery_threshold_rule.
+        function moThresholdForKm(km) { return km <= 2.5 ? 20 : km <= 5 ? 30 : 45; }
+        function moBaseFeeForKm(km)   { return km <= 2.5 ? 3  : km <= 5 ? 5  : 12; }
+        function moDeliveryFeeForKm(km, basis) { return basis >= moThresholdForKm(km) ? 0 : moBaseFeeForKm(km); }
+
+        // Recompute the delivery fee from the resolved distance + current food basis,
+        // matching the webapp's free-above-threshold rule. Only runs while the fee is
+        // "auto" (system-owned); once the boss types a fee manually, moDeliveryAuto=false
+        // and we leave it alone.
+        function recomputeDeliveryFee() {
+            if (!state.moDeliveryAuto) return;
+            const d = state.moDistanceResolved;
+            if (!d || typeof d.distanceKm !== 'number') return;
+            const foodTotal = parseFloat($('#moTotal').value) || 0;
+            const promoDiscount = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
+            const basis = foodTotal - promoDiscount;  // meal voucher NOT subtracted
+            $('#moDelivery').value = moDeliveryFeeForKm(d.distanceKm, basis).toFixed(2);
+        }
+
         // ─── Live order summary: 食物 − 餐券 − 优惠 + 运费 = 客户实付总额 ───
         function refreshOrderSummary() {
             const box = $('#moSummaryBox');
             if (!box) return;
+            recomputeDeliveryFee();  // keep delivery fee in sync with food basis + distance
             const foodTotal = parseFloat($('#moTotal').value) || 0;
             const deliveryFee = parseFloat($('#moDelivery').value) || 0;
             const vouchersUsed = parseInt($('#moVouchersUsed').value, 10) || 0;
@@ -9275,6 +9345,10 @@ incredibowl.my`,
         }
         // One form-level listener covers typing in 金额 / 运费 / 餐券张数 / 菜品下拉 / 数量.
         $('#manualOrderForm').addEventListener('input', refreshOrderSummary);
+        // Boss manually edits the delivery fee → stop auto-applying the system rule.
+        // Fires in the target phase (before the form's bubble listener), so the
+        // recompute inside refreshOrderSummary sees moDeliveryAuto=false and backs off.
+        $('#moDelivery').addEventListener('input', () => { state.moDeliveryAuto = false; });
 
         // ─── Promo code (RM-promo) — mutex with meal vouchers ──────────
         // Validated state lives on `state.moPromoValidated` = { code, discount } or null
@@ -9399,6 +9473,7 @@ incredibowl.my`,
                 if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
                 const km = Number(data.distanceKm);
                 const tierLabel = { free: '免运区', near: '近距离', mid: '中距离', far: '远距离' };
+                state.moDeliveryAuto = true;  // system now owns the delivery fee (free-above-threshold)
                 if (data.tier === 'outside') {
                     // Beyond 7.5km service ceiling — still recordable (boss may have delivered anyway).
                     state.moDistanceResolved = { distanceKm: km, tier: 'far', formattedAddress: data.formattedAddress || addr };
@@ -9408,12 +9483,12 @@ incredibowl.my`,
                 } else {
                     state.moDistanceResolved = { distanceKm: km, tier: data.tier, formattedAddress: data.formattedAddress || addr };
                     $('#moZone').value = data.tier === 'free' ? 'within2km' : 'outside2km';
-                    const fee = Number(data.fee) || 0;
-                    preview.innerHTML = `✓ ${escapeHtml(data.formattedAddress || addr)} · <strong>${km}km</strong> · ${tierLabel[data.tier] || data.tier} · 建议运费 RM ${fee.toFixed(2)}`;
+                    const foodTotal = parseFloat($('#moTotal').value) || 0;
+                    const promoD = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
+                    const feeNow = moDeliveryFeeForKm(km, foodTotal - promoD);
+                    const thr = moThresholdForKm(km);
+                    preview.innerHTML = `✓ ${escapeHtml(data.formattedAddress || addr)} · <strong>${km}km</strong> · ${tierLabel[data.tier] || data.tier} · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
                     preview.style.color = 'var(--success)';
-                    // Auto-fill delivery fee only if still untouched (0) — never clobber a typed fee.
-                    const dEl = $('#moDelivery');
-                    if ((parseFloat(dEl.value) || 0) === 0) dEl.value = fee.toFixed(2);
                 }
                 if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
             } catch (e) {
