@@ -2999,21 +2999,23 @@ incredibowl.my`,
 
         // Lunch / Dinner / Unknown classification.
         // Manual override: order.mealType ('lunch' | 'dinner') wins.
-        // Otherwise: try deliveryTime, then createdAt hour. Split at 15:00 (no gaps).
+        // MUST mirror isLunchOrder() in src/lib/prepIngredients.ts so the order
+        // cards split the SAME way as the server-computed ingredient list.
         function mealType(o) {
             if (o.mealType === 'lunch' || o.mealType === 'dinner') return o.mealType;
-            const t = String(o.deliveryTime || '');
-            const m = t.match(/^(\d{1,2})/);
-            let hour = m ? parseInt(m[1], 10) : null;
-            if (hour == null) {
-                const d = tsToDate(o.createdAt);
-                if (d) hour = d.getHours();
-            }
-            if (hour == null) return 'unknown';
-            // Inclusive split at 15:00. Late-night (0-4) typically next-day-meal prep
-            // — most likely the dinner-shift owner clearing orders, so we treat as dinner.
-            if (hour >= 5 && hour < 15) return 'lunch';
-            return 'dinner';
+            const t = String(o.deliveryTime || '').toLowerCase();
+            // Web orders store a TEXT label ("lunch (11am-1pm)" / "dinner (5pm-8pm)").
+            // Check keywords FIRST — the HH:MM regex below would miss these and
+            // wrongly fall back to order-CREATION time (the lunch/dinner mix-up bug).
+            if (t.includes('dinner') || t.includes('晚')) return 'dinner';
+            if (t.includes('lunch') || t.includes('午')) return 'lunch';
+            // Manual orders store HH:MM — match anywhere, split at 17:00 like the server.
+            const m = t.match(/(\d{1,2}):\d{2}/);
+            if (m) return parseInt(m[1], 10) >= 17 ? 'dinner' : 'lunch';
+            // No delivery-time signal at all — last resort: order-creation hour.
+            const d = tsToDate(o.createdAt);
+            if (d) { const h = d.getHours(); return (h >= 5 && h < 15) ? 'lunch' : 'dinner'; }
+            return 'unknown';
         }
 
         const tsToDate = (ts) => {
