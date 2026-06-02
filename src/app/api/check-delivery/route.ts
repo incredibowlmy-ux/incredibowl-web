@@ -7,6 +7,25 @@ import {
     type DeliveryTier,
 } from '@/lib/deliveryUtils';
 
+// CORS so the standalone admin dashboard (served from file:// or a different
+// host) can call this for manual order entry. Same '*' pattern as the
+// /api/admin/* routes. Endpoint is already public + rate-limited.
+const CORS_HEADERS: Record<string, string> = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+};
+
+function corsify(res: NextResponse): NextResponse {
+    for (const [k, v] of Object.entries(CORS_HEADERS)) res.headers.set(k, v);
+    return res;
+}
+
+export async function OPTIONS() {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 /**
  * POST /api/check-delivery
  *
@@ -61,16 +80,16 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
     const rl = checkRateLimit(ip);
     if (!rl.ok) {
-        return NextResponse.json(
+        return corsify(NextResponse.json(
             { error: '查询次数过多，请稍后重试' },
             { status: 429, headers: { 'Retry-After': rl.retryAfterSec.toString() } },
-        );
+        ));
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         console.error('GOOGLE_MAPS_API_KEY is not set');
-        return NextResponse.json({ error: '地图服务暂未配置，请联系客服' }, { status: 500 });
+        return corsify(NextResponse.json({ error: '地图服务暂未配置，请联系客服' }, { status: 500 }));
     }
 
     let address: string;
@@ -78,11 +97,11 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         address = String(body.address || '').trim();
     } catch {
-        return NextResponse.json({ error: '请求格式错误' }, { status: 400 });
+        return corsify(NextResponse.json({ error: '请求格式错误' }, { status: 400 }));
     }
 
     if (!address || address.length < 4) {
-        return NextResponse.json({ error: '请输入完整地址（建议含 condo 名 + 路名 / 邮编）' }, { status: 400 });
+        return corsify(NextResponse.json({ error: '请输入完整地址（建议含 condo 名 + 路名 / 邮编）' }, { status: 400 }));
     }
 
     const params = new URLSearchParams({
@@ -113,18 +132,18 @@ export async function POST(req: NextRequest) {
         googleData = await res.json();
     } catch (err) {
         console.error('check-delivery geocode network error:', err);
-        return NextResponse.json({ error: '地图服务无响应，请重试' }, { status: 503 });
+        return corsify(NextResponse.json({ error: '地图服务无响应，请重试' }, { status: 503 }));
     }
 
     if (googleData.status === 'ZERO_RESULTS') {
-        return NextResponse.json(
+        return corsify(NextResponse.json(
             { error: '找不到这个地址，请加上 condo 名或路名后重试' },
             { status: 404 },
-        );
+        ));
     }
     if (googleData.status !== 'OK' || !googleData.results?.length) {
         console.error('check-delivery geocode failed:', googleData.status, googleData.error_message);
-        return NextResponse.json({ error: '地址解析失败，请稍后重试' }, { status: 502 });
+        return corsify(NextResponse.json({ error: '地址解析失败，请稍后重试' }, { status: 502 }));
     }
 
     const top = googleData.results[0];
@@ -133,11 +152,11 @@ export async function POST(req: NextRequest) {
 
     // Outside the 7.5km service ceiling: tell them honestly, offer WhatsApp.
     if (distanceKm > MAX_DELIVERY_KM) {
-        return NextResponse.json({
+        return corsify(NextResponse.json({
             tier: 'outside' as const,
             distanceKm: Number(distanceKm.toFixed(2)),
             formattedAddress: top.formatted_address,
-        });
+        }));
     }
 
     const tier: DeliveryTier = tierFromDistance(distanceKm);
@@ -150,7 +169,7 @@ export async function POST(req: NextRequest) {
     const threshold = thresholdForDistance(distanceKm);
     const feeAtThreshold = calcDeliveryFee(distanceKm, threshold);
 
-    return NextResponse.json({
+    return corsify(NextResponse.json({
         tier,
         distanceKm: Number(distanceKm.toFixed(2)),
         fee: feeNow,
@@ -158,5 +177,5 @@ export async function POST(req: NextRequest) {
         threshold,
         formattedAddress: top.formatted_address,
         partialMatch: !!top.partial_match,
-    });
+    }));
 }
