@@ -4467,36 +4467,28 @@ incredibowl.my`,
         // C5: 同期对比 — today vs same weekday last week + same date last month.
         // Always operates on state.orders (lifetime), ignores state.range, so the
         // comparison is honest no matter what filter is active above.
+        // Uses deliveryDate (not createdAt) so the numbers line up with the
+        // 未来 7 天预测 card above + match real daily revenue (营业额) recognition.
         function renderPeriodCompare() {
             const today = startOfDay(new Date());
-            const aggregateForDate = (targetStart, targetEnd) => {
+            const aggregateForDate = (anchorDate) => {
+                const key = ymdKey(anchorDate);
                 let rev = 0, count = 0;
                 paidOrders(state.orders).forEach(o => {
-                    const d = tsToDate(o.createdAt);
-                    if (!d) return;
-                    if (d >= targetStart && d < targetEnd) {
-                        rev += orderAccrualRevenue(o) + (o.deliveryFee || 0);
-                        count += 1;
-                    }
+                    if (o.deliveryDate !== key) return;
+                    rev += orderAccrualRevenue(o) + (o.deliveryFee || 0);
+                    count += 1;
                 });
                 return { rev, count };
             };
-            const dayWindow = (anchor) => {
-                const s = startOfDay(anchor);
-                const e = new Date(s); e.setDate(s.getDate() + 1);
-                return [s, e];
-            };
 
-            const [todayS, todayE] = dayWindow(today);
-            const todayStats = aggregateForDate(todayS, todayE);
+            const todayStats = aggregateForDate(today);
 
             const wow = new Date(today); wow.setDate(today.getDate() - 7);
-            const [wowS, wowE] = dayWindow(wow);
-            const wowStats = aggregateForDate(wowS, wowE);
+            const wowStats = aggregateForDate(wow);
 
             const mom = new Date(today); mom.setMonth(today.getMonth() - 1);
-            const [momS, momE] = dayWindow(mom);
-            const momStats = aggregateForDate(momS, momE);
+            const momStats = aggregateForDate(mom);
 
             const fmtDate = d => `${d.getMonth() + 1}/${d.getDate()}`;
             const card = (label, anchorDate, baseStats) => {
