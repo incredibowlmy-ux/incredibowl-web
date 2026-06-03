@@ -123,7 +123,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         badgeValidityLabel: '有效期',
         badgeValidityValue: '30 / 60 天',
         badgeSavingsLabel: '最高省',
-        badgeSavingsValue: 'RM 37',
+        badgeSavingsValue: 'RM 20',
 
         bundleLabel: (n) => `${n} 张餐券`,
         bundleHighlightPopular: '人气之选',
@@ -211,7 +211,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         badgeValidityLabel: 'Validity',
         badgeValidityValue: '30 / 60 days',
         badgeSavingsLabel: 'Save up to',
-        badgeSavingsValue: 'RM 37',
+        badgeSavingsValue: 'RM 20',
 
         bundleLabel: (n) => `${n} vouchers`,
         bundleHighlightPopular: 'Most popular',

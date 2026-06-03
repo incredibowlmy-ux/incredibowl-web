@@ -608,7 +608,7 @@ export default function CartDrawer({
                                             <div className="flex-1 text-left min-w-0">
                                                 <p className="text-xs font-black text-[#1A2D23]">先囤券更划算</p>
                                                 <p className="text-[10px] text-[#1A2D23]/60 font-bold leading-snug">
-                                                    20 张装省 RM 37 · 30 / 60 天有效
+                                                    20 张装省 RM 20 · 30 / 60 天有效
                                                 </p>
                                             </div>
                                             <span className="text-xs font-black text-[#FF6B35] group-hover:translate-x-1 transition-transform">→</span>

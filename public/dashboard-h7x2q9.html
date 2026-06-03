@@ -1696,8 +1696,8 @@
                                     <input type="number" id="calcMealVouchersUsed" step="1" min="0" value="0" placeholder="0" style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px" />
                                 </div>
                                 <div>
-                                    <label style="display:block;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px">每张摊销价 (默认 RM 17.575)</label>
-                                    <input type="number" id="calcMealVoucherAllocated" step="0.01" min="0" value="17.575" placeholder="17.575" style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px" />
+                                    <label style="display:block;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px">每张摊销价 (默认 RM 18.00)</label>
+                                    <input type="number" id="calcMealVoucherAllocated" step="0.01" min="0" value="18.00" placeholder="18.00" style="width:100%;padding:8px 10px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px" />
                                 </div>
                             </div>
 
@@ -2281,8 +2281,8 @@
                     <label>套餐 *</label>
                     <div class="channel-pills" id="svmBundlePills">
                         <button type="button" class="channel-pill" data-bundle="5">5 张 · RM 92.50</button>
-                        <button type="button" class="channel-pill active" data-bundle="10">10 张 · RM 175.75</button>
-                        <button type="button" class="channel-pill" data-bundle="20">20 张 · RM 333.00</button>
+                        <button type="button" class="channel-pill active" data-bundle="10">10 张 · RM 180.00</button>
+                        <button type="button" class="channel-pill" data-bundle="20">20 张 · RM 350.00</button>
                     </div>
                     <div style="font-size:10px;color:var(--text-muted);margin-top:4px">每张面值 RM 18.50 · 摊销价 = 实付 / 张数（MFRS 15 合约负债）</div>
                 </div>
@@ -2316,7 +2316,7 @@
                     </div>
                     <div>
                         <label>摊销价 / 张</label>
-                        <div class="num mono" id="svmAllocatedPreview" style="padding:10px 12px;background:var(--bg-subtle);border-radius:7px;font-weight:700;color:var(--primary)">RM 17.575</div>
+                        <div class="num mono" id="svmAllocatedPreview" style="padding:10px 12px;background:var(--bg-subtle);border-radius:7px;font-weight:700;color:var(--primary)">RM 18.00</div>
                     </div>
                 </div>
 
@@ -9770,8 +9770,8 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         const MEAL_VOUCHER_BUNDLES_DASHBOARD = {
             '5':  { id: '5',  voucherCount: 5,  price: 92.50 },
-            '10': { id: '10', voucherCount: 10, price: 175.75 },
-            '20': { id: '20', voucherCount: 20, price: 333.00 },
+            '10': { id: '10', voucherCount: 10, price: 180.00 },
+            '20': { id: '20', voucherCount: 20, price: 350.00 },
         };
         let svmBundleId = '10';
         let svmPaymentMethod = 'cash';

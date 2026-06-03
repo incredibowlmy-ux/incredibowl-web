@@ -5,10 +5,10 @@
  * Pre-paid in bundles. Vouchers do NOT cover add-ons — those still
  * require cash payment at checkout.
  *
- * Pricing decided 2026-05-10:
+ * Pricing decided 2026-05-10, discounts compressed 2026-06-03 (margin/positioning):
  *  - 5  vouchers @ RM 92.50  (face value, 0% off — entry tier)
- *  - 10 vouchers @ RM 175.75 (~5% off, save RM 9.25)
- *  - 20 vouchers @ RM 333.00 (~10% off, save RM 37.00)
+ *  - 10 vouchers @ RM 180.00 (~3% off, save RM 5.00,  RM 18.00/voucher)
+ *  - 20 vouchers @ RM 350.00 (~5% off, save RM 20.00, RM 17.50/voucher)
  *
  * Validity (decided 2026-05-16):
  *  - 5  / 10 张装：30 天（鼓励频次，避免囤货沉睡）
@@ -61,8 +61,8 @@ function buildBundle(
 
 export const MEAL_VOUCHER_BUNDLES: MealVoucherBundle[] = [
   buildBundle('5',  5,  92.50,  30),
-  buildBundle('10', 10, 175.75, 30, '人气之选'),
-  buildBundle('20', 20, 333.00, 60, '最划算'),
+  buildBundle('10', 10, 180.00, 30, '人气之选'),
+  buildBundle('20', 20, 350.00, 60, '最划算'),
 ];
 
 export function getBundle(bundleId: string): MealVoucherBundle | undefined {
