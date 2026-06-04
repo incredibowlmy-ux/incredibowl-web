@@ -10,7 +10,7 @@ import {
     User,
     updateProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { normalizePhone } from "./phoneUtils";
 
@@ -51,6 +51,12 @@ export const signInWithFacebook = async (referralCode?: string) => {
 // Sign in with Email/Password
 export const loginWithEmail = async (email: string, password: string) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
+    // Ensure a Firestore user doc exists. Social logins already call this;
+    // email login historically did not, so accounts that exist in Firebase
+    // Auth but were never given a users/{uid} doc would hit "No document to
+    // update" the moment they tried to save their profile. saveUserProfile is
+    // a no-op (just refreshes lastLoginAt) when the doc already exists.
+    try { await saveUserProfile(result.user); } catch (e) { console.warn('[loginWithEmail] ensure profile doc failed', e); }
     return result.user;
 };
 
@@ -226,7 +232,11 @@ export const updateUserProfile = async (
     if (typeof data.phone === 'string') {
         payload.phoneNormalized = normalizePhone(data.phone);
     }
-    await updateDoc(userRef, payload);
+    // setDoc + merge (upsert) instead of updateDoc: updateDoc throws
+    // "No document to update" when the users/{uid} doc is missing. An upsert
+    // creates it on the spot and is a plain field-merge when it already exists,
+    // so saving a profile can never hard-fail on a missing doc.
+    await setDoc(userRef, payload, { merge: true });
 };
 
 // Try to claim a pending referral voucher. Server checks profile is

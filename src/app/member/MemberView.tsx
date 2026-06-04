@@ -274,6 +274,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
             }));
             setIsEditing(false);
         } catch (error) {
+            console.error('[member] profile save failed:', error);
             alert(t.saveFailed);
         }
         setSaving(false);
