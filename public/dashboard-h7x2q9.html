@@ -9417,36 +9417,79 @@ incredibowl.my`,
         }
 
         // Auto-fill the delivery address from the customer's registered webapp profile
-        // so the boss doesn't re-type it. Only fills when the address box is EMPTY —
-        // never clobbers a manually-typed address or an order's own saved address.
-        // User doc carries: address, addressDistanceKm (geocoded), deliveryZone.
+        // OR their most recent past order. Only fills when the address box is EMPTY —
+        // never clobbers a manually-typed address.
+        // Priority:
+        //   1) 账号注册地址 (state.users 里有 webapp 账号)
+        //   2) 上一次订单地址 (WhatsApp / 现金 / walk-in 客户没账号但下过单)
         function autofillAddressFromProfile() {
             const addrEl = $('#moAddress');
             if (addrEl.value.trim()) return;            // don't overwrite existing
-            const u = findUserDocByPhone($('#moPhone').value.trim());
-            if (!u) return;
-            const addr = (u.address || '').trim();
+            const phoneRaw = $('#moPhone').value.trim();
+            if (!phoneRaw) return;
+            const preview = $('#moDistancePreview');
+
+            // ─── Path 1: registered webapp account ───
+            const u = findUserDocByPhone(phoneRaw);
+            if (u && (u.address || '').trim()) {
+                const addr = (u.address || '').trim();
+                addrEl.value = addr;
+                const km = typeof u.addressDistanceKm === 'number' ? u.addressDistanceKm : null;
+                if (km !== null) {
+                    const tier = km <= 5 ? 'near' : 'mid';   // mirrors deliveryUtils.tierFromDistance
+                    state.moDistanceResolved = { distanceKm: km, tier, formattedAddress: addr, fromProfile: true };
+                    state.moDeliveryAuto = true;             // fee follows free-above-threshold rule
+                    $('#moZone').value = u.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
+                    const foodTotal = parseFloat($('#moTotal').value) || 0;
+                    const promoD = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
+                    const feeNow = moDeliveryFeeForKm(km, foodTotal - promoD);
+                    const thr = moThresholdForKm(km);
+                    preview.innerHTML = `📇 用账号注册地址 · <strong>${km}km</strong> · ${tier === 'near' ? '近距离' : '中距离'} · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
+                } else {
+                    const zone = u.deliveryZone || 'within2km';
+                    $('#moZone').value = zone;
+                    state.moDistanceResolved = { distanceKm: null, formattedAddress: addr, fromProfile: true };
+                    preview.textContent = `📇 用账号注册地址（账号无精确距离，按档位 ${zone === 'within2km' ? '≤2km' : '>2km'} 记，可点「算距离」补精确公里）`;
+                }
+                preview.style.color = 'var(--success)';
+                if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
+                return;
+            }
+
+            // ─── Path 2: fallback to most recent past order with this phone ───
+            // Covers WhatsApp / cash / walk-in 老客户 who never registered a webapp account.
+            const phoneNorm = normalizePhone(phoneRaw);
+            if (!phoneNorm) return;
+            let lastOrder = null;
+            let lastTs = -Infinity;
+            (state.orders || []).forEach(o => {
+                if (!o.userAddress) return;
+                if (normalizePhone(o.userPhone) !== phoneNorm) return;
+                const t = tsToDate(o.createdAt);
+                const tms = t ? t.getTime() : 0;
+                if (tms > lastTs) { lastTs = tms; lastOrder = o; }
+            });
+            if (!lastOrder) return;
+            const addr = String(lastOrder.userAddress || '').trim();
             if (!addr) return;
             addrEl.value = addr;
-            const preview = $('#moDistancePreview');
-            const km = typeof u.addressDistanceKm === 'number' ? u.addressDistanceKm : null;
+            const km = typeof lastOrder.deliveryDistanceKm === 'number' ? lastOrder.deliveryDistanceKm : null;
             if (km !== null) {
-                const tier = km <= 5 ? 'near' : 'mid';   // mirrors deliveryUtils.tierFromDistance
+                const tier = lastOrder.deliveryTier
+                    || (km <= 2 ? 'free' : km <= 5 ? 'near' : km <= 10 ? 'mid' : 'far');
                 state.moDistanceResolved = { distanceKm: km, tier, formattedAddress: addr, fromProfile: true };
-                state.moDeliveryAuto = true;             // fee follows free-above-threshold rule
-                $('#moZone').value = u.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
+                state.moDeliveryAuto = true;
+                $('#moZone').value = lastOrder.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
                 const foodTotal = parseFloat($('#moTotal').value) || 0;
                 const promoD = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
                 const feeNow = moDeliveryFeeForKm(km, foodTotal - promoD);
                 const thr = moThresholdForKm(km);
-                preview.innerHTML = `📇 用账号注册地址 · <strong>${km}km</strong> · ${tier === 'near' ? '近距离' : '中距离'} · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
+                preview.innerHTML = `📜 用上次订单地址 · <strong>${km}km</strong> · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
             } else {
-                // Legacy account: has address but no geocoded distance. Keep address + zone,
-                // let admin card derive the tier from zone. No km stored.
-                const zone = u.deliveryZone || 'within2km';
+                const zone = lastOrder.deliveryZone || 'within2km';
                 $('#moZone').value = zone;
                 state.moDistanceResolved = { distanceKm: null, formattedAddress: addr, fromProfile: true };
-                preview.textContent = `📇 用账号注册地址（账号无精确距离，按档位 ${zone === 'within2km' ? '≤2km' : '>2km'} 记，可点「算距离」补精确公里）`;
+                preview.textContent = `📜 用上次订单地址（无精确距离，按档位 ${zone === 'within2km' ? '≤2km' : '>2km'} 记，可点「算距离」补精确公里）`;
             }
             preview.style.color = 'var(--success)';
             if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
