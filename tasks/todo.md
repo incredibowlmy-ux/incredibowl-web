@@ -1,48 +1,48 @@
-# 手动录入单加「地址 + 自动距离」(dashboard)
+# 修复:切页面后购物车地址/电话丢失(需刷新)
 
-## 目标
-让 dashboard 手动录入的订单，在 admin 卡片上和网站自动单一样显示：
-完整地址 + 精确公里数 + 距离档位（近距离/中距离…）。
+## 问题
+登录后加购物车 → 不付款先点去别的页(餐券/会员/博客…)→ 回到结账时地址电话变「尚未填写」、下单被锁,要刷新才恢复。
+购物车的菜不丢(localStorage 持久化),丢的是「身份 + 地址/电话」这一层。
 
-## 根因
-`public/dashboard-h7x2q9.html` 手动表单没有地址输入框，保存时 `userAddress: ''`、
-无 `deliveryDistanceKm`、无 `deliveryTier`。admin 卡片（src/app/admin/page.tsx:1214-1246）
-靠这三个字段渲染地址+距离标签，所以手动单只剩被当成 free 的「免运区（老客户）」。
+## 根因(代码可验证)
+1. `userProfile`(地址/电话)是 CartDrawer 的临时 React state,每次开抽屉才去 Firestore 现拉,**无缓存**(CartDrawer.tsx:248-253)。
+2. Firebase Auth 初始化被 requestIdleCallback 延迟≤3s,且首页卸载时会取消未跑完的初始化(page.tsx:59-71)。快速切页时 Auth 反复被取消 → currentUser 一直 null → profile 拉不到。
+3. 全站 9 个文件各自订阅 onAuthChange + 各自拉 profile,互不同步,无单一数据源。
 
-## 方案（用户选定：输入地址 → 自动算距离）
-复用现成公开接口 `POST /api/check-delivery`（无需 auth，同源），
-返回 `{ tier, distanceKm, fee, formattedAddress }`，和网站自动单同一套 Google 地图算法。
+## 方案:根 layout 共享 AuthProvider + 持久化 profile 缓存
 
-## 改动清单（全部在 dashboard-h7x2q9.html）
-- [ ] 1. HTML：手动订单 modal 加「配送地址」输入框 + 「算距离」按钮 + 结果预览行
-- [ ] 2. JS：geocodeManualAddress() 调 /api/check-delivery，存 state.moDistanceResolved；
-        自动同步 moZone；建议运费回填（仅当运费仍为 0）
-- [ ] 3. JS：地址 input/Enter 监听（改地址→失效，Enter→触发）
-- [ ] 4. JS：openOrderModal 重置区清空地址 + state.moDistanceResolved
-- [ ] 5. JS：编辑模式回填 userAddress + 从已存 km/tier 还原 state
-- [ ] 6. JS：保存时 orderData.userAddress + deliveryDistanceKm + deliveryTier
-- [ ] 7. 处理 >7.5km「outside」：仍可保存，按 far 记，预览警告
+- [ ] 1. 新建 `src/context/AuthContext.tsx`('use client')
+    - 只在 layout 级初始化一次 Auth(保留 requestIdleCallback 延迟保性能,但不再随页面卸载被取消)
+    - 持有 currentUser / userProfile / loading,暴露 `useAuth()` + `refreshProfile()`
+    - mount 时先从 localStorage 秒读 profile(瞬显地址电话);user 解析后再拉 Firestore 覆盖 + 写回缓存
+    - **logout / user=null 时清掉缓存**(地址电话是 PII,共用设备防串号)
+- [ ] 2. `layout.tsx`:用 `<AuthProvider>` 包住 `{children}`(server layout 套 client provider,可行)
+- [ ] 3. `page.tsx`:删掉本地 currentUser + 可取消的延迟 onAuthChange,改用 `useAuth()`
+- [ ] 4. `CartDrawer.tsx`:删掉自带 onAuthChange + getUserProfile,改用 `useAuth()`;地址电话来自缓存=瞬显;开抽屉时 refreshProfile() 后台刷新,但不卡 UI
+- [ ] 5. `AuthModal.tsx`:`updateUserProfile` 后调 `refreshProfile()`,改完地址购物车立即反映(顺带修「存了但购物车不更新」)
+- [ ] 暂不动 member / meal-vouchers / admin / en 页(独立路由,照常工作,后续再迁)
 
 ## 验证
-- [ ] 真实地址 → 预览 km+档位 → 保存 → admin 卡片显示地址 + 「🛵 xx · X.XXkm」
-- [ ] 不点算距离直接保存 → 地址照存、不写 km、不报错
-- [ ] 编辑已有手动单 → 地址/距离回填，重存不丢
+- [ ] tsc / next build 通过
+- [ ] browse dogfood:登录→加购物车→去 /meal-vouchers→返回→开购物车,地址电话**不刷新就在**;before/after 对比
+- [ ] logout 后缓存清空,下一个用户看不到上一个人的地址
+- [ ] 确认未回归 LCP(Auth 仍延迟初始化)
 
-## Review（2026-06-02 完成代码）
-全部 7 处改动落在 public/dashboard-h7x2q9.html：
-1. ✅ 手动 modal 加 #moAddress 输入框 + #moGeocodeBtn「算距离」+ #moDistancePreview
-2. ✅ geocodeManualAddress() 调 ADMIN_API_BASE+/api/check-delivery（公开无 auth、同源）
-3. ✅ 地址 Enter 触发 / input 改动失效重算
-4. ✅ openOrderModal 重置区清空地址 + state.moDistanceResolved
-5. ✅ 编辑模式回填 userAddress + 从已存 km/tier 还原（重存不丢；updateDoc 会带上新字段）
-6. ✅ 保存写 userAddress + deliveryDistanceKm + deliveryTier（admin/page.tsx 直接读这俩渲染）
-7. ✅ outside(>7.5km) 按 far 记 + 警告，仍可保存
+## Review(已实施 2026-06-05)
 
-设计取舍：
-- 运费只在仍为 0 时自动回填建议值，绝不覆盖老板手填的运费
-- deliveryZone（成本会计用）随 tier 自动同步：free→within2km，其余→outside2km
-- 不点「算距离」也能存，只是不写距离字段（地址照存）
+改动文件:
+- 新增 `src/context/AuthContext.tsx`:全站 AuthProvider,根 layout 级一次性初始化、survive 导航;profile 按 uid 缓存到 localStorage(`incredibowl-profile`),登出/换用户即清。
+- `src/app/layout.tsx`:`<AuthProvider>` 包住 `{children}`。
+- `src/app/page.tsx`:删本地 currentUser + 延迟 onAuthChange,改 `useAuth()`。
+- `src/components/cart/CartDrawer.tsx`:删自带 onAuthChange/getUserProfile,改 `useAuth()`;开抽屉后台 refreshProfile()。
+- `src/components/auth/AuthModal.tsx`:更新地址后 `refreshProfile()` 同步全站。
 
-待老板线上冒烟（需登录 + Google Maps key，本地跑不了）：
-- [ ] 真实地址 → 预览 km+档位 → 保存 → admin 卡片显示地址 + 「🛵 xx · X.XXkm」
-- [ ] 编辑现有 #4HLRLZ → 补地址 → 重存 → 卡片从「免运区」变精确距离
+验证结果:
+- ✅ `tsc --noEmit` 零报错
+- ✅ `next build` 通过(全页面预渲染 + sitemap 正常)
+- ✅ 所有路由 200(/、/meal-vouchers、/member、/order、/en)
+- ✅ browse:首页渲染→去 /meal-vouchers→返回→无新 console 报错(仅既有 Meta pixel/web-share 警告)
+- ✅ browse:打开购物车抽屉「我的订单」正常,useAuth() 无 context/undefined 报错
+
+未能自动验证(需老板真账号):登录态下「加购物车→切页→返回地址电话仍在」的端到端流程。
+建议老板用真账号手动复测一次该路径,以及登出后换账号确认不串地址。

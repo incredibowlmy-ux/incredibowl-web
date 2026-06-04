@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
 import { isValidEmail, isValidMyPhone } from '@/lib/cartUtils';
@@ -14,6 +15,7 @@ import AuthProfileView from './AuthProfileView';
 type AuthView = 'main' | 'email-login' | 'email-signup' | 'profile';
 
 export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+    const { refreshProfile } = useAuth();
     const [view, setView] = useState<AuthView>('main');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -182,6 +184,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             }
             setEditingProfile(false);
             await loadProfile(currentUser.uid);
+            // Propagate the new address/phone to the app-wide AuthProvider so the
+            // cart (and anything else reading useAuth) reflects it immediately.
+            await refreshProfile();
             setTimeout(() => setMessage(''), claimed?.voucherCode || claimed?.rejectedReason ? 6000 : 2000);
         } catch (error: any) {
             setMessage(`⚠️ 更新失败: ${error.message}`);

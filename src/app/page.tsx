@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import type { User as FirebaseUser } from 'firebase/auth';
 import dynamic from 'next/dynamic';
 
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
@@ -28,13 +27,14 @@ import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { useAuth } from '@/context/AuthContext';
 import { CheckCircle } from 'lucide-react';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
+    const { currentUser } = useAuth();
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [isAuthOpen, setIsAuthOpen] = useState(false);
-    const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
     const [isAddOnOpen, setIsAddOnOpen] = useState(false);
     const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
     const [editConfig, setEditConfig] = useState<any>(null);
@@ -42,34 +42,8 @@ export default function V4BentoLayout() {
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
 
-    useEffect(() => {
-        let unsubscribe: (() => void) | undefined;
-        let cancelled = false;
-        const initAuth = () => {
-            if (cancelled) return;
-            import('@/lib/auth').then(({ onAuthChange }) => {
-                if (cancelled) return;
-                unsubscribe = onAuthChange((user) => setCurrentUser(user));
-            });
-        };
-        // Defer Firebase Auth init off the critical path. The ~90KB auth iframe +
-        // getProjectConfig roundtrip otherwise loads on every page view — even for
-        // visitors who never sign in — adding seconds to first load. NavBar renders
-        // the logged-out state until this resolves a moment later.
-        const w = window as typeof window & {
-            requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-            cancelIdleCallback?: (handle: number) => void;
-        };
-        const handle = w.requestIdleCallback
-            ? w.requestIdleCallback(initAuth, { timeout: 3000 })
-            : window.setTimeout(initAuth, 1500);
-        return () => {
-            cancelled = true;
-            if (w.cancelIdleCallback) w.cancelIdleCallback(handle);
-            else clearTimeout(handle);
-            unsubscribe?.();
-        };
-    }, []);
+    // Auth state now comes from the app-wide AuthProvider (root layout), so it
+    // survives navigation between pages instead of re-initializing per page.
 
     // Handle FPX payment redirect results and cancel orphan pending orders.
     //

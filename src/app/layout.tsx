@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { weeklyMenu } from "@/data/weeklyMenu";
+import { AuthProvider } from "@/context/AuthContext";
 
 // Build Menu structured data from the live menu so Google's food rich
 // results stay in sync with the actual dishes shown on the page.
@@ -296,7 +297,7 @@ gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-Z78ZLBH7CF'}')
             alt=""
           />
         </noscript>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

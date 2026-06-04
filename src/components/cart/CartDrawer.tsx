@@ -3,9 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
-import { onAuthChange, getUserProfile } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 // updateOrderStatus moved to server-side /api/confirm-order
-import { User } from 'firebase/auth';
 import { isValidMyPhone } from '@/lib/cartUtils';
 import {
     calcPerDeliveryFees,
@@ -33,12 +32,14 @@ export default function CartDrawer({
     onClearCart,
     onEditItem
 }: any) {
+    // Auth + profile (address/phone) come from the app-wide AuthProvider, which
+    // survives page navigation — so reopening the cart after visiting another
+    // page shows the saved address/phone instantly, no refresh needed.
+    const { currentUser, userProfile, refreshProfile } = useAuth();
     const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx' | ''>('');
     const [receiptUploaded, setReceiptUploaded] = useState(false);
     const [receiptUrl, setReceiptUrl] = useState('');
     const [uploading, setUploading] = useState(false);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [userProfile, setUserProfile] = useState<any>(null);
     const [orderNote, setOrderNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
@@ -191,15 +192,6 @@ export default function CartDrawer({
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthChange(async (user: User | null) => {
-            setCurrentUser(user);
-            if (user) { const profile = await getUserProfile(user.uid); setUserProfile(profile); }
-            else setUserProfile(null);
-        });
-        return () => unsubscribe();
-    }, []);
-
-    useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
@@ -245,12 +237,12 @@ export default function CartDrawer({
         });
     };
 
+    // Background-refresh the authoritative profile when the cart opens (picks up
+    // a freshly edited address/distance). The cached profile already renders
+    // instantly via AuthProvider, so this never blocks the UI.
     useEffect(() => {
-        const fetchProfile = async () => {
-            if (isOpen && currentUser) { const profile = await getUserProfile(currentUser.uid); setUserProfile(profile); }
-        };
-        fetchProfile();
-    }, [isOpen, currentUser]);
+        if (isOpen && currentUser) refreshProfile();
+    }, [isOpen, currentUser, refreshProfile]);
 
     // Refresh available meal voucher count whenever drawer opens or auth changes
     useEffect(() => {
