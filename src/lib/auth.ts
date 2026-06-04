@@ -6,6 +6,7 @@ import {
     FacebookAuthProvider,
     signOut,
     onAuthStateChanged,
+    sendPasswordResetEmail,
     User,
     updateProfile
 } from "firebase/auth";
@@ -51,6 +52,14 @@ export const signInWithFacebook = async (referralCode?: string) => {
 export const loginWithEmail = async (email: string, password: string) => {
     const result = await signInWithEmailAndPassword(auth, email, password);
     return result.user;
+};
+
+// Send a password-reset email. Firebase delivers a link that opens its hosted
+// reset page (no extra UI needed on our side). Throws on invalid-email; we
+// intentionally treat "user-not-found" as success in the caller to avoid
+// leaking which emails are registered.
+export const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
 };
 
 // Register with Email/Password

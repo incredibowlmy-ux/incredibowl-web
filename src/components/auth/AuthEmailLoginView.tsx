@@ -15,12 +15,13 @@ interface AuthEmailLoginViewProps {
     onSubmit: (e: React.FormEvent) => void;
     onSignup: () => void;
     onBack: () => void;
+    onForgotPassword: () => void;
 }
 
 export default function AuthEmailLoginView({
     email, setEmail, password, setPassword,
     showPassword, setShowPassword,
-    loading, message, onSubmit, onSignup, onBack,
+    loading, message, onSubmit, onSignup, onBack, onForgotPassword,
 }: AuthEmailLoginViewProps) {
     return (
         <div className="p-6 space-y-4">
@@ -40,6 +41,12 @@ export default function AuthEmailLoginView({
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
+                </div>
+                <div className="text-right">
+                    <button type="button" onClick={onForgotPassword} disabled={loading}
+                        className="text-xs font-bold text-gray-400 hover:text-[#FF6B35] disabled:opacity-50">
+                        忘记密码？
+                    </button>
                 </div>
                 <button type="submit" disabled={loading}
                     className="w-full py-3 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] disabled:opacity-50 shadow-lg shadow-[#FF6B35]/20">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
+import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
@@ -117,6 +117,22 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             else if (error.code === 'auth/user-not-found') setMessage('⚠️ 帐号不存在，请先注册');
             else setMessage(`⚠️ ${error.message}`);
         }
+        setLoading(false);
+    };
+
+    const handlePasswordReset = async () => {
+        if (!email) { setMessage('⚠️ 请先在上方输入邮箱，再点忘记密码'); return; }
+        if (!isValidEmail(email)) { setMessage('⚠️ 邮箱格式不正确，例: your@email.com'); return; }
+        setLoading(true); setMessage('');
+        try {
+            await resetPassword(email);
+        } catch (error: any) {
+            // user-not-found / unregistered email: still show success so we don't
+            // reveal which emails exist. Only surface real input/format errors.
+            if (error.code === 'auth/invalid-email') { setMessage('⚠️ 邮箱格式不正确'); setLoading(false); return; }
+            if (error.code === 'auth/too-many-requests') { setMessage('⚠️ 请求太频繁，请稍后再试'); setLoading(false); return; }
+        }
+        setMessage(`✅ 重置链接已发送至 ${email}，请查收邮箱（也看看垃圾邮件夹）`);
         setLoading(false);
     };
 
@@ -246,6 +262,7 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                         onSubmit={handleEmailLogin}
                         onSignup={() => { setView('email-signup'); setMessage(''); }}
                         onBack={() => { setView('main'); setMessage(''); }}
+                        onForgotPassword={handlePasswordReset}
                     />
                 )}
 
