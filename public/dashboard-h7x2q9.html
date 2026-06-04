@@ -8266,6 +8266,17 @@ incredibowl.my`,
 
         // Canonical dish → add-on mapping. Source: AddOnModal.tsx + addOnsConfig.ts (Incredibowl-web).
         // Keys are STRING dish IDs (matches state.menu Firestore doc id and stringified MENU_SEED ids).
+        //
+        // 共享饮品组（每道菜都有，跟 webapp 一致）— 改茶价或加新茶只改这一处，
+        // 不用同步 9 道菜。
+        const DRINKS_PILLS = [
+            { id: 'longjing-ice',    label: '龙井 (冰)',   price: 3.80 },
+            { id: 'longjing-warm',   label: '龙井 (温)',   price: 3.80 },
+            { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
+            { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
+            { id: 'shuixian-ice',    label: '水仙 (冰)',   price: 3.80 },
+            { id: 'shuixian-warm',   label: '水仙 (温)',   price: 3.80 },
+        ];
         const DISH_ADDON_MAP = {
             '11': [
                 { id: 'natto-super-combo',  label: '灵魂三件套', price: 5.00 },
@@ -8284,12 +8295,7 @@ incredibowl.my`,
                 { id: 'extra-corn',         label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',       label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm',      label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',     label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm',    label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',       label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm',      label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '12': [
                 { id: 'surf-turf-super-combo', label: '海陆澎湃三件套', price: 11.40 },
@@ -8310,12 +8316,7 @@ incredibowl.my`,
                 { id: 'extra-corn',            label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',          label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',          label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm',         label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',        label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm',       label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',          label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm',         label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '13': [
                 { id: 'extra-herbal-leg-1', label: '多加一只暖胃全鸡腿', price: 16.50 },
@@ -8334,12 +8335,7 @@ incredibowl.my`,
                 { id: 'extra-corn',         label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',       label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm',      label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',     label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm',    label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',       label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm',      label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '14': [
                 { id: 'extra-soy-leg-1', label: '多加一只酱油全鸡腿', price: 16.50 },
@@ -8354,12 +8350,7 @@ incredibowl.my`,
                 { id: 'extra-edamame', label: '毛豆仁 (50g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '1': [
                 { id: 'chicken-chop-nostalgia-combo', label: '古早味大满贯三件套', price: 12.90 },
@@ -8378,12 +8369,7 @@ incredibowl.my`,
                 { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '3': [
                 { id: 'greek-protein-bomb-combo',  label: '蛋白质核弹三件套', price: 15.90 },
@@ -8404,12 +8390,7 @@ incredibowl.my`,
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '4': [
                 { id: 'pork-potato-duo-combo', label: '薯肉双拼满足套', price: 13.40 },
@@ -8428,12 +8409,7 @@ incredibowl.my`,
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '5': [
                 { id: 'scallion-soup-combo',       label: '爆量满足三件套', price: 12.90 },
@@ -8451,12 +8427,7 @@ incredibowl.my`,
                 { id: 'extra-corn',    label: '甜玉米 (50g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
             '2': [
                 // 绍兴酒蒸花肉（周四特餐）— webapp 无自定义 add-on section，沿用默认 alacarte + drinks
@@ -8471,12 +8442,7 @@ incredibowl.my`,
                 { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                { id: 'longjing-ice',  label: '龙井 (冰)', price: 3.80 },
-                { id: 'longjing-warm', label: '龙井 (温)', price: 3.80 },
-                { id: 'tieguanyin-ice',  label: '铁观音 (冰)', price: 3.80 },
-                { id: 'tieguanyin-warm', label: '铁观音 (温)', price: 3.80 },
-                { id: 'shuixian-ice',  label: '水仙 (冰)', price: 3.80 },
-                { id: 'shuixian-warm', label: '水仙 (温)', price: 3.80 },
+                ...DRINKS_PILLS,
             ],
         };
 
