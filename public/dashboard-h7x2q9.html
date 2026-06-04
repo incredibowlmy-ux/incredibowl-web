@@ -7552,9 +7552,17 @@ incredibowl.my`,
                 totalPaymentFee += paymentFeeForOrder(o);
             });
 
-            // Promo voucher discount (RM-promo)
+            // Promo voucher discount (RM-promo) — informational only.
+            // 不计入 netProfit：promo 折扣已含在 o.total 净额里，再减就是重复扣。
             const promoOrders = paid.filter(o => o.promoCode && o.promoDiscount);
             const promoDiscountTotal = promoOrders.reduce((s, o) => s + (Number(o.promoDiscount) || 0), 0);
+
+            // Refunds (退款实际是营收冲销 — 跟净利率分母同步)
+            let totalRefunds = 0, refundedOrderCount = 0;
+            paid.forEach(o => {
+                const r = Number(o.refundAmount) || 0;
+                if (r > 0) { totalRefunds += r; refundedOrderCount += 1; }
+            });
 
             // Marketing + fixed costs
             const totalSpend = useFullHistory
@@ -7577,8 +7585,10 @@ incredibowl.my`,
 
             const grossProfit = totalRevenue - totalCOGS;
             const grossMargin = totalRevenue > 0 ? grossProfit / totalRevenue : null;
-            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - promoDiscountTotal;
-            const netMargin = totalRevenue > 0 ? netProfit / totalRevenue : null;
+            // Mirrors UI formula at line ~5387 — promo discount NOT subtracted (would double-count).
+            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - totalRefunds;
+            const netRevenue = totalRevenue - totalRefunds;
+            const netMargin = netRevenue > 0 ? netProfit / netRevenue : null;
             const marketingROAS = totalSpend > 0 ? totalRevenue / totalSpend : null;
 
             return {
@@ -7602,7 +7612,9 @@ incredibowl.my`,
                     paymentFees: Number(totalPaymentFee.toFixed(2)),
                     marketingSpend: Number(totalSpend.toFixed(2)),
                     fixedCosts: Number(fixedCostInRange.toFixed(2)),
-                    promoDiscount: Number(promoDiscountTotal.toFixed(2)),
+                    refunds: Number(totalRefunds.toFixed(2)),
+                    refundedOrderCount,
+                    promoDiscount: Number(promoDiscountTotal.toFixed(2)),  // informational — not in netProfit
                 },
                 profit: {
                     gross: Number(grossProfit.toFixed(2)),
