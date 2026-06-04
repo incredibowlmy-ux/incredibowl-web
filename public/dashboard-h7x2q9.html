@@ -4601,16 +4601,23 @@ incredibowl.my`,
 
             const ensure = (k) => {
                 if (!monthData[k]) monthData[k] = {
-                    month: k, newUsers: 0, firstOrderUsers: 0, spend: 0, revenue: 0,
+                    month: k, newUsers: 0, firstOrderUsers: 0, convertedSignups: 0, spend: 0, revenue: 0,
                 };
                 return monthData[k];
             };
 
-            // New users by signup month
+            // New users by signup month + remember signup month per user phone-key
+            // (so we can match against the customer-key used in orders)
+            const signupMonthByCustomerKey = {};
             state.users.forEach(u => {
                 const d = tsToDate(u.createdAt);
                 if (!d) return;
-                ensure(ymKey(d)).newUsers += 1;
+                const month = ymKey(d);
+                ensure(month).newUsers += 1;
+                // Build same phone-key shape that orders use, so signup ↔ order matching works
+                const phone = normalizePhone(u.phone || '');
+                const key = (phone && phone.length >= 7) ? 'p:' + phone : 'u:' + u.id;
+                if (!signupMonthByCustomerKey[key]) signupMonthByCustomerKey[key] = month;
             });
 
             // Customers who completed first order — track earliest paid order's month per customer (phone-based)
@@ -4620,11 +4627,18 @@ incredibowl.my`,
                 if (!d) return;
                 const k = customerKey(o);
                 if (!firstOrderByCustomer[k] || d < firstOrderByCustomer[k].d) {
-                    firstOrderByCustomer[k] = { d, rev: 0 };
+                    firstOrderByCustomer[k] = { d, rev: 0, key: k };
                 }
             });
             Object.values(firstOrderByCustomer).forEach(val => {
                 ensure(ymKey(val.d)).firstOrderUsers += 1;
+                // If this customer ALSO has a registered account, count them under their signup month's
+                // "converted" tally — this gives a real 0-100% conversion: of users who signed up in
+                // month X, how many ever placed a first order (regardless of when).
+                const signupMonth = signupMonthByCustomerKey[val.key];
+                if (signupMonth) {
+                    ensure(signupMonth).convertedSignups += 1;
+                }
             });
 
             // Spend per month
@@ -4721,7 +4735,10 @@ incredibowl.my`,
                 const rows = [...arr].reverse().map(m => {
                     const blended = m.newUsers ? m.spend / m.newUsers : null;
                     const eff = m.firstOrderUsers ? m.spend / m.firstOrderUsers : null;
-                    const conv = m.newUsers ? m.firstOrderUsers / m.newUsers : null;
+                    // 真正的转化率：当月注册的客户里，最终完成首单的占比（同 phone 匹配，bounded [0,1]）
+                    // 之前用 firstOrderUsers / newUsers 会 > 100%（非注册客户也下单），现在改成
+                    // 「这批注册账号里有多少最终下了单」。WA / 现金 / walk-in 客户的首单数仍展示在 "首单客" 列。
+                    const conv = m.newUsers ? m.convertedSignups / m.newUsers : null;
                     return `
                         <tr>
                             <td><strong>${m.month}</strong></td>
@@ -4738,8 +4755,12 @@ incredibowl.my`,
                 $('#cacTable').innerHTML = `
                     <table class="dt">
                         <thead><tr>
-                            <th>月份</th><th class="r">花费</th><th class="r">新客</th><th class="r">完成首单</th>
-                            <th class="r">首单转化率</th><th class="r">Blended CAC</th><th class="r">有效 CAC</th>
+                            <th>月份</th><th class="r">花费</th>
+                            <th class="r" title="该月新注册 webapp 账号数">注册数</th>
+                            <th class="r" title="该月首次下单的客户（含 WA / 现金 / walk-in，可能 > 注册数）">首单客</th>
+                            <th class="r" title="该月注册的账号里，最终下过单的占比（bounded 0-100%）">注册→首单</th>
+                            <th class="r" title="花费 ÷ 注册数">Blended CAC</th>
+                            <th class="r" title="花费 ÷ 首单客数（真正获客成本）">有效 CAC</th>
                             <th class="r">当月营收</th><th class="r">ROAS</th>
                         </tr></thead>
                         <tbody>${rows}</tbody>
