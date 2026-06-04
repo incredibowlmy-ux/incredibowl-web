@@ -4689,7 +4689,7 @@ incredibowl.my`,
             // AOV / Payback 用食物营收（不含 deliveryFee）— deliveryFee 是 pass-through 给
             // Lalamove，不是毛利来源，包含进来会让 payback 回收能力被高估。
             const totalRevInRange = fOrders.reduce((s, o) => s + orderAccrualRevenue(o), 0);
-            const aovInRange = fOrders.length ? totalRevInRange / fOrders.length : 0;
+            const aovInRange = fOrders.length ? totalRevInRange / fOrders.length : null;
             const paybackOrders = aovInRange && effectiveCAC ? effectiveCAC / aovInRange : null;
 
             $('#cacKpis').innerHTML = `
