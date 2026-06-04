@@ -4171,20 +4171,17 @@ incredibowl.my`,
             });
         }
 
-        function renderHeatmap(orders) {
-            // Day of week × Hour buckets (4-hr buckets for readability)
-            // Monday-first to match 送达热力 + 跟马来本地业务习惯
-            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-            const hours = ['00-06', '06-09', '09-12', '12-15', '15-18', '18-21', '21-24'];
-            const hBucket = h => h < 6 ? 0 : h < 9 ? 1 : h < 12 ? 2 : h < 15 ? 3 : h < 18 ? 4 : h < 21 ? 5 : 6;
+        // Shared 7-weekday × 7-hour heatmap renderer.
+        // 抽出共用逻辑：grid 累加、7×7 数据展开、ECharts setOption boilerplate。
+        // 每张 heatmap 的差异只剩：chartId、hour 标签、坐标提取函数、tooltip 后缀、颜色。
+        function renderWeekHourHeatmap(orders, opts) {
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']; // Mon-first
 
             const grid = {};
             orders.forEach(o => {
-                const d = tsToDate(o.createdAt);
-                if (!d) return;
-                // Monday-first weekday index (0=Mon ... 6=Sun)
-                const dow = (d.getDay() + 6) % 7;
-                const k = `${dow},${hBucket(d.getHours())}`;
+                const pos = opts.getCoords(o);
+                if (!pos) return;
+                const k = `${pos.dow},${pos.hb}`;
                 grid[k] = (grid[k] || 0) + 1;
             });
 
@@ -4198,13 +4195,13 @@ incredibowl.my`,
                 }
             }
 
-            getChart('heatmapChart').setOption({
+            getChart(opts.chartId).setOption({
                 ...echartsBase,
-                tooltip: { ...echartsBase.tooltip, formatter: p => `${days[p.value[1]]} · ${hours[p.value[0]]}<br/><strong>${p.value[2]} 单</strong>` },
+                tooltip: { ...echartsBase.tooltip, formatter: p => `${days[p.value[1]]} · ${opts.hours[p.value[0]]}<br/><strong>${p.value[2]} ${opts.tooltipUnit}</strong>` },
                 grid: { left: 60, right: 30, top: 10, bottom: 50 },
-                xAxis: { type: 'category', data: hours, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.textMuted, fontSize: 11 }, splitArea: { show: false } },
+                xAxis: { type: 'category', data: opts.hours, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.textMuted, fontSize: 11 }, splitArea: { show: false } },
                 yAxis: { type: 'category', data: days, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.text, fontSize: 11 }, splitArea: { show: false } },
-                visualMap: { min: 0, max: Math.max(max, 1), calculable: false, show: false, inRange: { color: ['#F4F1EB', COLOR.accent, COLOR.primary] } },
+                visualMap: { min: 0, max: Math.max(max, 1), calculable: false, show: false, inRange: { color: ['#F4F1EB', opts.colorMid, COLOR.primary] } },
                 series: [{
                     type: 'heatmap',
                     data,
@@ -4214,12 +4211,25 @@ incredibowl.my`,
             });
         }
 
+        function renderHeatmap(orders) {
+            // 下单热力 — createdAt × 24h (4-hr buckets), Monday-first
+            const hBucket = h => h < 6 ? 0 : h < 9 ? 1 : h < 12 ? 2 : h < 15 ? 3 : h < 18 ? 4 : h < 21 ? 5 : 6;
+            renderWeekHourHeatmap(orders, {
+                chartId: 'heatmapChart',
+                hours: ['00-06', '06-09', '09-12', '12-15', '15-18', '18-21', '21-24'],
+                tooltipUnit: '单',
+                colorMid: COLOR.accent,
+                getCoords: o => {
+                    const d = tsToDate(o.createdAt);
+                    if (!d) return null;
+                    return { dow: (d.getDay() + 6) % 7, hb: hBucket(d.getHours()) };
+                },
+            });
+        }
+
         // C4: 送达时段热力 — by deliveryDate weekday × deliveryTime hour bucket.
-        // Mirrors renderHeatmap but tells the kitchen-prep story instead of the
-        // ordering-pattern story. Orders without deliveryDate/deliveryTime are skipped.
+        // 跟 renderHeatmap 镜像但讲厨房备餐故事而不是下单模式。无 deliveryDate/Time 的订单跳过。
         function renderDeliveryHeatmap(orders) {
-            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']; // Mon-first
-            const hours = ['11-12', '12-13', '13-14', '17-18', '18-19', '19-20', '20+'];
             const hBucket = h => {
                 if (h >= 11 && h < 12) return 0;
                 if (h >= 12 && h < 13) return 1;
@@ -4230,47 +4240,22 @@ incredibowl.my`,
                 if (h >= 20) return 6;
                 return -1;
             };
-
-            const grid = {};
-            orders.forEach(o => {
-                if (!o.deliveryDate) return;
-                const d = new Date(o.deliveryDate + 'T00:00:00');
-                if (isNaN(d)) return;
-                const t = String(o.deliveryTime || '');
-                const m = t.match(/^(\d{1,2})/);
-                if (!m) return;
-                const hh = parseInt(m[1], 10);
-                const hb = hBucket(hh);
-                if (hb < 0) return;
-                // Monday-first weekday index
-                const dow = (d.getDay() + 6) % 7;
-                const k = `${dow},${hb}`;
-                grid[k] = (grid[k] || 0) + 1;
-            });
-
-            const data = [];
-            let max = 0;
-            for (let dow = 0; dow < 7; dow++) {
-                for (let h = 0; h < 7; h++) {
-                    const v = grid[`${dow},${h}`] || 0;
-                    if (v > max) max = v;
-                    data.push([h, dow, v]);
-                }
-            }
-
-            getChart('deliveryHeatmapChart').setOption({
-                ...echartsBase,
-                tooltip: { ...echartsBase.tooltip, formatter: p => `${days[p.value[1]]} · ${hours[p.value[0]]}<br/><strong>${p.value[2]} 单要送</strong>` },
-                grid: { left: 60, right: 30, top: 10, bottom: 50 },
-                xAxis: { type: 'category', data: hours, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.textMuted, fontSize: 11 }, splitArea: { show: false } },
-                yAxis: { type: 'category', data: days, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: COLOR.text, fontSize: 11 }, splitArea: { show: false } },
-                visualMap: { min: 0, max: Math.max(max, 1), calculable: false, show: false, inRange: { color: ['#F4F1EB', COLOR.success, COLOR.primary] } },
-                series: [{
-                    type: 'heatmap',
-                    data,
-                    label: { show: max < 50, color: '#fff', fontSize: 11, fontWeight: 600, formatter: p => p.value[2] || '' },
-                    itemStyle: { borderRadius: 6, borderColor: '#FAF8F4', borderWidth: 2 },
-                }],
+            renderWeekHourHeatmap(orders, {
+                chartId: 'deliveryHeatmapChart',
+                hours: ['11-12', '12-13', '13-14', '17-18', '18-19', '19-20', '20+'],
+                tooltipUnit: '单要送',
+                colorMid: COLOR.success,
+                getCoords: o => {
+                    if (!o.deliveryDate) return null;
+                    const d = new Date(o.deliveryDate + 'T00:00:00');
+                    if (isNaN(d)) return null;
+                    const t = String(o.deliveryTime || '');
+                    const m = t.match(/^(\d{1,2})/);
+                    if (!m) return null;
+                    const hb = hBucket(parseInt(m[1], 10));
+                    if (hb < 0) return null;
+                    return { dow: (d.getDay() + 6) % 7, hb };
+                },
             });
         }
 
