@@ -3898,9 +3898,12 @@ incredibowl.my`,
             const keyFn = grain === 'day' ? ymdKey : grain === 'week' ? d => ymdKey(startOfWeek(d)) : ymKey;
             const labelFn = grain === 'day' ? fmt.date : grain === 'week' ? d => 'W ' + fmt.date(startOfWeek(d)) : fmt.month;
 
+            // 用 deliveryDate（送达日）— 跟同期对比 / 未来 7 天预测 / 备餐 n8n 口径统一。
+            // 没填送达日的订单（极少数 legacy）跳过。
             orders.forEach(o => {
-                const d = tsToDate(o.createdAt);
-                if (!d) return;
+                if (!o.deliveryDate) return;
+                const d = new Date(o.deliveryDate + 'T00:00:00');
+                if (isNaN(d)) return;
                 const k = keyFn(d);
                 const b = buckets.get(k) || { date: d, food: 0, delivery: 0, count: 0 };
                 b.food += orderAccrualRevenue(o);
