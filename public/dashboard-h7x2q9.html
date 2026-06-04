@@ -5237,10 +5237,10 @@ incredibowl.my`,
                     `).join('')}
                     <tr style="background:var(--bg-subtle);font-weight:700">
                         <td>合计</td>
-                        <td class="r num">${fmt.rm(totalSpend + voucherDiscountTotal + totalDeliveryCost + totalPackaging + totalPaymentFee)}</td>
+                        <td class="r num">${fmt.rm(totalSpend + totalDeliveryCost + totalPackaging + totalPaymentFee)}</td>
                         <td class="r num">${fmt.rm(totalRevenue)}</td>
-                        <td class="r num">${(totalSpend + voucherDiscountTotal + totalDeliveryCost + totalPackaging + totalPaymentFee) ? (totalRevenue / (totalSpend + voucherDiscountTotal + totalDeliveryCost + totalPackaging + totalPaymentFee)).toFixed(2) + '×' : '—'}</td>
-                        <td class="muted" style="font-size:12px">综合 ROI</td>
+                        <td class="r num">${(totalSpend + totalDeliveryCost + totalPackaging + totalPaymentFee) ? (totalRevenue / (totalSpend + totalDeliveryCost + totalPackaging + totalPaymentFee)).toFixed(2) + '×' : '—'}</td>
+                        <td class="muted" style="font-size:12px">综合 ROI（promo 折扣不计 · 已含在营收净额）</td>
                     </tr>
                     </tbody>
                 </table>
@@ -5385,9 +5385,14 @@ incredibowl.my`,
             });
 
             // ─── Net Profit ───
+            // 注意：promoDiscount 不在公式里 — 因为 o.total = food − promoDiscount，
+            // totalRevenue 已经是「净营收」（客户实付现金 + MFRS 15 voucher allocated revenue），
+            // 再减 voucherDiscountTotal 就重复扣了。promoDiscount 影响在 voucherROI 卡里单独看。
+            // 净利率分母用 (营收 − 退款)：退款实际是营收冲销，分子分母同步处理。
             const fixedCostInRange = computeFixedCostsInRange();
-            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - voucherDiscountTotal - totalRefunds;
-            const netMarginPct = totalRevenue ? netProfit / totalRevenue : null;
+            const netProfit = totalRevenue - totalCOGS - totalDeliveryCost - totalPackaging - totalPaymentFee - totalSpend - fixedCostInRange - totalRefunds;
+            const netRevenue = totalRevenue - totalRefunds;
+            const netMarginPct = netRevenue > 0 ? netProfit / netRevenue : null;
 
             $('#netProfit').innerHTML = `
                 <div class="kpi-value num display" style="font-size:38px;line-height:1;color:${netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">
@@ -5401,7 +5406,6 @@ incredibowl.my`,
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 包装成本</span><span class="num">${fmt.rm(totalPackaging)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− Razorpay 手续费</span><span class="num">${fmt.rm(totalPaymentFee)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 营销开支</span><span class="num">${fmt.rm(totalSpend)}</span></div>
-                    <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− Voucher 折扣</span><span class="num">${fmt.rm(voucherDiscountTotal)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 退款</span><span class="num">${fmt.rm(totalRefunds)}</span></div>
                     <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">− 固定成本</span><span class="num">${fmt.rm(fixedCostInRange)}</span></div>
                     <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:8px;border-top:1px solid var(--border);margin-top:6px"><span>= 净利润</span><span class="num" style="color:${netProfit >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt.rm(netProfit)}</span></div>
