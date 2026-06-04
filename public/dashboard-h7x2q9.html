@@ -1412,6 +1412,10 @@
 
                 <!-- ═══════════════ RETENTION PAGE ═══════════════ -->
                 <div class="page" id="page-retention">
+                    <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px 12px;background:var(--bg-subtle);border-radius:8px;border-left:3px solid var(--accent)">
+                        💡 下方留存指标均为<strong>全期累计</strong>，不受顶部日期范围切换影响 —
+                        复购率 / 平均回购周期等指标需要长期窗口才有意义，按 7 天 / 14 天看会被压到接近 0。
+                    </div>
                     <div class="kpi-grid" id="retentionKpis"></div>
 
                     <div class="card">
@@ -4169,7 +4173,8 @@ incredibowl.my`,
 
         function renderHeatmap(orders) {
             // Day of week × Hour buckets (4-hr buckets for readability)
-            const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            // Monday-first to match 送达热力 + 跟马来本地业务习惯
+            const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
             const hours = ['00-06', '06-09', '09-12', '12-15', '15-18', '18-21', '21-24'];
             const hBucket = h => h < 6 ? 0 : h < 9 ? 1 : h < 12 ? 2 : h < 15 ? 3 : h < 18 ? 4 : h < 21 ? 5 : 6;
 
@@ -4177,7 +4182,9 @@ incredibowl.my`,
             orders.forEach(o => {
                 const d = tsToDate(o.createdAt);
                 if (!d) return;
-                const k = `${d.getDay()},${hBucket(d.getHours())}`;
+                // Monday-first weekday index (0=Mon ... 6=Sun)
+                const dow = (d.getDay() + 6) % 7;
+                const k = `${dow},${hBucket(d.getHours())}`;
                 grid[k] = (grid[k] || 0) + 1;
             });
 
@@ -4282,7 +4289,9 @@ incredibowl.my`,
 
             const allRelevant = state.orders.filter(o => {
                 if (!o.deliveryDate) return false;
-                if (o.status === 'cancelled' || o.status === 'pending') return false;
+                // 跟营收 KPI 一致：只算 PAID_STATUSES（confirmed + delivered），
+                // 排除 preparing — preparing 单还可能取消，算进来会让预测分母偏高。
+                if (!PAID_STATUSES.has(o.status)) return false;
                 return true;
             });
 
@@ -4677,7 +4686,9 @@ incredibowl.my`,
                 firstOrderInRange = Object.values(firstOrderByCustomer).filter(v => v.d >= cutoff).length;
             }
             const effectiveCAC = firstOrderInRange ? totalSpend / firstOrderInRange : null;
-            const totalRevInRange = fOrders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
+            // AOV / Payback 用食物营收（不含 deliveryFee）— deliveryFee 是 pass-through 给
+            // Lalamove，不是毛利来源，包含进来会让 payback 回收能力被高估。
+            const totalRevInRange = fOrders.reduce((s, o) => s + orderAccrualRevenue(o), 0);
             const aovInRange = fOrders.length ? totalRevInRange / fOrders.length : 0;
             const paybackOrders = aovInRange && effectiveCAC ? effectiveCAC / aovInRange : null;
 
@@ -5744,15 +5755,25 @@ incredibowl.my`,
         }
 
         function computeSpendInRange() {
+            const sumMonth = (v) => (Number(v.meta) || 0) + (Number(v.other) || 0);
             if (state.range === 'all') {
-                return Object.values(state.spend).reduce((s, m) => s + (Number(m.meta) || 0) + (Number(m.other) || 0), 0);
+                return Object.values(state.spend).reduce((s, m) => s + sumMonth(m), 0);
             }
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - Number(state.range));
-            const cutoffMonth = startOfMonth(cutoff);
+            // Mirrors computeFixedCostsInRange pro-rata logic:
+            // 之前是粗暴月级（md >= cutoffMonth 整月计入），range=7 天落在月末时
+            // 会把整月广告费算进来 → ROAS 严重低报。改成按天 pro-rata。
+            const today = startOfDay(new Date());
+            const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + 1); // exclusive
+            const rangeStart = new Date(today); rangeStart.setDate(rangeStart.getDate() - Number(state.range) + 1);
             return Object.entries(state.spend).reduce((s, [k, v]) => {
-                const md = new Date(k + '-01');
-                return md >= cutoffMonth ? s + (Number(v.meta) || 0) + (Number(v.other) || 0) : s;
+                const monthStart = new Date(k + '-01');
+                const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+                const daysInMonth = Math.round((monthEnd - monthStart) / 86400000);
+                const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
+                const overlapEnd = monthEnd < rangeEnd ? monthEnd : rangeEnd;
+                const overlapDays = Math.max(0, Math.round((overlapEnd - overlapStart) / 86400000));
+                if (overlapDays === 0) return s;
+                return s + sumMonth(v) * (overlapDays / daysInMonth);
             }, 0);
         }
 
