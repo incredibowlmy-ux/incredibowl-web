@@ -2456,8 +2456,10 @@
             { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Thu', active: true },
-            { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: true },
+            { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08，让位给三文鱼
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },
+            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 18.50, costPrice: 0, day: 'Tue', active: true },
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 4 },
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -3243,6 +3245,35 @@ incredibowl.my`,
                 }
                 if (seededNew > 0) {
                     setTimeout(() => toast(`已新增 ${seededNew} 道菜到菜单（手动订单下拉可选）`, 'success'), 900);
+                }
+
+                // ─── Migration: sync `active` + `voucherTopUp` from MENU_SEED → Firestore.
+                //     退役菜（active: false）+ 餐券补差（voucherTopUp）属于「老板设置」类元数据，
+                //     不像名字 / 价格那样允许 dashboard 端单独编辑 → 直接以 SEED 为权威源同步。 ───
+                let metaSynced = 0;
+                for (const seedEntry of MENU_SEED) {
+                    const item = state.menu.find(m => String(m.id) === String(seedEntry.id));
+                    if (!item) continue;
+                    const updates = {};
+                    if (seedEntry.active === false && item.active !== false) updates.active = false;
+                    if (seedEntry.active === true  && item.active === false) updates.active = true;
+                    if (typeof seedEntry.voucherTopUp === 'number'
+                        && Number(item.voucherTopUp) !== seedEntry.voucherTopUp) {
+                        updates.voucherTopUp = seedEntry.voucherTopUp;
+                    }
+                    if (Object.keys(updates).length === 0) continue;
+                    try {
+                        await setDoc(doc(db, 'menu', String(item.id)),
+                            { ...updates, updatedAt: Timestamp.now() }, { merge: true });
+                        Object.assign(item, updates);
+                        metaSynced++;
+                    } catch (e) {
+                        console.error(`Menu meta sync failed for ${item.name}:`, e);
+                        migrationErrors.push(`菜单元数据 (${item.name}): ${e.message}`);
+                    }
+                }
+                if (metaSynced > 0) {
+                    setTimeout(() => toast(`已同步 ${metaSynced} 道菜的状态/餐券补差`, 'success'), 950);
                 }
 
                 // ─── Migration: backfill costPrice from Excel costing for any menu doc still at 0 ───
@@ -8450,6 +8481,37 @@ incredibowl.my`,
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 ...DRINKS_PILLS,
             ],
+            '20': [
+                // 古早味姜葱鱼片饭（周二主推）— webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '21': [
+                // 柠香香煎三文鱼饭（周五）— RM 23.90，餐券抵扣需补 RM 4（voucherTopUp）
+                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
         };
 
         function getDishAddons(dishName) {
@@ -9536,6 +9598,9 @@ incredibowl.my`,
         // webapp /api/submit-order behaviour so dashboard manual orders don't
         // short-change customers when a dish costs more than RM 18.50.
         // Add-ons are NEVER covered by vouchers — only main dishes.
+        // 收集主菜单价（已扣 voucherTopUp）— 餐券抵扣按「dish 实际可覆盖额」算。
+        // 例：柠香三文鱼 RM 23.90 但 voucherTopUp=4 → 餐券抵 19.90，客户补 RM 4 现金。
+        // mirror 自 webapp/src/data/weeklyMenu.ts dishVoucherValue()。
         function collectMainDishUnitPrices() {
             const prices = [];
             $$('#moItemRows .item-row').forEach(row => {
@@ -9543,8 +9608,13 @@ incredibowl.my`,
                 const q = parseInt(row.querySelector('.mo-item-qty').value, 10) || 0;
                 if (!sel.value || q <= 0) return;
                 const opt = sel.options[sel.selectedIndex];
-                const price = opt ? Number(opt.dataset.price) || 0 : 0;
-                for (let i = 0; i < q; i++) prices.push(price);
+                const fullPrice = opt ? Number(opt.dataset.price) || 0 : 0;
+                // Look up the menu doc for voucherTopUp (sel.value = canonical dish name)
+                const canon = canonicalDishName(sel.value);
+                const dish = (state.menu || []).find(m => canonicalDishName(m.name) === canon);
+                const topUp = dish && typeof dish.voucherTopUp === 'number' ? dish.voucherTopUp : 0;
+                const voucherValue = Math.max(0, fullPrice - topUp);
+                for (let i = 0; i < q; i++) prices.push(voucherValue);
             });
             prices.sort((a, b) => b - a);
             return prices;
