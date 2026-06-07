@@ -37,10 +37,16 @@ export function computeNextSpecial(): NextSpecial {
     // 今日 / 明日 / 后日 / explicit date automatically below).
     const ymdUTC = (d: Date) =>
         `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    // A weekday can host more than one special (e.g. Tuesday) — the Hero headlines
+    // the `isPrimary` one (falls back to the first listed). Retired dishes excluded.
+    const pickSpecial = (wd: number): MenuItem | undefined => {
+        const list = weeklyMenu.filter(d => !d.retired && d.weekday === wd);
+        return list.find(d => d.isPrimary) ?? list[0];
+    };
     let skipSafety = 14;
     while (skipSafety-- > 0) {
         const wd = next.getUTCDay();
-        const wkly = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === wd);
+        const wkly = pickSpecial(wd);
         if (wkly && isDishBlockedOn(wkly.id, ymdUTC(next))) {
             next.setUTCDate(next.getUTCDate() + 1);
             if (next.getUTCDay() === 6) next.setUTCDate(next.getUTCDate() + 2);
@@ -51,7 +57,7 @@ export function computeNextSpecial(): NextSpecial {
     }
 
     const targetWd = next.getUTCDay();
-    const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
+    const weeklySpecial = pickSpecial(targetWd);
     const fallback = weeklyMenu.find(d => d.id === 14) ?? weeklyMenu[0];
     const dish = weeklySpecial ?? fallback;
 

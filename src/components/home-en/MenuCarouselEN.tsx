@@ -20,6 +20,8 @@ function translateTopTag(tag: string): string {
         '明日特餐': "Tomorrow's special",
         '后日特餐': 'Day-after special',
         '已截单': 'Closed',
+        '暂别 · Paused': 'Paused',        // retired dish — desktop full topTag
+        '暂别': 'Paused',                 // retired dish — mobile split
         '周一至五 · Mon–Fri': 'Mon–Fri', // desktop passes the full topTag
         '周一至五': 'Mon–Fri',           // mobile passes the part before ' · '
         '周一': 'Mon',
@@ -41,6 +43,8 @@ function translateBtnText(btnText: string, dish: MenuItem): string {
         '加入明天的预订': "Add to tomorrow's order",
         '加入后日预订': 'Add to day-after order',
         '已截单': 'Closed for orders',
+        '鸡汤暂别，敬请期待回归': 'Paused — back soon',
+        '周二不供应': 'Not available on Tue',
     };
     return map[cleaned] ?? cleaned;
 }
@@ -61,14 +65,17 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
         return computeNextSpecial().dish.id;
     }, [menuDates]);
 
+    // Retired dishes still render (greyed-out) but shouldn't inflate the count.
+    const visibleCount = useMemo(() => weeklyMenu.filter(d => !d.retired).length, []);
+
     return (
         <div className="lg:col-span-12 mt-8" id="menu">
             <div className="flex items-center justify-between mb-6 px-4 md:px-2">
                 <div>
                     <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight leading-tight">Daily Picks · Weekly Rotation</h2>
                     <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
-                        <span className="lg:hidden">{weeklyMenu.length} dishes this week — tomorrow&rsquo;s pick first, closed bowls last.</span>
-                        <span className="hidden lg:inline">{weeklyMenu.length} dishes this week — tap a card to view details and add to order.</span>
+                        <span className="lg:hidden">{visibleCount} dishes this week — tomorrow&rsquo;s pick first, closed bowls last.</span>
+                        <span className="hidden lg:inline">{visibleCount} dishes this week — tap a card to view details and add to order.</span>
                     </p>
                 </div>
             </div>

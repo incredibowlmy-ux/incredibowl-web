@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
-import { weeklyMenu } from '@/data/weeklyMenu';
+import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
@@ -137,14 +137,17 @@ export async function POST(req: Request) {
     // ── Validate meal voucher redemption ──────────────────────
     let serverMealVoucherDiscount = 0;
     if (mealVouchersUsed > 0) {
-      // Count main dish servings across cart
-      const mainDishUnitPrices: number[] = [];
+      // Count main dish servings across cart, by VOUCHER VALUE (unit price minus
+      // any per-dish top-up — e.g. premium salmon: voucher covers RM 19.90, the
+      // remaining RM 4 stays payable). Mirrors CartDrawer's client-side math.
+      const mainDishVoucherValues: number[] = [];
       for (const vb of validatedBundles) {
         const units = (vb.dishQty || 1) * (vb.quantity || 1);
-        for (let k = 0; k < units; k++) mainDishUnitPrices.push(vb.serverDishPrice);
+        const value = dishVoucherValue(vb.serverDishPrice, vb.dish);
+        for (let k = 0; k < units; k++) mainDishVoucherValues.push(value);
       }
-      if (mealVouchersUsed > mainDishUnitPrices.length) {
-        return NextResponse.json({ error: `餐券数量超过主餐数量（最多 ${mainDishUnitPrices.length} 张）` }, { status: 400 });
+      if (mealVouchersUsed > mainDishVoucherValues.length) {
+        return NextResponse.json({ error: `餐券数量超过主餐数量（最多 ${mainDishVoucherValues.length} 张）` }, { status: 400 });
       }
 
       const available = await countAvailableVouchers(db, userId);
@@ -152,9 +155,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `账户餐券不足：需要 ${mealVouchersUsed} 张，可用 ${available} 张` }, { status: 400 });
       }
 
-      // Discount = top X most-expensive main dish unit prices (best-deal first)
-      mainDishUnitPrices.sort((a, b) => b - a);
-      serverMealVoucherDiscount = mainDishUnitPrices.slice(0, mealVouchersUsed).reduce((s, p) => s + p, 0);
+      // Discount = top X highest-value main dish servings (best-deal first)
+      mainDishVoucherValues.sort((a, b) => b - a);
+      serverMealVoucherDiscount = mainDishVoucherValues.slice(0, mealVouchersUsed).reduce((s, p) => s + p, 0);
 
       const clientMV = Number(clientMealVoucherDiscount) || 0;
       if (Math.abs(serverMealVoucherDiscount - clientMV) > 0.02) {

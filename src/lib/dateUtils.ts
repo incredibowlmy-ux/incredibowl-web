@@ -8,6 +8,8 @@ export interface MenuDateInfo {
     btnText: string;
     disabled: boolean;
     actualDate: string;
+    /** Short disabled-reason for the cramped mobile button (falls back to 已截单). */
+    reasonShort?: string;
 }
 
 const CUTOFF_HOUR = 6;
@@ -54,18 +56,41 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     const menuDates: Record<number, MenuDateInfo> = {};
 
     dishes.forEach(dish => {
-        // Daily/permanent items are identified by their day field, not hardcoded IDs
-        if (dish.day === 'Daily / 常驻') {
+        // Retired dishes: shown on the menu but never orderable (greyed card + note).
+        if (dish.retired) {
             menuDates[dish.id] = {
-                topTag: '周一至五 · Mon–Fri',
-                btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
-                disabled: false,
-                actualDate: nextAvailStr
+                topTag: '暂别 · Paused',
+                btnText: dish.unavailableNote ?? '暂时下架',
+                disabled: true,
+                actualDate: '',
+                reasonShort: '暂别',
             };
             return;
         }
-        const targetWd = dish.id;
-        if (targetWd < 0 || targetWd > 6) return; // guard against invalid IDs
+        // Daily/permanent items are identified by their day field, not hardcoded IDs
+        if (dish.day === 'Daily / 常驻') {
+            // A daily dish can be unavailable on a specific weekday (e.g. 马铃薯
+            // 周二不供应). It still SHOWS — just greyed-out + not orderable when the
+            // next delivery date falls on that weekday.
+            const excludedToday = dish.excludeWeekday !== undefined && nextAvail.getDay() === dish.excludeWeekday;
+            menuDates[dish.id] = excludedToday
+                ? {
+                    topTag: '周一至五 · Mon–Fri',
+                    btnText: dish.unavailableNote ?? '当日不供应',
+                    disabled: true,
+                    actualDate: nextAvailStr,
+                    reasonShort: dish.unavailableNote ?? '当日不供应',
+                }
+                : {
+                    topTag: '周一至五 · Mon–Fri',
+                    btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
+                    disabled: false,
+                    actualDate: nextAvailStr,
+                };
+            return;
+        }
+        const targetWd = dish.weekday;
+        if (targetWd === undefined || targetWd < 0 || targetWd > 6) return; // not a weekly special
         const targetDate = new Date(now);
         // Do not add +1 forcefully anymore, allow today
         while (targetDate.getDay() !== targetWd) targetDate.setDate(targetDate.getDate() + 1);

@@ -31,14 +31,17 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
         return computeNextSpecial().dish.id;
     }, [menuDates]);
 
+    // Retired dishes still render (greyed-out) but shouldn't inflate the "X dishes" count.
+    const visibleCount = useMemo(() => weeklyMenu.filter(d => !d.retired).length, []);
+
     return (
         <div className="lg:col-span-12 mt-8" id="menu">
             <div className="flex items-center justify-between mb-6 px-4 md:px-2">
                 <div>
                     <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight leading-tight">每日精选 / Weekly Rotation</h2>
                     <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
-                        <span className="lg:hidden">本周 {weeklyMenu.length} 道菜 · 明日特餐打头，截单菜放后面</span>
-                        <span className="hidden lg:inline">本周精选 {weeklyMenu.length} 道菜，点击卡片查看详情并加入预订</span>
+                        <span className="lg:hidden">本周 {visibleCount} 道菜 · 明日特餐打头，截单菜放后面</span>
+                        <span className="hidden lg:inline">本周精选 {visibleCount} 道菜，点击卡片查看详情并加入预订</span>
                     </p>
                 </div>
             </div>
@@ -131,7 +134,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                         {!isDisabled && <ShoppingBag size={12} />}
                                         <span className="truncate">
                                             {isDisabled
-                                                ? '已截单'
+                                                ? (dInfo?.reasonShort ?? '已截单')
                                                 : isTomorrow
                                                     ? '加入明天'
                                                     : '加入预订'}

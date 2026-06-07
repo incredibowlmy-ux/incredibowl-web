@@ -1,6 +1,15 @@
 export interface MenuItem {
     id: number;
     day: string;
+    /**
+     * Weekday this dish serves (0=Sun … 6=Sat). Present ONLY for weekly specials.
+     * Daily/常驻 dishes and retired dishes omit it. Two specials may share a
+     * weekday (e.g. Tuesday) — the Hero "next special" picks the `isPrimary` one.
+     * NOTE: `id` is a pure unique identifier — it is NO LONGER the weekday.
+     */
+    weekday?: number;
+    /** When two specials share a `weekday`, the one shown as the Hero headline. */
+    isPrimary?: boolean;
     name: string;
     nameEn: string;
     price: number;
@@ -9,6 +18,20 @@ export interface MenuItem {
     desc: string;
     descEn?: string;
     tagsEn?: string[];
+    /**
+     * Extra cash (RM) due when redeeming ONE meal voucher for this dish, because
+     * its price sits above the standard voucher value. Absent/0 = fully covered
+     * by one voucher. Enforced client-side (CartDrawer) AND server-side
+     * (/api/submit-order) — keep both in sync.
+     */
+    voucherTopUp?: number;
+    /** Dish removed from rotation: shown greyed-out on the menu, not orderable. */
+    retired?: boolean;
+    /** Daily dish unavailable on this weekday (0-6): greyed-out, not orderable that day. */
+    excludeWeekday?: number;
+    /** Short reason shown on a disabled card (retired / weekday-excluded). */
+    unavailableNote?: string;
+    unavailableNoteEn?: string;
 }
 
 /**
@@ -23,6 +46,15 @@ export function dishImageAlt(item: MenuItem, locale: 'zh' | 'en' = 'zh'): string
     // Prefer descriptive tags (skip numeric ones like protein gram counts).
     const descriptiveTag = item.tags?.find(t => !/^[~\d]/.test(t)) ?? '招牌家常菜';
     return `${item.name} - ${descriptiveTag} - Pearl Point 私厨外送 · Old Klang Road 家常菜`;
+}
+
+/**
+ * Value (RM) one meal voucher covers for a dish at `unitPrice`: the unit price
+ * minus any per-dish top-up. The customer pays the top-up in cash; the voucher
+ * absorbs the rest. Mirrored by /api/submit-order — keep both in sync.
+ */
+export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'voucherTopUp'>): number {
+    return Math.max(0, unitPrice - (dish.voucherTopUp ?? 0));
 }
 
 export const weeklyMenu: MenuItem[] = [
@@ -69,6 +101,10 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
         image: "/pork_potato_stew.webp",
+        // 周二不供应（碗妈备餐安排）：网站当天可见但不可点。
+        excludeWeekday: 2,
+        unavailableNote: "周二不供应",
+        unavailableNoteEn: "Not available on Tue",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
@@ -77,6 +113,7 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 1,
         day: "Mon / 周一",
+        weekday: 1,
         name: "阿嫲古早味酱油鸡全腿",
         nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
@@ -87,8 +124,25 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
+        // 周二主推（Hero「明日特餐」周二展示这道）。新上 2026-06-08。
+        id: 20,
+        day: "Tue / 周二",
+        weekday: 2,
+        isPrimary: true,
+        name: "古早味姜葱鱼片饭",
+        nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
+        price: 18.50,
+        image: "/ginger_scallion_fish.webp",
+        tags: ["高蛋白 28g+", "古早味", "姜葱爆香", "荷包蛋", "鱼片嫩滑"],
+        tagsEn: ["28g+ protein", "Old-school", "Ginger-scallion sear", "Sunny-side egg", "Silky fish"],
+        desc: "巴丁鱼片用姜丝葱段爆香，淋一勺绍兴酒提鲜，盖一颗荷包蛋——古早味的温柔。",
+        descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
+    },
+    {
+        // 周二第二道（当归蒸鸡降为副位，Hero 不再以它打头）。
         id: 2,
         day: "Tue / 周二",
+        weekday: 2,
         name: "招牌原盅当归蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
@@ -101,6 +155,7 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 3,
         day: "Wed / 周三",
+        weekday: 3,
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",
         price: 19.90,
@@ -113,6 +168,7 @@ export const weeklyMenu: MenuItem[] = [
     {
         id: 4,
         day: "Thu / 周四",
+        weekday: 4,
         name: "绍兴酒蒸花肉",
         nameEn: "Shaoxing Wine Steamed Pork Belly",
         price: 19.90,
@@ -123,8 +179,27 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Made with the fattier cut of pork belly — Shaoxing wine and ginger steamed deep into the meat, rich and melt-in-your-mouth. If you love that fatty, silky bite you'll adore it; if you prefer lean, this one may not be for you."
     },
     {
+        // 周五新上 2026-06-08。a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
+        id: 21,
+        day: "Fri / 周五",
+        weekday: 5,
+        name: "柠香香煎三文鱼饭",
+        nameEn: "Lemon Pan-Seared Salmon",
+        price: 23.90,
+        voucherTopUp: 4,
+        image: "/lemon_salmon.webp",
+        tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM4"],
+        tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
+        desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
+        descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
+    },
+    {
+        // 退役 2026-06-08：周五位让给三文鱼。保留在菜单上「可见不可点」，附说明。
         id: 5,
         day: "Fri / 周五",
+        retired: true,
+        unavailableNote: "鸡汤暂别，敬请期待回归",
+        unavailableNoteEn: "Scallion soup paused — back soon",
         name: "金黄葱香煎鸡汤",
         nameEn: "Golden Scallion Pan-Fried Chicken Soup",
         price: 18.50,

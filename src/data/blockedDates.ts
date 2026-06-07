@@ -1,6 +1,7 @@
 // Per-dish dates that are explicitly stopped from sale (sold out / boss manual stop).
 // Format: { dishId: ['YYYY-MM-DD', ...] }
-// dishId mirrors `weeklyMenu` `id` (= weekday 0-6 for weekly specials).
+// dishId = `weeklyMenu` item `id` (a stable unique identifier; NOT the weekday —
+// the dish's serve-day now lives in MenuItem.weekday).
 //
 // To stop a dish for a specific date:
 //   - add the YYYY-MM-DD (MYT) to that dish's array

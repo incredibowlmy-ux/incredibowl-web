@@ -162,6 +162,34 @@ export const dishRecipes: DishRecipe[] = [
       { name: '时蔬', qty: 50, unit: 'g' },
     ],
   },
+  {
+    // 周二新上 2026-06-08。生鲜采购项（绍兴酒/蚝油/粟粉/盐/油等瓶装常备调味
+    // 按惯例不计入采购汇总）。白饭存 80g 生米采购重（碗妈表 180g 是熟饭）。
+    name: '古早味姜葱鱼片饭',
+    shortName: '姜鱼',
+    ingredients: [
+      { name: '巴丁鱼片', qty: 250, unit: 'g' },
+      { name: '荷包蛋', qty: 1, unit: '颗' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: '葱', qty: 32, unit: 'g' },
+      { name: '姜', qty: 12, unit: 'g' },
+    ],
+  },
+  {
+    // 周五新上 2026-06-08。
+    // TODO_CONFIRM: 三文鱼 = 采购生重。碗妈给的是「熟食 70–100g」，这里按生重
+    //   ~120g 估（煎制失水约 20%）。确认实际每份采购克数后更新此值。
+    name: '柠香香煎三文鱼饭',
+    shortName: '三文',
+    ingredients: [
+      { name: '三文鱼', qty: 120, unit: 'g' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: '西兰花', qty: 50, unit: 'g' },
+      { name: '毛豆', qty: 30, unit: 'g' },
+      { name: '玉米', qty: 30, unit: 'g' },
+      { name: '樱桃番茄', qty: 30, unit: 'g' },
+    ],
+  },
 ];
 
 /**

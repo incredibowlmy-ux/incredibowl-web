@@ -17,6 +17,7 @@ import {
 } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
+import { dishVoucherValue } from '@/data/weeklyMenu';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
@@ -80,18 +81,22 @@ export default function CartDrawer({
     // Each main dish serving in the cart = one redeemable "slot".
     // The discount applied = sum of the X most-expensive serving prices,
     // so the customer always gets the best deal. Add-ons are excluded.
-    const mainDishUnitPrices: number[] = cart.flatMap((bundle: any) => {
+    // Each serving's voucher VALUE = unit price minus any per-dish top-up (e.g.
+    // premium salmon: one voucher covers RM 19.90, customer still pays RM 4 cash).
+    // Best deal first → cover the highest-VALUE servings. Mirrored server-side.
+    const mainDishVoucherValues: number[] = cart.flatMap((bundle: any) => {
         const unitPrice = getDishPrice(bundle?.dish?.price ?? 0);
+        const value = dishVoucherValue(unitPrice, bundle?.dish ?? {});
         const totalUnits = (bundle?.dishQty || 1) * (bundle?.quantity || 1);
-        return Array.from({ length: totalUnits }, () => unitPrice);
+        return Array.from({ length: totalUnits }, () => value);
     });
-    const totalMainDishCount = mainDishUnitPrices.length;
+    const totalMainDishCount = mainDishVoucherValues.length;
     const maxRedeemable = Math.min(totalMainDishCount, availableMealVouchers);
     const cappedMealVouchersUsed = Math.min(mealVouchersUsed, maxRedeemable);
-    const sortedMainDishPricesDesc = [...mainDishUnitPrices].sort((a, b) => b - a);
-    const mealVoucherDiscount = sortedMainDishPricesDesc
+    const mealVoucherDiscount = [...mainDishVoucherValues]
+        .sort((a, b) => b - a)
         .slice(0, cappedMealVouchersUsed)
-        .reduce((sum, p) => sum + p, 0);
+        .reduce((sum, v) => sum + v, 0);
 
     // Promo code and meal vouchers are mutually exclusive per order.
     const promoLockedByVouchers = cappedMealVouchersUsed > 0;
