@@ -7978,18 +7978,50 @@ incredibowl.my`,
                 return `📍 ${escP(addr)}${dist.trim() ? ' · ' + dist.trim() : ''}`;
             }
 
+            // ─── Hardcoded default-egg map (mirror src/data/dishIngredients.ts).
+            // 用于「鸡蛋汇总」行 — 算 default 内置蛋 + 客户加料蛋的总数，
+            // 避免老板只看「客户加料」漏煎 default 内置蛋（鱼片饭+山药云耳）。
+            // 加新菜/改菜谱时同步更新 webapp dishIngredients.ts 即可。
+            const DISH_DEFAULT_EGGS = {
+                '古早味姜葱鱼片饭': 1,
+                '山药云耳海陆双鲜炒': 1,
+            };
+            // 哪些 add-on label 算「荷包蛋」类（用于加料合计）
+            const EGG_ADDON_LABELS = new Set([
+                '荷包蛋',
+            ]);
+
             function aggregate(orders) {
                 const dishes = new Map(), addons = new Map();
+                let defaultEggs = 0;
+                let addonEggs = 0;
                 orders.forEach(o => normalizeOrderItems(o).forEach(it => {
                     const name = canonicalDishName(it.name);
-                    if (name) dishes.set(name, (dishes.get(name) || 0) + (Number(it.quantity) || 1));
+                    const qty = Number(it.quantity) || 1;
+                    if (name) {
+                        dishes.set(name, (dishes.get(name) || 0) + qty);
+                        // 累计该菜 default 带的荷包蛋
+                        const eggsPerServing = DISH_DEFAULT_EGGS[name] || 0;
+                        defaultEggs += eggsPerServing * qty;
+                    }
                     (it.addOns || []).forEach(a => {
                         const lbl = a.label || a.name || a.id || '加料';
-                        addons.set(lbl, (addons.get(lbl) || 0) + (Number(a.quantity) || 1));
+                        const aq = Number(a.quantity) || 1;
+                        addons.set(lbl, (addons.get(lbl) || 0) + aq);
+                        if (EGG_ADDON_LABELS.has(lbl)) addonEggs += aq;
                     });
                 }));
                 const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escP(k)} <b>×${v}</b>`).join(' · ');
-                return { dishesHtml: fmt(dishes) || '—', addonsHtml: fmt(addons) || '无' };
+                const totalEggs = defaultEggs + addonEggs;
+                const eggsHtml = totalEggs > 0
+                    ? `共 <b>${totalEggs}</b> 颗（菜品自带 ${defaultEggs} + 客户加料 ${addonEggs}）`
+                    : '无';
+                return {
+                    dishesHtml: fmt(dishes) || '—',
+                    addonsHtml: fmt(addons) || '无',
+                    eggsHtml,
+                    totalEggs,
+                };
             }
 
             function orderCard(o) {
@@ -8039,7 +8071,8 @@ incredibowl.my`,
                     <div class="agg">
                         <div class="agg-t">🧑‍🍳 备餐汇总</div>
                         <div class="agg-row"><span class="agg-l">主菜</span>${agg.dishesHtml}</div>
-                        <div class="agg-row"><span class="agg-l">配料</span>${agg.addonsHtml}</div>
+                        <div class="agg-row"><span class="agg-l">客户加料</span>${agg.addonsHtml}</div>
+                        ${agg.totalEggs > 0 ? `<div class="agg-row"><span class="agg-l">🥚 鸡蛋合计</span>${agg.eggsHtml}</div>` : ''}
                     </div>
                     ${ingHtml}
                     ${sorted.map(orderCard).join('')}
