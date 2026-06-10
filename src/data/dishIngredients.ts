@@ -225,6 +225,12 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
     { name: '鸡蛋(生)', qty: 3, unit: '颗' },
   ],
 
+  // ─── Potato fried egg side ────────────────────────────────
+  '马铃薯煎蛋': [
+    { name: '马铃薯', qty: 150, unit: 'g' },
+    { name: '鸡蛋(生)', qty: 2, unit: '颗' },
+  ],
+
   // ─── Generic sides (40g format) ───────────────────────────
   '清甜水煮毛豆仁 (40g)': [{ name: '毛豆', qty: 40, unit: 'g' }],
   '金黄甜玉米 (40g)': [{ name: '玉米', qty: 40, unit: 'g' }],
@@ -359,7 +365,7 @@ export const addOnShortNames: Record<string, string> = {
   // Eggs
   '荷包蛋': '荷包',
   '温泉蛋': '温泉',
-  '马铃薯煎蛋': '薯蛋',
+  '马铃薯煎蛋': '薯煎蛋',
   '蒜蓉西兰花炒蛋': '西兰花蛋',
 
   // Generic 40g sides
