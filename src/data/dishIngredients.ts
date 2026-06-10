@@ -261,11 +261,55 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   '【绵密软糯】加马铃薯 (90g)': [{ name: '马铃薯', qty: 100, unit: 'g' }],
   '【浓香入味】加花肉片 (70g)': [{ name: '五花肉', qty: 125, unit: 'g' }],
 
+  // ─── Combos (composite add-ons) ────────────────────────────
+  // Each combo is a bundle of single add-ons at a discount. The recipe
+  // mirrors the bundle's `extraDesc` in AddOnModal.tsx — KEEP IN SYNC
+  // if marketing changes a combo's contents.
+
+  // natto-super-combo: 温泉蛋 + 海苔 + 酱油
+  '灵魂三件套 (原价 RM 6.0)': [
+    { name: '温泉蛋', qty: 1, unit: '颗' },
+    { name: '海苔', qty: 3, unit: 'g' },
+    { name: '酱油', qty: 20, unit: 'ml' },
+  ],
+
+  // surf-turf-super-combo: 大虾 4只 + 嫩炒鸡丁 + 云耳
+  '海陆澎湃三件套 (原价 RM 14.0)': [
+    { name: '虾', qty: 4, unit: '只' },
+    { name: '鸡胸肉', qty: 65, unit: 'g' },
+    { name: '云耳', qty: 20, unit: 'g' },
+  ],
+
+  // chicken-chop-nostalgia-combo: 多加 1 块 鸡扒 + 荷包蛋 + 加饭
+  '古早味大满贯三件套 (原价 RM 15.40)': [
+    { name: '鸡扒', qty: 1, unit: '块' },
+    { name: '荷包蛋', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 150, unit: 'g' },
+  ],
+
+  // greek-protein-bomb-combo: 加柠香鸡胸 + 加马铃薯 + 加椰菜花
+  '蛋白质核弹三件套 (原价 RM 18.40)': [
+    { name: '鸡胸肉', qty: 200, unit: 'g' },
+    { name: '马铃薯', qty: 100, unit: 'g' },
+    { name: '椰菜花', qty: 100, unit: 'g' },
+  ],
+
+  // scallion-soup-combo: 鸡扒 + 荷包蛋 + 加饭 (same recipe as nostalgia combo)
+  '爆量满足三件套 (原价 RM 15.40)': [
+    { name: '鸡扒', qty: 1, unit: '块' },
+    { name: '荷包蛋', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 150, unit: 'g' },
+  ],
+
+  // pork-potato-duo-combo: 马铃薯 + 花肉
+  '薯肉双拼满足套 (原价 RM 15.40)': [
+    { name: '马铃薯', qty: 100, unit: 'g' },
+    { name: '五花肉', qty: 125, unit: 'g' },
+  ],
+
   // ─── TODO_RECIPE (data not provided yet) ───────────────────
-  // '马铃薯煎蛋' (potato-egg / potato-egg-alacarte)
-  // Combo add-ons (super-combo / nostalgia-combo / protein-bomb-combo / etc.):
-  //   if BowlMama wants ingredient breakdown for these, list each combo's
-  //   contents below — but they're rare enough that skipping is fine.
+  // '马铃薯煎蛋' (potato-egg / potato-egg-alacarte) — still missing
+  //   ingredient breakdown; user hasn't given portion sizes.
 };
 
 // ─── Lookup helpers ──────────────────────────────
@@ -351,6 +395,14 @@ export const addOnShortNames: Record<string, string> = {
   // Pork belly stew
   '【绵密软糯】加马铃薯 (90g)': '马铃薯',
   '【浓香入味】加花肉片 (70g)': '花肉',
+
+  // Combos (composite — single token in matrix, ingredients still expand in 🛒)
+  '灵魂三件套 (原价 RM 6.0)': '纳豆套',
+  '海陆澎湃三件套 (原价 RM 14.0)': '海陆套',
+  '古早味大满贯三件套 (原价 RM 15.40)': '鸡扒套',
+  '蛋白质核弹三件套 (原价 RM 18.40)': '希胸套',
+  '爆量满足三件套 (原价 RM 15.40)': '葱汤套',
+  '薯肉双拼满足套 (原价 RM 15.40)': '薯肉套',
 };
 
 export function getAddOnShortName(label: string): string {
