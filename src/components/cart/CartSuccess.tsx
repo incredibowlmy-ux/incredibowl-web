@@ -46,10 +46,9 @@ export default function CartSuccess({ orderSuccess, cart, userProfile, cartTotal
                         </p>
                         <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
                         <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {cartTotal.toFixed(2)}</span></p>
-                        <p className="text-sm"><span className="font-bold">⭐ 获得积分：</span><span className="text-[#FF6B35] font-black">+{Math.floor(cartTotal)} 分 (核对后发放)</span></p>
                     </div>
                     <p className="text-sm font-bold text-[#FF6B35] animate-pulse">碗妈正在核对付款截图，请耐心等候 💬</p>
-                    <p className="text-xs text-gray-400">核对成功后，积分将自动存入你的账户</p>
+                    <p className="text-xs text-gray-400">核对成功后，碗妈会确认你的订单 ✅</p>
                 </div>
             </div>
         </div>

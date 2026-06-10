@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, claimReferralVoucher } from '@/lib/auth';
+import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
@@ -30,7 +30,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const [editingProfile, setEditingProfile] = useState(false);
     const [userOrders, setUserOrders] = useState<any[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
-    const [referralInput, setReferralInput] = useState('');
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -59,17 +58,8 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const handleGoogleLogin = async () => {
         setLoading(true); setMessage('');
         try {
-            const referral = referralInput.trim().toUpperCase() || undefined;
-            console.log('[handleGoogleLogin] click', { referralInput, referral });
-            const { user, referralDeferred, referralRejectedReason } = await signInWithGoogle(referral);
-            console.log('[handleGoogleLogin] returned', { uid: user.uid, referralDeferred, referralRejectedReason });
-            if (referralDeferred) {
-                setMessage('✅ 登录成功！🎁 推荐码已记录 — 填手机号 + 确认地址后即可领取 RM 10 首单优惠券');
-            } else if (referralRejectedReason) {
-                setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
-            } else {
-                setMessage('✅ 登录成功！');
-            }
+            const user = await signInWithGoogle();
+            setMessage('✅ 登录成功！');
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
@@ -83,15 +73,8 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const handleFacebookLogin = async () => {
         setLoading(true); setMessage('');
         try {
-            const referral = referralInput.trim().toUpperCase() || undefined;
-            const { user, referralDeferred, referralRejectedReason } = await signInWithFacebook(referral);
-            if (referralDeferred) {
-                setMessage('✅ 登录成功！🎁 推荐码已记录 — 填手机号 + 确认地址后即可领取 RM 10 首单优惠券');
-            } else if (referralRejectedReason) {
-                setMessage(`✅ 登录成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
-            } else {
-                setMessage('✅ 登录成功！');
-            }
+            const user = await signInWithFacebook();
+            setMessage('✅ 登录成功！');
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
@@ -145,17 +128,9 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         if (password.length < 6) { setMessage('⚠️ 密码至少需要6位'); return; }
         setLoading(true); setMessage('');
         try {
-            const { referralDeferred, referralRejectedReason } = await registerWithEmail(email, password, name, phone, address, referralInput.trim().toUpperCase() || undefined);
-            if (referralDeferred) {
-                setMessage('✅ 注册成功！🎁 推荐码已记录 — 完善资料（确认地址）后即可领取 RM 10 首单优惠券');
-                setTimeout(() => resetAndClose(), 6000);
-            } else if (referralRejectedReason) {
-                setMessage(`✅ 注册成功！⚠️ 推荐码未生效：${referralRejectedReason}`);
-                setTimeout(() => resetAndClose(), 5000);
-            } else {
-                setMessage('✅ 注册成功！欢迎加入 Incredibowl！');
-                setTimeout(() => resetAndClose(), 1500);
-            }
+            await registerWithEmail(email, password, name, phone, address);
+            setMessage('✅ 注册成功！欢迎加入 Incredibowl！');
+            setTimeout(() => resetAndClose(), 1500);
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') setMessage('⚠️ 此邮箱已注册，请直接登录');
             else if (error.code === 'auth/weak-password') setMessage('⚠️ 密码太简单，请加强');
@@ -184,26 +159,15 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 addressVerifiedAt: serverTimestamp(),
                 addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
             };
-            // referredBy is intentionally not sent here — it can only be set
-            // at signup (Firestore Rules block clients from writing it later).
             await updateUserProfile(currentUser.uid, updateData);
 
-            // Profile is now complete (phone + verified address). Try to claim
-            // a pending referral voucher. Server runs the anti-abuse suite.
-            const claimed = await claimReferralVoucher(currentUser);
-            if (claimed?.voucherCode) {
-                setMessage(`✅ 资料已更新！🎁 你获得 RM 10 首单优惠券：${claimed.voucherCode}（30 天内首单可用）`);
-            } else if (claimed?.rejectedReason) {
-                setMessage(`✅ 资料已更新！⚠️ 推荐奖励未发放：${claimed.rejectedReason}`);
-            } else {
-                setMessage('✅ 资料已更新！');
-            }
+            setMessage('✅ 资料已更新！');
             setEditingProfile(false);
             await loadProfile(currentUser.uid);
             // Propagate the new address/phone to the app-wide AuthProvider so the
             // cart (and anything else reading useAuth) reflects it immediately.
             await refreshProfile();
-            setTimeout(() => setMessage(''), claimed?.voucherCode || claimed?.rejectedReason ? 6000 : 2000);
+            setTimeout(() => setMessage(''), 2000);
         } catch (error: any) {
             setMessage(`⚠️ 更新失败: ${error.message}`);
         }
@@ -235,7 +199,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                         phone={phone} setPhone={setPhone}
                         address={address} setAddress={setAddress}
                         editingProfile={editingProfile} setEditingProfile={setEditingProfile}
-                        referralInput={referralInput} setReferralInput={setReferralInput}
                         loading={loading} message={message}
                         onUpdateProfile={handleUpdateProfile}
                         onLogout={handleLogout}
@@ -246,7 +209,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                 {view === 'main' && (
                     <AuthMainView
                         loading={loading} message={message}
-                        referralInput={referralInput} setReferralInput={setReferralInput}
                         onGoogleLogin={handleGoogleLogin}
                         onFacebookLogin={handleFacebookLogin}
                         onEmailLogin={() => { setView('email-login'); setMessage(''); }}
@@ -274,7 +236,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                         phone={phone} setPhone={setPhone}
                         address={address} setAddress={setAddress}
                         showPassword={showPassword} setShowPassword={setShowPassword}
-                        referralInput={referralInput} setReferralInput={setReferralInput}
                         loading={loading} message={message}
                         onSubmit={handleEmailSignup}
                         onLogin={() => { setView('email-login'); setMessage(''); }}
@@ -282,11 +243,6 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
                     />
                 )}
 
-                <div className="p-3 bg-[#E3EADA]/30 text-center border-t border-[#E3EADA]">
-                    <p className="text-[10px] font-bold text-[#1A2D23]/50 flex items-center justify-center gap-1 uppercase tracking-wider">
-                        🎁 推荐好友 · 双方各得永久 RM 5 voucher
-                    </p>
-                </div>
             </div>
         </div>
     );

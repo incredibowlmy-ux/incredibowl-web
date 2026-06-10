@@ -14,9 +14,9 @@ async function getDb() {
  * POST /api/confirm-order
  *
  * Confirms or cancels an order. On first confirm: bumps totalOrders /
- * totalSpent, mints a permanent RM 5 voucher for the referrer (if any),
- * claims the promo voucher used at checkout, and fires the Meta CAPI
- * Purchase event. Uses Firebase Admin SDK so it bypasses Firestore rules.
+ * totalSpent, claims the promo voucher used at checkout, and fires the
+ * Meta CAPI Purchase event. Uses Firebase Admin SDK so it bypasses
+ * Firestore rules.
  */
 export async function POST(req: Request) {
   try {
@@ -90,47 +90,6 @@ export async function POST(req: Request) {
           totalOrders: FieldValue.increment(1),
           totalSpent: FieldValue.increment(foodAfterDiscount + deliveryFee),
         });
-
-        // Referral bonus (only on first confirmed order). Server-side
-        // defence-in-depth: even though /api/validate-referral checks
-        // self-referral at signup, we re-verify here in case rules drift
-        // or the check was bypassed. Reward is a permanent RM 5 voucher
-        // for the referrer (no expiry, no min spend).
-        const userSnap = await userRef.get();
-        const userData = userSnap.data();
-        if (userData?.referredBy && !userData?.referralBonusAwarded) {
-          const referralCode = userData.referredBy;
-          const referrerQuery = await db.collection('users')
-            .where('referralCode', '==', referralCode)
-            .limit(1)
-            .get();
-
-          if (!referrerQuery.empty) {
-            const referrerDoc = referrerQuery.docs[0];
-            const referrerData = referrerDoc.data() || {};
-
-            // Block self-referral by uid (different account, but somehow
-            // the same uid — shouldn't happen but cheap to check).
-            const isSelfUid = referrerDoc.id === orderData.userId;
-            // Block phone match (same person, two SIMs / two accounts).
-            const refereePhone = userData.phoneNormalized;
-            const referrerPhone = referrerData.phoneNormalized;
-            const isSelfPhone = refereePhone && referrerPhone && refereePhone === referrerPhone;
-
-            if (!isSelfUid && !isSelfPhone) {
-              await mintReferrerVoucher(db, referrerDoc.id, orderId);
-              // Mark awarded on referee. The referee already received their
-              // RM 10 voucher at signup — referrer now also gets a voucher.
-              await userRef.update({
-                referralBonusAwarded: true,
-              });
-            } else {
-              console.warn(`Referral bonus blocked (self-referral) for order ${orderId}`);
-              // Still mark as "awarded" so we don't keep checking on every confirm.
-              await userRef.update({ referralBonusAwarded: true });
-            }
-          }
-        }
       }
 
       // Claim voucher when transitioning TO confirmed for the first time.
@@ -283,57 +242,3 @@ export async function POST(req: Request) {
   }
 }
 
-// ── Referrer reward voucher ───────────────────────────────────
-// Mints a permanent RM 5 voucher for the referrer when their referee makes
-// their first confirmed order. Replaces the old "50 points" reward (sunset
-// 2026-05-17). Permanent = no expiresAt field — voucherValidation.ts skips
-// the expiry check when the field is absent.
-//
-// Idempotency is provided by the caller setting `referralBonusAwarded = true`
-// on the referee's user doc — we only get called once per referee.
-const REFERRER_VOUCHER_AMOUNT_RM = 5;
-const REFERRER_VOUCHER_CODE_RETRIES = 5;
-
-function generateReferrerVoucherCode(): string {
-  return 'REFBONUS-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-}
-
-async function mintReferrerVoucher(
-  db: FirebaseFirestore.Firestore,
-  referrerUid: string,
-  triggeringOrderId: string,
-): Promise<void> {
-  const { Timestamp } = await import('firebase-admin/firestore');
-  let lastError: unknown = null;
-  for (let attempt = 0; attempt < REFERRER_VOUCHER_CODE_RETRIES; attempt++) {
-    const code = generateReferrerVoucherCode();
-    const voucherRef = db.collection('vouchers').doc(code);
-    try {
-      await db.runTransaction(async (tx) => {
-        const snap = await tx.get(voucherRef);
-        if (snap.exists) throw new Error('CODE_COLLISION');
-        tx.set(voucherRef, {
-          code,
-          discount: REFERRER_VOUCHER_AMOUNT_RM,
-          isUsed: false,
-          usedBy: '',
-          source: 'referrer-bonus',
-          redeemedBy: referrerUid,
-          triggeringOrderId,
-          createdAt: Timestamp.now(),
-          // No expiresAt — permanent.
-        });
-      });
-      return;
-    } catch (err) {
-      lastError = err;
-      const msg = err instanceof Error ? err.message : '';
-      if (msg === 'CODE_COLLISION') continue;
-      throw err;
-    }
-  }
-  console.error(
-    `mintReferrerVoucher: code collision retries exhausted for referrer ${referrerUid}`,
-    lastError,
-  );
-}

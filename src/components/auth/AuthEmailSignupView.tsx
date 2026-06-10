@@ -10,7 +10,6 @@ interface AuthEmailSignupViewProps {
     phone: string; setPhone: (v: string) => void;
     address: string; setAddress: (v: string) => void;
     showPassword: boolean; setShowPassword: (v: boolean) => void;
-    referralInput: string; setReferralInput: (v: string) => void;
     loading: boolean;
     message: string;
     onSubmit: (e: React.FormEvent) => void;
@@ -22,7 +21,6 @@ export default function AuthEmailSignupView({
     name, setName, email, setEmail, password, setPassword,
     phone, setPhone, address, setAddress,
     showPassword, setShowPassword,
-    referralInput, setReferralInput,
     loading, message, onSubmit, onLogin, onBack,
 }: AuthEmailSignupViewProps) {
     return (
@@ -58,12 +56,6 @@ export default function AuthEmailSignupView({
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
-                </div>
-                <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">🎁 推荐码 Referral Code（选填）</label>
-                    <input type="text" value={referralInput} onChange={(e) => setReferralInput(e.target.value)} placeholder="朋友的推荐码，例: IB-A1B2C3"
-                        className="w-full mt-1 px-4 py-3 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30" />
-                    <p className="text-[10px] text-[#E65100]/50 mt-1">完善地址（确认地图位置）后即可领取 RM 10 首单优惠券（30 天有效）</p>
                 </div>
                 <button type="submit" disabled={loading}
                     className="w-full py-3 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] disabled:opacity-50 shadow-lg shadow-[#FF6B35]/20">

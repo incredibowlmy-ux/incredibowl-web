@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Share2, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
 import {
     tierFromDistance,
     tierFeeHintZh,
@@ -65,7 +65,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
-    const [copied, setCopied] = useState(false);
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState('');
@@ -76,7 +75,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [geocodeResult, setGeocodeResult] = useState<{ lat: number; lng: number; distanceKm: number; zone: DeliveryZone; formattedAddress: string; partialMatch: boolean } | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
-    const [referralStats, setReferralStats] = useState<{ referredCount: number; confirmedCount: number; pendingCount: number; pointsEarned: number } | null>(null);
     const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string | null; daysLeft: number | null }[]>([]);
     const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
     const [mealVoucherInfo, setMealVoucherInfo] = useState<{
@@ -92,28 +90,12 @@ export default function MemberView({ locale }: { locale: Locale }) {
             setAuthChecked(true);
             if (user) {
                 loadData(user.uid);
-                loadReferralStats(user);
                 loadMyVouchers(user);
                 loadMealVouchers(user);
             }
         });
         return () => unsubscribe();
     }, []);
-
-    const loadReferralStats = async (user: User) => {
-        try {
-            const token = await user.getIdToken();
-            const res = await fetch('/api/referral-stats', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            setReferralStats(data);
-        } catch (e) {
-            console.warn('Failed to load referral stats:', e);
-        }
-    };
 
     const loadMyVouchers = async (user: User) => {
         try {
@@ -247,17 +229,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
             }
             await updateUserProfile(currentUser.uid, updateData);
 
-            if (geocodeResult) {
-                const { claimReferralVoucher } = await import('@/lib/auth');
-                const claimed = await claimReferralVoucher(currentUser);
-                if (claimed?.voucherCode) {
-                    alert(t.referralRewardSuccess(claimed.voucherCode));
-                    loadMyVouchers(currentUser);
-                } else if (claimed?.rejectedReason) {
-                    alert(t.referralRewardRejected(claimed.rejectedReason));
-                }
-            }
-
             setProfileData((prev: any) => ({
                 ...prev,
                 displayName: editName,
@@ -309,20 +280,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const memberDays = profileData?.createdAt?.seconds
         ? Math.floor((Date.now() / 1000 - profileData.createdAt.seconds) / 86400)
         : 0;
-
-    const referralCode = profileData?.referralCode || ('IB-' + (currentUser?.uid?.slice(0, 6).toUpperCase() || 'XXXXXX'));
-    const shareText = t.referralShareText(referralCode);
-
-    const handleCopyCode = () => {
-        navigator.clipboard.writeText(referralCode);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-    const handleCopyShareText = () => {
-        navigator.clipboard.writeText(shareText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     const dishCount: Record<string, number> = {};
     orders.forEach((o: any) => {
@@ -719,69 +676,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         <p className="text-[10px] text-[#1A2D23]/40 mt-3 text-center">{t.pasteVoucherHint}</p>
                         </>
                     )}
-                </div>
-
-                {/* Referral Section */}
-                <div className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] rounded-[32px] p-6 text-white shadow-2xl shadow-[#1A2D23]/20 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#FF6B35]/20 rounded-full blur-[50px] mix-blend-screen pointer-events-none" />
-                    <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#E3EADA]/10 rounded-full blur-[40px] mix-blend-screen pointer-events-none" />
-
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Share2 size={18} className="text-[#FF6B35]" />
-                            <h3 className="font-black text-lg">{t.referFriends}</h3>
-                        </div>
-                        <p className="text-white/70 text-xs mb-5 leading-relaxed">
-                            {t.referBlurbBeforeBonus}<span className="text-[#FF6B35] font-black">{t.referBonusVoucher}</span>{t.referBlurbMid}<span className="text-[#FF6B35] font-black">{t.referBonusPoints}</span>{t.referBlurbAfterBonus}
-                        </p>
-
-                        <div className="bg-white/10 rounded-xl p-4 flex items-center justify-between mb-4">
-                            <div>
-                                <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">{t.referralCodeLabel}</p>
-                                <p className="text-2xl font-black tracking-[0.3em] text-[#FF6B35]">{referralCode}</p>
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <button
-                                    onClick={handleCopyCode}
-                                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${copied ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'}`}
-                                >
-                                    {copied ? <><CheckCircle size={11} /> {t.copied}</> : <><Copy size={11} /> {t.copyCodeBtn}</>}
-                                </button>
-                                <button
-                                    onClick={handleCopyShareText}
-                                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 bg-white/10 text-white/80 hover:bg-white/20 transition-all"
-                                >
-                                    <Share2 size={11} /> {t.copyCopyText}
-                                </button>
-                            </div>
-                        </div>
-
-                        {referralStats && referralStats.referredCount > 0 ? (
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <div className="grid grid-cols-2 gap-3 text-center">
-                                    <div>
-                                        <p className="text-2xl font-black text-white">{referralStats.referredCount}</p>
-                                        <p className="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">{t.statFriendsRegistered}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-black text-green-400">{referralStats.confirmedCount}</p>
-                                        <p className="text-[9px] uppercase tracking-wider text-white/40 font-bold mt-1">{t.statFirstOrders}</p>
-                                    </div>
-                                </div>
-                                {referralStats.pendingCount > 0 && (
-                                    <p className="text-[11px] text-amber-300/80 mt-3 text-center">
-                                        {t.pendingFriendsReminder(referralStats.pendingCount)}
-                                    </p>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="bg-white/5 rounded-xl p-4 border border-white/10 text-center">
-                                <p className="text-xs text-white/50 leading-relaxed">
-                                    {t.referEmptyHint}
-                                </p>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
                 {/* Edit Profile Modal */}

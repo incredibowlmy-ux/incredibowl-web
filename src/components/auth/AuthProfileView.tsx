@@ -22,7 +22,6 @@ interface AuthProfileViewProps {
     phone: string; setPhone: (v: string) => void;
     address: string; setAddress: (v: string) => void;
     editingProfile: boolean; setEditingProfile: (v: boolean) => void;
-    referralInput: string; setReferralInput: (v: string) => void;
     loading: boolean;
     message: string;
     onUpdateProfile: (geocode?: GeocodeResult) => void;
@@ -34,7 +33,6 @@ export default function AuthProfileView({
     currentUser, profileData,
     phone, setPhone, address, setAddress,
     editingProfile, setEditingProfile,
-    referralInput, setReferralInput,
     loading, message, onUpdateProfile, onLogout, onClose,
 }: AuthProfileViewProps) {
     const [geocoding, setGeocoding] = useState(false);
@@ -255,17 +253,6 @@ export default function AuthProfileView({
                     )}
                 </div>
 
-                {editingProfile && !profileData?.referredBy && (profileData?.totalOrders || 0) === 0 && (
-                    <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                            🎁 推荐码 Referral Code（选填）
-                        </label>
-                        <input type="text" value={referralInput} onChange={(e) => setReferralInput(e.target.value)}
-                            placeholder="朋友的推荐码，例: IB-A1B2C3"
-                            className="w-full mt-1 px-4 py-3 bg-[#FFF3E0] border-2 border-[#FFE0B2] rounded-xl text-sm outline-none focus:border-[#FF6B35] placeholder:text-[#E65100]/30" />
-                        <p className="text-[10px] text-[#E65100]/50 mt-1">填写推荐码，首次下单确认后双方各获永久 RM 5 voucher</p>
-                    </div>
-                )}
             </div>
 
             {/* Action Buttons */}

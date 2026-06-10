@@ -26,9 +26,6 @@ interface MemberDictShape {
     daysJoined: (n: number) => string;
     editProfile: string;
 
-    // Shared copy button label (used by referral-code share section)
-    copied: string;
-
     // Stats grid
     statsTotalOrders: string;
     statsTotalSpent: string;
@@ -89,22 +86,6 @@ interface MemberDictShape {
     voucherCopied: string;
     pasteVoucherHint: string;
 
-    // Referral section
-    referFriends: string;
-    referBlurbBeforeBonus: string;
-    referBonusVoucher: string;
-    referBlurbMid: string;
-    referBonusPoints: string;
-    referBlurbAfterBonus: string;
-    referralCodeLabel: string;
-    copyCodeBtn: string;
-    copyCopyText: string;
-    statFriendsRegistered: string;
-    statFirstOrders: string;
-    pendingFriendsReminder: (n: number) => string;
-    referEmptyHint: string;
-    referralShareText: (code: string) => string;
-
     // Edit profile modal
     updateProfile: string;
     updateMemberInfoSub: string;
@@ -129,8 +110,6 @@ interface MemberDictShape {
     saveProfile: string;
     cancel: string;
     saveFailed: string;
-    referralRewardSuccess: (code: string) => string;
-    referralRewardRejected: (reason: string) => string;
 }
 
 export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
@@ -144,8 +123,6 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         defaultGreeting: '亲爱的会员',
         daysJoined: (n) => `加入第 ${n} 天`,
         editProfile: '编辑资料',
-
-        copied: '已复制',
 
         statsTotalOrders: '总订单',
         statsTotalSpent: '累计消费',
@@ -187,8 +164,8 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         myVouchers: '我的优惠券',
         voucherCountSuffix: (n) => `${n} 张可用`,
         noPromoVouchers: '暂无可用优惠券',
-        noPromoVouchersLine1: '· 满 100 积分可兑换 RM 10 优惠券',
-        noPromoVouchersLine2: '· 推荐朋友注册即可获 RM 10 首单券',
+        noPromoVouchersLine1: '· 购买餐券包，一次买下最多省 RM 20',
+        noPromoVouchersLine2: '· 有优惠码？结账时输入即可抵扣',
         voucherLabelReferral: '推荐奖励 · 首单可用',
         voucherLabelPoints: '积分兑换',
         voucherLabelPointsMigration: '积分转换 · 永久有效',
@@ -201,22 +178,6 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         voucherCopy: '复制',
         voucherCopied: '已复制',
         pasteVoucherHint: '结账时输入优惠码即可使用',
-
-        referFriends: '推荐好友',
-        referBlurbBeforeBonus: '朋友用你的推荐码注册即获 ',
-        referBonusVoucher: 'RM 10 优惠券',
-        referBlurbMid: '（首单可用）；朋友完成首单后你再得 ',
-        referBonusPoints: '永久 RM 5 voucher',
-        referBlurbAfterBonus: '。',
-        referralCodeLabel: '推荐码',
-        copyCodeBtn: '复制码',
-        copyCopyText: '复制文案',
-        statFriendsRegistered: '朋友注册',
-        statFirstOrders: '已下首单',
-        pendingFriendsReminder: (n) => `💡 还有 ${n} 位朋友未下单 — 提醒一下？`,
-        referEmptyHint: '把推荐码发给朋友，他们注册时填上即可使用。',
-        referralShareText: (code) =>
-            `🍛 我在 Incredibowl 订了好吃的家味便当！用我的推荐码 ${code} 注册，新用户即获 RM 10 优惠券（首单可用）！\n👉 https://incredibowl.my`,
 
         updateProfile: '更新个人资料',
         updateMemberInfoSub: 'Update Member Info',
@@ -241,10 +202,6 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         saveProfile: '确认保存',
         cancel: '取消',
         saveFailed: '保存失败，请稍后再试',
-        referralRewardSuccess: (code) =>
-            `🎁 推荐奖励到账！\n\nRM 10 首单优惠券：${code}\n30 天内首单可用，已加入「我的优惠券」`,
-        referralRewardRejected: (reason) =>
-            `⚠️ 推荐奖励未发放\n\n原因：${reason}\n\n如有疑问请 WhatsApp 010-337 0197 联系碗妈`,
     },
     en: {
         memberCenter: 'Member Center',
@@ -256,8 +213,6 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         defaultGreeting: 'Dear member',
         daysJoined: (n) => `${n} days as a member`,
         editProfile: 'Edit profile',
-
-        copied: 'Copied',
 
         statsTotalOrders: 'Orders',
         statsTotalSpent: 'Total spent',
@@ -299,8 +254,8 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         myVouchers: 'My vouchers',
         voucherCountSuffix: (n) => `${n} available`,
         noPromoVouchers: 'No promo vouchers',
-        noPromoVouchersLine1: '· Redeem RM 10 voucher with 100 points',
-        noPromoVouchersLine2: '· Refer a friend to earn a RM 10 first-order voucher',
+        noPromoVouchersLine1: '· Buy a meal voucher bundle and save up to RM 20',
+        noPromoVouchersLine2: '· Got a promo code? Enter it at checkout',
         voucherLabelReferral: 'Referral bonus · First order',
         voucherLabelPoints: 'Points redemption',
         voucherLabelPointsMigration: 'Points migration · Never expires',
@@ -313,22 +268,6 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         voucherCopy: 'Copy',
         voucherCopied: 'Copied',
         pasteVoucherHint: 'Enter the code at checkout',
-
-        referFriends: 'Refer friends',
-        referBlurbBeforeBonus: 'Friends who register with your code get a ',
-        referBonusVoucher: 'RM 10 voucher',
-        referBlurbMid: ' (first order). After their first order, you earn ',
-        referBonusPoints: 'a permanent RM 5 voucher',
-        referBlurbAfterBonus: '.',
-        referralCodeLabel: 'Referral code',
-        copyCodeBtn: 'Copy code',
-        copyCopyText: 'Copy share text',
-        statFriendsRegistered: 'Registered',
-        statFirstOrders: 'First orders',
-        pendingFriendsReminder: (n) => `💡 ${n} friend${n === 1 ? '' : 's'} haven't ordered yet — nudge them?`,
-        referEmptyHint: 'Share your code with friends — they enter it when signing up.',
-        referralShareText: (code) =>
-            `🍛 I've been ordering home-cooked meals from Incredibowl! Use my referral code ${code} when you sign up — new users get a RM 10 first-order voucher!\n👉 https://incredibowl.my`,
 
         updateProfile: 'Update profile',
         updateMemberInfoSub: 'Update Member Info',
@@ -353,9 +292,5 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         saveProfile: 'Save',
         cancel: 'Cancel',
         saveFailed: 'Save failed. Please try again later.',
-        referralRewardSuccess: (code) =>
-            `🎁 Referral reward unlocked!\n\nRM 10 first-order voucher: ${code}\nValid for 30 days on your first order — added to "My vouchers"`,
-        referralRewardRejected: (reason) =>
-            `⚠️ Referral reward not granted\n\nReason: ${reason}\n\nQuestions? WhatsApp 010-337 0197`,
     },
 };
