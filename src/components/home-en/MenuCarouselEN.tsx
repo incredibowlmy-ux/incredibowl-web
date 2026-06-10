@@ -45,6 +45,7 @@ function translateBtnText(btnText: string, dish: MenuItem): string {
         '已截单': 'Closed for orders',
         '鸡汤暂别，敬请期待回归': 'Paused — back soon',
         '周二不供应': 'Not available on Tue',
+        '当日暂停': 'Paused today',
     };
     return map[cleaned] ?? cleaned;
 }

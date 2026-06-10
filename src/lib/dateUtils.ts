@@ -72,21 +72,27 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
             // A daily dish can be unavailable on a specific weekday (e.g. 马铃薯
             // 周二不供应). It still SHOWS — just greyed-out + not orderable when the
             // next delivery date falls on that weekday.
+            // Unavailable when the next delivery date is either a recurring excluded
+            // weekday (e.g. 马铃薯 周二) OR a one-off blocked date (boss put on hold).
             const excludedToday = dish.excludeWeekday !== undefined && nextAvail.getDay() === dish.excludeWeekday;
-            menuDates[dish.id] = excludedToday
-                ? {
+            const blockedToday = isDishBlockedOn(dish.id, nextAvailStr);
+            if (excludedToday || blockedToday) {
+                const note = excludedToday ? (dish.unavailableNote ?? '当日不供应') : '当日暂停';
+                menuDates[dish.id] = {
                     topTag: '周一至五 · Mon–Fri',
-                    btnText: dish.unavailableNote ?? '当日不供应',
+                    btnText: note,
                     disabled: true,
                     actualDate: nextAvailStr,
-                    reasonShort: dish.unavailableNote ?? '当日不供应',
-                }
-                : {
+                    reasonShort: note,
+                };
+            } else {
+                menuDates[dish.id] = {
                     topTag: '周一至五 · Mon–Fri',
                     btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                     disabled: false,
                     actualDate: nextAvailStr,
                 };
+            }
             return;
         }
         const targetWd = dish.weekday;

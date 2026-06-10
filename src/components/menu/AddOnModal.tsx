@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
+import { isDishBlockedOn } from '@/data/blockedDates';
 
 /** Resolve add-on price from the centralized config (single source of truth). */
 function p(id: string, fallback: number): number {
@@ -692,6 +693,10 @@ export default function AddOnModal({
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
                                                 alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for BowlMama's rest!)");
+                                                return;
+                                            }
+                                            if (dish && isDishBlockedOn(dish.id, selected)) {
+                                                alert("这道菜该日暂停供应，请另选日期。 (This dish is paused on the selected date — please pick another day.)");
                                                 return;
                                             }
                                             if (selected < (minDate || "")) {

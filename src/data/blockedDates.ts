@@ -11,6 +11,8 @@
 
 export const BLOCKED_DATES: Record<number, string[]> = {
     // 4 = 绍兴酒蒸花肉 (周四特餐)。马铃薯炖花肉片自 2026-05-31 改为常驻日常菜。
+    // 12 = 山药云耳海陆双鲜炒 (常驻)。老板要求 2026-06-12（周五）暂停一天。过后自动恢复。
+    12: ['2026-06-12'],
 };
 
 export function isDishBlockedOn(dishId: number, ymd: string): boolean {
