@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { User } from 'firebase/auth';
 import { onAuthChange, getUserProfile, logout } from '@/lib/auth';
 import { getUserOrders } from '@/lib/orders';
-import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, Copy, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
+import { ArrowLeft, Star, ShoppingBag, Wallet, Calendar, Clock, CheckCircle, ChefHat, Truck, XCircle, Sparkles, ChevronLeft, ChevronRight, RefreshCw, LogOut, Settings, Phone, MapPin, Save, X, User as UserIcon, Loader2, AlertCircle, Ticket, Plus } from 'lucide-react';
 import {
     tierFromDistance,
     tierFeeHintZh,
@@ -75,8 +75,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [geocodeResult, setGeocodeResult] = useState<{ lat: number; lng: number; distanceKm: number; zone: DeliveryZone; formattedAddress: string; partialMatch: boolean } | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
-    const [myVouchers, setMyVouchers] = useState<{ code: string; discount: number; source: string; expiresAt: string | null; daysLeft: number | null }[]>([]);
-    const [copiedVoucher, setCopiedVoucher] = useState<string | null>(null);
     const [mealVoucherInfo, setMealVoucherInfo] = useState<{
         availableCount: number;
         soonestDaysLeft: number | null;
@@ -90,27 +88,11 @@ export default function MemberView({ locale }: { locale: Locale }) {
             setAuthChecked(true);
             if (user) {
                 loadData(user.uid);
-                loadMyVouchers(user);
                 loadMealVouchers(user);
             }
         });
         return () => unsubscribe();
     }, []);
-
-    const loadMyVouchers = async (user: User) => {
-        try {
-            const token = await user.getIdToken();
-            const res = await fetch('/api/my-vouchers', {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            setMyVouchers(data.vouchers || []);
-        } catch (e) {
-            console.warn('Failed to load vouchers:', e);
-        }
-    };
 
     const loadMealVouchers = async (user: User) => {
         try {
@@ -130,12 +112,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
         } catch (e) {
             console.warn('Failed to load meal vouchers:', e);
         }
-    };
-
-    const handleCopyVoucher = (code: string) => {
-        navigator.clipboard.writeText(code);
-        setCopiedVoucher(code);
-        setTimeout(() => setCopiedVoucher(null), 2000);
     };
 
     const loadData = async (uid: string) => {
@@ -592,90 +568,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* My Vouchers */}
-                <div className="bg-white rounded-[32px] p-6 shadow-md border border-[#E3EADA]">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
-                            <Sparkles size={18} className="text-[#FF6B35]" />
-                            {t.myVouchers}
-                        </h3>
-                        <span className="text-xs text-[#1A2D23]/50 font-bold">{t.voucherCountSuffix(myVouchers.length)}</span>
-                    </div>
-                    {myVouchers.length === 0 ? (
-                        <div className="bg-[#FDFBF7] border border-dashed border-[#E3EADA] rounded-xl px-4 py-6 text-center">
-                            <p className="text-sm text-[#1A2D23]/60 font-bold mb-1">{t.noPromoVouchers}</p>
-                            <p className="text-[11px] text-[#1A2D23]/50 leading-relaxed">
-                                {t.noPromoVouchersLine1}<br />
-                                {t.noPromoVouchersLine2}
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                        <div className="space-y-2.5">
-                            {myVouchers.map((v) => {
-                                // Source → label + accent color. Permanent sources (migration,
-                                // referrer-bonus) use the deep-green accent like the old
-                                // points redemption to signal "long-term value".
-                                const isReferral = v.source === 'referral';
-                                const isPoints = v.source === 'points-redemption';
-                                const isMigration = v.source === 'points-migration-2026-05';
-                                const isReferrerBonus = v.source === 'referrer-bonus';
-                                const labelText =
-                                    isReferral ? t.voucherLabelReferral
-                                    : isPoints ? t.voucherLabelPoints
-                                    : isMigration ? t.voucherLabelPointsMigration
-                                    : isReferrerBonus ? t.voucherLabelReferrerBonus
-                                    : t.voucherLabelGeneric;
-                                const accent =
-                                    isReferral ? '#FF6B35'
-                                    : (isPoints || isMigration || isReferrerBonus) ? '#2D5F3E'
-                                    : '#C9A24E';
-                                const isPermanent = v.daysLeft === null;
-                                return (
-                                    <div
-                                        key={v.code}
-                                        className="flex items-stretch border border-dashed rounded-xl overflow-hidden"
-                                        style={{ borderColor: accent }}
-                                    >
-                                        <div
-                                            className="flex flex-col items-center justify-center px-4 py-3 text-white shrink-0"
-                                            style={{ backgroundColor: accent, minWidth: '90px' }}
-                                        >
-                                            <p className="text-[9px] font-bold uppercase tracking-wider opacity-80">RM</p>
-                                            <p className="text-2xl font-black leading-none">{v.discount}</p>
-                                            <p className="text-[9px] font-bold uppercase tracking-wider opacity-80 mt-0.5">{t.voucherDiscountLabel}</p>
-                                        </div>
-                                        <div className="flex-1 p-3 flex items-center justify-between gap-2 bg-[#FDFBF7]">
-                                            <div className="min-w-0">
-                                                <p className="font-mono font-black text-sm text-[#1A2D23] truncate">{v.code}</p>
-                                                <p className="text-[10px] font-bold mt-0.5" style={{ color: accent }}>{labelText}</p>
-                                                <p className="text-[10px] text-[#1A2D23]/50 mt-0.5">
-                                                    {isPermanent ? (
-                                                        <span className="text-emerald-700 font-bold">💎 {t.voucherPermanent}</span>
-                                                    ) : (
-                                                        <>
-                                                            {t.voucherDaysLeft(v.daysLeft!)}
-                                                            {v.daysLeft! <= 7 && <span className="text-red-500 font-bold ml-1">{t.voucherExpiringSoon}</span>}
-                                                        </>
-                                                    )}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleCopyVoucher(v.code)}
-                                                className={`shrink-0 px-3 py-2 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all ${copiedVoucher === v.code ? 'bg-green-500 text-white' : 'bg-[#1A2D23]/5 text-[#1A2D23] hover:bg-[#1A2D23]/10'}`}
-                                            >
-                                                {copiedVoucher === v.code ? <><CheckCircle size={11} /> {t.voucherCopied}</> : <><Copy size={11} /> {t.voucherCopy}</>}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <p className="text-[10px] text-[#1A2D23]/40 mt-3 text-center">{t.pasteVoucherHint}</p>
-                        </>
-                    )}
                 </div>
 
                 {/* Edit Profile Modal */}
