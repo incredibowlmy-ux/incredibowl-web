@@ -111,6 +111,21 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
     },
     {
+        // 常驻新菜 2026-06-14 上架（下周一 6/15 起可配送）。a la carte RM22.90；
+        // 餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90）。蛋白克数待补后再加标签。
+        id: 22,
+        day: "Daily / 常驻",
+        name: "参峇臭豆虾仁炒花肉",
+        nameEn: "Sambal Petai Prawn & Pork Belly",
+        price: 22.90,
+        voucherTopUp: 3,
+        image: "/sambal_petai_prawn_pork.webp",
+        tags: ["参峇香辣", "虾仁弹牙", "臭豆控真爱", "餐券+RM3"],
+        tagsEn: ["Sambal spicy", "Bouncy prawns", "Petai lover's pick", "Voucher +RM3"],
+        desc: "参峇辣酱爆香花肉与虾仁，配上一口入魂的臭豆，惹味咸香，扒饭三碗不嫌多。",
+        descEn: "Sambal-fried pork belly and prawns with soul-stirring petai — bold, spicy, and impossibly good over rice."
+    },
+    {
         // 退役 2026-06-14：周一酱油鸡暂别。保留在菜单上「可见不可点」，附说明。
         // 退役菜去掉 weekday；computeNextSpecial 周一自动回退到常驻鸡扒饭（id 14）。
         id: 1,

@@ -137,6 +137,12 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
+    // 常驻新菜 2026-06-14 上架。份量待碗妈提供后补；空 ingredients 时备餐汇总自动跳过。
+    name: '参峇臭豆虾仁炒花肉',
+    shortName: '参峇',
+    ingredients: [],
+  },
+  {
     name: '绍兴酒蒸花肉',
     shortName: '绍肉',
     // 仅列生鲜采购项（与本表惯例一致）。完整配方另含绍兴酒/麻油/鱼露/蚝油/糖/
