@@ -111,9 +111,13 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
     },
     {
+        // 退役 2026-06-14：周一酱油鸡暂别。保留在菜单上「可见不可点」，附说明。
+        // 退役菜去掉 weekday；computeNextSpecial 周一自动回退到常驻鸡扒饭（id 14）。
         id: 1,
         day: "Mon / 周一",
-        weekday: 1,
+        retired: true,
+        unavailableNote: "酱油鸡暂别，敬请期待回归",
+        unavailableNoteEn: "Soy sauce chicken paused — back soon",
         name: "阿嫲古早味酱油鸡全腿",
         nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
