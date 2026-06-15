@@ -1214,6 +1214,9 @@
                     <button class="add-order-btn" id="sellVoucherBtn" title="手动录入餐券销售（WhatsApp / 现金）— 自动 mint 真券到客户账号" style="background:linear-gradient(135deg,#C9985C,#E0B47A);color:#fff">
                         <span class="plus">🎫</span><span>卖餐券</span>
                     </button>
+                    <button class="add-order-btn" id="lookupCustomerBtn" title="按姓名 / 电话查客户档案（订单史 · 消费 · 偏好 · 餐券余额）" style="background:linear-gradient(135deg,#4A7B8C,#6FA5B8);color:#fff">
+                        <span class="plus">🔍</span><span>查客户</span>
+                    </button>
                     <div class="date-picker" id="datePicker">
                         <button class="date-btn" data-range="7">7 日</button>
                         <button class="date-btn active" data-range="30">30 日</button>
@@ -1989,6 +1992,26 @@
     <div id="toast" class="toast"></div>
 
     <!-- ═══════════════ MANUAL ORDER MODAL ═══════════════ -->
+    <div id="customerLookupModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:760px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🔍 查客户</div>
+                    <div class="modal-subtitle">按姓名 / 电话 / 订单号查档案 · 累计订单 · 偏好 · 餐券余额</div>
+                </div>
+                <button class="modal-close" id="closeCustomerLookupBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-row">
+                    <label>搜索（姓名 / 电话 / 订单号）</label>
+                    <input type="text" id="customerLookupInput" placeholder="例：王小明 或 01234... 或 #ABC123" autocomplete="off" />
+                    <div id="customerLookupSuggestions" style="margin-top:6px;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);display:none"></div>
+                </div>
+                <div id="customerProfileContainer" style="margin-top:14px"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="manualOrderModal" class="modal-backdrop hidden">
         <div class="modal">
             <div class="modal-header">
@@ -10346,6 +10369,442 @@ incredibowl.my`,
             } finally {
                 btn.disabled = false;
                 btn.textContent = editingOrderId ? '保存修改' : '保存';
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //   CUSTOMER LOOKUP — 按姓名/电话查客户档案
+        //   订单史 · 消费 · 偏好 · 餐券余额 · 行动按钮
+        // ═══════════════════════════════════════════════════════════════
+
+        // Build unique customer index keyed by customerKey(o).
+        // Each entry: { key, name (most recent), phone, orderCount, lastOrderTs }
+        function buildCustomerIndex() {
+            const map = new Map();
+            (state.orders || []).forEach(o => {
+                const k = customerKey(o);
+                const ts = tsToDate(o.createdAt)?.getTime() || 0;
+                const cur = map.get(k);
+                if (!cur || ts > cur.lastOrderTs) {
+                    map.set(k, {
+                        key: k,
+                        name: o.userName || cur?.name || '',
+                        phone: o.userPhone || cur?.phone || '',
+                        orderCount: (cur?.orderCount || 0) + 1,
+                        lastOrderTs: ts,
+                    });
+                } else {
+                    cur.orderCount += 1;
+                }
+            });
+            // Also pull in registered users who haven't ordered yet
+            (state.users || []).forEach(u => {
+                const phone = u.phone || '';
+                const normalized = normalizePhone(phone);
+                const k = (normalized && normalized.length >= 7) ? 'p:' + normalized : 'u:' + u.id;
+                if (!map.has(k)) {
+                    map.set(k, {
+                        key: k,
+                        name: u.displayName || '',
+                        phone,
+                        orderCount: 0,
+                        lastOrderTs: tsToDate(u.createdAt)?.getTime() || 0,
+                    });
+                }
+            });
+            return [...map.values()].sort((a, b) => b.lastOrderTs - a.lastOrderTs);
+        }
+
+        function searchCustomers(query) {
+            const q = String(query || '').trim().toLowerCase();
+            if (!q) return [];
+            const idx = buildCustomerIndex();
+            // Order ID match: "#ABC123" or "abc123" — last 6 chars of o.id
+            if (q.length >= 3) {
+                const idMatch = q.replace(/^#/, '').toLowerCase();
+                const matchedOrder = (state.orders || []).find(o => String(o.id || '').toLowerCase().endsWith(idMatch));
+                if (matchedOrder) {
+                    const k = customerKey(matchedOrder);
+                    const c = idx.find(c => c.key === k);
+                    if (c) return [c];
+                }
+            }
+            const qPhone = q.replace(/\D/g, '');
+            return idx.filter(c => {
+                if (qPhone && qPhone.length >= 4) {
+                    const cPhone = normalizePhone(c.phone);
+                    if (cPhone.includes(qPhone)) return true;
+                }
+                if (c.name && c.name.toLowerCase().includes(q)) return true;
+                return false;
+            }).slice(0, 30);
+        }
+
+        // Returns full profile object — see renderCustomerProfile for shape consumed
+        function buildCustomerProfile(key) {
+            const orders = (state.orders || []).filter(o => customerKey(o) === key);
+            if (!orders.length && !key.startsWith('u:')) return null;
+            orders.sort((a, b) => (tsToDate(b.createdAt)?.getTime() || 0) - (tsToDate(a.createdAt)?.getTime() || 0));
+
+            // User doc (if exists) — match by phone or userId
+            const phoneNorm = key.startsWith('p:') ? key.slice(2) : null;
+            const userIdRaw = key.startsWith('u:') ? key.slice(2) : null;
+            const userDoc = (state.users || []).find(u => {
+                if (phoneNorm && normalizePhone(u.phone || '') === phoneNorm) return true;
+                if (userIdRaw && u.id === userIdRaw) return true;
+                return false;
+            }) || null;
+
+            // Basic identity (prefer most-recent order, fall back to user doc)
+            const lastOrder = orders[0] || null;
+            const firstOrder = orders[orders.length - 1] || null;
+            const name = (lastOrder?.userName || userDoc?.displayName || '匿名').trim();
+            const phone = (lastOrder?.userPhone || userDoc?.phone || '').trim();
+
+            // Addresses (deduped across orders + user doc)
+            const addressSet = new Set();
+            orders.forEach(o => { const a = (o.userAddress || '').trim(); if (a) addressSet.add(a); });
+            if (userDoc?.address) addressSet.add(String(userDoc.address).trim());
+            const addresses = [...addressSet].filter(Boolean);
+            const km = lastOrder?.deliveryDistanceKm ?? userDoc?.addressDistanceKm ?? null;
+
+            // Paid order stats
+            const paid = orders.filter(o => PAID_STATUSES.has(o.status));
+            const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
+            const totalOrders = paid.length;
+            const totalRevenue = paid.reduce((s, o) => s + orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0), 0);
+            const aov = totalOrders > 0 ? totalRevenue / totalOrders : null;
+            const cashTotal = paid.reduce((s, o) => s + (Number(o.total) || 0), 0);
+            const voucherRev = paid.reduce((s, o) => s + (Number(o.mealVoucherAllocatedRevenue) || 0), 0);
+            const totalVouchersUsed = paid.reduce((s, o) => s + (Number(o.mealVouchersUsed) || 0), 0);
+            const totalPromoDiscount = paid.reduce((s, o) => s + (Number(o.promoDiscount) || 0), 0);
+            const totalRefunds = paid.reduce((s, o) => s + (Number(o.refundAmount) || 0), 0);
+            const refundOrderCount = paid.filter(o => Number(o.refundAmount) > 0).length;
+
+            // Dates / cycle / tag
+            const firstOrderDate = tsToDate(firstOrder?.createdAt);
+            const lastOrderDate = tsToDate(lastOrder?.createdAt);
+            const today = startOfDay(new Date());
+            const daysSinceFirst = firstOrderDate ? daysBetween(firstOrderDate, today) : null;
+            const daysSinceLast = lastOrderDate ? daysBetween(lastOrderDate, today) : null;
+            let avgCycle = null;
+            if (paid.length >= 2) {
+                const dates = paid.map(o => tsToDate(o.createdAt)).filter(Boolean).sort((a, b) => a - b);
+                let totalDays = 0;
+                for (let i = 1; i < dates.length; i++) totalDays += daysBetween(dates[i - 1], dates[i]);
+                avgCycle = totalDays / (dates.length - 1);
+            }
+
+            const tags = [];
+            if (userDoc) tags.push({ label: '🌐 网站账号', color: '#388E3C', bg: 'rgba(56,142,60,0.12)' });
+            if (totalOrders >= 10) tags.push({ label: '👑 VIP (≥10 单)', color: '#9A6E2F', bg: 'rgba(201,152,92,0.18)' });
+            else if (totalOrders >= 5) tags.push({ label: '🤝 老客 (≥5 单)', color: '#1976D2', bg: 'rgba(25,118,210,0.12)' });
+            else if (totalOrders === 1) tags.push({ label: '🌱 新客', color: '#2E7D32', bg: 'rgba(46,125,50,0.12)' });
+            if (daysSinceLast !== null && daysSinceLast >= 15 && daysSinceLast < 30) tags.push({ label: '⚠️ 流失风险', color: '#E65100', bg: 'rgba(245,124,0,0.15)' });
+            else if (daysSinceLast !== null && daysSinceLast >= 30) tags.push({ label: '💔 已流失', color: '#C62828', bg: 'rgba(211,47,47,0.13)' });
+
+            // Voucher purchases by this customer
+            const purchases = (state.mealVoucherPurchases || []).filter(p => {
+                if (p.status !== 'paid') return false;
+                if (phoneNorm && normalizePhone(p.userPhone || '') === phoneNorm) return true;
+                if (userIdRaw && p.userId === userIdRaw) return true;
+                return false;
+            });
+            const voucherPurchaseCount = purchases.length;
+            const voucherCountMinted = purchases.reduce((s, p) => s + (Number(p.voucherCount) || 0), 0);
+            const voucherCashSpent = purchases.reduce((s, p) => s + (Number(p.amountPaid) || 0), 0);
+
+            // Voucher balance + expiring soon
+            const myVouchers = (state.mealVouchers || []).filter(v => {
+                if (phoneNorm && normalizePhone(v.userPhone || '') === phoneNorm) return true;
+                if (userIdRaw && v.userId === userIdRaw) return true;
+                return false;
+            });
+            const nowMs = Date.now();
+            const available = myVouchers.filter(v => v.status === 'available' && (tsToDate(v.expiresAt)?.getTime() || 0) > nowMs);
+            const expiringSoon = available.filter(v => {
+                const exp = tsToDate(v.expiresAt);
+                if (!exp) return false;
+                const days = (exp.getTime() - nowMs) / 86400000;
+                return days <= 7;
+            });
+
+            // Top dishes + top add-ons
+            const dishCount = new Map();
+            const addonCount = new Map();
+            paid.forEach(o => normalizeOrderItems(o).forEach(it => {
+                const dn = canonicalDishName(it.name);
+                if (dn) dishCount.set(dn, (dishCount.get(dn) || 0) + (Number(it.quantity) || 1));
+                (it.addOns || []).forEach(a => {
+                    const lbl = a.label || a.name || a.id || '加料';
+                    addonCount.set(lbl, (addonCount.get(lbl) || 0) + (Number(a.quantity) || 1));
+                });
+            }));
+            const topDishes = [...dishCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const topAddons = [...addonCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            // Meal preference
+            let lunchCount = 0, dinnerCount = 0;
+            paid.forEach(o => {
+                const mt = mealType(o);
+                if (mt === 'lunch') lunchCount++;
+                else if (mt === 'dinner') dinnerCount++;
+            });
+
+            // Payment method distribution
+            const pmCount = new Map();
+            paid.forEach(o => {
+                const pm = String(o.paymentMethod || 'unknown').toLowerCase();
+                pmCount.set(pm, (pmCount.get(pm) || 0) + 1);
+            });
+
+            // Order notes — collect unique non-empty notes (recurring requests like "no scallion")
+            const noteSet = new Set();
+            orders.forEach(o => { const n = (o.note || '').trim(); if (n && !n.startsWith('手动录入')) noteSet.add(n); });
+            const notes = [...noteSet].slice(0, 8);
+
+            return {
+                key, name, phone, addresses, km, userDoc,
+                firstOrderDate, lastOrderDate, daysSinceFirst, daysSinceLast, avgCycle,
+                totalOrders, cancelledCount,
+                totalRevenue, aov, cashTotal, voucherRev, totalVouchersUsed,
+                totalPromoDiscount, totalRefunds, refundOrderCount,
+                voucherPurchaseCount, voucherCountMinted, voucherCashSpent,
+                availableCount: available.length, expiringSoonCount: expiringSoon.length,
+                topDishes, topAddons, lunchCount, dinnerCount, pmCount,
+                recent: paid.slice(0, 10),
+                tags, notes,
+            };
+        }
+
+        function renderCustomerProfile(p) {
+            if (!p) return '<div style="padding:20px;color:var(--text-muted);text-align:center">没找到该客户</div>';
+            const tagsHtml = p.tags.length
+                ? p.tags.map(t => `<span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;background:${t.bg};color:${t.color};margin-right:4px">${escapeHtml(t.label)}</span>`).join('')
+                : '<span style="color:var(--text-muted);font-size:11px">—</span>';
+            const addressHtml = p.addresses.length
+                ? p.addresses.slice(0, 3).map(a => `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">📍 ${escapeHtml(a)}${p.km !== null && a === p.addresses[0] ? ` · ${p.km}km` : ''}</div>`).join('') + (p.addresses.length > 3 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px">（还有 ${p.addresses.length - 3} 个历史地址）</div>` : '')
+                : '<div style="font-size:12px;color:var(--text-muted);margin-top:2px">📍 无地址记录</div>';
+            const lunchPct = (p.lunchCount + p.dinnerCount) > 0 ? Math.round(p.lunchCount / (p.lunchCount + p.dinnerCount) * 100) : null;
+            const dinnerPct = lunchPct !== null ? 100 - lunchPct : null;
+            const topPm = [...p.pmCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 2);
+            const totalPmCount = [...p.pmCount.values()].reduce((s, v) => s + v, 0);
+            const pmDisplay = topPm.map(([m, c]) => `${escapeHtml(m)} ${Math.round(c / totalPmCount * 100)}%`).join(' · ') || '—';
+
+            // Helper: format days
+            const fmtDays = (d) => d === null ? '—' : d === 0 ? '今天' : d === 1 ? '昨天' : `${d} 天前`;
+            const fmtDateShort = (d) => d ? `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear() % 100}` : '—';
+
+            return `
+                <!-- ─── 概览 ─── -->
+                <div style="padding:14px 16px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                        <div style="flex:1;min-width:0">
+                            <div style="font-size:18px;font-weight:700;color:var(--text)">${escapeHtml(p.name)}</div>
+                            <div style="font-size:13px;color:var(--text-muted);margin-top:2px">📞 ${escapeHtml(p.phone || '—')}</div>
+                            ${addressHtml}
+                        </div>
+                        <div style="text-align:right;flex-shrink:0">
+                            ${tagsHtml}
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;font-size:11px;color:var(--text-muted)">
+                        <div><div>首单</div><div style="color:var(--text);font-weight:600;margin-top:1px">${fmtDateShort(p.firstOrderDate)} (${fmtDays(p.daysSinceFirst)})</div></div>
+                        <div><div>末单</div><div style="color:var(--text);font-weight:600;margin-top:1px">${fmtDateShort(p.lastOrderDate)} (${fmtDays(p.daysSinceLast)})</div></div>
+                        <div><div>平均回购周期</div><div style="color:var(--text);font-weight:600;margin-top:1px">${p.avgCycle === null ? '—' : p.avgCycle.toFixed(1) + ' 天'}</div></div>
+                    </div>
+                </div>
+
+                <!-- ─── 数据 ─── -->
+                <div style="padding:14px 16px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">📊 关键数据</div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px">
+                        <div><span style="color:var(--text-muted)">总订单</span> <strong>${p.totalOrders}</strong> 单${p.cancelledCount ? ` <span style="color:var(--danger);font-size:11px">(取消 ${p.cancelledCount})</span>` : ''}</div>
+                        <div><span style="color:var(--text-muted)">总消费</span> <strong>${fmt.rm(p.totalRevenue)}</strong></div>
+                        <div><span style="color:var(--text-muted)">客单价 AOV</span> <strong>${p.aov === null ? '—' : fmt.rm(p.aov)}</strong></div>
+                        <div><span style="color:var(--text-muted)">现金消费</span> <strong>${fmt.rm(p.cashTotal)}</strong></div>
+                        <div><span style="color:var(--text-muted)">餐券消耗</span> <strong>${p.totalVouchersUsed}</strong> 张 (摊销 ${fmt.rm(p.voucherRev)})</div>
+                        <div><span style="color:var(--text-muted)">享受 promo 折扣</span> <strong>${fmt.rm(p.totalPromoDiscount)}</strong></div>
+                        ${p.totalRefunds > 0 ? `<div style="color:var(--danger)"><span>退款</span> <strong>${fmt.rm(p.totalRefunds)}</strong> (${p.refundOrderCount} 单)</div>` : ''}
+                    </div>
+                </div>
+
+                <!-- ─── 餐券 ─── -->
+                ${p.voucherPurchaseCount > 0 || p.availableCount > 0 ? `
+                <div style="padding:14px 16px;background:rgba(201,152,92,0.08);border-radius:10px;margin-bottom:10px;border-left:3px solid #C9985C">
+                    <div style="font-size:13px;font-weight:600;color:#9A6E2F;margin-bottom:8px">🎫 餐券</div>
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px">
+                        <div><span style="color:var(--text-muted)">购买</span> <strong>${p.voucherPurchaseCount}</strong> 笔 / <strong>${p.voucherCountMinted}</strong> 张</div>
+                        <div><span style="color:var(--text-muted)">付款</span> <strong>${fmt.rm(p.voucherCashSpent)}</strong></div>
+                        <div><span style="color:var(--text-muted)">已用</span> <strong>${p.totalVouchersUsed}</strong> / 余 <strong>${p.availableCount}</strong></div>
+                        ${p.expiringSoonCount > 0 ? `<div style="color:#C62828"><span>⚠️ 7 天内过期</span> <strong>${p.expiringSoonCount}</strong> 张</div>` : ''}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- ─── 偏好 ─── -->
+                ${p.topDishes.length > 0 ? `
+                <div style="padding:14px 16px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">🍴 偏好</div>
+                    <div style="font-size:12px;line-height:1.7">
+                        <div><span style="color:var(--text-muted)">Top 菜：</span>${p.topDishes.map(([n, c]) => `${escapeHtml(n)} <strong>×${c}</strong>`).join(' · ')}</div>
+                        ${p.topAddons.length > 0 ? `<div style="margin-top:4px"><span style="color:var(--text-muted)">Top 加点：</span>${p.topAddons.map(([n, c]) => `${escapeHtml(n)} <strong>×${c}</strong>`).join(' · ')}</div>` : ''}
+                        ${lunchPct !== null ? `<div style="margin-top:4px"><span style="color:var(--text-muted)">餐别偏好：</span><span style="color:#B45309;font-weight:600">午 ${lunchPct}%</span> / <span style="color:#4338CA;font-weight:600">晚 ${dinnerPct}%</span></div>` : ''}
+                        <div style="margin-top:4px"><span style="color:var(--text-muted)">支付偏好：</span>${pmDisplay}</div>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- ─── 备注历史 ─── -->
+                ${p.notes.length > 0 ? `
+                <div style="padding:12px 16px;background:rgba(99,102,241,0.06);border-radius:10px;margin-bottom:10px;border-left:3px solid #6366F1">
+                    <div style="font-size:13px;font-weight:600;color:#4338CA;margin-bottom:6px">📝 备注 / 特殊要求历史</div>
+                    <div style="font-size:12px;line-height:1.7;color:var(--text)">${p.notes.map(n => `「${escapeHtml(n)}」`).join(' · ')}</div>
+                </div>
+                ` : ''}
+
+                <!-- ─── 最近 10 单 ─── -->
+                ${p.recent.length > 0 ? `
+                <div style="padding:14px 16px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">⏱️ 最近 ${p.recent.length} 单</div>
+                    <div style="font-size:12px">
+                        ${p.recent.map(o => {
+                            const d = tsToDate(o.createdAt);
+                            const dStr = d ? `${d.getMonth() + 1}/${d.getDate()}` : '—';
+                            const mt = mealType(o);
+                            const mealLabel = mt === 'lunch' ? '<span style="color:#B45309">午</span>' : mt === 'dinner' ? '<span style="color:#4338CA">晚</span>' : '';
+                            const dishNames = (o.items || []).map(it => canonicalDishName(it.name)).filter(n => n && !n.startsWith('↳')).join(' + ') || '—';
+                            const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
+                            const refund = Number(o.refundAmount) || 0;
+                            return `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border)">
+                                <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">${dStr} ${mealLabel}</span>
+                                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(dishNames)}">${escapeHtml(dishNames)}</span>
+                                <span style="font-weight:600;flex-shrink:0">${fmt.rm(rev)}${refund > 0 ? ` <span style="color:var(--danger);font-size:10px">退 ${fmt.rm(refund)}</span>` : ''}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- ─── 行动按钮 ─── -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+                    <button type="button" class="btn sm" data-cust-action="copy-phone" data-phone="${escapeHtml(p.phone)}" ${!p.phone ? 'disabled' : ''}>📋 复制电话</button>
+                    <button type="button" class="btn sm" data-cust-action="copy-wa" data-name="${escapeHtml(p.name)}" data-days="${p.daysSinceLast ?? ''}" ${!p.phone ? 'disabled' : ''}>💬 复制 WA 召回模板</button>
+                    <button type="button" class="btn sm primary" data-cust-action="new-order" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" data-addr="${escapeHtml(p.addresses[0] || '')}">+ 新建订单（预填资料）</button>
+                </div>
+            `;
+        }
+
+        function openCustomerLookup() {
+            const modal = $('#customerLookupModal');
+            $('#customerLookupInput').value = '';
+            $('#customerLookupSuggestions').innerHTML = '';
+            $('#customerLookupSuggestions').style.display = 'none';
+            $('#customerProfileContainer').innerHTML = `
+                <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">
+                    👆 在上方输入<strong>姓名</strong>、<strong>电话</strong>或<strong>订单号</strong>（如 #ABC123）开始搜索
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            setTimeout(() => $('#customerLookupInput').focus(), 100);
+        }
+
+        function closeCustomerLookup() {
+            $('#customerLookupModal').classList.add('hidden');
+        }
+
+        function renderCustomerSuggestions(query) {
+            const sug = $('#customerLookupSuggestions');
+            const results = searchCustomers(query);
+            if (results.length === 0) {
+                sug.style.display = 'block';
+                sug.innerHTML = `<div style="padding:10px 12px;font-size:12px;color:var(--text-muted)">没匹配到客户</div>`;
+                return;
+            }
+            sug.style.display = 'block';
+            sug.innerHTML = results.map(c => `
+                <div class="customer-suggest" data-key="${escapeHtml(c.key)}" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:center">
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:13px">${escapeHtml(c.name || '匿名')}</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:1px">📞 ${escapeHtml(c.phone || '—')}</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);flex-shrink:0">${c.orderCount} 单</div>
+                </div>
+            `).join('');
+        }
+
+        // Wire events
+        $('#lookupCustomerBtn').addEventListener('click', openCustomerLookup);
+        $('#closeCustomerLookupBtn').addEventListener('click', closeCustomerLookup);
+        $('#customerLookupModal').addEventListener('click', (e) => {
+            if (e.target === $('#customerLookupModal')) closeCustomerLookup();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !$('#customerLookupModal').classList.contains('hidden')) closeCustomerLookup();
+        });
+
+        let customerLookupDebounce = null;
+        $('#customerLookupInput').addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            if (customerLookupDebounce) clearTimeout(customerLookupDebounce);
+            if (!q) {
+                $('#customerLookupSuggestions').style.display = 'none';
+                $('#customerProfileContainer').innerHTML = `
+                    <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">
+                        👆 在上方输入<strong>姓名</strong>、<strong>电话</strong>或<strong>订单号</strong>（如 #ABC123）开始搜索
+                    </div>
+                `;
+                return;
+            }
+            customerLookupDebounce = setTimeout(() => renderCustomerSuggestions(q), 120);
+        });
+
+        // Click a suggestion → render profile
+        $('#customerLookupSuggestions').addEventListener('click', (e) => {
+            const item = e.target.closest('.customer-suggest');
+            if (!item) return;
+            const key = item.dataset.key;
+            $('#customerLookupSuggestions').style.display = 'none';
+            const profile = buildCustomerProfile(key);
+            $('#customerProfileContainer').innerHTML = renderCustomerProfile(profile);
+        });
+
+        // Action buttons inside profile (delegated)
+        $('#customerProfileContainer').addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-cust-action]');
+            if (!btn) return;
+            const action = btn.dataset.custAction;
+            if (action === 'copy-phone') {
+                const phone = btn.dataset.phone || '';
+                if (!phone) return;
+                navigator.clipboard.writeText(phone)
+                    .then(() => toast(`已复制电话 ${phone}`, 'success'))
+                    .catch(() => toast('复制失败', 'error'));
+            } else if (action === 'copy-wa') {
+                const name = btn.dataset.name || '客户';
+                const days = btn.dataset.days || '';
+                const tmpl = days
+                    ? `嗨 ${name}！很久没看到你的订单啦 (${days} 天)🍱 这周新菜上线了，要不要尝一份？👉 https://incredibowl.my`
+                    : `嗨 ${name}！这周新菜上线了，要不要尝一份？🍱 👉 https://incredibowl.my`;
+                navigator.clipboard.writeText(tmpl)
+                    .then(() => toast(`已复制 ${name} 的 WA 文案`, 'success'))
+                    .catch(() => toast('复制失败', 'error'));
+            } else if (action === 'new-order') {
+                const name = btn.dataset.name || '';
+                const phone = btn.dataset.phone || '';
+                const addr = btn.dataset.addr || '';
+                closeCustomerLookup();
+                openOrderModal();
+                // Wait for modal DOM ready, then prefill
+                setTimeout(() => {
+                    if ($('#moName')) $('#moName').value = name;
+                    if ($('#moPhone')) {
+                        $('#moPhone').value = phone;
+                        // Trigger phone input handler so voucher hint + address autofill fire
+                        $('#moPhone').dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    if (addr && $('#moAddress') && !$('#moAddress').value) $('#moAddress').value = addr;
+                }, 150);
             }
         });
 
