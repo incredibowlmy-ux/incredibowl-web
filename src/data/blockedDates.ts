@@ -10,7 +10,7 @@
 // Past dates are harmless (no match against future serve dates) but feel free to prune.
 
 export const BLOCKED_DATES: Record<number, string[]> = {
-    // 4 = 绍兴酒蒸花肉 (周四特餐)。马铃薯炖花肉片自 2026-05-31 改为常驻日常菜。
+    // 4 = 绍兴酒蒸花肉（2026-06-15 起改为周一特餐）。马铃薯炖花肉片自 2026-05-31 改为常驻日常菜。
     // 12 = 山药云耳海陆双鲜炒 (常驻)。老板要求 2026-06-12（周五）暂停一天。过后自动恢复。
     12: ['2026-06-12'],
 };

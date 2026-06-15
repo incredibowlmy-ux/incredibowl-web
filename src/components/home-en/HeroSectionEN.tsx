@@ -67,7 +67,7 @@ export default function HeroSectionEN() {
             <div className="lg:col-span-7 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[460px]">
                 <div className="absolute inset-0 pointer-events-none">
                     {weeklyMenu.map((dish, i) => (
-                        heroImgIdx === i && (
+                        heroImgIdx === i && dish.image.startsWith('/') && (
                             <div key={dish.id} className="absolute inset-0 animate-fade-in">
                                 <Image src={dish.image} alt="" fill className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority={i === 0} />
                             </div>
@@ -169,13 +169,17 @@ export default function HeroSectionEN() {
                 >
                     <div className="relative w-full h-56 md:h-64 lg:h-72 overflow-hidden bg-[#E3EADA]">
                         {nextSpecial && (
-                            <Image
-                                src={nextSpecial.dish.image}
-                                alt={dishImageAlt(nextSpecial.dish, 'en')}
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                sizes="(min-width: 1024px) 33vw, 100vw"
-                            />
+                            nextSpecial.dish.image.startsWith('/') ? (
+                                <Image
+                                    src={nextSpecial.dish.image}
+                                    alt={dishImageAlt(nextSpecial.dish, 'en')}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                    sizes="(min-width: 1024px) 33vw, 100vw"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-7xl">{nextSpecial.dish.image}</div>
+                            )
                         )}
                         <div className="absolute top-4 left-4 z-10">
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A2D23] text-white rounded-full shadow-md">

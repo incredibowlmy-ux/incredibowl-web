@@ -143,6 +143,12 @@ export const dishRecipes: DishRecipe[] = [
     ingredients: [],
   },
   {
+    // 周四新菜 2026-06-15 上架。份量待碗妈提供后补；空 ingredients 时备餐汇总自动跳过。
+    name: '家乡豆酱焖花肉',
+    shortName: '豆酱',
+    ingredients: [],
+  },
+  {
     name: '绍兴酒蒸花肉',
     shortName: '绍肉',
     // 仅列生鲜采购项（与本表惯例一致）。完整配方另含绍兴酒/麻油/鱼露/蚝油/糖/

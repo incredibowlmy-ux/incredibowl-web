@@ -39,7 +39,7 @@ export default function HeroSection() {
                 {/* Rotating Background Images — pushed to right side, much dimmer */}
                 <div className="absolute inset-0 pointer-events-none">
                     {weeklyMenu.map((dish, i) => (
-                        heroImgIdx === i && (
+                        heroImgIdx === i && dish.image.startsWith('/') && (
                             <div key={dish.id} className="absolute inset-0 animate-fade-in">
                                 <Image src={dish.image} alt="" fill sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority={i === 0} />
                             </div>
@@ -152,13 +152,17 @@ export default function HeroSection() {
                     {/* Image area */}
                     <div className="relative w-full h-56 md:h-64 lg:h-72 overflow-hidden bg-[#E3EADA]">
                         {nextSpecial && (
-                            <Image
-                                src={nextSpecial.dish.image}
-                                alt={dishImageAlt(nextSpecial.dish)}
-                                fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                sizes="(min-width: 1024px) 33vw, 100vw"
-                            />
+                            nextSpecial.dish.image.startsWith('/') ? (
+                                <Image
+                                    src={nextSpecial.dish.image}
+                                    alt={dishImageAlt(nextSpecial.dish)}
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                    sizes="(min-width: 1024px) 33vw, 100vw"
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-7xl">{nextSpecial.dish.image}</div>
+                            )
                         )}
                         {/* Top label */}
                         <div className="absolute top-4 left-4 z-10">

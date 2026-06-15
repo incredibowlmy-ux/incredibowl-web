@@ -58,6 +58,7 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 }
 
 export const weeklyMenu: MenuItem[] = [
+    // ─── 常驻菜 Daily ───────────────────────────────────────────
     {
         id: 11,
         day: "Daily / 常驻",
@@ -83,18 +84,6 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
     },
     {
-        id: 14,
-        day: "Daily / 常驻",
-        name: "香煎金黄鸡扒饭",
-        nameEn: "Pan-Fried Golden Chicken Chop Rice",
-        price: 18.50,
-        image: "/chicken_chop.webp",
-        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
-        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
-        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
-        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
-    },
-    {
         id: 13,
         day: "Daily / 常驻",
         name: "马铃薯炖花肉片",
@@ -111,7 +100,7 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
     },
     {
-        // 常驻新菜 2026-06-14 上架（下周一 6/15 起可配送）。a la carte RM22.90；
+        // 常驻新菜 2026-06-14 上架。a la carte RM22.90；
         // 餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90）。蛋白克数待补后再加标签。
         id: 22,
         day: "Daily / 常驻",
@@ -125,28 +114,57 @@ export const weeklyMenu: MenuItem[] = [
         desc: "参峇辣酱爆香花肉与虾仁，配上一口入魂的臭豆，惹味咸香，扒饭三碗不嫌多。",
         descEn: "Sambal-fried pork belly and prawns with soul-stirring petai — bold, spicy, and impossibly good over rice."
     },
+    // ─── 周一 Mon ───────────────────────────────────────────────
     {
-        // 退役 2026-06-14：周一酱油鸡暂别。保留在菜单上「可见不可点」，附说明。
-        // 退役菜去掉 weekday；computeNextSpecial 周一自动回退到常驻鸡扒饭（id 14）。
-        id: 1,
+        // 2026-06-15 重排：原「常驻」鸡扒饭降为周一特餐，并作周一 Hero 主打。
+        id: 14,
         day: "Mon / 周一",
-        retired: true,
-        unavailableNote: "酱油鸡暂别，敬请期待回归",
-        unavailableNoteEn: "Soy sauce chicken paused — back soon",
-        name: "阿嫲古早味酱油鸡全腿",
-        nameEn: "Soy Sauce Chicken Whole Leg",
+        weekday: 1,
+        isPrimary: true,
+        name: "香煎金黄鸡扒饭",
+        nameEn: "Pan-Fried Golden Chicken Chop Rice",
         price: 18.50,
-        image: "/soy_sauce_chicken_leg.webp",
-        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
-        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
-        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
-        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
+        image: "/chicken_chop.webp",
+        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
+        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
+        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
+        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
     },
     {
-        // 周二主推（Hero「明日特餐」周二展示这道）。新上 2026-06-08。
-        id: 20,
+        // 2026-06-15 重排：原周四特餐改到周一（周一第二道）。
+        id: 4,
+        day: "Mon / 周一",
+        weekday: 1,
+        name: "绍兴酒蒸花肉",
+        nameEn: "Shaoxing Wine Steamed Pork Belly",
+        price: 19.90,
+        image: "/shaoxing_pork_belly.webp",
+        tags: ["绍兴酒香", "姜丝提鲜", "蒸香软嫩", "偏肥·肥香控真爱"],
+        tagsEn: ["Shaoxing wine aroma", "Ginger-infused", "Steamed & tender", "Rich & fatty"],
+        desc: "选偏肥的五花部位，绍兴酒香顺着姜丝蒸进肉里，肥香软糯、入口即化。爱这口肥香的会上瘾；偏好瘦口的朋友这道可能不合。",
+        descEn: "Made with the fattier cut of pork belly — Shaoxing wine and ginger steamed deep into the meat, rich and melt-in-your-mouth. If you love that fatty, silky bite you'll adore it; if you prefer lean, this one may not be for you."
+    },
+    // ─── 周二 Tue ───────────────────────────────────────────────
+    {
+        // 2026-06-15 重排：原周三特餐改到周二（周二唯一特餐）。
+        id: 3,
         day: "Tue / 周二",
         weekday: 2,
+        name: "希腊柠香烤鸡胸",
+        nameEn: "Greek Mediterranean Lemon Chicken",
+        price: 19.90,
+        image: "/greek_lemon_chicken_v2.webp",
+        tags: ["蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
+        tagsEn: ["64g+ protein bomb", "Gym-friendly", "Best with rice"],
+        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。",
+        descEn: "Lemon's tang seeps into the lightly charred chicken breast, carried by thyme and extra-virgin olive oil. Mmm."
+    },
+    // ─── 周三 Wed ───────────────────────────────────────────────
+    {
+        // 2026-06-15 重排：原周二主推改到周三（周三 Hero 主打）。
+        id: 20,
+        day: "Wed / 周三",
+        weekday: 3,
         isPrimary: true,
         name: "古早味姜葱鱼片饭",
         nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
@@ -158,10 +176,10 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
     },
     {
-        // 周二第二道（当归蒸鸡降为副位，Hero 不再以它打头）。
+        // 2026-06-15 重排：原周二第二道改到周三（周三第二道）。
         id: 2,
-        day: "Tue / 周二",
-        weekday: 2,
+        day: "Wed / 周三",
+        weekday: 3,
         name: "招牌原盅当归蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
@@ -171,32 +189,24 @@ export const weeklyMenu: MenuItem[] = [
         desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。",
         descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
     },
+    // ─── 周四 Thu ───────────────────────────────────────────────
     {
-        id: 3,
-        day: "Wed / 周三",
-        weekday: 3,
-        name: "希腊柠香烤鸡胸",
-        nameEn: "Greek Mediterranean Lemon Chicken",
-        price: 19.90,
-        image: "/greek_lemon_chicken_v2.webp",
-        tags: ["蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
-        tagsEn: ["64g+ protein bomb", "Gym-friendly", "Best with rice"],
-        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。",
-        descEn: "Lemon's tang seeps into the lightly charred chicken breast, carried by thyme and extra-virgin olive oil. Mmm."
-    },
-    {
-        id: 4,
+        // 全新菜 2026-06-15 上架（周四特餐）。a la carte RM19.90 = 标准餐券面值，无需补差价。
+        // ⚠️ 图片待老板提供实拍图后替换：暂用 emoji 占位（各 next/image 消费处已加 startsWith('/') 守卫）。
+        // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
+        id: 23,
         day: "Thu / 周四",
         weekday: 4,
-        name: "绍兴酒蒸花肉",
-        nameEn: "Shaoxing Wine Steamed Pork Belly",
+        name: "家乡豆酱焖花肉",
+        nameEn: "Hometown Taucu Braised Pork Belly",
         price: 19.90,
-        image: "/shaoxing_pork_belly.webp",
-        tags: ["绍兴酒香", "姜丝提鲜", "蒸香软嫩", "偏肥·肥香控真爱"],
-        tagsEn: ["Shaoxing wine aroma", "Ginger-infused", "Steamed & tender", "Rich & fatty"],
-        desc: "选偏肥的五花部位，绍兴酒香顺着姜丝蒸进肉里，肥香软糯、入口即化。爱这口肥香的会上瘾；偏好瘦口的朋友这道可能不合。",
-        descEn: "Made with the fattier cut of pork belly — Shaoxing wine and ginger steamed deep into the meat, rich and melt-in-your-mouth. If you love that fatty, silky bite you'll adore it; if you prefer lean, this one may not be for you."
+        image: "🍲",
+        tags: ["家乡豆酱", "焖煮入味", "肥香软糯", "下饭神器"],
+        tagsEn: ["Hometown taucu", "Slow-braised", "Rich & tender", "Made for rice"],
+        desc: "家乡豆酱慢火焖煮花肉，豆香咸鲜渗进每一丝肉里，软糯入味、咸香下饭。",
+        descEn: "Pork belly slow-braised in hometown fermented soybean paste (taucu) — savoury, tender and deeply infused, made for rice."
     },
+    // ─── 周五 Fri ───────────────────────────────────────────────
     {
         // 周五新上 2026-06-08。a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
         id: 21,
@@ -211,6 +221,24 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
         desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
         descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
+    },
+    // ─── 已退役（灰显·可见不可点）Retired ────────────────────────
+    {
+        // 退役 2026-06-14：周一酱油鸡暂别。保留在菜单上「可见不可点」，附说明。
+        // 退役菜去掉 weekday；computeNextSpecial 无周内特餐时回退到 id 14（鸡扒饭）。
+        id: 1,
+        day: "Mon / 周一",
+        retired: true,
+        unavailableNote: "酱油鸡暂别，敬请期待回归",
+        unavailableNoteEn: "Soy sauce chicken paused — back soon",
+        name: "阿嫲古早味酱油鸡全腿",
+        nameEn: "Soy Sauce Chicken Whole Leg",
+        price: 18.50,
+        image: "/soy_sauce_chicken_leg.webp",
+        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
+        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
+        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
+        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
         // 退役 2026-06-08：周五位让给三文鱼。保留在菜单上「可见不可点」，附说明。

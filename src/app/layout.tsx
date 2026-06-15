@@ -16,7 +16,8 @@ const dailySection = {
       "@type": "MenuItem",
       name: d.name,
       description: d.desc,
-      image: `https://www.incredibowl.my${d.image}`,
+      // 仅当为真实图片路径时输出 image（新菜可能先用 emoji 占位，避免生成坏 URL）
+      ...(d.image.startsWith("/") ? { image: `https://www.incredibowl.my${d.image}` } : {}),
       offers: {
         "@type": "Offer",
         price: d.price.toFixed(2),
@@ -35,7 +36,8 @@ const weeklySection = {
       "@type": "MenuItem",
       name: d.name,
       description: d.desc,
-      image: `https://www.incredibowl.my${d.image}`,
+      // 仅当为真实图片路径时输出 image（新菜可能先用 emoji 占位，避免生成坏 URL）
+      ...(d.image.startsWith("/") ? { image: `https://www.incredibowl.my${d.image}` } : {}),
       offers: {
         "@type": "Offer",
         price: d.price.toFixed(2),

@@ -38,7 +38,8 @@ const LEGACY_DISH_IMAGES: Record<string, string> = {
 
 const resolveDishImage = (item: { name?: string; image?: string } | undefined): string | null => {
     if (!item) return null;
-    if (item.image) return item.image;
+    // 只接受真实图片路径；新菜可能先用 emoji 占位（如「🍲」），此时回退到 emoji 缩略图而非塞进 next/image。
+    if (item.image && item.image.startsWith('/')) return item.image;
     if (item.name && LEGACY_DISH_IMAGES[item.name]) return LEGACY_DISH_IMAGES[item.name];
     return null;
 };
