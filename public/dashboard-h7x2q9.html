@@ -2452,14 +2452,16 @@
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
             { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Daily', active: true },
             { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Daily', active: true },
-            { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },
+            { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: false },  // 退役 2026-06-14
             { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Thu', active: true },
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08，让位给三文鱼
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },
-            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 18.50, costPrice: 0, day: 'Tue', active: true },
+            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 18.50, costPrice: 0, day: 'Wed', active: true },  // 2026-06-15 重排：Tue → Wed
             { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 4 },
+            { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // 常驻新菜 2026-06-14
+            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 周四新菜 2026-06-15
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -8531,6 +8533,38 @@ incredibowl.my`,
             ],
             '21': [
                 // 柠香香煎三文鱼饭（周五）— RM 23.90，餐券抵扣需补 RM 4（voucherTopUp）
+                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '22': [
+                // 参峇臭豆虾仁炒花肉（常驻新菜）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
+                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '23': [
+                // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
                 // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
