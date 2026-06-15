@@ -3765,9 +3765,11 @@ incredibowl.my`,
 
         let recentFilter = 'all';
         let recentDeliveryFilter = 'all'; // 'all' | 'today' | 'tomorrow' | 'lunch' | 'dinner'
+        let recentOrdersPage = 0;          // 0-based page index for pagination
+        const RECENT_PAGE_SIZE = 15;       // orders per page
         function renderRecentOrders() {
-            // Use full filteredOrders (not just paid) so recent shows everything
-            const all = filteredOrders().slice(0, 80);
+            // Use full filteredOrders (no cap) so pagination can walk back through entire range
+            const all = filteredOrders();
             let filtered = recentFilter === 'all' ? all
                 : recentFilter === 'manual' ? all.filter(o => o.isManual)
                 : all.filter(o => !o.isManual);
@@ -3791,14 +3793,22 @@ incredibowl.my`,
                     return ka.localeCompare(kb);
                 });
             }
-            const top15 = filtered.slice(0, 15);
 
-            if (top15.length === 0) {
+            // ─── Pagination ───
+            const totalCount = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(totalCount / RECENT_PAGE_SIZE));
+            // Clamp page (filter or range change may have shrunk the list)
+            if (recentOrdersPage >= totalPages) recentOrdersPage = totalPages - 1;
+            if (recentOrdersPage < 0) recentOrdersPage = 0;
+            const startIdx = recentOrdersPage * RECENT_PAGE_SIZE;
+            const pageItems = filtered.slice(startIdx, startIdx + RECENT_PAGE_SIZE);
+
+            if (totalCount === 0) {
                 $('#recentOrdersList').innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><div class="empty-state-msg">暂无订单</div></div>`;
                 return;
             }
 
-            $('#recentOrdersList').innerHTML = top15.map(o => {
+            const ordersHtml = pageItems.map(o => {
                 const d = tsToDate(o.createdAt);
                 const dateStr = d ? d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + d.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit', hour12: false }) : '—';
                 // Delivery date + meal slot (lunch/dinner). deliveryDate is 'YYYY-MM-DD' string.
@@ -3891,6 +3901,17 @@ incredibowl.my`,
                     </div>
                 `;
             }).join('');
+
+            // ─── Pagination footer ───
+            const paginationHtml = totalPages > 1
+                ? `<div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 6px;border-top:1px solid var(--border);margin-top:8px">
+                       <button type="button" class="btn sm" id="recentPrevBtn" ${recentOrdersPage === 0 ? 'disabled' : ''} style="${recentOrdersPage === 0 ? 'opacity:0.45;cursor:not-allowed' : ''}">← 上一页</button>
+                       <span style="font-size:13px;color:var(--text-muted)">第 <strong style="color:var(--text)">${recentOrdersPage + 1}</strong> / ${totalPages} 页 · 共 ${totalCount} 单</span>
+                       <button type="button" class="btn sm" id="recentNextBtn" ${recentOrdersPage >= totalPages - 1 ? 'disabled' : ''} style="${recentOrdersPage >= totalPages - 1 ? 'opacity:0.45;cursor:not-allowed' : ''}">下一页 →</button>
+                   </div>`
+                : `<div style="text-align:center;padding:14px 0;font-size:12px;color:var(--text-muted)">共 ${totalCount} 单</div>`;
+
+            $('#recentOrdersList').innerHTML = ordersHtml + paginationHtml;
         }
 
         function escapeHtml(s) {
@@ -7895,6 +7916,7 @@ incredibowl.my`,
             $$('#recentFilter button').forEach(x => x.classList.remove('active'));
             b.classList.add('active');
             recentFilter = b.dataset.filter;
+            recentOrdersPage = 0;  // reset to first page when filter changes
             renderRecentOrders();
         }));
 
@@ -7903,8 +7925,24 @@ incredibowl.my`,
             $$('#recentDeliveryFilter button').forEach(x => x.classList.remove('active'));
             b.classList.add('active');
             recentDeliveryFilter = b.dataset.dfilter;
+            recentOrdersPage = 0;  // reset to first page when filter changes
             renderRecentOrders();
         }));
+
+        // Recent orders pagination — delegated so re-renders don't break bindings
+        document.addEventListener('click', (e) => {
+            const prev = e.target.closest('#recentPrevBtn');
+            const next = e.target.closest('#recentNextBtn');
+            if (!prev && !next) return;
+            if (prev && recentOrdersPage > 0) recentOrdersPage--;
+            if (next) recentOrdersPage++;  // renderRecentOrders will clamp if overshot
+            renderRecentOrders();
+            // Scroll the list back to top so 老板 sees the new page from row 1
+            const list = $('#recentOrdersList');
+            if (list && typeof list.scrollIntoView === 'function') {
+                list.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
 
         // ═══════════════════════════════════════════════════════════════
         //   PREP SHEET — printable daily order sheet (kitchen aggregate + per-order)
