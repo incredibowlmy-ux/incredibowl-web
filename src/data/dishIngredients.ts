@@ -137,16 +137,33 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
-    // 常驻新菜 2026-06-14 上架。份量待碗妈提供后补；空 ingredients 时备餐汇总自动跳过。
+    // 常驻新菜 2026-06-14 上架，份量碗妈 2026-06-17 提供。
+    // 顶级无皮五花肉与绍兴/豆酱焖花肉共用同一采购 SKU（聚合时合并）。
+    // 「PD51/60 虾」按碗妈给的规格独立存，不与山药那道的泛称「虾」自动合并。
+    // sambal 按 portion-controlled 计入采购汇总（同酱油惯例）。
     name: '参峇臭豆虾仁炒花肉',
     shortName: '参峇',
-    ingredients: [],
+    ingredients: [
+      { name: '顶级无皮五花肉', qty: 75, unit: 'g' },
+      { name: 'PD51/60 虾', qty: 4, unit: '只' },
+      { name: '臭豆', qty: 50, unit: 'g' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: 'sambal', qty: 2, unit: '汤匙' },
+    ],
   },
   {
-    // 周四新菜 2026-06-15 上架。份量待碗妈提供后补；空 ingredients 时备餐汇总自动跳过。
+    // 周四新菜 2026-06-15 上架，份量碗妈 2026-06-17 提供。
+    // 仅列生鲜采购项；家乡豆酱按惯例（瓶装常备调味）不计入采购汇总。
+    // 顶级无皮五花肉与绍兴酒蒸花肉共用同一采购 SKU（聚合时自动合并）。
     name: '家乡豆酱焖花肉',
     shortName: '豆酱',
-    ingredients: [],
+    ingredients: [
+      { name: '顶级无皮五花肉', qty: 140, unit: 'g' },
+      { name: '西兰花', qty: 50, unit: 'g' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: '姜', qty: 10, unit: 'g' },
+      { name: '葱', qty: 5, unit: 'g' },
+    ],
   },
   {
     name: '绍兴酒蒸花肉',
