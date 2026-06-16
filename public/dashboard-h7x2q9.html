@@ -905,6 +905,7 @@
         .order-action-btn:hover { background: var(--bg-subtle); color: var(--text); }
         .order-action-btn.delete-order-btn:hover { background: var(--danger-soft); color: var(--danger); }
         .order-action-btn.edit-order-btn:hover { background: var(--primary-soft); color: var(--primary); }
+        .order-action-btn.confirm-msg-btn:hover { background: rgba(37,211,102,0.15); color: #25D366; }
         .order-date { font-size: 11px; color: var(--text-muted); }
         .order-customer { font-size: 13px; font-weight: 500; color: var(--text); }
         .order-items-preview { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -2159,6 +2160,44 @@
                 <div class="modal-footer-actions">
                     <button type="button" class="btn ghost" id="cancelModalBtn">取消</button>
                     <button type="button" class="btn" id="submitOrderBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ 确认消息 MODAL ═══════════════ -->
+    <div id="confirmMsgModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">📋 确认消息</div>
+                    <div class="modal-subtitle" id="cmSubtitle">发送前可随意修改</div>
+                </div>
+                <button class="modal-close" id="cmCloseBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-row-2">
+                    <div>
+                        <label>落款人（记住，下次自动用）</label>
+                        <input type="text" id="cmSender" maxlength="40" placeholder="Wei Ting" />
+                    </div>
+                    <div>
+                        <label>客户 WhatsApp 号码</label>
+                        <input type="text" id="cmPhone" placeholder="60123456789" />
+                    </div>
+                </div>
+                <div class="modal-row">
+                    <label>消息内容（可直接编辑）</label>
+                    <textarea id="cmText" spellcheck="false" style="min-height:320px;font-size:13px;line-height:1.7"></textarea>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);line-height:1.6">💡 改了「落款人」点「↻ 重新生成」会用新落款重套整条消息（覆盖手动改动）。<br>怕 emoji 在 WhatsApp 链接里丢 → 用「📋 复制」再去 WhatsApp 粘贴，最保险。</div>
+                <div id="cmError" class="login-error hidden" style="margin-top:10px"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-actions" style="margin-left:auto">
+                    <button type="button" class="btn ghost" id="cmRegenBtn">↻ 重新生成</button>
+                    <button type="button" class="btn ghost" id="cmCopyBtn">📋 复制</button>
+                    <button type="button" class="btn" id="cmSendBtn" style="background:#25D366;border-color:#25D366">🟢 打开 WhatsApp</button>
                 </div>
             </div>
         </div>
@@ -3883,8 +3922,13 @@ incredibowl.my`,
                     : `<button type="button" class="order-action-btn refund-edit-btn" data-id="${o.id}" title="标记退款">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9"/><polyline points="3 4 3 12 11 12"/></svg>
                     </button>`;
+                // 一键生成确认消息 → wa.me 发送（网站单 + 手录单都有）
+                const confirmBtn = `<button type="button" class="order-action-btn confirm-msg-btn" data-id="${o.id}" title="生成确认消息 → 一键发 WhatsApp">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </button>`;
                 const actions = o.isManual
                     ? `<div class="order-actions">
+                            ${confirmBtn}
                             ${deliveryBtn}
                             ${refundBtn}
                             <button type="button" class="order-action-btn edit-order-btn" data-id="${o.id}" title="编辑">
@@ -3894,7 +3938,7 @@ incredibowl.my`,
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                             </button>
                         </div>`
-                    : `<div class="order-actions">${deliveryBtn}${refundBtn}</div>`;
+                    : `<div class="order-actions">${confirmBtn}${deliveryBtn}${refundBtn}</div>`;
                 const deliveryHtml = deliveryStr || mealLabel
                     ? `<div class="order-delivery" title="送达日期与时段">
                            ${deliveryStr ? `<span class="dl-date">送 ${deliveryStr}</span>` : ''}
@@ -9411,8 +9455,119 @@ incredibowl.my`,
             }
         });
 
+        // ─────────── 订单确认消息 → WhatsApp 一键发 ───────────
+        // 落款人：记住老板上次填的（localStorage），默认 Wei Ting
+        function getSender() { try { return localStorage.getItem('cm_sender') || 'Wei Ting'; } catch { return 'Wei Ting'; } }
+        function setSender(v) { try { localStorage.setItem('cm_sender', v); } catch {} }
+        function _cmFirstName(n) { return (String(n || '').trim().split(/\s+/)[0]) || '亲'; }
+        function _cmMoney(n) { return 'RM ' + (Number(n) || 0).toFixed(2); }
+        function _cmDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(String(dateStr) + 'T00:00:00');
+            if (isNaN(d.getTime())) return String(dateStr);
+            const wd = d.toLocaleDateString('en-US', { weekday: 'short' });
+            const mo = d.toLocaleDateString('en-US', { month: 'long' });
+            return `${wd}, ${d.getDate()} ${mo}`;
+        }
+        function _cmMeal(o) {
+            const m = String(o.mealType || '').toLowerCase();
+            if (m === 'lunch') return 'Lunch';
+            if (m === 'dinner') return 'Dinner';
+            const t = String(o.deliveryTime || '');
+            if (/lunch|午/i.test(t)) return 'Lunch';
+            if (/dinner|晚/i.test(t)) return 'Dinner';
+            return ''; // 不确定就不写，绝不瞎猜
+        }
+        // 电话归一化为国际格式（马来西亚）：0123… → 60123…
+        function waPhone(raw) {
+            let d = String(raw || '').replace(/\D/g, '');
+            if (!d) return '';
+            if (d.startsWith('60')) return d;
+            if (d.startsWith('0')) return '60' + d.slice(1);
+            if (d.startsWith('1')) return '60' + d; // 漏了前导 0 的写法
+            return d;
+        }
+        function buildConfirmMessage(o, sender) {
+            sender = sender || getSender();
+            const first = _cmFirstName(o.userName);
+            const L = [];
+            L.push(`Hi ${first} 😊 ${sender} from Incredibowl — order confirmed!`);
+            L.push('');
+            const head = [_cmDate(o.deliveryDate), _cmMeal(o)].filter(Boolean).join(' · ');
+            if (head) L.push(`📅 ${head}`);
+            (o.items || []).forEach(it => {
+                const rawName = String(it.name || '');
+                const isAddon = rawName.startsWith('↳');
+                const zh = rawName.replace(/^↳\s*/, '').trim();
+                const en = String(it.nameEn || '').trim();
+                const label = en ? `${en} ${zh}` : zh;
+                const qty = Number(it.quantity) || 1;
+                L.push(`${isAddon ? '🍳' : '🍲'} ${label} ×${qty} — ${_cmMoney((Number(it.price) || 0) * qty)}`);
+                // 手录订单的加料是嵌套在 it.addOns
+                (it.addOns || []).forEach(a => {
+                    const al = a.label || a.name || a.id || '加料';
+                    const aq = Number(a.quantity) || 1;
+                    L.push(`🍳 ${al} ×${aq} — ${_cmMoney((Number(a.price) || 0) * aq)}`);
+                });
+            });
+            const mvDisc = Number(o.mealVoucherDiscount) || 0;
+            if (mvDisc > 0) L.push(`🎫 Meal voucher — −${_cmMoney(mvDisc)}`);
+            const promoDisc = Number(o.promoDiscount) || 0;
+            if (promoDisc > 0) L.push(`🎟 ${o.promoCode || 'Promo'} — −${_cmMoney(promoDisc)}`);
+            const fee = Number(o.deliveryFee) || 0;
+            L.push(fee > 0 ? `🛵 Delivery — ${_cmMoney(fee)}` : `🛵 Delivery — FREE 🎉`);
+            L.push('━'.repeat(19));
+            // 客户实付 = 食物（已扣餐券/优惠）+ 运费
+            L.push(`✅ Total ${_cmMoney((Number(o.total) || 0) + fee)}`);
+            if (o.deliveryTime) L.push(`🕛 Delivery at ${o.deliveryTime} 👍`);
+            L.push('');
+            if (o.userAddress) L.push(`📍 ${o.userAddress}`);
+            L.push(`💳 How would you like to pay? (DuitNow QR / FPX / transfer) — a screenshot once done would be great 🙏`);
+            L.push('');
+            L.push(`Thank you, ${first}! ✨`);
+            L.push(`— ${sender}`);
+            return L.join('\n');
+        }
+
+        // ── 确认消息预览/编辑 modal ──
+        function openConfirmMsgModal(order) {
+            state.cmOrder = order;
+            $('#cmSender').value = getSender();
+            $('#cmPhone').value = waPhone(order.userPhone);
+            $('#cmText').value = buildConfirmMessage(order, getSender());
+            $('#cmError').classList.add('hidden');
+            $('#cmSubtitle').textContent = (order.userName || '客户') + ' · 发送前可随意修改';
+            $('#confirmMsgModal').classList.remove('hidden');
+        }
+        function closeConfirmMsgModal() { $('#confirmMsgModal').classList.add('hidden'); }
+        if ($('#cmRegenBtn')) $('#cmRegenBtn').addEventListener('click', () => {
+            if (!state.cmOrder) return;
+            const s = $('#cmSender').value.trim() || 'Wei Ting';
+            setSender(s);
+            $('#cmText').value = buildConfirmMessage(state.cmOrder, s); // 用新落款重套（覆盖手动改动）
+        });
+        if ($('#cmSender')) $('#cmSender').addEventListener('change', () => setSender($('#cmSender').value.trim() || 'Wei Ting'));
+        if ($('#cmCopyBtn')) $('#cmCopyBtn').addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText($('#cmText').value); toast('已复制 · 去 WhatsApp 粘贴发送（emoji 不会丢）', 'success'); }
+            catch { $('#cmText').select(); document.execCommand('copy'); toast('已复制（兼容模式）· 去 WhatsApp 粘贴', 'success'); }
+        });
+        if ($('#cmSendBtn')) $('#cmSendBtn').addEventListener('click', () => {
+            const phone = waPhone($('#cmPhone').value);
+            if (!phone) { $('#cmError').textContent = '没有有效电话 — 请改用「📋 复制」再去 WhatsApp 手动粘贴'; $('#cmError').classList.remove('hidden'); return; }
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent($('#cmText').value)}`, '_blank');
+        });
+        if ($('#cmCloseBtn')) $('#cmCloseBtn').addEventListener('click', closeConfirmMsgModal);
+        if ($('#confirmMsgModal')) $('#confirmMsgModal').addEventListener('click', (e) => { if (e.target.id === 'confirmMsgModal') closeConfirmMsgModal(); });
+
         // Edit / Delete / Delivery / Refund buttons inside recent orders list (delegated)
         document.addEventListener('click', async (e) => {
+            const cmBtn = e.target.closest('.confirm-msg-btn');
+            if (cmBtn) {
+                const id = cmBtn.dataset.id;
+                const order = state.orders.find(o => o.id === id);
+                if (order) openConfirmMsgModal(order);
+                return;
+            }
             const dfmBtn = e.target.closest('.delivery-edit-btn');
             if (dfmBtn) {
                 const id = dfmBtn.dataset.id;
