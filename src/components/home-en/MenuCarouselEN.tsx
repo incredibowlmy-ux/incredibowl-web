@@ -7,6 +7,7 @@ import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
+import SoldOutNotice from '@/components/home/SoldOutNotice';
 
 interface MenuCarouselENProps {
     menuDates: Record<number, MenuDateInfo>;
@@ -80,6 +81,8 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                     </p>
                 </div>
             </div>
+
+            <SoldOutNotice locale="en" />
 
             {/* MOBILE + TABLET — compact 2-column grid (replaces the legacy carousel) */}
             <div className="lg:hidden grid grid-cols-2 gap-3 px-3 pt-2">

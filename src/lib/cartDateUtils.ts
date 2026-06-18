@@ -15,6 +15,8 @@
  * Client-side check in CartDrawer auto-cleans stale items as a UX courtesy.
  */
 
+import { isDateClosed } from '@/data/blockedDates';
+
 const CUTOFF_HOUR_MY = 6;
 
 /** Format a Date as "YYYY-MM-DD" using its local components. */
@@ -48,7 +50,8 @@ export type DateInvalidReason =
     | 'invalid_format'
     | 'past'
     | 'today_after_cutoff'
-    | 'weekend';
+    | 'weekend'
+    | 'sold_out';
 
 export type DateValidity =
     | { ok: true }
@@ -71,6 +74,9 @@ export function isOrderDateValid(selectedDate: string | null | undefined): DateV
     const dow = new Date(y, m - 1, d).getDay(); // 0=Sun, 6=Sat
     if (dow === 0 || dow === 6) {
         return { ok: false, reason: 'weekend', message: `${selectedDate} 周末不配送` };
+    }
+    if (isDateClosed(selectedDate)) {
+        return { ok: false, reason: 'sold_out', message: `${selectedDate} 已售罄，当天暂停接单` };
     }
     return { ok: true };
 }

@@ -1,5 +1,5 @@
 import { MenuItem } from '@/data/weeklyMenu';
-import { isDishBlockedOn } from '@/data/blockedDates';
+import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { AdminOrder } from '@/types';
 
 // Shape of per-dish date info computed for the menu
@@ -40,6 +40,15 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     nextAvail.setDate(now.getDate() + (isPastCutoff ? 1 : 0));
     if (nextAvail.getDay() === 6) nextAvail.setDate(nextAvail.getDate() + 2);
     else if (nextAvail.getDay() === 0) nextAvail.setDate(nextAvail.getDate() + 1);
+
+    // Skip whole-day closures (售罄 / 老板停一天) — roll forward to the next open
+    // weekday so daily dishes become orderable for that day instead of Friday.
+    let closedSafety = 14;
+    while (closedSafety-- > 0 && isDateClosed(formatYMD(nextAvail))) {
+        nextAvail.setDate(nextAvail.getDate() + 1);
+        if (nextAvail.getDay() === 6) nextAvail.setDate(nextAvail.getDate() + 2);
+        else if (nextAvail.getDay() === 0) nextAvail.setDate(nextAvail.getDate() + 1);
+    }
 
     const nextAvailStr = formatYMD(nextAvail);
 
@@ -104,7 +113,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         // Skip explicitly blocked dates for this dish (boss-stopped / sold-out).
         // Roll +7 to the next same-weekday occurrence; cap iterations defensively.
         let blockSafety = 26;
-        while (blockSafety-- > 0 && isDishBlockedOn(dish.id, formatYMD(targetDate))) {
+        while (blockSafety-- > 0 && (isDishBlockedOn(dish.id, formatYMD(targetDate)) || isDateClosed(formatYMD(targetDate)))) {
             targetDate.setDate(targetDate.getDate() + 7);
         }
 

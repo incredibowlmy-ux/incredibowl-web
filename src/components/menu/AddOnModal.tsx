@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
-import { isDishBlockedOn } from '@/data/blockedDates';
+import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 
 /** Resolve add-on price from the centralized config (single source of truth). */
 function p(id: string, fallback: number): number {
@@ -697,6 +697,10 @@ export default function AddOnModal({
                                             }
                                             if (dish && isDishBlockedOn(dish.id, selected)) {
                                                 alert("这道菜该日暂停供应，请另选日期。 (This dish is paused on the selected date — please pick another day.)");
+                                                return;
+                                            }
+                                            if (isDateClosed(selected)) {
+                                                alert("该日已售罄，暂停接单，请另选日期。 (That day is sold out — please pick another day.)");
                                                 return;
                                             }
                                             if (selected < (minDate || "")) {

@@ -18,3 +18,22 @@ export const BLOCKED_DATES: Record<number, string[]> = {
 export function isDishBlockedOn(dishId: number, ymd: string): boolean {
     return BLOCKED_DATES[dishId]?.includes(ymd) ?? false;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Whole-day closures (整天售罄 / 老板临时停一天). Unlike BLOCKED_DATES (per-dish),
+// these stop EVERY dish for that date. The menu rolls forward to the next open
+// weekday (顺延), checkout for the date is rejected, and a sold-out notice shows.
+// Format: ['YYYY-MM-DD', ...] in Malaysia time. Past dates auto-stop showing.
+//
+// 2026-06-19（周五）：老板临时停一天，顺延到下周一。过后自动恢复，删掉即可。
+export const CLOSED_DATES: string[] = ['2026-06-19'];
+
+/** True if the whole day is closed (sold out / boss stop). */
+export function isDateClosed(ymd: string): boolean {
+    return CLOSED_DATES.includes(ymd);
+}
+
+/** Upcoming closures (today or later) for the sold-out notice. Empty when none. */
+export function upcomingClosedDates(todayYmd: string): string[] {
+    return CLOSED_DATES.filter(d => d >= todayYmd).sort();
+}

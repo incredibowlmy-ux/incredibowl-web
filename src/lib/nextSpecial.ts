@@ -1,5 +1,5 @@
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
-import { isDishBlockedOn } from '@/data/blockedDates';
+import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 
 export interface NextSpecial {
     dish: MenuItem;
@@ -47,7 +47,8 @@ export function computeNextSpecial(): NextSpecial {
     while (skipSafety-- > 0) {
         const wd = next.getUTCDay();
         const wkly = pickSpecial(wd);
-        if (wkly && isDishBlockedOn(wkly.id, ymdUTC(next))) {
+        // Skip whole-day closures (售罄) and blocked specials alike → next open day.
+        if (isDateClosed(ymdUTC(next)) || (wkly && isDishBlockedOn(wkly.id, ymdUTC(next)))) {
             next.setUTCDate(next.getUTCDate() + 1);
             if (next.getUTCDay() === 6) next.setUTCDate(next.getUTCDate() + 2);
             else if (next.getUTCDay() === 0) next.setUTCDate(next.getUTCDate() + 1);
