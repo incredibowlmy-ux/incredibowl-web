@@ -49,5 +49,21 @@ check('下个周五 6-26 照常可下单', orderDateState('2026-06-26'), 'ok');
 // 关闭日过后（假设起点是 6-26 周五）→ 不受影响
 check('6-26 起点不被顺延', nextAvailFrom('2026-06-26'), '2026-06-26');
 
+// ── Hero 标签：周五售罄顺延周一后，鸡排饭不能再挂「明日特餐」──
+function heroLabel(diff, targetWd) {
+    const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const wdEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    let zh = '今日特餐', en = "TODAY'S SPECIAL";
+    if (diff === 1) { zh = '明日特餐'; en = "TOMORROW'S SPECIAL"; }
+    else if (diff === 2) { zh = '后日特餐'; en = "DAY AFTER SPECIAL"; }
+    else if (diff > 2) { zh = `${wdCn[targetWd]}特餐`; en = `${wdEn[targetWd]} SPECIAL`; }
+    return { zh, en };
+}
+// 周四(6-18) → 周一(6-22) = diff 4，targetWd=1(周一)
+const lbl = heroLabel(4, 1);
+check('Hero 周一标签 zh', lbl.zh, '周一特餐');
+check('Hero 周一标签 en', lbl.en, 'MON SPECIAL');
+check('Hero 标签不再是「明日特餐」', lbl.zh === '明日特餐', false);
+
 console.log(pass ? '\n✅ 全部通过' : '\n❌ 有失败');
 if (!pass) process.exit(1);

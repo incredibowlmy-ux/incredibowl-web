@@ -73,6 +73,8 @@ export function computeNextSpecial(): NextSpecial {
     let labelEn = "TODAY'S SPECIAL";
     if (diff === 1) { labelZh = '明日特餐'; labelEn = "TOMORROW'S SPECIAL"; }
     else if (diff === 2) { labelZh = '后日特餐'; labelEn = "DAY AFTER SPECIAL"; }
+    // >2 天（如周五售罄顺延到周一，或正常周末）：按真实星期标注，别再错挂「明日特餐」。
+    else if (diff > 2) { labelZh = `${wdCn[targetWd]}特餐`; labelEn = `${wdEn[targetWd]} SPECIAL`; }
 
     const dateLine = `${next.getUTCMonth() + 1}月${next.getUTCDate()}日 · ${wdCn[targetWd]} / ${wdEn[targetWd]}`;
 
