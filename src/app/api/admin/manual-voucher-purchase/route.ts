@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mintVouchersForPurchase } from '@/lib/mealVoucherUtils';
+import { mintAddonCredits, type ResolvedPrepaidAddon } from '@/lib/addonCreditUtils';
 import { getBundle, getValidityDaysForBundle } from '@/data/mealVoucherConfig';
+import { getAddOnPrice, getPrepaidAddonOption } from '@/data/addOnsConfig';
 import { normalizePhone } from '@/lib/phoneUtils';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
@@ -67,6 +69,10 @@ async function verifyAdmin(req: NextRequest): Promise<{ email: string } | null> 
  *   - channel?: 'whatsapp' | 'walkin' | 'cash' | 'other'
  *   - paidAtMs?: number (defaults to now)
  *   - amountPaidOverride?: number (defaults to bundle.price — only used for cash discounts)
+ *   - prepaidAddOns?: [{ addonId, quantity }] — add-ons paid upfront alongside the
+ *       bundle (e.g. 19 sunny eggs). addonId must be in PREPAID_ADDON_OPTIONS;
+ *       price is taken server-side from ADD_ON_PRICES. Recorded as contract
+ *       liability (separate from the bundle cash) and minted as addon credits.
  *   - note?: string
  */
 export async function POST(req: NextRequest) {
@@ -83,6 +89,7 @@ export async function POST(req: NextRequest) {
       channel,
       paidAtMs,
       amountPaidOverride,
+      prepaidAddOns,
       note,
     } = body || {};
 
@@ -112,6 +119,32 @@ export async function POST(req: NextRequest) {
         error: `amountPaid (RM ${amountPaid}) 大于 bundle 标价 (RM ${bundle.price})，不允许`,
       }, { status: 400 }));
     }
+
+    // ── Validate prepaid add-ons (optional) ───────────────────────
+    // Each addonId must be whitelisted; price is server-authoritative.
+    const resolvedAddOns: ResolvedPrepaidAddon[] = [];
+    if (prepaidAddOns != null) {
+      if (!Array.isArray(prepaidAddOns)) {
+        return corsify(NextResponse.json({ error: 'prepaidAddOns 必须是数组' }, { status: 400 }));
+      }
+      for (const raw of prepaidAddOns) {
+        const addonId = String(raw?.addonId || '');
+        const quantity = Number(raw?.quantity);
+        const opt = getPrepaidAddonOption(addonId);
+        const price = getAddOnPrice(addonId);
+        if (!opt || typeof price !== 'number') {
+          return corsify(NextResponse.json({ error: `不支持预付的加料：${addonId}` }, { status: 400 }));
+        }
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+          return corsify(NextResponse.json({ error: `加料数量无效：${opt.name}` }, { status: 400 }));
+        }
+        resolvedAddOns.push({ addonId, addonName: opt.name, unitPriceRM: price, quantity });
+      }
+    }
+    const addOnAmountPaid = Number(
+      resolvedAddOns.reduce((s, a) => s + a.unitPriceRM * a.quantity, 0).toFixed(2),
+    );
+    const totalAmountPaid = Number((amountPaid + addOnAmountPaid).toFixed(2));
 
     const db = await getDb();
     const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
@@ -166,6 +199,9 @@ export async function POST(req: NextRequest) {
       bundleId: bundle.id,
       voucherCount: bundle.voucherCount,
       amountPaid,
+      addOnAmountPaid,
+      totalAmountPaid,
+      prepaidAddOns: resolvedAddOns,
       originalPrice: bundle.price,
       validityDays: getValidityDaysForBundle(bundle.id),
       paymentMethod,
@@ -190,9 +226,24 @@ export async function POST(req: NextRequest) {
       purchasedAtMs: purchasedAt.toMillis(),
     });
 
-    // ── 4. Bump user.totalSpent (mirrors web confirm-purchase behaviour) ──
+    // ── 4. Mint prepaid add-on credits (contract liability, separate pool) ──
+    const addonCreditIds = await mintAddonCredits(db, {
+      userId,
+      purchaseId: purchaseRef.id,
+      prepaidAddOns: resolvedAddOns,
+      purchasedAtMs: purchasedAt.toMillis(),
+      validityDays: getValidityDaysForBundle(bundle.id),
+    });
+    if (addonCreditIds.length > 0) {
+      await purchaseRef.update({
+        addonCreditIds,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
+    // ── 5. Bump user.totalSpent by TOTAL cash (bundle + prepaid add-ons) ──
     await db.collection('users').doc(userId).update({
-      totalSpent: FieldValue.increment(amountPaid),
+      totalSpent: FieldValue.increment(totalAmountPaid),
       lastOrderAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -202,10 +253,13 @@ export async function POST(req: NextRequest) {
       purchaseId: purchaseRef.id,
       voucherIds,
       voucherCount: voucherIds.length,
+      addonCreditIds,
       userId,
       userName: userDataSnapshot.displayName || '',
       wasStubCreated,
       amountPaid,
+      addOnAmountPaid,
+      totalAmountPaid,
       allocatedValuePerVoucher: Number((amountPaid / bundle.voucherCount).toFixed(4)),
     }));
   } catch (err: any) {

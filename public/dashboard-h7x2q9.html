@@ -1484,6 +1484,12 @@
                         </div>
                     </div>
 
+                    <!-- ─── 预付加料负债 ─── -->
+                    <div class="card" id="cardAddonCreditLiability">
+                        <div class="card-header"><div><div class="card-title">预付加料负债</div><div class="card-sub">客户预付的煎蛋 / 升级等 · 兑餐时确认收入（MFRS 15）</div></div></div>
+                        <div id="addonCreditLiability"></div>
+                    </div>
+
                     <div class="card collapsible" data-collapsible>
                         <div class="card-header">
                             <div>
@@ -2124,6 +2130,16 @@
                     <div style="margin-top:6px;font-size:10px;color:var(--text-muted)">FIFO 从客户现有可用券扣 · 1 张 = 1 道主菜全额覆盖 · 不抵 add-on / 配送费</div>
                 </div>
 
+                <!-- ─── 预付加料抵扣（可选，仅当客户有预付余额时显示）─── -->
+                <div class="modal-row hidden" id="moPrepaidSection" style="padding:12px 14px;background:rgba(201,152,92,0.08);border:1px solid rgba(201,152,92,0.25);border-radius:10px">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span>🍳 预付加料抵扣（可选）</span>
+                        <span style="font-size:11px;color:var(--text-muted);font-weight:400">已付清 · 用掉自动 RM0 加进订单</span>
+                    </label>
+                    <div id="moPrepaidAddonRows" style="display:grid;gap:8px"></div>
+                    <div style="margin-top:6px;font-size:10px;color:var(--text-muted)">用掉的加料会作为 RM0 行加进订单（厨房可见）· 从客户预付余额扣 · 确认对应收入</div>
+                </div>
+
                 <!-- ─── 优惠码抵扣（可选）─── 与餐券互斥 -->
                 <div class="modal-row" id="moPromoSection" style="padding:12px 14px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.25);border-radius:10px">
                     <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -2384,6 +2400,20 @@
                         <label>摊销价 / 张</label>
                         <div class="num mono" id="svmAllocatedPreview" style="padding:10px 12px;background:var(--bg-subtle);border-radius:7px;font-weight:700;color:var(--primary)">RM 18.00</div>
                     </div>
+                </div>
+
+                <!-- ─── 预付加料（可选）─── -->
+                <div class="modal-row" id="svmPrepaidSection" style="padding:12px 14px;background:rgba(201,152,92,0.08);border:1px solid rgba(201,152,92,0.25);border-radius:10px">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span>🍳 预付加料（可选）</span>
+                        <span style="font-size:11px;color:var(--text-muted);font-weight:400">客户一次付清 · 兑餐时自动 RM0</span>
+                    </label>
+                    <div id="svmPrepaidRows" style="display:grid;gap:8px"></div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,152,92,0.3);display:flex;justify-content:space-between;align-items:baseline">
+                        <span style="font-size:11px;color:var(--text-muted)">加料小计 + 套餐实付 = 客户总付</span>
+                        <span id="svmGrandTotal" class="num mono" style="font-weight:800;color:var(--primary)">RM 0.00</span>
+                    </div>
+                    <div style="margin-top:4px;font-size:10px;color:var(--text-muted)">加料按面值预付（合约负债）· 兑餐时确认收入 · 有效期跟套餐同步</div>
                 </div>
 
                 <div class="modal-row">
@@ -3162,6 +3192,7 @@ incredibowl.my`,
             state.vouchers = [];
             state.mealVoucherPurchases = [];
             state.mealVouchers = [];
+            state.addonCredits = [];
             state.spend = {};
             state.fixedCosts = {};
             state.menu = [];
@@ -3238,7 +3269,7 @@ incredibowl.my`,
             // toast at the end instead of users wondering why something didn't sync.
             const migrationErrors = [];
             try {
-                const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap] = await Promise.all([
+                const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap, addonCreditsSnap] = await Promise.all([
                     getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
                     getDocs(collection(db, 'users')),
                     getDocs(collection(db, 'vouchers')).catch(() => ({ docs: [] })),
@@ -3250,6 +3281,7 @@ incredibowl.my`,
                     getDocs(collection(db, 'addons')).catch(() => ({ docs: [] })),
                     getDocs(collection(db, 'mealVoucherPurchases')).catch(() => ({ docs: [] })),
                     getDocs(collection(db, 'mealVouchers')).catch(() => ({ docs: [] })),
+                    getDocs(collection(db, 'mealVoucherAddonCredits')).catch(() => ({ docs: [] })),
                 ]);
 
                 state.orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -3257,6 +3289,7 @@ incredibowl.my`,
                 state.vouchers = vouchersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 state.mealVoucherPurchases = mvPurchasesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 state.mealVouchers = mvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                state.addonCredits = addonCreditsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
                 state.spend = {};
                 spendSnap.docs.forEach(d => { state.spend[d.id] = d.data(); });
@@ -5340,6 +5373,7 @@ incredibowl.my`,
             `;
 
             renderMealVoucherKPIs(orders);
+            renderAddonCreditKPI(orders);
             renderVoucherCohort();
             renderRefundSummary(orders);
 
@@ -5877,6 +5911,59 @@ incredibowl.my`,
                 </div>
                 <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
                     ${outstanding.length === 0 ? '目前没有未核销餐券' : `面值 vs 摊销差 ${fmt.rm(bulkDiscount)} 是批量折扣藏在 COGS 里 — 不进营业额`}
+                </div>
+            `;
+        }
+
+        function renderAddonCreditKPI(orders) {
+            const el = $('#addonCreditLiability');
+            if (!el) return;
+            const nowMs = Date.now();
+            const expiringMs = nowMs + 14 * 86_400_000;
+            let outstandingUnits = 0;
+            let liabilityRM = 0;
+            let expiringUnits = 0;
+            const byAddon = {};
+            (state.addonCredits || []).forEach(c => {
+                const remaining = Number(c.quantityRemaining) || 0;
+                if (c.status !== 'available' || remaining <= 0) return;
+                const exp = tsToDate(c.expiresAt);
+                if (!exp || exp.getTime() <= nowMs) return; // expired → breakage, not liability
+                const unit = Number(c.unitAllocatedRM) || 0;
+                outstandingUnits += remaining;
+                liabilityRM += remaining * unit;
+                const name = c.addonName || c.addonId;
+                if (!byAddon[name]) byAddon[name] = { units: 0, rm: 0 };
+                byAddon[name].units += remaining;
+                byAddon[name].rm += remaining * unit;
+                if (exp.getTime() <= expiringMs) expiringUnits += remaining;
+            });
+            const recognizedInRange = (orders || []).reduce((s, o) => s + (Number(o.addonCreditsAllocatedRevenue) || 0), 0);
+            const breakdown = Object.entries(byAddon)
+                .sort((a, b) => b[1].rm - a[1].rm)
+                .map(([n, v]) => `${n} ×${v.units}（${fmt.rm(v.rm)}）`)
+                .join(' · ') || '—';
+
+            el.innerHTML = `
+                <div class="kpi-value num display" style="font-size:42px;line-height:1;${outstandingUnits === 0 ? 'color:var(--text-muted)' : ''}">
+                    ${fmt.rm(liabilityRM)}
+                </div>
+                <div style="margin-top:6px;font-size:12px;color:var(--text-muted)">合约负债（按摊销价）· ${outstandingUnits} 个未核销</div>
+                <div style="margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted)">本期确认收入</div>
+                        <div class="num" style="font-weight:700;font-size:16px">${fmt.rm(recognizedInRange)}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:11px;color:var(--text-muted)">14 天内到期</div>
+                        <div class="num" style="font-weight:700;font-size:16px;color:${expiringUnits > 0 ? 'var(--warning)' : 'var(--success)'}">${expiringUnits} 个</div>
+                    </div>
+                </div>
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--text-muted)">
+                    <strong>明细：</strong>${breakdown}
+                </div>
+                <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+                    ${outstandingUnits === 0 ? '目前没有未核销的预付加料' : '客户兑餐时这些加料自动 RM0 · 同步确认对应收入'}
                 </div>
             `;
         }
@@ -9763,7 +9850,8 @@ incredibowl.my`,
                 const exp = tsToDate(v.expiresAt);
                 return exp && exp.getTime() > nowMs;
             }).length;
-            return { userId: u.id, displayName: u.displayName || '', availableVouchers };
+            const availableAddonCredits = availableAddonCreditsForUser(u.id);
+            return { userId: u.id, displayName: u.displayName || '', availableVouchers, availableAddonCredits };
         }
 
         // Full user doc by phone (registered webapp account) — for pulling saved address.
@@ -9860,6 +9948,7 @@ incredibowl.my`,
                 hint.textContent = '填上电话才能查餐券';
                 hint.style.color = 'var(--text-muted)';
                 $('#moVouchersUsed').max = 0;
+                renderMoPrepaidAddons(null);
                 refreshVoucherPreview();
                 return;
             }
@@ -9873,7 +9962,39 @@ incredibowl.my`,
                 hint.style.color = match.availableVouchers > 0 ? '#9A6E2F' : 'var(--text-muted)';
                 $('#moVouchersUsed').max = match.availableVouchers;
             }
+            renderMoPrepaidAddons(match);
             refreshVoucherPreview();
+        }
+
+        // Populate the prepaid add-on redemption section from the resolved
+        // customer's available credits. Hidden entirely when they have none.
+        function renderMoPrepaidAddons(match) {
+            const section = $('#moPrepaidSection');
+            const rows = $('#moPrepaidAddonRows');
+            if (!section || !rows) return;
+            const credits = match && match.availableAddonCredits ? match.availableAddonCredits : {};
+            const entries = Object.entries(credits).filter(([, c]) => c.remaining > 0);
+            if (entries.length === 0) {
+                section.classList.add('hidden');
+                rows.innerHTML = '';
+                return;
+            }
+            section.classList.remove('hidden');
+            rows.innerHTML = entries.map(([id, c]) => `
+                <div style="display:grid;grid-template-columns:1fr 96px;gap:10px;align-items:center">
+                    <span style="font-size:12px">${c.name} <span style="color:var(--text-muted)">· 剩 ${c.remaining}</span></span>
+                    <input type="number" class="mo-prepaid-qty" data-id="${id}" min="0" max="${c.remaining}" step="1" value="0" placeholder="0" style="text-align:right" />
+                </div>
+            `).join('');
+        }
+        function collectMoPrepaidAddonsUsed() {
+            const out = [];
+            $$('#moPrepaidAddonRows .mo-prepaid-qty').forEach(inp => {
+                const c = parseInt(inp.value, 10) || 0;
+                const max = parseInt(inp.max, 10) || 0;
+                if (c > 0) out.push({ addonId: inp.dataset.id, count: Math.min(c, max) });
+            });
+            return out;
         }
 
         // 1 voucher = 1 main dish full coverage (NOT flat face value).
@@ -10173,10 +10294,60 @@ incredibowl.my`,
             '10': { id: '10', voucherCount: 10, price: 180.00 },
             '20': { id: '20', voucherCount: 20, price: 350.00 },
         };
+        // Prepaid add-on options — MUST match server PREPAID_ADDON_OPTIONS + ADD_ON_PRICES.
+        const PREPAID_ADDON_OPTIONS_DASHBOARD = [
+            { id: 'sunny-egg', name: '荷包蛋', price: 2.50 },
+            { id: 'onsen-egg', name: '温泉蛋', price: 3.00 },
+            { id: 'potato-egg', name: '马铃薯煎蛋', price: 3.50 },
+            { id: 'salmon-upgrade', name: '三文鱼升级', price: 4.00 },
+        ];
+        // Per-user available prepaid add-on credits → { addonId: { name, remaining } }
+        function availableAddonCreditsForUser(userId) {
+            const nowMs = Date.now();
+            const byAddon = {};
+            (state.addonCredits || []).forEach(c => {
+                if (c.userId !== userId) return;
+                if (c.status !== 'available') return;
+                const exp = tsToDate(c.expiresAt);
+                const remaining = Number(c.quantityRemaining) || 0;
+                if (!exp || exp.getTime() <= nowMs || remaining <= 0) return;
+                const id = c.addonId;
+                if (!byAddon[id]) byAddon[id] = { name: c.addonName || id, remaining: 0 };
+                byAddon[id].remaining += remaining;
+            });
+            return byAddon;
+        }
         let svmBundleId = '10';
         let svmPaymentMethod = 'cash';
         let svmChannel = 'whatsapp';
 
+        function renderSvmPrepaidRows() {
+            const wrap = $('#svmPrepaidRows');
+            if (!wrap) return;
+            wrap.innerHTML = PREPAID_ADDON_OPTIONS_DASHBOARD.map(o => `
+                <div style="display:grid;grid-template-columns:1fr 96px;gap:10px;align-items:center">
+                    <span style="font-size:12px">${o.name} <span style="color:var(--text-muted)">· RM ${o.price.toFixed(2)}</span></span>
+                    <input type="number" class="svm-prepaid-qty" data-id="${o.id}" data-price="${o.price}" min="0" step="1" value="0" placeholder="0" style="text-align:right" />
+                </div>
+            `).join('');
+            wrap.querySelectorAll('.svm-prepaid-qty').forEach(inp => inp.addEventListener('input', refreshSvmGrandTotal));
+        }
+        function collectSvmPrepaidAddOns() {
+            const out = [];
+            $$('#svmPrepaidRows .svm-prepaid-qty').forEach(inp => {
+                const q = parseInt(inp.value, 10) || 0;
+                if (q > 0) out.push({ addonId: inp.dataset.id, quantity: q, price: Number(inp.dataset.price) || 0 });
+            });
+            return out;
+        }
+        function refreshSvmGrandTotal() {
+            const bundle = MEAL_VOUCHER_BUNDLES_DASHBOARD[svmBundleId];
+            const overrideStr = $('#svmAmountPaid').value;
+            const override = parseFloat(overrideStr);
+            const pack = (overrideStr !== '' && !isNaN(override) && override > 0) ? override : (bundle ? bundle.price : 0);
+            const addonSub = collectSvmPrepaidAddOns().reduce((s, a) => s + a.price * a.quantity, 0);
+            $('#svmGrandTotal').textContent = `RM ${(pack + addonSub).toFixed(2)}`;
+        }
         function openSellVoucherModal() {
             const today = new Date().toISOString().slice(0, 10);
             $('#svmDate').value = today;
@@ -10189,6 +10360,8 @@ incredibowl.my`,
             svmChannel = 'whatsapp';
             updateSvmPills();
             refreshSvmAllocated();
+            renderSvmPrepaidRows();
+            refreshSvmGrandTotal();
             $('#svmError').classList.add('hidden');
             $('#sellVoucherModal').classList.remove('hidden');
             setTimeout(() => $('#svmName').focus(), 100);
@@ -10211,6 +10384,7 @@ incredibowl.my`,
             const allocated = amountPaid / bundle.voucherCount;
             $('#svmAllocatedPreview').textContent = `RM ${allocated.toFixed(3)}`;
             $('#svmAmountPaid').placeholder = `默认 RM ${bundle.price.toFixed(2)}`;
+            refreshSvmGrandTotal();
         }
 
         $('#sellVoucherBtn').addEventListener('click', openSellVoucherModal);
@@ -10254,6 +10428,9 @@ incredibowl.my`,
 
             const paidAtMs = date ? new Date(date + 'T12:00:00').getTime() : undefined;
 
+            // Prepaid add-ons — send only {addonId, quantity}; server re-prices.
+            const prepaidAddOns = collectSvmPrepaidAddOns().map(a => ({ addonId: a.addonId, quantity: a.quantity }));
+
             const btn = $('#svmSubmitBtn');
             btn.disabled = true;
             btn.textContent = '正在发券...';
@@ -10266,9 +10443,13 @@ incredibowl.my`,
                     channel: svmChannel,
                     paidAtMs,
                     amountPaidOverride,
+                    prepaidAddOns: prepaidAddOns.length > 0 ? prepaidAddOns : undefined,
                     note,
                 });
-                toast(`✅ 已发 ${result.voucherCount} 张餐券给 ${result.userName || name} · 收 RM ${result.amountPaid.toFixed(2)}${result.wasStubCreated ? '（已建 stub 账号）' : ''}`, 'success');
+                const addonNote = (result.addOnAmountPaid > 0)
+                    ? ` + 预付加料 RM ${result.addOnAmountPaid.toFixed(2)}（共收 RM ${result.totalAmountPaid.toFixed(2)}）`
+                    : '';
+                toast(`✅ 已发 ${result.voucherCount} 张餐券给 ${result.userName || name} · 收 RM ${result.amountPaid.toFixed(2)}${addonNote}${result.wasStubCreated ? '（已建 stub 账号）' : ''}`, 'success');
                 closeSellVoucherModal();
                 // Refresh state so KPI cards + Recent Orders pick up the new purchase/vouchers
                 await loadAllData();
@@ -10295,6 +10476,7 @@ incredibowl.my`,
             const zone = $('#moZone').value;
             const note = $('#moNote').value.trim();
             const vouchersUsed = parseInt($('#moVouchersUsed').value, 10) || 0;
+            const prepaidAddonsUsed = collectMoPrepaidAddonsUsed();
 
             // Collect items from picker rows
             const items = [];
@@ -10346,19 +10528,32 @@ incredibowl.my`,
             // (FIFO claim needs real userId, not synthetic manual_* one).
             let realUserMatch = null;
             let mealVoucherDiscount = 0;
-            if (vouchersUsed > 0) {
+            const needsRealUser = vouchersUsed > 0 || prepaidAddonsUsed.length > 0;
+            if (needsRealUser) {
                 if (!phoneRaw) {
-                    errEl.textContent = '用餐券抵扣必须填电话（用来找客户餐券）';
+                    errEl.textContent = '用餐券 / 预付加料必须填电话（用来找客户账号）';
                     errEl.classList.remove('hidden');
                     $('#moPhone').focus();
                     return;
                 }
                 realUserMatch = findRealUserByPhone(phoneRaw);
                 if (!realUserMatch) {
-                    errEl.textContent = '找不到该电话的客户账号 — 请先「卖餐券」给客户建账号，再用券';
+                    errEl.textContent = '找不到该电话的客户账号 — 请先「卖餐券」给客户建账号，再用券 / 预付加料';
                     errEl.classList.remove('hidden');
                     return;
                 }
+                // Validate prepaid add-on consumption against available balance.
+                for (const it of prepaidAddonsUsed) {
+                    const avail = (realUserMatch.availableAddonCredits || {})[it.addonId];
+                    const have = avail ? avail.remaining : 0;
+                    if (it.count > have) {
+                        errEl.textContent = `预付「${avail ? avail.name : it.addonId}」只剩 ${have} 个，要用 ${it.count} 个不够`;
+                        errEl.classList.remove('hidden');
+                        return;
+                    }
+                }
+            }
+            if (vouchersUsed > 0) {
                 if (vouchersUsed > realUserMatch.availableVouchers) {
                     errEl.textContent = `客户只有 ${realUserMatch.availableVouchers} 张可用券，要扣 ${vouchersUsed} 张不够`;
                     errEl.classList.remove('hidden');
@@ -10462,31 +10657,42 @@ incredibowl.my`,
                     state.orders.unshift({ id: orderId, ...orderData });
                     $('#sysOrderCount').textContent = state.orders.length;
 
-                    // ─── Claim vouchers via admin API (FIFO) ───
+                    // ─── Claim vouchers + prepaid add-ons via admin API (FIFO) ───
                     // Done AFTER the order doc exists so the claim can reference orderId.
                     // If claim fails, delete the just-created order to avoid orphans.
-                    if (vouchersUsed > 0) {
+                    if (vouchersUsed > 0 || prepaidAddonsUsed.length > 0) {
                         try {
                             const claimResult = await callAdminAPI('/api/admin/manual-voucher-redemption', {
                                 phone: phoneRaw,
                                 voucherCount: vouchersUsed,
+                                addonCreditsUsed: prepaidAddonsUsed.length > 0 ? prepaidAddonsUsed : undefined,
                                 orderId,
                             });
                             // Mirror server-side updates into local state so KPIs refresh immediately
                             const idx = state.orders.findIndex(o => o.id === orderId);
                             if (idx >= 0) {
-                                state.orders[idx].mealVouchersUsed = vouchersUsed;
-                                state.orders[idx].claimedMealVoucherIds = claimResult.claimedVoucherIds;
-                                state.orders[idx].mealVoucherAllocatedRevenue = claimResult.allocatedTotalRM;
+                                if (vouchersUsed > 0) {
+                                    state.orders[idx].mealVouchersUsed = vouchersUsed;
+                                    state.orders[idx].claimedMealVoucherIds = claimResult.claimedVoucherIds;
+                                    state.orders[idx].mealVoucherAllocatedRevenue = claimResult.allocatedTotalRM;
+                                }
+                                if (prepaidAddonsUsed.length > 0) {
+                                    state.orders[idx].addonCreditsUsed = claimResult.addonCreditsUsed;
+                                    state.orders[idx].addonCreditsAllocatedRevenue = claimResult.addonCreditsAllocatedRevenue;
+                                }
                             }
-                            // Refresh state.mealVouchers so available-count hint is accurate next time
+                            // Refresh state so available-count hints are accurate next time
                             await loadAllData();
-                            toast(`已保存：${name} · 现金 RM ${cashFoodTotal.toFixed(2)} + ${vouchersUsed} 张餐券（摊销 RM ${claimResult.allocatedTotalRM.toFixed(2)}）`, 'success');
+                            const voucherPart = vouchersUsed > 0 ? ` + ${vouchersUsed} 张餐券（摊销 RM ${claimResult.allocatedTotalRM.toFixed(2)}）` : '';
+                            const addonPart = (claimResult.addonCreditsAllocatedRevenue > 0)
+                                ? ` + 预付加料（确认 RM ${claimResult.addonCreditsAllocatedRevenue.toFixed(2)}）`
+                                : '';
+                            toast(`已保存：${name} · 现金 RM ${cashFoodTotal.toFixed(2)}${voucherPart}${addonPart}`, 'success');
                         } catch (claimErr) {
-                            // Roll back the order to keep voucher state consistent
+                            // Roll back the order to keep voucher / credit state consistent
                             try { await deleteDoc(doc(db, 'orders', orderId)); } catch {}
                             state.orders = state.orders.filter(o => o.id !== orderId);
-                            errEl.textContent = '餐券抵扣失败：' + claimErr.message + '（订单已回滚）';
+                            errEl.textContent = '餐券 / 预付加料抵扣失败：' + claimErr.message + '（订单已回滚）';
                             errEl.classList.remove('hidden');
                             btn.disabled = false;
                             btn.textContent = '保存';

@@ -36,12 +36,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = await getDb();
-    const [ordersSnap, usersSnap, feedbacksSnap, mealVoucherPurchasesSnap, mealVouchersSnap] = await Promise.all([
+    const [ordersSnap, usersSnap, feedbacksSnap, mealVoucherPurchasesSnap, mealVouchersSnap, addonCreditsSnap] = await Promise.all([
       db.collection('orders').orderBy('createdAt', 'desc').get(),
       db.collection('users').orderBy('createdAt', 'desc').get(),
       db.collection('feedbacks').get(),
       db.collection('mealVoucherPurchases').orderBy('createdAt', 'desc').get(),
       db.collection('mealVouchers').get(),
+      db.collection('mealVoucherAddonCredits').get(),
     ]);
 
     // Auto-cancel FPX pending orders older than 10 minutes (QR orders unaffected)
@@ -126,7 +127,71 @@ export async function GET(req: NextRequest) {
       faceValuePerVoucherRM: FACE_VALUE_RM,
     };
 
-    return NextResponse.json({ orders, users, feedbacks, mealVoucherPurchases, mealVoucherStats });
+    // ── Prepaid add-on credit liability aggregates ────────────
+    // Mirrors meal-voucher accounting: prepaid add-on cash is a contract
+    // liability, recognised as each unit is consumed at redemption.
+    let addonOutstandingUnits = 0;
+    let addonOutstandingLiabilityRM = 0;
+    let addonExpiringSoonUnits = 0;
+    let addonExpiringSoonLiabilityRM = 0;
+    let addonRecognizedLifetimeRM = 0;
+    let addonExpiredLifetimeRM = 0;
+    const addonByAddon: Record<string, { addonName: string; remaining: number; liabilityRM: number }> = {};
+    for (const doc of addonCreditsSnap.docs) {
+      const c = doc.data() as {
+        addonId?: string;
+        addonName?: string;
+        status?: string;
+        unitAllocatedRM?: number;
+        quantityTotal?: number;
+        quantityRemaining?: number;
+        expiresAt?: { toMillis?: () => number };
+      };
+      const unit = Number(c.unitAllocatedRM) || 0;
+      const total = Number(c.quantityTotal) || 0;
+      const remaining = Number(c.quantityRemaining) || 0;
+      const consumed = Math.max(0, total - remaining);
+      const expMs = c.expiresAt?.toMillis ? c.expiresAt.toMillis() : 0;
+      const isExpired = !expMs || expMs <= now;
+      // Revenue is recognised whenever a unit is consumed, regardless of batch status.
+      addonRecognizedLifetimeRM += consumed * unit;
+      if (remaining > 0 && c.status !== 'used-up') {
+        if (isExpired) {
+          // Unconsumed units that lapsed → breakage.
+          addonExpiredLifetimeRM += remaining * unit;
+        } else {
+          addonOutstandingUnits += remaining;
+          addonOutstandingLiabilityRM += remaining * unit;
+          const key = String(c.addonId || 'unknown');
+          const name = String(c.addonName || key);
+          if (!addonByAddon[key]) addonByAddon[key] = { addonName: name, remaining: 0, liabilityRM: 0 };
+          addonByAddon[key].remaining += remaining;
+          addonByAddon[key].liabilityRM += remaining * unit;
+          if (expMs - now < FOURTEEN_DAYS_MS) {
+            addonExpiringSoonUnits += remaining;
+            addonExpiringSoonLiabilityRM += remaining * unit;
+          }
+        }
+      }
+    }
+    for (const k of Object.keys(addonByAddon)) {
+      addonByAddon[k].liabilityRM = Number(addonByAddon[k].liabilityRM.toFixed(2));
+    }
+    const addonCashCollectedLifetimeRM = mealVoucherPurchases
+      .filter((p: any) => p.status === 'paid')
+      .reduce((sum: number, p: any) => sum + (Number(p.addOnAmountPaid) || 0), 0);
+    const addonCreditStats = {
+      outstandingUnits: addonOutstandingUnits,
+      outstandingLiabilityRM: Number(addonOutstandingLiabilityRM.toFixed(2)),
+      expiringSoonUnits: addonExpiringSoonUnits,
+      expiringSoonLiabilityRM: Number(addonExpiringSoonLiabilityRM.toFixed(2)),
+      recognizedLifetimeRM: Number(addonRecognizedLifetimeRM.toFixed(2)),
+      expiredLifetimeRM: Number(addonExpiredLifetimeRM.toFixed(2)),
+      cashCollectedLifetimeRM: Number(addonCashCollectedLifetimeRM.toFixed(2)),
+      byAddon: addonByAddon,
+    };
+
+    return NextResponse.json({ orders, users, feedbacks, mealVoucherPurchases, mealVoucherStats, addonCreditStats });
   } catch (err: any) {
     console.error('Admin data fetch error:', err);
     return NextResponse.json({ error: err.message || '数据获取失败' }, { status: 500 });

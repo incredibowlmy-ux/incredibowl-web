@@ -43,6 +43,10 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-corn': 2.50,
   'broccoli-egg': 10.90,
 
+  // ─── Prepaid-only upgrades (not shown on customer menu; used by
+  //     prepaid add-on credits — see PREPAID_ADDON_OPTIONS below) ──
+  'salmon-upgrade': 4.00,
+
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
   'potato-egg-alacarte': 3.50,
@@ -83,4 +87,29 @@ export const ADD_ON_PRICES: Record<string, number> = {
  */
 export function getAddOnPrice(addOnId: string): number | undefined {
   return ADD_ON_PRICES[addOnId];
+}
+
+/**
+ * Whitelist of add-ons that can be PREPAID as part of a meal-voucher bundle
+ * sale (e.g. "20 meals + 19 sunny eggs prepaid"). The admin dashboard's
+ * prepaid-addon picker renders from this list, and the server validates every
+ * prepaid addonId against it. Names here are server-authoritative — the client
+ * never gets to decide the display name or price (price always comes from
+ * ADD_ON_PRICES). Keep this list small and intentional.
+ */
+export interface PrepaidAddonOption {
+  id: string;
+  name: string;
+}
+
+export const PREPAID_ADDON_OPTIONS: PrepaidAddonOption[] = [
+  { id: 'sunny-egg', name: '荷包蛋' },
+  { id: 'onsen-egg', name: '温泉蛋' },
+  { id: 'potato-egg', name: '马铃薯煎蛋' },
+  { id: 'salmon-upgrade', name: '三文鱼升级' },
+];
+
+/** Fast lookup: is this add-on id allowed to be prepaid? */
+export function getPrepaidAddonOption(addOnId: string): PrepaidAddonOption | undefined {
+  return PREPAID_ADDON_OPTIONS.find((o) => o.id === addOnId);
 }
