@@ -10901,12 +10901,16 @@ incredibowl.my`,
             });
             const voucherPurchaseCount = purchases.length;
             const voucherCountMinted = purchases.reduce((s, p) => s + (Number(p.voucherCount) || 0), 0);
-            const voucherCashSpent = purchases.reduce((s, p) => s + (Number(p.amountPaid) || 0), 0);
+            // Include prepaid add-on cash (totalAmountPaid) so 付款 = real cash paid, not just bundle.
+            const voucherCashSpent = purchases.reduce((s, p) => s + (Number(p.totalAmountPaid ?? p.amountPaid) || 0), 0);
 
-            // Voucher balance + expiring soon
+            // Voucher balance + expiring soon.
+            // NOTE: voucher docs have NO userPhone field — match by the resolved user id
+            // (userDoc.id). Matching on v.userPhone always fails → would show 余 0.
+            const resolvedUserId = userDoc?.id || userIdRaw;
             const myVouchers = (state.mealVouchers || []).filter(v => {
+                if (resolvedUserId && v.userId === resolvedUserId) return true;
                 if (phoneNorm && normalizePhone(v.userPhone || '') === phoneNorm) return true;
-                if (userIdRaw && v.userId === userIdRaw) return true;
                 return false;
             });
             const nowMs = Date.now();
@@ -10917,6 +10921,9 @@ incredibowl.my`,
                 const days = (exp.getTime() - nowMs) / 86400000;
                 return days <= 7;
             });
+
+            // Prepaid add-on credit balance (already-paid eggs / upgrades not yet consumed)
+            const myAddonCredits = resolvedUserId ? availableAddonCreditsForUser(resolvedUserId) : {};
 
             // Top dishes + top add-ons
             const dishCount = new Map();
@@ -10960,6 +10967,7 @@ incredibowl.my`,
                 totalPromoDiscount, totalRefunds, refundOrderCount,
                 voucherPurchaseCount, voucherCountMinted, voucherCashSpent,
                 availableCount: available.length, expiringSoonCount: expiringSoon.length,
+                addonCredits: myAddonCredits,
                 topDishes, topAddons, lunchCount, dinnerCount, pmCount,
                 recent: paid.slice(0, 10),
                 tags, notes,
@@ -11027,6 +11035,7 @@ incredibowl.my`,
                         <div><span style="color:var(--text-muted)">付款</span> <strong>${fmt.rm(p.voucherCashSpent)}</strong></div>
                         <div><span style="color:var(--text-muted)">已用</span> <strong>${p.totalVouchersUsed}</strong> / 余 <strong>${p.availableCount}</strong></div>
                         ${p.expiringSoonCount > 0 ? `<div style="color:#C62828"><span>⚠️ 7 天内过期</span> <strong>${p.expiringSoonCount}</strong> 张</div>` : ''}
+                        ${(() => { const e = Object.values(p.addonCredits || {}).filter(c => c.remaining > 0); return e.length ? `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px"><span style="color:var(--text-muted)">🍳 预付加料余额</span> <strong>${e.map(c => `${c.name} ${c.remaining}`).join(' · ')}</strong></div>` : ''; })()}
                     </div>
                 </div>
                 ` : ''}
