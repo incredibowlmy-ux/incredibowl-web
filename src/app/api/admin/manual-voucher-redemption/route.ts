@@ -166,16 +166,11 @@ export async function POST(req: NextRequest) {
       update.mealVoucherAllocatedRevenue = claimed.allocatedTotalRM;
     }
     if (addonResult.lines.length > 0) {
-      // Append each consumed add-on as an RM0 line so the kitchen sees it.
-      const existingItems = Array.isArray(orderData.items) ? orderData.items : [];
-      const prepaidLines = addonResult.lines.map(l => ({
-        name: `↳ ${l.addonName}（预付）`,
-        nameEn: '',
-        price: 0,
-        quantity: l.count,
-        prepaidCredit: true,
-      }));
-      update.items = [...existingItems, ...prepaidLines];
+      // Prepaid add-ons are a CASH DISCOUNT (already paid upfront), NOT RM0 line
+      // items — the real dish / add-on lines already reflect the food the kitchen
+      // makes. We only record consumption + recognised revenue here; the dashboard
+      // reduces the order's cash `total` by the prepaid coverage at creation time
+      // (mirrors how meal-voucher discounts work).
       update.addonCreditsUsed = addonResult.lines.map(l => ({ addonId: l.addonId, count: l.count }));
       update.addonCreditsAllocatedRevenue = addonResult.recognizedRevenueRM;
     }

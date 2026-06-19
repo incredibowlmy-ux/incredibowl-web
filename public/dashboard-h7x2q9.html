@@ -10106,13 +10106,29 @@ incredibowl.my`,
             const usableVouchers = Math.min(vouchersUsed, prices.length);
             const mvDiscount = computeMealVoucherDiscount(usableVouchers);
             const promoDiscount = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
-            const cashFood = Math.max(0, foodTotal - mvDiscount - promoDiscount);
+            // Prepaid add-ons consumed this order REDUCE cash due (already paid upfront).
+            // Coverage uses the credit's allocated value (face), per addon.
+            const prepaidUsed = (typeof collectMoPrepaidAddonsUsed === 'function') ? collectMoPrepaidAddonsUsed() : [];
+            const moMatch = findRealUserByPhone($('#moPhone').value.trim());
+            const moCredits = (moMatch && moMatch.availableAddonCredits) ? moMatch.availableAddonCredits : {};
+            const prepaidLineInfos = prepaidUsed.map(pu => {
+                const opt = PREPAID_ADDON_OPTIONS_DASHBOARD.find(o => o.id === pu.addonId);
+                const unit = (moCredits[pu.addonId] && typeof moCredits[pu.addonId].unitAllocatedRM === 'number')
+                    ? moCredits[pu.addonId].unitAllocatedRM
+                    : (opt ? opt.price : 0);
+                return { name: opt ? opt.name : pu.addonId, count: pu.count, amount: unit * pu.count };
+            });
+            const prepaidCoverage = prepaidLineInfos.reduce((s, p) => s + p.amount, 0);
+            const cashFood = Math.max(0, foodTotal - mvDiscount - promoDiscount - prepaidCoverage);
             const grand = cashFood + deliveryFee;
 
             const row = (label, val) => `<div style="display:flex;justify-content:space-between"><span>${label}</span><span>${val}</span></div>`;
             const lines = [row('食物总额', `RM ${foodTotal.toFixed(2)}`)];
             if (mvDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎫 餐券抵扣 ×${usableVouchers}</span><span>− RM ${mvDiscount.toFixed(2)}</span></div>`);
             if (promoDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎟 优惠码 ${escapeHtml((state.moPromoValidated && state.moPromoValidated.code) || '')}</span><span>− RM ${promoDiscount.toFixed(2)}</span></div>`);
+            prepaidLineInfos.forEach(p => {
+                lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🍳 预付${p.name} ×${p.count}（已付）</span><span>− RM ${p.amount.toFixed(2)}</span></div>`);
+            });
             lines.push(row('🛵 配送费', deliveryFee > 0 ? `+ RM ${deliveryFee.toFixed(2)}` : '免费'));
             $('#moSummaryLines').innerHTML = lines.join('');
             $('#moSummaryGrand').textContent = `RM ${grand.toFixed(2)}`;
@@ -10584,7 +10600,15 @@ incredibowl.my`,
             // mealVoucherAllocatedRevenue = filled by redemption API after FIFO claim (MFRS 15)
             const promo = state.moPromoValidated;  // null OR { code, discount }
             const promoDiscount = promo ? Number(promo.discount) || 0 : 0;
-            const cashFoodTotal = Math.max(0, total - mealVoucherDiscount - promoDiscount);
+            // Prepaid add-ons reduce cash due (already paid upfront). Coverage = credit
+            // allocated value × count, per addon (mirrors the live summary).
+            const prepaidCoverage = prepaidAddonsUsed.reduce((s, it) => {
+                const c = (realUserMatch && realUserMatch.availableAddonCredits) ? realUserMatch.availableAddonCredits[it.addonId] : null;
+                const opt = PREPAID_ADDON_OPTIONS_DASHBOARD.find(o => o.id === it.addonId);
+                const unit = (c && typeof c.unitAllocatedRM === 'number') ? c.unitAllocatedRM : (opt ? opt.price : 0);
+                return s + unit * it.count;
+            }, 0);
+            const cashFoodTotal = Math.max(0, total - mealVoucherDiscount - promoDiscount - prepaidCoverage);
 
             // Build createdAt: use selected date at noon for consistent sorting
             const dateObj = new Date(date + 'T12:00:00');
@@ -10623,6 +10647,10 @@ incredibowl.my`,
             // — actual claim happens after order doc is created via the redemption API
             if (vouchersUsed > 0) {
                 orderData.mealVoucherDiscount = Number(mealVoucherDiscount.toFixed(2));
+            }
+            // Prepaid add-on coverage applied to this order (cash discount, already paid).
+            if (prepaidAddonsUsed.length > 0) {
+                orderData.addonCreditsDiscount = Number(prepaidCoverage.toFixed(2));
             }
             // Promo voucher (RM-promo, mutex with meal vouchers). Code burnt below after save.
             if (promo) {
