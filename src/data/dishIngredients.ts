@@ -181,6 +181,19 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
+    // 周二新菜 2026-06-21 上架。份量老板 2026-06-22 提供：和牛饼 1 块（采购按块计）+
+    // 白米饭 80g 生米 + 樱桃番茄 3 颗。温泉蛋按描述「盖一颗半熟温泉蛋」自带 1 颗。
+    // 番茄莎莎的其他调味（橄榄油/盐/黑胡椒等）按惯例不计入每日采购汇总。
+    name: '澳洲和牛饼饭',
+    shortName: '和牛',
+    ingredients: [
+      { name: '澳洲和牛饼', qty: 1, unit: '块' },
+      { name: '温泉蛋', qty: 1, unit: '颗' },
+      { name: '樱桃番茄', qty: 3, unit: '颗' },
+      { name: '白饭', qty: 80, unit: 'g' },
+    ],
+  },
+  {
     name: '金黄葱香煎鸡汤',
     shortName: '葱汤',
     ingredients: [

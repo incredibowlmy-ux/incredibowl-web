@@ -10147,10 +10147,13 @@ incredibowl.my`,
             const moCredits = (moMatch && moMatch.availableAddonCredits) ? moMatch.availableAddonCredits : {};
             const prepaidLineInfos = prepaidUsed.map(pu => {
                 const opt = PREPAID_ADDON_OPTIONS_DASHBOARD.find(o => o.id === pu.addonId);
-                const unit = (moCredits[pu.addonId] && typeof moCredits[pu.addonId].unitAllocatedRM === 'number')
-                    ? moCredits[pu.addonId].unitAllocatedRM
+                const credit = moCredits[pu.addonId];
+                const unit = (credit && typeof credit.unitAllocatedRM === 'number' && credit.unitAllocatedRM > 0)
+                    ? credit.unitAllocatedRM
                     : (opt ? opt.price : 0);
-                return { name: opt ? opt.name : pu.addonId, count: pu.count, amount: unit * pu.count };
+                // Name fallback: credit doc's addonName → static OPTIONS table → raw addonId
+                const name = (credit && credit.name) || (opt && opt.name) || pu.addonId;
+                return { name, count: pu.count, amount: unit * pu.count };
             });
             const prepaidCoverage = prepaidLineInfos.reduce((s, p) => s + p.amount, 0);
             const cashFood = Math.max(0, foodTotal - mvDiscount - promoDiscount - prepaidCoverage);
@@ -10350,6 +10353,7 @@ incredibowl.my`,
             { id: 'onsen-egg', name: '温泉蛋', price: 3.00 },
             { id: 'potato-egg', name: '马铃薯煎蛋', price: 3.50 },
             { id: 'salmon-upgrade', name: '三文鱼升级', price: 4.00 },
+            { id: 'wagyu-upgrade', name: '和牛饭升级', price: 3.00 },  // 2026-06-21：周二和牛饼饭 voucherTopUp=3
         ];
         // Per-user available prepaid add-on credits → { addonId: { name, remaining } }
         function availableAddonCreditsForUser(userId) {
@@ -10362,8 +10366,15 @@ incredibowl.my`,
                 const remaining = Number(c.quantityRemaining) || 0;
                 if (!exp || exp.getTime() <= nowMs || remaining <= 0) return;
                 const id = c.addonId;
-                if (!byAddon[id]) byAddon[id] = { name: c.addonName || id, remaining: 0 };
+                const unitAllocated = Number(c.unitAllocatedRM) || 0;
+                if (!byAddon[id]) byAddon[id] = { name: c.addonName || id, remaining: 0, totalAllocatedRM: 0 };
                 byAddon[id].remaining += remaining;
+                byAddon[id].totalAllocatedRM += unitAllocated * remaining;
+            });
+            // Weighted-avg unitAllocatedRM (preview only — server uses FIFO per batch).
+            // 修复：之前没把 unitAllocatedRM 带出来 → 摘要算 RM 0，老板看不到实际减免金额。
+            Object.values(byAddon).forEach(v => {
+                v.unitAllocatedRM = v.remaining > 0 ? v.totalAllocatedRM / v.remaining : 0;
             });
             return byAddon;
         }
