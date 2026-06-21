@@ -2554,6 +2554,7 @@
             { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 4 },
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // 常驻新菜 2026-06-14
             { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 周四新菜 2026-06-15
+            { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // 周二新菜 2026-06-21 (default: 1 温泉蛋)
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -8173,43 +8174,59 @@ incredibowl.my`,
             }
 
             // ─── Hardcoded default-egg map (mirror src/data/dishIngredients.ts).
-            // 用于「鸡蛋汇总」行 — 算 default 内置蛋 + 客户加料蛋的总数，
-            // 避免老板只看「客户加料」漏煎 default 内置蛋（鱼片饭+山药云耳）。
+            // 用于「鸡蛋汇总」行 — 算 default 内置蛋 + 客户加料蛋的总数（按蛋型分），
+            // 避免老板只看「客户加料」漏煎 default 内置蛋。
+            // 格式：菜名 → { 蛋型: 每份颗数 }
             // 加新菜/改菜谱时同步更新 webapp dishIngredients.ts 即可。
             const DISH_DEFAULT_EGGS = {
-                '古早味姜葱鱼片饭': 1,
-                '山药云耳海陆双鲜炒': 1,
+                '古早味姜葱鱼片饭':   { '荷包蛋': 1 },
+                '山药云耳海陆双鲜炒': { '荷包蛋': 1 },
+                '澳洲和牛饼饭':       { '温泉蛋': 1 },
             };
-            // 哪些 add-on label 算「荷包蛋」类（用于加料合计）
-            const EGG_ADDON_LABELS = new Set([
-                '荷包蛋',
-            ]);
+            // 哪些 add-on label 算「鸡蛋类加料」（按蛋型分别累加）
+            const EGG_ADDON_TYPES = new Set(['荷包蛋', '温泉蛋', '马铃薯煎蛋']);
+            const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔' };
 
             function aggregate(orders) {
                 const dishes = new Map(), addons = new Map();
-                let defaultEggs = 0;
-                let addonEggs = 0;
+                // 蛋型 → { default: N, addon: M }
+                const eggCounts = new Map();
+                const bumpEgg = (type, kind, qty) => {
+                    const cur = eggCounts.get(type) || { default: 0, addon: 0 };
+                    cur[kind] += qty;
+                    eggCounts.set(type, cur);
+                };
                 orders.forEach(o => normalizeOrderItems(o).forEach(it => {
                     const name = canonicalDishName(it.name);
                     const qty = Number(it.quantity) || 1;
                     if (name) {
                         dishes.set(name, (dishes.get(name) || 0) + qty);
-                        // 累计该菜 default 带的荷包蛋
-                        const eggsPerServing = DISH_DEFAULT_EGGS[name] || 0;
-                        defaultEggs += eggsPerServing * qty;
+                        // 累计该菜 default 带的各种蛋
+                        const dmap = DISH_DEFAULT_EGGS[name];
+                        if (dmap) {
+                            Object.entries(dmap).forEach(([type, per]) => bumpEgg(type, 'default', per * qty));
+                        }
                     }
                     (it.addOns || []).forEach(a => {
                         const lbl = a.label || a.name || a.id || '加料';
                         const aq = Number(a.quantity) || 1;
                         addons.set(lbl, (addons.get(lbl) || 0) + aq);
-                        if (EGG_ADDON_LABELS.has(lbl)) addonEggs += aq;
+                        if (EGG_ADDON_TYPES.has(lbl)) bumpEgg(lbl, 'addon', aq);
                     });
                 }));
                 const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escP(k)} <b>×${v}</b>`).join(' · ');
-                const totalEggs = defaultEggs + addonEggs;
-                const eggsHtml = totalEggs > 0
-                    ? `共 <b>${totalEggs}</b> 颗（菜品自带 ${defaultEggs} + 客户加料 ${addonEggs}）`
-                    : '无';
+
+                // Per-type egg lines（按总数倒序），跳过 0 项
+                const eggLines = [...eggCounts.entries()]
+                    .filter(([, c]) => (c.default + c.addon) > 0)
+                    .sort((a, b) => (b[1].default + b[1].addon) - (a[1].default + a[1].addon))
+                    .map(([type, c]) => {
+                        const total = c.default + c.addon;
+                        const icon = EGG_ICON[type] || '🥚';
+                        return `${icon} ${escP(type)} 共 <b>${total}</b> 颗（菜品自带 ${c.default} + 客户加料 ${c.addon}）`;
+                    });
+                const totalEggs = [...eggCounts.values()].reduce((s, c) => s + c.default + c.addon, 0);
+                const eggsHtml = eggLines.length > 0 ? eggLines.join('<br/>') : '无';
                 return {
                     dishesHtml: fmt(dishes) || '—',
                     addonsHtml: fmt(addons) || '无',
@@ -8757,6 +8774,23 @@ incredibowl.my`,
             ],
             '23': [
                 // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
+                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (40g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (40g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '24': [
+                // 澳洲和牛饼饭（周二主推）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
+                // default 自带 1 温泉蛋（已含在菜里）+ 樱桃番茄莎莎；下方 add-on 是 EXTRA
                 // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
