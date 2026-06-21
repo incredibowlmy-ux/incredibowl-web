@@ -46,6 +46,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Prepaid-only upgrades (not shown on customer menu; used by
   //     prepaid add-on credits — see PREPAID_ADDON_OPTIONS below) ──
   'salmon-upgrade': 4.00,
+  'wagyu-upgrade': 3.00,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
@@ -107,6 +108,7 @@ export const PREPAID_ADDON_OPTIONS: PrepaidAddonOption[] = [
   { id: 'onsen-egg', name: '温泉蛋' },
   { id: 'potato-egg', name: '马铃薯煎蛋' },
   { id: 'salmon-upgrade', name: '三文鱼升级' },
+  { id: 'wagyu-upgrade', name: '和牛饭升级' },
 ];
 
 /** Fast lookup: is this add-on id allowed to be prepaid? */
