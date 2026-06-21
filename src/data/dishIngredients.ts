@@ -96,8 +96,8 @@ export const dishRecipes: DishRecipe[] = [
     ingredients: [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
-      { name: '毛豆', qty: 30, unit: 'g' },
-      { name: '玉米粒', qty: 30, unit: 'g' },
+      { name: '毛豆', qty: 25, unit: 'g' },
+      { name: '玉米粒', qty: 25, unit: 'g' },
       { name: '樱桃番茄', qty: 30, unit: 'g' },
     ],
   },
@@ -227,8 +227,8 @@ export const dishRecipes: DishRecipe[] = [
       { name: '三文鱼', qty: 120, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '西兰花', qty: 50, unit: 'g' },
-      { name: '毛豆', qty: 30, unit: 'g' },
-      { name: '玉米', qty: 30, unit: 'g' },
+      { name: '毛豆', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 25, unit: 'g' },
       { name: '樱桃番茄', qty: 30, unit: 'g' },
     ],
   },
@@ -274,6 +274,9 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   ],
 
   // ─── Generic sides (40g format) ───────────────────────────
+  '清甜水煮毛豆仁 (25g)': [{ name: '毛豆', qty: 25, unit: 'g' }],
+  '金黄甜玉米 (25g)': [{ name: '玉米', qty: 25, unit: 'g' }],
+  // legacy labels (历史 / 改版前已下的在途订单仍能正确聚合备料)
   '清甜水煮毛豆仁 (40g)': [{ name: '毛豆', qty: 40, unit: 'g' }],
   '金黄甜玉米 (40g)': [{ name: '玉米', qty: 40, unit: 'g' }],
   '爽脆多汁小番茄 (40g)': [{ name: '樱桃番茄', qty: 40, unit: 'g' }],
@@ -411,6 +414,8 @@ export const addOnShortNames: Record<string, string> = {
   '蒜蓉西兰花炒蛋': '西兰花蛋',
 
   // Generic 40g sides
+  '清甜水煮毛豆仁 (25g)': '毛豆',
+  '金黄甜玉米 (25g)': '玉米',
   '清甜水煮毛豆仁 (40g)': '毛豆',
   '金黄甜玉米 (40g)': '玉米',
   '爽脆多汁小番茄 (40g)': '番茄',
