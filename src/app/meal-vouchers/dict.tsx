@@ -149,7 +149,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         summaryTotal: '实付',
 
         rulesTitle: '使用规则',
-        rule1: <><strong className="text-[#1A2D23]">1 张餐券 = 1 份主餐</strong>（任意菜品 RM 16.90–19.90 都能抵；多张券同时使用时，优先抵最贵的主餐，最划算）</>,
+        rule1: <><strong className="text-[#1A2D23]">1 张餐券 = 1 份主餐</strong>（RM 16.90–19.90 全额抵；超过 RM 19.90 的主餐用券后补差价，券抵 RM 19.90；多张券同用优先抵最贵的，最划算）</>,
         rule2: <><strong className="text-[#1A2D23]">加购项（饮料、加料、蛋等）</strong>不在抵扣范围内，需现金支付</>,
         rule3: <>有效期按组合：<strong className="text-[#1A2D23]">5 / 10 张装 30 天，20 张装 60 天</strong>，过期归零；不可叠加 RM 折扣券（推荐券 / 积分券）</>,
         rule4: '预付现金购买，不支持现金退款',
@@ -237,7 +237,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         summaryTotal: 'You pay',
 
         rulesTitle: 'How it works',
-        rule1: <><strong className="text-[#1A2D23]">1 voucher = 1 main dish</strong> (any dish RM 16.90–19.90; when multiple vouchers are used, the priciest mains are deducted first for best value)</>,
+        rule1: <><strong className="text-[#1A2D23]">1 voucher = 1 main dish</strong> (RM 16.90–19.90 fully covered; premium mains above RM 19.90 use one voucher plus a small top-up for the difference; multiple vouchers cover the priciest mains first)</>,
         rule2: <><strong className="text-[#1A2D23]">Add-ons (drinks, extra sides, eggs, etc.)</strong> are not covered and require cash payment</>,
         rule3: <>Validity depends on bundle: <strong className="text-[#1A2D23]">5 / 10 packs are valid 30 days, 20-pack is valid 60 days</strong>. Expired vouchers are forfeited. Cannot stack with RM promo codes (referral / points)</>,
         rule4: 'Prepaid in cash, no cash refunds',

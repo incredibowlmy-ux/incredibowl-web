@@ -79,7 +79,7 @@ export default function RefundPolicy() {
                             </ul>
                             <p className="mt-4"><strong>C. Voucher Coverage / 抵扣范围：</strong></p>
                             <ul className="list-disc ml-6 space-y-2">
-                                <li>1 voucher = 1 main dish (any item from the menu). <strong>Add-ons (drinks, sides, eggs, etc.) require cash payment</strong> and are not covered by vouchers. / 1 张餐券 = 1 份主餐（任意菜单菜品）。<strong>加购项（饮料、加料、蛋等）需现金支付</strong>，不在抵扣范围内。</li>
+                                <li>1 voucher = 1 main dish (any item from the menu). Premium dishes above RM 19.90 use one voucher plus a cash top-up for the difference (the voucher covers RM 19.90). <strong>Add-ons (drinks, sides, eggs, etc.) require cash payment</strong> and are not covered by vouchers. / 1 张餐券 = 1 份主餐（任意菜单菜品）。超过 RM 19.90 的精选主餐用一张餐券抵扣，需补差价（餐券覆盖到 RM 19.90）。<strong>加购项（饮料、加料、蛋等）需现金支付</strong>，不在抵扣范围内。</li>
                                 <li>Vouchers <strong>cannot be combined with promo codes</strong> (referral / points-redemption / custom codes) on the same order. / 餐券<strong>不可与优惠码同时使用</strong>（包括推荐码、积分券、自定义码）。</li>
                             </ul>
                         </div>
