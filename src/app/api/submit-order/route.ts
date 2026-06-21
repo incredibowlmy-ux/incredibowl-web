@@ -75,6 +75,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `菜品不存在: ID ${bundle.dishId}` }, { status: 400 });
       }
 
+      // Per-dish weekday availability: a 常驻 dish limited to certain weekdays
+      // (e.g. 马铃薯炖花肉片 = 周四五供应) must not be ordered for other days —
+      // even via a direct API call that skips the greyed-out menu card.
+      if (dish.availableWeekdays && dish.availableWeekdays.length && bundle.selectedDate) {
+        const [yy, mm, dd] = String(bundle.selectedDate).split('-').map(Number);
+        const wd = new Date(yy, (mm || 1) - 1, dd || 1).getDay();
+        if (!dish.availableWeekdays.includes(wd)) {
+          const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          const allowedLabel = dish.availableWeekdays.map(d => wdCn[d]).join('、');
+          return NextResponse.json({ error: `${dish.name} 仅在${allowedLabel}供应，无法下单所选日期` }, { status: 400 });
+        }
+      }
+
       const serverDishPrice = getDishPrice(dish.price);
       let serverAddOnsTotal = 0;
 

@@ -78,17 +78,20 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         }
         // Daily/permanent items are identified by their day field, not hardcoded IDs
         if (dish.day === 'Daily / 常驻') {
-            // A daily dish can be unavailable on a specific weekday (e.g. 马铃薯
-            // 周二不供应). It still SHOWS — just greyed-out + not orderable when the
-            // next delivery date falls on that weekday.
-            // Unavailable when the next delivery date is either a recurring excluded
-            // weekday (e.g. 马铃薯 周二) OR a one-off blocked date (boss put on hold).
-            const excludedToday = dish.excludeWeekday !== undefined && nextAvail.getDay() === dish.excludeWeekday;
+            // A daily dish may be restricted to a subset of weekdays
+            // (e.g. 马铃薯炖花肉片 = 周四五供应). It still SHOWS — just greyed-out +
+            // not orderable when the next delivery date falls outside that set.
+            // Also unavailable on a one-off blocked date (boss put on hold).
+            const allowList = dish.availableWeekdays;
+            const topTag = allowList && allowList.length
+                ? `${allowList.map(d => wdCn[d]).join('、')} · ${allowList.map(d => wdEn[d]).join(' & ')}`
+                : '周一至五 · Mon–Fri';
+            const dayAllowed = !allowList || allowList.length === 0 || allowList.includes(nextAvail.getDay());
             const blockedToday = isDishBlockedOn(dish.id, nextAvailStr);
-            if (excludedToday || blockedToday) {
-                const note = excludedToday ? (dish.unavailableNote ?? '当日不供应') : '当日暂停';
+            if (!dayAllowed || blockedToday) {
+                const note = !dayAllowed ? (dish.unavailableNote ?? '当日不供应') : '当日暂停';
                 menuDates[dish.id] = {
-                    topTag: '周一至五 · Mon–Fri',
+                    topTag,
                     btnText: note,
                     disabled: true,
                     actualDate: nextAvailStr,
@@ -96,7 +99,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
                 };
             } else {
                 menuDates[dish.id] = {
-                    topTag: '周一至五 · Mon–Fri',
+                    topTag,
                     btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                     disabled: false,
                     actualDate: nextAvailStr,

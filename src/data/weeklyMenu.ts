@@ -27,8 +27,14 @@ export interface MenuItem {
     voucherTopUp?: number;
     /** Dish removed from rotation: shown greyed-out on the menu, not orderable. */
     retired?: boolean;
-    /** Daily dish unavailable on this weekday (0-6): greyed-out, not orderable that day. */
-    excludeWeekday?: number;
+    /**
+     * Daily/常驻 dish available ONLY on these weekdays (0=Sun…6=Sat). Absent =
+     * all operating days (Mon–Fri). The menu card greys out + shows
+     * `unavailableNote` when the next delivery date falls outside this set, and
+     * /api/submit-order rejects out-of-range dates (so a direct API call can't
+     * skip the greyed card). e.g. 马铃薯炖花肉片 = [4,5] (Thu & Fri only).
+     */
+    availableWeekdays?: number[];
     /** Short reason shown on a disabled card (retired / weekday-excluded). */
     unavailableNote?: string;
     unavailableNoteEn?: string;
@@ -90,10 +96,11 @@ export const weeklyMenu: MenuItem[] = [
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
         image: "/pork_potato_stew.webp",
-        // 周二不供应（碗妈备餐安排）：网站当天可见但不可点。
-        excludeWeekday: 2,
-        unavailableNote: "周二不供应",
-        unavailableNoteEn: "Not available on Tue",
+        // 只在周四、周五供应（碗妈备餐安排）：其余工作日网站可见但不可点；
+        // /api/submit-order 也会拒收非周四五的下单，防止绕过菜单卡直接调 API。
+        availableWeekdays: [4, 5],
+        unavailableNote: "周四五供应",
+        unavailableNoteEn: "Thu & Fri only",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
