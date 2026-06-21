@@ -57,7 +57,7 @@ const out = 'public/<菜名>.webp';
 | `desc` / `descEn` | ✅ | 中 / 英简介。 |
 | `voucherTopUp` | 高价菜✅ | 餐券补差价(RM)。价格 ≤19.90 不写;>19.90 按惯例设(如 22.90→`3`,23.90→`4`)。 |
 | `retired` | 选填 | 退役菜:灰显可见不可点,需配 `unavailableNote`。 |
-| `excludeWeekday` | 选填 | 常驻菜某天不供应(如 `2`=周二),配 `unavailableNote`。 |
+| `availableWeekdays` | 选填 | 常驻菜**只在**这几天供应(如 `[4,5]`=只周四五),配 `unavailableNote`。⚠️ 前端灰显 + **服务端 submit-order 也会拒收非供应日下单**,两边都生效。留空=周一至五全供。 |
 
 ---
 
