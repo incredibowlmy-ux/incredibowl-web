@@ -146,7 +146,25 @@ export const weeklyMenu: MenuItem[] = [
     },
     // ─── 周二 Tue ───────────────────────────────────────────────
     {
-        // 2026-06-15 重排：原周三特餐改到周二（周二唯一特餐）。
+        // 全新菜 2026-06-21 上架（周二特餐·Hero 主推 isPrimary）。a la carte RM22.90；
+        // 餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90），与参峇臭豆同规则。
+        // 蛋白 32g（老板/碗妈 2026-06-21 提供）。
+        id: 24,
+        day: "Tue / 周二",
+        weekday: 2,
+        isPrimary: true,
+        name: "澳洲和牛饼饭",
+        nameEn: "Aussie Wagyu Beef Patty Don",
+        price: 22.90,
+        voucherTopUp: 3,
+        image: "/wagyu_beef_patty.webp",
+        tags: ["高蛋白 32g+", "澳洲和牛饼", "温泉蛋拌饭", "番茄莎莎清爽"],
+        tagsEn: ["32g+ protein", "Aussie wagyu patty", "Onsen egg over rice", "Zesty tomato salsa"],
+        desc: "澳洲和牛肉饼香煎到外焦内嫩，盖一颗半熟温泉蛋，金黄蛋液顺着肉香流进米饭；配一勺酸甜樱桃番茄莎莎解腻，丰腴却清爽。",
+        descEn: "Aussie wagyu beef patty seared crisp outside and juicy within, crowned with a soft onsen egg whose golden yolk runs into the rice — finished with a tangy cherry-tomato salsa that keeps it bright, not heavy."
+    },
+    {
+        // 2026-06-15 重排：原周三特餐改到周二。2026-06-21 起降为周二第二道（和牛升主推）。
         id: 3,
         day: "Tue / 周二",
         weekday: 2,
