@@ -41,6 +41,17 @@ export default function V4BentoLayout() {
     const [minDate, setMinDate] = useState<string>('');
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
+    const [dishStock, setDishStock] = useState<Record<string, number>>({});
+
+    // Live per-dish stock for limited dishes (e.g. petai) → menu「仅剩 X / 售罄」.
+    useEffect(() => {
+        let alive = true;
+        fetch('/api/dish-stock')
+            .then(r => (r.ok ? r.json() : {}))
+            .then(d => { if (alive && d && typeof d === 'object') setDishStock(d as Record<string, number>); })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, []);
 
     // Auth state now comes from the app-wide AuthProvider (root layout), so it
     // survives navigation between pages instead of re-initializing per page.
@@ -269,7 +280,7 @@ export default function V4BentoLayout() {
                     <PromoBanner />
                     <FaqHeroStrip />
                     <ErrorBoundary>
-                        <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} />
+                        <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
                     <ErrorBoundary>
                         <AboutBowlMama />

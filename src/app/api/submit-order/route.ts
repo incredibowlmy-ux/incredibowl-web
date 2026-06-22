@@ -278,6 +278,21 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Reserve limited-dish stock (e.g. petai) — atomic; reject if short ──
+    // Dishes without a `dishStock` doc are unlimited. Reserved at submit;
+    // released below if the voucher claim rolls the just-created orders back.
+    const { consumeDishStock, releaseDishStock } = await import('@/lib/stockUtils');
+    const stockItems = validatedBundles.map((vb: any) => ({
+      dishId: vb.dish.id,
+      qty: (vb.dishQty || 1) * (vb.quantity || 1),
+      name: vb.dish.name,
+    }));
+    try {
+      await consumeDishStock(db, stockItems);
+    } catch (err: any) {
+      return NextResponse.json({ error: err?.message || '库存不足' }, { status: 400 });
+    }
+
     // ── Create one order doc per delivery group (grouped above) ──────────
     let remainingPromo = serverPromoDiscount;
     let remainingMV = serverMealVoucherDiscount;
@@ -404,10 +419,11 @@ export async function POST(req: Request) {
           updatedAt: FieldValue.serverTimestamp(),
         });
       } catch (err: any) {
-        // Roll back the just-created orders
+        // Roll back the just-created orders + release the reserved dish stock
         for (const oid of orderIds) {
           try { await db.collection('orders').doc(oid).delete(); } catch {}
         }
+        try { await releaseDishStock(db, stockItems); } catch {}
         return NextResponse.json({ error: err?.message || '餐券抢占失败，请重试' }, { status: 400 });
       }
     }

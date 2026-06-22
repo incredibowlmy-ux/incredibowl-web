@@ -12,9 +12,11 @@ import SoldOutNotice from '@/components/home/SoldOutNotice';
 interface MenuCarouselProps {
     menuDates: Record<number, MenuDateInfo>;
     onOpenAddOn: (dish: MenuItem) => void;
+    /** dishId(string) → remaining stock for limited dishes; absent = unlimited. */
+    dishStock?: Record<string, number>;
 }
 
-export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselProps) {
+export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselProps) {
     // Reorder: [tomorrow's special, ...other orderable, ...cutoff-disabled].
     // On SSR/initial render (menuDates empty) we keep the source order so the
     // skeleton DOM matches what hydrates after the client computes menuDates.
@@ -69,7 +71,10 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                     ))
                     : sortedMenu.map((dish) => {
                         const dInfo = menuDates[dish.id];
-                        const isDisabled = !!dInfo?.disabled;
+                        const stockLeft = dishStock[String(dish.id)];
+                        const isLimited = typeof stockLeft === 'number';
+                        const isSoldOut = isLimited && stockLeft <= 0;
+                        const isDisabled = !!dInfo?.disabled || isSoldOut;
                         const isTomorrow = dish.id === tomorrowsId && !isDisabled;
                         return (
                             <div
@@ -97,6 +102,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-xl bg-[#FDFBF7] mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                                    {isLimited && (
+                                        <span className={`absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                            {isSoldOut ? '售罄' : `仅剩 ${stockLeft} 份`}
+                                        </span>
+                                    )}
                                     {dish.image.startsWith('/') ? (
                                         <Image
                                             src={dish.image}
@@ -137,7 +147,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                         {!isDisabled && <ShoppingBag size={12} />}
                                         <span className="truncate">
                                             {isDisabled
-                                                ? (dInfo?.reasonShort ?? '已截单')
+                                                ? (isSoldOut ? '售罄' : (dInfo?.reasonShort ?? '已截单'))
                                                 : isTomorrow
                                                     ? '加入明天'
                                                     : '加入预订'}
@@ -191,7 +201,10 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                     ))
                     : sortedMenu.map((dish) => {
                         const dInfo = menuDates[dish.id];
-                        const isDisabled = !!dInfo?.disabled;
+                        const stockLeft = dishStock[String(dish.id)];
+                        const isLimited = typeof stockLeft === 'number';
+                        const isSoldOut = isLimited && stockLeft <= 0;
+                        const isDisabled = !!dInfo?.disabled || isSoldOut;
                         return (
                             <div
                                 key={dish.id}
@@ -212,6 +225,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                                    {isLimited && (
+                                        <span className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[12px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                            {isSoldOut ? '售罄' : `仅剩 ${stockLeft} 份`}
+                                        </span>
+                                    )}
                                     {dish.image.startsWith('/') ? (
                                         <Image
                                             src={dish.image}
@@ -248,7 +266,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn }: MenuCarouselPro
                                     >
                                         {!isDisabled && <ShoppingBag size={18} />}
                                         <span className="truncate">
-                                            {dInfo ? dInfo.btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') : '加入明天的预订'}
+                                            {isSoldOut ? '售罄' : (dInfo ? dInfo.btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') : '加入明天的预订')}
                                         </span>
                                     </button>
                                 </div>
