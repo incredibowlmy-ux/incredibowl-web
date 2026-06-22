@@ -103,7 +103,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
                                 <div className={`aspect-square w-full rounded-xl bg-[#FDFBF7] mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
                                     {isLimited && (
-                                        <span className={`absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                        <span className={`absolute top-1.5 left-1.5 z-10 px-2 py-1 rounded-md text-[12px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
                                             {isSoldOut ? '售罄' : `仅剩 ${stockLeft} 份`}
                                         </span>
                                     )}
@@ -226,7 +226,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
                                 <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
                                     {isLimited && (
-                                        <span className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[12px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                        <span className={`absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[14px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
                                             {isSoldOut ? '售罄' : `仅剩 ${stockLeft} 份`}
                                         </span>
                                     )}
