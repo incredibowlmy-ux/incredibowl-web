@@ -100,7 +100,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-xl bg-[#FDFBF7] mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
-                                    {isLimited && (
+                                    {isLimited && stockLeft <= 10 && (
                                         <span className={`absolute top-1.5 left-1.5 z-10 px-2 py-1 rounded-md text-[12px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
                                             {isSoldOut ? 'Sold out' : `${stockLeft} left`}
                                         </span>
@@ -223,7 +223,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
-                                    {isLimited && (
+                                    {isLimited && stockLeft <= 10 && (
                                         <span className={`absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[14px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
                                             {isSoldOut ? 'Sold out' : `${stockLeft} left`}
                                         </span>
