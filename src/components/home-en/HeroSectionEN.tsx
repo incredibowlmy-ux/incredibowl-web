@@ -3,44 +3,13 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
-import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
+import { weeklyMenu, dishImageAlt } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
-
-interface NextSpecial {
-    dish: MenuItem;
-    label: string;
-    dateLine: string;
-}
-
-function computeNextSpecial(): NextSpecial {
-    const now = new Date();
-    const isPastCutoff = now.getHours() >= 6;
-
-    const next = new Date(now);
-    next.setDate(now.getDate() + (isPastCutoff ? 1 : 0));
-    if (next.getDay() === 6) next.setDate(next.getDate() + 2);
-    else if (next.getDay() === 0) next.setDate(next.getDate() + 1);
-
-    const targetWd = next.getDay();
-    const weeklySpecial = weeklyMenu.find(d => d.day !== 'Daily / 常驻' && d.id === targetWd);
-    const fallback = weeklyMenu.find(d => d.id === 14) ?? weeklyMenu[0];
-    const dish = weeklySpecial ?? fallback;
-
-    const nowMid = new Date(now).setHours(0, 0, 0, 0);
-    const nextMid = new Date(next).setHours(0, 0, 0, 0);
-    const diff = Math.round((nextMid - nowMid) / 86400000);
-
-    const wdEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const monthEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    let label = "TODAY'S SPECIAL";
-    if (diff === 1) label = "TOMORROW'S SPECIAL";
-    else if (diff === 2) label = "DAY AFTER SPECIAL";
-
-    const dateLine = `${monthEn[next.getMonth()]} ${next.getDate()} · ${wdEn[targetWd]}`;
-
-    return { dish, label, dateLine };
-}
+// Single source of truth for "next special" (MYT-anchored, skips weekends,
+// excludes retired dishes, honours isPrimary). The EN Hero previously kept its
+// own copy that treated `id` as the weekday — which surfaced the retired
+// 酱油鸡 (id 1) every Monday. Share the lib version so the two never drift again.
+import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
 
 export default function HeroSectionEN() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
@@ -185,14 +154,14 @@ export default function HeroSectionEN() {
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A2D23] text-white rounded-full shadow-md">
                                 <CalendarCheck size={13} strokeWidth={3} />
                                 <span className="text-xs font-black tracking-wider uppercase">
-                                    {nextSpecial?.label ?? "TOMORROW'S SPECIAL"}
+                                    {nextSpecial?.labelEn ?? "TOMORROW'S SPECIAL"}
                                 </span>
                             </div>
                         </div>
                         {nextSpecial && (
                             <div className="absolute bottom-3 right-3 z-10">
                                 <span className="inline-block px-2.5 py-1 bg-white/90 backdrop-blur-sm text-[#1A2D23] rounded-full text-xs font-black tracking-wide shadow-md">
-                                    {nextSpecial.dateLine}
+                                    {nextSpecial.dateLineEn}
                                 </span>
                             </div>
                         )}
@@ -200,7 +169,7 @@ export default function HeroSectionEN() {
 
                     <div className="flex-1 p-6 md:p-7 flex flex-col">
                         <p className="text-xs font-black text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
-                            {nextSpecial?.label.replace("'S SPECIAL", "").toLowerCase().replace(/^./, c => c.toUpperCase()) ?? "Tomorrow"} pick
+                            {nextSpecial?.labelEn.replace("'S SPECIAL", "").replace(" SPECIAL", "").toLowerCase().replace(/^./, c => c.toUpperCase()) ?? "Tomorrow"} pick
                         </p>
                         <h3 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">
                             {nextSpecial?.dish.nameEn ?? "BowlMama's Pick"}

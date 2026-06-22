@@ -5,7 +5,10 @@ export interface NextSpecial {
     dish: MenuItem;
     labelZh: string;
     labelEn: string;
+    /** Mixed zh/en date line for the ZH Hero, e.g. "6月22日 · 周一 / MON". */
     dateLine: string;
+    /** English-only date line for the EN Hero, e.g. "Jun 22 · MON". */
+    dateLineEn: string;
 }
 
 /**
@@ -68,6 +71,7 @@ export function computeNextSpecial(): NextSpecial {
 
     const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     const wdEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const monthEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     let labelZh = '今日特餐';
     let labelEn = "TODAY'S SPECIAL";
@@ -77,6 +81,7 @@ export function computeNextSpecial(): NextSpecial {
     else if (diff > 2) { labelZh = `${wdCn[targetWd]}特餐`; labelEn = `${wdEn[targetWd]} SPECIAL`; }
 
     const dateLine = `${next.getUTCMonth() + 1}月${next.getUTCDate()}日 · ${wdCn[targetWd]} / ${wdEn[targetWd]}`;
+    const dateLineEn = `${monthEn[next.getUTCMonth()]} ${next.getUTCDate()} · ${wdEn[targetWd]}`;
 
-    return { dish, labelZh, labelEn, dateLine };
+    return { dish, labelZh, labelEn, dateLine, dateLineEn };
 }

@@ -23,6 +23,12 @@ export function formatMD(d: Date): string {
     return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
+const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** English month-day, e.g. "Jun 22". Mirror of formatMD for the EN locale. */
+export function formatMDEn(d: Date): string {
+    return `${MONTH_EN[d.getMonth()]} ${d.getDate()}`;
+}
+
 export function formatCreatedAt(order: AdminOrder): string {
     if (!order.createdAt) return '—';
     // Firebase Admin SDK serializes as _seconds; client SDK uses seconds
@@ -32,7 +38,11 @@ export function formatCreatedAt(order: AdminOrder): string {
     return ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number, MenuDateInfo>; minDate: string } {
+export function computeMenuDates(
+    dishes: MenuItem[],
+    locale: 'zh' | 'en' = 'zh',
+): { menuDates: Record<number, MenuDateInfo>; minDate: string } {
+    const en = locale === 'en';
     const now = new Date();
     const isPastCutoff = now.getHours() > CUTOFF_HOUR || (now.getHours() === CUTOFF_HOUR && now.getMinutes() >= CUTOFF_MINUTE);
 
@@ -60,6 +70,13 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
     else if (diffDays === 2) relativeDay = '后天';
     else if (diffDays > 2) relativeDay = formatMD(nextAvail);
 
+    // English "add to … order" phrasing for the daily-dish CTA on the EN locale.
+    const dailyOrderEn =
+        diffDays === 0 ? "Add to today's order"
+            : diffDays === 1 ? "Add to tomorrow's order"
+                : diffDays === 2 ? 'Add to day-after order'
+                    : `Add to ${formatMDEn(nextAvail)} order`;
+
     const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const menuDates: Record<number, MenuDateInfo> = {};
@@ -68,11 +85,11 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         // Retired dishes: shown on the menu but never orderable (greyed card + note).
         if (dish.retired) {
             menuDates[dish.id] = {
-                topTag: '暂别 · Paused',
-                btnText: dish.unavailableNote ?? '暂时下架',
+                topTag: en ? 'Paused' : '暂别 · Paused',
+                btnText: en ? (dish.unavailableNoteEn ?? 'Paused — back soon') : (dish.unavailableNote ?? '暂时下架'),
                 disabled: true,
                 actualDate: '',
-                reasonShort: '暂别',
+                reasonShort: en ? 'Paused' : '暂别',
             };
             return;
         }
@@ -84,12 +101,16 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
             // Also unavailable on a one-off blocked date (boss put on hold).
             const allowList = dish.availableWeekdays;
             const topTag = allowList && allowList.length
-                ? `${allowList.map(d => wdCn[d]).join('、')} · ${allowList.map(d => wdEn[d]).join(' & ')}`
-                : '周一至五 · Mon–Fri';
+                ? (en
+                    ? allowList.map(d => wdEn[d]).join(' & ')
+                    : `${allowList.map(d => wdCn[d]).join('、')} · ${allowList.map(d => wdEn[d]).join(' & ')}`)
+                : (en ? 'Mon–Fri' : '周一至五 · Mon–Fri');
             const dayAllowed = !allowList || allowList.length === 0 || allowList.includes(nextAvail.getDay());
             const blockedToday = isDishBlockedOn(dish.id, nextAvailStr);
             if (!dayAllowed || blockedToday) {
-                const note = !dayAllowed ? (dish.unavailableNote ?? '当日不供应') : '当日暂停';
+                const note = !dayAllowed
+                    ? (en ? (dish.unavailableNoteEn ?? 'Not available') : (dish.unavailableNote ?? '当日不供应'))
+                    : (en ? 'Paused today' : '当日暂停');
                 menuDates[dish.id] = {
                     topTag,
                     btnText: note,
@@ -100,7 +121,7 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
             } else {
                 menuDates[dish.id] = {
                     topTag,
-                    btnText: `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
+                    btnText: en ? dailyOrderEn : `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                     disabled: false,
                     actualDate: nextAvailStr,
                 };
@@ -129,13 +150,20 @@ export function computeMenuDates(dishes: MenuItem[]): { menuDates: Record<number
         if (now >= cutoffForTarget) {
             targetDate.setDate(targetDate.getDate() + 7);
             isDisabled = true;
-            btnText = `今日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
+            btnText = en
+                ? `Closed today · order ${formatMDEn(targetDate)} (${wdEn[targetWd]})`
+                : `今日已截单 · 可预订 ${formatMD(targetDate)} (${wdCn[targetWd]})`;
         } else {
-            const prefix = diffDays === 0 && targetDate.getDate() === now.getDate() ? '今日' : '';
-            btnText = `预订 ${prefix}${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
+            const isToday = diffDays === 0 && targetDate.getDate() === now.getDate();
+            btnText = en
+                ? `Order ${isToday ? 'today ' : ''}${formatMDEn(targetDate)} (${wdEn[targetWd]})`
+                : `预订 ${isToday ? '今日' : ''}${formatMD(targetDate)} (${wdCn[targetWd]}) · RM ${dish.price.toFixed(2)}`;
         }
 
-        menuDates[dish.id] = { topTag: `${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`, btnText, disabled: isDisabled, actualDate: formatYMD(targetDate) };
+        const topTag = en
+            ? `${formatMDEn(targetDate)} · ${wdEn[targetWd]}`
+            : `${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`;
+        menuDates[dish.id] = { topTag, btnText, disabled: isDisabled, actualDate: formatYMD(targetDate) };
     });
 
     return { menuDates, minDate: nextAvailStr };

@@ -12,46 +12,11 @@ import SoldOutNotice from '@/components/home/SoldOutNotice';
 interface MenuCarouselENProps {
     menuDates: Record<number, MenuDateInfo>;
     onOpenAddOn: (dish: MenuItem) => void;
+    /** dishId(string) → remaining stock for limited dishes; absent = unlimited. */
+    dishStock?: Record<string, number>;
 }
 
-/** Translate the Chinese topTag (e.g., "今日特餐", "明日特餐", "周一", "常驻") into English. */
-function translateTopTag(tag: string): string {
-    const map: Record<string, string> = {
-        '今日特餐': "Today's special",
-        '明日特餐': "Tomorrow's special",
-        '后日特餐': 'Day-after special',
-        '已截单': 'Closed',
-        '暂别 · Paused': 'Paused',        // retired dish — desktop full topTag
-        '暂别': 'Paused',                 // retired dish — mobile split
-        '周一至五 · Mon–Fri': 'Mon–Fri', // desktop passes the full topTag
-        '周一至五': 'Mon–Fri',           // mobile passes the part before ' · '
-        '周一': 'Mon',
-        '周二': 'Tue',
-        '周三': 'Wed',
-        '周四': 'Thu',
-        '周五': 'Fri',
-        '周六': 'Sat',
-        '周日': 'Sun',
-    };
-    return map[tag] ?? tag;
-}
-
-/** Translate the order button text. */
-function translateBtnText(btnText: string, dish: MenuItem): string {
-    const cleaned = btnText.replace(` · RM ${dish.price.toFixed(2)}`, '');
-    const map: Record<string, string> = {
-        '加入今日预订': "Add to today's order",
-        '加入明天的预订': "Add to tomorrow's order",
-        '加入后日预订': 'Add to day-after order',
-        '已截单': 'Closed for orders',
-        '鸡汤暂别，敬请期待回归': 'Paused — back soon',
-        '周二不供应': 'Not available on Tue',
-        '当日暂停': 'Paused today',
-    };
-    return map[cleaned] ?? cleaned;
-}
-
-export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselENProps) {
+export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselENProps) {
     // Reorder: [tomorrow's special, ...other orderable, ...cutoff-disabled].
     const sortedMenu = useMemo(() => {
         if (!Object.keys(menuDates).length) return weeklyMenu;
@@ -104,7 +69,10 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                     ))
                     : sortedMenu.map((dish) => {
                         const dInfo = menuDates[dish.id];
-                        const isDisabled = !!dInfo?.disabled;
+                        const stockLeft = dishStock[String(dish.id)];
+                        const isLimited = typeof stockLeft === 'number';
+                        const isSoldOut = isLimited && stockLeft <= 0;
+                        const isDisabled = !!dInfo?.disabled || isSoldOut;
                         const isTomorrow = dish.id === tomorrowsId && !isDisabled;
                         return (
                             <div
@@ -124,7 +92,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                                             ? 'bg-[#FF6B35]/15 text-[#FF6B35]'
                                             : 'bg-[#FDFBF7] text-gray-500'
                                     }`}>
-                                        {isTomorrow ? '✨ Tomorrow' : (dInfo ? translateTopTag(dInfo.topTag.split(' · ')[0]) : dish.day)}
+                                        {isTomorrow ? '✨ Tomorrow' : (dInfo ? dInfo.topTag.split(' · ')[0] : dish.day)}
                                     </div>
                                     <p className="font-extrabold text-[13px] leading-none text-[#FF6B35] shrink-0">
                                         RM{dish.price.toFixed(2)}
@@ -132,6 +100,11 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-xl bg-[#FDFBF7] mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                                    {isLimited && (
+                                        <span className={`absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                            {isSoldOut ? 'Sold out' : `${stockLeft} left`}
+                                        </span>
+                                    )}
                                     {dish.image.startsWith('/') ? (
                                         <Image
                                             src={dish.image}
@@ -172,7 +145,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                                         {!isDisabled && <ShoppingBag size={12} />}
                                         <span className="truncate">
                                             {isDisabled
-                                                ? 'Closed'
+                                                ? (isSoldOut ? 'Sold out' : 'Closed')
                                                 : isTomorrow
                                                     ? 'Order tmrw'
                                                     : 'Add to order'}
@@ -226,7 +199,10 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                     ))
                     : sortedMenu.map((dish) => {
                         const dInfo = menuDates[dish.id];
-                        const isDisabled = !!dInfo?.disabled;
+                        const stockLeft = dishStock[String(dish.id)];
+                        const isLimited = typeof stockLeft === 'number';
+                        const isSoldOut = isLimited && stockLeft <= 0;
+                        const isDisabled = !!dInfo?.disabled || isSoldOut;
                         return (
                             <div
                                 key={dish.id}
@@ -239,7 +215,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                             >
                                 <div className="flex justify-between items-start mb-4">
                                     <div className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FDFBF7] text-gray-500">
-                                        {dInfo ? translateTopTag(dInfo.topTag) : dish.day}
+                                        {dInfo ? dInfo.topTag : dish.day}
                                     </div>
                                     <p className="font-extrabold text-[20px] leading-none text-[#FF6B35]">
                                         RM {dish.price.toFixed(2)}
@@ -247,6 +223,11 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                                 </div>
 
                                 <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                                    {isLimited && (
+                                        <span className={`absolute top-2 left-2 z-10 px-2 py-0.5 rounded-md text-[12px] font-bold ${isSoldOut ? 'bg-gray-700/85 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                                            {isSoldOut ? 'Sold out' : `${stockLeft} left`}
+                                        </span>
+                                    )}
                                     {dish.image.startsWith('/') ? (
                                         <Image
                                             src={dish.image}
@@ -283,7 +264,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn }: MenuCarouselE
                                     >
                                         {!isDisabled && <ShoppingBag size={18} />}
                                         <span className="truncate">
-                                            {dInfo ? translateBtnText(dInfo.btnText, dish) : "Add to tomorrow's order"}
+                                            {isSoldOut ? 'Sold out' : (dInfo ? dInfo.btnText : "Add to tomorrow's order")}
                                         </span>
                                     </button>
                                 </div>

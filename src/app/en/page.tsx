@@ -44,6 +44,17 @@ export default function EnglishHome() {
     const [minDate, setMinDate] = useState<string>('');
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
+    const [dishStock, setDishStock] = useState<Record<string, number>>({});
+
+    // Live per-dish stock for limited dishes (e.g. petai) → menu "X left / Sold out".
+    useEffect(() => {
+        let alive = true;
+        fetch('/api/dish-stock')
+            .then(r => (r.ok ? r.json() : {}))
+            .then(d => { if (alive && d && typeof d === 'object') setDishStock(d as Record<string, number>); })
+            .catch(() => {});
+        return () => { alive = false; };
+    }, []);
 
     // Override <html lang> to en-MY for screen readers (root layout sets zh-MY by default)
     useEffect(() => {
@@ -172,7 +183,7 @@ export default function EnglishHome() {
     }, []);
 
     useEffect(() => {
-        const { menuDates: dates, minDate: min } = computeMenuDates(weeklyMenu);
+        const { menuDates: dates, minDate: min } = computeMenuDates(weeklyMenu, 'en');
         setMenuDates(dates);
         setMinDate(min);
     }, []);
@@ -265,7 +276,7 @@ export default function EnglishHome() {
                     <PromoBannerEN />
                     <FaqHeroStripEN />
                     <ErrorBoundary>
-                        <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} />
+                        <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
                     <ErrorBoundary>
                         <AboutBowlMamaEN />
