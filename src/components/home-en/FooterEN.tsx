@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
 
+const COVERAGE_AREAS = ['Old Klang Road', 'OUG', 'Kuchai Lama', 'Happy Garden', 'Taman Desa', 'Bukit Jalil'];
+
 export default function FooterEN() {
     return (
         <footer className="pt-20 pb-32 md:pb-36 bg-white border-t border-[#E3EADA]">
@@ -68,9 +70,14 @@ export default function FooterEN() {
                                 <p className="text-xs text-[#1A2D23]/55 uppercase tracking-[0.2em] font-bold mb-2 flex justify-center items-center gap-1.5">
                                     <MapPin size={12} className="text-[#FF6B35]" /> Serving our neighbours around
                                 </p>
-                                <p className="text-[13px] text-[#1A2D23]/65 font-semibold tracking-[0.1em] md:tracking-[0.15em] leading-relaxed">
-                                    Pearl Point · Millerz Square · OUG · Old Klang Road
-                                </p>
+                                <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
+                                    {COVERAGE_AREAS.map((area) => (
+                                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDFBF7] border border-[#E3EADA] text-[12px] font-semibold text-[#1A2D23]/75">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" />
+                                            {area}
+                                        </span>
+                                    ))}
+                                </div>
                                 <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[280px] space-y-1">
                                     <li className="flex justify-between gap-3">
                                         <span className="font-semibold text-[#1A2D23]/80">Within 2.5km</span>
@@ -129,11 +136,13 @@ export default function FooterEN() {
                             <MapPin size={16} className="text-[#FF6B35]" />
                             Coverage area
                         </p>
-                        <div className="space-y-2 text-[14px] text-[#1A2D23]/75 font-semibold leading-relaxed">
-                            <p>Pearl Point</p>
-                            <p>Millerz Square</p>
-                            <p>OUG</p>
-                            <p>Old Klang Road</p>
+                        <div className="flex flex-wrap gap-2">
+                            {COVERAGE_AREAS.map((area) => (
+                                <span key={area} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FDFBF7] border border-[#E3EADA] text-[13px] font-semibold text-[#1A2D23]/75">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" />
+                                    {area}
+                                </span>
+                            ))}
                         </div>
                         <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[280px]">
                             <li className="flex justify-between gap-3">
