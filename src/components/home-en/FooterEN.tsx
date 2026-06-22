@@ -74,15 +74,15 @@ export default function FooterEN() {
                                 <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[280px] space-y-1">
                                     <li className="flex justify-between gap-3">
                                         <span className="font-semibold text-[#1A2D23]/80">Within 2.5km</span>
-                                        <span><span className="font-bold">RM 3</span> · free over 20</span>
+                                        <span><span className="font-bold">RM 3</span> · free over RM 20</span>
                                     </li>
                                     <li className="flex justify-between gap-3">
                                         <span className="font-semibold text-[#1A2D23]/80">2.5–5km</span>
-                                        <span><span className="font-bold">RM 5</span> · free over 30</span>
+                                        <span><span className="font-bold">RM 5</span> · free over RM 30</span>
                                     </li>
                                     <li className="flex justify-between gap-3">
                                         <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                        <span><span className="font-bold">RM 12</span> · 45+ → free</span>
+                                        <span><span className="font-bold">RM 12</span> · RM 45+ → free</span>
                                     </li>
                                     <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">Beyond 7.5km — not delivered</li>
                                 </ul>
@@ -138,15 +138,15 @@ export default function FooterEN() {
                         <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[280px]">
                             <li className="flex justify-between gap-3">
                                 <span className="font-semibold text-[#1A2D23]/80">Within 2.5km</span>
-                                <span><span className="font-bold">RM 3</span> · free over 20</span>
+                                <span><span className="font-bold">RM 3</span> · free over RM 20</span>
                             </li>
                             <li className="flex justify-between gap-3">
                                 <span className="font-semibold text-[#1A2D23]/80">2.5–5km</span>
-                                <span><span className="font-bold">RM 5</span> · free over 30</span>
+                                <span><span className="font-bold">RM 5</span> · free over RM 30</span>
                             </li>
                             <li className="flex justify-between gap-3">
                                 <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                <span><span className="font-bold">RM 12</span> · 45+ → free</span>
+                                <span><span className="font-bold">RM 12</span> · RM 45+ → free</span>
                             </li>
                             <li className="text-[11px] text-[#1A2D23]/40 italic pt-1">Beyond 7.5km — not delivered</li>
                         </ul>

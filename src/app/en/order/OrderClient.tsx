@@ -188,7 +188,7 @@ export default function OrderClient() {
                         6 AM market run · no MSG
                     </p>
                     <p className="text-base lg:text-lg text-[#1A2D23]/60 font-bold mb-7">
-                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Within 2.5km RM 3 (free over 20) / 2.5–5km free over 30 · Fresh-cooked
+                        <span className="text-[#1A2D23] font-black">From RM 16.90</span> · Within 2.5km RM 3 (free over RM 20) / 2.5–5km free over RM 30 · Fresh-cooked
                     </p>
 
                     <a
