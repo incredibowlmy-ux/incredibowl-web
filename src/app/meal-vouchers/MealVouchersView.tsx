@@ -262,16 +262,42 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
         }
     };
 
+    // Static, always-server-rendered SEO content. The purchase widget below is
+    // auth-gated, so without this the prerendered HTML (and any non-JS crawler)
+    // would see only a spinner. Rendered in the !authChecked and !currentUser
+    // states — exactly the states a bot lands in — so /meal-vouchers can rank.
+    const SeoIntro = () => (
+        <section className="max-w-2xl mx-auto px-6 pt-10 pb-2">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#FF6B35] flex items-center justify-center text-white shrink-0">
+                    <Ticket size={24} />
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-[#1A2D23] leading-tight">{t.seoHeading}</h1>
+            </div>
+            <p className="text-[15px] md:text-base text-[#1A2D23]/75 leading-relaxed mb-4">{t.seoLead}</p>
+            <ul className="space-y-2 mb-4">
+                {t.seoPoints.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-[14px] md:text-[15px] text-[#1A2D23]/80">
+                        <CheckCircle size={18} className="text-[#FF6B35] shrink-0 mt-0.5" />
+                        <span>{p}</span>
+                    </li>
+                ))}
+            </ul>
+            <p className="text-[14px] text-[#1A2D23]/70 leading-relaxed">{t.seoHow}</p>
+        </section>
+    );
+
     if (authChecked && !currentUser) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
-                <div className="text-center space-y-4 max-w-sm">
-                    <div className="text-6xl">🎟️</div>
-                    <h1 className="text-2xl font-black text-[#1A2D23]">{t.pageTitle}</h1>
-                    <p className="text-gray-500 text-sm">{t.loginRequired}</p>
-                    <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
-                        <ArrowLeft size={16} /> {t.loginReturnHome}
-                    </Link>
+            <div className="min-h-screen bg-[#FDFBF7] py-10">
+                <SeoIntro />
+                <div className="max-w-2xl mx-auto px-6 mt-4">
+                    <div className="bg-white rounded-2xl border border-[#E3EADA] p-6 text-center space-y-4">
+                        <p className="text-gray-500 text-sm">{t.loginRequired}</p>
+                        <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                            <ArrowLeft size={16} /> {t.loginReturnHome}
+                        </Link>
+                    </div>
                 </div>
             </div>
         );
@@ -279,8 +305,11 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
     if (!authChecked) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full"></div>
+            <div className="min-h-screen bg-[#FDFBF7] py-10">
+                <SeoIntro />
+                <div className="flex items-center justify-center py-10">
+                    <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full"></div>
+                </div>
             </div>
         );
     }

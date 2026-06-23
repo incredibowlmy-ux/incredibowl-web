@@ -3,7 +3,11 @@ module.exports = {
   siteUrl: 'https://www.incredibowl.my',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
-  exclude: ['/admin*', '/checkout*', '/member*', '/account*', '/login*', '/icon.png', '/dashboard-*'],
+  // /member* covers the ZH /member but NOT /en/member (different prefix), so it
+  // is listed explicitly. Member pages are noindex,follow account pages — keep
+  // them out of the sitemap. /meal-vouchers + legal pages stay (self-canonical,
+  // indexable).
+  exclude: ['/admin*', '/checkout*', '/member*', '/en/member*', '/account*', '/login*', '/icon.png', '/dashboard-*'],
   robotsTxtOptions: {
     policies: [
       // Default policy for all crawlers (Google, Bing, DuckDuckGo, etc.)

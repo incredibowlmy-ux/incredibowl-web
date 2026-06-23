@@ -20,6 +20,14 @@ interface MealVouchersDictShape {
     loginRequired: string;
     loginReturnHome: string;
 
+    // SEO intro — rendered in the static-prerender / logged-out states so
+    // crawlers & AI engines index real content (the purchase widget itself is
+    // auth-gated and otherwise invisible to bots).
+    seoHeading: string;
+    seoLead: string;
+    seoPoints: string[];
+    seoHow: string;
+
     // Header
     backHome: string;
     subtitle: string;
@@ -116,6 +124,18 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         loginRequired: '请先在首页登录后再购买餐券',
         loginReturnHome: '返回首页登录',
 
+        seoHeading: 'Incredibowl 餐券预付包：一次买，慢慢吃',
+        seoLead:
+            '餐券预付包让你一次预付、在有效期内随时兑换。1 张餐券 = 1 道主菜（菜单上任意一道，不含加料）—— 不加味精的家常菜，每天清晨从巴刹新鲜采购，从 Pearl Point 出发配送 Old Klang Road / OUG 一带。',
+        seoPoints: [
+            '买越多省越多：5 张 RM 92.50、10 张 RM 180（省 RM 5）、20 张 RM 350（每张低至 RM 17.50，最高省 RM 20）。',
+            '不限菜品：任意主菜都能兑，菜单每周轮换 + 常驻菜。',
+            '有效期清楚：5 / 10 张装 30 天，20 张装 60 天。',
+            '兑券简单：下单时自动抵扣，先到期的先用（FIFO）。',
+        ],
+        seoHow:
+            '怎么用：在首页登录 → 选择张数 → DuitNow QR 或 FPX 付款 → 餐券存入你的账户，下单时自动可用。',
+
         backHome: '返回首页',
         subtitle: 'Meal Voucher Bundles · 一次买，慢慢吃',
         badgeAnyDishLabel: '放心买',
@@ -202,6 +222,17 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     en: {
         pageTitle: 'Meal Voucher Bundles',
         loginRequired: 'Please sign in from the homepage first to buy vouchers.',
+        seoHeading: 'Incredibowl Meal Voucher Bundles: Buy Once, Eat Anytime',
+        seoLead:
+            'Meal voucher bundles let you pre-pay once and redeem anytime within the validity period. 1 voucher = 1 main dish (any dish on the menu, add-ons not included) — MSG-free home-cooked food, freshly sourced from the wet market every morning, delivered from Pearl Point across Old Klang Road / OUG.',
+        seoPoints: [
+            'Save more by buying more: 5 for RM 92.50, 10 for RM 180 (save RM 5), 20 for RM 350 (as low as RM 17.50/voucher, up to RM 20 off).',
+            'Any main dish — redeem on any dish; the menu rotates weekly alongside daily staples.',
+            'Clear validity — 30 days for the 5 & 10 packs, 60 days for the 20 pack.',
+            'Easy to redeem — applied automatically at checkout, oldest voucher used first (FIFO).',
+        ],
+        seoHow:
+            'How it works: sign in from the homepage, pick a bundle, pay by DuitNow QR or FPX, and the vouchers are credited to your account — ready to use at checkout.',
         loginReturnHome: 'Back to homepage',
 
         backHome: 'Back to home',
