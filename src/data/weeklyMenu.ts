@@ -282,3 +282,15 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A bowl of clear scallion broth — washing off a week's tiredness, ready for a clean weekend."
     }
 ];
+
+/**
+ * The dish shown in the Hero "Tomorrow's Special" card BEFORE the date-driven
+ * `computeNextSpecial()` runs client-side. The Hero special is intentionally
+ * computed in an effect (it changes by date and would mismatch on hydration if
+ * baked into the static build), so the prerendered HTML needs a real fallback —
+ * otherwise crawlers/AI read the placeholder "招牌好菜 / RM 0.00" instead of a
+ * real dish name + price. Prefers the BowlMama signature (当归蒸鸡); falls back
+ * to the first active dish if it is ever retired.
+ */
+export const signatureDish: MenuItem =
+    weeklyMenu.find(d => d.id === 2 && !d.retired) ?? weeklyMenu.find(d => !d.retired)!;

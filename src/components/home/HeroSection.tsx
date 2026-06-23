@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
-import { weeklyMenu, dishImageAlt } from '@/data/weeklyMenu';
+import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
 
@@ -30,7 +30,9 @@ export default function HeroSection() {
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
 
     const discount = getPromoDiscount();
-    const finalPrice = nextSpecial ? nextSpecial.dish.price - discount : 0;
+    // Fall back to the signature dish price (not 0) so the prerendered HTML shows
+    // a real "RM 18.50" instead of "RM 0.00" to crawlers/AI before hydration.
+    const finalPrice = (nextSpecial?.dish.price ?? signatureDish.price) - discount;
 
     return (
         <>
@@ -189,10 +191,10 @@ export default function HeroSection() {
                             {nextSpecial?.labelZh ?? '明日特餐'}
                         </p>
                         <h3 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">
-                            {nextSpecial?.dish.name ?? '招牌好菜'}
+                            {nextSpecial?.dish.name ?? signatureDish.name}
                         </h3>
                         <p className="text-xs md:text-sm font-semibold text-[#1A2D23]/55 italic mb-4">
-                            {nextSpecial?.dish.nameEn ?? "BowlMama's Pick"}
+                            {nextSpecial?.dish.nameEn ?? signatureDish.nameEn}
                         </p>
 
                         {/* Tags */}

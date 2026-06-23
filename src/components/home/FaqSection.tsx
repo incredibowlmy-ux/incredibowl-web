@@ -6,11 +6,15 @@ import { HelpCircle, ChevronDown } from 'lucide-react';
 interface FaqItem {
     q: string;
     a: React.ReactNode;
+    /** Plain-text answer for the FAQPage JSON-LD. MUST mirror `a` — Google requires
+     *  the structured answer to match the answer visible on the page. */
+    aText: string;
 }
 
 const FAQS: FaqItem[] = [
     {
         q: '你们有店面吗？我可以过来吃吗？',
+        aText: '没有店面哦 —— 碗妈是家庭式私厨，只接外送。我们从 Pearl Point 隔壁的 Pearl Suria Residence 家里，煮好之后送到你家。',
         a: (
             <>
                 没有店面哦 —— 碗妈是<span className="font-bold text-[#1A2D23]">家庭式私厨，只接外送</span>。<br />
@@ -20,6 +24,7 @@ const FAQS: FaqItem[] = [
     },
     {
         q: '你们煮饭的地方在哪？',
+        aText: '在 Pearl Point 隔壁的 Pearl Suria Residence 家里厨房。不接受 walk-in，也不开放参观（家里地方小，不方便招待）。',
         a: (
             <>
                 在 Pearl Point 隔壁的 <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span> 家里厨房。<br />
@@ -29,6 +34,7 @@ const FAQS: FaqItem[] = [
     },
     {
         q: '我家附近能送吗？',
+        aText: '主要送 Pearl Point / Millerz / OUG / Old Klang Road / Bangsar 一带：2.5km 内 RM 3（满 RM 20 免运）；2.5–5km RM 5（满 RM 30 免运）；5–7.5km RM 12（满 RM 45 免运）；7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。不确定家里在不在范围内？注册账号 + 填写地址，系统会自动核对位置，告诉你能不能送、运费多少。',
         a: (
             <>
                 主要送 <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span> 一带：
@@ -47,6 +53,7 @@ const FAQS: FaqItem[] = [
     },
     {
         q: '一定要提前下单吗？',
+        aText: '是的 —— 每天早上 06:00 截单（06:00 前下单当日配送）。碗妈需要提前去巴刹采购、提前煮，不会有现成的放在冰箱里。想吃明天的，今天晚上就要下单。',
         a: (
             <>
                 是的 —— 每天早上 <span className="font-bold text-[#FF6B35]">06:00 截单</span>（06:00 前下单当日配送）。<br />
@@ -56,6 +63,19 @@ const FAQS: FaqItem[] = [
         ),
     },
 ];
+
+// FAQPage structured data, generated from the same FAQS array that renders the
+// visible Q&A — so the schema can never drift from what's on the page. Lets
+// Google show FAQ rich results and gives AI answer engines clean Q&A pairs.
+const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map(item => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.aText },
+    })),
+};
 
 export default function FaqSection() {
     // First Q open by default; user can toggle. Tracks open indexes.
@@ -76,6 +96,10 @@ export default function FaqSection() {
             aria-labelledby="faq-heading"
             className="lg:col-span-12 mt-4 scroll-mt-32"
         >
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
             <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
                 {/* Header */}
                 <div className="bg-[#E3EADA] px-6 md:px-10 lg:px-14 py-6 lg:py-8 flex items-center gap-3">
