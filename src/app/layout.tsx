@@ -152,10 +152,10 @@ export default function RootLayout({
                   servesCuisine: ["Chinese", "Home-cooked", "Malaysian Chinese"],
                   address: {
                     "@type": "PostalAddress",
-                    streetAddress: "Pearl Point, Old Klang Road",
+                    streetAddress: "Pearl Suria Residence, Jalan Klang Lama, Taman United",
                     addressLocality: "Kuala Lumpur",
                     addressRegion: "Wilayah Persekutuan Kuala Lumpur",
-                    postalCode: "58000",
+                    postalCode: "58200",
                     addressCountry: "MY"
                   },
                   geo: {
@@ -167,7 +167,7 @@ export default function RootLayout({
                     {
                       "@type": "OpeningHoursSpecification",
                       dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-                      opens: "11:00",
+                      opens: "08:00",
                       closes: "20:00"
                     }
                   ],
@@ -220,6 +220,7 @@ export default function RootLayout({
                     "https://wa.me/60103370197",
                     "https://www.facebook.com/profile.php?id=61587218759550",
                     "https://www.instagram.com/incredibowl_my/",
+                    "https://www.tiktok.com/@incredibowl.my",
                     "https://www.xiaohongshu.com/user/profile/69793d3f000000002603b93a"
                   ]
                   // aggregateRating removed: Schema.org guidelines require visible
