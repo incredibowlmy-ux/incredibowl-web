@@ -123,19 +123,19 @@ export const weeklyMenu: MenuItem[] = [
     },
     // ─── 周一 Mon ───────────────────────────────────────────────
     {
-        // 2026-06-15 重排：原「常驻」鸡扒饭降为周一特餐，并作周一 Hero 主打。
-        id: 14,
+        // 2026-06-27 酱油鸡回归，重新作周一特餐 · Hero 主打（原周一鸡扒饭 id14 移到周四）。
+        id: 1,
         day: "Mon / 周一",
         weekday: 1,
         isPrimary: true,
-        name: "香煎金黄鸡扒饭",
-        nameEn: "Pan-Fried Golden Chicken Chop Rice",
+        name: "阿嫲古早味酱油鸡全腿",
+        nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
-        image: "/chicken_chop.webp",
-        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
-        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
-        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
-        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
+        image: "/soy_sauce_chicken_leg.webp",
+        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
+        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
+        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
+        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
         // 2026-06-15 重排：原周四特餐改到周一（周一第二道）。
@@ -216,6 +216,21 @@ export const weeklyMenu: MenuItem[] = [
     },
     // ─── 周四 Thu ───────────────────────────────────────────────
     {
+        // 2026-06-27 从周一移到周四，并作周四 Hero 主打（豆酱花肉退为周四第二道）。
+        id: 14,
+        day: "Thu / 周四",
+        weekday: 4,
+        isPrimary: true,
+        name: "香煎金黄鸡扒饭",
+        nameEn: "Pan-Fried Golden Chicken Chop Rice",
+        price: 18.50,
+        image: "/chicken_chop.webp",
+        tags: ["高蛋白 43g+", "焦香四溢", "营养均衡", "外脆里嫩爆汁款"],
+        tagsEn: ["43g+ protein", "Aromatic sear", "Balanced", "Crisp outside, juicy inside"],
+        desc: "小时候最盼这口焦香，不用花哨调料，盐和胡椒足矣。",
+        descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
+    },
+    {
         // 全新菜 2026-06-15 上架（周四特餐）。a la carte RM19.90 = 标准餐券面值，无需补差价。
         // ⚠️ 图片待老板提供实拍图后替换：暂用 emoji 占位（各 next/image 消费处已加 startsWith('/') 守卫）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
@@ -248,23 +263,6 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
     },
     // ─── 已退役（灰显·可见不可点）Retired ────────────────────────
-    {
-        // 退役 2026-06-14：周一酱油鸡暂别。保留在菜单上「可见不可点」，附说明。
-        // 退役菜去掉 weekday；computeNextSpecial 无周内特餐时回退到 id 14（鸡扒饭）。
-        id: 1,
-        day: "Mon / 周一",
-        retired: true,
-        unavailableNote: "酱油鸡暂别，敬请期待回归",
-        unavailableNoteEn: "Soy sauce chicken paused — back soon",
-        name: "阿嫲古早味酱油鸡全腿",
-        nameEn: "Soy Sauce Chicken Whole Leg",
-        price: 18.50,
-        image: "/soy_sauce_chicken_leg.webp",
-        tags: ["高蛋白 48g+", "广式经典", "酱香入骨", "皮亮肉嫩", "一口酱香魂归位"],
-        tagsEn: ["48g+ protein", "Cantonese classic", "Soy-infused", "Glossy & tender", "Soy-glazed comfort"],
-        desc: "广式经典做法，酱油的咸香慢慢渗进每一丝鸡肉，皮亮肉嫩。",
-        descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
-    },
     {
         // 退役 2026-06-08：周五位让给三文鱼。保留在菜单上「可见不可点」，附说明。
         id: 5,
