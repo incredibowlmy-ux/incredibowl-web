@@ -131,7 +131,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         >
                             <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
                             <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
-                            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#FF6B35] text-white text-[10px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-[#FDFBF7]">
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#FF6B35] text-white text-[11px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-[#FDFBF7]">
                                 {cartCount}
                             </span>
                         </button>

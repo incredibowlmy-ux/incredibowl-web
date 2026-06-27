@@ -8,10 +8,8 @@ export const GOOGLE_RATING_VALUE = "5.0";
 export const GOOGLE_REVIEW_COUNT = 35;
 
 /**
- * Link customers tap to read the reviews on Google itself (credibility — proves
- * the wall isn't fabricated). The Maps search URL reliably resolves to the GBP
- * listing. For a direct reviews deep-link, replace with the Place ID form:
- *   https://search.google.com/local/reviews?placeid=YOUR_PLACE_ID
+ * Direct deep-link to the Incredibowl Google reviews list (credibility — lets
+ * customers verify the wall isn't fabricated). Built from the GBP Place ID.
  */
 export const GOOGLE_REVIEWS_URL =
-  "https://www.google.com/maps/search/?api=1&query=Incredibowl%20Pearl%20Suria%20Residence%20Jalan%20Klang%20Lama";
+  "https://search.google.com/local/reviews?placeid=ChIJJdj9aydLzDER2RtkQ-FJvss";

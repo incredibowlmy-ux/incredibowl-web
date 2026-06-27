@@ -41,7 +41,7 @@ export default function PromoBanner() {
                             {/* Free side value badge */}
                             <div className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
                                 <Salad size={26} className="text-[#FF9B50]" strokeWidth={2.5} />
-                                <span className="text-[10px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">免费</span>
+                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">免费</span>
                             </div>
 
                             {/* Details */}

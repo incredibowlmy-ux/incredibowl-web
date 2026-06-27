@@ -59,7 +59,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
             </h3>
             {dateSub && <span className={`font-bold text-gray-400 ${size === 'sm' ? 'text-[11px]' : 'text-[14px]'}`}>{dateSub}</span>}
             {highlight && (
-                <span className={`ml-auto inline-flex items-center gap-1 font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full ${size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[12px] px-2.5 py-1'}`}>
+                <span className={`ml-auto inline-flex items-center gap-1 font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full ${size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-[12px] px-2.5 py-1'}`}>
                     ✨ Up next
                 </span>
             )}
@@ -87,7 +87,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                 }`}
             >
                 <div className="flex justify-between items-start mb-2 gap-1">
-                    <div className={`px-1.5 py-0.5 rounded text-[10px] font-bold truncate ${
+                    <div className={`px-1.5 py-0.5 rounded text-[11px] font-bold truncate ${
                         isTomorrow
                             ? 'bg-[#FF6B35]/15 text-[#FF6B35]'
                             : 'bg-[#FDFBF7] text-gray-500'
@@ -124,7 +124,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
 
                 <div className="flex flex-wrap gap-1 mb-2.5 min-h-[18px] overflow-hidden max-h-[18px]">
                     {(dish.tagsEn ?? dish.tags).slice(0, 2).map(tag => (
-                        <span key={tag} className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#E3EADA]/70 text-[#1A2D23] truncate max-w-full">
+                        <span key={tag} className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#E3EADA]/70 text-[#1A2D23] truncate max-w-full">
                             {tag}
                         </span>
                     ))}
@@ -280,7 +280,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                 <Sparkles size={20} className="text-[#FF6B35]" strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black text-[#FF6B35] uppercase tracking-widest mb-0.5">Next Week</p>
+                <p className="text-[11px] font-black text-[#FF6B35] uppercase tracking-widest mb-0.5">Next Week</p>
                 <p className="text-[14px] font-extrabold text-[#1A2D23] leading-tight">Get a heads-up when next week&rsquo;s menu drops?</p>
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#25D366] text-white rounded-full text-[12px] font-black shadow-sm shadow-[#25D366]/30 shrink-0">
@@ -384,7 +384,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                                     <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
                                                 </span>
                                                 <span className="text-[12px] font-bold text-gray-400 mt-1.5">{dayDateSub(g.dishes[0])}</span>
-                                                {isNext && <span className="mt-1.5 text-[10px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
+                                                {isNext && <span className="mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
                                             </div>
                                             {g.dishes.map(renderDesktopCard)}
                                         </div>
