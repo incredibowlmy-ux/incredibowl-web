@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Plus, X } from 'lucide-react';
+import { MessageCircle, Plus, X, ExternalLink } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 
@@ -24,6 +24,12 @@ const SEED_FEEDBACKS: SeedFeedback[] = [
 // Google Business Profile aggregate — manually synced (update when GBP grows).
 const GOOGLE_RATING_VALUE = "5.0";
 const GOOGLE_REVIEW_COUNT = 35;
+// Link customers tap to verify the reviews on Google itself (credibility — proves
+// the wall isn't fabricated). Replace with the exact reviews deep-link once the
+// Place ID is known: https://search.google.com/local/reviews?placeid=YOUR_PLACE_ID
+// The maps search URL below reliably resolves to the GBP listing meanwhile.
+const GOOGLE_REVIEWS_URL =
+    "https://www.google.com/maps/search/?api=1&query=Incredibowl%20Pearl%20Suria%20Residence%20Jalan%20Klang%20Lama";
 
 // Review + aggregateRating structured data, attached to the existing Restaurant
 // entity by @id (defined in src/app/layout.tsx — same @id merges, not a second
@@ -154,10 +160,17 @@ export default function FeedbackSection() {
                 {/* Stats summary — sits between header and grid */}
                 <div className="bg-[#E3EADA] px-4 md:px-8 pb-4">
                     <div className="bg-white/55 backdrop-blur-sm rounded-2xl px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border border-white/70">
-                        <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23]">
+                        <a
+                            href={GOOGLE_REVIEWS_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="在 Google 查看全部评价"
+                            className="group inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23] rounded-md px-1 -mx-1 hover:text-[#FF6B35] transition-colors"
+                        >
                             Google <span className="text-amber-500">{GOOGLE_RATING_VALUE} ★</span>
-                            <span className="text-[#1A2D23]/55 font-bold">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
-                        </span>
+                            <span className="text-[#1A2D23]/55 font-bold group-hover:text-[#FF6B35]/70">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
+                            <ExternalLink size={13} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] shrink-0" strokeWidth={2.5} />
+                        </a>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
                         <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} 条留言</span>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
@@ -228,8 +241,17 @@ export default function FeedbackSection() {
                                 </div>
                             </div>
 
-                            {/* Bottom CTA — write your own */}
-                            <div className="mt-6 px-4 md:px-8 flex justify-center">
+                            {/* Bottom CTA — verify on Google + write your own */}
+                            <div className="mt-6 px-4 md:px-8 flex flex-wrap items-center justify-center gap-3">
+                                <a
+                                    href={GOOGLE_REVIEWS_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-[#FDFBF7] text-[#1A2D23] text-sm font-bold rounded-full border border-[#1A2D23]/15 shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                                >
+                                    <span className="text-amber-500">★</span> 在 Google 查看全部评价
+                                    <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
+                                </a>
                                 <button
                                     onClick={() => setIsFeedbackModalOpen(true)}
                                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
