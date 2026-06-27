@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircleHeart, ArrowRight, Star, Ticket } from 'lucide-react';
+import { MessageCircleHeart, ArrowRight, Star, Salad } from 'lucide-react';
 
 export default function PromoBanner() {
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
@@ -28,7 +28,7 @@ export default function PromoBanner() {
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 新店开灶，感谢街坊支持 🎉<br />
-                                你的声音很重要 — 评价送 RM5 回购券
+                                你的声音很重要 — 评价送一份惊喜小菜
                             </p>
                         </div>
 
@@ -36,21 +36,17 @@ export default function PromoBanner() {
                         <div className="hidden lg:flex items-center gap-4 p-4 bg-gradient-to-br from-[#FF6B35]/12 via-[#FF6B35]/8 to-transparent border-2 border-dashed border-[#FF9B50]/40 rounded-2xl relative overflow-hidden">
                             {/* Decorative blur */}
                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-[#FF6B35] rounded-full blur-2xl opacity-20 pointer-events-none" />
-                            {/* Ticket corner mark */}
-                            <div className="absolute top-2.5 right-3">
-                                <Ticket size={14} className="text-[#FF9B50]/45" strokeWidth={2.5} />
-                            </div>
 
-                            {/* RM 5 value badge */}
-                            <div className="flex-shrink-0 flex items-baseline gap-1 px-3.5 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
-                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider">RM</span>
-                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">5</span>
+                            {/* Free side value badge */}
+                            <div className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
+                                <Salad size={26} className="text-[#FF9B50]" strokeWidth={2.5} />
+                                <span className="text-[10px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">免费</span>
                             </div>
 
                             {/* Details */}
                             <div className="flex-1 min-w-0 relative">
-                                <p className="text-sm font-black text-white leading-tight">回购券 / Voucher</p>
-                                <p className="text-[11px] text-white/60 leading-snug mt-1">30 天内可用 · 自动发放</p>
+                                <p className="text-sm font-black text-white leading-tight">惊喜小菜 / Free Side</p>
+                                <p className="text-[11px] text-white/60 leading-snug mt-1">好评后下次下单附上 · 碗妈当天配</p>
                             </div>
                         </div>
 
@@ -72,10 +68,10 @@ export default function PromoBanner() {
                             <div>
                                 <div className="flex items-center gap-2 mb-3">
                                     <MessageCircleHeart size={18} className="text-[#FF9B50]" strokeWidth={2.5} />
-                                    <p className="text-[#FF9B50] font-black text-[15px]">好评返券</p>
+                                    <p className="text-[#FF9B50] font-black text-[15px]">好评送小菜</p>
                                 </div>
                                 <p className="text-white/85 text-[15px] leading-relaxed">
-                                    分享你的评价，送你 <span className="text-[#FF9B50] font-black">RM 5 回购券</span>。
+                                    分享你的评价，送你 <span className="text-[#FF9B50] font-black">一份惊喜小菜</span>。
                                 </p>
                             </div>
 
@@ -110,7 +106,7 @@ export default function PromoBanner() {
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">3</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">截图发 WhatsApp 给碗妈领券</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">截图发 WhatsApp 给碗妈领小菜</p>
                                 </div>
                             </div>
 
@@ -122,7 +118,7 @@ export default function PromoBanner() {
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-bold leading-tight">立即下单</span>
-                                    <span className="text-[11px] font-medium text-white/75 leading-tight">赚 RM5 回购券</span>
+                                    <span className="text-[11px] font-medium text-white/75 leading-tight">好评换一份小菜</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>
