@@ -17,6 +17,9 @@ interface MenuCarouselENProps {
 }
 
 const WD_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Per-weekday number badge (Mon=1 … Fri=5). Replaces the 🗓 calendar emoji,
+// which renders as a generic "1" box on Windows and looked identical every day.
+const WD_EMOJI = ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
 
 export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselENProps) {
     const ready = Object.keys(menuDates).length > 0;
@@ -335,7 +338,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                 const isNext = g.dishes.some(d => d.id === tomorrowsId);
                                 return (
                                     <React.Fragment key={`m-day-${g.wd}`}>
-                                        {sectionHeader(`m-hdr-${g.wd}`, `🗓 ${WD_LABEL[g.wd]}`, dayDateSub(g.dishes[0]), isNext, 'sm')}
+                                        {sectionHeader(`m-hdr-${g.wd}`, `${WD_EMOJI[g.wd]} ${WD_LABEL[g.wd]}`, dayDateSub(g.dishes[0]), isNext, 'sm')}
                                         {g.dishes.map(renderMobileCard)}
                                     </React.Fragment>
                                 );
@@ -352,7 +355,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
 
                             {groups.retired.length > 0 && (
                                 <>
-                                    {sectionHeader('m-hdr-retired', '🕰 Paused · Past dishes', null, false, 'sm')}
+                                    {sectionHeader('m-hdr-retired', '🕰 Past favourites · Back soon', null, false, 'sm')}
                                     {groups.retired.map(renderMobileCard)}
                                 </>
                             )}
@@ -374,7 +377,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                     return (
                                         <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
                                             <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-[#FF6B35]' : 'border-gray-100'}`}>
-                                                <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>🗓 {WD_LABEL[g.wd]}</span>
+                                                <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_EMOJI[g.wd]} {WD_LABEL[g.wd]}</span>
                                                 <span className="text-[12px] font-bold text-gray-400 mt-1.5">{dayDateSub(g.dishes[0])}</span>
                                                 {isNext && <span className="mt-1.5 text-[10px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
                                             </div>
@@ -402,7 +405,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                             {/* Paused · Past dishes */}
                             {groups.retired.length > 0 && (
                                 <div className="mt-12">
-                                    <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">🕰 Paused · Past dishes</h3>
+                                    <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">🕰 Past favourites · Back soon</h3>
                                     <div className="grid grid-cols-3 xl:grid-cols-4 gap-5">
                                         {groups.retired.map(renderDesktopCard)}
                                     </div>
