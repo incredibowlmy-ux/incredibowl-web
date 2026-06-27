@@ -78,29 +78,13 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A classic healthy bowl. Umami natto stirred with a silky 'moon-gazing' egg — simple, but layered with depth."
     },
     {
-        id: 12,
-        day: "Daily / 常驻",
-        name: "山药云耳海陆双鲜炒",
-        nameEn: "Chinese Yam & Black Fungus Surf & Turf",
-        price: 18.50,
-        image: "/chinese_yam_black_fungus_v3.webp",
-        tags: ["高蛋白 31g+", "养胃滋补", "健脾益胃", "清肺润燥", "脆嫩滑爽三重奏"],
-        tagsEn: ["31g+ protein", "Stomach-warming", "Spleen-nourishing", "Lung-soothing", "Crisp & silky"],
-        desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。",
-        descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
-    },
-    {
         id: 13,
         day: "Daily / 常驻",
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
         image: "/pork_potato_stew.webp",
-        // 只在周四、周五供应（碗妈备餐安排）：其余工作日网站可见但不可点；
-        // /api/submit-order 也会拒收非周四五的下单，防止绕过菜单卡直接调 API。
-        availableWeekdays: [4, 5],
-        unavailableNote: "周四五供应",
-        unavailableNoteEn: "Thu & Fri only",
+        // 2026-06-27 改为天天供应（原仅周四五，availableWeekdays 已移除）。
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
@@ -249,9 +233,11 @@ export const weeklyMenu: MenuItem[] = [
     // ─── 周五 Fri ───────────────────────────────────────────────
     {
         // 周五新上 2026-06-08。a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
+        // 2026-06-27 周五新增第二道（山药），三文鱼设 isPrimary 续作周五 Hero 主打。
         id: 21,
         day: "Fri / 周五",
         weekday: 5,
+        isPrimary: true,
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 23.90,
@@ -261,6 +247,20 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
         desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
         descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
+    },
+    {
+        // 2026-06-27 从常驻改为周五特餐（周五第二道）。
+        id: 12,
+        day: "Fri / 周五",
+        weekday: 5,
+        name: "山药云耳海陆双鲜炒",
+        nameEn: "Chinese Yam & Black Fungus Surf & Turf",
+        price: 18.50,
+        image: "/chinese_yam_black_fungus_v3.webp",
+        tags: ["高蛋白 31g+", "养胃滋补", "健脾益胃", "清肺润燥", "脆嫩滑爽三重奏"],
+        tagsEn: ["31g+ protein", "Stomach-warming", "Spleen-nourishing", "Lung-soothing", "Crisp & silky"],
+        desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。",
+        descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
     },
     // ─── 已退役（灰显·可见不可点）Retired ────────────────────────
     {
