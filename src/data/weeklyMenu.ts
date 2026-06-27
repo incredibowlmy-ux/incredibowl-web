@@ -201,7 +201,7 @@ export const weeklyMenu: MenuItem[] = [
     },
     {
         // 全新菜 2026-06-15 上架（周四特餐）。a la carte RM19.90 = 标准餐券面值，无需补差价。
-        // ⚠️ 图片待老板提供实拍图后替换：暂用 emoji 占位（各 next/image 消费处已加 startsWith('/') 守卫）。
+        // 2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
         id: 23,
         day: "Thu / 周四",
@@ -209,7 +209,7 @@ export const weeklyMenu: MenuItem[] = [
         name: "家乡豆酱焖花肉",
         nameEn: "Hometown Taucu Braised Pork Belly",
         price: 19.90,
-        image: "🍲",
+        image: "/taucu_pork_belly.webp",
         tags: ["家乡豆酱", "焖煮入味", "肥香软糯", "下饭神器"],
         tagsEn: ["Hometown taucu", "Slow-braised", "Rich & tender", "Made for rice"],
         desc: "家乡豆酱慢火焖煮花肉，豆香咸鲜渗进每一丝肉里，软糯入味、咸香下饭。",
