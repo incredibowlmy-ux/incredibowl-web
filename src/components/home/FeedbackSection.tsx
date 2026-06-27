@@ -21,6 +21,38 @@ const SEED_FEEDBACKS: SeedFeedback[] = [
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
 ];
 
+// Google Business Profile aggregate — manually synced (update when GBP grows).
+const GOOGLE_RATING_VALUE = "5.0";
+const GOOGLE_REVIEW_COUNT = 35;
+
+// Review + aggregateRating structured data, attached to the existing Restaurant
+// entity by @id (defined in src/app/layout.tsx — same @id merges, not a second
+// entity). ONLY the verifiable Google reviews shown on this page are marked up,
+// so the rating is backed by reviews the visitor can actually read here, per
+// Google's policy. NOTE: self-serving LocalBusiness ratings do NOT render star
+// rich-results in Google search — the value is (1) AI answer engines read it,
+// (2) it reinforces the entity; the customer-facing stars already come from
+// Google Business Profile natively in Maps / the local pack.
+const reviewJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "@id": "https://www.incredibowl.my/#restaurant",
+    name: "Incredibowl",
+    aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: GOOGLE_RATING_VALUE,
+        ratingCount: String(GOOGLE_REVIEW_COUNT),
+        bestRating: "5",
+    },
+    review: SEED_FEEDBACKS.filter(f => f.isGoogle).map(f => ({
+        "@type": "Review",
+        author: { "@type": "Person", name: f.name },
+        ...(f.reviewDate ? { datePublished: f.reviewDate } : {}),
+        reviewRating: { "@type": "Rating", ratingValue: "5", bestRating: "5" },
+        reviewBody: f.text,
+    })),
+};
+
 /** Format an ISO date string as a Chinese relative time. Returns "" if input is empty. */
 function formatRelativeCN(dateStr?: string): string {
     if (!dateStr) return "";
@@ -99,6 +131,10 @@ export default function FeedbackSection() {
 
     return (
         <>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewJsonLd) }}
+            />
             <div id="feedback" className="lg:col-span-12 mt-4 scroll-mt-32">
                 {/* Compact header — single row */}
                 <div className="bg-[#E3EADA] rounded-t-[32px] px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -119,10 +155,11 @@ export default function FeedbackSection() {
                 <div className="bg-[#E3EADA] px-4 md:px-8 pb-4">
                     <div className="bg-white/55 backdrop-blur-sm rounded-2xl px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border border-white/70">
                         <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23]">
-                            Google <span className="text-amber-500">5.0 ★</span>
+                            Google <span className="text-amber-500">{GOOGLE_RATING_VALUE} ★</span>
+                            <span className="text-[#1A2D23]/55 font-bold">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
                         </span>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} 条真实留言</span>
+                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} 条留言</span>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
                         <span className="text-[13px] font-semibold text-[#1A2D23]/75">来自 Pearl Point / Millerz / Citizen 1 & 2 等社区</span>
                     </div>
