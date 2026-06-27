@@ -20,14 +20,14 @@ export default function PromoBanner() {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-black tracking-widest border border-[#FF6B35]/30">
-                                    新开张
+                                    街坊回馈
                                 </span>
                                 <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
                                     感恩折扣
                                 </h3>
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
-                                新店开灶，感谢街坊支持 🎉<br />
+                                感谢街坊一路支持 🧡<br />
                                 你的声音很重要 — 评价送一份惊喜小菜
                             </p>
                         </div>
@@ -102,7 +102,7 @@ export default function PromoBanner() {
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">2</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">在 Google / Facebook 留评价（带图更好）</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">在 Facebook 留评价（带图更好）</p>
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">3</span>
