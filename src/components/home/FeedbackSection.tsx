@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, Plus, X, ExternalLink } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
+import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 
 type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string; isGoogle?: boolean };
 
@@ -21,15 +22,8 @@ const SEED_FEEDBACKS: SeedFeedback[] = [
     { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
 ];
 
-// Google Business Profile aggregate — manually synced (update when GBP grows).
-const GOOGLE_RATING_VALUE = "5.0";
-const GOOGLE_REVIEW_COUNT = 35;
-// Link customers tap to verify the reviews on Google itself (credibility — proves
-// the wall isn't fabricated). Replace with the exact reviews deep-link once the
-// Place ID is known: https://search.google.com/local/reviews?placeid=YOUR_PLACE_ID
-// The maps search URL below reliably resolves to the GBP listing meanwhile.
-const GOOGLE_REVIEWS_URL =
-    "https://www.google.com/maps/search/?api=1&query=Incredibowl%20Pearl%20Suria%20Residence%20Jalan%20Klang%20Lama";
+// GBP rating/count/URL come from the shared single source of truth
+// (@/data/googleReviews) so the wall, PromoBanner, and schema never drift.
 
 // Review + aggregateRating structured data, attached to the existing Restaurant
 // entity by @id (defined in src/app/layout.tsx — same @id merges, not a second

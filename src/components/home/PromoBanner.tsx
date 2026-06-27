@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageCircleHeart, ArrowRight, Star, Salad } from 'lucide-react';
+import { MessageCircleHeart, ArrowRight, Star, Salad, ExternalLink } from 'lucide-react';
+import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 
 export default function PromoBanner() {
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
@@ -75,17 +76,28 @@ export default function PromoBanner() {
                                 </p>
                             </div>
 
-                            {/* Cluster B: trust signals — desktop only, validates the offer */}
+                            {/* Cluster B: trust signals — desktop only, validates the offer.
+                                The rating + count link out to the real Google reviews so
+                                customers can verify (credibility). */}
                             <div className="hidden lg:flex items-center gap-4 py-3 px-1">
-                                <div className="flex items-center gap-1.5">
-                                    <Star size={14} className="text-[#FF9B50] fill-[#FF9B50]" strokeWidth={0} />
-                                    <span className="text-white font-black text-sm leading-none">5.0</span>
-                                </div>
-                                <span className="w-px h-4 bg-white/15" aria-hidden="true" />
-                                <div className="text-xs leading-none">
-                                    <span className="text-white font-black">10+</span>
-                                    <span className="text-white/55 font-medium ml-1">Google 评价</span>
-                                </div>
+                                <a
+                                    href={GOOGLE_REVIEWS_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="在 Google 查看评价"
+                                    className="group inline-flex items-center gap-4 rounded-md hover:opacity-90 transition-opacity"
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <Star size={14} className="text-[#FF9B50] fill-[#FF9B50]" strokeWidth={0} />
+                                        <span className="text-white font-black text-sm leading-none">{GOOGLE_RATING_VALUE}</span>
+                                    </div>
+                                    <span className="w-px h-4 bg-white/15" aria-hidden="true" />
+                                    <div className="text-xs leading-none inline-flex items-center gap-1">
+                                        <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
+                                        <span className="text-white/55 font-medium">Google 评价</span>
+                                        <ExternalLink size={11} className="text-white/40 group-hover:text-[#FF9B50] transition-colors" strokeWidth={2.5} />
+                                    </div>
+                                </a>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
                                     <span className="text-white font-black">100%</span>
