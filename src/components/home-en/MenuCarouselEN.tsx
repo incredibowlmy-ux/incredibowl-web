@@ -17,9 +17,6 @@ interface MenuCarouselENProps {
 }
 
 const WD_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-// Per-weekday number badge (Mon=1 … Fri=5). Replaces the 🗓 calendar emoji,
-// which renders as a generic "1" box on Windows and looked identical every day.
-const WD_EMOJI = ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'];
 
 export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselENProps) {
     const ready = Object.keys(menuDates).length > 0;
@@ -47,11 +44,16 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
     }, [ready]);
 
     // ── Section header (spans the full row in both grids) ──
-    const sectionHeader = (key: string, title: string, dateSub: string | null, highlight: boolean, size: 'sm' | 'lg') => (
+    const sectionHeader = (key: string, title: string, dateSub: string | null, highlight: boolean, size: 'sm' | 'lg', badgeNum?: number) => (
         <div
             key={key}
-            className={`${size === 'sm' ? 'col-span-2 mt-3 first:mt-1 px-1' : 'col-span-full mt-5 first:mt-0 px-1'} flex items-baseline gap-2`}
+            className={`${size === 'sm' ? 'col-span-2 mt-3 first:mt-1 px-1' : 'col-span-full mt-5 first:mt-0 px-1'} flex items-center gap-2`}
         >
+            {badgeNum != null && (
+                <span className={`inline-flex items-center justify-center rounded-full font-black shrink-0 ${size === 'sm' ? 'w-5 h-5 text-[11px]' : 'w-6 h-6 text-[13px]'} ${highlight ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>
+                    {badgeNum}
+                </span>
+            )}
             <h3 className={`font-extrabold leading-none ${size === 'sm' ? 'text-[16px]' : 'text-[24px]'} ${highlight ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>
                 {title}
             </h3>
@@ -338,7 +340,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                 const isNext = g.dishes.some(d => d.id === tomorrowsId);
                                 return (
                                     <React.Fragment key={`m-day-${g.wd}`}>
-                                        {sectionHeader(`m-hdr-${g.wd}`, `${WD_EMOJI[g.wd]} ${WD_LABEL[g.wd]}`, dayDateSub(g.dishes[0]), isNext, 'sm')}
+                                        {sectionHeader(`m-hdr-${g.wd}`, WD_LABEL[g.wd], dayDateSub(g.dishes[0]), isNext, 'sm', g.wd)}
                                         {g.dishes.map(renderMobileCard)}
                                     </React.Fragment>
                                 );
@@ -377,7 +379,10 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                     return (
                                         <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
                                             <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-[#FF6B35]' : 'border-gray-100'}`}>
-                                                <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_EMOJI[g.wd]} {WD_LABEL[g.wd]}</span>
+                                                <span className="flex items-center gap-2">
+                                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>{g.wd}</span>
+                                                    <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
+                                                </span>
                                                 <span className="text-[12px] font-bold text-gray-400 mt-1.5">{dayDateSub(g.dishes[0])}</span>
                                                 {isNext && <span className="mt-1.5 text-[10px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
                                             </div>
