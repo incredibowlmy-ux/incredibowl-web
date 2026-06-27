@@ -1,5 +1,38 @@
 # Lessons learned
 
+## 2026-06-21 — EN 版别复制日期/特餐逻辑，也别用静态映射「反查翻译」中文串
+
+**现象：** 老板发现英文版 `/en`：① Hero「Tomorrow's Special」显示的是**已退役的酱油鸡全腿**（应是周一主推鸡扒饭）；② 菜单卡按钮和日期标签是中文（`预订 6月22日 (周一)`、`6月22日 周一 · Mon`）。
+
+**根因（两个，本质同源——EN 组件树各自为政）：**
+1. `HeroSectionEN.tsx` **自带一份** `computeNextSpecial`,还停留在旧逻辑 `d.id === targetWd`（把 `id` 当星期几）。但 `weeklyMenu` 早已改成 `id=唯一标识、weekday=供应日`,周一 `find(id===1)` 命中的正是退役的酱油鸡(id 1)。共享版 `lib/nextSpecial.ts` 用 `weekday===wd && !retired && isPrimary` 是对的——ZH Hero 用共享版所以没事，只有 EN Hero 用了坏副本。**两份副本漂移**,和 dashboard 双副本一个性质。
+2. `dateUtils.computeMenuDates` 只产中文串,`MenuCarouselEN` 靠 `translateTopTag/translateBtnText` 两张**静态映射表**反查英文。带日期的串（`预订 6月22日…`）永远命中不了 map → 原样漏出中文。
+
+**给自己的规则：**
+1. **日期/特餐这类逻辑只能有一份**——一律 import `@/lib/nextSpecial`、`@/lib/dateUtils`。看到组件里有本地 `computeNextSpecial`/`computeMenuDates` 副本,立即视为 bug 合并掉。
+2. **多语言要在数据源头按 locale 产出**,不要在下游用映射表「把中文翻回英文」。给共享函数加 `locale` 参数（默认 `'zh'` 保护 ZH 零影响），EN 调用处传 `'en'`。带动态内容（日期/克数/价格）的串尤其不能靠反查。
+3. `src/app/en/*` + `src/components/home-en/*` 是**独立组件树**;任何在 ZH 侧改的「日期/供应日/特餐挑选/退役」逻辑,必须同步检查 EN 侧是否也走了共享 lib。
+4. 改完用 `next dev` + browse 实测 `/en`（不能只测 `/`）——客户端 `useEffect` 算的值只有真浏览器能看到。
+
+## 2026-06-20 — dashboard 改 UI 前先确认 sync 方向：Desktop 才是源头
+
+**现象：** 做「预付加料」功能要改 dashboard，我直接编辑了仓库内的 `public/dashboard-h7x2q9.html`。
+后来才发现有 `scripts/sync-dashboard.mjs`（`npm run sync:dashboard`），它的方向是
+**Desktop `incredibowl-dashboard.html` → 仓库 `public/`**（并注入 noindex meta）。
+也就是说 **Desktop 那份是源头（source of truth），`public/` 是它的派生拷贝**。
+我改的是派生拷贝——下次任何人跑 sync，我的改动会被 Desktop 旧版**整个覆盖丢失**。
+
+**根因：** 记忆里只记了「dashboard 有两个副本要同步」，没记清楚**哪份是源头、用什么工具同步**。
+我凭「仓库文件 = 真源码」的惯性直接改了仓库。
+
+**给自己的规则：**
+1. 改任何 dashboard HTML 前，先 `Read scripts/sync-dashboard.mjs` 确认 **DEFAULT_SRC（源）和 DST（目标）方向**。
+2. 源头是 **Desktop `C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html`**；
+   `public/dashboard-h7x2q9.html` = 源头 + 注入的 2 行 noindex meta。
+3. 正确流程：**改 Desktop 源 → `npm run sync:dashboard` 回灌仓库**。
+   若已误改仓库拷贝：把仓库版（去掉那 2 行 meta）写回 Desktop，再 sync 回灌，使工具链一致。
+4. 财务版 `Accounting/finance-dashboard-*.html` 是独立小文件（~9KB，无餐券逻辑），不在 sync 链内，按需单独处理。
+
 ## 2026-06-08 — 写菜品文案别凭想象定配料，照图核对
 
 **现象：** 给「古早味姜葱鱼片饭」写描述时，我把那颗蛋写成「月见蛋」（生蛋黄拌饭式），沿用了纳豆饭的叫法。老板更正：是**荷包蛋（煎蛋）**。回看产品图，蛋白已凝固、明显是煎过的荷包蛋。
