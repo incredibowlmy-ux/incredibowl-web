@@ -77,7 +77,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '虾', qty: 4, unit: '只' },
       { name: '鸡胸肉', qty: 65, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
-      { name: '荷包蛋', qty: 1, unit: '颗' },
+      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '葱', qty: 1, unit: 'g' },
     ],
   },
@@ -201,7 +201,7 @@ export const dishRecipes: DishRecipe[] = [
     ingredients: [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
-      { name: '荷包蛋', qty: 1, unit: '颗' },
+      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '葱', qty: 40, unit: 'g' },
       { name: '时蔬', qty: 50, unit: 'g' },
     ],
@@ -213,7 +213,7 @@ export const dishRecipes: DishRecipe[] = [
     shortName: '姜鱼',
     ingredients: [
       { name: '巴丁鱼片', qty: 250, unit: 'g' },
-      { name: '荷包蛋', qty: 1, unit: '颗' },
+      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '葱', qty: 32, unit: 'g' },
       { name: '姜', qty: 12, unit: 'g' },
@@ -256,11 +256,12 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // 少饭 / less-rice intentionally absent — it's a subtraction, not addition
 
   // ─── Egg add-ons ───────────────────────────────────────────
-  // 三种蛋分桶（备餐时知道要做几个荷包/温泉/拌饭用生蛋）：
-  //   荷包蛋 = sunny-side-up，单独煎好放上桌
-  //   温泉蛋 = onsen 低温慢煮，单独做好放上桌
-  //   鸡蛋(生) = 打散用于炒（蒜蓉西兰花炒蛋 add-on）
-  '荷包蛋': [{ name: '荷包蛋', qty: 1, unit: '颗' }],
+  // 采购蛋类按 SKU 合并：荷包蛋 + 拌饭炒蛋都计入「鸡蛋(生)」(2026-06-29 合并)，
+  // 库存/采购汇总只看一个鸡蛋总数。做法看 add-on 标签 / 菜名区分，不靠食材名分桶：
+  //   荷包蛋(标签) = sunny-side-up 单独煎好放上桌 → 计 鸡蛋(生)
+  //   鸡蛋(生)     = 打散用于炒（蒜蓉西兰花炒蛋 add-on）
+  //   温泉蛋       = onsen 低温慢煮，仍单列（如要也并入鸡蛋再说）
+  '荷包蛋': [{ name: '鸡蛋(生)', qty: 1, unit: '颗' }],
   '温泉蛋': [{ name: '温泉蛋', qty: 1, unit: '颗' }],
 
   // ─── Broccoli egg side ────────────────────────────────────
@@ -336,7 +337,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // chicken-chop-nostalgia-combo: 多加 1 块 鸡扒 + 荷包蛋 + 加饭
   '古早味大满贯三件套 (原价 RM 15.40)': [
     { name: '鸡扒', qty: 1, unit: '块' },
-    { name: '荷包蛋', qty: 1, unit: '颗' },
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
     { name: '白饭', qty: 150, unit: 'g' },
   ],
 
@@ -350,7 +351,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // scallion-soup-combo: 鸡扒 + 荷包蛋 + 加饭 (same recipe as nostalgia combo)
   '爆量满足三件套 (原价 RM 15.40)': [
     { name: '鸡扒', qty: 1, unit: '块' },
-    { name: '荷包蛋', qty: 1, unit: '颗' },
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
     { name: '白饭', qty: 150, unit: 'g' },
   ],
 
