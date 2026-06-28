@@ -97,7 +97,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '毛豆', qty: 25, unit: 'g' },
-      { name: '玉米粒', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 25, unit: 'g' },
       { name: '樱桃番茄', qty: 30, unit: 'g' },
     ],
   },
