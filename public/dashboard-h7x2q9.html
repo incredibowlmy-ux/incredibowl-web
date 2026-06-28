@@ -2025,6 +2025,27 @@
                         </div>
                     </div>
 
+                    <!-- Layer B+ — 食材余量预测（逐日 burn-down 矩阵）-->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📈 食材余量预测（未来几天）</div>
+                                <div class="card-sub">从「现有(盘点)」往前推：每天扣掉那天已下订单的所需，列出逐日累计余量。<b>红格＝那天告罄</b>（不补货的话）。据此决定今天买什么、买多少。</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <select id="invMatrixDays" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev)">
+                                    <option value="7">未来 7 天</option>
+                                    <option value="14">未来 14 天</option>
+                                    <option value="5">未来 5 天</option>
+                                </select>
+                                <button class="btn ghost sm" id="invMatrixRefresh">↻ 刷新</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="invMatrixTable" class="table-wrap" style="overflow-x:auto">点「刷新」加载…</div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -2992,6 +3013,7 @@ incredibowl.my`,
             '荷包蛋': 'sunny-egg',
             '温泉蛋': 'onsen-egg',                                  // unified (was: onsen-egg + onsen-egg-side)
             '马铃薯煎蛋': 'potato-egg',
+            '蒜蓉西兰花炒蛋': 'broccoli-egg',
             '清甜水煮毛豆仁 (25g)': 'extra-edamame',
             '清甜水煮毛豆仁 (40g)': 'extra-edamame',                 // unified (was: extra-edamame + extra-edamame-side)
             '清甜水煮毛豆仁 (50g)': 'extra-edamame',                 // legacy label
@@ -3009,10 +3031,10 @@ incredibowl.my`,
             // 套餐组合
             '灵魂三件套 (原价 RM 6.0)': 'natto-super-combo',
             '海陆澎湃三件套 (原价 RM 14.0)': 'surf-turf-super-combo',
-            '古早味大满贯三件套 (原价 RM 14.40)': 'chicken-chop-nostalgia-combo',
+            '古早味大满贯三件套 (原价 RM 15.40)': 'chicken-chop-nostalgia-combo',
             '蛋白质核弹三件套 (原价 RM 18.40)': 'greek-protein-bomb-combo',
-            '薯肉双拼满足套 (原价 RM 13.40)': 'pork-potato-duo-combo',
-            '爆量满足三件套 (原价 RM 14.40)': 'scallion-soup-combo',
+            '薯肉双拼满足套 (原价 RM 15.40)': 'pork-potato-duo-combo',
+            '爆量满足三件套 (原价 RM 15.40)': 'scallion-soup-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -3049,6 +3071,24 @@ incredibowl.my`,
             '【收工犒劳】多加一只葱香煎鸡扒': 'extra-scallion-chop-side',
         };
 
+        // Resolve a web add-on label → canonical id, tolerant of the cosmetic
+        // "(原价 RM x.xx)" price annotation the webapp embeds in套餐 labels. A price
+        // change (e.g. RM 14.40 → 15.40) would otherwise break the exact-string match
+        // and orphan the add-on at RM 0 cost. Base names are unique, so stripping the
+        // suffix on both sides is safe.
+        const ADDON_PRICE_SUFFIX_RE = /\s*[（(]\s*原价[^）)]*[）)]\s*$/;
+        function lookupAddonId(labelToId, label) {
+            if (!label) return undefined;
+            if (labelToId.has(label)) return labelToId.get(label);            // exact match
+            const stripped = label.replace(ADDON_PRICE_SUFFIX_RE, '');
+            if (stripped !== label && labelToId.has(stripped)) return labelToId.get(stripped);
+            // Map key may carry a stale price suffix — compare on the stripped base name.
+            for (const [k, v] of labelToId) {
+                if (k.replace(ADDON_PRICE_SUFFIX_RE, '') === stripped) return v;
+            }
+            return undefined;
+        }
+
         // Normalize order items: web orders store add-ons as separate flat items prefixed with `↳ `
         // (e.g. `↳ 灵魂三件套 (原价 RM 6.0)`). Convert them into the nested form used by manual orders:
         //   items[i].addOns = [{ id, label, price, quantity }]
@@ -3071,7 +3111,7 @@ incredibowl.my`,
                     if (!lastMain) continue;  // orphan addon (shouldn't happen)
                     const label = it.name.replace(/^↳\s*/, '');
                     // Resolve label → id, then collapse legacy *-side ids to canonical
-                    const canonId = canonicalAddonId(labelToId.get(label) || label);
+                    const canonId = canonicalAddonId(lookupAddonId(labelToId, label) || label);
                     lastMain.addOns = lastMain.addOns || [];
                     lastMain.addOns.push({
                         id: canonId,
@@ -4295,7 +4335,7 @@ incredibowl.my`,
                 // Resolve canonical id, then collapse legacy *-side ids onto canonical
                 const resolved = addonById.has(rawId)
                     ? rawId
-                    : (labelToId.get(rawLabel) || rawId || rawLabel);
+                    : (lookupAddonId(labelToId, rawLabel) || rawId || rawLabel);
                 const canonId = canonicalAddonId(resolved);
                 const displayLabel = (addonById.get(canonId)?.name) || rawLabel || rawId;
                 const r = counts.get(canonId) || { label: displayLabel, qty: 0, rev: 0 };
@@ -9924,18 +9964,28 @@ incredibowl.my`,
         function invEsc(s) {
             return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
+        // Balance left AFTER the day's orders = onHand − needed (signed). Green=carry-over, red=short.
+        function invBalanceHtml(onHand, needed, unit) {
+            const bal = (Number(onHand) || 0) - (Number(needed) || 0);
+            if (bal === 0 && (Number(needed) || 0) === 0) return '<span style="color:var(--text-muted)">—</span>';
+            if (bal < 0) return `<span style="color:#c0392b;font-weight:700">缺 ${invFmtQty(-bal, unit)}</span>`;
+            return `<span style="color:#1a7f37;font-weight:600">剩 ${invFmtQty(bal, unit)}</span>`;
+        }
 
         function initInventory() {
             if (!_inventoryWired) {
                 _inventoryWired = true;
                 $('#invDishRefresh').addEventListener('click', loadInvDishStock);
                 $('#invIngRefresh').addEventListener('click', () => loadInvIngredients($('#invIngDate').value));
+                $('#invMatrixRefresh').addEventListener('click', loadInvMatrix);
+                $('#invMatrixDays').addEventListener('change', loadInvMatrix);
                 // Default the 盘点 date to tomorrow (the prep horizon).
                 const t = new Date(); t.setDate(t.getDate() + 1);
                 $('#invIngDate').value = t.toISOString().slice(0, 10);
             }
             loadInvDishStock();
             loadInvIngredients($('#invIngDate').value);
+            loadInvMatrix();
         }
 
         // ── Layer A: 按菜可售份数 ──
@@ -10011,30 +10061,40 @@ incredibowl.my`,
             let rows = '';
             for (const it of list) {
                 const short = it.shortfall > 0;
-                const low = it.low;
-                const flag = short ? 'background:rgba(220,0,0,.07)' : (low ? 'background:rgba(230,150,0,.07)' : '');
-                rows += `<tr data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" style="${flag}">
-                    <td style="font-weight:600">${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
-                    <td class="mono" style="text-align:right">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
-                    <td style="text-align:right;white-space:nowrap">
+                const flag = short ? 'background:rgba(192,57,43,.06)' : (it.low ? 'background:rgba(230,150,0,.07)' : '');
+                rows += `<tr data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" data-needed="${it.needed}" style="${flag};border-bottom:1px solid var(--border)">
+                    <td style="font-weight:600;padding:7px 12px 7px 4px">${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
+                    <td class="mono" style="text-align:right;padding:7px 16px;color:var(--text-muted)">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
+                    <td style="text-align:right;white-space:nowrap;padding:7px 4px">
                         <input type="number" min="0" step="any" class="inv-ing-input" value="${it.onHand}"
-                            style="width:80px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
+                            style="width:78px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
                         <span style="color:var(--text-muted);font-size:11px;margin-left:3px">${invEsc(it.unit)}</span>
                     </td>
-                    <td class="mono" style="text-align:right;${short ? 'color:#c00;font-weight:700' : 'color:var(--text-muted)'}">${short ? '缺 ' + invFmtQty(it.shortfall, it.unit) : (it.needed > 0 ? '足' : '')}</td>
-                    <td style="text-align:right;white-space:nowrap">
+                    <td class="mono inv-ing-balance" style="text-align:right;white-space:nowrap;padding:7px 16px">${invBalanceHtml(it.onHand, it.needed, it.unit)}</td>
+                    <td style="text-align:right;white-space:nowrap;padding:7px 4px">
                         <input type="number" min="0" step="any" class="inv-ing-threshold" placeholder="阈值" value="${it.threshold == null ? '' : it.threshold}"
-                            style="width:64px;padding:5px 6px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:12px" />
+                            style="width:60px;padding:5px 6px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:12px" />
                         <button class="btn sm inv-ing-save" style="margin-left:6px">保存</button>
                     </td></tr>`;
             }
-            el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-                <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px">
-                    <th style="padding:6px 4px">食材</th><th style="padding:6px 4px;text-align:right">所需(当日)</th>
-                    <th style="padding:6px 4px;text-align:right">现有(盘点)</th><th style="padding:6px 4px;text-align:right">差额</th>
-                    <th style="padding:6px 4px;text-align:right">低量阈值 / 保存</th>
+            el.innerHTML = `<div style="max-width:860px">
+                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px;border-bottom:2px solid var(--border-strong)">
+                    <th style="padding:8px 4px">食材</th>
+                    <th style="padding:8px 16px;text-align:right">所需(当日)</th>
+                    <th style="padding:8px 4px;text-align:right">现有(盘点)</th>
+                    <th style="padding:8px 16px;text-align:right">结余(用完当日)</th>
+                    <th style="padding:8px 4px;text-align:right">低量阈值 / 保存</th>
                 </tr></thead><tbody>${rows}</tbody></table>
-                <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">红＝当日所需 > 现有（仅提醒，不阻挡下单）· 橙＝低于低量阈值 · 克类填克自动换算 kg。</div>`;
+                <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.7">
+                    <b>结余 = 现有 − 当日所需</b>（<span style="color:#1a7f37">绿＝剩余可结转下一天</span> · <span style="color:#c0392b">红＝不够，仅提醒、不阻挡下单</span>）· 橙底＝低于低量阈值<br>
+                    改「现有」框，结余即时更新 — 满意后点该行「保存」才会写入。克类直接填克，自动换算 kg。
+                </div></div>`;
+            // Live balance recompute as you type 现有, before saving.
+            el.querySelectorAll('.inv-ing-input').forEach(inp => inp.addEventListener('input', (ev) => {
+                const tr = ev.target.closest('tr');
+                tr.querySelector('.inv-ing-balance').innerHTML = invBalanceHtml(ev.target.value, tr.dataset.needed, tr.dataset.unit || '');
+            }));
             el.querySelectorAll('.inv-ing-save').forEach(btn => btn.addEventListener('click', async (ev) => {
                 const tr = ev.target.closest('tr');
                 const onHand = Number(tr.querySelector('.inv-ing-input').value);
@@ -10050,9 +10110,63 @@ incredibowl.my`,
                 await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name, onHand, threshold });
                 toast(`「${name}」现有量设为 ${onHand}`, 'success');
                 loadInvIngredients($('#invIngDate').value);
+                loadInvMatrix(); // keep the burn-down projection in sync with the new on-hand
             } catch (e) {
                 toast('保存失败：' + e.message, 'error');
             }
+        }
+
+        // ── Layer B+: 食材余量预测（逐日 burn-down 矩阵）──
+        async function loadInvMatrix() {
+            const el = $('#invMatrixTable');
+            el.innerHTML = '加载中…';
+            const days = Number($('#invMatrixDays').value) || 7;
+            const startDate = ymdKey(new Date());
+            let data;
+            try {
+                data = await callAdminAPI('/api/admin/ingredient-stock', { action: 'matrix', startDate, days });
+            } catch (e) {
+                el.innerHTML = '<div style="color:var(--danger,#c00)">加载失败：' + invEsc(e.message) + '</div>';
+                return;
+            }
+            const dates = data.dates || [];
+            const list = data.ingredients || [];
+            if (!list.length) {
+                el.innerHTML = `<div style="color:var(--text-muted)">未来 ${days} 天暂无已下订单需要预测的食材。</div>`;
+                return;
+            }
+            const wd = ['日', '一', '二', '三', '四', '五', '六'];
+            const dateHdr = dates.map(ds => {
+                const [yy, mm, dd] = ds.split('-').map(Number);
+                return `<th style="padding:7px 12px;text-align:right;white-space:nowrap;font-weight:600">${mm}/${dd}<br><span style="font-weight:400;color:var(--text-muted)">周${wd[new Date(yy, mm - 1, dd).getDay()]}</span></th>`;
+            }).join('');
+            let rows = '';
+            for (const it of list) {
+                const cells = it.running.map((bal, i) => {
+                    const neg = bal < 0;
+                    const isRunout = i === it.runoutIndex;
+                    const used = it.perDay[i] > 0;
+                    const style = neg
+                        ? 'color:#c0392b;font-weight:700' + (isRunout ? ';background:rgba(192,57,43,.14)' : '')
+                        : (used ? 'color:var(--text)' : 'color:var(--text-muted)');
+                    const txt = neg ? '缺' + invFmtQty(-bal, it.unit) : invFmtQty(bal, it.unit);
+                    return `<td class="mono" style="text-align:right;padding:7px 12px;white-space:nowrap;${style}">${txt}</td>`;
+                }).join('');
+                rows += `<tr style="border-bottom:1px solid var(--border)">
+                    <td style="font-weight:600;padding:7px 12px 7px 4px;position:sticky;left:0;background:var(--bg-elev);white-space:nowrap">${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
+                    <td class="mono" style="text-align:right;padding:7px 14px;white-space:nowrap;color:var(--text-muted)">${invFmtQty(it.onHand, it.unit)}</td>
+                    ${cells}</tr>`;
+            }
+            el.innerHTML = `<table style="border-collapse:collapse;font-size:13px;min-width:100%">
+                <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px;border-bottom:2px solid var(--border-strong)">
+                    <th style="padding:7px 4px;position:sticky;left:0;background:var(--bg-elev);z-index:1">食材</th>
+                    <th style="padding:7px 14px;text-align:right">现有</th>
+                    ${dateHdr}
+                </tr></thead><tbody>${rows}</tbody></table>
+                <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.7">
+                    每格＝该食材从今天「现有」起、扣到当天为止的<b>累计余量</b>。<span style="color:#c0392b">红＝已不够（最深红那格＝首个告罄日）</span> · 按最早告罄排在前。<br>
+                    能囤的料（肉/蛋/米）参考性最强；当天现买的菜/虾你照常补货。改盘点「现有」后这里会自动重算。
+                </div>`;
         }
 
         // Normalize Malaysian phone the same way the server does. Keep in sync with src/lib/phoneUtils.ts

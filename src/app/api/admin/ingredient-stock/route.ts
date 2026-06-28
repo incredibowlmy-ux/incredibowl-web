@@ -85,7 +85,61 @@ export async function POST(req: NextRequest) {
       return adminJson({ date: date || null, ingredients });
     }
 
-    return adminJson({ error: '未知 action（list | set）' }, 400);
+    if (action === 'matrix') {
+      // Forward burn-down: starting from current on-hand, subtract each day's
+      // orders across a horizon, exposing the running balance per ingredient
+      // per day and the day each runs out (if no restock).
+      const startDate = typeof body.startDate === 'string' ? body.startDate.trim() : '';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return adminJson({ error: 'startDate 格式应为 YYYY-MM-DD' }, 400);
+      const days = Math.min(31, Math.max(1, Math.floor(Number(body.days) || 7)));
+
+      // Date list (UTC math on the Y/M/D parts → no server-TZ drift).
+      const [y, m, d0] = startDate.split('-').map(Number);
+      const dates: string[] = [];
+      for (let i = 0; i < days; i++) dates.push(new Date(Date.UTC(y, m - 1, d0 + i)).toISOString().slice(0, 10));
+      const endDate = dates[dates.length - 1];
+
+      const stock = await getAllIngredientStock(db);
+      // deliveryDate is an ISO string → lexicographic range == chronological range.
+      const snap = await db.collection('orders')
+        .where('deliveryDate', '>=', startDate).where('deliveryDate', '<=', endDate).get();
+      const orders = snap.docs.map(x => x.data() as PrepOrder).filter(o => o.status !== 'cancelled');
+
+      const byDate = new Map<string, PrepOrder[]>();
+      for (const o of orders) {
+        const dd = (o as { deliveryDate?: string }).deliveryDate || '';
+        if (!byDate.has(dd)) byDate.set(dd, []);
+        byDate.get(dd)!.push(o);
+      }
+
+      const unitByName = new Map<string, string>();
+      const neededByDate = dates.map(dt => {
+        const { lines } = aggregateIngredients(byDate.get(dt) || []);
+        const mp = new Map<string, number>();
+        for (const l of lines) { mp.set(l.name, (mp.get(l.name) || 0) + l.qty); if (!unitByName.has(l.name)) unitByName.set(l.name, l.unit); }
+        return mp;
+      });
+
+      const names = new Set<string>();
+      neededByDate.forEach(mp => mp.forEach((_, n) => names.add(n)));
+
+      const ingredients = [...names].map(name => {
+        const s = stock[name];
+        const onHand = s?.onHand ?? 0;
+        const unit = s?.unit || unitByName.get(name) || '';
+        const perDay = neededByDate.map(mp => mp.get(name) || 0);
+        const running: number[] = [];
+        let bal = onHand, runoutIndex = -1;
+        for (let i = 0; i < perDay.length; i++) { bal -= perDay[i]; running.push(bal); if (runoutIndex < 0 && bal < 0) runoutIndex = i; }
+        return { name, unit, onHand, tracked: !!s, perDay, running, runoutIndex, totalNeeded: perDay.reduce((a, b) => a + b, 0) };
+      })
+        .filter(x => x.totalNeeded > 0)
+        .sort((a, b) => (a.runoutIndex < 0 ? 999 : a.runoutIndex) - (b.runoutIndex < 0 ? 999 : b.runoutIndex) || a.name.localeCompare(b.name, 'zh'));
+
+      return adminJson({ startDate, dates, ingredients });
+    }
+
+    return adminJson({ error: '未知 action（list | set | matrix）' }, 400);
   } catch (err) {
     console.error('[admin/ingredient-stock] failed:', err);
     const msg = err instanceof Error ? err.message : '食材库存操作失败';
