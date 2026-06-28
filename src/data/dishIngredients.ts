@@ -74,7 +74,7 @@ export const dishRecipes: DishRecipe[] = [
     ingredients: [
       { name: '山药', qty: 100, unit: 'g' },
       { name: '云耳', qty: 4, unit: 'g' },
-      { name: '虾', qty: 4, unit: '只' },
+      { name: 'PD31/40 虾', qty: 4, unit: '只' },
       { name: '鸡胸肉', qty: 65, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '鸡蛋(生)', qty: 1, unit: '颗' },
@@ -139,7 +139,8 @@ export const dishRecipes: DishRecipe[] = [
   {
     // 常驻新菜 2026-06-14 上架，份量碗妈 2026-06-17 提供。
     // 顶级无皮五花肉与绍兴/豆酱焖花肉共用同一采购 SKU（聚合时合并）。
-    // 「PD51/60 虾」按碗妈给的规格独立存，不与山药那道的泛称「虾」自动合并。
+    // 虾按采购规格分两个 SKU：山药/大虾仁/海陆系列用「PD31/40 虾」(大)，
+    // 本道参峇用「PD51/60 虾」(小)，两者不合并（2026-06-29 规格化）。
     // sambal 按 portion-controlled 计入采购汇总（同酱油惯例）。
     name: '参峇臭豆虾仁炒花肉',
     shortName: '参峇',
@@ -290,7 +291,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   '秘制日本酱油': [{ name: '酱油', qty: 20, unit: 'ml' }],
 
   // ─── Surf & Turf add-ons ───────────────────────────────────
-  '鲜甜大虾仁 (4只)': [{ name: '虾', qty: 4, unit: '只' }],
+  '鲜甜大虾仁 (4只)': [{ name: 'PD31/40 虾', qty: 4, unit: '只' }],
   '嫩炒鸡丁 (50g)': [{ name: '鸡胸肉', qty: 65, unit: 'g' }],
   '脆爽云耳 (20g)': [{ name: '云耳', qty: 20, unit: 'g' }],
   '鲜脆山药块 (90g)': [{ name: '山药', qty: 90, unit: 'g' }],
@@ -329,7 +330,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
 
   // surf-turf-super-combo: 大虾 4只 + 嫩炒鸡丁 + 云耳
   '海陆澎湃三件套 (原价 RM 14.0)': [
-    { name: '虾', qty: 4, unit: '只' },
+    { name: 'PD31/40 虾', qty: 4, unit: '只' },
     { name: '鸡胸肉', qty: 65, unit: 'g' },
     { name: '云耳', qty: 20, unit: 'g' },
   ],
