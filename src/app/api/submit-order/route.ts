@@ -435,6 +435,19 @@ export async function POST(req: Request) {
     // confirmation atomically claims the voucher when the order transitions
     // to 'confirmed'.
 
+    // ── Raw-ingredient inventory (advisory) ───────────────────
+    // Decrement on-hand for what this order consumes, reusing the prep
+    // aggregation. ADVISORY: best-effort + swallows its own errors, so a stock
+    // hiccup can never fail a paid order. Drift is corrected by the daily 盘点.
+    // (The per-dish sell-out limit was already reserved above via consumeDishStock.)
+    try {
+      const allItems = payloads.flatMap((p: any) => p.items || []);
+      const { consumeIngredientStock } = await import('@/lib/ingredientStock');
+      await consumeIngredientStock(db, allItems);
+    } catch (err) {
+      console.error('ingredient stock decrement skipped:', err);
+    }
+
     const serverTotal = Math.max(0, serverCartTotal - serverPromoDiscount) + serverDeliveryFee;
 
     // ── Meta CAPI: InitiateCheckout ───────────────────────────

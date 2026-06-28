@@ -1176,6 +1176,11 @@
                     <span>订单计算器</span>
                 </button>
 
+                <button class="nav-item" data-page="inventory">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                    <span>库存</span>
+                </button>
+
                 <button class="nav-item" data-page="settings">
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span>设置</span>
@@ -1982,6 +1987,41 @@
                             <div><strong>订单数</strong>：<span id="sysOrderCount" class="mono">—</span></div>
                             <div><strong>用户数</strong>：<span id="sysUserCount" class="mono">—</span></div>
                             <div><strong>Voucher 数</strong>：<span id="sysVoucherCount" class="mono">—</span></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="page" id="page-inventory">
+
+                    <!-- Layer A — 按菜可售份数 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">📦 按菜可售份数（限量防超卖）</div>
+                                <div class="card-sub">填了数字的菜：网页卖一份减一份，售罄自动停售；留空＝不限量。手动单保存后也会自动扣。</div>
+                            </div>
+                            <button class="btn ghost sm" id="invDishRefresh">↻ 刷新</button>
+                        </div>
+                        <div class="card-content">
+                            <div id="invDishTable" class="table-wrap">加载中…</div>
+                        </div>
+                    </div>
+
+                    <!-- Layer B — 食材原料盘点 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🥩 食材原料盘点</div>
+                                <div class="card-sub">每日盘点录入现有量（克类直接填克，界面自动换算 kg）。系统按当日订单算出「所需」并标红缺口。下单自动扣，仅提醒、不阻挡下单。</div>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="date" id="invIngDate" style="font-size:12px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev)" />
+                                <button class="btn ghost sm" id="invIngRefresh">↻ 加载</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div id="invIngTable" class="table-wrap">选日期后点「加载」…</div>
                         </div>
                     </div>
 
@@ -7133,6 +7173,7 @@ incredibowl.my`,
             chat:      { title: '客户对话', sub: 'WhatsApp 对话历史（来自 Google Sheets）' },
             leads:     { title: '潜在客户', sub: 'WA 聊过但没下单的人 · 跟进转化用' },
             calculator:{ title: '订单计算器', sub: '查现有订单净利 · 或手动加菜模拟一单' },
+            inventory: { title: '库存',     sub: '按菜可售份数 · 食材原料盘点' },
             settings:  { title: '设置',     sub: '菜单管理 · 固定成本 · 营销开支' },
         };
 
@@ -7157,6 +7198,11 @@ incredibowl.my`,
             // Initialize calculator on first open
             if (page === 'calculator' && typeof initCalculator === 'function') {
                 initCalculator();
+            }
+
+            // Initialize inventory (stock count) on first open
+            if (page === 'inventory' && typeof initInventory === 'function') {
+                initInventory();
             }
 
             // Resize charts that became visible
@@ -9863,6 +9909,152 @@ incredibowl.my`,
             return data;
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //   INVENTORY (stock count) — 按菜可售份数 + 食材原料盘点
+        // ═══════════════════════════════════════════════════════════════
+        let _inventoryWired = false;
+
+        // Mirror formatQty() in src/lib/prepIngredients.ts: g≥1000→kg, ml≥1000→L.
+        function invFmtQty(qty, unit) {
+            if (unit === 'g' && qty >= 1000) return (qty / 1000).toFixed(qty % 1000 === 0 ? 0 : 2) + 'kg';
+            if (unit === 'ml' && qty >= 1000) return (qty / 1000).toFixed(qty % 1000 === 0 ? 0 : 2) + 'L';
+            const r = Number(qty.toFixed(2));
+            return (Number.isInteger(r) ? String(r) : r.toString()) + unit;
+        }
+        function invEsc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        function initInventory() {
+            if (!_inventoryWired) {
+                _inventoryWired = true;
+                $('#invDishRefresh').addEventListener('click', loadInvDishStock);
+                $('#invIngRefresh').addEventListener('click', () => loadInvIngredients($('#invIngDate').value));
+                // Default the 盘点 date to tomorrow (the prep horizon).
+                const t = new Date(); t.setDate(t.getDate() + 1);
+                $('#invIngDate').value = t.toISOString().slice(0, 10);
+            }
+            loadInvDishStock();
+            loadInvIngredients($('#invIngDate').value);
+        }
+
+        // ── Layer A: 按菜可售份数 ──
+        async function loadInvDishStock() {
+            const el = $('#invDishTable');
+            el.innerHTML = '加载中…';
+            let stockMap = {};
+            try {
+                const res = await fetch(`${ADMIN_API_BASE}/api/dish-stock`, { cache: 'no-store' });
+                stockMap = await res.json();
+            } catch (e) {
+                el.innerHTML = '<div style="color:var(--danger,#c00)">读取库存失败：' + invEsc(e.message) + '</div>';
+                return;
+            }
+            const dishes = (state.menu || []).filter(d => d.active !== false)
+                .slice().sort((a, b) => Number(a.id) - Number(b.id));
+            if (!dishes.length) { el.innerHTML = '<div style="color:var(--text-muted)">菜单为空</div>'; return; }
+            let rows = '';
+            for (const d of dishes) {
+                const r = stockMap[String(d.id)];
+                const isLimited = typeof r === 'number';
+                rows += `<tr data-id="${invEsc(d.id)}" data-name="${invEsc(d.name)}">
+                    <td style="font-weight:600">${invEsc(d.name)}</td>
+                    <td class="mono" style="text-align:center">${isLimited ? r : '<span style="color:var(--text-muted)">不限量</span>'}</td>
+                    <td style="text-align:right;white-space:nowrap">
+                        <input type="number" min="0" step="1" class="inv-dish-input" placeholder="份数" value="${isLimited ? r : ''}"
+                            style="width:74px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
+                        <button class="btn sm inv-dish-save" style="margin-left:6px">保存</button>
+                        <button class="btn ghost sm inv-dish-clear" style="margin-left:4px" title="设为不限量（删除限量）">清除</button>
+                    </td></tr>`;
+            }
+            el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px">
+                    <th style="padding:6px 4px">菜品</th><th style="padding:6px 4px;text-align:center">当前剩余</th><th style="padding:6px 4px;text-align:right">设置</th>
+                </tr></thead><tbody>${rows}</tbody></table>`;
+            // Event delegation (wire once per render).
+            el.querySelectorAll('.inv-dish-save').forEach(btn => btn.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr');
+                const val = tr.querySelector('.inv-dish-input').value.trim();
+                if (val === '') { toast('请输入份数，或点「清除」设为不限量', 'warn'); return; }
+                const remaining = Math.max(0, Math.floor(Number(val)));
+                if (!Number.isFinite(remaining)) { toast('份数无效', 'error'); return; }
+                await saveInvDishStock(tr.dataset.id, tr.dataset.name, remaining);
+            }));
+            el.querySelectorAll('.inv-dish-clear').forEach(btn => btn.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr');
+                await saveInvDishStock(tr.dataset.id, tr.dataset.name, null);
+            }));
+        }
+        async function saveInvDishStock(dishId, dishName, remaining) {
+            try {
+                await callAdminAPI('/api/admin/dish-stock', { dishId: Number(dishId), remaining, dishName });
+                toast(remaining === null ? `「${dishName}」已设为不限量` : `「${dishName}」剩余设为 ${remaining} 份`, 'success');
+                loadInvDishStock();
+            } catch (e) {
+                toast('保存失败：' + e.message, 'error');
+            }
+        }
+
+        // ── Layer B: 食材原料盘点 ──
+        async function loadInvIngredients(date) {
+            const el = $('#invIngTable');
+            el.innerHTML = '加载中…';
+            let data;
+            try {
+                data = await callAdminAPI('/api/admin/ingredient-stock', { action: 'list', date });
+            } catch (e) {
+                el.innerHTML = '<div style="color:var(--danger,#c00)">加载失败：' + invEsc(e.message) + '</div>';
+                return;
+            }
+            const list = data.ingredients || [];
+            if (!list.length) { el.innerHTML = '<div style="color:var(--text-muted)">无食材数据（先跑 seed-ingredient-stock 脚本）</div>'; return; }
+            let rows = '';
+            for (const it of list) {
+                const short = it.shortfall > 0;
+                const low = it.low;
+                const flag = short ? 'background:rgba(220,0,0,.07)' : (low ? 'background:rgba(230,150,0,.07)' : '');
+                rows += `<tr data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" style="${flag}">
+                    <td style="font-weight:600">${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
+                    <td class="mono" style="text-align:right">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
+                    <td style="text-align:right;white-space:nowrap">
+                        <input type="number" min="0" step="any" class="inv-ing-input" value="${it.onHand}"
+                            style="width:80px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
+                        <span style="color:var(--text-muted);font-size:11px;margin-left:3px">${invEsc(it.unit)}</span>
+                    </td>
+                    <td class="mono" style="text-align:right;${short ? 'color:#c00;font-weight:700' : 'color:var(--text-muted)'}">${short ? '缺 ' + invFmtQty(it.shortfall, it.unit) : (it.needed > 0 ? '足' : '')}</td>
+                    <td style="text-align:right;white-space:nowrap">
+                        <input type="number" min="0" step="any" class="inv-ing-threshold" placeholder="阈值" value="${it.threshold == null ? '' : it.threshold}"
+                            style="width:64px;padding:5px 6px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:12px" />
+                        <button class="btn sm inv-ing-save" style="margin-left:6px">保存</button>
+                    </td></tr>`;
+            }
+            el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px">
+                    <th style="padding:6px 4px">食材</th><th style="padding:6px 4px;text-align:right">所需(当日)</th>
+                    <th style="padding:6px 4px;text-align:right">现有(盘点)</th><th style="padding:6px 4px;text-align:right">差额</th>
+                    <th style="padding:6px 4px;text-align:right">低量阈值 / 保存</th>
+                </tr></thead><tbody>${rows}</tbody></table>
+                <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">红＝当日所需 > 现有（仅提醒，不阻挡下单）· 橙＝低于低量阈值 · 克类填克自动换算 kg。</div>`;
+            el.querySelectorAll('.inv-ing-save').forEach(btn => btn.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr');
+                const onHand = Number(tr.querySelector('.inv-ing-input').value);
+                if (!Number.isFinite(onHand) || onHand < 0) { toast('现有量无效', 'error'); return; }
+                const thRaw = tr.querySelector('.inv-ing-threshold').value.trim();
+                const threshold = thRaw === '' ? null : Number(thRaw);
+                if (threshold !== null && (!Number.isFinite(threshold) || threshold < 0)) { toast('阈值无效', 'error'); return; }
+                await saveInvIngredient(tr.dataset.name, onHand, threshold);
+            }));
+        }
+        async function saveInvIngredient(name, onHand, threshold) {
+            try {
+                await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name, onHand, threshold });
+                toast(`「${name}」现有量设为 ${onHand}`, 'success');
+                loadInvIngredients($('#invIngDate').value);
+            } catch (e) {
+                toast('保存失败：' + e.message, 'error');
+            }
+        }
+
         // Normalize Malaysian phone the same way the server does. Keep in sync with src/lib/phoneUtils.ts
         function dashboardNormalizePhone(raw) {
             if (!raw) return '';
@@ -10795,6 +10987,13 @@ incredibowl.my`,
                     } else {
                         toast(`已保存：${name} · RM ${total.toFixed(2)}`, 'success');
                     }
+                    // ─── Decrement stock for NEW manual orders ───
+                    // Mirrors web checkout: drop the per-dish sell-out count + raw
+                    // ingredients via the recipe. ADVISORY + best-effort — the order
+                    // is already saved, so a stock hiccup only logs, never blocks.
+                    // Edits are skipped (item changes → adjust counts in the 库存 panel).
+                    try { await callAdminAPI('/api/admin/consume-stock', { items }); }
+                    catch (stockErr) { console.warn('[manual-order] stock decrement skipped:', stockErr && stockErr.message); }
                 }
                 renderAll();
                 closeOrderModal();

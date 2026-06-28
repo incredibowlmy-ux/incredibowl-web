@@ -9,7 +9,8 @@
  * Recipe data lives in src/data/dishIngredients.ts — edit there to add/adjust a
  * dish's ingredients; both consumers pick it up automatically.
  */
-import { getRecipeForDish, getAddOnRecipe, IngredientLine } from '@/data/dishIngredients';
+import { getRecipeForDish, getAddOnRecipe } from '@/data/dishIngredients';
+import type { IngredientLine } from '@/data/dishIngredients';
 
 export interface PrepOrderItemAddOn {
   id?: string;

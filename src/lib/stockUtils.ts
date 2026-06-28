@@ -79,6 +79,35 @@ export async function consumeDishStock(db: Firestore, items: DishStockItem[]): P
   });
 }
 
+/**
+ * Lenient decrement for MANUAL (dashboard) orders — admin is in control, so it
+ * does NOT block on shortage (unlike consumeDishStock for web checkout). Only
+ * touches dishes that already have a `dishStock` doc; clamps at 0 so the menu
+ * never shows a negative "仅剩". Best-effort: per-dish failures are swallowed.
+ * Returns the dishIds whose remaining actually changed.
+ */
+export async function decrementDishStockLenient(db: Firestore, items: DishStockItem[]): Promise<number[]> {
+  const wanted = aggregate(items);
+  if (wanted.size === 0) return [];
+  const changed: number[] = [];
+  for (const [id, { qty }] of wanted) {
+    const ref = db.collection('dishStock').doc(String(id));
+    try {
+      const did = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return false; // unlimited — not tracked
+        const remaining = Number(snap.data()?.remaining) || 0;
+        tx.update(ref, { remaining: Math.max(0, remaining - qty), updatedAt: FieldValue.serverTimestamp() });
+        return true;
+      });
+      if (did) changed.push(id);
+    } catch (err) {
+      console.error(`[decrementDishStockLenient] dish ${id} failed:`, err);
+    }
+  }
+  return changed;
+}
+
 /** Best-effort release (rollback) — increments remaining back for limited dishes. */
 export async function releaseDishStock(db: Firestore, items: DishStockItem[]): Promise<void> {
   const wanted = aggregate(items);
