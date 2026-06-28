@@ -464,3 +464,55 @@ export function getAddOnShortName(label: string): string {
   // then take the result. Better than nothing for new add-ons.
   return label.replace(/^【[^】]+】/, '').replace(/\s*\([^)]*\)$/, '').trim() || label;
 }
+
+// ─── Manual-order (dashboard) label aliases ──────────────────────
+/**
+ * The standalone dashboard's manual add-on picker (DISH_ADDON_MAP in
+ * public/dashboard-h7x2q9.html) stores SHORTENED labels — it drops the 【…】
+ * marketing prefix or the "(原价 RM …)" combo suffix the web cart uses. Orders
+ * persist the label string and the prep aggregator (src/lib/prepIngredients.ts)
+ * keys ingredients BY LABEL, so every manual add-on whose short label ≠ the
+ * web-cart label silently contributed 0 ingredients — e.g. two extra chicken
+ * legs (1 manual "多加一只暖胃全鸡腿" + 1 web "【犒劳自己】多加一只暖胃全鸡腿")
+ * showed up as "鸡全腿 1只" in the 食材清单.
+ *
+ * Register each manual label as an alias of its web-cart twin so BOTH resolve
+ * to the SAME recipe — no ingredient data duplicated. When you add a new
+ * shortened label to the dashboard picker, add its alias here.
+ */
+const MANUAL_LABEL_ALIASES: Record<string, string> = {
+  // Chicken-leg / chicken-chop specials (drop 【…】 prefix)
+  '多加一只暖胃全鸡腿': '【犒劳自己】多加一只暖胃全鸡腿',
+  '多加一只酱油全鸡腿': '【犒劳自己】多加一只酱油全鸡腿',
+  '加葱香煎鸡扒': '【收工犒劳】多加一只葱香煎鸡扒',
+  // Greek / pork-belly à-la-carte sides (drop 【…】 prefix)
+  '加柠香烤鸡胸 (180g)': '【增肌极客】加柠香烤鸡胸 (180g)',
+  '加马铃薯 (90g)': '【优质碳水】加马铃薯 (90g)',     // 同 100g 马铃薯，与花肉版等价
+  '加脆甜椰菜花 (80g)': '【抗氧高纤】加脆甜椰菜花 (80g)',
+  '加提鲜黑橄榄 (12g)': '【地中海风味】加提鲜黑橄榄 (12g)',
+  '加花肉片 (70g)': '【浓香入味】加花肉片 (70g)',
+  // Plain-named sides (web uses a descriptive prefix)
+  '毛豆仁 (25g)': '清甜水煮毛豆仁 (25g)',
+  '甜玉米 (25g)': '金黄甜玉米 (25g)',
+  '小番茄 (40g)': '爽脆多汁小番茄 (40g)',
+  // Combos (drop "(原价 RM …)" suffix)
+  '灵魂三件套': '灵魂三件套 (原价 RM 6.0)',
+  '海陆澎湃三件套': '海陆澎湃三件套 (原价 RM 14.0)',
+  '古早味大满贯三件套': '古早味大满贯三件套 (原价 RM 15.40)',
+  '蛋白质核弹三件套': '蛋白质核弹三件套 (原价 RM 18.40)',
+  '爆量满足三件套': '爆量满足三件套 (原价 RM 15.40)',
+  '薯肉双拼满足套': '薯肉双拼满足套 (原价 RM 15.40)',
+};
+for (const [manual, web] of Object.entries(MANUAL_LABEL_ALIASES)) {
+  if (addOnRecipes[web] && !addOnRecipes[manual]) addOnRecipes[manual] = addOnRecipes[web];
+  if (addOnShortNames[web] && !addOnShortNames[manual]) addOnShortNames[manual] = addOnShortNames[web];
+}
+
+// Legacy manual-only multi-leg labels (no web-cart twin) — N× the single leg.
+if (!addOnRecipes['加 2 只暖胃鸡腿 (legacy)']) addOnRecipes['加 2 只暖胃鸡腿 (legacy)'] = [{ name: '鸡全腿', qty: 2, unit: '只' }];
+if (!addOnRecipes['加 3 只暖胃鸡腿 (legacy)']) addOnRecipes['加 3 只暖胃鸡腿 (legacy)'] = [{ name: '鸡全腿', qty: 3, unit: '只' }];
+
+// ⚠️ TODO_RECIPE: '虾仁炒蛋' (shrimp-egg, RM 12.90) — appears in every dish's
+// manual picker but has NO portion data (虾 only count / 鸡蛋 colon unknown).
+// Left unmatched on purpose — DO NOT fabricate quantities. Add a recipe in
+// addOnRecipes once the boss provides the 虾/蛋 portion sizes.
