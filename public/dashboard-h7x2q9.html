@@ -2616,6 +2616,7 @@
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // 常驻新菜 2026-06-14
             { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 周四新菜 2026-06-15
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // 周二新菜 2026-06-21 (default: 1 温泉蛋)
+            { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Daily', active: true },  // 新菜 2026-06-29 入系统(鸡胸)；网站 hidden 未上线，排期待定
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -2672,6 +2673,7 @@
             { id: 'potato-egg',                  name: '马铃薯煎蛋',                            price: 3.50,  category: '单点' },
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
             { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
+            { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋',                      price: 6.80,  category: '单点' },  // 新 add-on 2026-06-29，通用配菜（所有菜可加）
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (25g)',                  price: 2.50,  category: '单点' },
             { id: 'extra-corn',                  name: '金黄甜玉米 (25g)',                      price: 2.50,  category: '单点' },
             { id: 'chia-pudding',                name: '奇亚籽布丁',                            price: 6.90,  category: '单点' },
@@ -7389,15 +7391,48 @@ incredibowl.my`,
         });
 
         // ═══════════════════════════════════════════════════════════════
+        //   DISH DROPDOWN — grouped by weekday for easier visual scanning.
+        //   常驻先 → 周一→周日 → 其他。今天那一组 prefix「⭐ (今天)」。
+        //   MENU_SEED 是 day 字段的 fallback（Firestore 文档可能缺）。
+        // ═══════════════════════════════════════════════════════════════
+        const DISH_DAY_ORDER = ['Daily', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', '其他'];
+        const DISH_DAY_LABEL = {
+            Daily: '常驻 · 每日供应',
+            Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四',
+            Fri: '周五', Sat: '周六', Sun: '周日',
+            '其他': '其他 / 未排期',
+        };
+        const DISH_SEED_DAY_BY_ID = Object.create(null);
+        MENU_SEED.forEach(m => { DISH_SEED_DAY_BY_ID[String(m.id)] = m.day; });
+        function buildDishOptionsHtml(menu) {
+            const dishes = (menu || []).filter(m =>
+                !String(m.id).startsWith('addon-') && m.active !== false);
+            const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
+            dishes.forEach(m => {
+                const day = m.day || DISH_SEED_DAY_BY_ID[String(m.id)] || '其他';
+                (groups[day] || groups['其他']).push(m);
+            });
+            DISH_DAY_ORDER.forEach(d => {
+                groups[d].sort((a, b) => Number(a.id) - Number(b.id));
+            });
+            const todayWeekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
+            return DISH_DAY_ORDER.filter(d => groups[d].length).map(d => {
+                const todayBadge = d === todayWeekday ? ' ⭐ (今天)' : '';
+                const label = `${DISH_DAY_LABEL[d]}${todayBadge}`;
+                const opts = groups[d].map(m =>
+                    `<option value="${escapeHtml(m.name)}" data-price="${m.price}">${escapeHtml(m.name)} · RM ${Number(m.price).toFixed(2)}</option>`
+                ).join('');
+                return `<optgroup label="${escapeHtml(label)}">${opts}</optgroup>`;
+            }).join('');
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //   ORDER CALCULATOR — P&L breakdown for one order
         // ═══════════════════════════════════════════════════════════════
 
         // Build a row matching the manual-order item-row shape (reuses DISH_ADDON_MAP).
         function buildCalcItemRow() {
-            const dishes = (state.menu || []).filter(m => !String(m.id).startsWith('addon-') && m.active !== false);
-            const optsHtml = dishes.map(m =>
-                `<option value="${escapeHtml(m.name)}" data-price="${m.price}">${escapeHtml(m.name)} · RM ${Number(m.price).toFixed(2)}</option>`
-            ).join('');
+            const optsHtml = buildDishOptionsHtml(state.menu);
             const wrap = document.createElement('div');
             wrap.className = 'calc-item-row';
             wrap.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--bg-elev)';
@@ -8893,20 +8928,41 @@ incredibowl.my`,
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 ...DRINKS_PILLS,
             ],
+            '25': [
+                // 家常日式咖喱饭（鸡胸）— RM 18.50，新菜 2026-06-29。沿用默认 alacarte + 米饭 + drinks。
+                // 鲜虾西兰花滑蒸蛋经 UNIVERSAL_ADDONS 自动追加，无需在此重复列出。
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (25g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
         };
 
+        // 通用配菜：每道菜都能加（不挂在某一道）。在 getDishAddons 里统一追加，
+        // 避免逐道菜往 DISH_ADDON_MAP 复制。如该菜已自列同 id 则去重。
+        const UNIVERSAL_ADDONS = [
+            { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
+        ];
         function getDishAddons(dishName) {
             if (!dishName) return [];
             const canon = canonicalDishName(dishName);
             const dish = (state.menu || []).find(m => canonicalDishName(m.name) === canon);
             if (!dish) return [];
-            return DISH_ADDON_MAP[String(dish.id)] || [];
+            const base = DISH_ADDON_MAP[String(dish.id)] || [];
+            const extras = UNIVERSAL_ADDONS.filter(u => !base.some(b => b.id === u.id));
+            return [...base, ...extras];
         }
 
         function buildItemRow(menu) {
-            const optsHtml = menu.filter(m => m.active !== false).map(m =>
-                `<option value="${escapeHtml(m.name)}" data-price="${m.price}">${escapeHtml(m.name)} · RM ${Number(m.price).toFixed(2)}</option>`
-            ).join('');
+            const optsHtml = buildDishOptionsHtml(menu);
 
             const wrap = document.createElement('div');
             wrap.className = 'item-row';
