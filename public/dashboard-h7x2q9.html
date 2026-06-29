@@ -3429,8 +3429,8 @@ incredibowl.my`,
                     setTimeout(() => toast(`已新增 ${seededNew} 道菜到菜单（手动订单下拉可选）`, 'success'), 900);
                 }
 
-                // ─── Migration: sync `active` + `voucherTopUp` from MENU_SEED → Firestore.
-                //     退役菜（active: false）+ 餐券补差（voucherTopUp）属于「老板设置」类元数据，
+                // ─── Migration: sync `active` + `voucherTopUp` + `day` from MENU_SEED → Firestore.
+                //     退役菜（active: false）+ 餐券补差（voucherTopUp）+ 排期（day）属于「老板设置」类元数据，
                 //     不像名字 / 价格那样允许 dashboard 端单独编辑 → 直接以 SEED 为权威源同步。 ───
                 let metaSynced = 0;
                 for (const seedEntry of MENU_SEED) {
@@ -3442,6 +3442,9 @@ incredibowl.my`,
                     if (typeof seedEntry.voucherTopUp === 'number'
                         && Number(item.voucherTopUp) !== seedEntry.voucherTopUp) {
                         updates.voucherTopUp = seedEntry.voucherTopUp;
+                    }
+                    if (seedEntry.day && seedEntry.day !== item.day) {
+                        updates.day = seedEntry.day;
                     }
                     if (Object.keys(updates).length === 0) continue;
                     try {
@@ -7409,7 +7412,8 @@ incredibowl.my`,
                 !String(m.id).startsWith('addon-') && m.active !== false);
             const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
             dishes.forEach(m => {
-                const day = m.day || DISH_SEED_DAY_BY_ID[String(m.id)] || '其他';
+                // SEED wins (源码是排期权威)；Firestore 仅给非 SEED 的新菜 fallback。
+                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
@@ -7442,7 +7446,8 @@ incredibowl.my`,
                 !String(m.id).startsWith('addon-') && m.active !== false);
             const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
             dishes.forEach(m => {
-                const day = m.day || DISH_SEED_DAY_BY_ID[String(m.id)] || '其他';
+                // SEED wins (源码是排期权威)；Firestore 仅给非 SEED 的新菜 fallback。
+                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
