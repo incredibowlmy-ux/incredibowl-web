@@ -7426,6 +7426,117 @@ incredibowl.my`,
             }).join('');
         }
 
+        // ─── Searchable dish combobox ─── input + dropdown panel + hidden <select>.
+        // 1) 打字过滤（中英菜名 substring）
+        // 2) 焦点时显示所有菜，按 weekday 分组，送达日/今天那组排第一并 ⭐
+        //    Manual-order modal 读 #moDate；calculator 没有日期就 fallback 今天。
+        function getWeekdayKeyFromDateStr(yyyyMmDd) {
+            const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            if (!yyyyMmDd) return DOW[new Date().getDay()];
+            const [y, m, d] = String(yyyyMmDd).split('-').map(Number);
+            if (!y || !m || !d) return DOW[new Date().getDay()];
+            return DOW[new Date(y, m - 1, d).getDay()];
+        }
+        function _dishGroupsByDay(menu) {
+            const dishes = (menu || []).filter(m =>
+                !String(m.id).startsWith('addon-') && m.active !== false);
+            const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
+            dishes.forEach(m => {
+                const day = m.day || DISH_SEED_DAY_BY_ID[String(m.id)] || '其他';
+                (groups[day] || groups['其他']).push(m);
+            });
+            DISH_DAY_ORDER.forEach(d => {
+                groups[d].sort((a, b) => Number(a.id) - Number(b.id));
+            });
+            return groups;
+        }
+        function _renderDishComboPanel(panel, query, hilightKey, hilightLabel) {
+            const groups = _dishGroupsByDay(state.menu);
+            const q = (query || '').trim().toLowerCase();
+            const ordered = [hilightKey, ...DISH_DAY_ORDER.filter(d => d !== hilightKey)];
+            const html = ordered.filter(d => groups[d] && groups[d].length).map(d => {
+                const matches = groups[d].filter(m => {
+                    if (!q) return true;
+                    return m.name.toLowerCase().includes(q)
+                        || (m.nameEn || '').toLowerCase().includes(q);
+                });
+                if (!matches.length) return '';
+                const isHilight = d === hilightKey;
+                const badge = isHilight ? ` ⭐ (${hilightLabel})` : '';
+                const hdrBg = isHilight ? 'var(--primary-soft, rgba(255,107,53,0.08))' : 'var(--bg-subtle)';
+                return `
+                    <div class="dish-combo-group-hdr" style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:6px 12px;background:${hdrBg};position:sticky;top:0;z-index:1">
+                        ${escapeHtml(DISH_DAY_LABEL[d] + badge)}
+                    </div>
+                    ${matches.map(m =>
+                        `<div class="dish-combo-row" data-name="${escapeHtml(m.name)}" data-price="${m.price}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-top:1px solid var(--border)">
+                            <span style="color:var(--text)">${escapeHtml(m.name)}</span>
+                            <span style="color:var(--text-muted);margin-left:6px;font-size:12px">· RM ${Number(m.price).toFixed(2)}</span>
+                        </div>`).join('')}
+                `;
+            }).join('');
+            panel.innerHTML = html || `<div style="padding:12px;text-align:center;color:var(--text-muted);font-size:12px">无匹配菜品</div>`;
+        }
+        function attachDishCombo(rowEl, opts = {}) {
+            const inputSel = opts.inputSel || '.dish-combo-input';
+            const panelSel = opts.panelSel || '.dish-combo-panel';
+            const selectSel = opts.selectSel;  // required
+            const dateInputSel = opts.dateInputSel || null;  // null = always today
+            const input = rowEl.querySelector(inputSel);
+            const panel = rowEl.querySelector(panelSel);
+            const select = rowEl.querySelector(selectSel);
+            if (!input || !panel || !select) return;
+            function ctx() {
+                if (dateInputSel) {
+                    const v = document.querySelector(dateInputSel)?.value;
+                    if (v) return { key: getWeekdayKeyFromDateStr(v), label: '送达日' };
+                }
+                return { key: getWeekdayKeyFromDateStr(null), label: '今天' };
+            }
+            function rerender() {
+                const c = ctx();
+                _renderDishComboPanel(panel, input.value, c.key, c.label);
+            }
+            let blurTimer;
+            input.addEventListener('focus', () => {
+                rerender();
+                panel.style.display = 'block';
+            });
+            input.addEventListener('input', rerender);
+            input.addEventListener('blur', () => {
+                blurTimer = setTimeout(() => { panel.style.display = 'none'; }, 180);
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { panel.style.display = 'none'; input.blur(); }
+            });
+            panel.addEventListener('mousedown', (e) => {
+                const row = e.target.closest('.dish-combo-row');
+                if (!row) return;
+                e.preventDefault();
+                clearTimeout(blurTimer);
+                rowEl.setDishValue(row.dataset.name);
+                panel.style.display = 'none';
+                input.blur();
+            });
+            panel.addEventListener('mouseover', (e) => {
+                const row = e.target.closest('.dish-combo-row');
+                if (row) row.style.background = 'var(--bg-input)';
+            });
+            panel.addEventListener('mouseout', (e) => {
+                const row = e.target.closest('.dish-combo-row');
+                if (row) row.style.background = '';
+            });
+            // Public API: silent=true for prefill (no change event → caller controls addon render)
+            rowEl.setDishValue = (name, { silent = false } = {}) => {
+                const matched = [...select.options].find(o => o.value === name);
+                if (!matched) return false;
+                input.value = name;
+                select.value = name;
+                if (!silent) select.dispatchEvent(new Event('change', { bubbles: true }));
+                return true;
+            };
+        }
+
         // ═══════════════════════════════════════════════════════════════
         //   ORDER CALCULATOR — P&L breakdown for one order
         // ═══════════════════════════════════════════════════════════════
@@ -7438,10 +7549,15 @@ incredibowl.my`,
             wrap.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--bg-elev)';
             wrap.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 70px 30px;gap:8px;align-items:center">
-                    <select class="calc-item-select" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px">
-                        <option value="">-- 选择菜品 --</option>
-                        ${optsHtml}
-                    </select>
+                    <div class="calc-item-picker" style="position:relative">
+                        <input type="text" class="calc-item-search dish-combo-input" placeholder="搜菜名或选择 (e.g. 鸡 / 蒸花肉)" autocomplete="off"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px;box-sizing:border-box" />
+                        <div class="calc-item-dropdown dish-combo-panel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;max-height:300px;overflow-y:auto;background:var(--bg-elev);border:1px solid var(--border-strong);border-radius:8px;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+                        <select class="calc-item-select" hidden>
+                            <option value="">-- 选择菜品 --</option>
+                            ${optsHtml}
+                        </select>
+                    </div>
                     <input type="number" class="calc-item-qty" min="1" max="99" value="1" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px;text-align:center" />
                     <button type="button" class="calc-item-remove" style="width:30px;height:30px;border-radius:8px;color:var(--text-muted);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">&times;</button>
                 </div>
@@ -7452,6 +7568,7 @@ incredibowl.my`,
             const sel = wrap.querySelector('.calc-item-select');
             const qty = wrap.querySelector('.calc-item-qty');
             const addonContainer = wrap.querySelector('.calc-addon-pills');
+            attachDishCombo(wrap, { selectSel: '.calc-item-select' });
 
             function renderAddons() {
                 const addons = getDishAddons(sel.value);
@@ -8969,10 +9086,15 @@ incredibowl.my`,
             wrap.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--bg-subtle)';
             wrap.innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 70px 30px;gap:8px;align-items:center">
-                    <select class="mo-item-select" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px">
-                        <option value="">-- 选择菜品 --</option>
-                        ${optsHtml}
-                    </select>
+                    <div class="mo-item-picker" style="position:relative">
+                        <input type="text" class="mo-item-search dish-combo-input" placeholder="搜菜名或选择 (e.g. 鸡 / 蒸花肉)" autocomplete="off"
+                            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px;box-sizing:border-box" />
+                        <div class="mo-item-dropdown dish-combo-panel" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:50;max-height:300px;overflow-y:auto;background:var(--bg-elev);border:1px solid var(--border-strong);border-radius:8px;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,0.15)"></div>
+                        <select class="mo-item-select" hidden>
+                            <option value="">-- 选择菜品 --</option>
+                            ${optsHtml}
+                        </select>
+                    </div>
                     <input type="number" class="mo-item-qty" min="1" max="99" value="1" style="padding:8px 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:13px;text-align:center" />
                     <button type="button" class="mo-item-remove" style="width:30px;height:30px;border-radius:8px;color:var(--text-muted);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">&times;</button>
                 </div>
@@ -8984,6 +9106,7 @@ incredibowl.my`,
             const sel = wrap.querySelector('.mo-item-select');
             const qty = wrap.querySelector('.mo-item-qty');
             const addonContainer = wrap.querySelector('.mo-addon-pills');
+            attachDishCombo(wrap, { selectSel: '.mo-item-select', dateInputSel: '#moDate' });
 
             // ─── Pill state model ───
             // qty = 0  → unselected (flat pill, click to add)
@@ -9194,8 +9317,13 @@ incredibowl.my`,
                         const row = buildItemRow(state.menu);
                         $('#moItemRows').appendChild(row);
                         const sel = row.querySelector('.mo-item-select');
-                        const matched = [...sel.options].find(opt => canonicalDishName(opt.value) === canonicalDishName(it.name));
-                        if (matched) sel.value = matched.value;
+                        const matched = [...sel.options].find(opt =>
+                            opt.value && canonicalDishName(opt.value) === canonicalDishName(it.name));
+                        if (matched && row.setDishValue) {
+                            row.setDishValue(matched.value, { silent: true });
+                        } else if (matched) {
+                            sel.value = matched.value;
+                        }
                         row.querySelector('.mo-item-qty').value = it.quantity || 1;
                         // Restore add-ons WITH their per-pill quantities — Map<id, qty>
                         const addonQtyMap = new Map();
