@@ -16,6 +16,7 @@
 import type { Firestore } from 'firebase-admin/firestore';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getBundle, getValidityDaysForBundle, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
+import { claimPromoVoucher } from '@/lib/voucherValidation';
 
 export interface MintInput {
   userId: string;
@@ -104,6 +105,85 @@ export async function mintVouchersForPurchase(
 
   await batch.commit();
   return ids;
+}
+
+/**
+ * Finalize a paid meal-voucher purchase: mint vouchers (idempotent), flip the
+ * purchase to status='paid', bump the buyer's LTV, and burn any promo code.
+ *
+ * This is the SINGLE source of truth shared by every "money has settled" path:
+ *   - /api/meal-vouchers/confirm-purchase  (browser handler, after sig verify)
+ *   - /api/payment/webhook                 (Curlec server-to-server, FPX/App safe)
+ * Keeping both on this one function is what stops the two paths from drifting.
+ *
+ * Idempotent end-to-end:
+ *   - minting is guarded by purchase.voucherIds inside mintVouchersForPurchase()
+ *   - the status flip + totalSpent bump run in a transaction guarded by
+ *     status==='paid', so concurrent webhook + browser fires don't double-count.
+ *
+ * userId is read from the purchase doc itself (NOT passed in) so the webhook —
+ * which has no authenticated user — finalizes for the correct owner.
+ */
+export interface FinalizePayment {
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  /** Audit tag recorded on the purchase, e.g. 'client-confirm' | 'webhook:payment.captured'. */
+  source: string;
+}
+
+export async function finalizeMealVoucherPurchase(
+  db: Firestore,
+  purchaseId: string,
+  payment: FinalizePayment,
+): Promise<{ voucherIds: string[]; alreadyPaid: boolean }> {
+  const purchaseRef = db.collection('mealVoucherPurchases').doc(purchaseId);
+  const snap = await purchaseRef.get();
+  if (!snap.exists) throw new Error(`Purchase ${purchaseId} not found`);
+  const d = snap.data() || {};
+  const userId: string = d.userId;
+  if (!userId) throw new Error(`Purchase ${purchaseId} missing userId`);
+
+  // Mint first (idempotent — returns existing IDs on retry).
+  const voucherIds = await mintVouchersForPurchase(db, {
+    userId,
+    purchaseId,
+    voucherCount: Number(d.voucherCount) || 0,
+  });
+
+  // Atomic status flip + LTV bump, guarded by status==='paid' for idempotency.
+  let shouldClaimPromo = false;
+  let alreadyPaid = false;
+  const userRef = db.collection('users').doc(userId);
+  await db.runTransaction(async (tx) => {
+    const fresh = await tx.get(purchaseRef);
+    if (!fresh.exists) return;
+    const fd = fresh.data() || {};
+    if (fd.status === 'paid') { alreadyPaid = true; return; }
+    shouldClaimPromo = !!fd.promoCode;
+    tx.update(purchaseRef, {
+      status: 'paid',
+      ...(payment.razorpayPaymentId ? { razorpayPaymentId: payment.razorpayPaymentId } : {}),
+      ...(payment.razorpaySignature ? { razorpaySignature: payment.razorpaySignature } : {}),
+      paidAt: FieldValue.serverTimestamp(),
+      finalizedBy: payment.source,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    tx.update(userRef, {
+      totalSpent: FieldValue.increment(Number(fd.amountPaid) || 0),
+    });
+  });
+
+  // Burn the promo voucher only on the first paid transition. Best-effort: a
+  // flaky claim must not fail a purchase the customer already paid for.
+  if (shouldClaimPromo && d.promoCode) {
+    try {
+      await claimPromoVoucher(db, d.promoCode, userId);
+    } catch (e) {
+      console.warn('Failed to claim promo voucher on meal-voucher finalize:', e);
+    }
+  }
+
+  return { voucherIds, alreadyPaid };
 }
 
 /**
