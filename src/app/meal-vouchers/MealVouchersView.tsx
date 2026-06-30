@@ -9,12 +9,8 @@ import {
     ArrowLeft, Ticket, CheckCircle, Sparkles, AlertCircle, Loader2,
     CreditCard, Phone, Plus, Calendar, ShieldCheck, Clock, Tag,
 } from 'lucide-react';
-import { MEAL_VOUCHER_BUNDLES, TEST_MEAL_VOUCHER_BUNDLE, getBundle } from '@/data/mealVoucherConfig';
+import { MEAL_VOUCHER_BUNDLES } from '@/data/mealVoucherConfig';
 import type { MealVoucherBundle } from '@/data/mealVoucherConfig';
-
-// ⚠️ 临时：仅这个邮箱能看到 RM1 测试套餐（验证 FPX→webhook 用）。测试完连同
-// TEST_MEAL_VOUCHER_BUNDLE 一起删。
-const TEST_BUNDLE_ADMIN_EMAIL = 'incredibowl.my@gmail.com';
 import type { Locale } from '../member/dict';
 import { MEAL_VOUCHERS_DICT } from './dict';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
@@ -56,15 +52,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     const [promoError, setPromoError] = useState('');
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
 
-    // Admin-only RM1 test bundle (FPX→webhook verification). Appended to the
-    // visible list ONLY for the admin email; customers never see it.
-    const isTestAdmin = currentUser?.email === TEST_BUNDLE_ADMIN_EMAIL;
-    const visibleBundles = isTestAdmin
-        ? [...MEAL_VOUCHER_BUNDLES, TEST_MEAL_VOUCHER_BUNDLE]
-        : MEAL_VOUCHER_BUNDLES;
-    // getBundle() resolves both public + the hidden test bundle, so a selected
-    // '1' doesn't crash on a public-only lookup.
-    const selectedBundle = getBundle(selectedBundleId) ?? MEAL_VOUCHER_BUNDLES[0];
+    const selectedBundle = MEAL_VOUCHER_BUNDLES.find(b => b.id === selectedBundleId)!;
     const cappedPromoDiscount = promoApplied
         ? Math.min(promoDiscount, Math.max(0, selectedBundle.price - 0.01))
         : 0;
@@ -416,7 +404,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
             <main className="max-w-2xl mx-auto px-4 -mt-6 relative z-10 pb-12 space-y-6">
                 {/* Bundle picker */}
                 <section className="space-y-3">
-                    {visibleBundles.map((bundle) => {
+                    {MEAL_VOUCHER_BUNDLES.map((bundle) => {
                         const isSelected = selectedBundleId === bundle.id;
                         const highlight = localiseHighlight(bundle.highlight);
                         return (
