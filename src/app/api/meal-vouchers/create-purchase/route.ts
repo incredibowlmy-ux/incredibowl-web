@@ -23,7 +23,10 @@ function getRazorpay() {
   return razorpay;
 }
 
-async function verifyAuth(req: NextRequest): Promise<{ uid: string } | null> {
+// ⚠️ 临时：仅此邮箱可买 RM1 测试套餐（bundleId '1'）。测试完删测试套餐时一并清理。
+const TEST_BUNDLE_ADMIN_EMAIL = 'incredibowl.my@gmail.com';
+
+async function verifyAuth(req: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
@@ -31,7 +34,7 @@ async function verifyAuth(req: NextRequest): Promise<{ uid: string } | null> {
     await getDb();
     const { getAuth } = await import('firebase-admin/auth');
     const decoded = await getAuth().verifyIdToken(token);
-    return { uid: decoded.uid };
+    return { uid: decoded.uid, email: decoded.email };
   } catch {
     return null;
   }
@@ -67,6 +70,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     const bundle = getBundle(bundleId)!;
+
+    // Hidden RM1 test bundle is admin-only. The view never shows it to others,
+    // but harden the API too so a crafted request can't buy a RM18.50 dish for RM1.
+    if (bundle.id === '1' && auth.email !== TEST_BUNDLE_ADMIN_EMAIL) {
+      return NextResponse.json({ error: '无效组合' }, { status: 400 });
+    }
 
     if (!['fpx', 'qr'].includes(paymentMethod)) {
       return NextResponse.json({ error: '无效支付方式' }, { status: 400 });
