@@ -348,24 +348,26 @@ export default function MemberView({ locale }: { locale: Locale }) {
             <div className="max-w-2xl mx-auto px-4 -mt-20 relative z-10 space-y-6 pb-12">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-4 gap-3">
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <ShoppingBag size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-xl font-black text-[#1A2D23]">{profileData?.totalOrders || 0}</p>
+                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{profileData?.totalOrders || 0}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsTotalOrders}</p>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Wallet size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-xl font-black text-[#1A2D23] truncate">RM{(profileData?.totalSpent || 0).toFixed(0)}</p>
+                        <p className="text-base sm:text-xl font-black text-[#1A2D23] whitespace-nowrap">
+                            <span className="text-[9px] sm:text-xs font-bold align-text-top mr-0.5 opacity-70">RM</span>{(profileData?.totalSpent || 0).toFixed(0)}
+                        </p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsTotalSpent}</p>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Star size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-xl font-black text-[#1A2D23]">{favDish ? favDish[1] : 0}</p>
+                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{favDish ? favDish[1] : 0}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsFavCount}</p>
                     </div>
-                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 text-center shadow-lg shadow-black/5 border border-white">
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
                         <Calendar size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-xl font-black text-[#1A2D23]">{memberDays}</p>
+                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{memberDays}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsDaysJoined}</p>
                     </div>
                 </div>
