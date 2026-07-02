@@ -9,7 +9,7 @@
  * Recipe data lives in src/data/dishIngredients.ts — edit there to add/adjust a
  * dish's ingredients; both consumers pick it up automatically.
  */
-import { getRecipeForDish, getAddOnRecipe } from '@/data/dishIngredients';
+import { getRecipeForDish, getAddOnRecipe, UNTRACKED_OK } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
 
 export interface PrepOrderItemAddOn {
@@ -109,6 +109,41 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
   }
   const lines = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'));
   return { lines, text: lines.length === 0 ? '无' : lines.map(l => `${l.name} ${formatQty(l.qty, l.unit)}`).join('；') };
+}
+
+/**
+ * Items in the orders that resolve to NO recipe (missing, or present but with
+ * empty ingredients = "data not provided") — these silently contribute ZERO to
+ * prep/stock aggregation, so surface them instead of hiding the gap.
+ * Deliberately-untracked items (drinks, 少饭 — see UNTRACKED_OK) are skipped.
+ * Returns [{ label, count }] sorted by count desc.
+ */
+export function collectUnrecipedLabels(orders: PrepOrder[]): { label: string; count: number }[] {
+  const misses = new Map<string, number>();
+  const bump = (label: string, qty: number) => {
+    if (UNTRACKED_OK.has(label)) return;
+    misses.set(label, (misses.get(label) || 0) + qty);
+  };
+  for (const o of orders) {
+    for (const it of o.items || []) {
+      const qty = it.quantity || 0;
+      if (qty <= 0) continue;
+      if (isAddOnItem(it.name)) {
+        const label = stripAddOnPrefix(it.name);
+        if (!getAddOnRecipe(label)) bump(label, qty);
+      } else {
+        const recipe = getRecipeForDish(it.name);
+        if (!recipe || recipe.ingredients.length === 0) bump(it.name, qty);
+        for (const a of it.addOns || []) {
+          const label = a.label || a.name || a.id || '';
+          const aQty = a.quantity || 0;
+          if (!label || aQty <= 0) continue;
+          if (!getAddOnRecipe(label)) bump(label, aQty);
+        }
+      }
+    }
+  }
+  return [...misses.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
 }
 
 // ─── Per-dish view (dashboard 打印备餐单) ──────────────────────────────

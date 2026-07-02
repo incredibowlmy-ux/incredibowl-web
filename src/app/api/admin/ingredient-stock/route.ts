@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   try {
     const { getAdminDb } = await import('@/lib/firebase-admin');
     const db = getAdminDb();
-    const { getAllIngredientStock, setIngredientStock, addIngredientStock, getIngredientLedger } = await import('@/lib/ingredientStock');
+    const { getAllIngredientStock, setIngredientStock, setIngredientThreshold, addIngredientStock, getIngredientLedger } = await import('@/lib/ingredientStock');
 
     if (action === 'add') {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -60,14 +60,22 @@ export async function POST(req: NextRequest) {
 
     if (action === 'set') {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
-      const onHand = Number(body.onHand);
       if (!name) return adminJson({ error: '缺少食材名' }, 400);
-      if (!Number.isFinite(onHand) || onHand < 0) return adminJson({ error: 'onHand 必须为非负数' }, 400);
       const hasThreshold = 'threshold' in body;
       const threshold = body.threshold == null ? null : Number(body.threshold);
       if (hasThreshold && threshold !== null && (!Number.isFinite(threshold) || threshold < 0)) {
         return adminJson({ error: 'threshold 必须为非负数或 null' }, 400);
       }
+      // Threshold-only save (no onHand in body): must NOT touch on-hand — a
+      // stale count sent along would silently revert stock consumed since the
+      // dashboard page loaded.
+      if (body.onHand === undefined) {
+        if (!hasThreshold) return adminJson({ error: '缺少 onHand 或 threshold' }, 400);
+        await setIngredientThreshold(db, name, threshold);
+        return adminJson({ ok: true, name, threshold });
+      }
+      const onHand = Number(body.onHand);
+      if (!Number.isFinite(onHand) || onHand < 0) return adminJson({ error: 'onHand 必须为非负数' }, 400);
       await setIngredientStock(db, name, onHand, { by: adminEmail, ...(hasThreshold ? { threshold } : {}) });
       return adminJson({ ok: true, name, onHand });
     }
@@ -76,13 +84,18 @@ export async function POST(req: NextRequest) {
       const date = typeof body.date === 'string' ? body.date.trim() : '';
       const stock = await getAllIngredientStock(db);
 
-      // Amount needed for the date's active orders (same roll-up as prep list).
+      // Amount needed for the date's active orders (same roll-up as prep list),
+      // plus any order items with NO recipe — those contribute zero to both
+      // prep and stock, so the dashboard surfaces them instead of hiding gaps.
       const needed = new Map<string, number>();
+      let unreciped: { label: string; count: number }[] = [];
       if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         const snap = await db.collection('orders').where('deliveryDate', '==', date).get();
         const orders = snap.docs.map(d => d.data() as PrepOrder).filter(o => o.status !== 'cancelled');
         const { lines } = aggregateIngredients(orders);
         for (const l of lines) needed.set(l.name, (needed.get(l.name) || 0) + l.qty);
+        const { collectUnrecipedLabels } = await import('@/lib/prepIngredients');
+        unreciped = collectUnrecipedLabels(orders);
       }
 
       // Union of tracked ingredients + anything needed but not yet tracked.
@@ -102,7 +115,7 @@ export async function POST(req: NextRequest) {
           low: s?.threshold != null && onHand <= s.threshold,
         };
       });
-      return adminJson({ date: date || null, ingredients });
+      return adminJson({ date: date || null, ingredients, unreciped });
     }
 
     if (action === 'matrix') {

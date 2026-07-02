@@ -69,7 +69,8 @@ export async function getAllIngredientStock(db: Firestore): Promise<Record<strin
 //   receive = 进货（买货入库，+）
 //   adjust  = 盘点校正（实物重数，覆盖，delta = new − old）
 //   consume = 下单消耗（自动，−）
-export type MovementType = 'receive' | 'adjust' | 'consume';
+//   release = 删单回补（把已扣的加回去，+）
+export type MovementType = 'receive' | 'adjust' | 'consume' | 'release';
 
 export interface LedgerEntry {
   type: MovementType;
@@ -151,6 +152,20 @@ export async function setIngredientStock(
   });
 }
 
+/**
+ * Threshold-only save — deliberately does NOT touch onHand. The dashboard's
+ * threshold button previously sent a stale onHand along, silently reverting
+ * counts consumed since page load; this path makes that impossible. No ledger
+ * entry (thresholds aren't stock movements).
+ */
+export async function setIngredientThreshold(db: Firestore, name: string, threshold: number | null): Promise<void> {
+  await db.collection('ingredientStock').doc(ingredientDocId(name)).set({
+    name,
+    threshold: threshold == null ? FieldValue.delete() : threshold,
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
 /** Recent movements for one ingredient, newest first (single-field orderBy → auto index). */
 export async function getIngredientLedger(db: Firestore, name: string, limit = 30): Promise<LedgerEntry[]> {
   const ref = db.collection('ingredientStock').doc(ingredientDocId(name));
@@ -183,6 +198,29 @@ export async function consumeIngredientStock(
   items: PrepOrderItem[],
   ctx?: { orderId?: string; source?: string },
 ): Promise<void> {
+  return applyOrderMovement(db, items, -1, 'consume', ctx);
+}
+
+/**
+ * Inverse of consume — credits back what a DELETED order had auto-deducted
+ * (both layers stay honest when the admin removes a mistaken order). Same
+ * best-effort/never-throws contract; logs `release` movements.
+ */
+export async function releaseIngredientStock(
+  db: Firestore,
+  items: PrepOrderItem[],
+  ctx?: { orderId?: string; source?: string },
+): Promise<void> {
+  return applyOrderMovement(db, items, +1, 'release', ctx);
+}
+
+async function applyOrderMovement(
+  db: Firestore,
+  items: PrepOrderItem[],
+  sign: 1 | -1,
+  type: 'consume' | 'release',
+  ctx?: { orderId?: string; source?: string },
+): Promise<void> {
   try {
     const { lines } = aggregateIngredients([{ items }]);
     if (!lines.length) return;
@@ -204,14 +242,14 @@ export async function consumeIngredientStock(
     let touched = 0;
     snaps.forEach((snap, i) => {
       if (!snap.exists) return; // untracked ingredient — skip
-      const qty = byName.get(names[i]) || 0;
+      const delta = sign * (byName.get(names[i]) || 0);
       const before = Number(snap.data()?.onHand) || 0;
       batch.update(refs[i], {
-        onHand: FieldValue.increment(-qty),
+        onHand: FieldValue.increment(delta),
         updatedAt: FieldValue.serverTimestamp(),
       });
       writeLog(batch, refs[i], {
-        type: 'consume', delta: -qty, after: before - qty,
+        type, delta, after: before + delta,
         unit: String(snap.data()?.unit || unitByName.get(names[i]) || ''),
         note: ctx?.source ?? 'order', orderId: ctx?.orderId ?? null,
       });
@@ -220,6 +258,6 @@ export async function consumeIngredientStock(
     if (touched) await batch.commit();
   } catch (err) {
     // Advisory layer — log and move on; ordering must never fail on this.
-    console.error('[consumeIngredientStock] best-effort decrement failed:', err);
+    console.error(`[${type}IngredientStock] best-effort movement failed:`, err);
   }
 }

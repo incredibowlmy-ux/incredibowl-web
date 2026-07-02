@@ -27,10 +27,12 @@ const menuByName = new Map(weeklyMenu.map(d => [d.name, d]));
 export async function POST(req: NextRequest) {
   if (!(await verifyAdmin(req))) return adminJson({ error: '未授权访问' }, 403);
 
-  let items: PrepOrderItem[];
+  let items: PrepOrderItem[], release: boolean, orderId: string;
   try {
     const body = await req.json();
     items = Array.isArray(body?.items) ? body.items : [];
+    release = body?.release === true; // true = credit back (order deleted)
+    orderId = typeof body?.orderId === 'string' ? body.orderId : '';
   } catch {
     return adminJson({ error: '请求格式错误' }, 400);
   }
@@ -49,12 +51,22 @@ export async function POST(req: NextRequest) {
       })
       .filter((x): x is { dishId: number; qty: number; name: string } => x !== null);
 
+    if (release) {
+      // Order deleted → credit BOTH layers back so the hard sell-out gate
+      // doesn't keep blocking customers for portions that freed up.
+      const { releaseDishStock } = await import('@/lib/stockUtils');
+      try { await releaseDishStock(db, dishItems); } catch (e) { console.error('[consume-stock] dish release failed:', e); }
+      const { releaseIngredientStock } = await import('@/lib/ingredientStock');
+      await releaseIngredientStock(db, items, { source: '删单回补', orderId: orderId || undefined });
+      return adminJson({ ok: true, released: true, note: '已回补限量菜份数 + 食材' });
+    }
+
     const { decrementDishStockLenient } = await import('@/lib/stockUtils');
     const dishDecremented = await decrementDishStockLenient(db, dishItems);
 
     // Layer B — raw ingredient inventory (best-effort, swallows errors).
     const { consumeIngredientStock } = await import('@/lib/ingredientStock');
-    await consumeIngredientStock(db, items, { source: '手动单' });
+    await consumeIngredientStock(db, items, { source: '手动单', orderId: orderId || undefined });
 
     return adminJson({
       ok: true,

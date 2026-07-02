@@ -10021,12 +10021,23 @@ incredibowl.my`,
                     await deleteDoc(doc(db, 'orders', id));
                     state.orders = state.orders.filter(o => o.id !== id);
                     $('#sysOrderCount').textContent = state.orders.length;
+                    // ─── Credit stock back (dishStock + ingredients) ───
+                    // Orders from the stock system's launch (2026-06-29) onward
+                    // auto-deducted at save time; releasing keeps the hard
+                    // sell-out gate from blocking customers on freed portions.
+                    // Older orders never deducted — releasing them would inflate.
+                    // Best-effort: a failure here must not block the delete.
+                    const createdMs = tsToDate(order.createdAt)?.getTime() || 0;
+                    if (createdMs >= new Date('2026-06-29T00:00:00+08:00').getTime() && Array.isArray(order.items) && order.items.length) {
+                        try { await callAdminAPI('/api/admin/consume-stock', { items: order.items, release: true, orderId: id }); }
+                        catch (relErr) { console.warn('[delete-order] stock release skipped:', relErr && relErr.message); }
+                    }
                     // Refresh state so released vouchers reappear as available
                     if (claimedVoucherIds.length > 0) await loadAllData();
                     renderAll();
                     toast(claimedVoucherIds.length > 0
                         ? `订单已删除 · ${claimedVoucherIds.length} 张餐券已 release 回客户账户`
-                        : '订单已删除', 'success');
+                        : '订单已删除（库存已回补）', 'success');
                 } catch (err) {
                     toast('删除失败：' + err.message, 'error');
                     delBtn.disabled = false;
@@ -10283,8 +10294,14 @@ incredibowl.my`,
                         <button class="btn ghost sm inv-ing-thsave" title="保存低量阈值（低于它标橙）" style="margin-left:5px">存</button>
                     </td></tr>`;
             }
+            // Items with NO recipe contribute zero to prep/stock — surface them
+            // so gaps are visible instead of silent (drinks/少饭 excluded server-side).
+            const unreciped = data.unreciped || [];
+            const unrecipedHtml = unreciped.length
+                ? `<div style="margin-bottom:10px;padding:8px 12px;border-radius:10px;background:rgba(230,150,0,.10);border:1px solid rgba(230,150,0,.35);font-size:12px;line-height:1.6">⚠️ <b>当日订单有 ${unreciped.length} 种品项未计入食材</b>（无配方，不进备餐/库存汇总）：${unreciped.map(u => `${invEsc(u.label)} ×${u.count}`).join(' · ')}<br><span style="color:var(--text-muted)">给我配方份量后即可自动计入（dishIngredients.ts）。</span></div>`
+                : '';
             el.innerHTML = `<div style="max-width:1000px;overflow-x:auto">
-                <table style="width:100%;border-collapse:collapse;font-size:13px">
+                ${unrecipedHtml}<table style="width:100%;border-collapse:collapse;font-size:13px">
                 <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px;border-bottom:2px solid var(--border-strong)">
                     <th style="padding:8px 4px">食材</th>
                     <th style="padding:8px 14px;text-align:right">所需(当日)</th>
@@ -10321,7 +10338,9 @@ incredibowl.my`,
                 const tr = ev.target.closest('tr'); const raw = tr.querySelector('.inv-ing-th').value.trim();
                 const threshold = raw === '' ? null : Number(raw);
                 if (threshold !== null && (!Number.isFinite(threshold) || threshold < 0)) { toast('阈值无效', 'error'); return; }
-                try { await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name: tr.dataset.name, onHand: Number(tr.dataset.onhand) || 0, threshold }); toast('阈值已保存', 'success'); reload(); }
+                // Threshold-only payload — sending onHand here reverted counts
+                // consumed since page load (server now has a dedicated path).
+                try { await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name: tr.dataset.name, threshold }); toast('阈值已保存', 'success'); reload(); }
                 catch (e) { toast('保存失败：' + e.message, 'error'); }
             }));
             el.querySelectorAll('.inv-ing-ledger').forEach(b => b.addEventListener('click', (ev) => toggleInvLedger(ev.target.closest('tr'))));
@@ -10339,7 +10358,7 @@ incredibowl.my`,
             let entries;
             try { const d = await callAdminAPI('/api/admin/ingredient-stock', { action: 'ledger', name, limit: 30 }); entries = d.entries || []; }
             catch (e) { drawer.querySelector('div').innerHTML = '<span style="color:var(--danger,#c00)">加载失败：' + invEsc(e.message) + '</span>'; return; }
-            const META = { receive: ['进货', '#2f6b3d'], adjust: ['校正', '#2563eb'], consume: ['消耗', 'var(--text-muted)'] };
+            const META = { receive: ['进货', '#2f6b3d'], adjust: ['校正', '#2563eb'], consume: ['消耗', 'var(--text-muted)'], release: ['回补', '#8b5cf6'] };
             const fmtTime = (ms) => { if (!ms) return '—'; const d = new Date(ms); const p = n => String(n).padStart(2, '0'); return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
             let inner;
             if (!entries.length) inner = '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">暂无流水记录。</div>';
@@ -11348,7 +11367,7 @@ incredibowl.my`,
                     // ingredients via the recipe. ADVISORY + best-effort — the order
                     // is already saved, so a stock hiccup only logs, never blocks.
                     // Edits are skipped (item changes → adjust counts in the 库存 panel).
-                    try { await callAdminAPI('/api/admin/consume-stock', { items }); }
+                    try { await callAdminAPI('/api/admin/consume-stock', { items, orderId }); }
                     catch (stockErr) { console.warn('[manual-order] stock decrement skipped:', stockErr && stockErr.message); }
                 }
                 renderAll();
