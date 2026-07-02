@@ -7646,6 +7646,9 @@ incredibowl.my`,
                     addonRev += aPrice * aQty;
                 });
             });
+            // Delivery is charged & collected separately from o.total (which holds the
+            // food/voucher cash only), so o.deliveryFee is the source of truth for the
+            // delivery the customer actually paid.
             const deliveryRev = Number(o.deliveryFee) || 0;
             const grossRev = foodRev + addonRev + deliveryRev;
 
@@ -7661,7 +7664,9 @@ incredibowl.my`,
             });
             const cogs = dishCOGS + addonCOGS;
 
-            // Delivery cost: override → cfg → 0 (self-pickup)
+            // Delivery cost: override → cfg → 0 (self-pickup).
+            // NOTE: each part of a multi-part order is a SEPARATE delivery day (own trip),
+            // so every part legitimately carries its own full delivery cost — do NOT divide.
             let deliveryCost = 0;
             if (o.deliveryZone) {
                 if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) {
@@ -10257,62 +10262,100 @@ incredibowl.my`,
             }
             const list = data.ingredients || [];
             if (!list.length) { el.innerHTML = '<div style="color:var(--text-muted)">无食材数据（先跑 seed-ingredient-stock 脚本）</div>'; return; }
+            const inStyle = 'padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px';
             let rows = '';
             for (const it of list) {
                 const short = it.shortfall > 0;
                 const flag = short ? 'background:rgba(192,57,43,.06)' : (it.low ? 'background:rgba(230,150,0,.07)' : '');
-                rows += `<tr data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" data-needed="${it.needed}" style="${flag};border-bottom:1px solid var(--border)">
-                    <td style="font-weight:600;padding:7px 12px 7px 4px">${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
-                    <td class="mono" style="text-align:right;padding:7px 16px;color:var(--text-muted)">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
+                rows += `<tr class="inv-ing-row" data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" data-needed="${it.needed}" data-onhand="${it.onHand}" style="${flag};border-bottom:1px solid var(--border)">
+                    <td style="font-weight:600;padding:7px 8px 7px 4px;white-space:nowrap">
+                        <button class="btn ghost sm inv-ing-ledger" title="查看进货/校正/消耗流水" style="padding:2px 6px;margin-right:6px">📜</button>${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:var(--text-muted);font-size:11px">(未建档)</span>'}</td>
+                    <td class="mono" style="text-align:right;padding:7px 14px;color:var(--text-muted)">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
+                    <td class="mono" style="text-align:right;padding:7px 14px;font-weight:700;white-space:nowrap">${invFmtQty(it.onHand, it.unit)}</td>
+                    <td class="mono" style="text-align:right;white-space:nowrap;padding:7px 14px">${invBalanceHtml(it.onHand, it.needed, it.unit)}</td>
                     <td style="text-align:right;white-space:nowrap;padding:7px 4px">
-                        <input type="number" min="0" step="any" class="inv-ing-input" value="${it.onHand}"
-                            style="width:78px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
-                        <span style="color:var(--text-muted);font-size:11px;margin-left:3px">${invEsc(it.unit)}</span>
+                        <input type="number" min="0" step="any" class="inv-ing-amt" placeholder="数量" style="width:74px;${inStyle}" />
+                        <button class="btn sm inv-ing-add" title="进货：把这个数加到现有（不影响已有/已扣）" style="margin-left:5px;background:#2f6b3d">＋进货</button>
+                        <button class="btn ghost sm inv-ing-set" title="盘点校正：把现有改成这个数（实物重数纠偏）" style="margin-left:4px">校正=</button>
                     </td>
-                    <td class="mono inv-ing-balance" style="text-align:right;white-space:nowrap;padding:7px 16px">${invBalanceHtml(it.onHand, it.needed, it.unit)}</td>
                     <td style="text-align:right;white-space:nowrap;padding:7px 4px">
-                        <input type="number" min="0" step="any" class="inv-ing-threshold" placeholder="阈值" value="${it.threshold == null ? '' : it.threshold}"
-                            style="width:60px;padding:5px 6px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:12px" />
-                        <button class="btn sm inv-ing-save" style="margin-left:6px">保存</button>
+                        <input type="number" min="0" step="any" class="inv-ing-th" placeholder="阈值" value="${it.threshold == null ? '' : it.threshold}" style="width:56px;${inStyle};font-size:12px" />
+                        <button class="btn ghost sm inv-ing-thsave" title="保存低量阈值（低于它标橙）" style="margin-left:5px">存</button>
                     </td></tr>`;
             }
-            el.innerHTML = `<div style="max-width:860px">
+            el.innerHTML = `<div style="max-width:1000px;overflow-x:auto">
                 <table style="width:100%;border-collapse:collapse;font-size:13px">
                 <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px;border-bottom:2px solid var(--border-strong)">
                     <th style="padding:8px 4px">食材</th>
-                    <th style="padding:8px 16px;text-align:right">所需(当日)</th>
-                    <th style="padding:8px 4px;text-align:right">现有(盘点)</th>
-                    <th style="padding:8px 16px;text-align:right">结余(用完当日)</th>
-                    <th style="padding:8px 4px;text-align:right">低量阈值 / 保存</th>
+                    <th style="padding:8px 14px;text-align:right">所需(当日)</th>
+                    <th style="padding:8px 14px;text-align:right">现有</th>
+                    <th style="padding:8px 14px;text-align:right">结余(用完当日)</th>
+                    <th style="padding:8px 4px;text-align:right">进货 / 校正</th>
+                    <th style="padding:8px 4px;text-align:right">低量阈值</th>
                 </tr></thead><tbody>${rows}</tbody></table>
-                <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.7">
-                    <b>结余 = 现有 − 当日所需</b>（<span style="color:#1a7f37">绿＝剩余可结转下一天</span> · <span style="color:#c0392b">红＝不够，仅提醒、不阻挡下单</span>）· 橙底＝低于低量阈值<br>
-                    改「现有」框，结余即时更新 — 满意后点该行「保存」才会写入。克类直接填克，自动换算 kg。
+                <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8">
+                    <b style="color:#2f6b3d">＋进货</b>＝买了新货，把数量<b>加</b>到现有（不影响已有和已扣的账）· <b>校正=</b>＝实物盘点，把现有<b>改成</b>这个数（纠偏）· 消耗由下单自动扣。<br>
+                    <b>结余 = 现有 − 当日所需</b>（<span style="color:#1a7f37">绿＝可结转</span> · <span style="color:#c0392b">红＝不够，仅提醒不阻挡</span>）· 橙底＝低于阈值 · 点 📜 看该食材流水。克类填克自动换算 kg。
                 </div></div>`;
-            // Live balance recompute as you type 现有, before saving.
-            el.querySelectorAll('.inv-ing-input').forEach(inp => inp.addEventListener('input', (ev) => {
-                const tr = ev.target.closest('tr');
-                tr.querySelector('.inv-ing-balance').innerHTML = invBalanceHtml(ev.target.value, tr.dataset.needed, tr.dataset.unit || '');
+
+            const reload = () => { loadInvIngredients($('#invIngDate').value); loadInvMatrix(); };
+            const readAmt = (tr, allowZero) => {
+                const v = Number(tr.querySelector('.inv-ing-amt').value);
+                if (!Number.isFinite(v) || v < 0 || (!allowZero && v <= 0)) return null;
+                return v;
+            };
+            el.querySelectorAll('.inv-ing-add').forEach(b => b.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr'); const amt = readAmt(tr, false);
+                if (amt == null) { toast('进货数量要 > 0', 'warn'); return; }
+                try { const r = await callAdminAPI('/api/admin/ingredient-stock', { action: 'add', name: tr.dataset.name, delta: amt }); toast(`「${tr.dataset.name}」进货 +${amt}，现有 ${r.onHand}`, 'success'); reload(); }
+                catch (e) { toast('进货失败：' + e.message, 'error'); }
             }));
-            el.querySelectorAll('.inv-ing-save').forEach(btn => btn.addEventListener('click', async (ev) => {
-                const tr = ev.target.closest('tr');
-                const onHand = Number(tr.querySelector('.inv-ing-input').value);
-                if (!Number.isFinite(onHand) || onHand < 0) { toast('现有量无效', 'error'); return; }
-                const thRaw = tr.querySelector('.inv-ing-threshold').value.trim();
-                const threshold = thRaw === '' ? null : Number(thRaw);
+            el.querySelectorAll('.inv-ing-set').forEach(b => b.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr'); const amt = readAmt(tr, true);
+                if (amt == null) { toast('校正数量无效', 'error'); return; }
+                if (!confirm(`盘点校正：把「${tr.dataset.name}」现有直接改成 ${amt}${tr.dataset.unit}？（覆盖当前值）`)) return;
+                try { await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name: tr.dataset.name, onHand: amt }); toast(`「${tr.dataset.name}」已校正为 ${amt}`, 'success'); reload(); }
+                catch (e) { toast('校正失败：' + e.message, 'error'); }
+            }));
+            el.querySelectorAll('.inv-ing-thsave').forEach(b => b.addEventListener('click', async (ev) => {
+                const tr = ev.target.closest('tr'); const raw = tr.querySelector('.inv-ing-th').value.trim();
+                const threshold = raw === '' ? null : Number(raw);
                 if (threshold !== null && (!Number.isFinite(threshold) || threshold < 0)) { toast('阈值无效', 'error'); return; }
-                await saveInvIngredient(tr.dataset.name, onHand, threshold);
+                try { await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name: tr.dataset.name, onHand: Number(tr.dataset.onhand) || 0, threshold }); toast('阈值已保存', 'success'); reload(); }
+                catch (e) { toast('保存失败：' + e.message, 'error'); }
             }));
+            el.querySelectorAll('.inv-ing-ledger').forEach(b => b.addEventListener('click', (ev) => toggleInvLedger(ev.target.closest('tr'))));
         }
-        async function saveInvIngredient(name, onHand, threshold) {
-            try {
-                await callAdminAPI('/api/admin/ingredient-stock', { action: 'set', name, onHand, threshold });
-                toast(`「${name}」现有量设为 ${onHand}`, 'success');
-                loadInvIngredients($('#invIngDate').value);
-                loadInvMatrix(); // keep the burn-down projection in sync with the new on-hand
-            } catch (e) {
-                toast('保存失败：' + e.message, 'error');
-            }
+
+        // Toggle the movement-history drawer row under an ingredient row.
+        async function toggleInvLedger(tr) {
+            const next = tr.nextElementSibling;
+            if (next && next.classList.contains('inv-ledger-row')) { next.remove(); return; }
+            const name = tr.dataset.name;
+            const drawer = document.createElement('tr');
+            drawer.className = 'inv-ledger-row';
+            drawer.innerHTML = `<td colspan="6" style="padding:0 4px 10px 34px;background:var(--bg-subtle,rgba(0,0,0,.02))"><div style="font-size:12px;color:var(--text-muted)">加载流水中…</div></td>`;
+            tr.after(drawer);
+            let entries;
+            try { const d = await callAdminAPI('/api/admin/ingredient-stock', { action: 'ledger', name, limit: 30 }); entries = d.entries || []; }
+            catch (e) { drawer.querySelector('div').innerHTML = '<span style="color:var(--danger,#c00)">加载失败：' + invEsc(e.message) + '</span>'; return; }
+            const META = { receive: ['进货', '#2f6b3d'], adjust: ['校正', '#2563eb'], consume: ['消耗', 'var(--text-muted)'] };
+            const fmtTime = (ms) => { if (!ms) return '—'; const d = new Date(ms); const p = n => String(n).padStart(2, '0'); return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+            let inner;
+            if (!entries.length) inner = '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">暂无流水记录。</div>';
+            else inner = `<table style="border-collapse:collapse;font-size:12px;margin:4px 0"><tbody>${entries.map(e => {
+                const [lbl, col] = META[e.type] || ['?', 'var(--text)'];
+                const sign = e.delta > 0 ? '+' : '';
+                const src = e.by ? invEsc(e.by.split('@')[0]) : (e.orderId ? '#' + invEsc(String(e.orderId).slice(-6)) : (e.note ? invEsc(e.note) : ''));
+                return `<tr>
+                    <td style="padding:3px 12px 3px 0;color:var(--text-muted);white-space:nowrap">${fmtTime(e.at)}</td>
+                    <td style="padding:3px 12px 3px 0;font-weight:600;color:${col};white-space:nowrap">${lbl}</td>
+                    <td class="mono" style="padding:3px 12px 3px 0;text-align:right;color:${col};white-space:nowrap">${sign}${invFmtQty(e.delta, e.unit)}</td>
+                    <td class="mono" style="padding:3px 12px 3px 0;text-align:right;color:var(--text-muted);white-space:nowrap">→ ${invFmtQty(e.after, e.unit)}</td>
+                    <td style="padding:3px 0;color:var(--text-muted);white-space:nowrap">${src}</td>
+                </tr>`;
+            }).join('')}</tbody></table>`;
+            drawer.querySelector('td').innerHTML = `<div style="font-size:12px;color:var(--text);font-weight:600;margin:6px 0 2px">📜 ${invEsc(name)} 库存流水（最近 30 条）</div>${inner}`;
         }
 
         // ── Layer B+: 食材余量预测（逐日 burn-down 矩阵）──

@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     // Layer B — raw ingredient inventory (best-effort, swallows errors).
     const { consumeIngredientStock } = await import('@/lib/ingredientStock');
-    await consumeIngredientStock(db, items);
+    await consumeIngredientStock(db, items, { source: '手动单' });
 
     return adminJson({
       ok: true,

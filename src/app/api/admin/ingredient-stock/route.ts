@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { verifyAdmin, adminJson, corsPreflight } from '@/lib/adminApi';
+import { verifyAdminEmail, adminJson, corsPreflight } from '@/lib/adminApi';
 import { aggregateIngredients, type PrepOrder } from '@/lib/prepIngredients';
 
 /**
@@ -7,13 +7,14 @@ import { aggregateIngredients, type PrepOrder } from '@/lib/prepIngredients';
  *
  * Powers the dashboard「🥩 食材盘点」panel.
  *
- *   { action: 'list', date }                 → every tracked ingredient with its
- *                                              on-hand + the amount NEEDED for
- *                                              `date`'s active orders (same
- *                                              aggregation as the prep list),
- *                                              and the shortfall.
- *   { action: 'set', name, onHand, threshold? } → 盘点: overwrite on-hand
- *                                              (and optional low-stock threshold).
+ *   { action: 'list', date }                    → every tracked ingredient + its
+ *                                                 on-hand + NEEDED for `date` + shortfall.
+ *   { action: 'add', name, delta, note? }       → 进货: ADD delta to on-hand
+ *                                                 (never overwrites) + log receive.
+ *   { action: 'set', name, onHand, threshold? } → 盘点校正: overwrite on-hand
+ *                                                 (+ optional threshold) + log adjust.
+ *   { action: 'ledger', name, limit? }          → recent movements for one ingredient.
+ *   { action: 'matrix', startDate, days }       → forward burn-down projection.
  *
  * On-hand units follow the recipe (g stored raw; UI promotes to kg). NEEDED is
  * advisory — short ingredients are flagged, never block ordering.
@@ -23,7 +24,8 @@ export function OPTIONS() {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await verifyAdmin(req))) return adminJson({ error: '未授权访问' }, 403);
+  const adminEmail = await verifyAdminEmail(req);
+  if (!adminEmail) return adminJson({ error: '未授权访问' }, 403);
 
   let body: Record<string, unknown>;
   try {
@@ -36,7 +38,25 @@ export async function POST(req: NextRequest) {
   try {
     const { getAdminDb } = await import('@/lib/firebase-admin');
     const db = getAdminDb();
-    const { getAllIngredientStock, setIngredientStock } = await import('@/lib/ingredientStock');
+    const { getAllIngredientStock, setIngredientStock, addIngredientStock, getIngredientLedger } = await import('@/lib/ingredientStock');
+
+    if (action === 'add') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      const delta = Number(body.delta);
+      const note = typeof body.note === 'string' ? body.note.trim() : '';
+      if (!name) return adminJson({ error: '缺少食材名' }, 400);
+      if (!Number.isFinite(delta) || delta <= 0) return adminJson({ error: '进货数量必须为正数' }, 400);
+      const onHand = await addIngredientStock(db, name, delta, { note: note || undefined, by: adminEmail });
+      return adminJson({ ok: true, name, delta, onHand });
+    }
+
+    if (action === 'ledger') {
+      const name = typeof body.name === 'string' ? body.name.trim() : '';
+      if (!name) return adminJson({ error: '缺少食材名' }, 400);
+      const limit = Number(body.limit) || 30;
+      const entries = await getIngredientLedger(db, name, limit);
+      return adminJson({ name, entries });
+    }
 
     if (action === 'set') {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
@@ -48,7 +68,7 @@ export async function POST(req: NextRequest) {
       if (hasThreshold && threshold !== null && (!Number.isFinite(threshold) || threshold < 0)) {
         return adminJson({ error: 'threshold 必须为非负数或 null' }, 400);
       }
-      await setIngredientStock(db, name, onHand, hasThreshold ? { threshold } : undefined);
+      await setIngredientStock(db, name, onHand, { by: adminEmail, ...(hasThreshold ? { threshold } : {}) });
       return adminJson({ ok: true, name, onHand });
     }
 
@@ -139,7 +159,7 @@ export async function POST(req: NextRequest) {
       return adminJson({ startDate, dates, ingredients });
     }
 
-    return adminJson({ error: '未知 action（list | set | matrix）' }, 400);
+    return adminJson({ error: '未知 action（list | add | set | ledger | matrix）' }, 400);
   } catch (err) {
     console.error('[admin/ingredient-stock] failed:', err);
     const msg = err instanceof Error ? err.message : '食材库存操作失败';

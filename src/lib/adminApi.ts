@@ -32,18 +32,26 @@ export function adminJson(body: unknown, status = 200): NextResponse {
   return corsify(NextResponse.json(body, { status }));
 }
 
-/** Verify the request carries a valid admin Firebase ID token. */
-export async function verifyAdmin(req: NextRequest): Promise<boolean> {
+/**
+ * Verify the request carries a valid admin Firebase ID token; return the admin's
+ * email (for audit trails) or null if not an authorized admin.
+ */
+export async function verifyAdminEmail(req: NextRequest): Promise<string | null> {
   const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return false;
+  if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
   try {
     const { getAdminDb } = await import('@/lib/firebase-admin');
     getAdminDb(); // ensure the admin app is initialized before getAuth()
     const { getAuth } = await import('firebase-admin/auth');
     const decoded = await getAuth().verifyIdToken(token);
-    return !!decoded.email && ADMIN_EMAILS.includes(decoded.email);
+    return decoded.email && ADMIN_EMAILS.includes(decoded.email) ? decoded.email : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/** Verify the request carries a valid admin Firebase ID token. */
+export async function verifyAdmin(req: NextRequest): Promise<boolean> {
+  return (await verifyAdminEmail(req)) !== null;
 }

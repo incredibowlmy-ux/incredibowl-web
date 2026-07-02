@@ -443,7 +443,7 @@ export async function POST(req: Request) {
     try {
       const allItems = payloads.flatMap((p: any) => p.items || []);
       const { consumeIngredientStock } = await import('@/lib/ingredientStock');
-      await consumeIngredientStock(db, allItems);
+      await consumeIngredientStock(db, allItems, { orderId: groupId || orderIds[0], source: '网页单' });
     } catch (err) {
       console.error('ingredient stock decrement skipped:', err);
     }

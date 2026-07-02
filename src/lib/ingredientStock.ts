@@ -62,29 +62,127 @@ export async function getAllIngredientStock(db: Firestore): Promise<Record<strin
   return out;
 }
 
-/** Set on-hand (盘点) — and optionally unit/threshold — for one ingredient. */
+// ─── Movement ledger ────────────────────────────────────────────────
+// Every stock change writes an entry to the `log` SUB-collection under the
+// ingredient doc (ingredientStock/{docId}/log). A subcollection keeps the query
+// per-ingredient with a single-field orderBy — no composite index needed.
+//   receive = 进货（买货入库，+）
+//   adjust  = 盘点校正（实物重数，覆盖，delta = new − old）
+//   consume = 下单消耗（自动，−）
+export type MovementType = 'receive' | 'adjust' | 'consume';
+
+export interface LedgerEntry {
+  type: MovementType;
+  delta: number;   // signed change to on-hand
+  after: number;   // on-hand after this movement
+  unit: string;
+  note: string | null;   // source tag / free note
+  orderId: string | null;
+  by: string | null;     // admin email for manual moves
+  at: number | null;     // millis
+}
+
+interface LogFields {
+  type: MovementType; delta: number; after: number; unit: string;
+  note?: string | null; orderId?: string | null; by?: string | null;
+}
+// Write one ledger entry via a transaction/batch writer (tx.set / batch.set).
+function writeLog(
+  writer: { set: (ref: FirebaseFirestore.DocumentReference, data: Record<string, unknown>) => unknown },
+  ingredientRef: FirebaseFirestore.DocumentReference,
+  e: LogFields,
+): void {
+  writer.set(ingredientRef.collection('log').doc(), {
+    type: e.type, delta: e.delta, after: e.after, unit: e.unit || '',
+    note: e.note ?? null, orderId: e.orderId ?? null, by: e.by ?? null,
+    at: FieldValue.serverTimestamp(),
+  });
+}
+
+/**
+ * 进货 (receive): ADD `delta` to on-hand — never overwrites, so it can't wipe
+ * the running count or already-consumed accounting. Logs a `receive` movement.
+ * Returns the new on-hand.
+ */
+export async function addIngredientStock(
+  db: Firestore,
+  name: string,
+  delta: number,
+  opts?: { unit?: string; note?: string; by?: string },
+): Promise<number> {
+  const ref = db.collection('ingredientStock').doc(ingredientDocId(name));
+  let after = 0;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const before = snap.exists ? (Number(snap.data()?.onHand) || 0) : 0;
+    after = before + delta;
+    const unit = opts?.unit || (snap.exists ? String(snap.data()?.unit || '') : '') || '';
+    tx.set(ref, { name, onHand: after, unit, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    writeLog(tx, ref, { type: 'receive', delta, after, unit, note: opts?.note ?? null, by: opts?.by ?? null });
+  });
+  return after;
+}
+
+/**
+ * 盘点校正 (adjust): OVERWRITE on-hand to `onHand` (physical recount). Logs an
+ * `adjust` movement (delta = new − old) only when the count actually changes,
+ * so a threshold-only save doesn't create a noise entry.
+ */
 export async function setIngredientStock(
   db: Firestore,
   name: string,
   onHand: number,
-  opts?: { unit?: string; threshold?: number | null },
+  opts?: { unit?: string; threshold?: number | null; note?: string; by?: string },
 ): Promise<void> {
-  const payload: Record<string, unknown> = { name, onHand, updatedAt: FieldValue.serverTimestamp() };
-  if (opts?.unit) payload.unit = opts.unit;
-  if (opts && 'threshold' in opts) {
-    payload.threshold = opts.threshold == null ? FieldValue.delete() : opts.threshold;
-  }
-  await db.collection('ingredientStock').doc(ingredientDocId(name)).set(payload, { merge: true });
+  const ref = db.collection('ingredientStock').doc(ingredientDocId(name));
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const before = snap.exists ? (Number(snap.data()?.onHand) || 0) : 0;
+    const unit = opts?.unit || (snap.exists ? String(snap.data()?.unit || '') : '') || '';
+    const payload: Record<string, unknown> = { name, onHand, updatedAt: FieldValue.serverTimestamp() };
+    if (opts?.unit) payload.unit = opts.unit;
+    if (opts && 'threshold' in opts) {
+      payload.threshold = opts.threshold == null ? FieldValue.delete() : opts.threshold;
+    }
+    tx.set(ref, payload, { merge: true });
+    if (onHand !== before) {
+      writeLog(tx, ref, { type: 'adjust', delta: onHand - before, after: onHand, unit, note: opts?.note ?? null, by: opts?.by ?? null });
+    }
+  });
+}
+
+/** Recent movements for one ingredient, newest first (single-field orderBy → auto index). */
+export async function getIngredientLedger(db: Firestore, name: string, limit = 30): Promise<LedgerEntry[]> {
+  const ref = db.collection('ingredientStock').doc(ingredientDocId(name));
+  const snap = await ref.collection('log').orderBy('at', 'desc').limit(Math.min(200, Math.max(1, limit))).get();
+  return snap.docs.map(d => {
+    const x = d.data() || {};
+    return {
+      type: (x.type as MovementType) || 'adjust',
+      delta: Number(x.delta) || 0,
+      after: Number(x.after) || 0,
+      unit: typeof x.unit === 'string' ? x.unit : '',
+      note: x.note ?? null,
+      orderId: x.orderId ?? null,
+      by: x.by ?? null,
+      at: x.at?.toMillis?.() ?? null,
+    };
+  });
 }
 
 /**
- * Best-effort decrement of on-hand for every ingredient an order consumes.
+ * Best-effort decrement of on-hand for every ingredient an order consumes, and
+ * a `consume` ledger entry per ingredient (same batch, so no extra round trips).
  * Reuses the prep aggregation (handles "↳ "-prefixed add-on rows + nested
  * addOns + the manual-label aliases) so it stays byte-identical to the cook
  * list. Only ingredients that already have a doc are touched. NEVER throws —
  * a failure here must not break checkout.
  */
-export async function consumeIngredientStock(db: Firestore, items: PrepOrderItem[]): Promise<void> {
+export async function consumeIngredientStock(
+  db: Firestore,
+  items: PrepOrderItem[],
+  ctx?: { orderId?: string; source?: string },
+): Promise<void> {
   try {
     const { lines } = aggregateIngredients([{ items }]);
     if (!lines.length) return;
@@ -92,7 +190,11 @@ export async function consumeIngredientStock(db: Firestore, items: PrepOrderItem
     // Merge by name (doc id is name only) so a batch never writes the same doc
     // twice — Firestore rejects duplicate writes in one batch.
     const byName = new Map<string, number>();
-    for (const l of lines) byName.set(l.name, (byName.get(l.name) || 0) + l.qty);
+    const unitByName = new Map<string, string>();
+    for (const l of lines) {
+      byName.set(l.name, (byName.get(l.name) || 0) + l.qty);
+      if (!unitByName.has(l.name)) unitByName.set(l.name, l.unit);
+    }
 
     const names = [...byName.keys()];
     const refs = names.map(n => db.collection('ingredientStock').doc(ingredientDocId(n)));
@@ -102,9 +204,16 @@ export async function consumeIngredientStock(db: Firestore, items: PrepOrderItem
     let touched = 0;
     snaps.forEach((snap, i) => {
       if (!snap.exists) return; // untracked ingredient — skip
+      const qty = byName.get(names[i]) || 0;
+      const before = Number(snap.data()?.onHand) || 0;
       batch.update(refs[i], {
-        onHand: FieldValue.increment(-(byName.get(names[i]) || 0)),
+        onHand: FieldValue.increment(-qty),
         updatedAt: FieldValue.serverTimestamp(),
+      });
+      writeLog(batch, refs[i], {
+        type: 'consume', delta: -qty, after: before - qty,
+        unit: String(snap.data()?.unit || unitByName.get(names[i]) || ''),
+        note: ctx?.source ?? 'order', orderId: ctx?.orderId ?? null,
       });
       touched++;
     });
