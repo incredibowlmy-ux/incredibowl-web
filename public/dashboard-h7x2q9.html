@@ -11292,6 +11292,23 @@ incredibowl.my`,
                     // Update local state
                     const idx = state.orders.findIndex(o => o.id === editingOrderId);
                     if (idx >= 0) state.orders[idx] = { ...state.orders[idx], ...updateFields, id: editingOrderId };
+                    // ─── Sync stock when the item list changed ───
+                    // Release what the OLD version deducted, deduct the NEW list
+                    // (stock-era orders only; older ones never deducted). Compare
+                    // just the stock-relevant shape so address/time edits don't
+                    // churn the ledger. Best-effort — never blocks the save.
+                    const stockShape = (arr) => JSON.stringify((arr || []).map(x => [x.name, x.quantity, (x.addOns || []).map(a => [a.label || a.name || a.id, a.quantity])]));
+                    const origCreatedMs = orig ? (tsToDate(orig.createdAt)?.getTime() || 0) : 0;
+                    if (origCreatedMs >= new Date('2026-06-29T00:00:00+08:00').getTime()
+                        && stockShape(orig && orig.items) !== stockShape(items)) {
+                        try {
+                            if (orig && Array.isArray(orig.items) && orig.items.length) {
+                                await callAdminAPI('/api/admin/consume-stock', { items: orig.items, release: true, orderId: editingOrderId });
+                            }
+                            await callAdminAPI('/api/admin/consume-stock', { items, orderId: editingOrderId });
+                            toast('库存已按改单同步（回补旧菜 → 扣新菜）', 'success');
+                        } catch (stockErr) { console.warn('[edit-order] stock sync skipped:', stockErr && stockErr.message); }
+                    }
                     toast(`订单已更新：${name}`, 'success');
                 } else {
                     const docRef = await addDoc(collection(db, 'orders'), orderData);
