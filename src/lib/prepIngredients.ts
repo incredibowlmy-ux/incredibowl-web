@@ -169,16 +169,23 @@ interface AddOnAgg { name: string; unit: string; bySource: Map<string, number> }
 // (马铃薯 in 炖肉 vs 烤鸡胸) stays separate — each dish carries its own line.
 // 白饭 is pulled into a per-meal `rice` total. Add-ons keep per-source quantities
 // so an overlapping ingredient (鸡胸肉 from 嫩炒鸡丁 vs 增肌加鸡胸) can be split.
+// 糙米 is ALSO a batch-cooked staple (rice-swap add-on) — it belongs next to
+// 白饭（统一煮）on the prep sheet, not buried in the add-on string (boss 2026-07-03).
+const BROWN_RICE_STAPLE = '糙米';
+
 function aggregateByDish(orders: PrepOrder[]): {
   mains: Map<string, { servings: number; lines: Map<string, Line> }>;
   addOns: Map<string, AddOnAgg>;
   rice: number;
+  brownRice: number;
 } {
   const mains = new Map<string, { servings: number; lines: Map<string, Line> }>();
   const addOns = new Map<string, AddOnAgg>();
   let rice = 0;
+  let brownRice = 0;
   const addAddOn = (line: IngredientLine, mult: number, source: string) => {
     if (line.name === UNIVERSAL_STAPLE) { rice += line.qty * mult; return; }
+    if (line.name === BROWN_RICE_STAPLE) { brownRice += line.qty * mult; return; }
     const key = `${line.name} ${line.unit}`;
     let cur = addOns.get(key);
     if (!cur) { cur = { name: line.name, unit: line.unit, bySource: new Map() }; addOns.set(key, cur); }
@@ -215,7 +222,7 @@ function aggregateByDish(orders: PrepOrder[]): {
       }
     }
   }
-  return { mains, addOns, rice };
+  return { mains, addOns, rice, brownRice };
 }
 
 // Format the add-on bucket. An ingredient from a SINGLE add-on shows plain
@@ -243,7 +250,8 @@ export interface DishIngredientGroup {
 }
 export interface MealIngredients {
   groups: DishIngredientGroup[];
-  riceText: string;  // total 白饭 for the meal, '' when none
+  riceText: string;       // total 白饭 for the meal, '' when none
+  brownRiceText: string;  // total 糙米 (rice-swap staple), '' when none — shown beside 白饭
   addOnText: string;
 }
 
@@ -284,7 +292,7 @@ export function buildDailyPrepIngredients(lunchOrders: PrepOrder[], dinnerOrders
       }));
 
   return {
-    lunch: { groups: toGroups(L.mains), riceText: L.rice > 0 ? formatQty(L.rice, 'g') : '', addOnText: formatAddOns(L.addOns) },
-    dinner: { groups: toGroups(D.mains), riceText: D.rice > 0 ? formatQty(D.rice, 'g') : '', addOnText: formatAddOns(D.addOns) },
+    lunch: { groups: toGroups(L.mains), riceText: L.rice > 0 ? formatQty(L.rice, 'g') : '', brownRiceText: L.brownRice > 0 ? formatQty(L.brownRice, 'g') : '', addOnText: formatAddOns(L.addOns) },
+    dinner: { groups: toGroups(D.mains), riceText: D.rice > 0 ? formatQty(D.rice, 'g') : '', brownRiceText: D.brownRice > 0 ? formatQty(D.brownRice, 'g') : '', addOnText: formatAddOns(D.addOns) },
   };
 }
