@@ -3,8 +3,15 @@
 > 状态：待审批。生产环境有真实客户/营收，支付链改动属高风险，每阶段改完按「push 前必须先验证」规则本地 tsc + dogfood 再 commit。
 
 ## 阶段 0 — 前置确认（需老板参与，阻塞阶段 2）
-- [ ] 登录 Firebase Console → Firestore → 规则，把当前**线上规则原文**贴给我。
-      原因：我无法读取线上规则。若现状是 test-mode `allow read, write: if true`，则全部客户姓名/电话/地址正在裸奔；若已有规则，我要按现状增量收紧，避免改坏客户端直读。
+- [x] 老板已贴线上规则（2026-07-02）。分析结论：**不是裸奔**，users/feedbacks/兜底都齐；
+      但 orders 有两个真洞：① `create: isSignedIn()` 任何登录者可伪造已确认订单
+      ② owner update 可付款后自改金额/自确认。客户端建单(lib/orders.ts submitOrder)
+      确认是死代码 → 可安全关掉。
+- [x] 收紧草案已入仓 `firestore.rules`（仅动 orders 节，其余与线上逐行一致）。
+      ⏳ **部署=老板动作**：Console → Firestore → 规则 → 粘贴发布；发布前建议
+      Rules Playground 验证（客户读自己订单=允许 / 客户 create 订单=拒绝）。
+- [ ] 残余风险（规则层关不掉）：deliveryZone/addressVerified* 客户端可写 →
+      恶意用户可骗免运费。根治=地址验证挪服务端 API（列为阶段 2.5，中等工作量）。
 
 ## 阶段 1 — 支付与订单完整性（🔴 最高危，核心修复）
 统一闭合「免费下单 / 盗刷别人餐券 / RM1 付 RM50」三个洞，照搬 meal-vouchers 已验证的正确写法。
@@ -159,5 +166,13 @@
 - Dashboard 内联 JS `node --check` 通过；public 拷贝已含新面板（5 处标记）。
 - ⏳ 待办（需线上）：**部署后**才能用（dashboard 调 https://www.incredibowl.my 上的新路由）；浏览器 dogfood（需 admin 登录态）；commit+push（按惯例待拍板）。
 
-**已知数据瑕疵（非本次引入）**：配方里 `时蔬`(份/g)、`樱桃番茄`(g/颗) 单位不一致；模糊原料盘点自行决定是否维护。
+**已知数据瑕疵（非本次引入）**：~~配方里 `时蔬`(份/g)、`樱桃番茄`(g/颗) 单位不一致~~ 2026-07-02 评审四修已统一（番茄→颗/时蔬→份）。模糊原料盘点自行决定是否维护。
 **运维点**：dashboard 选单加新短 label 要同步 ① dishIngredients 的 MANUAL_LABEL_ALIASES ② 若是限量菜在库存页设份数。
+
+### 2026-07-02 追加 — 评审遗留 P2 两项（已实现待部署）
+- [x] **编辑手动单同步库存**：dashboard 编辑分支比对 items 库存形状（名/量/加料），
+      变了就「回补旧 → 扣新」（仅 06-29 后的单；地址/时间改动不动库存）。
+- [x] **FPX 弃单对账** `GET|POST /api/n8n/release-stale-fpx`（N8N_API_KEY 鉴权，同 daily-prep）：
+      `pending + fpx + 超 1 小时`（?hours= 可调）→ 标 cancelled(fpx-timeout-auto) +
+      回补 dishStock/食材（仅 06-29 后）+ releaseMealVouchers。**只碰 fpx**——QR pending
+      是等人工核收据的正常态。⏳ 老板需在 n8n 加每小时 workflow 打这个端点。

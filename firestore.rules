@@ -1,0 +1,104 @@
+rules_version = '2';
+// Incredibowl Firestore rules — repo copy (source of truth for review).
+// 部署：Firebase Console → Firestore → 规则 → 粘贴发布（或 firebase deploy --only firestore:rules）。
+// 基线 = 老板 2026-07-02 贴回的线上规则；本版仅收紧 orders（见该节注释），其余逐行保持。
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ───────────── Helpers ─────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email in [
+        'incredibowl.my@gmail.com',
+        'hello@incredibowl.my'
+      ];
+    }
+
+    // 客户能改的字段（敏感字段如 points/totalSpent/vouchersUsed/
+    // referralBonusAwarded/referredBy/referralCode 只能服务端写）
+    // ⚠️ 已知残余风险：deliveryZone / addressDistanceKm / addressVerified*
+    // 由客户端地理编码流程写入（MemberView/AuthModal → lib/auth.ts），恶意
+    // 客户可自写骗免运费。根治需把地址验证挪服务端 API（安全计划阶段 2.5），
+    // 规则层暂无法收紧否则打断正常改地址流程。
+    function userSafeFields() {
+      return [
+        'uid', 'email', 'displayName', 'photoURL',
+        'phone', 'phoneNormalized',
+        'address', 'addressLat', 'addressLng', 'addressDistanceKm',
+        'deliveryZone', 'addressFormatted',
+        'addressVerifiedAt', 'addressVerifiedText',
+        'createdAt', 'lastLoginAt', 'updatedAt'
+      ];
+    }
+
+    // 新建账号必须用安全默认值
+    function safeInitialDefaults() {
+      return request.resource.data.get('points', 0) == 0
+          && request.resource.data.get('totalSpent', 0) == 0
+          && request.resource.data.get('totalOrders', 0) == 0
+          && request.resource.data.get('referralBonusAwarded', false) == false
+          && request.resource.data.get('vouchersUsed', []).size() == 0;
+    }
+
+    // ───────────── 用户资料 ─────────────
+    match /users/{userId} {
+      // 创建：只能创建自己的，敏感数字必须为安全默认值
+      allow create: if isSignedIn() && request.auth.uid == userId
+                    && safeInitialDefaults();
+
+      // 更新：本人 + 只能改安全字段
+      allow update: if isSignedIn() && request.auth.uid == userId
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(userSafeFields());
+
+      // 读：本人或管理员
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // 审计日志（admin only）
+      match /auditLog/{logId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    // ───────────── 订单 ─────────────
+    // 🔒 2026-07-02 收紧：原 `allow create: if isSignedIn()` + owner update
+    // 让任何登录用户能伪造任意订单（status:'confirmed'、total:0 白吃）或
+    // 付款后自改金额/菜品/自确认。实际下单/确认/收据全部走服务端 API
+    // （/api/submit-order、/api/confirm-order，Admin SDK 不受规则约束），
+    // 客户端建单代码（lib/orders.ts submitOrder）已确认无调用方 = 死代码。
+    // 因此客户端只保留 owner 只读；一切写入仅 admin / 服务端。
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
+      // create 故意不给任何非 admin 主体 —— 结账必须走 /api/submit-order。
+    }
+
+    // ───────────── Dashboard 数据（仅管理员）─────────────
+    match /marketingSpend/{month} {
+      allow read, write: if isAdmin();
+    }
+    match /dashboardConfig/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ───────────── 邻居好评（公开读 已审核 的）─────────────
+    // 首页 FeedbackSection 给所有访客看，需要 anonymous read。
+    // 只读 status == 'APPROVED' 的，未审核 / 已拒绝的不曝光。
+    // 创建：登录用户可提交（待审核）。
+    // 改 / 删：仅管理员（走 Admin SDK，前端不直接动）。
+    match /feedbacks/{feedbackId} {
+      allow read: if resource.data.status == 'APPROVED' || isAdmin();
+      allow create: if isSignedIn()
+                    && request.resource.data.get('status', '') != 'APPROVED';
+      allow update, delete: if isAdmin();
+    }
+
+    // ───────────── 兜底（vouchers / mealVouchers / dishStock / ingredientStock / 其他）─────────────
+    // 任何未明确列出的 collection — 仅管理员（前端走 API 用 Admin SDK 绕开）
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
