@@ -9,7 +9,7 @@
  * Recipe data lives in src/data/dishIngredients.ts — edit there to add/adjust a
  * dish's ingredients; both consumers pick it up automatically.
  */
-import { getRecipeForDish, getAddOnRecipe, UNTRACKED_OK } from '@/data/dishIngredients';
+import { getRecipeForDish, getAddOnRecipe, resolveAddOnAlias, UNTRACKED_OK } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
 
 export interface PrepOrderItemAddOn {
@@ -153,9 +153,15 @@ export function collectUnrecipedLabels(orders: PrepOrder[]): { label: string; co
 // since rice is cooked fresh each meal even for cook-once dishes' plates).
 const UNIVERSAL_STAPLE = '白饭';
 
-// Strip the marketing prefix 【...】 and the (Xg) suffix so an add-on source tag
-// reads short, e.g. "【增肌极客】加柠香烤鸡胸 (180g)" → "加柠香烤鸡胸".
-const cleanAddOnLabel = (s: string) => s.replace(/^【[^】]*】/, '').replace(/\s*\([^)]*\)\s*$/, '').trim() || s;
+// Source tag for the add-on ingredient bucket: FIRST resolve the manual-order
+// short label to its web-cart twin (else the same add-on splits into two lines,
+// e.g. "糙米 180g（换糙米）· 糙米 90g（白饭换糙米）"), THEN strip the marketing
+// 【...】 prefix and (Xg) suffix so it reads short: "【增肌极客】加柠香烤鸡胸
+// (180g)" → "加柠香烤鸡胸".
+const cleanAddOnLabel = (s: string) => {
+  const canonical = resolveAddOnAlias(s);
+  return canonical.replace(/^【[^】]*】/, '').replace(/\s*\([^)]*\)\s*$/, '').trim() || canonical;
+};
 
 interface AddOnAgg { name: string; unit: string; bySource: Map<string, number> }
 

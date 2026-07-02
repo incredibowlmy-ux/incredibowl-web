@@ -523,10 +523,24 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '蛋白质核弹三件套': '蛋白质核弹三件套 (原价 RM 18.40)',
   '爆量满足三件套': '爆量满足三件套 (原价 RM 15.40)',
   '薯肉双拼满足套': '薯肉双拼满足套 (原价 RM 15.40)',
+  // Rice swap — manual short label has its OWN recipe entry above (loop skips
+  // it), listed here purely so the prep sheet's source tag unifies to one line
+  // (was "糙米 180g（换糙米）· 糙米 90g（白饭换糙米）"; boss 2026-07-02).
+  '换糙米': '白饭换糙米 (180g)',
 };
 for (const [manual, web] of Object.entries(MANUAL_LABEL_ALIASES)) {
   if (addOnRecipes[web] && !addOnRecipes[manual]) addOnRecipes[manual] = addOnRecipes[web];
   if (addOnShortNames[web] && !addOnShortNames[manual]) addOnShortNames[manual] = addOnShortNames[web];
+}
+
+/**
+ * Canonical (web-cart) label for any order-stored add-on label. The prep
+ * sheet's per-source tags must resolve BOTH spellings of the same add-on to
+ * ONE tag, or the ingredient shows as two lines (e.g. 换糙米 vs 白饭换糙米).
+ * Recipes already unify via the alias loop above; this unifies DISPLAY.
+ */
+export function resolveAddOnAlias(label: string): string {
+  return MANUAL_LABEL_ALIASES[label] || label;
 }
 
 // Legacy manual-only multi-leg labels (no web-cart twin) — N× the single leg.
