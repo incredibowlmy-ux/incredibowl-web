@@ -7417,6 +7417,15 @@ incredibowl.my`,
         };
         const DISH_SEED_DAY_BY_ID = Object.create(null);
         MENU_SEED.forEach(m => { DISH_SEED_DAY_BY_ID[String(m.id)] = m.day; });
+        // 组内排序跟 MENU_SEED 数组顺序走（seed 每天主打菜排第一，与 webapp
+        // WEEKLY_SCHEDULE 一致）。非 seed 的新菜排最后（Infinity → 退回 id 序）。
+        const DISH_SEED_ORDER_BY_ID = Object.create(null);
+        MENU_SEED.forEach((m, i) => { DISH_SEED_ORDER_BY_ID[String(m.id)] = i; });
+        function seedOrderCompare(a, b) {
+            const ia = DISH_SEED_ORDER_BY_ID[String(a.id)] ?? Infinity;
+            const ib = DISH_SEED_ORDER_BY_ID[String(b.id)] ?? Infinity;
+            return ia !== ib ? ia - ib : Number(a.id) - Number(b.id);
+        }
         function buildDishOptionsHtml(menu) {
             const dishes = (menu || []).filter(m =>
                 !String(m.id).startsWith('addon-') && m.active !== false);
@@ -7427,7 +7436,7 @@ incredibowl.my`,
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
-                groups[d].sort((a, b) => Number(a.id) - Number(b.id));
+                groups[d].sort(seedOrderCompare);
             });
             const todayWeekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
             return DISH_DAY_ORDER.filter(d => groups[d].length).map(d => {
@@ -7461,7 +7470,7 @@ incredibowl.my`,
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
-                groups[d].sort((a, b) => Number(a.id) - Number(b.id));
+                groups[d].sort(seedOrderCompare);
             });
             return groups;
         }
