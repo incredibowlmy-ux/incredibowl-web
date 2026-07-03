@@ -106,7 +106,7 @@ const WEEKLY_SCHEDULE: Record<number, number[]> = {
     5: [14, 23],  // 周五：金黄鸡扒饭(主打)、家乡豆酱焖花肉
 };
 
-const DAILY_DISHES: number[] = [11, 13];  // 纳豆月见、马铃薯炖花肉片
+const DAILY_DISHES: number[] = [11, 13, 26];  // 纳豆月见、马铃薯炖花肉片、⚠️支付测试(临时,测完删)
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
@@ -194,6 +194,18 @@ const DISH_CATALOG: DishData[] = [
         tagsEn: ["Japanese curry", "Pan-seared chicken breast", "Warm & rich", "Made for rice"],
         desc: "浓郁日式咖喱慢炖到顺滑，配嫩煎鸡胸肉，盖在热饭上，一口暖到心里。",
         descEn: "Rich Japanese curry simmered until silky, served with pan-seared chicken breast over hot rice — warm and comforting in every bite."
+    },
+    {
+        // ⚠️ 临时支付测试商品 2026-07-03（真实 FPX 小额自测用）——测完立刻删除本条 + DAILY_DISHES 里的 26。
+        id: 26,
+        name: "支付测试（内部专用，请勿下单）",
+        nameEn: "Payment Test (Internal Only — Do Not Order)",
+        price: 1.00,
+        image: "🧪",
+        tags: ["内部测试"],
+        tagsEn: ["Internal test"],
+        desc: "内部支付通道测试商品，非售卖菜品，请勿下单。",
+        descEn: "Internal payment-gateway test item. Not a real dish — please do not order."
     },
     {
         // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。周五新上 2026-06-08。
