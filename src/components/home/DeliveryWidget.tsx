@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
+import { DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
 
 type Tier = 'near' | 'mid' | 'far' | 'outside';
 
@@ -51,11 +52,14 @@ export default function DeliveryWidget() {
     return (
         <section
             aria-labelledby="delivery-heading"
-            className="lg:col-span-5 mt-4"
+            className="lg:col-span-12 mt-4"
         >
-            <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden">
+            {/* Mobile keeps the stacked strips; desktop (full-width row since the
+                promo banner moved below the menu) splits into checker-left /
+                info-right so neither side stretches into dead space. */}
+            <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden lg:grid lg:grid-cols-12">
                 {/* Hero strip: address checker — the headline action */}
-                <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8">
+                <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8 lg:col-span-6 lg:flex lg:flex-col lg:justify-center">
                     <div className="flex items-center gap-2.5 mb-1.5">
                         <MapPin size={18} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                         <h2 id="delivery-heading" className="text-[18px] md:text-[22px] lg:text-[26px] font-extrabold text-[#1A2D23] leading-tight">
@@ -167,23 +171,17 @@ export default function DeliveryWidget() {
                     WhatsApp fallback CTA removed — the checker's outside-zone result
                     already surfaces a WhatsApp link, and the floating button +
                     sticky bar cover the rest. */}
-                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start">
+                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-[#FF6B35]/10 lg:content-center lg:gap-8">
                     {/* Tier table */}
                     <div>
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">配送费一览</p>
                         <ul className="space-y-1.5 text-[13px] leading-snug">
-                            <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2.5km 内</span></span>
-                                <span className="text-right"><span className="font-bold text-gray-700">RM 3</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">满 RM 20 免运</span></span>
-                            </li>
-                            <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">2.5–5km</span></span>
-                                <span className="text-right"><span className="font-bold text-gray-700">RM 5</span><br /><span className="text-[11px] text-[#FF6B35] font-bold">满 RM 30 免运</span></span>
-                            </li>
-                            <li className="flex justify-between gap-2">
-                                <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">5–7.5km</span></span>
-                                <span className="text-right"><span className="font-bold text-gray-700">RM 12</span><br /><span className="text-[11px] text-amber-600 font-bold">满 RM 45 免运</span></span>
-                            </li>
+                            {DELIVERY_TIER_COPY.map((t, i) => (
+                                <li key={t.rangeZh} className="flex justify-between gap-2">
+                                    <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeZh}</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>满 RM {t.freeOver} 免运</span></span>
+                                </li>
+                            ))}
                         </ul>
                     </div>
 

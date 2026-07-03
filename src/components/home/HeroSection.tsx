@@ -6,6 +6,7 @@ import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-reac
 import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
+import { DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN } from '@/lib/deliveryCopy';
 
 export default function HeroSection() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
@@ -123,7 +124,7 @@ export default function HeroSection() {
                         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
                             <span>网页 / WhatsApp 下单</span>
                             <span className="text-[#FF6B35] font-black">→</span>
-                            <span>2.5km 内 RM 3（满 20 免运）· 2.5–5km 满 30 免运</span>
+                            <span>{DELIVERY_SUMMARY_ZH}</span>
                         </div>
                         {/* Desktop: icon-prefixed feature list with dot separator */}
                         <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
@@ -134,11 +135,11 @@ export default function HeroSection() {
                             <span className="text-[#1A2D23]/25 select-none">·</span>
                             <span className="inline-flex items-center gap-1.5">
                                 <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                2.5km 内 RM 3（满 20 免运）· 2.5–5km 满 30 免运
+                                {DELIVERY_SUMMARY_ZH}
                             </span>
                         </div>
                         <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
-                            Within 2.5km RM 3 (free over RM 20) · 2.5–5km free over RM 30
+                            {DELIVERY_SUMMARY_EN}
                         </p>
                     </div>
                 </div>

@@ -275,13 +275,23 @@ export default function V4BentoLayout() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
                     <HeroSection />
+                    {/* Desktop declutters the above-the-fold stack: trust strip merges
+                        into the hero badge, the FAQ teaser lives in the FAQ section,
+                        and the promo banner re-renders after the menu (when the
+                        "review → free side" pitch is actually relevant). Mobile keeps
+                        the original order — mobile layout is frozen. */}
                     <HeroTrustStrip />
                     <DeliveryWidget />
-                    <PromoBanner />
+                    <div className="contents lg:hidden">
+                        <PromoBanner />
+                    </div>
                     <FaqHeroStrip />
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
+                    <div className="hidden lg:contents">
+                        <PromoBanner />
+                    </div>
                     <ErrorBoundary>
                         <AboutBowlMama />
                     </ErrorBoundary>

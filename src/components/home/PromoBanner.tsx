@@ -8,7 +8,7 @@ export default function PromoBanner() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
-        <div className="lg:col-span-7 mt-4">
+        <div className="lg:col-span-12 mt-4">
             <div className="relative bg-gradient-to-br from-[#1A2D23] via-[#243A2D] to-[#1A2D23] rounded-[32px] p-6 md:p-8 overflow-hidden border border-[#FF6B35]/15 h-full">
                 {/* Decorative blurs */}
                 <div className="w-48 h-48 bg-[#FF6B35] rounded-full blur-3xl opacity-15 absolute -top-16 -left-10 pointer-events-none" />
@@ -47,7 +47,7 @@ export default function PromoBanner() {
                             {/* Details */}
                             <div className="flex-1 min-w-0 relative">
                                 <p className="text-sm font-black text-white leading-tight">惊喜小菜 / Free Side</p>
-                                <p className="text-[11px] text-white/60 leading-snug mt-1">好评后下次下单附上 · 碗妈当天配</p>
+                                <p className="text-[12px] text-white/75 leading-snug mt-1">好评后下次下单附上 · 碗妈当天配</p>
                             </div>
                         </div>
 
@@ -94,20 +94,20 @@ export default function PromoBanner() {
                                     <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                     <div className="text-xs leading-none inline-flex items-center gap-1">
                                         <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
-                                        <span className="text-white/55 font-medium">Google 评价</span>
+                                        <span className="text-white/70 font-medium">Google 评价</span>
                                         <ExternalLink size={11} className="text-white/40 group-hover:text-[#FF9B50] transition-colors" strokeWidth={2.5} />
                                     </div>
                                 </a>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
                                     <span className="text-white font-black">100%</span>
-                                    <span className="text-white/55 font-medium ml-1">邻居推荐</span>
+                                    <span className="text-white/70 font-medium ml-1">邻居推荐</span>
                                 </div>
                             </div>
 
                             {/* Cluster C: how to claim — 3 steps (border-t on mobile only, desktop relies on flex spacing) */}
                             <div className="border-t border-white/10 pt-4 space-y-2.5 lg:border-t-0 lg:pt-0">
-                                <p className="text-[11px] font-black text-white/55 uppercase tracking-wider mb-2.5">如何获得</p>
+                                <p className="text-[11px] lg:text-[12px] font-black text-white/55 lg:text-white/70 uppercase tracking-wider mb-2.5">如何获得</p>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">1</span>
                                     <p className="text-[13px] text-white/75 leading-snug pt-0.5">下单并享用</p>
@@ -129,8 +129,8 @@ export default function PromoBanner() {
                                 className="mt-5 lg:mt-0 self-start lg:self-end inline-flex items-center gap-3 px-5 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full shadow-md shadow-[#FF6B35]/20 transition-[background-color,transform,box-shadow] duration-150 ease-out active:scale-[0.97] active:brightness-95 group"
                             >
                                 <div className="flex flex-col items-start">
-                                    <span className="text-[15px] font-bold leading-tight">立即下单</span>
-                                    <span className="text-[11px] font-medium text-white/75 leading-tight">好评换一份小菜</span>
+                                    <span className="text-[15px] font-bold leading-tight">去看菜单</span>
+                                    <span className="text-[11px] lg:text-[12px] font-medium text-white/75 leading-tight">好评换一份小菜</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>

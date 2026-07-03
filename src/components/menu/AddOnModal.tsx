@@ -565,8 +565,13 @@ export default function AddOnModal({
                     {/* ─── Divider ─── */}
                     <div className="mx-5 md:mx-6 border-t border-dashed border-[#E8DFD0] my-2" />
 
+                    {/* Desktop shows the (required) delivery schedule BEFORE the optional
+                        add-ons so the disabled "请先选择送达时段" CTA is explained without
+                        scrolling. Mobile keeps the original order — mobile is frozen. */}
+                    <div className="lg:flex lg:flex-col">
+
                     {/* ─── Add-on Sections ─── */}
-                    <div className="px-5 md:px-6 mt-4 space-y-3">
+                    <div className="px-5 md:px-6 mt-4 space-y-3 lg:order-2">
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
@@ -583,11 +588,11 @@ export default function AddOnModal({
                                             <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
                                                 {section.title}
                                             </h3>
-                                            <p className={`text-[11px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
+                                            <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
                                                 {section.titleEn}
                                             </p>
                                             {(section as any).extraDesc && (
-                                                <p className="max-w-[85%] text-[10px] mt-1.5 leading-relaxed text-[#FF6B35]/70 whitespace-pre-wrap">
+                                                <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-[#FF6B35]/70 lg:text-[#FF6B35]/85 whitespace-pre-wrap">
                                                     {(section as any).extraDesc}
                                                 </p>
                                             )}
@@ -634,7 +639,7 @@ export default function AddOnModal({
                                                             <p className="text-sm font-bold text-[#3B2A1A] truncate">
                                                                 {item.name}
                                                             </p>
-                                                            <p className="text-[11px] text-[#8B7355]">
+                                                            <p className="text-[11px] lg:text-[12px] text-[#8B7355]">
                                                                 {item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>
                                                             </p>
                                                         </div>
@@ -670,7 +675,7 @@ export default function AddOnModal({
                     </div>
 
                     {/* ─── Delivery Date and Time ─── */}
-                    <div className="px-5 md:px-6 mt-6">
+                    <div className="px-5 md:px-6 mt-6 lg:order-1 lg:mt-4">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
                             <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
@@ -717,7 +722,27 @@ export default function AddOnModal({
                                     {dateLabel || selectedDate} (固定款)
                                 </div>
                             )}
-                            <div className="relative">
+                            {/* Desktop: the two slots as big tap targets — no hidden dropdown */}
+                            <div className="hidden lg:grid grid-cols-2 gap-3">
+                                {([
+                                    { value: 'Lunch (11AM-1PM)', label: '🌞 午餐 11AM - 1PM' },
+                                    { value: 'Dinner (5PM-8PM)', label: '🌙 晚餐 5PM - 8PM' },
+                                ] as const).map(slot => (
+                                    <button
+                                        key={slot.value}
+                                        type="button"
+                                        onClick={() => setSelectedTime(slot.value)}
+                                        className={`min-h-[46px] px-4 py-3 rounded-2xl text-sm font-bold border-2 transition-colors ${
+                                            selectedTime === slot.value
+                                                ? 'border-[#2D5F3E] bg-[#2D5F3E] text-white'
+                                                : 'border-[#E8DFD0] bg-white text-[#3B2A1A] hover:border-[#2D5F3E]/50'
+                                        }`}
+                                    >
+                                        {slot.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="relative lg:hidden">
                                 <div className="absolute inset-y-0 left-4 flex justify-center items-center pointer-events-none">
                                     <Clock size={16} className="text-[#2D5F3E]" />
                                 </div>
@@ -733,6 +758,8 @@ export default function AddOnModal({
                             </div>
                         </div>
                     </div>
+
+                    </div>{/* /desktop reorder wrapper */}
 
                     {/* ─── Note to Restaurant ─── */}
                     <div className="px-5 md:px-6 mt-6">

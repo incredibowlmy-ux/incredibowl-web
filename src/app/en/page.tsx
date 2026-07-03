@@ -271,13 +271,21 @@ export default function EnglishHome() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBannerEN />
                     <HeroSectionEN />
+                    {/* Desktop declutter mirrors the ZH homepage: trust strip + FAQ
+                        teaser hidden at lg, promo banner re-rendered after the menu.
+                        Mobile keeps the original order — mobile layout is frozen. */}
                     <HeroTrustStripEN />
                     <DeliveryWidgetEN />
-                    <PromoBannerEN />
+                    <div className="contents lg:hidden">
+                        <PromoBannerEN />
+                    </div>
                     <FaqHeroStripEN />
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
+                    <div className="hidden lg:contents">
+                        <PromoBannerEN />
+                    </div>
                     <ErrorBoundary>
                         <AboutBowlMamaEN />
                     </ErrorBoundary>

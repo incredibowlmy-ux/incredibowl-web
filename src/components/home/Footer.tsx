@@ -2,6 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
+import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_ZH } from '@/lib/deliveryCopy';
 
 const COVERAGE_AREAS = ['Old Klang Road', 'OUG', 'Kuchai Lama', 'Happy Garden', 'Taman Desa', 'Bukit Jalil'];
 
@@ -82,19 +83,13 @@ export default function Footer() {
                                     ))}
                                 </div>
                                 <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[260px] space-y-1">
-                                    <li className="flex justify-between gap-3">
-                                        <span className="font-semibold text-[#1A2D23]/80">2.5km 内</span>
-                                        <span><span className="font-bold">RM 3</span> · 满 20 免运</span>
-                                    </li>
-                                    <li className="flex justify-between gap-3">
-                                        <span className="font-semibold text-[#1A2D23]/80">2.5–5km</span>
-                                        <span><span className="font-bold">RM 5</span> · 满 30 免运</span>
-                                    </li>
-                                    <li className="flex justify-between gap-3">
-                                        <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                        <span><span className="font-bold">RM 12</span> · 满 45 免运</span>
-                                    </li>
-                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">7.5km 以外暂不配送</li>
+                                    {DELIVERY_TIER_COPY.map((t) => (
+                                        <li key={t.rangeZh} className="flex justify-between gap-3">
+                                            <span className="font-semibold text-[#1A2D23]/80">{t.rangeZh}</span>
+                                            <span><span className="font-bold">RM {t.fee}</span> · 满 {t.freeOver} 免运</span>
+                                        </li>
+                                    ))}
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">{BEYOND_DELIVERY_NOTE_ZH}</li>
                                 </ul>
                             </div>
                         </div>
@@ -150,19 +145,13 @@ export default function Footer() {
                             ))}
                         </div>
                         <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[260px]">
-                            <li className="flex justify-between gap-3">
-                                <span className="font-semibold text-[#1A2D23]/80">2.5km 内</span>
-                                <span><span className="font-bold">RM 3</span> · 满 20 免运</span>
-                            </li>
-                            <li className="flex justify-between gap-3">
-                                <span className="font-semibold text-[#1A2D23]/80">2.5–5km</span>
-                                <span><span className="font-bold">RM 5</span> · 满 30 免运</span>
-                            </li>
-                            <li className="flex justify-between gap-3">
-                                <span className="font-semibold text-[#1A2D23]/80">5–7.5km</span>
-                                <span><span className="font-bold">RM 12</span> · 满 45 免运</span>
-                            </li>
-                            <li className="text-[11px] text-[#1A2D23]/40 italic pt-1">7.5km 以外暂不配送</li>
+                            {DELIVERY_TIER_COPY.map((t) => (
+                                <li key={t.rangeZh} className="flex justify-between gap-3">
+                                    <span className="font-semibold text-[#1A2D23]/80">{t.rangeZh}</span>
+                                    <span><span className="font-bold">RM {t.fee}</span> · 满 {t.freeOver} 免运</span>
+                                </li>
+                            ))}
+                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">{BEYOND_DELIVERY_NOTE_ZH}</li>
                         </ul>
                     </div>
 

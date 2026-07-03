@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown } from 'lucide-react';
+import { DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
 
 interface FaqItem {
     q: string;
@@ -34,14 +35,14 @@ const FAQS: FaqItem[] = [
     },
     {
         q: '我家附近能送吗？',
-        aText: '主要送 Pearl Point / Millerz / OUG / Old Klang Road / Bangsar 一带：2.5km 内 RM 3（满 RM 20 免运）；2.5–5km RM 5（满 RM 30 免运）；5–7.5km RM 12（满 RM 45 免运）；7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。不确定家里在不在范围内？注册账号 + 填写地址，系统会自动核对位置，告诉你能不能送、运费多少。',
+        aText: `主要送 Pearl Point / Millerz / OUG / Old Klang Road / Bangsar 一带：${DELIVERY_TIER_COPY.map((t) => `${t.rangeZh} RM ${t.fee}（满 RM ${t.freeOver} 免运）`).join('；')}；7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。不确定家里在不在范围内？注册账号 + 填写地址，系统会自动核对位置，告诉你能不能送、运费多少。`,
         a: (
             <>
                 主要送 <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span> 一带：
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
-                    <li>• 2.5km 内 —— <span className="font-semibold">RM 3</span>（满 RM 20 <span className="text-green-600 font-bold">免运</span>）</li>
-                    <li>• 2.5–5km —— <span className="font-semibold">RM 5</span>（满 RM 30 <span className="text-green-600 font-bold">免运</span>）</li>
-                    <li>• 5–7.5km —— <span className="font-semibold">RM 12</span>（满 RM 45 <span className="text-green-600 font-bold">免运</span>）</li>
+                    {DELIVERY_TIER_COPY.map((t) => (
+                        <li key={t.rangeZh}>• {t.rangeZh} —— <span className="font-semibold">RM {t.fee}</span>（满 RM {t.freeOver} <span className="text-green-600 font-bold">免运</span>）</li>
+                    ))}
                     <li>• 7.5km 以外 —— 暂不配送，公司订餐请 WhatsApp 询价</li>
                 </ul>
                 <p className="mt-3">

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ShoppingBag, User, ChevronRight } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import LanguageSwitcher from './LanguageSwitcher';
+import { DELIVERY_SUMMARY_ZH } from '@/lib/deliveryCopy';
 
 interface NavBarProps {
     currentUser: FirebaseUser | null;
@@ -42,8 +43,8 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 
                 {/* Desktop Version */}
                 <div className="hidden sm:flex w-full justify-center px-3">
-                    <p className="text-xs font-black tracking-wide truncate">
-                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 RM 3 满 20 免运 · 2.5–5km 满 30 免运 · 5–7.5km RM 12 满 45 免运
+                    <p className="text-xs lg:text-[13px] font-black tracking-wide truncate">
+                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                     </p>
                 </div>
 
@@ -51,11 +52,11 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 RM 3 满 20 免运 · 2.5–5km 满 30 免运 · 5–7.5km RM 12 满 45 免运
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
                         {/* Duplicate for seamless infinite loop */}
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> 2.5km 内 RM 3 满 20 免运 · 2.5–5km 满 30 免运 · 5–7.5km RM 12 满 45 免运
+                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
                     </div>
                 </div>

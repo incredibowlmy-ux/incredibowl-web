@@ -3,8 +3,10 @@
 :root {
   --background: #FFFFFF;
   --foreground: #1D1D1D;
-  --primary: #FF6B00;
-  --primary-dark: #E66000;
+  /* Brand orange — matches the hardcoded #FF6B35 used across components
+     (hover #E95D31). Keep these in sync if the brand color ever changes. */
+  --primary: #FF6B35;
+  --primary-dark: #E95D31;
   --secondary: #E63946;
   --accent: #FFD60A;
   --kraft: #F4EFE6;

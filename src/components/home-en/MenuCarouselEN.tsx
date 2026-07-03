@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { ShoppingBag, Sparkles, Phone } from 'lucide-react';
 import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
@@ -20,6 +20,9 @@ const WD_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselENProps) {
     const ready = Object.keys(menuDates).length > 0;
+    // Desktop-only: retired dishes collapsed by default so new visitors aren't
+    // greeted by a wall of unorderable grey cards. Mobile keeps them expanded.
+    const [showRetired, setShowRetired] = useState(false);
 
     const tomorrowsId = useMemo(() => (ready ? computeNextSpecial().dish.id : null), [ready]);
 
@@ -29,7 +32,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
     // skeleton and hydration matches (NO_LCP-safe guard, mirrors the ZH carousel).
     const groups = useMemo(() => {
         if (!ready) return null;
-        const active = weeklyMenu.filter(d => !d.retired);
+        const active = weeklyMenu.filter(d => !d.retired && !d.hidden);
         const daily = active.filter(d => d.weekday == null);
         const days = [1, 2, 3, 4, 5]
             .map(wd => ({
@@ -163,13 +166,17 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
         const isLimited = typeof stockLeft === 'number';
         const isSoldOut = isLimited && stockLeft <= 0;
         const isDisabled = !!dInfo?.disabled || isSoldOut;
+        // Past today's cutoff (bookable again next week) reads differently from
+        // sold-out/retired: keep the photo in colour, just dim the card, so the
+        // column doesn't look like the dish is gone for good.
+        const isCutoffOnly = !!dInfo?.disabled && !isSoldOut && !dish.retired;
         return (
             <div
                 key={dish.id}
                 onClick={() => !isDisabled && onOpenAddOn(dish)}
                 className={`group bg-white rounded-3xl p-5 border border-gray-100 transition-[transform,box-shadow,border-color,opacity] duration-300 ease-out flex flex-col ${
                     isDisabled
-                        ? 'opacity-50 cursor-not-allowed'
+                        ? `${isCutoffOnly ? 'opacity-75' : 'opacity-50'} cursor-not-allowed`
                         : 'cursor-pointer hover:shadow-xl hover:shadow-[#1A2D23]/5 hover:-translate-y-1 hover:border-[#FF6B35]/20 active:scale-[0.99]'
                 }`}
             >
@@ -182,7 +189,12 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                     </p>
                 </div>
 
-                <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled && !isCutoffOnly ? 'grayscale' : ''}`}>
+                    {isCutoffOnly && !(isLimited && stockLeft <= 10) && (
+                        <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[13px] font-extrabold shadow-md bg-white/90 text-[#1A2D23]/70">
+                            Closed for today
+                        </span>
+                    )}
                     {isLimited && stockLeft <= 10 && (
                         <span className={`absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[14px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
                             {isSoldOut ? 'Sold out' : `${stockLeft} left`}
@@ -383,7 +395,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                                     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>{g.wd}</span>
                                                     <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
                                                 </span>
-                                                <span className="text-[12px] font-bold text-gray-400 mt-1.5">{dayDateSub(g.dishes[0])}</span>
+                                                <span className="text-[13px] font-bold text-gray-500 mt-1.5">{dayDateSub(g.dishes[0])}</span>
                                                 {isNext && <span className="mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
                                             </div>
                                             {g.dishes.map(renderDesktopCard)}
@@ -392,28 +404,39 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                 })}
                             </div>
 
-                            {/* Daily · Always available */}
-                            {groups.daily.length > 0 && (
+                            {/* Daily · Always available — next-week CTA shares the row so it fills cleanly */}
+                            {groups.daily.length > 0 ? (
                                 <div className="mt-12">
                                     <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">⭐ Daily · Always available</h3>
-                                    <div className="grid grid-cols-3 xl:grid-cols-4 gap-5">
+                                    <div className="grid grid-cols-3 gap-5">
                                         {groups.daily.map(renderDesktopCard)}
+                                        {whatsappDesktop}
                                     </div>
+                                </div>
+                            ) : (
+                                <div className="mt-8 grid grid-cols-3 gap-5">
+                                    {whatsappDesktop}
                                 </div>
                             )}
 
-                            {/* Next-week CTA */}
-                            <div className="mt-8 grid grid-cols-3 xl:grid-cols-4 gap-5">
-                                {whatsappDesktop}
-                            </div>
-
-                            {/* Paused · Past dishes */}
+                            {/* Paused · Past dishes — collapsed by default */}
                             {groups.retired.length > 0 && (
                                 <div className="mt-12">
-                                    <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">🕰 Past favourites · Back soon</h3>
-                                    <div className="grid grid-cols-3 xl:grid-cols-4 gap-5">
-                                        {groups.retired.map(renderDesktopCard)}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRetired(v => !v)}
+                                        className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 hover:bg-white border border-gray-200 hover:border-[#FF6B35]/30 rounded-2xl transition-colors text-left"
+                                        aria-expanded={showRetired}
+                                    >
+                                        <span className="text-[20px] font-extrabold text-[#1A2D23] leading-none">🕰 Past favourites · Back soon</span>
+                                        <span className="text-[14px] font-bold text-gray-400">({groups.retired.length})</span>
+                                        <span className="ml-auto text-[14px] font-bold text-[#FF6B35]">{showRetired ? 'Hide ▲' : 'Take a look ▼'}</span>
+                                    </button>
+                                    {showRetired && (
+                                        <div className="mt-5 grid grid-cols-3 xl:grid-cols-4 gap-5">
+                                            {groups.retired.map(renderDesktopCard)}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </>

@@ -22,6 +22,19 @@ export default function WhatsAppStickyBarEN() {
                 return;
             }
         }
+        // Desktop: don't interrupt the first screens — surface the bar only after
+        // the visitor has scrolled into/past the menu (engaged intent). Mobile
+        // keeps the original 1.5s timer (mobile behaviour is frozen).
+        if (window.matchMedia('(min-width: 1024px)').matches) {
+            const onScroll = () => {
+                if (window.scrollY > 1600) {
+                    setShow(true);
+                    window.removeEventListener('scroll', onScroll);
+                }
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            return () => window.removeEventListener('scroll', onScroll);
+        }
         const timer = setTimeout(() => setShow(true), SHOW_DELAY_MS);
         return () => clearTimeout(timer);
     }, []);

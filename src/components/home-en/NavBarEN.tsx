@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ShoppingBag, User, ChevronRight } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import LanguageSwitcher from '../home/LanguageSwitcher';
+import { DELIVERY_SUMMARY_EN } from '@/lib/deliveryCopy';
 
 interface NavBarENProps {
     currentUser: FirebaseUser | null;
@@ -42,8 +43,8 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
 
                 {/* Desktop */}
                 <div className="hidden sm:flex w-full justify-center px-3">
-                    <p className="text-xs font-black tracking-wide truncate">
-                        Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> Within 2.5km RM 3 (free over RM 20) · 2.5–5km free over RM 30 · 5–7.5km RM 12 (free over RM 45)
+                    <p className="text-xs lg:text-[13px] font-black tracking-wide truncate">
+                        Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_EN}
                     </p>
                 </div>
 
@@ -51,10 +52,10 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
                     <div className="animate-marquee-mobile-en flex shrink-0 items-center">
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            Orders close 06:00 · Within 2.5km RM 3 (free over RM 20) · 2.5–5km free over RM 30 · 5–7.5km RM 12 (free over RM 45)
+                            Orders close 06:00 · {DELIVERY_SUMMARY_EN}
                         </span>
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            Orders close 06:00 · Within 2.5km RM 3 (free over RM 20) · 2.5–5km free over RM 30 · 5–7.5km RM 12 (free over RM 45)
+                            Orders close 06:00 · {DELIVERY_SUMMARY_EN}
                         </span>
                     </div>
                 </div>

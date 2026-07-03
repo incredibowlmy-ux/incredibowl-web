@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Sparkles, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
+import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 // updateOrderStatus moved to server-side /api/confirm-order
 import { isValidMyPhone } from '@/lib/cartUtils';
@@ -823,12 +823,6 @@ export default function CartDrawer({
                                     )}
                                     <span className="text-3xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
                                 </div>
-                            </div>
-
-                            {/* Points preview — based on food (subtotal after discount), not delivery fee */}
-                            <div className="flex items-center gap-2 px-3 py-2 bg-[#E3EADA]/30 rounded-xl">
-                                <Sparkles size={14} className="text-[#FF6B35]" />
-                                <span className="text-xs font-bold text-[#1A2D23]/60">核对成功后可获 <span className="text-[#FF6B35]">+{Math.floor(subtotalAfterDiscount)}</span> 积分</span>
                             </div>
 
                             {/* Warnings */}
