@@ -12,12 +12,17 @@ import { DELIVERY_PROSE_SHORT_EN, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 // may, per Next.js. The <html lang> swap to en-MY is handled client-side in
 // en/page.tsx (document.documentElement.lang), which JS-rendering crawlers
 // (Googlebot) pick up after render.
+// Positioning mirrors the Google Business Profile categories:
+// primary = Chinese delivery restaurant, secondary = healthy food.
 export const metadata: Metadata = {
-  title: "Incredibowl | Home-cooked Delivery · No MSG · Pearl Point / Old Klang Road / OUG KL",
+  title: "Incredibowl | Chinese Home-cooked Delivery · Healthy, No MSG · Old Klang Road / OUG KL",
   description:
-    `Home-cooked food delivery from Pearl Point, Kuala Lumpur — covering ${COVERAGE_AREAS.join(" / ")}. No MSG, freshly sourced from the wet market every morning. ${DELIVERY_PROSE_SHORT_EN}. Order by 6AM.`,
+    `Chinese home-cooked food delivery from Pearl Point, Kuala Lumpur — covering ${COVERAGE_AREAS.join(" / ")}. Healthy, no MSG, freshly sourced from the wet market every morning. ${DELIVERY_PROSE_SHORT_EN}. Order by 6AM.`,
   keywords: [
+    "chinese food delivery KL",
     "home-cooked food delivery KL",
+    "healthy food delivery KL",
+    "healthy bowl KL",
     "no MSG food delivery",
     ...COVERAGE_AREAS.map((a) => `${a} food delivery`),
   ],
@@ -30,9 +35,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Incredibowl | Pearl Point Home-cooked Delivery",
+    title: "Incredibowl | Chinese Home-cooked Delivery KL",
     description:
-      `No MSG, freshly sourced from the wet market every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
+      `Healthy, no MSG, freshly sourced from the wet market every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
     url: "https://www.incredibowl.my/en",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -48,9 +53,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Incredibowl | Pearl Point Home-cooked Delivery",
+    title: "Incredibowl | Chinese Home-cooked Delivery KL",
     description:
-      `No MSG, freshly sourced every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
+      `Healthy, no MSG, freshly sourced every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
     images: ["https://www.incredibowl.my/pork_potato_stew.webp"],
   },
 };

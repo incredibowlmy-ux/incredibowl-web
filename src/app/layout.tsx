@@ -64,12 +64,19 @@ const CJK_STACK = `"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragi
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),
-  title: "Incredibowl | Pearl Point 私厨外送 · 无味精家常菜 · Old Klang Road / OUG",
-  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。早上 6AM 截单。`,
+  // Positioning mirrors the Google Business Profile categories:
+  // primary = Chinese delivery restaurant (中式家常菜), secondary = healthy food.
+  title: "Incredibowl | Pearl Point 中式家常菜私厨外送 · 健康无味精 · Old Klang Road / OUG",
+  description: `吉隆坡 Old Klang Road 中式家常菜私厨外送。健康无味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。早上 6AM 截单。`,
   keywords: [
     "私厨外送",
     "家常菜外送",
+    "中式外送",
     "无味精外送",
+    "健康餐外送",
+    "chinese food delivery KL",
+    "healthy food delivery KL",
+    "healthy bowl KL",
     "home-cooked food delivery KL",
     ...COVERAGE_AREAS.flatMap((a) => [`${a} 外送`, `${a} food delivery`]),
   ],
@@ -86,8 +93,8 @@ export const metadata: Metadata = {
     apple: "/apple-icon.png",
   },
   openGraph: {
-    title: "Incredibowl | Pearl Point 私厨外送",
-    description: `不加味精，每天巴刹新鲜现煮。Pearl Point 出发，${DELIVERY_PROSE_SHORT_ZH}。`,
+    title: "Incredibowl | Pearl Point 中式家常菜私厨外送",
+    description: `健康无味精，每天巴刹新鲜现煮。Pearl Point 出发，${DELIVERY_PROSE_SHORT_ZH}。`,
     url: "https://www.incredibowl.my",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -103,8 +110,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Incredibowl | Pearl Point 私厨外送",
-    description: `不加味精，每天巴刹新鲜现煮。Pearl Point 出发，${DELIVERY_PROSE_SHORT_ZH}。`,
+    title: "Incredibowl | Pearl Point 中式家常菜私厨外送",
+    description: `健康无味精，每天巴刹新鲜现煮。Pearl Point 出发，${DELIVERY_PROSE_SHORT_ZH}。`,
     images: ["https://www.incredibowl.my/pork_potato_stew.webp"],
   },
   verification: {
@@ -149,7 +156,7 @@ export default function RootLayout({
                   "@id": "https://www.incredibowl.my/#restaurant",
                   name: "Incredibowl",
                   alternateName: "碗妈私厨 (BowlMama)",
-                  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。`,
+                  description: `吉隆坡 Old Klang Road 中式家常菜私厨外送。健康无味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。`,
                   url: "https://www.incredibowl.my/",
                   telephone: "+60103370197",
                   image: [
@@ -157,7 +164,7 @@ export default function RootLayout({
                     "https://www.incredibowl.my/potato_fried_egg.webp"
                   ],
                   priceRange: "RM 15-25",
-                  servesCuisine: ["Chinese", "Home-cooked", "Malaysian Chinese"],
+                  servesCuisine: ["Chinese", "Home-cooked", "Malaysian Chinese", "Healthy"],
                   address: {
                     "@type": "PostalAddress",
                     streetAddress: "Pearl Suria Residence, Jalan Klang Lama, Taman United",

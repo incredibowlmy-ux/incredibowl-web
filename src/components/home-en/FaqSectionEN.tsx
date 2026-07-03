@@ -47,6 +47,16 @@ const FAQS: FaqItem[] = [
         ),
     },
     {
+        q: 'Is the food healthy?',
+        a: (
+            <>
+                BowlMama cooks <span className="font-bold text-[#1A2D23]">healthy-leaning Chinese home food</span>: <span className="font-bold text-[#1A2D23]">no MSG</span>, ever &mdash;
+                ingredients are picked fresh at the wet market every morning and cooked the same day.<br />
+                Every dish on the menu lists its <span className="font-bold text-[#1A2D23]">protein grams</span> (many mains are 30g+ protein), so you can plan your meals.
+            </>
+        ),
+    },
+    {
         q: 'Do I have to pre-order?',
         a: (
             <>
