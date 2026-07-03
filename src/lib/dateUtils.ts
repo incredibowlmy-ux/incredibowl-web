@@ -82,6 +82,9 @@ export function computeMenuDates(
     const menuDates: Record<number, MenuDateInfo> = {};
 
     dishes.forEach(dish => {
+        // Hidden dishes: completely absent from the website — no menuDates entry,
+        // so the carousels (which also filter `hidden`) never look one up.
+        if (dish.hidden) return;
         // Retired dishes: shown on the menu but never orderable (greyed card + note).
         if (dish.retired) {
             menuDates[dish.id] = {

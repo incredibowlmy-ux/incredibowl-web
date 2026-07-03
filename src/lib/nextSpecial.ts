@@ -43,7 +43,7 @@ export function computeNextSpecial(): NextSpecial {
     // A weekday can host more than one special (e.g. Tuesday) — the Hero headlines
     // the `isPrimary` one (falls back to the first listed). Retired dishes excluded.
     const pickSpecial = (wd: number): MenuItem | undefined => {
-        const list = weeklyMenu.filter(d => !d.retired && d.weekday === wd);
+        const list = weeklyMenu.filter(d => !d.retired && !d.hidden && d.weekday === wd);
         return list.find(d => d.isPrimary) ?? list[0];
     };
     let skipSafety = 14;

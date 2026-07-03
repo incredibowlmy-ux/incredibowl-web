@@ -38,6 +38,16 @@ export interface MenuItem {
     /** Short reason shown on a disabled card (retired / weekday-excluded). */
     unavailableNote?: string;
     unavailableNoteEn?: string;
+    /**
+     * Completely absent from the customer website (both ZH & EN carousels,
+     * Hero next-special, date computation and SEO structured data) — UNLIKE
+     * `retired` which still shows greyed-out. The dish stays in this array so
+     * the ops dashboard / stock / prep APIs can still reference it. Use for a
+     * dish that's been added to the system but is NOT ready to show on the
+     * site yet (e.g. waiting on a real photo). To go live: drop `hidden` and
+     * set a real `/xxx.webp` image.
+     */
+    hidden?: boolean;
 }
 
 /**
@@ -140,34 +150,38 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Aussie wagyu beef patty seared crisp outside and juicy within, crowned with a soft onsen egg whose golden yolk runs into the rice — finished with a tangy cherry-tomato salsa that keeps it bright, not heavy."
     },
     {
-        // 2026-06-15 重排：原周三特餐改到周二。2026-06-21 起降为周二第二道（和牛升主推）。
-        id: 3,
+        // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 轮换上线作周二第二道（和牛仍主推）。
+        // image 暂用 emoji 占位（实拍图未到），图好后换 /japanese_curry_rice.webp。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）。
+        id: 25,
         day: "Tue / 周二",
         weekday: 2,
-        name: "希腊柠香烤鸡胸",
-        nameEn: "Greek Mediterranean Lemon Chicken",
-        price: 19.90,
-        image: "/greek_lemon_chicken_v2.webp",
-        tags: ["蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
-        tagsEn: ["64g+ protein bomb", "Gym-friendly", "Best with rice"],
-        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。",
-        descEn: "Lemon's tang seeps into the lightly charred chicken breast, carried by thyme and extra-virgin olive oil. Mmm."
+        name: "家常日式咖喱饭",
+        nameEn: "Homestyle Japanese Curry Rice",
+        price: 18.50,
+        image: "🍛",
+        tags: ["日式咖喱", "嫩煎鸡胸", "暖心浓香", "下饭满足"],
+        tagsEn: ["Japanese curry", "Pan-seared chicken breast", "Warm & rich", "Made for rice"],
+        desc: "浓郁日式咖喱慢炖到顺滑，配嫩煎鸡胸肉，盖在热饭上，一口暖到心里。",
+        descEn: "Rich Japanese curry simmered until silky, served with pan-seared chicken breast over hot rice — warm and comforting in every bite."
     },
     // ─── 周三 Wed ───────────────────────────────────────────────
     {
-        // 2026-06-15 重排：原周二主推改到周三（周三 Hero 主打）。
-        id: 20,
+        // 2026-07-04 轮换：从周五移到周三（周三 Hero 主打）。周五新上 2026-06-08。
+        // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
+        id: 21,
         day: "Wed / 周三",
         weekday: 3,
         isPrimary: true,
-        name: "古早味姜葱鱼片饭",
-        nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
-        price: 18.50,
-        image: "/ginger_scallion_fish.webp",
-        tags: ["高蛋白 28g+", "古早味", "姜葱爆香", "荷包蛋", "鱼片嫩滑"],
-        tagsEn: ["28g+ protein", "Old-school", "Ginger-scallion sear", "Sunny-side egg", "Silky fish"],
-        desc: "巴丁鱼片用姜丝葱段爆香，淋一勺绍兴酒提鲜，盖一颗荷包蛋——古早味的温柔。",
-        descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
+        name: "柠香香煎三文鱼饭",
+        nameEn: "Lemon Pan-Seared Salmon",
+        price: 23.90,
+        voucherTopUp: 4,
+        image: "/lemon_salmon.webp",
+        tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM4"],
+        tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
+        desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
+        descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
     },
     {
         // 2026-06-15 重排：原周二第二道改到周三（周三第二道）。
@@ -185,10 +199,40 @@ export const weeklyMenu: MenuItem[] = [
     },
     // ─── 周四 Thu ───────────────────────────────────────────────
     {
-        // 2026-06-27 从周一移到周四，并作周四 Hero 主打（豆酱花肉退为周四第二道）。
-        id: 14,
+        // 2026-07-04 轮换：周二→周四，并作周四 Hero 主打。
+        id: 3,
         day: "Thu / 周四",
         weekday: 4,
+        isPrimary: true,
+        name: "希腊柠香烤鸡胸",
+        nameEn: "Greek Mediterranean Lemon Chicken",
+        price: 19.90,
+        image: "/greek_lemon_chicken_v2.webp",
+        tags: ["蛋白质炸弹 64g+", "增肌好伙伴", "最强下饭款"],
+        tagsEn: ["64g+ protein bomb", "Gym-friendly", "Best with rice"],
+        desc: "柠檬的微酸渗进微焦的鸡胸肉里，带着百里香的清气，加上特级初榨橄榄油，嗯。。",
+        descEn: "Lemon's tang seeps into the lightly charred chicken breast, carried by thyme and extra-virgin olive oil. Mmm."
+    },
+    {
+        // 2026-07-04 轮换：周五→周四（周四第二道）。2026-06-27 曾从常驻改为周五特餐。
+        id: 12,
+        day: "Thu / 周四",
+        weekday: 4,
+        name: "山药云耳海陆双鲜炒",
+        nameEn: "Chinese Yam & Black Fungus Surf & Turf",
+        price: 18.50,
+        image: "/chinese_yam_black_fungus_v3.webp",
+        tags: ["高蛋白 31g+", "养胃滋补", "健脾益胃", "清肺润燥", "脆嫩滑爽三重奏"],
+        tagsEn: ["31g+ protein", "Stomach-warming", "Spleen-nourishing", "Lung-soothing", "Crisp & silky"],
+        desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。",
+        descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
+    },
+    // ─── 周五 Fri ───────────────────────────────────────────────
+    {
+        // 2026-07-04 轮换：周四→周五（周五 Hero 主打）。
+        id: 14,
+        day: "Fri / 周五",
+        weekday: 5,
         isPrimary: true,
         name: "香煎金黄鸡扒饭",
         nameEn: "Pan-Fried Golden Chicken Chop Rice",
@@ -200,12 +244,12 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
     },
     {
-        // 全新菜 2026-06-15 上架（周四特餐）。a la carte RM19.90 = 标准餐券面值，无需补差价。
+        // 2026-07-04 轮换：周四→周五（周五第二道）。全新菜 2026-06-15 上架。
         // 2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
         id: 23,
-        day: "Thu / 周四",
-        weekday: 4,
+        day: "Fri / 周五",
+        weekday: 5,
         name: "家乡豆酱焖花肉",
         nameEn: "Hometown Taucu Braised Pork Belly",
         price: 19.90,
@@ -214,38 +258,6 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["Hometown taucu", "Slow-braised", "Rich & tender", "Made for rice"],
         desc: "家乡豆酱慢火焖煮花肉，豆香咸鲜渗进每一丝肉里，软糯入味、咸香下饭。",
         descEn: "Pork belly slow-braised in hometown fermented soybean paste (taucu) — savoury, tender and deeply infused, made for rice."
-    },
-    // ─── 周五 Fri ───────────────────────────────────────────────
-    {
-        // 周五新上 2026-06-08。a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
-        // 2026-06-27 周五新增第二道（山药），三文鱼设 isPrimary 续作周五 Hero 主打。
-        id: 21,
-        day: "Fri / 周五",
-        weekday: 5,
-        isPrimary: true,
-        name: "柠香香煎三文鱼饭",
-        nameEn: "Lemon Pan-Seared Salmon",
-        price: 23.90,
-        voucherTopUp: 4,
-        image: "/lemon_salmon.webp",
-        tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM4"],
-        tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
-        desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
-        descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
-    },
-    {
-        // 2026-06-27 从常驻改为周五特餐（周五第二道）。
-        id: 12,
-        day: "Fri / 周五",
-        weekday: 5,
-        name: "山药云耳海陆双鲜炒",
-        nameEn: "Chinese Yam & Black Fungus Surf & Turf",
-        price: 18.50,
-        image: "/chinese_yam_black_fungus_v3.webp",
-        tags: ["高蛋白 31g+", "养胃滋补", "健脾益胃", "清肺润燥", "脆嫩滑爽三重奏"],
-        tagsEn: ["31g+ protein", "Stomach-warming", "Spleen-nourishing", "Lung-soothing", "Crisp & silky"],
-        desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。",
-        descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
     },
     // ─── 已退役（灰显·可见不可点）Retired ────────────────────────
     {
@@ -280,6 +292,23 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["37g+ protein", "Warm & restorative", "Healing broth", "Gut-friendly"],
         desc: "一碗葱香清汤，洗去一周疲惫，干干净净迎周末。",
         descEn: "A bowl of clear scallion broth — washing off a week's tiredness, ready for a clean weekend."
+    },
+    {
+        // 暂别 2026-07-04：本周轮换让位（原周三 Hero 主打）。保留「可见不可点」。
+        // 回归时售价调为 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
+        id: 20,
+        day: "Wed / 周三",
+        retired: true,
+        unavailableNote: "姜葱鱼片暂别，敬请期待回归",
+        unavailableNoteEn: "Ginger-scallion fish paused — back soon",
+        name: "古早味姜葱鱼片饭",
+        nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
+        price: 19.90,
+        image: "/ginger_scallion_fish.webp",
+        tags: ["高蛋白 28g+", "古早味", "姜葱爆香", "荷包蛋", "鱼片嫩滑"],
+        tagsEn: ["28g+ protein", "Old-school", "Ginger-scallion sear", "Sunny-side egg", "Silky fish"],
+        desc: "巴丁鱼片用姜丝葱段爆香，淋一勺绍兴酒提鲜，盖一颗荷包蛋——古早味的温柔。",
+        descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
     }
 ];
 

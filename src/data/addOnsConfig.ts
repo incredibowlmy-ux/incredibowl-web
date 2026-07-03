@@ -42,6 +42,9 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-edamame': 2.50,
   'extra-corn': 2.50,
   'broccoli-egg': 10.90,
+  // 新 add-on 2026-06-29：鲜虾西兰花滑蒸蛋。已进系统 + dashboard 可选；
+  // 暂未加入 AddOnModal（网站购物车看不到），等上线时再加 UI。价格先登记以备校验。
+  'shrimp-broccoli-steamed-egg': 6.80,
 
   // ─── Prepaid-only upgrades (not shown on customer menu; used by
   //     prepaid add-on credits — see PREPAID_ADDON_OPTIONS below) ──

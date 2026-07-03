@@ -11,7 +11,7 @@ const dailySection = {
   "@type": "MenuSection",
   name: "Daily / 常驻菜",
   hasMenuItem: weeklyMenu
-    .filter(d => d.day.startsWith("Daily"))
+    .filter(d => d.day.startsWith("Daily") && !d.hidden)
     .map(d => ({
       "@type": "MenuItem",
       name: d.name,
@@ -31,7 +31,7 @@ const weeklySection = {
   "@type": "MenuSection",
   name: "Weekly Rotation / 每周轮换",
   hasMenuItem: weeklyMenu
-    .filter(d => !d.day.startsWith("Daily"))
+    .filter(d => !d.day.startsWith("Daily") && !d.hidden)
     .map(d => ({
       "@type": "MenuItem",
       name: d.name,
