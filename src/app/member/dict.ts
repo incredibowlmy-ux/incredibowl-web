@@ -48,6 +48,7 @@ interface MemberDictShape {
     statusCancelled: string;
     orderItemSuffix: (n: number) => string;
     reorder: string;
+    reorderSkipped: (names: string) => string;
     reorderWaPrefix: string;
     reorderWaTotal: (rm: string) => string;
     reorderWaAddress: (addr: string) => string;
@@ -124,6 +125,7 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         statusCancelled: '已取消',
         orderItemSuffix: (n) => `等${n}份`,
         reorder: '再来一单',
+        reorderSkipped: (names) => `已把还在本周菜单上的菜加进购物车；以下菜品本周暂不供应，未能加入：${names}`,
         reorderWaPrefix: '🍛 我想再来一单！',
         reorderWaTotal: (rm) => `总计: RM ${rm}`,
         reorderWaAddress: (addr) => `📍 地址: ${addr}`,
@@ -196,6 +198,7 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         statusCancelled: 'Cancelled',
         orderItemSuffix: (n) => `+ ${n} items`,
         reorder: 'Reorder',
+        reorderSkipped: (names) => `Added the dishes still on this week's menu to your cart. Not available this week (skipped): ${names}`,
         reorderWaPrefix: "🍛 I'd like to reorder!",
         reorderWaTotal: (rm) => `Total: RM ${rm}`,
         reorderWaAddress: (addr) => `📍 Address: ${addr}`,

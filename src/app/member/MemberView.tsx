@@ -20,6 +20,9 @@ import {
 } from '@/lib/deliveryUtils';
 import { MEMBER_DICT, type Locale } from './dict';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
+import { useCartStore } from '@/store/cartStore';
+import { weeklyMenu } from '@/data/weeklyMenu';
+import { computeMenuDates } from '@/lib/dateUtils';
 
 // Legacy dish-name → image map. Only used as fallback for orders placed
 // BEFORE submit-order started persisting `item.image` on the order doc.
@@ -270,10 +273,52 @@ export default function MemberView({ locale }: { locale: Locale }) {
         : undefined;
     const favDishImage = resolveDishImage(favDishItem) || (favDish ? LEGACY_DISH_IMAGES[favDish[0]] : null);
 
+    // One-tap reorder: refill the cart with this order's dishes (mapped onto the
+    // CURRENT weekly rotation — each dish lands on its next orderable date at
+    // today's price) and jump to the homepage with the cart drawer open.
+    // Items that no longer exist on the menu (rotated out / paused / past
+    // cutoff) can't self-serve, so they fall back to the old WhatsApp flow.
     const handleReorder = (order: any) => {
-        const items = order.items?.map((item: any) => `${item.name} x${item.quantity}`).join('\n') || '';
-        const msg = `${t.reorderWaPrefix}\n\n${items}\n\n${t.reorderWaTotal((order.total || 0).toFixed(2))}\n${t.reorderWaAddress(order.userAddress || '')}\n\n${t.reorderWaThanks}`;
-        window.open(`https://wa.me/60103370197?text=${encodeURIComponent(msg)}`, '_blank');
+        const { menuDates } = computeMenuDates(weeklyMenu, locale);
+        const { addBundle } = useCartStore.getState();
+        const added: string[] = [];
+        const skipped: string[] = [];
+
+        (order.items || []).forEach((item: any, i: number) => {
+            const dish = weeklyMenu.find(d =>
+                !d.hidden && !d.retired && (d.name === item.name || (item.nameEn && d.nameEn === item.nameEn))
+            );
+            const dInfo = dish ? menuDates[dish.id] : undefined;
+            if (!dish || !dInfo || dInfo.disabled || !dInfo.actualDate) {
+                skipped.push(locale === 'en' ? (item.nameEn || item.name) : item.name);
+                return;
+            }
+            const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+            const selectedTime = order.deliveryTime === 'Dinner (5PM-8PM)' ? 'Dinner (5PM-8PM)' : 'Lunch (11AM-1PM)';
+            addBundle({
+                cartItemId: `${dish.id}-${Date.now()}-${i}`,
+                dish,
+                dishQty: qty,
+                addOns: [],
+                selectedDate: dInfo.actualDate,
+                selectedTime,
+                price: dish.price * qty,
+                quantity: 1,
+            });
+            added.push(locale === 'en' ? dish.nameEn : dish.name);
+        });
+
+        if (added.length === 0) {
+            // Nothing reorderable this week — old WhatsApp flow as the fallback path.
+            const items = order.items?.map((item: any) => `${item.name} x${item.quantity}`).join('\n') || '';
+            const msg = `${t.reorderWaPrefix}\n\n${items}\n\n${t.reorderWaTotal((order.total || 0).toFixed(2))}\n${t.reorderWaAddress(order.userAddress || '')}\n\n${t.reorderWaThanks}`;
+            window.open(`https://wa.me/60103370197?text=${encodeURIComponent(msg)}`, '_blank');
+            return;
+        }
+        if (skipped.length > 0) {
+            alert(t.reorderSkipped(skipped.join(locale === 'en' ? ', ' : '、')));
+        }
+        window.location.href = `${homeHref}?cart=open`;
     };
 
     return (

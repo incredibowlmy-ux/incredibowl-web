@@ -221,6 +221,18 @@ export default function V4BentoLayout() {
         window.history.replaceState({}, '', next ? `?${next}` : window.location.pathname);
     }, [menuDates]);
 
+    // Deep-link: ?cart=open → open the cart drawer on arrival. Used by the
+    // member-page one-tap reorder, which refills the cart (localStorage) then
+    // redirects here so the customer lands straight on checkout.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('cart') !== 'open') return;
+        setIsCartOpen(true);
+        params.delete('cart');
+        const next = params.toString();
+        window.history.replaceState({}, '', next ? `?${next}` : window.location.pathname);
+    }, []);
+
     const openAddOnModal = (dish: MenuItem) => {
         const dInfo = menuDates[dish.id];
         if (dInfo && dInfo.disabled) return;
