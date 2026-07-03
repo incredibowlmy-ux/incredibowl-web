@@ -116,6 +116,11 @@ export async function POST(req: Request) {
       items: Array<{ id: string; quantity: number; item_price: number }>;
     }> = [];
 
+    // Orders confirmed for the FIRST time in this batch → customer receipt
+    // email after the writes settle. Unlike purchaseEvents this includes
+    // zero-cash voucher-covered orders — the customer still wants a receipt.
+    const receiptOrders: Array<{ id: string; data: Record<string, any> }> = [];
+
     for (const orderId of orderIds) {
       const orderRef = db.collection('orders').doc(orderId);
       const orderSnap = await orderRef.get();
@@ -123,6 +128,7 @@ export async function POST(req: Request) {
 
       const orderData = orderSnap.data()!;
       const isFirstConfirm = status === 'confirmed' && orderData.status !== 'confirmed';
+      if (isFirstConfirm) receiptOrders.push({ id: orderId, data: orderData });
 
       // Queue Meta CAPI Purchase event for any order transitioning to 'confirmed'
       // for the first time (FPX flow: customer just paid; QR flow: admin
@@ -302,6 +308,15 @@ export async function POST(req: Request) {
         },
       });
     }));
+
+    // ── Customer receipt email ───────────────────────────────
+    // Best-effort and AWAITED (same Vercel-freeze reasoning as CAPI above).
+    // sendOrderReceiptEmails never throws; a bounced email can't 500 a paid
+    // order's confirmation.
+    if (receiptOrders.length > 0) {
+      const { sendOrderReceiptEmails } = await import('@/lib/receiptEmail');
+      await sendOrderReceiptEmails(receiptOrders);
+    }
 
     return NextResponse.json({
       success: true,

@@ -95,10 +95,12 @@ export async function POST(req: NextRequest) {
       .get();
 
     if (q.empty) {
-      // Not a meal-voucher order (e.g. a regular food order, which is
-      // confirmed via its own browser callback + /api/confirm-order). Nothing
-      // for this endpoint to do — ack so Razorpay stops retrying.
-      return NextResponse.json({ ok: true, note: 'no matching voucher purchase' }, { status: 200 });
+      // Not a meal-voucher purchase → try the FOOD-ORDER fallback. Before this
+      // existed, a food order whose browser never made it back (closed tab,
+      // WebView navigation) sat 'pending' until the 1h stale-FPX sweep
+      // cancelled it — money captured, order gone. Now the webhook confirms it
+      // server-side, exactly like vouchers.
+      return handleFoodOrderFallback(db, type, orderId, paymentId);
     }
 
     const purchaseId = q.docs[0].id;
@@ -124,4 +126,88 @@ export async function POST(req: NextRequest) {
     console.error('[webhook] processing error:', err);
     return NextResponse.json({ error: err.message || 'webhook failed' }, { status: 500 });
   }
+}
+
+/**
+ * Server-side confirmation for regular FOOD orders (the voucher path above has
+ * had this safety net since day one; food orders relied on the browser coming
+ * back).
+ *
+ * Rather than duplicating confirm-order's side effects (LTV bump, promo-voucher
+ * claim, CAPI Purchase, receipt email), we invoke the production-proven route
+ * handler directly with a self-computed Razorpay signature: we hold
+ * RAZORPAY_KEY_SECRET, and the webhook body was already HMAC-verified above,
+ * so signing `orderId|paymentId` here is legitimate cryptographic proof of the
+ * same payment — it flows through confirm-order's Path A and its
+ * razorpayOrderId-binding check unchanged. Idempotent: a second delivery (or
+ * the browser callback racing us) finds no 'pending' docs and no-ops.
+ */
+async function handleFoodOrderFallback(
+  db: FirebaseFirestore.Firestore,
+  type: string,
+  orderId: string,
+  paymentId: string | undefined,
+) {
+  const ordersQ = await db.collection('orders')
+    .where('razorpayOrderId', '==', orderId)
+    .get();
+
+  if (ordersQ.empty) {
+    return NextResponse.json({ ok: true, note: 'no matching purchase or order' }, { status: 200 });
+  }
+
+  // Money arrived but the stale-FPX sweep already cancelled the order (payment
+  // event came >1h late). Do NOT auto-revive — the 06:00 cutoff may have
+  // passed and the kitchen never planned this meal. Flag for a human instead.
+  const lateCancelled = ordersQ.docs.filter(d => d.data().status === 'cancelled');
+  for (const d of lateCancelled) {
+    await d.ref.update({
+      latePaymentCaptured: true,
+      latePaymentId: paymentId || '',
+      needsReview: true,
+    });
+    console.error(
+      `[webhook] ⚠️ LATE PAYMENT on cancelled order ${d.id} (payment ${paymentId}) — ` +
+      'customer paid but order was already cancelled; needs manual refund-or-revive.',
+    );
+  }
+
+  const pendingIds = ordersQ.docs.filter(d => d.data().status === 'pending').map(d => d.id);
+  if (pendingIds.length === 0 || !paymentId) {
+    return NextResponse.json({
+      ok: true,
+      note: lateCancelled.length ? 'late payment flagged' : 'orders already settled',
+      flagged: lateCancelled.length,
+    }, { status: 200 });
+  }
+
+  const signature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+
+  const { POST: confirmOrder } = await import('@/app/api/confirm-order/route');
+  const res = await confirmOrder(new Request('http://internal/api/confirm-order', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      orderIds: pendingIds,
+      status: 'confirmed',
+      paymentData: {
+        razorpayOrderId: orderId,
+        razorpayPaymentId: paymentId,
+        razorpaySignature: signature,
+      },
+    }),
+  }));
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    // 500 → Razorpay retries; a transient Firestore hiccup must not drop a paid order.
+    console.error(`[webhook] food-order confirm failed (${res.status}): ${body}`);
+    return NextResponse.json({ error: 'food order confirm failed' }, { status: 500 });
+  }
+
+  console.log(`[webhook] ${type} → confirmed food orders [${pendingIds.join(', ')}] via server fallback`);
+  return NextResponse.json({ ok: true, confirmedOrders: pendingIds }, { status: 200 });
 }
