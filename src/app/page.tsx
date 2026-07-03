@@ -40,7 +40,11 @@ export default function V4BentoLayout() {
     const [editConfig, setEditConfig] = useState<any>(null);
     const [minDate, setMinDate] = useState<string>('');
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
-    const [fpxSuccessId, setFpxSuccessId] = useState<string | null>(null);
+    const [fpxSuccess, setFpxSuccess] = useState<{
+        id: string;
+        items: { name: string; nameEn?: string; qty: number; date: string }[];
+        total: number | null;
+    } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
 
     // Live per-dish stock for limited dishes (e.g. petai) → menu「仅剩 X / 售罄」.
@@ -109,7 +113,7 @@ export default function V4BentoLayout() {
             sessionStorage.removeItem('fpx_pending_order');
 
             try {
-                const { orderIds, isMultiPart, groupId } = JSON.parse(pendingStr);
+                const { orderIds, isMultiPart, groupId, summary } = JSON.parse(pendingStr);
                 fetch('/api/payment/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -146,9 +150,15 @@ export default function V4BentoLayout() {
                             }
                         } catch { /* tracking is best-effort */ }
                         const successId = isMultiPart ? groupId : orderIds[0];
-                        setFpxSuccessId(successId);
+                        // Persistent modal — closed only by user click. The old 5s
+                        // auto-dismiss fired while customers were still returning
+                        // from the bank redirect and was routinely missed.
+                        setFpxSuccess({
+                            id: successId,
+                            items: Array.isArray(summary?.items) ? summary.items : [],
+                            total: typeof summary?.total === 'number' ? summary.total : null,
+                        });
                         clearCart();
-                        setTimeout(() => setFpxSuccessId(null), 5000);
                     })
                     .catch((err) => {
                         console.error('FPX order confirmation failed:', err);
@@ -336,18 +346,34 @@ export default function V4BentoLayout() {
                 <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
             </ErrorBoundary>
             {/* FPX redirect success overlay */}
-            {fpxSuccessId && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxSuccessId(null)}>
-                    <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300">
+            {fpxSuccess && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxSuccess(null)}>
+                    <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle size={44} className="text-green-500" />
                         </div>
                         <h3 className="text-2xl font-black text-[#1A2D23] mb-2">FPX 支付成功！🎉</h3>
                         <p className="text-sm text-gray-500 mb-1">
-                            订单编号：<span className="font-bold text-[#FF6B35]">#{fpxSuccessId.startsWith('GRP') ? fpxSuccessId : fpxSuccessId.slice(-6).toUpperCase()}</span>
+                            订单编号：<span className="font-bold text-[#FF6B35]">#{fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}</span>
                         </p>
-                        <p className="text-xs text-gray-400 mt-2">订单已确认，感谢您的订购！</p>
-                        <button onClick={() => setFpxSuccessId(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
+                        {fpxSuccess.items.length > 0 && (
+                            <div className="mt-3 bg-gray-50 rounded-xl p-3 text-left text-sm text-gray-600 space-y-1">
+                                {fpxSuccess.items.map((it, i) => (
+                                    <div key={i} className="flex justify-between gap-3">
+                                        <span>{it.name} ×{it.qty}</span>
+                                        <span className="text-gray-400 whitespace-nowrap">{it.date}</span>
+                                    </div>
+                                ))}
+                                {fpxSuccess.total != null && (
+                                    <div className="flex justify-between border-t border-gray-200 pt-1.5 mt-1.5 font-bold text-[#1A2D23]">
+                                        <span>已付总额</span>
+                                        <span>RM {fpxSuccess.total.toFixed(2)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <p className="text-xs text-gray-400 mt-3">订单已确认，感谢您的订购！</p>
+                        <button onClick={() => setFpxSuccess(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
                     </div>
                 </div>
             )}

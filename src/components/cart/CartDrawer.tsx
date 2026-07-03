@@ -476,7 +476,18 @@ export default function CartDrawer({
             }
             // Step 2: Save for FPX redirect recovery in page.tsx.
             const payloads = orderIds.map(() => ({ userId: currentUser!.uid, total: finalTotal / orderIds.length }));
-            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, createdAt: Date.now() }));
+            // Cart snapshot for the post-redirect success modal (page.tsx / en/page.tsx)
+            // — the cart itself is cleared by then, so the modal reads this instead.
+            const summary = {
+                items: cart.map((it: any) => ({
+                    name: it.name,
+                    nameEn: it.nameEn || it.name,
+                    qty: it.quantity || 1,
+                    date: it.selectedDate || '',
+                })),
+                total: finalTotal,
+            };
+            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, createdAt: Date.now() }));
             setSubmitting(false);
 
             try {
