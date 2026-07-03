@@ -1,6 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  DELIVERY_PROSE_ZH,
+  BEYOND_DELIVERY_NOTE_ZH,
+  tierProseZh,
+  TIER_INNER,
+  TIER_OUTER,
+  TIER_MID,
+} from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title:
@@ -86,7 +94,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
         name: "配送范围和运费是怎样的？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运），5–7.5km RM 12（满 RM 45 免运），7.5km 以外暂不配送。注册账号填地址后系统会自动核对距离与运费。每日早上 6AM 截单。",
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}，${tierProseZh(TIER_MID)}，${BEYOND_DELIVERY_NOTE_ZH}。注册账号填地址后系统会自动核对距离与运费。每日早上 6AM 截单。`,
         },
       },
     ],
@@ -146,7 +154,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
             <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>
-            . 无味精 · 每天巴刹现采 · 2.5km 内 RM 3（满 RM 20 免运）。
+            . 无味精 · 每天巴刹现采 · {tierProseZh(TIER_INNER)}。
           </p>
         </div>
 
@@ -198,7 +206,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
             从 Pearl Point 出发，约 5km 范围覆盖 Old Klang Road 一带主要社区：Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。
           </p>
           <p>
-            <strong>运费</strong>：2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）· 5–7.5km RM 12（满 RM 45 免运）· 7.5km 以外暂不配送。每日早上 <strong>6AM 截单</strong>，午餐 11AM 起送、晚餐 5PM 起送。
+            <strong>运费</strong>：{DELIVERY_PROSE_ZH} · {BEYOND_DELIVERY_NOTE_ZH}。每日早上 <strong>6AM 截单</strong>，午餐 11AM 起送、晚餐 5PM 起送。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -215,7 +223,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 配送范围和运费？</h3>
-              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）、2.5–5km RM 5（满 RM 30 免运）、5–7.5km RM 12（满 RM 45 免运）。注册填地址后系统自动核对距离与运费。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}、{tierProseZh(TIER_MID)}。注册填地址后系统自动核对距离与运费。</p>
             </div>
           </div>
 
@@ -224,7 +232,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
               想吃一顿没有味精的家常饭？
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              Pearl Point 出发 · 不加味精 · 每天巴刹采购 · 2.5km 内 RM 3 满 20 免运
+              Pearl Point 出发 · 不加味精 · 每天巴刹采购 · {tierProseZh(TIER_INNER)}
             </p>
             <Link
               href="/"

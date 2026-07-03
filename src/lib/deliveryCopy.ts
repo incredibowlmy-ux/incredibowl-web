@@ -66,3 +66,26 @@ export const DELIVERY_SUMMARY_EN = DELIVERY_TIER_COPY
 
 export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}km 以外暂不配送`;
 export const BEYOND_DELIVERY_NOTE_EN = `Beyond ${MID_RADIUS_KM}km — not currently delivered`;
+
+// ── Long-form / SEO prose fragments ─────────────────────────────────────────
+// Used by layout metadata, /order landing pages, blog posts and their JSON-LD
+// so long-form copy can never drift from the real fee schedule either.
+
+/** "2.5km 内 RM 3（满 RM 20 免运）" — bracketed style used in prose/metadata */
+export const tierProseZh = (t: DeliveryTierCopy) =>
+    `${t.rangeZh} RM ${t.fee}（满 RM ${t.freeOver} 免运）`;
+export const tierProseEn = (t: DeliveryTierCopy) =>
+    `${t.rangeEn} RM ${t.fee} (free over RM ${t.freeOver})`;
+
+/** All three tiers: "2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）· 5–7.5km RM 12（满 RM 45 免运）" */
+export const DELIVERY_PROSE_ZH = DELIVERY_TIER_COPY.map(tierProseZh).join(" · ");
+export const DELIVERY_PROSE_EN = DELIVERY_TIER_COPY.map(tierProseEn).join(" · ");
+
+/** First two tiers only — for length-constrained metadata descriptions. */
+export const DELIVERY_PROSE_SHORT_ZH = DELIVERY_TIER_COPY.slice(0, 2).map(tierProseZh).join(" · ");
+export const DELIVERY_PROSE_SHORT_EN = DELIVERY_TIER_COPY.slice(0, 2).map(tierProseEn).join(" · ");
+
+/** Named tiers for prose that interpolates a single tier's numbers. */
+export const TIER_INNER = DELIVERY_TIER_COPY[0];
+export const TIER_OUTER = DELIVERY_TIER_COPY[1];
+export const TIER_MID = DELIVERY_TIER_COPY[2];

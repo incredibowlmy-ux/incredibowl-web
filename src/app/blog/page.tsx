@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { DELIVERY_PROSE_SHORT_ZH } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title: "Incredibowl Blog | Old Klang Road & Pearl Point 私厨外送指南",
@@ -140,7 +141,7 @@ export default function BlogIndex() {
           </p>
           <h3 className="text-2xl font-black mb-3">想试试今天的菜单？</h3>
           <p className="text-[#1A2D23]/70 mb-4">
-            Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）。
+            Pearl Point 出发，{DELIVERY_PROSE_SHORT_ZH}。
           </p>
           <Link
             href="/"

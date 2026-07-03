@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import OrderClient from "./OrderClient";
+import { DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
     title: "Pearl Point Home Kitchen · Lunch + Dinner Delivery | Incredibowl",
     description:
-        "6 AM market run · lunch (11:30 AM) or dinner (5 PM) delivery. From RM 16.90; within 2.5 km RM 3 (free over RM 20), 2.5–5 km free over RM 30. One WhatsApp to order — no signup. Pearl Point / Old Klang Road / OUG.",
+        `6 AM market run · lunch (11:30 AM) or dinner (5 PM) delivery. From RM 16.90; ${DELIVERY_PROSE_SHORT_EN}. One WhatsApp to order — no signup. Pearl Point / Old Klang Road / OUG.`,
     alternates: {
         canonical: "/en/order",
         languages: {

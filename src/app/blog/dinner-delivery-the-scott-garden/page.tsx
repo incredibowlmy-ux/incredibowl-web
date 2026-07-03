@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { tierProseZh, TIER_INNER, TIER_OUTER } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title:
@@ -86,7 +87,7 @@ export default function DinnerDeliveryTheScottGarden() {
         name: "The Scott Garden 送餐运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运）。The Scott Garden 在配送范围内，注册账号填地址后系统会自动核对实际距离与运费。",
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，注册账号填地址后系统会自动核对实际距离与运费。`,
         },
       },
     ],
@@ -145,7 +146,7 @@ export default function DinnerDeliveryTheScottGarden() {
             <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>{" "}
-            and dinner arrives from 5PM. 无味精家常晚餐 · 当天现煮 · 2.5km 内 RM 3（满 RM 20 免运）。
+            and dinner arrives from 5PM. 无味精家常晚餐 · 当天现煮 · {tierProseZh(TIER_INNER)}。
           </p>
         </div>
 
@@ -198,7 +199,7 @@ export default function DinnerDeliveryTheScottGarden() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: The Scott Garden 送餐运费多少？</h3>
-              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）、2.5–5km RM 5（满 RM 30 免运）。The Scott Garden 在配送范围内，注册填地址后系统自动核对。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，注册填地址后系统自动核对。</p>
             </div>
           </div>
 

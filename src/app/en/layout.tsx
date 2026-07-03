@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
 
 // The English home (en/page.tsx) is a Client Component, so it cannot export
 // `metadata` itself — without this layout it would inherit the root layout's
@@ -14,7 +15,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Incredibowl | Home-cooked Delivery · No MSG · Pearl Point / Old Klang Road / OUG KL",
   description:
-    "Home-cooked food delivery from Pearl Point, Old Klang Road, Kuala Lumpur. No MSG, freshly sourced from the wet market every morning. Within 2.5km RM 3 (free over RM 20) · 2.5–5km RM 5 (free over RM 30). Order by 6AM. www.incredibowl.my/en",
+    `Home-cooked food delivery from Pearl Point, Old Klang Road, Kuala Lumpur. No MSG, freshly sourced from the wet market every morning. ${DELIVERY_PROSE_SHORT_EN}. Order by 6AM. www.incredibowl.my/en`,
   alternates: {
     canonical: "/en",
     languages: {
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Incredibowl | Pearl Point Home-cooked Delivery",
     description:
-      "No MSG, freshly sourced from the wet market every morning. From Pearl Point — within 2.5km RM 3 (free over RM 20) · 2.5–5km RM 5 (free over RM 30).",
+      `No MSG, freshly sourced from the wet market every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
     url: "https://www.incredibowl.my/en",
     siteName: "Incredibowl Malaysia",
     images: [
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Incredibowl | Pearl Point Home-cooked Delivery",
     description:
-      "No MSG, freshly sourced every morning. From Pearl Point — within 2.5km RM 3 (free over RM 20) · 2.5–5km RM 5 (free over RM 30).",
+      `No MSG, freshly sourced every morning. From Pearl Point — ${DELIVERY_PROSE_SHORT_EN}.`,
     images: ["https://www.incredibowl.my/pork_potato_stew.webp"],
   },
 };

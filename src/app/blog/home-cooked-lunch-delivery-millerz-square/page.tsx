@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { tierProseZh, TIER_INNER, TIER_OUTER } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title:
@@ -86,7 +87,7 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
         name: "Millerz Square 送餐运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运）。Millerz Square 紧邻 Pearl Point，落在最近的运费区间。注册账号填地址后系统会自动核对实际距离与运费。",
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。Millerz Square 紧邻 Pearl Point，落在最近的运费区间。注册账号填地址后系统会自动核对实际距离与运费。`,
         },
       },
     ],
@@ -145,7 +146,7 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
             <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>{" "}
-            and lunch arrives from 11AM. 无味精家常午餐 · 紧邻 Millerz Square · 2.5km 内 RM 3（满 RM 20 免运）。
+            and lunch arrives from 11AM. 无味精家常午餐 · 紧邻 Millerz Square · {tierProseZh(TIER_INNER)}。
           </p>
         </div>
 
@@ -203,7 +204,7 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Millerz Square 送餐运费多少？</h3>
-              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）、2.5–5km RM 5（满 RM 30 免运）。Millerz Square 紧邻 Pearl Point，落在最近区间。注册填地址后系统自动核对。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。Millerz Square 紧邻 Pearl Point，落在最近区间。注册填地址后系统自动核对。</p>
             </div>
           </div>
 

@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import {
+  DELIVERY_PROSE_ZH,
+  tierProseZh,
+  TIER_INNER,
+  TIER_OUTER,
+  TIER_MID,
+} from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title:
@@ -86,7 +93,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
         name: "Pearl Point 送餐范围与运费？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运），2.5–5km RM 5（满 RM 30 免运），5–7.5km RM 12（满 RM 45 免运）。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。每日早上 6AM 截单。",
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}，${tierProseZh(TIER_MID)}。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。每日早上 6AM 截单。`,
         },
       },
     ],
@@ -146,7 +153,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
             <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>
-            . 无味精 · 每天巴刹现采 · 真实蛋白克数 · 2.5km 内 RM 3（满 RM 20 免运）。
+            . 无味精 · 每天巴刹现采 · 真实蛋白克数 · {tierProseZh(TIER_INNER)}。
           </p>
         </div>
 
@@ -199,7 +206,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
             四、配送范围与下单
           </h2>
           <p>
-            Pearl Point 出发，约 5km 覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。<strong>运费</strong>：2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）· 5–7.5km RM 12（满 RM 45 免运）。每日早上 <strong>6AM 截单</strong>。
+            Pearl Point 出发，约 5km 覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。<strong>运费</strong>：{DELIVERY_PROSE_ZH}。每日早上 <strong>6AM 截单</strong>。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -216,7 +223,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Pearl Point 送餐范围与运费？</h3>
-              <p>Pearl Point 出发，2.5km 内 RM 3（满 RM 20 免运）、2.5–5km RM 5（满 RM 30 免运）、5–7.5km RM 12（满 RM 45 免运）。覆盖 Millerz Square、Meadow Park、The Scott Garden、OUG 等。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}、{tierProseZh(TIER_MID)}。覆盖 Millerz Square、Meadow Park、The Scott Garden、OUG 等。</p>
             </div>
           </div>
 
