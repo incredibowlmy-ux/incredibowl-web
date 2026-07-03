@@ -175,9 +175,9 @@ export default function DeliveryWidget() {
                     {/* Tier table */}
                     <div>
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">配送费一览</p>
-                        <ul className="space-y-1.5 text-[13px] leading-snug">
+                        <ul className="space-y-1.5 lg:space-y-2 text-[13px] leading-snug">
                             {DELIVERY_TIER_COPY.map((t, i) => (
-                                <li key={t.rangeZh} className="flex justify-between gap-2">
+                                <li key={t.rangeZh} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeZh}</span></span>
                                     <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>满 RM {t.freeOver} 免运</span></span>
                                 </li>

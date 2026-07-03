@@ -7,6 +7,7 @@ import {
   TIER_INNER,
   TIER_OUTER,
   TIER_MID,
+  COVERAGE_AREAS,
 } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
@@ -93,7 +94,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
         name: "Pearl Point 送餐范围与运费？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}，${tierProseZh(TIER_MID)}。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。每日早上 6AM 截单。`,
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}，${tierProseZh(TIER_MID)}。覆盖 ${COVERAGE_AREAS.join("、")} 等。每日早上 6AM 截单。`,
         },
       },
     ],
@@ -206,7 +207,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
             四、配送范围与下单
           </h2>
           <p>
-            Pearl Point 出发，约 5km 覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。<strong>运费</strong>：{DELIVERY_PROSE_ZH}。每日早上 <strong>6AM 截单</strong>。
+            Pearl Point 出发，配送范围覆盖 {COVERAGE_AREAS.join("、")} 等。<strong>运费</strong>：{DELIVERY_PROSE_ZH}。每日早上 <strong>6AM 截单</strong>。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -223,7 +224,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Pearl Point 送餐范围与运费？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}、{tierProseZh(TIER_MID)}。覆盖 Millerz Square、Meadow Park、The Scott Garden、OUG 等。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}、{tierProseZh(TIER_MID)}。覆盖 {COVERAGE_AREAS.join("、")} 等。</p>
             </div>
           </div>
 

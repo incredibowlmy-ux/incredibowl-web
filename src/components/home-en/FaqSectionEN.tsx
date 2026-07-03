@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown } from 'lucide-react';
-import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_EN } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_EN, COVERAGE_AREAS } from '@/lib/deliveryCopy';
 
 interface FaqItem {
     q: string;
@@ -32,7 +32,7 @@ const FAQS: FaqItem[] = [
         q: 'Do you deliver to my area?',
         a: (
             <>
-                Mainly <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span>:
+                Mainly <span className="font-semibold text-[#1A2D23]">{COVERAGE_AREAS.join(' / ')}</span>:
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
                     {DELIVERY_TIER_COPY.map((t) => (
                         <li key={t.rangeEn}>• {t.rangeEn} &mdash; <span className="font-semibold">RM {t.fee}</span> (<span className="text-green-600 font-bold">free over RM {t.freeOver}</span>)</li>

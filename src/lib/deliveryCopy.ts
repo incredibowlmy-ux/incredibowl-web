@@ -89,3 +89,18 @@ export const DELIVERY_PROSE_SHORT_EN = DELIVERY_TIER_COPY.slice(0, 2).map(tierPr
 export const TIER_INNER = DELIVERY_TIER_COPY[0];
 export const TIER_OUTER = DELIVERY_TIER_COPY[1];
 export const TIER_MID = DELIVERY_TIER_COPY[2];
+
+// ── Coverage areas ──────────────────────────────────────────────────────────
+// Single source for the neighbourhoods we serve — used by the trust strip,
+// footer, FAQ and SEO metadata/JSON-LD (areaServed). Update here only.
+export const COVERAGE_AREAS = [
+    "Old Klang Road",
+    "OUG",
+    "Taman Desa",
+    "Kuchai Lama",
+    "Bukit Jalil",
+    "Sri Petaling",
+];
+
+/** "Old Klang Road · OUG · Taman Desa · Kuchai Lama · Bukit Jalil · Sri Petaling" */
+export const COVERAGE_AREAS_TEXT = COVERAGE_AREAS.join(" · ");

@@ -9,6 +9,7 @@ import {
   TIER_INNER,
   TIER_OUTER,
   TIER_MID,
+  COVERAGE_AREAS,
 } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
@@ -84,7 +85,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
         name: "Incredibowl 配送范围到哪里？运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。覆盖 Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG、Old Klang Road 中段绝大部分公寓。${tierProseZh(TIER_MID)}。${BEYOND_DELIVERY_NOTE_ZH}，公司订餐可 WhatsApp 询价。`,
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。覆盖 ${COVERAGE_AREAS.join("、")} 一带绝大部分公寓与社区。${tierProseZh(TIER_MID)}。${BEYOND_DELIVERY_NOTE_ZH}，公司订餐可 WhatsApp 询价。`,
         },
       },
       {
@@ -202,19 +203,12 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             三、配送范围与运费（以 Incredibowl 为例）
           </h2>
           <p>
-            从 Pearl Point 出发，5km 范围基本覆盖了 Old Klang Road / OUG 一带所有主要公寓与社区：
+            从 Pearl Point 出发，配送范围基本覆盖了这几个区的所有主要公寓与社区：
           </p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Pearl Point</li>
-            <li>Millerz Square</li>
-            <li>Meadow Park 1 / 2 / 3</li>
-            <li>The Scott Garden</li>
-            <li>D&apos;Ivoz Residences</li>
-            <li>Verve Suites</li>
-            <li>The Harmony / Platinum Arena</li>
-            <li>Citizen 1 &amp; 2</li>
-            <li>Petalz Residences</li>
-            <li>D&apos;Sands / SkyVille 8 @ Benteng</li>
+            {COVERAGE_AREAS.map((a) => (
+              <li key={a}>{a}</li>
+            ))}
           </ul>
           <p className="mt-4">
             <strong>运费规则</strong>：{DELIVERY_PROSE_ZH} · {BEYOND_DELIVERY_NOTE_ZH}（公司订餐 WhatsApp 询价）。每日早上 6AM 截单。
@@ -242,7 +236,7 @@ export default function OldKlangRoadFoodDeliveryGuide() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Incredibowl 配送范围到哪里？运费多少？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}，{tierProseZh(TIER_OUTER)}（涵盖 Old Klang Road 中段绝大部分公寓）。{tierProseZh(TIER_MID)}。{BEYOND_DELIVERY_NOTE_ZH}，公司订餐请 WhatsApp 询价。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}，{tierProseZh(TIER_OUTER)}（涵盖 {COVERAGE_AREAS.join("、")} 一带绝大部分公寓）。{tierProseZh(TIER_MID)}。{BEYOND_DELIVERY_NOTE_ZH}，公司订餐请 WhatsApp 询价。</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 怎么下单？什么时候截单？</h3>

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown } from 'lucide-react';
-import { DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, COVERAGE_AREAS } from '@/lib/deliveryCopy';
 
 interface FaqItem {
     q: string;
@@ -35,10 +35,10 @@ const FAQS: FaqItem[] = [
     },
     {
         q: '我家附近能送吗？',
-        aText: `主要送 Pearl Point / Millerz / OUG / Old Klang Road / Bangsar 一带：${DELIVERY_TIER_COPY.map((t) => `${t.rangeZh} RM ${t.fee}（满 RM ${t.freeOver} 免运）`).join('；')}；7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。不确定家里在不在范围内？注册账号 + 填写地址，系统会自动核对位置，告诉你能不能送、运费多少。`,
+        aText: `主要送 ${COVERAGE_AREAS.join(' / ')} 一带：${DELIVERY_TIER_COPY.map((t) => `${t.rangeZh} RM ${t.fee}（满 RM ${t.freeOver} 免运）`).join('；')}；7.5km 以外暂不配送，公司订餐请 WhatsApp 询价。不确定家里在不在范围内？注册账号 + 填写地址，系统会自动核对位置，告诉你能不能送、运费多少。`,
         a: (
             <>
-                主要送 <span className="font-semibold text-[#1A2D23]">Pearl Point / Millerz / OUG / Old Klang Road / Bangsar</span> 一带：
+                主要送 <span className="font-semibold text-[#1A2D23]">{COVERAGE_AREAS.join(' / ')}</span> 一带：
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
                     {DELIVERY_TIER_COPY.map((t) => (
                         <li key={t.rangeZh}>• {t.rangeZh} —— <span className="font-semibold">RM {t.fee}</span>（满 RM {t.freeOver} <span className="text-green-600 font-bold">免运</span>）</li>

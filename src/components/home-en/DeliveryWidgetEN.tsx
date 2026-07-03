@@ -170,9 +170,9 @@ export default function DeliveryWidgetEN() {
                 <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-[#FF6B35]/10 lg:content-center lg:gap-8">
                     <div>
                         <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">Delivery fee at a glance</p>
-                        <ul className="space-y-1.5 text-[13px] leading-snug">
+                        <ul className="space-y-1.5 lg:space-y-2 text-[13px] leading-snug">
                             {DELIVERY_TIER_COPY.map((t, i) => (
-                                <li key={t.rangeEn} className="flex justify-between gap-2">
+                                <li key={t.rangeEn} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeEn}</span></span>
                                     <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>RM {t.freeOver}+ → free</span></span>
                                 </li>

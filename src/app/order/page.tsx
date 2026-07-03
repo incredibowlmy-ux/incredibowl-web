@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import OrderClient from "./OrderClient";
-import { DELIVERY_PROSE_SHORT_ZH } from "@/lib/deliveryCopy";
+import { DELIVERY_PROSE_SHORT_ZH, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
     title: "Pearl Point 私厨外送 · 午晚两餐送到 | Incredibowl",
     description:
-        `凌晨 6 点去巴刹，午餐 11:30AM 或晚餐 5PM 送到你手上。RM 16.90 起，${DELIVERY_PROSE_SHORT_ZH}。WhatsApp 一句话下单，不需要注册。Pearl Point / Old Klang Road / OUG。`,
+        `凌晨 6 点去巴刹，午餐 11:30AM 或晚餐 5PM 送到你手上。RM 16.90 起，${DELIVERY_PROSE_SHORT_ZH}。WhatsApp 一句话下单，不需要注册。覆盖 ${COVERAGE_AREAS.join(" / ")}。`,
     alternates: {
         canonical: "/order",
         languages: {

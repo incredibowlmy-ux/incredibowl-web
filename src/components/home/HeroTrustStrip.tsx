@@ -1,6 +1,7 @@
 "use client";
 
 import { Star } from 'lucide-react';
+import { COVERAGE_AREAS, COVERAGE_AREAS_TEXT } from '@/lib/deliveryCopy';
 
 export default function HeroTrustStrip() {
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
@@ -38,9 +39,19 @@ export default function HeroTrustStrip() {
 
                 <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
 
-                {/* Neighborhood chip */}
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <span>Pearl Point · Millerz · Citizen 1 & 2 · OUG <span className="opacity-70">邻居都在吃</span></span>
+                {/* Coverage areas — plain line on mobile, pill chips on desktop
+                    (real text either way, doubles as GEO keywords) */}
+                <span className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
+                    <span>{COVERAGE_AREAS_TEXT} <span className="opacity-70">邻居都在吃</span></span>
+                </span>
+                <span className="hidden lg:inline-flex items-center flex-wrap justify-center gap-1.5">
+                    {COVERAGE_AREAS.map((area) => (
+                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E3EADA]/60 text-[12px] font-bold text-[#1A2D23]/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" aria-hidden="true" />
+                            {area}
+                        </span>
+                    ))}
+                    <span className="ml-1 text-[13px] font-semibold text-[#1A2D23]/60">邻居都在吃</span>
                 </span>
             </button>
         </div>

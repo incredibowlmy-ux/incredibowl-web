@@ -4,7 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import { weeklyMenu } from "@/data/weeklyMenu";
 import { AuthProvider } from "@/context/AuthContext";
-import { DELIVERY_PROSE_SHORT_ZH } from "@/lib/deliveryCopy";
+import { DELIVERY_PROSE_SHORT_ZH, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 
 // Build Menu structured data from the live menu so Google's food rich
 // results stay in sync with the actual dishes shown on the page.
@@ -65,7 +65,14 @@ const CJK_STACK = `"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragi
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),
   title: "Incredibowl | Pearl Point 私厨外送 · 无味精家常菜 · Old Klang Road / OUG",
-  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 ${DELIVERY_PROSE_SHORT_ZH}。早上 6AM 截单。www.incredibowl.my`,
+  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。早上 6AM 截单。`,
+  keywords: [
+    "私厨外送",
+    "家常菜外送",
+    "无味精外送",
+    "home-cooked food delivery KL",
+    ...COVERAGE_AREAS.flatMap((a) => [`${a} 外送`, `${a} food delivery`]),
+  ],
   alternates: {
     canonical: "/",
     languages: {
@@ -142,7 +149,7 @@ export default function RootLayout({
                   "@id": "https://www.incredibowl.my/#restaurant",
                   name: "Incredibowl",
                   alternateName: "碗妈私厨 (BowlMama)",
-                  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，Old Klang Road / OUG 一带 ${DELIVERY_PROSE_SHORT_ZH}。`,
+                  description: `吉隆坡 Old Klang Road 私厨外送。不加味精，每天巴刹新鲜现煮。Pearl Point 出发，覆盖 ${COVERAGE_AREAS.join(" / ")}。${DELIVERY_PROSE_SHORT_ZH}。`,
                   url: "https://www.incredibowl.my/",
                   telephone: "+60103370197",
                   image: [
@@ -172,20 +179,10 @@ export default function RootLayout({
                       closes: "20:00"
                     }
                   ],
-                  areaServed: [
-                    { "@type": "Place", name: "Pearl Point" },
-                    { "@type": "Place", name: "Meadow Park" },
-                    { "@type": "Place", name: "Millerz Square" },
-                    { "@type": "Place", name: "The Scott Garden" },
-                    { "@type": "Place", name: "D'Ivoz Residences" },
-                    { "@type": "Place", name: "Verve Suites" },
-                    { "@type": "Place", name: "The Harmony" },
-                    { "@type": "Place", name: "Platinum Arena" },
-                    { "@type": "Place", name: "Citizen 1 & 2" },
-                    { "@type": "Place", name: "Petalz" },
-                    { "@type": "Place", name: "D'Sands" },
-                    { "@type": "Place", name: "SkyVille 8 @ Benteng" }
-                  ],
+                  areaServed: COVERAGE_AREAS.map((a) => ({
+                    "@type": "Place",
+                    name: `${a}, Kuala Lumpur`,
+                  })),
                   hasMenu: {
                     "@type": "Menu",
                     name: "Incredibowl Daily Menu",

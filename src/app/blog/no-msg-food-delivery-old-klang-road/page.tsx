@@ -8,6 +8,7 @@ import {
   TIER_INNER,
   TIER_OUTER,
   TIER_MID,
+  COVERAGE_AREAS,
 } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
@@ -78,7 +79,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
         name: "Where can I get no MSG food delivery in Old Klang Road?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Incredibowl is a home kitchen based at Pearl Point, Old Klang Road, cooking MSG-free home-cooked meals delivered within about 5km — covering Pearl Point, Millerz Square, Meadow Park, The Scott Garden and OUG. Every dish is cooked with no MSG, using ingredients sourced fresh from the wet market each morning. Order at www.incredibowl.my by 6AM.",
+          text: `Incredibowl is a home kitchen based at Pearl Point, Old Klang Road, cooking MSG-free home-cooked meals — covering ${COVERAGE_AREAS.join(", ")}. Every dish is cooked with no MSG, using ingredients sourced fresh from the wet market each morning. Order at www.incredibowl.my by 6AM.`,
         },
       },
       {
@@ -203,7 +204,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
             四、配送范围与下单
           </h2>
           <p>
-            从 Pearl Point 出发，约 5km 范围覆盖 Old Klang Road 一带主要社区：Pearl Point、Millerz Square、Meadow Park、The Scott Garden、OUG 等。
+            从 Pearl Point 出发，配送范围覆盖 {COVERAGE_AREAS.join("、")} 一带主要社区。
           </p>
           <p>
             <strong>运费</strong>：{DELIVERY_PROSE_ZH} · {BEYOND_DELIVERY_NOTE_ZH}。每日早上 <strong>6AM 截单</strong>，午餐 11AM 起送、晚餐 5PM 起送。
@@ -215,7 +216,7 @@ export default function NoMsgFoodDeliveryOldKlangRoad() {
           <div className="space-y-5">
             <div>
               <h3 className="font-black text-lg mb-1">Q: Where can I get no MSG food delivery in Old Klang Road?</h3>
-              <p>Incredibowl is a home kitchen at Pearl Point, Old Klang Road, cooking MSG-free meals delivered within ~5km (Pearl Point, Millerz Square, Meadow Park, The Scott Garden, OUG). Order by 6AM at www.incredibowl.my.</p>
+              <p>Incredibowl is a home kitchen at Pearl Point, Old Klang Road, cooking MSG-free meals covering {COVERAGE_AREAS.join(", ")}. Order by 6AM at www.incredibowl.my.</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 真的不放味精吗？怎么确认？</h3>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
+import { DELIVERY_PROSE_SHORT_EN, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 
 // The English home (en/page.tsx) is a Client Component, so it cannot export
 // `metadata` itself — without this layout it would inherit the root layout's
@@ -15,7 +15,12 @@ import { DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
 export const metadata: Metadata = {
   title: "Incredibowl | Home-cooked Delivery · No MSG · Pearl Point / Old Klang Road / OUG KL",
   description:
-    `Home-cooked food delivery from Pearl Point, Old Klang Road, Kuala Lumpur. No MSG, freshly sourced from the wet market every morning. ${DELIVERY_PROSE_SHORT_EN}. Order by 6AM. www.incredibowl.my/en`,
+    `Home-cooked food delivery from Pearl Point, Kuala Lumpur — covering ${COVERAGE_AREAS.join(" / ")}. No MSG, freshly sourced from the wet market every morning. ${DELIVERY_PROSE_SHORT_EN}. Order by 6AM.`,
+  keywords: [
+    "home-cooked food delivery KL",
+    "no MSG food delivery",
+    ...COVERAGE_AREAS.map((a) => `${a} food delivery`),
+  ],
   alternates: {
     canonical: "/en",
     languages: {

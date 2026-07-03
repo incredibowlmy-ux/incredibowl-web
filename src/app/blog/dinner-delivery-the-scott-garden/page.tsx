@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { tierProseZh, TIER_INNER, TIER_OUTER } from "@/lib/deliveryCopy";
+import { tierProseZh, TIER_INNER, TIER_OUTER, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
   title:
@@ -71,7 +71,7 @@ export default function DinnerDeliveryTheScottGarden() {
         name: "Is there dinner delivery near The Scott Garden?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. Incredibowl is a home kitchen at Pearl Point on Old Klang Road, near The Scott Garden, delivering MSG-free home-cooked dinners. The Scott Garden is within the delivery zone. Order by 6AM and dinner is delivered from 5PM.",
+          text: `Yes. Incredibowl is a home kitchen at Pearl Point on Old Klang Road, near The Scott Garden, delivering MSG-free home-cooked dinners. The Scott Garden is within the delivery zone, which covers ${COVERAGE_AREAS.join(", ")}. Order by 6AM and dinner is delivered from 5PM.`,
         },
       },
       {
@@ -87,7 +87,7 @@ export default function DinnerDeliveryTheScottGarden() {
         name: "The Scott Garden 送餐运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，注册账号填地址后系统会自动核对实际距离与运费。`,
+          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，配送范围覆盖 ${COVERAGE_AREAS.join("、")}。注册账号填地址后系统会自动核对实际距离与运费。`,
         },
       },
     ],
@@ -199,7 +199,7 @@ export default function DinnerDeliveryTheScottGarden() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: The Scott Garden 送餐运费多少？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，注册填地址后系统自动核对。</p>
+              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，配送范围覆盖 {COVERAGE_AREAS.join("、")}。注册填地址后系统自动核对。</p>
             </div>
           </div>
 

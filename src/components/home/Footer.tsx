@@ -2,9 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
-import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_ZH } from '@/lib/deliveryCopy';
-
-const COVERAGE_AREAS = ['Old Klang Road', 'OUG', 'Kuchai Lama', 'Happy Garden', 'Taman Desa', 'Bukit Jalil'];
+import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_ZH, COVERAGE_AREAS } from '@/lib/deliveryCopy';
 
 export default function Footer() {
     return (
