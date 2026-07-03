@@ -8,13 +8,24 @@
       ② owner update 可付款后自改金额/自确认。客户端建单(lib/orders.ts submitOrder)
       确认是死代码 → 可安全关掉。
 - [x] 收紧草案已入仓 `firestore.rules`（仅动 orders 节，其余与线上逐行一致）。
-      ⏳ **部署=老板动作**：Console → Firestore → 规则 → 粘贴发布；发布前建议
-      Rules Playground 验证（客户读自己订单=允许 / 客户 create 订单=拒绝）。
+- [x] **已部署**（老板 2026-07-03 贴 Console 发布）：orders 客户端 create/update 已关——
+      伪造已确认订单白吃 / 付款后自改金额菜品状态，两个直写洞闭合。
+      ⏳ 老板自检（低优先）：dashboard 能编辑订单 + 会员页能看历史订单 = 两通道未断。
 - [ ] 残余风险（规则层关不掉）：deliveryZone/addressVerified* 客户端可写 →
       恶意用户可骗免运费。根治=地址验证挪服务端 API（列为阶段 2.5，中等工作量）。
 
-## 阶段 1 — 支付与订单完整性（🔴 最高危，核心修复）
+## 阶段 1 — 支付与订单完整性（🔴 最高危，核心修复）✅ 已实现待部署（2026-07-03）
 统一闭合「免费下单 / 盗刷别人餐券 / RM1 付 RM50」三个洞，照搬 meal-vouchers 已验证的正确写法。
+
+**实现**：`adminApi.ts` 加 `verifyBearerUser`（任意登录 token→uid/isAdmin）。
+- submit-order：验 token，`userId=auth.uid`（忽略 body），无 token 401。
+- create-order：入参 `{orderIds}`，服务端校验 owner+pending、按订单 doc `total+deliveryFee` 求权威金额、razorpayOrderId 绑回订单；客户端 initiateRazorpayPayment 改传 orderIds+token。
+- confirm-order：鉴权状态机——confirmed=签名验通**且** razorpayOrderId 严格匹配绑定（去掉「无绑定放行」豁免，堵签名重放）/admin/owner+餐券全覆盖(total0)；cancelled=owner 或订单仍 pending；preparing/delivered=仅 admin。totalSpent 改 set(merge) 防缺用户文档 500。
+- 客户端 7 处带 token（CartDrawer submit/create/confirm×3 + admin 页确认）；FPX 重定向流(page/en)保持无 token 走签名路径。
+
+**验证（本地 dev 真实 HTTP 拟攻，真 Firebase token + 真 Razorpay 签名）：12/12 通过**——
+无token submit 401 / create 越权 403 / 权威金额 5250 生（客户端无从谎报）/ razorpayOrderId 绑回 / 无凭证确认 403 / 伪造签名 403 / 拿自己token确认别人单 403 / 真签名确认 200 / 签名重放别单 403 / pending 无token取消 200。tsc 全绿。
+⏳ **push 待老板定时段**（避用餐高峰）；部署后老板配合一单真实 FPX 小额自测（自动变 confirmed，我盯日志）。
 
 - [ ] **submit-order 加鉴权**（src/app/api/submit-order/route.ts）
       - 加 `verifyAuth`（复制 admin/data 的 helper），无 token → 401

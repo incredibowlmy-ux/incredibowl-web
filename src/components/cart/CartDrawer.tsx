@@ -204,13 +204,22 @@ export default function CartDrawer({
         return () => { document.body.removeChild(script); };
     }, []);
 
-    const initiateRazorpayPayment = (amountMYR: number): Promise<{ razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }> => {
+    /** Auth header for the payment-chain APIs — they verify the token's uid. */
+    const authHeaders = async (): Promise<Record<string, string>> => {
+        const token = await currentUser!.getIdToken();
+        return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    };
+
+    // Server derives the authoritative amount from the pending order docs and
+    // binds the Razorpay order id back onto them — the client no longer sends
+    // an amount at all (it could lie).
+    const initiateRazorpayPayment = (orderIdsToPay: string[]): Promise<{ razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }> => {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await fetch('/api/payment/create-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ amount: Math.round(amountMYR * 100) }),
+                    headers: await authHeaders(),
+                    body: JSON.stringify({ orderIds: orderIdsToPay }),
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '创建支付订单失败');
@@ -339,9 +348,9 @@ export default function CartDrawer({
 
         const res = await fetch('/api/submit-order', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: await authHeaders(),
             body: JSON.stringify({
-                userId: currentUser!.uid,
+                // userId omitted on purpose — the server takes it from the token
                 userName: currentUser!.displayName || userProfile?.displayName || 'Guest',
                 userEmail: currentUser!.email || '',
                 userPhone: userProfile!.phone,
@@ -414,7 +423,7 @@ export default function CartDrawer({
                 trackPixel('InitiateCheckout', { value: 0, currency: 'MYR' }, result.checkoutEventId);
                 const confirmRes = await fetch('/api/confirm-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authHeaders(), // owner token — voucher-covered confirm path
                     body: JSON.stringify({ orderIds: result.orderIds, status: 'confirmed' }),
                 });
                 if (!confirmRes.ok) {
@@ -433,7 +442,7 @@ export default function CartDrawer({
                 if (voucherOrderIds.length > 0) {
                     await fetch('/api/confirm-order', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
                         body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled' }),
                     }).catch(() => {});
                 }
@@ -471,7 +480,7 @@ export default function CartDrawer({
             setSubmitting(false);
 
             try {
-                const paymentResult = await initiateRazorpayPayment(finalTotal);
+                const paymentResult = await initiateRazorpayPayment(orderIds);
                 const verifyRes = await fetch('/api/payment/verify', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(paymentResult),
@@ -485,9 +494,11 @@ export default function CartDrawer({
                     razorpaySignature: paymentResult.razorpay_signature,
                 };
                 // Step 3: Confirm all pending orders via server-side API.
+                // Signature in payData is the primary authorization; token is
+                // belt-and-braces when the session is still alive.
                 const confirmRes = await fetch('/api/confirm-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
                     body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
                 });
                 if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || '订单确认失败');
@@ -509,9 +520,10 @@ export default function CartDrawer({
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
             } catch (err: any) {
                 // Cancel pending orders on any payment failure (dismiss, network error, verification fail, etc.)
+                // Pending orders may also be cancelled without a token (server pending-rule).
                 await fetch('/api/confirm-order', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
                     body: JSON.stringify({ orderIds, status: 'cancelled' }),
                 }).catch(() => {});
                 sessionStorage.removeItem('fpx_pending_order');

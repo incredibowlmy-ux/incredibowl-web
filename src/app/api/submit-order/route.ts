@@ -26,9 +26,19 @@ async function getDb() {
  */
 export async function POST(req: Request) {
   try {
+    // ── AuthN: the caller IS the customer ─────────────────────
+    // The order's userId comes from the verified token, NEVER from the body —
+    // a body userId let anyone place orders (and burn meal vouchers) as any
+    // victim uid. Checkout UI requires login, so a token is always available.
+    const { verifyBearerUser } = await import('@/lib/adminApi');
+    const auth = await verifyBearerUser(req);
+    if (!auth) {
+      return NextResponse.json({ error: '请先登录再下单' }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
-      userId, userName, userEmail, userPhone, userAddress,
+      userName, userEmail, userPhone, userAddress,
       cartBundles, // Array of { dishId, dishQty, addOns: [{ id, quantity }], price, quantity, selectedDate, selectedTime, note }
       paymentMethod, receiptUploaded, receiptUrl,
       promoCode, promoDiscount: clientPromoDiscount,
@@ -37,10 +47,11 @@ export async function POST(req: Request) {
       mealVouchersUsed: rawMealVouchersUsed,
       clientMealVoucherDiscount,
     } = body;
+    const userId = auth.uid; // authoritative — body userId ignored
     const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
 
     // ── Basic validation ──────────────────────────────────────
-    if (!userId || !userPhone || !userAddress) {
+    if (!userPhone || !userAddress) {
       return NextResponse.json({ error: '缺少用户信息' }, { status: 400 });
     }
     if (!cartBundles || !Array.isArray(cartBundles) || cartBundles.length === 0) {

@@ -55,3 +55,31 @@ export async function verifyAdminEmail(req: NextRequest): Promise<string | null>
 export async function verifyAdmin(req: NextRequest): Promise<boolean> {
   return (await verifyAdminEmail(req)) !== null;
 }
+
+export interface BearerUser {
+  uid: string;
+  email: string | null;
+  isAdmin: boolean;
+}
+
+/**
+ * Verify the request carries ANY valid Firebase ID token (customer or admin)
+ * and return its identity. Used by customer-facing routes (submit-order /
+ * create-order / confirm-order) that must trust the token's uid — never a
+ * uid the client puts in the request body.
+ */
+export async function verifyBearerUser(req: NextRequest | Request): Promise<BearerUser | null> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  try {
+    const { getAdminDb } = await import('@/lib/firebase-admin');
+    getAdminDb(); // ensure the admin app is initialized before getAuth()
+    const { getAuth } = await import('firebase-admin/auth');
+    const decoded = await getAuth().verifyIdToken(token);
+    const email = decoded.email ?? null;
+    return { uid: decoded.uid, email, isAdmin: !!email && ADMIN_EMAILS.includes(email) };
+  } catch {
+    return null;
+  }
+}

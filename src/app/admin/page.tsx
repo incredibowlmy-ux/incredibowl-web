@@ -315,9 +315,10 @@ export default function AdminPage() {
         // Optimistic update
         setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
         try {
+            const token = await currentUser?.getIdToken();
             const res = await fetch('/api/confirm-order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ orderIds: [order.id], status: newStatus }),
             });
             if (!res.ok) throw new Error((await res.json()).error || '操作失败');

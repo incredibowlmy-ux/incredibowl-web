@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { releaseMealVouchers } from '@/lib/mealVoucherUtils';
 
@@ -10,6 +11,22 @@ async function getDb() {
   return adminDb;
 }
 
+// Constant-time Razorpay signature check — identical math to /api/payment/verify
+// and the production-proven meal-voucher webhook.
+function isValidRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
+  try {
+    const expected = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .update(`${orderId}|${paymentId}`)
+      .digest('hex');
+    const a = Buffer.from(expected, 'hex');
+    const b = Buffer.from(signature, 'hex');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * POST /api/confirm-order
  *
@@ -17,12 +34,24 @@ async function getDb() {
  * totalSpent, claims the promo voucher used at checkout, and fires the
  * Meta CAPI Purchase event. Uses Firebase Admin SDK so it bypasses
  * Firestore rules.
+ *
+ * 🔒 2026-07-03 authZ state machine (was: ZERO auth — anyone could POST an
+ * orderId and mark it paid = eat free):
+ *   → confirmed:  admin token
+ *               | valid Razorpay signature whose razorpayOrderId matches the
+ *                 binding stamped on the orders by create-order (FPX; works
+ *                 even when the bank redirect lands with no auth session)
+ *               | owner token + voucher-fully-covered order (total 0, no cash)
+ *   → cancelled:  admin | owner token | order still 'pending' (unpaid
+ *                 throwaway — redirect-failure flows cancel without a session;
+ *                 doc ids are unguessable)
+ *   → preparing/delivered: admin only
  */
 export async function POST(req: Request) {
   try {
     const { orderIds, status, paymentData } = await req.json();
 
-    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0 || orderIds.length > 20) {
       return NextResponse.json({ error: '缺少订单 ID' }, { status: 400 });
     }
     if (!status || !['confirmed', 'cancelled', 'preparing', 'delivered'].includes(status)) {
@@ -31,6 +60,49 @@ export async function POST(req: Request) {
 
     const db = await getDb();
     const { FieldValue } = await import('firebase-admin/firestore');
+
+    // ── AuthZ gate (before ANY mutation) ─────────────────────
+    const { verifyBearerUser } = await import('@/lib/adminApi');
+    const auth = await verifyBearerUser(req); // null when no/invalid token
+
+    const gateSnaps = await db.getAll(...orderIds.map((id: string) => db.collection('orders').doc(id)));
+    const gateOrders = gateSnaps.filter(s => s.exists).map(s => s.data()!);
+    if (gateOrders.length === 0) {
+      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+    }
+
+    const isAdmin = !!auth?.isAdmin;
+    const isOwnerOfAll = !!auth && gateOrders.every(o => o.userId === auth.uid);
+
+    let authorized = false;
+    if (isAdmin) {
+      authorized = true;
+    } else if (status === 'confirmed') {
+      // Path A — cryptographic proof of payment (FPX). The signature must be
+      // valid AND the paid razorpayOrderId must EQUAL the one create-order
+      // bound to every order doc here. Requiring the match (not just a valid
+      // signature) blocks replaying one real payment's signature onto a
+      // different unpaid order. In-flight orders created before this deploy
+      // lack the binding → they fail here and the 1h stale-FPX sweep cancels
+      // them (customer re-orders); acceptable for a low-traffic deploy window.
+      const pd = paymentData || {};
+      if (pd.razorpayOrderId && pd.razorpayPaymentId && pd.razorpaySignature
+          && isValidRazorpaySignature(pd.razorpayOrderId, pd.razorpayPaymentId, pd.razorpaySignature)) {
+        authorized = gateOrders.every(o => o.razorpayOrderId === pd.razorpayOrderId);
+      }
+      // Path B — voucher fully covered the bill: no cash due, owner confirms.
+      if (!authorized && isOwnerOfAll) {
+        authorized = gateOrders.every(o =>
+          o.paymentMethod === 'voucher' && (Number(o.total) || 0) === 0 && (Number(o.deliveryFee) || 0) === 0);
+      }
+    } else if (status === 'cancelled') {
+      // Owner may cancel own orders; anyone may cancel a still-'pending'
+      // (unpaid) order — the redirect-failure flows run without a session.
+      authorized = isOwnerOfAll || gateOrders.every(o => o.status === 'pending');
+    }
+    if (!authorized) {
+      return NextResponse.json({ error: '未授权操作' }, { status: 403 });
+    }
 
     // Collect per-order Purchase events to fire after Firestore writes
     // succeed. Keyed by orderId so the client can dedupe against fbq.
@@ -86,10 +158,12 @@ export async function POST(req: Request) {
         const foodAfterDiscount = orderData.total ?? 0;
         const deliveryFee = orderData.deliveryFee ?? 0;
 
-        await userRef.update({
+        // set+merge (not update): increment still works and a missing user doc
+        // can't 500 the confirm — a paid order must never be left unconfirmed.
+        await userRef.set({
           totalOrders: FieldValue.increment(1),
           totalSpent: FieldValue.increment(foodAfterDiscount + deliveryFee),
-        });
+        }, { merge: true });
       }
 
       // Claim voucher when transitioning TO confirmed for the first time.
