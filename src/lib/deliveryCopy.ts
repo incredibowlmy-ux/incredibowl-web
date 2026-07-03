@@ -67,6 +67,10 @@ export const DELIVERY_SUMMARY_EN = DELIVERY_TIER_COPY
 export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}km 以外暂不配送`;
 export const BEYOND_DELIVERY_NOTE_EN = `Beyond ${MID_RADIUS_KM}km — not currently delivered`;
 
+/** Where the km radii are measured from — without this, "2.5km 内" is ambiguous. */
+export const DISTANCE_BASIS_ZH = "距离以 Pearl Point（碗妈厨房）为起点计算";
+export const DISTANCE_BASIS_EN = "Distances measured from Pearl Point (BowlMama's kitchen)";
+
 // ── Long-form / SEO prose fragments ─────────────────────────────────────────
 // Used by layout metadata, /order landing pages, blog posts and their JSON-LD
 // so long-form copy can never drift from the real fee schedule either.

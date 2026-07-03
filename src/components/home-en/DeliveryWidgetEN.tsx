@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
-import { DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, DISTANCE_BASIS_EN } from '@/lib/deliveryCopy';
 
 type Tier = 'near' | 'mid' | 'far' | 'outside';
 
@@ -169,7 +169,8 @@ export default function DeliveryWidgetEN() {
                     bar cover the rest. */}
                 <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-[#FF6B35]/10 lg:content-center lg:gap-8">
                     <div>
-                        <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">Delivery fee at a glance</p>
+                        <p className="text-[13px] font-extrabold text-[#1A2D23]">Delivery fee at a glance</p>
+                        <p className="text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5">{DISTANCE_BASIS_EN}</p>
                         <ul className="space-y-1.5 lg:space-y-2 text-[13px] leading-snug">
                             {DELIVERY_TIER_COPY.map((t, i) => (
                                 <li key={t.rangeEn} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
