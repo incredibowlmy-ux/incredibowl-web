@@ -6,9 +6,13 @@ export interface MenuItem {
      * Daily/常驻 dishes and retired dishes omit it. Two specials may share a
      * weekday (e.g. Tuesday) — the Hero "next special" picks the `isPrimary` one.
      * NOTE: `id` is a pure unique identifier — it is NO LONGER the weekday.
+     * DERIVED from WEEKLY_SCHEDULE below — do not hand-write on dishes.
      */
     weekday?: number;
-    /** When two specials share a `weekday`, the one shown as the Hero headline. */
+    /**
+     * When two specials share a `weekday`, the one shown as the Hero headline.
+     * DERIVED: the FIRST id listed for a weekday in WEEKLY_SCHEDULE.
+     */
     isPrimary?: boolean;
     name: string;
     nameEn: string;
@@ -25,7 +29,10 @@ export interface MenuItem {
      * (/api/submit-order) — keep both in sync.
      */
     voucherTopUp?: number;
-    /** Dish removed from rotation: shown greyed-out on the menu, not orderable. */
+    /**
+     * Dish removed from rotation: shown greyed-out on the menu, not orderable.
+     * DERIVED from PAUSED_DISHES below.
+     */
     retired?: boolean;
     /**
      * Daily/常驻 dish available ONLY on these weekdays (0=Sun…6=Sat). Absent =
@@ -41,11 +48,13 @@ export interface MenuItem {
     /**
      * Completely absent from the customer website (both ZH & EN carousels,
      * Hero next-special, date computation and SEO structured data) — UNLIKE
-     * `retired` which still shows greyed-out. The dish stays in this array so
+     * `retired` which still shows greyed-out. The dish stays in the array so
      * the ops dashboard / stock / prep APIs can still reference it. Use for a
      * dish that's been added to the system but is NOT ready to show on the
-     * site yet (e.g. waiting on a real photo). To go live: drop `hidden` and
-     * set a real `/xxx.webp` image.
+     * site yet (e.g. waiting on a real photo). A hidden dish sits in
+     * DISH_CATALOG WITHOUT appearing in any schedule bucket; to go live, add
+     * its id to WEEKLY_SCHEDULE / DAILY_DISHES, drop `hidden`, and set a real
+     * `/xxx.webp` image.
      */
     hidden?: boolean;
 }
@@ -73,11 +82,49 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
     return Math.max(0, unitPrice - (dish.voucherTopUp ?? 0));
 }
 
-export const weeklyMenu: MenuItem[] = [
-    // ─── 常驻菜 Daily ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//   每周排期表 — 换菜单只改这一块（老板每周发新菜单 → 更新这三个列表）
+//
+//   · WEEKLY_SCHEDULE：每天卖哪几道（key = weekday 1–5）。
+//     数组第一个 id = 当天 Hero 主打（isPrimary 自动推导，别手写）。
+//   · DAILY_DISHES：常驻菜（每个营业日都卖）。
+//   · PAUSED_DISHES：暂别菜（菜单灰显「可见不可点」）。day 保留原排期
+//     标签，只影响 SEO 结构化数据分组。
+//
+//   规则（模块加载时自检，排错了 build 直接失败，绝不带病上线）：
+//     1. 每个 id 必须存在于 DISH_CATALOG 且只能出现在一个列表里一次。
+//     2. 排期中的菜不能带 hidden。
+//     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
+//
+//   生效周：2026-07-07（Mon 7 Jul）
+// ═══════════════════════════════════════════════════════════════════
+const WEEKLY_SCHEDULE: Record<number, number[]> = {
+    1: [1, 4],    // 周一：酱油鸡全腿(主打)、绍兴酒蒸花肉
+    2: [24, 25],  // 周二：澳洲和牛饼饭(主打)、家常日式咖喱饭
+    3: [21, 2],   // 周三：柠香三文鱼(主打)、当归蒸鸡全腿
+    4: [3, 12],   // 周四：希腊柠香鸡胸(主打)、山药云耳双鲜炒
+    5: [14, 23],  // 周五：金黄鸡扒饭(主打)、家乡豆酱焖花肉
+};
+
+const DAILY_DISHES: number[] = [11, 13];  // 纳豆月见、马铃薯炖花肉片
+
+const PAUSED_DISHES: { id: number; day: string }[] = [
+    { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
+    { id: 5, day: 'Fri / 周五' },     // 葱香煎鸡汤 退役 2026-06-08
+    { id: 20, day: 'Wed / 周三' },    // 姜葱鱼片 暂别 2026-07-04（回归价已调 RM19.90）
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//   菜品目录 — 纯资料（名字/价格/图/文案），不含任何排期字段。
+//   排期（day/weekday/isPrimary/retired）由上方三个列表推导。
+//   加新菜：目录加一条（未排期前必须 hidden:true + emoji 占位图），
+//   要上线时把 id 排进 WEEKLY_SCHEDULE / DAILY_DISHES 并去掉 hidden。
+// ═══════════════════════════════════════════════════════════════════
+type DishData = Omit<MenuItem, 'day' | 'weekday' | 'isPrimary' | 'retired'>;
+
+const DISH_CATALOG: DishData[] = [
     {
         id: 11,
-        day: "Daily / 常驻",
         name: "纳豆月见海苔饭",
         nameEn: "Natto Tsukimi Seaweed Rice Bowl",
         price: 16.90,
@@ -89,24 +136,17 @@ export const weeklyMenu: MenuItem[] = [
     },
     {
         id: 13,
-        day: "Daily / 常驻",
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
         image: "/pork_potato_stew.webp",
-        // 2026-06-27 改为天天供应（原仅周四五，availableWeekdays 已移除）。
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
         desc: "土豆炖得烂烂的，拌在米饭里，就是最踏实的幸福。",
         descEn: "Potatoes braised until they melt, stirred into the rice — pure, grounded happiness."
     },
-    // ─── 周一 Mon ───────────────────────────────────────────────
     {
-        // 2026-06-27 酱油鸡回归，重新作周一特餐 · Hero 主打（原周一鸡扒饭 id14 移到周四）。
         id: 1,
-        day: "Mon / 周一",
-        weekday: 1,
-        isPrimary: true,
         name: "阿嫲古早味酱油鸡全腿",
         nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
@@ -117,10 +157,7 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A Cantonese classic — savoury soy slowly infusing every strand of chicken. Glossy skin, tender meat."
     },
     {
-        // 2026-06-15 重排：原周四特餐改到周一（周一第二道）。
         id: 4,
-        day: "Mon / 周一",
-        weekday: 1,
         name: "绍兴酒蒸花肉",
         nameEn: "Shaoxing Wine Steamed Pork Belly",
         price: 19.90,
@@ -130,15 +167,10 @@ export const weeklyMenu: MenuItem[] = [
         desc: "选偏肥的五花部位，绍兴酒香顺着姜丝蒸进肉里，肥香软糯、入口即化。爱这口肥香的会上瘾；偏好瘦口的朋友这道可能不合。",
         descEn: "Made with the fattier cut of pork belly — Shaoxing wine and ginger steamed deep into the meat, rich and melt-in-your-mouth. If you love that fatty, silky bite you'll adore it; if you prefer lean, this one may not be for you."
     },
-    // ─── 周二 Tue ───────────────────────────────────────────────
     {
-        // 全新菜 2026-06-21 上架（周二特餐·Hero 主推 isPrimary）。a la carte RM22.90；
-        // 餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90），与参峇臭豆同规则。
+        // a la carte RM22.90；餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90）。
         // 蛋白 32g（老板/碗妈 2026-06-21 提供）。
         id: 24,
-        day: "Tue / 周二",
-        weekday: 2,
-        isPrimary: true,
         name: "澳洲和牛饼饭",
         nameEn: "Aussie Wagyu Beef Patty Don",
         price: 22.90,
@@ -150,12 +182,10 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Aussie wagyu beef patty seared crisp outside and juicy within, crowned with a soft onsen egg whose golden yolk runs into the rice — finished with a tangy cherry-tomato salsa that keeps it bright, not heavy."
     },
     {
-        // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 轮换上线作周二第二道（和牛仍主推）。
+        // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 上线。
         // image 暂用 emoji 占位（实拍图未到），图好后换 /japanese_curry_rice.webp。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）。
         id: 25,
-        day: "Tue / 周二",
-        weekday: 2,
         name: "家常日式咖喱饭",
         nameEn: "Homestyle Japanese Curry Rice",
         price: 18.50,
@@ -165,14 +195,9 @@ export const weeklyMenu: MenuItem[] = [
         desc: "浓郁日式咖喱慢炖到顺滑，配嫩煎鸡胸肉，盖在热饭上，一口暖到心里。",
         descEn: "Rich Japanese curry simmered until silky, served with pan-seared chicken breast over hot rice — warm and comforting in every bite."
     },
-    // ─── 周三 Wed ───────────────────────────────────────────────
     {
-        // 2026-07-04 轮换：从周五移到周三（周三 Hero 主打）。周五新上 2026-06-08。
-        // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。
+        // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。周五新上 2026-06-08。
         id: 21,
-        day: "Wed / 周三",
-        weekday: 3,
-        isPrimary: true,
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 23.90,
@@ -184,10 +209,7 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
     },
     {
-        // 2026-06-15 重排：原周二第二道改到周三（周三第二道）。
         id: 2,
-        day: "Wed / 周三",
-        weekday: 3,
         name: "招牌原盅当归蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
@@ -197,13 +219,8 @@ export const weeklyMenu: MenuItem[] = [
         desc: "当归香渗进鸡肉，喝一口汤，魂都暖了。",
         descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
     },
-    // ─── 周四 Thu ───────────────────────────────────────────────
     {
-        // 2026-07-04 轮换：周二→周四，并作周四 Hero 主打。
         id: 3,
-        day: "Thu / 周四",
-        weekday: 4,
-        isPrimary: true,
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",
         price: 19.90,
@@ -214,10 +231,7 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Lemon's tang seeps into the lightly charred chicken breast, carried by thyme and extra-virgin olive oil. Mmm."
     },
     {
-        // 2026-07-04 轮换：周五→周四（周四第二道）。2026-06-27 曾从常驻改为周五特餐。
         id: 12,
-        day: "Thu / 周四",
-        weekday: 4,
         name: "山药云耳海陆双鲜炒",
         nameEn: "Chinese Yam & Black Fungus Surf & Turf",
         price: 18.50,
@@ -227,13 +241,8 @@ export const weeklyMenu: MenuItem[] = [
         desc: "新鲜山药配上爽口云耳，是对脾胃最温柔的照顾。",
         descEn: "Fresh Chinese yam with crunchy black fungus — the gentlest care your gut could ask for."
     },
-    // ─── 周五 Fri ───────────────────────────────────────────────
     {
-        // 2026-07-04 轮换：周四→周五（周五 Hero 主打）。
         id: 14,
-        day: "Fri / 周五",
-        weekday: 5,
-        isPrimary: true,
         name: "香煎金黄鸡扒饭",
         nameEn: "Pan-Fried Golden Chicken Chop Rice",
         price: 18.50,
@@ -244,12 +253,9 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
     },
     {
-        // 2026-07-04 轮换：周四→周五（周五第二道）。全新菜 2026-06-15 上架。
-        // 2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
+        // 全新菜 2026-06-15 上架。2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
         id: 23,
-        day: "Fri / 周五",
-        weekday: 5,
         name: "家乡豆酱焖花肉",
         nameEn: "Hometown Taucu Braised Pork Belly",
         price: 19.90,
@@ -259,12 +265,9 @@ export const weeklyMenu: MenuItem[] = [
         desc: "家乡豆酱慢火焖煮花肉，豆香咸鲜渗进每一丝肉里，软糯入味、咸香下饭。",
         descEn: "Pork belly slow-braised in hometown fermented soybean paste (taucu) — savoury, tender and deeply infused, made for rice."
     },
-    // ─── 已退役（灰显·可见不可点）Retired ────────────────────────
     {
-        // 退役 2026-06-27：参峇臭豆从常驻暂别。保留在菜单上「可见不可点」，附说明。
+        // 暂别中（见 PAUSED_DISHES）。unavailableNote 是菜的暂别文案，跟菜走。
         id: 22,
-        day: "Daily / 常驻",
-        retired: true,
         unavailableNote: "参峇臭豆暂别，敬请期待回归",
         unavailableNoteEn: "Sambal petai paused — back soon",
         name: "参峇臭豆虾仁炒花肉",
@@ -278,10 +281,8 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "Sambal-fried pork belly and prawns with soul-stirring petai — bold, spicy, and impossibly good over rice."
     },
     {
-        // 退役 2026-06-08：周五位让给三文鱼。保留在菜单上「可见不可点」，附说明。
+        // 暂别中（见 PAUSED_DISHES）。
         id: 5,
-        day: "Fri / 周五",
-        retired: true,
         unavailableNote: "鸡汤暂别，敬请期待回归",
         unavailableNoteEn: "Scallion soup paused — back soon",
         name: "金黄葱香煎鸡汤",
@@ -294,11 +295,8 @@ export const weeklyMenu: MenuItem[] = [
         descEn: "A bowl of clear scallion broth — washing off a week's tiredness, ready for a clean weekend."
     },
     {
-        // 暂别 2026-07-04：本周轮换让位（原周三 Hero 主打）。保留「可见不可点」。
-        // 回归时售价调为 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
+        // 暂别中（见 PAUSED_DISHES）。回归价 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
         id: 20,
-        day: "Wed / 周三",
-        retired: true,
         unavailableNote: "姜葱鱼片暂别，敬请期待回归",
         unavailableNoteEn: "Ginger-scallion fish paused — back soon",
         name: "古早味姜葱鱼片饭",
@@ -309,8 +307,62 @@ export const weeklyMenu: MenuItem[] = [
         tagsEn: ["28g+ protein", "Old-school", "Ginger-scallion sear", "Sunny-side egg", "Silky fish"],
         desc: "巴丁鱼片用姜丝葱段爆香，淋一勺绍兴酒提鲜，盖一颗荷包蛋——古早味的温柔。",
         descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
-    }
+    },
 ];
+
+// ═══════════════════════════════════════════════════════════════════
+//   推导层：排期表 × 菜目录 → weeklyMenu（形状与旧手写数组完全一致）。
+//   非法排期在模块加载即抛错 → `next build` 直接失败，绝不带病上线。
+// ═══════════════════════════════════════════════════════════════════
+const WEEKDAY_LABEL: Record<number, string> = {
+    1: 'Mon / 周一', 2: 'Tue / 周二', 3: 'Wed / 周三', 4: 'Thu / 周四', 5: 'Fri / 周五',
+};
+
+function buildWeeklyMenu(): MenuItem[] {
+    const byId = new Map(DISH_CATALOG.map(d => [d.id, d]));
+    const seen = new Set<number>();
+    const take = (id: number, where: string): DishData => {
+        const d = byId.get(id);
+        if (!d) throw new Error(`[weeklyMenu] ${where} 引用了不存在的菜 id ${id}`);
+        if (seen.has(id)) throw new Error(`[weeklyMenu] 菜 id ${id}「${d.name}」被排进多个位置（${where}）`);
+        seen.add(id);
+        return d;
+    };
+
+    const menu: MenuItem[] = [];
+
+    for (const id of DAILY_DISHES) {
+        const d = take(id, 'DAILY_DISHES');
+        if (d.hidden) throw new Error(`[weeklyMenu] hidden 菜 id ${id}「${d.name}」不能排进 DAILY_DISHES`);
+        menu.push({ ...d, day: 'Daily / 常驻' });
+    }
+
+    for (const wd of Object.keys(WEEKLY_SCHEDULE).map(Number)) {
+        const label = WEEKDAY_LABEL[wd];
+        if (!label) throw new Error(`[weeklyMenu] WEEKLY_SCHEDULE 含非法 weekday ${wd}（只允许 1–5）`);
+        WEEKLY_SCHEDULE[wd].forEach((id, i) => {
+            const d = take(id, `WEEKLY_SCHEDULE[${wd}]`);
+            if (d.hidden) throw new Error(`[weeklyMenu] hidden 菜 id ${id}「${d.name}」不能排进 WEEKLY_SCHEDULE`);
+            menu.push({ ...d, day: label, weekday: wd, ...(i === 0 ? { isPrimary: true } : {}) });
+        });
+    }
+
+    for (const { id, day } of PAUSED_DISHES) {
+        const d = take(id, 'PAUSED_DISHES');
+        menu.push({ ...d, day, retired: true });
+    }
+
+    // 目录里没进任何排期的菜必须是 hidden（staged 未上线），否则视为忘了排期。
+    for (const d of DISH_CATALOG) {
+        if (seen.has(d.id)) continue;
+        if (!d.hidden) throw new Error(`[weeklyMenu] 菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
+        menu.push({ ...d, day: 'Unscheduled / 未排期' });
+    }
+
+    return menu;
+}
+
+export const weeklyMenu: MenuItem[] = buildWeeklyMenu();
 
 /**
  * The dish shown in the Hero "Tomorrow's Special" card BEFORE the date-driven
