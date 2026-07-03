@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star } from 'lucide-react';
 import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 // Single source of truth for "next special" (MYT-anchored, skips weekends,
@@ -10,7 +10,6 @@ import { getPromoDiscount } from '@/data/promoConfig';
 // own copy that treated `id` as the weekday — which surfaced the retired
 // 酱油鸡 (id 1) every Monday. Share the lib version so the two never drift again.
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
-import { DELIVERY_SUMMARY_EN, DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
 import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
 export default function HeroSectionEN() {
@@ -112,28 +111,9 @@ export default function HeroSectionEN() {
                         </a>
                     </div>
 
-                    <div className="mt-5 max-w-md lg:max-w-xl">
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
-                            <span>Order via web / WhatsApp</span>
-                            <span className="text-[#FF6B35] font-black">→</span>
-                            <span>{DELIVERY_SUMMARY_EN}</span>
-                        </div>
-                        {/* Desktop: ordering channel + one pill per fee tier */}
-                        <div className="hidden lg:flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-[#1A2D23]/75">
-                            <span className="inline-flex items-center gap-1.5">
-                                <Smartphone size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                Web / WhatsApp ordering
-                            </span>
-                            <span className="text-[#1A2D23]/25 select-none">·</span>
-                            {DELIVERY_TIER_COPY.map((t) => (
-                                <span key={t.rangeEn} className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#1A2D23]/10 text-[13px] leading-none">
-                                    <span className="font-bold text-[#1A2D23]">{t.rangeEn}</span>
-                                    <span className="font-bold text-[#1A2D23]/60">RM {t.fee}</span>
-                                    <span className="font-bold text-[#FF6B35]">RM {t.freeOver}+ free</span>
-                                </span>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Delivery fees intentionally NOT shown here: the NavBar marquee
+                        and the DeliveryWidget right below already carry the full tier
+                        table — keep the hero on brand + CTA. */}
                 </div>
             </div>
 

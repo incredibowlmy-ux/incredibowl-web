@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-react';
+import { MapPin, ArrowRight, CalendarCheck, Star } from 'lucide-react';
 import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
-import { DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN, DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
 import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
 export default function HeroSection() {
@@ -119,35 +118,9 @@ export default function HeroSection() {
                         </a>
                     </div>
 
-                    {/* How-to-order flow — bilingual, scannable */}
-                    <div className="mt-5 max-w-md lg:max-w-xl">
-                        {/* Mobile: arrow flow (preserved) */}
-                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[13px] md:text-sm font-bold text-[#1A2D23]/75 lg:hidden">
-                            <span>网页 / WhatsApp 下单</span>
-                            <span className="text-[#FF6B35] font-black">→</span>
-                            <span>{DELIVERY_SUMMARY_ZH}</span>
-                        </div>
-                        {/* Desktop: ordering channel + one pill per fee tier — replaces
-                            the old two-line ZH+EN text wall (the /en page carries the
-                            English copy; no need to duplicate it here). */}
-                        <div className="hidden lg:flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-[#1A2D23]/75">
-                            <span className="inline-flex items-center gap-1.5">
-                                <Smartphone size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                网页 / WhatsApp 下单
-                            </span>
-                            <span className="text-[#1A2D23]/25 select-none">·</span>
-                            {DELIVERY_TIER_COPY.map((t) => (
-                                <span key={t.rangeZh} className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#1A2D23]/10 text-[13px] leading-none">
-                                    <span className="font-bold text-[#1A2D23]">{t.rangeZh}</span>
-                                    <span className="font-bold text-[#1A2D23]/60">RM {t.fee}</span>
-                                    <span className="font-bold text-[#FF6B35]">满 {t.freeOver} 免运</span>
-                                </span>
-                            ))}
-                        </div>
-                        <p className="lg:hidden text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
-                            {DELIVERY_SUMMARY_EN}
-                        </p>
-                    </div>
+                    {/* Delivery fees intentionally NOT shown here: the NavBar marquee
+                        (both breakpoints) and the DeliveryWidget right below the hero
+                        already carry the full tier table — keep the hero on brand + CTA. */}
                 </div>
             </div>
 
