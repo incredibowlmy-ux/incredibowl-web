@@ -1,0 +1,250 @@
+import { NextRequest } from 'next/server';
+import { corsPreflight, adminJson, verifyAdminEmail } from '@/lib/adminApi';
+import { weeklyMenu, dishVoucherValue, type MenuItem } from '@/data/weeklyMenu';
+import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
+
+/**
+ * POST /api/admin/subscriptions/week — 常客周计划的「生成预览 / 确认建单」。
+ *
+ * { action: 'preview', weekStart: 'YYYY-MM-DD' }            → 所有 active 订阅的下周单预览
+ * { action: 'confirm', weekStart, subscriptionId }          → 按订阅模板批量建单 + FIFO 扣券
+ *
+ * 逻辑镜像自 scripts/create-*-week-orders.mjs（LeeYin/Kelly 每周脚本的产品化）：
+ *   - 订单 schema 与脚本一字不差（isManual + channel:whatsapp + batchTag +
+ *     mealVoucherAllocatedRevenue 摊销 + createdAt 落在配送日 04:00Z）
+ *   - 扣券改用生产共享的 claimMealVouchers（原子事务，FIFO 最早到期先用）
+ *   - 幂等：batchTag = sub-<weekStart>-<subscriptionId>，已存在即拒绝
+ *
+ * confirm 不接受客户端传来的价格/菜单 —— 一切从订阅模板 + DISH_CATALOG 现价
+ * 重新计算，预览和确认永远同源。要改菜先改订阅再重新预览。
+ */
+
+let adminDb: FirebaseFirestore.Firestore | null = null;
+async function getDb() {
+  if (adminDb) return adminDb;
+  const { getAdminDb } = await import('@/lib/firebase-admin');
+  adminDb = getAdminDb();
+  return adminDb;
+}
+
+const round2 = (n: number) => Number(n.toFixed(2));
+const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+function addDays(ymd: string, days: number): string {
+  const d = new Date(`${ymd}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+interface PlannedItem {
+  name: string;
+  price: number;
+  quantity: number;
+  addOns: { id?: string; label: string; price: number; quantity: number }[];
+}
+
+interface PlannedDay {
+  date: string;
+  weekday: number;
+  meal: 'lunch' | 'dinner';
+  time: string;
+  items: PlannedItem[];
+  vCount: number;        // 本单消耗餐券张数（= 主菜总份数）
+  coverage: number;      // 餐券抵扣的面值 RM（Σ dishVoucherValue × qty）
+  originalTotal: number; // 菜金小计（含加料）
+  cashDue: number;       // 现金应收 = originalTotal − coverage + deliveryFee
+  warnings: string[];
+  blocked: boolean;      // 有硬伤（菜不存在/当日停业等）→ confirm 时整天跳过
+}
+
+/** 按订阅模板 + 当前菜单目录推演一周的单。preview 与 confirm 共用。 */
+function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warnings: string[] } {
+  const topWarnings: string[] = [];
+  const days: PlannedDay[] = [];
+  const plan: Record<string, any> = sub.plan || {};
+
+  for (let wd = 1; wd <= 5; wd++) {
+    const entry = plan[String(wd)];
+    if (!entry || entry.skip) continue;
+    const date = addDays(weekStart, wd - 1);
+    const warnings: string[] = [];
+    let blocked = false;
+
+    if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
+
+    const items: PlannedItem[] = [];
+    let vCount = 0, coverage = 0, originalTotal = 0;
+
+    for (const raw of entry.items ?? []) {
+      const qty = Math.max(1, Math.floor(Number(raw.qty) || 1));
+      const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw.dishName);
+      if (!dish) { warnings.push(`「${raw.dishName}」不在菜品目录`); blocked = true; continue; }
+      if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
+      if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);
+      if (isDishBlockedOn(dish.id, date)) { warnings.push(`「${dish.name}」在 ${date} 被停（BLOCKED_DATES）`); blocked = true; }
+      if (dish.day !== 'Daily / 常驻' && dish.weekday !== undefined && dish.weekday !== wd) {
+        warnings.push(`「${dish.name}」本轮排在周${WD_CN[dish.weekday]}，不是周${WD_CN[wd]}`);
+      }
+      if (dish.day === 'Daily / 常驻' && Array.isArray(dish.availableWeekdays)
+          && dish.availableWeekdays.length > 0 && !dish.availableWeekdays.includes(wd)) {
+        warnings.push(`「${dish.name}」只在周${dish.availableWeekdays.map(x => WD_CN[x]).join('、')}供应`);
+      }
+
+      const addOns = (raw.addOns ?? []).map((a: any) => ({
+        ...(a.id ? { id: String(a.id) } : {}),
+        label: String(a.label ?? ''),
+        price: Number(a.price) || 0,
+        quantity: Math.max(1, Math.floor(Number(a.quantity) || 1)),
+      }));
+      const addOnSum = addOns.reduce((s: number, a: any) => s + a.price * a.quantity, 0);
+
+      items.push({ name: dish.name, price: dish.price, quantity: qty, addOns });
+      vCount += qty;
+      coverage += dishVoucherValue(dish.price, dish) * qty;
+      originalTotal += dish.price * qty + addOnSum;
+    }
+
+    if (items.length === 0) { topWarnings.push(`周${WD_CN[wd]} 没有可用主菜，整天跳过`); continue; }
+
+    coverage = round2(coverage);
+    originalTotal = round2(originalTotal);
+    const deliveryFee = Number(sub.deliveryFeePerDelivery) || 0;
+    days.push({
+      date, weekday: wd,
+      meal: entry.meal === 'dinner' ? 'dinner' : 'lunch',
+      time: String(entry.time || (entry.meal === 'dinner' ? '19:00' : '12:00')),
+      items, vCount, coverage, originalTotal,
+      cashDue: round2(originalTotal - coverage + deliveryFee),
+      warnings, blocked,
+    });
+  }
+  return { days, warnings: topWarnings };
+}
+
+/** 生成给老板复制转发的 WhatsApp 确认消息（保持老板的号、老板的人情味）。 */
+function whatsappText(sub: any, days: PlannedDay[], vouchersLeftAfter: number): string {
+  const lines = days.filter(d => !d.blocked).map(d => {
+    const dishes = d.items.map(it => `${it.name}${it.quantity > 1 ? `×${it.quantity}` : ''}`).join(' + ');
+    const addons = d.items.flatMap(it => it.addOns).map(a => a.label).filter(Boolean);
+    return `周${WD_CN[d.weekday]}（${d.date.slice(5).replace('-', '/')}）${d.meal === 'dinner' ? '晚餐' : '午餐'}：${dishes}${addons.length ? ` +${addons.join('+')}` : ''}`;
+  });
+  const totalV = days.filter(d => !d.blocked).reduce((s, d) => s + d.vCount, 0);
+  const totalCash = round2(days.filter(d => !d.blocked).reduce((s, d) => s + d.cashDue, 0));
+  return `${sub.name} 你好！碗妈下周给你排的菜 🍛\n${lines.join('\n')}\n\n共扣 ${totalV} 张餐券（用完剩 ${vouchersLeftAfter} 张）${totalCash > 0 ? `，加料/补差现金 RM ${totalCash.toFixed(2)}` : ''}。\n没问题回 OK，想换哪天直接说 👌`;
+}
+
+export async function OPTIONS() { return corsPreflight(); }
+
+export async function POST(req: NextRequest) {
+  const adminEmail = await verifyAdminEmail(req);
+  if (!adminEmail) return adminJson({ error: '未授权' }, 401);
+
+  const body = await req.json().catch(() => null);
+  const action = body?.action;
+  const weekStart: string = String(body?.weekStart || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) return adminJson({ error: 'weekStart 需为 YYYY-MM-DD' }, 400);
+  if (new Date(`${weekStart}T00:00:00`).getDay() !== 1) return adminJson({ error: 'weekStart 必须是周一' }, 400);
+
+  const db = await getDb();
+
+  // ── 预览 ─────────────────────────────────────────────
+  if (action === 'preview') {
+    const snap = await db.collection('subscriptions').where('active', '==', true).get();
+    const previews = [];
+    for (const doc of snap.docs) {
+      const sub = { id: doc.id, ...doc.data() } as any;
+      const { days, warnings } = buildWeekPlan(sub, weekStart);
+      const vouchersNeeded = days.filter(d => !d.blocked).reduce((s, d) => s + d.vCount, 0);
+      const vouchersAvailable = await countAvailableVouchers(db, sub.userId);
+      if (vouchersAvailable < vouchersNeeded) {
+        warnings.push(`⛔ 餐券不足：需 ${vouchersNeeded} 张，只有 ${vouchersAvailable} 张 —— 先卖新券包或减天数`);
+      }
+      const batchTag = `sub-${weekStart}-${sub.id}`;
+      const existing = await db.collection('orders').where('batchTag', '==', batchTag).limit(1).get();
+      const userDoc = await db.collection('users').doc(sub.userId).get();
+      if (!userDoc.exists) warnings.push(`users/${sub.userId} 不存在 —— 先用「卖餐券」流程建档`);
+
+      previews.push({
+        subscriptionId: sub.id,
+        name: sub.name, phone: sub.phone, userId: sub.userId,
+        days,
+        vouchersNeeded, vouchersAvailable,
+        cashTotal: round2(days.filter(d => !d.blocked).reduce((s, d) => s + d.cashDue, 0)),
+        warnings,
+        alreadyCreated: !existing.empty,
+        canConfirm: existing.empty && vouchersAvailable >= vouchersNeeded && days.some(d => !d.blocked),
+        whatsappText: whatsappText(sub, days, vouchersAvailable - vouchersNeeded),
+        batchTag,
+      });
+    }
+    return adminJson({ weekStart, previews });
+  }
+
+  // ── 确认建单 ─────────────────────────────────────────
+  if (action === 'confirm') {
+    const subscriptionId = String(body?.subscriptionId || '');
+    if (!subscriptionId) return adminJson({ error: '缺 subscriptionId' }, 400);
+
+    const subSnap = await db.collection('subscriptions').doc(subscriptionId).get();
+    if (!subSnap.exists) return adminJson({ error: '订阅不存在' }, 404);
+    const sub = { id: subSnap.id, ...subSnap.data() } as any;
+
+    const batchTag = `sub-${weekStart}-${subscriptionId}`;
+    const existing = await db.collection('orders').where('batchTag', '==', batchTag).limit(1).get();
+    if (!existing.empty) return adminJson({ error: `batchTag=${batchTag} 已建过单，拒绝重复` }, 409);
+
+    const { days } = buildWeekPlan(sub, weekStart);
+    const usable = days.filter(d => !d.blocked);
+    if (usable.length === 0) return adminJson({ error: '本周没有可建的单（全部被硬伤拦下），看预览的警告' }, 400);
+
+    const vouchersNeeded = usable.reduce((s, d) => s + d.vCount, 0);
+    const available = await countAvailableVouchers(db, sub.userId);
+    if (available < vouchersNeeded) {
+      return adminJson({ error: `餐券不足：需 ${vouchersNeeded} 张，只有 ${available} 张` }, 400);
+    }
+
+    const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
+    const created: { orderId: string; date: string; voucherIds: string[] }[] = [];
+
+    // 每天一单：先 FIFO 扣券（原子事务）再写订单。中途失败会留下已建的前几
+    // 天 —— batchTag 幂等锁保证不会重复整周，剩余天数看 error 手动补。
+    for (const d of usable) {
+      const orderRef = db.collection('orders').doc();
+      const claim = await claimMealVouchers(db, sub.userId, d.vCount, orderRef.id);
+      const deliveryFee = Number(sub.deliveryFeePerDelivery) || 0;
+      await orderRef.set({
+        userId: sub.userId, userName: sub.name, userPhone: sub.phone, userEmail: '',
+        userAddress: sub.address,
+        items: d.items,
+        total: round2(d.originalTotal - d.coverage),
+        originalTotal: d.originalTotal,
+        deliveryFee,
+        deliveryZone: sub.deliveryZone || 'within2km',
+        deliveryDistanceKm: Number(sub.deliveryDistanceKm) || 0,
+        deliveryTier: sub.deliveryTier || 'near',
+        deliveryDate: d.date, deliveryTime: d.time,
+        paymentMethod: 'qr', receiptUploaded: true, status: 'confirmed',
+        isManual: true, channel: 'whatsapp', mealType: d.meal,
+        note: `手动录入 · whatsapp · 餐券抵扣 · 周订阅自动生成`,
+        batchTag,
+        subscriptionId,
+        mealVoucherDiscount: d.coverage,
+        mealVouchersUsed: d.vCount,
+        claimedMealVoucherIds: claim.ids,
+        mealVoucherAllocatedRevenue: claim.allocatedTotalRM,
+        redemptionRecordedBy: adminEmail,
+        // createdAt 落在配送日中午（04:00Z = KL 12:00），与手写周脚本一致，
+        // 让按日营收报表把摊销记在出餐当天。
+        createdAt: Timestamp.fromDate(new Date(`${d.date}T04:00:00Z`)),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      created.push({ orderId: orderRef.id, date: d.date, voucherIds: claim.ids });
+    }
+
+    console.log(`[subscriptions] ${adminEmail} 为 ${sub.name} 建 ${created.length} 单（${batchTag}）`);
+    return adminJson({ ok: true, batchTag, created, skippedDays: days.filter(d => d.blocked).map(d => d.date) });
+  }
+
+  return adminJson({ error: 'action 必须是 preview 或 confirm' }, 400);
+}
