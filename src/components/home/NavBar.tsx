@@ -80,6 +80,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 {/* Desktop-only quick nav anchors (hidden on mobile/tablet) */}
                 <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-[#1A2D23]/75">
                     <a href="#menu" className="hover:text-[#FF6B35] transition-colors">每日菜单</a>
+                    <Link href="/meal-vouchers" className="hover:text-[#FF6B35] transition-colors">餐券预付包</Link>
                     <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">邻居好评</a>
                     <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">联系碗妈</a>
                 </nav>

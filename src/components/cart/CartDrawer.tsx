@@ -775,6 +775,20 @@ export default function CartDrawer({
                                 </div>
                             )}
 
+                            {/* Meal voucher upsell — subtle one-liner near the subtotal; hidden
+                                once the user already owns vouchers (the redemption card above
+                                takes over the exposure job). */}
+                            {availableMealVouchers === 0 && (
+                                <Link
+                                    href="/meal-vouchers"
+                                    onClick={onClose}
+                                    className="group flex items-center gap-1.5 px-1 text-[11px] font-bold text-[#1A2D23]/50 hover:text-[#FF6B35] transition-colors"
+                                >
+                                    <Ticket size={12} className="text-[#FF6B35]/70 shrink-0" />
+                                    <span>常点的话，餐券包每餐更省 <span className="inline-block group-hover:translate-x-0.5 transition-transform">→</span></span>
+                                </Link>
+                            )}
+
                             {/* Subtotal + delivery fee breakdown */}
                             {currentUser && deliveryTier && (
                                 <div className="space-y-1.5 pb-1 border-b border-gray-100">

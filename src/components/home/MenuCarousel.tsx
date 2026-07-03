@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, Sparkles, Phone } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingBag, Sparkles, Phone, Ticket } from 'lucide-react';
 import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
@@ -441,6 +442,33 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                             )}
                         </>
                     )}
+            </div>
+
+            {/* Meal voucher promo — full-width banner closing the menu section
+                (outside both breakpoint grids so the day-band layout stays intact;
+                static content, safe for SSR/prerender). */}
+            <div className="mt-8 lg:mt-12 px-3 lg:px-2">
+                <Link
+                    href="/meal-vouchers"
+                    className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl lg:rounded-3xl p-4 lg:p-6 hover:shadow-lg hover:border-[#FF6B35]/40 transition-[box-shadow,border-color] duration-200 relative overflow-hidden"
+                >
+                    <div className="absolute -top-8 -right-8 w-28 h-28 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="relative flex items-center gap-3 lg:gap-5">
+                        <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl bg-[#FF6B35] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#FF6B35]/30">
+                            <Ticket size={22} className="lg:hidden" />
+                            <Ticket size={28} className="hidden lg:block" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[14px] lg:text-[18px] font-extrabold text-[#1A2D23] leading-tight">餐券预付包 · 一次买，慢慢吃</p>
+                            <p className="text-[11px] lg:text-[13px] text-[#1A2D23]/60 font-bold mt-0.5 leading-snug">
+                                任意主菜都能兑 · 20 张装省 RM 20 · 30 / 60 天有效
+                            </p>
+                        </div>
+                        <span className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 lg:px-5 lg:py-2.5 bg-[#FF6B35] group-hover:bg-[#E95D31] text-white rounded-full text-[12px] lg:text-[14px] font-black shadow-sm shadow-[#FF6B35]/30 transition-colors">
+                            去看餐券包<span className="hidden lg:inline"> →</span>
+                        </span>
+                    </div>
+                </Link>
             </div>
         </div>
     );

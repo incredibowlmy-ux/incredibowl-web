@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { MapPin, ArrowRight, CalendarCheck, Star } from 'lucide-react';
+import Link from 'next/link';
+import { MapPin, ArrowRight, CalendarCheck, Star, Ticket } from 'lucide-react';
 import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 // Single source of truth for "next special" (MYT-anchored, skips weekends,
@@ -109,6 +110,15 @@ export default function HeroSectionEN() {
                             </svg>
                             <span>Ask BowlMama on WhatsApp</span>
                         </a>
+
+                        {/* Tertiary CTA — meal voucher bundles (outlined, below primary in hierarchy) */}
+                        <Link
+                            href="/en/meal-vouchers"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/50 border-2 border-[#FF6B35]/25 hover:border-[#FF6B35]/60 hover:bg-white/70 text-[#1A2D23] rounded-full font-bold text-sm transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.97]"
+                        >
+                            <Ticket size={15} className="text-[#FF6B35]" />
+                            <span>Meal vouchers — save up to RM 20</span>
+                        </Link>
                     </div>
 
                     {/* Delivery fees intentionally NOT shown here: the NavBar marquee

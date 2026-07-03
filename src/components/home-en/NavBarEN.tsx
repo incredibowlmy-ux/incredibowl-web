@@ -77,6 +77,7 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
 
                     <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-[#1A2D23]/75">
                         <a href="#menu" className="hover:text-[#FF6B35] transition-colors">Daily Menu</a>
+                        <Link href="/en/meal-vouchers" className="hover:text-[#FF6B35] transition-colors">Meal Vouchers</Link>
                         <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">Reviews</a>
                         <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">Contact BowlMama</a>
                     </nav>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
@@ -385,7 +386,14 @@ export default function V4BentoLayout() {
                             </div>
                         )}
                         <p className="text-xs text-gray-400 mt-3">订单已确认，感谢您的订购！</p>
-                        <button onClick={() => setFpxSuccess(null)} className="mt-5 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
+                        {/* Meal voucher upsell — subtle, below the confirmation info */}
+                        <Link
+                            href="/meal-vouchers"
+                            className="mt-4 block bg-[#FFF3E0]/60 border border-[#FFD6B0]/60 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A2D23]/70 hover:border-[#FF6B35]/50 hover:text-[#1A2D23] transition-colors"
+                        >
+                            喜欢碗妈的菜？<span className="text-[#FF6B35]">餐券包更划算 →</span>
+                        </Link>
+                        <button onClick={() => setFpxSuccess(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
                     </div>
                 </div>
             )}
