@@ -57,7 +57,7 @@ export default function PromoBanner() {
                             onClick={scrollToFeedback}
                             className="hidden lg:inline-flex items-center gap-1.5 self-start text-[#FF9B50] hover:text-[#FFB770] text-sm font-bold underline-offset-4 hover:underline transition-colors group"
                         >
-                            <span>看 10+ 邻居怎么说</span>
+                            <span>看 {GOOGLE_REVIEW_COUNT}+ 邻居怎么说</span>
                             <ArrowRight size={13} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                         </button>
                     </div>

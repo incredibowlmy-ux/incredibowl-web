@@ -10,7 +10,8 @@ import { getPromoDiscount } from '@/data/promoConfig';
 // own copy that treated `id` as the weekday — which surfaced the retired
 // 酱油鸡 (id 1) every Monday. Share the lib version so the two never drift again.
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
-import { DELIVERY_SUMMARY_EN } from '@/lib/deliveryCopy';
+import { DELIVERY_SUMMARY_EN, DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
+import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
 export default function HeroSectionEN() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
@@ -63,7 +64,7 @@ export default function HeroSectionEN() {
                             className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35]/15 text-[#C84518] rounded-full text-xs font-bold shadow-sm hover:bg-[#FF6B35]/25 transition-colors active:scale-95"
                         >
                             <Star size={11} fill="currentColor" strokeWidth={0} />
-                            <span>10+ neighbours love it</span>
+                            <span>{GOOGLE_REVIEW_COUNT}+ neighbours love it</span>
                         </button>
                     </div>
 
@@ -117,16 +118,20 @@ export default function HeroSectionEN() {
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>{DELIVERY_SUMMARY_EN}</span>
                         </div>
-                        <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
+                        {/* Desktop: ordering channel + one pill per fee tier */}
+                        <div className="hidden lg:flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-[#1A2D23]/75">
                             <span className="inline-flex items-center gap-1.5">
                                 <Smartphone size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                                 Web / WhatsApp ordering
                             </span>
                             <span className="text-[#1A2D23]/25 select-none">·</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                {DELIVERY_SUMMARY_EN}
-                            </span>
+                            {DELIVERY_TIER_COPY.map((t) => (
+                                <span key={t.rangeEn} className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#1A2D23]/10 text-[13px] leading-none">
+                                    <span className="font-bold text-[#1A2D23]">{t.rangeEn}</span>
+                                    <span className="font-bold text-[#1A2D23]/60">RM {t.fee}</span>
+                                    <span className="font-bold text-[#FF6B35]">RM {t.freeOver}+ free</span>
+                                </span>
+                            ))}
                         </div>
                     </div>
                 </div>

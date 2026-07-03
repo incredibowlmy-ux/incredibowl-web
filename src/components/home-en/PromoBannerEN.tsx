@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageCircleHeart, ArrowRight, Star, Ticket } from 'lucide-react';
+import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
 export default function PromoBannerEN() {
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
@@ -49,7 +50,7 @@ export default function PromoBannerEN() {
                             onClick={scrollToFeedback}
                             className="hidden lg:inline-flex items-center gap-1.5 self-start text-[#FF9B50] hover:text-[#FFB770] text-sm font-bold underline-offset-4 hover:underline transition-colors group"
                         >
-                            <span>Read 10+ neighbour reviews</span>
+                            <span>Read {GOOGLE_REVIEW_COUNT}+ neighbour reviews</span>
                             <ArrowRight size={13} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                         </button>
                     </div>
@@ -69,11 +70,11 @@ export default function PromoBannerEN() {
                             <div className="hidden lg:flex items-center gap-4 py-3 px-1">
                                 <div className="flex items-center gap-1.5">
                                     <Star size={14} className="text-[#FF9B50] fill-[#FF9B50]" strokeWidth={0} />
-                                    <span className="text-white font-black text-sm leading-none">5.0</span>
+                                    <span className="text-white font-black text-sm leading-none">{GOOGLE_RATING_VALUE}</span>
                                 </div>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
-                                    <span className="text-white font-black">10+</span>
+                                    <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
                                     <span className="text-white/70 font-medium ml-1">Google reviews</span>
                                 </div>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />

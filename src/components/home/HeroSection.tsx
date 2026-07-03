@@ -6,7 +6,8 @@ import { MapPin, ArrowRight, CalendarCheck, Star, Smartphone } from 'lucide-reac
 import { weeklyMenu, dishImageAlt, signatureDish } from '@/data/weeklyMenu';
 import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
-import { DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN } from '@/lib/deliveryCopy';
+import { DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN, DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
+import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
 export default function HeroSection() {
     const [heroImgIdx, setHeroImgIdx] = useState(0);
@@ -70,7 +71,7 @@ export default function HeroSection() {
                             className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FF6B35]/15 text-[#C84518] rounded-full text-xs font-bold shadow-sm hover:bg-[#FF6B35]/25 transition-colors active:scale-95"
                         >
                             <Star size={11} fill="currentColor" strokeWidth={0} />
-                            <span>10+ 邻居好评</span>
+                            <span>{GOOGLE_REVIEW_COUNT}+ 邻居好评</span>
                         </button>
                     </div>
 
@@ -126,19 +127,24 @@ export default function HeroSection() {
                             <span className="text-[#FF6B35] font-black">→</span>
                             <span>{DELIVERY_SUMMARY_ZH}</span>
                         </div>
-                        {/* Desktop: icon-prefixed feature list with dot separator */}
-                        <div className="hidden lg:flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-sm font-bold text-[#1A2D23]/75">
+                        {/* Desktop: ordering channel + one pill per fee tier — replaces
+                            the old two-line ZH+EN text wall (the /en page carries the
+                            English copy; no need to duplicate it here). */}
+                        <div className="hidden lg:flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-bold text-[#1A2D23]/75">
                             <span className="inline-flex items-center gap-1.5">
                                 <Smartphone size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                                 网页 / WhatsApp 下单
                             </span>
                             <span className="text-[#1A2D23]/25 select-none">·</span>
-                            <span className="inline-flex items-center gap-1.5">
-                                <MapPin size={14} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                                {DELIVERY_SUMMARY_ZH}
-                            </span>
+                            {DELIVERY_TIER_COPY.map((t) => (
+                                <span key={t.rangeZh} className="inline-flex items-baseline gap-1.5 px-3 py-1.5 rounded-full bg-white/70 border border-[#1A2D23]/10 text-[13px] leading-none">
+                                    <span className="font-bold text-[#1A2D23]">{t.rangeZh}</span>
+                                    <span className="font-bold text-[#1A2D23]/60">RM {t.fee}</span>
+                                    <span className="font-bold text-[#FF6B35]">满 {t.freeOver} 免运</span>
+                                </span>
+                            ))}
                         </div>
-                        <p className="text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
+                        <p className="lg:hidden text-[13px] md:text-sm font-medium text-[#1A2D23]/55 mt-1.5 leading-relaxed">
                             {DELIVERY_SUMMARY_EN}
                         </p>
                     </div>
