@@ -695,12 +695,13 @@ export default function CartDrawer({
                             </div>
                         )}
                     </div>
-                </div>
 
-                {/* Checkout panel */}
-                {cart.length > 0 && (
-                    <div className="bg-white border-t border-[#E3EADA] shadow-[0_-10px_30px_rgba(0,0,0,0.03)] max-h-[55vh] overflow-y-auto">
-                        <div className="p-5 space-y-3">
+                    {/* Checkout sections — flow in the SAME scroll as the items.
+                        (Was a second independently-scrolling max-h-55vh panel stacked
+                        below, which read as "two separate pieces" on mobile — boss
+                        feedback 2026-07-05. Only the slim total+CTA bar stays fixed.) */}
+                    {cart.length > 0 && (
+                        <div className="px-5 pt-4 pb-6 border-t border-dashed border-[#E3EADA] space-y-3">
                             {/* Promo */}
                             <div className="space-y-2">
                                 <div className="flex gap-2">
@@ -854,33 +855,7 @@ export default function CartDrawer({
                                 </div>
                             )}
 
-                            {/* Total */}
-                            <div className="flex justify-between items-baseline">
-                                <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Total</span>
-                                <div className="text-right">
-                                    {(promoApplied || cappedMealVouchersUsed > 0) && (
-                                        <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
-                                    )}
-                                    <span className="text-3xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            {/* Warnings */}
-                            {!currentUser && (
-                                <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
-                                    <AlertCircle size={16} /> 请先登录再下单
-                                </button>
-                            )}
-                            {currentUser && (!userProfile?.phone || !userProfile?.address) && (
-                                <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
-                                    <AlertCircle size={16} /> 请先补充手机号和地址
-                                </button>
-                            )}
-                            {currentUser && userProfile?.address && !deliveryTier && (
-                                <button onClick={onAuthOpen} className="w-full py-3 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-sm border border-[#FFE0B2]">
-                                    <AlertCircle size={16} /> 请进入个人资料确认配送地址（验证配送范围）
-                                </button>
-                            )}
+                            {/* Total + auth warnings live in the fixed bottom bar below */}
 
                             {/* Payment method selector — hidden when vouchers cover the bill */}
                             {!isFullyCoveredByVouchers && (
@@ -921,16 +896,50 @@ export default function CartDrawer({
                                 </div>
                             )}
 
-                            {/* Submit */}
-                            <button onClick={handleCheckout}
-                                disabled={submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))}
-                                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-xl flex items-center justify-center gap-3 ${submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                    : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
-                                <CheckCircle size={22} />
-                                {submitting ? '提交中...' : '确认下单 →'}
-                            </button>
                         </div>
+                    )}
+                </div>
+
+                {/* Slim fixed checkout bar — the ONLY pinned piece: blocking warning
+                    (when any) + total + CTA. pb covers the iPhone home-indicator
+                    safe area so the button never sits under the gesture bar. */}
+                {cart.length > 0 && (
+                    <div className="shrink-0 bg-white border-t border-[#E3EADA] px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(0,0,0,0.06)] space-y-2.5">
+                        {!currentUser && (
+                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
+                                <AlertCircle size={14} /> 请先登录再下单
+                            </button>
+                        )}
+                        {currentUser && (!userProfile?.phone || !userProfile?.address) && (
+                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
+                                <AlertCircle size={14} /> 请先补充手机号和地址
+                            </button>
+                        )}
+                        {currentUser && userProfile?.address && !deliveryTier && (
+                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
+                                <AlertCircle size={14} /> 请进入个人资料确认配送地址（验证配送范围）
+                            </button>
+                        )}
+                        <div className="flex justify-between items-baseline">
+                            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
+                            <div className="text-right">
+                                {(promoApplied || cappedMealVouchersUsed > 0) && (
+                                    <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
+                                )}
+                                <span className="text-2xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <button onClick={handleCheckout}
+                            disabled={submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))}
+                            className={`w-full py-3.5 rounded-2xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
+                            <CheckCircle size={20} />
+                            {submitting ? '提交中...'
+                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && !paymentMethod) ? '请先选择付款方式 👆'
+                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && paymentMethod === 'qr' && !receiptUploaded) ? '请先上传转账截图 👆'
+                                : '确认下单 →'}
+                        </button>
                     </div>
                 )}
             </div>
