@@ -79,7 +79,13 @@ export default function EnglishHome() {
     // FPX redirect handling — same as zh page
     useEffect(() => {
         const url = new URL(window.location.href);
-        const pendingStr = sessionStorage.getItem('fpx_pending_order');
+        // localStorage, NOT sessionStorage — mobile FPX kills the original tab
+        // during the bank hop and sessionStorage dies with it (see zh page).
+        const pendingStr = localStorage.getItem('fpx_pending_order') || sessionStorage.getItem('fpx_pending_order');
+        const clearPendingStore = () => {
+            localStorage.removeItem('fpx_pending_order');
+            sessionStorage.removeItem('fpx_pending_order');
+        };
 
         const cancelPending = () => {
             if (!pendingStr) return;
@@ -93,7 +99,7 @@ export default function EnglishHome() {
             } catch (e) {
                 console.error('FPX pending order cancel error:', e);
             }
-            sessionStorage.removeItem('fpx_pending_order');
+            clearPendingStore();
         };
 
         const fpxErr = url.searchParams.get('fpx_error');
@@ -116,8 +122,26 @@ export default function EnglishHome() {
                 .forEach(k => url.searchParams.delete(k));
             window.history.replaceState({}, '', url.toString());
 
-            if (!pendingStr) return;
-            sessionStorage.removeItem('fpx_pending_order');
+            if (!pendingStr) {
+                // Snapshot lost (payment finished in a different browser
+                // context). Webhook confirms server-side; verify the signature
+                // and show a generic success modal.
+                fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ razorpay_payment_id: pid, razorpay_order_id: oid, razorpay_signature: sig }),
+                })
+                    .then(r => r.json())
+                    .then(v => {
+                        if (v.verified) {
+                            setFpxSuccess({ id: pid, items: [], total: null });
+                            clearCart();
+                        }
+                    })
+                    .catch(() => {});
+                return;
+            }
+            clearPendingStore();
 
             try {
                 const { orderIds, isMultiPart, groupId, summary } = JSON.parse(pendingStr);

@@ -70,7 +70,17 @@ export default function V4BentoLayout() {
     //   D) No FPX params but sessionStorage has pending → payment failed silently
     useEffect(() => {
         const url = new URL(window.location.href);
-        const pendingStr = sessionStorage.getItem('fpx_pending_order');
+        // localStorage, NOT sessionStorage: mobile FPX hops out to the bank
+        // app/site and Android/iOS browsers routinely kill the original tab —
+        // sessionStorage dies with it and the success modal never showed
+        // (boss repro'd 2026-07-05, order #9KP8D8). localStorage survives the
+        // round-trip. Keep reading legacy sessionStorage for payments started
+        // before this deploy.
+        const pendingStr = localStorage.getItem('fpx_pending_order') || sessionStorage.getItem('fpx_pending_order');
+        const clearPendingStore = () => {
+            localStorage.removeItem('fpx_pending_order');
+            sessionStorage.removeItem('fpx_pending_order');
+        };
 
         // Helper: cancel pending orders
         const cancelPending = () => {
@@ -85,7 +95,7 @@ export default function V4BentoLayout() {
             } catch (e) {
                 console.error('FPX pending order cancel error:', e);
             }
-            sessionStorage.removeItem('fpx_pending_order');
+            clearPendingStore();
         };
 
         // --- Error path: explicit FPX failure ---
@@ -110,8 +120,28 @@ export default function V4BentoLayout() {
                 .forEach(k => url.searchParams.delete(k));
             window.history.replaceState({}, '', url.toString());
 
-            if (!pendingStr) return;
-            sessionStorage.removeItem('fpx_pending_order');
+            if (!pendingStr) {
+                // Snapshot lost anyway (e.g. payment finished in a different
+                // browser context, like an in-app browser). The webhook
+                // confirms the order server-side; here we just verify the
+                // signature is genuine and show a generic success modal so
+                // the customer isn't left staring at a silent homepage.
+                fetch('/api/payment/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ razorpay_payment_id: pid, razorpay_order_id: oid, razorpay_signature: sig }),
+                })
+                    .then(r => r.json())
+                    .then(v => {
+                        if (v.verified) {
+                            setFpxSuccess({ id: pid, items: [], total: null });
+                            clearCart();
+                        }
+                    })
+                    .catch(() => {});
+                return;
+            }
+            clearPendingStore();
 
             try {
                 const { orderIds, isMultiPart, groupId, summary } = JSON.parse(pendingStr);

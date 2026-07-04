@@ -487,7 +487,10 @@ export default function CartDrawer({
                 })),
                 total: finalTotal,
             };
-            sessionStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, createdAt: Date.now() }));
+            // localStorage（不是 sessionStorage）：手机 FPX 跳银行时浏览器常把
+            // 原标签页杀掉，sessionStorage 随之丢失 → 跳回后成功弹窗渲染不出
+            // （2026-07-05 老板手机实测复现）。localStorage 能活过这趟往返。
+            localStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, createdAt: Date.now() }));
             setSubmitting(false);
 
             try {
@@ -526,7 +529,7 @@ export default function CartDrawer({
                         trackPixel('Purchase', { value: valuePerOrder, currency: 'MYR' }, eventId);
                     }
                 }
-                sessionStorage.removeItem('fpx_pending_order');
+                localStorage.removeItem('fpx_pending_order');
                 setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
                 setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
             } catch (err: any) {
@@ -537,7 +540,7 @@ export default function CartDrawer({
                     headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
                     body: JSON.stringify({ orderIds, status: 'cancelled' }),
                 }).catch(() => {});
-                sessionStorage.removeItem('fpx_pending_order');
+                localStorage.removeItem('fpx_pending_order');
                 if (err.message !== '已取消支付') {
                     alert(err.message || '支付失败，请重试');
                 }
