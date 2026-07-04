@@ -54,7 +54,15 @@ export default function AuthProfileView({
     const addressChangedSinceVerify = !!geocodeResult && address.trim() !== verifiedFor;
     const needsReVerify = editingProfile && (!geocodeResult || addressChangedSinceVerify);
 
-    const handleVerifyAddress = async () => {
+    // 一键「验证并保存」：自动跑 geocode 验证，通过立即续接保存 —— 用户不用
+    // 分两步点「确认地址」再点「保存」。安全语义不变：没验证过的地址永远
+    // 到不了 onUpdateProfile（geocode 是保存的前置，服务端下单还会再比对）。
+    const handleVerifyAndSave = async () => {
+        // 已验证且地址没改 → 直接保存
+        if (geocodeResult && !addressChangedSinceVerify) {
+            onUpdateProfile(geocodeResult);
+            return;
+        }
         if (!address || address.trim().length < 10) {
             setGeocodeError('请填写完整地址（至少 10 个字符）');
             return;
@@ -76,18 +84,15 @@ export default function AuthProfileView({
             }
             setGeocodeResult(data);
             setVerifiedFor(address.trim());
+            // 验证通过 → 直接续接保存（运费档位卡会闪现展示；保存成功后
+            // 回到购物车还有完整费用明细）
+            onUpdateProfile(data);
         } catch (e) {
             setGeocodeError(e instanceof Error ? e.message : '网络错误，请重试');
+        } finally {
+            // finally 保证失败路径也复位（旧代码 early-return 会把按钮卡在「验证中」）
+            setGeocoding(false);
         }
-        setGeocoding(false);
-    };
-
-    const handleSave = () => {
-        if (!geocodeResult || addressChangedSinceVerify) {
-            setGeocodeError('请先点「确认地址」验证后再保存');
-            return;
-        }
-        onUpdateProfile(geocodeResult);
     };
 
     return (
@@ -158,20 +163,6 @@ export default function AuthProfileView({
                                 placeholder="例: Pearl Point, Block B-12-3, Jalan 1/116B, OKR, 58000 KL"
                                 rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
 
-                            {/* Verify address button + result */}
-                            <button
-                                type="button"
-                                onClick={handleVerifyAddress}
-                                disabled={geocoding || !address.trim()}
-                                className={`mt-2 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
-                                    geocoding || !address.trim()
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'
-                                }`}
-                            >
-                                {geocoding ? <><Loader2 size={14} className="animate-spin" /> 验证中…</> : '📍 确认地址 / 检查配送区'}
-                            </button>
-
                             {geocodeError && (
                                 <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5">
                                     <AlertCircle size={12} className="mt-0.5 shrink-0" /> {geocodeError}
@@ -211,7 +202,7 @@ export default function AuthProfileView({
                                 );
                             })()}
                             {addressChangedSinceVerify && (
-                                <p className="mt-1 text-[10px] text-amber-600 font-bold">⚠️ 地址已修改，请重新点「确认地址」验证</p>
+                                <p className="mt-1 text-[10px] text-amber-600 font-bold">⚠️ 地址已修改，保存时会自动重新验证</p>
                             )}
                         </>
                     ) : (
@@ -258,10 +249,10 @@ export default function AuthProfileView({
             {/* Action Buttons */}
             <div className="space-y-2">
                 {editingProfile ? (
-                    <button onClick={handleSave} disabled={loading || needsReVerify}
+                    <button onClick={handleVerifyAndSave} disabled={loading || geocoding || !phone.trim() || !address.trim()}
                         className="w-full py-3 bg-[#FF6B35] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF6B35]/20">
-                        <Save size={16} />
-                        {loading ? '保存中...' : needsReVerify ? '请先确认地址' : '保存资料'}
+                        {geocoding ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        {geocoding ? '验证地址中…' : loading ? '保存中...' : needsReVerify ? '📍 验证地址并保存' : '保存资料'}
                     </button>
                 ) : (
                     <button onClick={() => setEditingProfile(true)}
