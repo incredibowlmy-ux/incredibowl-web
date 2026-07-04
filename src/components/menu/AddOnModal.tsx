@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar, Clock } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar } from 'lucide-react';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 
@@ -565,13 +565,14 @@ export default function AddOnModal({
                     {/* ─── Divider ─── */}
                     <div className="mx-5 md:mx-6 border-t border-dashed border-[#E8DFD0] my-2" />
 
-                    {/* Desktop shows the (required) delivery schedule BEFORE the optional
-                        add-ons so the disabled "请先选择送达时段" CTA is explained without
-                        scrolling. Mobile keeps the original order — mobile is frozen. */}
-                    <div className="lg:flex lg:flex-col">
+                    {/* The (required) delivery schedule comes BEFORE the optional add-ons
+                        on BOTH breakpoints, so the disabled "请先选择送达时段" CTA is
+                        explained without scroll-hunting. (Was desktop-only; boss approved
+                        aligning mobile 2026-07-05.) */}
+                    <div className="flex flex-col">
 
                     {/* ─── Add-on Sections ─── */}
-                    <div className="px-5 md:px-6 mt-4 space-y-3 lg:order-2">
+                    <div className="px-5 md:px-6 mt-6 space-y-3 order-2">
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
@@ -675,7 +676,7 @@ export default function AddOnModal({
                     </div>
 
                     {/* ─── Delivery Date and Time ─── */}
-                    <div className="px-5 md:px-6 mt-6 lg:order-1 lg:mt-4">
+                    <div className="px-5 md:px-6 mt-4 order-1">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
                             <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
@@ -722,8 +723,10 @@ export default function AddOnModal({
                                     {dateLabel || selectedDate} (固定款)
                                 </div>
                             )}
-                            {/* Desktop: the two slots as big tap targets — no hidden dropdown */}
-                            <div className="hidden lg:grid grid-cols-2 gap-3">
+                            {/* Both breakpoints: the two slots as big one-tap targets.
+                                (Was a native <select> on mobile — three interactions and
+                                an iOS picker wheel for a two-option choice.) */}
+                            <div className="grid grid-cols-2 gap-3">
                                 {([
                                     { value: 'Lunch (11AM-1PM)', label: '🌞 午餐 11AM - 1PM' },
                                     { value: 'Dinner (5PM-8PM)', label: '🌙 晚餐 5PM - 8PM' },
@@ -741,20 +744,6 @@ export default function AddOnModal({
                                         {slot.label}
                                     </button>
                                 ))}
-                            </div>
-                            <div className="relative lg:hidden">
-                                <div className="absolute inset-y-0 left-4 flex justify-center items-center pointer-events-none">
-                                    <Clock size={16} className="text-[#2D5F3E]" />
-                                </div>
-                                <select
-                                    className="w-full block appearance-none min-h-[46px] pl-10 pr-4 py-3 bg-white border border-[#E8DFD0] rounded-2xl text-sm outline-none focus:ring-2 focus:ring-[#2D5F3E] text-[#3B2A1A] font-bold cursor-pointer"
-                                    value={selectedTime}
-                                    onChange={(e) => setSelectedTime(e.target.value)}
-                                >
-                                    <option value="" disabled hidden>选个时间呗 / Select Time</option>
-                                    <option value="Lunch (11AM-1PM)">🌞 午餐 11AM - 1PM</option>
-                                    <option value="Dinner (5PM-8PM)">🌙 晚餐 5PM - 8PM</option>
-                                </select>
                             </div>
                         </div>
                     </div>
