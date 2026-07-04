@@ -2,6 +2,8 @@ import {
     signInWithPopup,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    signInAnonymously,
+    linkWithPopup,
     GoogleAuthProvider,
     FacebookAuthProvider,
     signOut,
@@ -65,6 +67,32 @@ export const registerWithEmail = async (
     const result = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(result.user, { displayName });
     await saveUserProfile(result.user, displayName, phone, address);
+    return result.user;
+};
+
+// 访客快速下单：静默创建 Firebase 匿名账号 —— 用户零弹窗、零注册，但服务端
+// 整条 uid 安全链路（submit-order 强制 uid、Firestore 规则、支付状态机）照常
+// 生效。⚠️ 需在 Firebase Console → Authentication → Sign-in method 启用
+// Anonymous，否则抛 auth/operation-not-allowed（调用方需兜底提示走 Google）。
+export const signInAsGuest = async () => {
+    const result = await signInAnonymously(auth);
+    await saveUserProfile(result.user);
+    return result.user;
+};
+
+// 把匿名访客「原地升级」成 Google 账号：同一个 uid，订单历史无缝保留，
+// 不产生孤儿账号。若该 Google 账号已注册过会抛 auth/credential-already-in-use
+// （两个身份没法自动合并），调用方提示联系碗妈人工处理。
+export const linkGuestToGoogle = async () => {
+    const u = auth.currentUser;
+    if (!u || !u.isAnonymous) throw new Error('当前不是访客账号');
+    const result = await linkWithPopup(u, googleProvider);
+    await setDoc(doc(db, "users", result.user.uid), {
+        email: result.user.email,
+        displayName: result.user.displayName || 'Guest',
+        photoURL: result.user.photoURL || null,
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
     return result.user;
 };
 

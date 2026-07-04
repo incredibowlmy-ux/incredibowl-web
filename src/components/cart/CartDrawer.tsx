@@ -43,6 +43,25 @@ export default function CartDrawer({
     const [uploading, setUploading] = useState(false);
     const [orderNote, setOrderNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const [guestLoading, setGuestLoading] = useState(false);
+
+    // 访客快速下单：静默建匿名账号（零注册），随即打开资料表单补手机+地址
+    // （AuthModal 对已登录用户直接进 profile 视图）。Anonymous provider 未启用
+    // 时优雅回退到 Google 登录。
+    const handleGuestCheckout = async () => {
+        setGuestLoading(true);
+        try {
+            const { signInAsGuest } = await import('@/lib/auth');
+            await signInAsGuest();
+            onAuthOpen();
+        } catch (e) {
+            console.error('[guest] anonymous sign-in failed:', e);
+            alert('访客模式暂时不可用，请用 Google 登录下单（一样很快）');
+            onAuthOpen();
+        } finally {
+            setGuestLoading(false);
+        }
+    };
     const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
@@ -906,9 +925,17 @@ export default function CartDrawer({
                 {cart.length > 0 && (
                     <div className="shrink-0 bg-white border-t border-[#E3EADA] px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(0,0,0,0.06)] space-y-2.5">
                         {!currentUser && (
-                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
-                                <AlertCircle size={14} /> 请先登录再下单
-                            </button>
+                            <div className="space-y-1.5">
+                                {/* 访客为主 CTA（转化优先），登录为次选 —— 强制注册是
+                                    弃单头号原因，手机+地址反正配送必须要。 */}
+                                <button onClick={handleGuestCheckout} disabled={guestLoading}
+                                    className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#2A3D33] transition-colors disabled:opacity-60">
+                                    ⚡ {guestLoading ? '进入访客模式…' : '访客快速下单（免注册）'}
+                                </button>
+                                <button onClick={onAuthOpen} className="w-full py-2 text-[#1A2D23]/60 hover:text-[#1A2D23] rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-colors">
+                                    已有账号？登录可查订单 / 用餐券 →
+                                </button>
+                            </div>
                         )}
                         {currentUser && (!userProfile?.phone || !userProfile?.address) && (
                             <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">

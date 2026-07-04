@@ -416,6 +416,26 @@ export default function V4BentoLayout() {
                             </div>
                         )}
                         <p className="text-xs text-gray-400 mt-3">订单已确认，感谢您的订购！</p>
+                        {/* Guest → Google upgrade: link in place, SAME uid, order
+                            history preserved. Only shown to anonymous guests. */}
+                        {currentUser?.isAnonymous && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const { linkGuestToGoogle } = await import('@/lib/auth');
+                                        await linkGuestToGoogle();
+                                        alert('✅ 已绑定 Google！订单记录已保存，下次可一键回购');
+                                    } catch (e: any) {
+                                        alert(e?.code === 'auth/credential-already-in-use'
+                                            ? '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理'
+                                            : '绑定未完成，可稍后再试（订单不受影响）');
+                                    }
+                                }}
+                                className="mt-3 w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors"
+                            >
+                                🔗 绑定 Google 保存订单记录（下次一键回购）
+                            </button>
+                        )}
                         {/* Meal voucher upsell — subtle, below the confirmation info */}
                         <Link
                             href="/meal-vouchers"

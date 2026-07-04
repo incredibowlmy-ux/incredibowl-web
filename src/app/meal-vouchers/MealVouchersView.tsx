@@ -163,7 +163,9 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     };
 
     const handleBuy = async () => {
-        if (!currentUser) { alert(t.loginToBuyVouchers); return; }
+        // 餐券必须绑「找得回来」的真账号 —— 匿名访客换设备/清缓存券就丢了，
+        // 所以买券前必须先 Google 登录（下单可以访客，买券不行）。
+        if (!currentUser || currentUser.isAnonymous) { alert(t.loginToBuyVouchers); return; }
         if (!paymentMethod) { setError(t.errorSelectMethod); return; }
         if (paymentMethod === 'qr' && !receiptUploaded) {
             setError(t.errorUploadReceipt);
@@ -287,7 +289,8 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
         </section>
     );
 
-    if (authChecked && !currentUser) {
+    // 匿名访客视同未登录：券绑身份，必须真账号才能买（下单可以访客，买券不行）。
+    if (authChecked && (!currentUser || currentUser.isAnonymous)) {
         return (
             <div className="min-h-screen bg-[#FDFBF7] py-10">
                 <SeoIntro />

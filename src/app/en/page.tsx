@@ -404,6 +404,26 @@ export default function EnglishHome() {
                             </div>
                         )}
                         <p className="text-xs text-gray-400 mt-3">Order confirmed, thank you!</p>
+                        {/* Guest → Google upgrade: link in place, SAME uid, order
+                            history preserved. Only shown to anonymous guests. */}
+                        {currentUser?.isAnonymous && (
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const { linkGuestToGoogle } = await import('@/lib/auth');
+                                        await linkGuestToGoogle();
+                                        alert('✅ Google account linked! Your order history is saved for one-tap reorders.');
+                                    } catch (e: any) {
+                                        alert(e?.code === 'auth/credential-already-in-use'
+                                            ? 'This Google account already has a member record — WhatsApp BowlMama to merge the two.'
+                                            : 'Linking did not complete — you can retry later (your order is unaffected).');
+                                    }
+                                }}
+                                className="mt-3 w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors"
+                            >
+                                🔗 Link Google to save your order history
+                            </button>
+                        )}
                         {/* Meal voucher upsell — subtle, below the confirmation info */}
                         <Link
                             href="/en/meal-vouchers"
