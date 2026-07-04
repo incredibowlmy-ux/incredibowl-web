@@ -47,6 +47,11 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
     const loadProfile = async (uid: string) => {
         const data = await getUserProfile(uid);
         if (data) { setProfileData(data); setPhone(data.phone || ''); setAddress(data.address || ''); }
+        // 资料还不完整（访客首单/新账号没手机或地址）→ 直接进入编辑模式，
+        // 省掉「先点编辑资料」那一下。纯 UI 便利：地址仍必须过「确认地址」
+        // 的 geocode 验证才能保存，服务端下单时照旧比对验证原文，防换址逃
+        // 运费的机制不受影响。
+        if (!data?.phone || !data?.address) setEditingProfile(true);
         setLoadingOrders(true);
         try { const orders = await getUserOrders(uid); setUserOrders(orders); }
         catch (e) { console.error('Failed to load orders:', e); }
