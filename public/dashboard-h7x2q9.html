@@ -2236,7 +2236,8 @@
                 <div class="modal-footer-hint">电话填上才能自动归并同一客户的多次下单</div>
                 <div class="modal-footer-actions">
                     <button type="button" class="btn ghost" id="cancelModalBtn">取消</button>
-                    <button type="button" class="btn" id="submitOrderBtn">保存</button>
+                    <!-- type=submit + form 属性：让表单里按 Enter 直接触发保存（按钮在 form 外） -->
+                    <button type="submit" form="manualOrderForm" class="btn" id="submitOrderBtn">保存</button>
                 </div>
             </div>
         </div>
@@ -2934,14 +2935,16 @@ incredibowl.my`,
         const $ = sel => document.querySelector(sel);
         const $$ = sel => document.querySelectorAll(sel);
 
+        // num()：NaN 也归零 — `??` 只兜 null/undefined，NaN 会漏成 "RM NaN" 上 KPI 卡
+        const numOr0 = n => (n == null || Number.isNaN(Number(n))) ? 0 : Number(n);
         const fmt = {
-            rm: n => 'RM ' + (n ?? 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            rm: n => 'RM ' + numOr0(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             rmShort: n => {
-                n = n ?? 0;
+                n = numOr0(n);
                 if (Math.abs(n) >= 1000) return 'RM ' + (n / 1000).toFixed(1) + 'k';
                 return 'RM ' + n.toFixed(0);
             },
-            int: n => (n ?? 0).toLocaleString('en-MY'),
+            int: n => numOr0(n).toLocaleString('en-MY'),
             pct: n => (n == null || isNaN(n) ? '—' : (n * 100).toFixed(1) + '%'),
             pctRaw: n => (n == null || isNaN(n) ? '—' : n.toFixed(1) + '%'),
             date: d => d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
@@ -3192,6 +3195,17 @@ incredibowl.my`,
             return 0;
         }
 
+        // 餐券套餐购买的网关手续费 — 只算订单会把净利虚高 ~1.5% × FPX 套餐现金。
+        // 只有 webapp 'fpx'（走 Curlec 网关）有费；'fpx-manual' 是直接银行转账、
+        // qr/cash/whatsapp 均零费。费基 = totalAmountPaid（含预付加料）?? amountPaid。
+        function paymentFeeForVoucherPurchase(p) {
+            if (String(p.paymentMethod || '').toLowerCase() !== 'fpx') return 0;
+            const grossPaid = Number(p.totalAmountPaid ?? p.amountPaid) || 0;
+            if (grossPaid <= 0) return 0;
+            const pctFee = grossPaid * ((Number(state.cfg.fpxFeePct) || 0) / 100);
+            return Math.max(pctFee, Number(state.cfg.fpxMinFee) || 0);
+        }
+
         // Lunch / Dinner / Unknown classification.
         // Manual override: order.mealType ('lunch' | 'dinner') wins.
         // MUST mirror isLunchOrder() in src/lib/prepIngredients.ts so the order
@@ -3232,13 +3246,25 @@ incredibowl.my`,
         const monthDiff = (from, to) => (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
         const daysBetween = (a, b) => Math.floor((b - a) / 86400000);
 
+        // 队列式 toast：之前是单例互相顶掉 — 「订单已保存」会立刻盖掉 1 秒前的
+        // 「库存扣减失败」错误。现在按序显示，错误停留 5 秒。
         const toast = (msg, kind = '') => {
-            const t = $('#toast');
-            t.textContent = msg;
-            t.className = 'toast show ' + kind;
-            clearTimeout(toast._t);
-            toast._t = setTimeout(() => t.classList.remove('show'), 2400);
+            toast._q = toast._q || [];
+            toast._q.push({ msg, kind });
+            if (!toast._busy) toastDrain();
         };
+        function toastDrain() {
+            const next = toast._q && toast._q.shift();
+            if (!next) { toast._busy = false; return; }
+            toast._busy = true;
+            const t = $('#toast');
+            t.textContent = next.msg;
+            t.className = 'toast show ' + next.kind;
+            setTimeout(() => {
+                t.classList.remove('show');
+                setTimeout(toastDrain, 250);  // 留出滑出动画间隙
+            }, next.kind === 'error' ? 5000 : 2400);
+        }
 
         const showLoading = (txt = '加载中...') => {
             $('#loadingText').textContent = txt;
@@ -3294,6 +3320,9 @@ incredibowl.my`,
             state.addons = [];
             state.leads = [];
             state.promo = null;
+            // WA 对话缓存也要清（共享电脑防泄漏）
+            Object.assign(state_leads, { chatRows: [], grouped: {}, leads: [], statusMap: {}, loaded: false });
+            try { localStorage.removeItem('cm_sender'); } catch {}
             await signOut(auth);
         });
 
@@ -3364,20 +3393,32 @@ incredibowl.my`,
             // toast at the end instead of users wondering why something didn't sync.
             const migrationErrors = [];
             try {
+                // _err sentinel：读失败 ≠ 集合为空。空数组会触发 auto-seed / 显示「暂无」，
+                // 而失败必须显式报错 — 否则一次网络抖动会让 menu 被 SEED 覆盖（写会排队，
+                // 恢复联网后冲掉线上真实文档）。
+                const failedReads = [];
+                const softGet = (label, promise) => promise.catch(e => {
+                    console.error(`[loadAllData] ${label} 读取失败:`, e);
+                    failedReads.push(label);
+                    return { docs: [], _err: e };
+                });
                 const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap, addonCreditsSnap] = await Promise.all([
                     getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
                     getDocs(collection(db, 'users')),
-                    getDocs(collection(db, 'vouchers')).catch(() => ({ docs: [] })),
-                    getDocs(collection(db, 'marketingSpend')).catch(() => ({ docs: [] })),
+                    softGet('优惠码', getDocs(collection(db, 'vouchers'))),
+                    softGet('广告花费', getDocs(collection(db, 'marketingSpend'))),
                     getDoc(doc(db, 'dashboardConfig', 'delivery')).catch(() => null),
-                    getDocs(collection(db, 'menu')).catch(() => ({ docs: [] })),
-                    getDocs(collection(db, 'fixedCosts')).catch(() => ({ docs: [] })),
+                    softGet('菜单', getDocs(collection(db, 'menu'))),
+                    softGet('固定成本', getDocs(collection(db, 'fixedCosts'))),
                     getDoc(doc(db, 'dashboardConfig', 'promo')).catch(() => null),
-                    getDocs(collection(db, 'addons')).catch(() => ({ docs: [] })),
-                    getDocs(collection(db, 'mealVoucherPurchases')).catch(() => ({ docs: [] })),
-                    getDocs(collection(db, 'mealVouchers')).catch(() => ({ docs: [] })),
-                    getDocs(collection(db, 'mealVoucherAddonCredits')).catch(() => ({ docs: [] })),
+                    softGet('配料', getDocs(collection(db, 'addons'))),
+                    softGet('餐券购买', getDocs(collection(db, 'mealVoucherPurchases'))),
+                    softGet('餐券', getDocs(collection(db, 'mealVouchers'))),
+                    softGet('预付加料', getDocs(collection(db, 'mealVoucherAddonCredits'))),
                 ]);
+                if (failedReads.length > 0) {
+                    migrationErrors.push(`读取失败: ${failedReads.join(' / ')}（相关数据本次显示为空）`);
+                }
 
                 state.orders = ordersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 state.users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -3393,8 +3434,13 @@ incredibowl.my`,
                 fixedSnap.docs.forEach(d => { state.fixedCosts[d.id] = d.data(); });
 
                 // Load menu from Firestore, fall back to seed if empty
+                const menuReadFailed = !!menuSnap._err;
                 if (menuSnap.docs.length > 0) {
                     state.menu = menuSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                } else if (menuReadFailed) {
+                    // 读失败 → 只在内存里用 SEED 兜底，绝不写库。此时写库会被 SDK
+                    // 排队，恢复联网后把老板改过的价格/成本全部覆盖回默认值。
+                    state.menu = MENU_SEED.map(m => ({ ...m, id: String(m.id) }));
                 } else {
                     state.menu = MENU_SEED.map(m => ({ ...m, id: String(m.id) }));
                     // Auto-seed Firestore so user can edit going forward
@@ -3413,6 +3459,10 @@ incredibowl.my`,
                     }
                 }
 
+                // ─── Menu migrations（menuReadFailed 时整体跳过 — 它们都基于 state.menu
+                //     写 Firestore，而读失败时 state.menu 只是内存 SEED 兜底，据此写库
+                //     会把老板的真实数据覆盖掉）───
+                if (!menuReadFailed) {
                 // ─── Migration: backfill any MENU_SEED entry missing from Firestore
                 //     (e.g. newly added 绍兴酒蒸花肉 周四特餐). Runs once per missing
                 //     id; no-op afterwards. Keeps dashboard dropdown in sync when we
@@ -3517,9 +3567,15 @@ incredibowl.my`,
                 if (renamed > 0) {
                     setTimeout(() => toast(`已统一 ${renamed} 道菜名（跟前台菜单一致）`, 'success'), 1000);
                 }
+                }  // end if (!menuReadFailed)
 
                 // Load addons from Firestore. Merge any new seed entries (so newly defined add-ons
                 // get added without overwriting existing user-edited costPrice values).
+                // 读失败时同 menu：只内存兜底，绝不写（否则 ADDON_SEED 会把已填的
+                // costPrice 全部清零回写）。
+                if (addonsSnap._err) {
+                    state.addons = ADDON_SEED.map(a => ({ id: a.id, name: a.name, price: a.price, category: a.category, costPrice: 0 }));
+                } else {
                 const existingAddons = new Map(addonsSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
                 for (const a of ADDON_SEED) {
                     if (!existingAddons.has(a.id)) {
@@ -3549,6 +3605,7 @@ incredibowl.my`,
                     }
                 }
                 state.addons = Array.from(existingAddons.values());
+                }  // end addons read-failed guard
 
                 // ─── Migration: collapse legacy *-side addon docs into their canonical
                 //     siblings (onsen-egg-side → onsen-egg, extra-edamame-side → extra-edamame,
@@ -3661,10 +3718,18 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   FILTERING HELPERS
         // ═══════════════════════════════════════════════════════════════
+        // range=N 的窗口 = 今天在内的 N 个日历天（从 N-1 天前的 00:00 起）。
+        // 之前用「now − N×24h」滚动截断：订单是钟点级、固定成本/广告费是日历天
+        // pro-rata，两边口径不一致 → 净利/ROAS 有半天级漂移。统一成日历天。
+        function rangeCutoff() {
+            const cutoff = new Date();
+            cutoff.setHours(0, 0, 0, 0);
+            cutoff.setDate(cutoff.getDate() - (Number(state.range) - 1));
+            return cutoff;
+        }
         function filteredOrders() {
             if (state.range === 'all') return state.orders;
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - Number(state.range));
+            const cutoff = rangeCutoff();
             return state.orders.filter(o => {
                 const d = tsToDate(o.createdAt);
                 return d && d >= cutoff;
@@ -3672,8 +3737,7 @@ incredibowl.my`,
         }
         function filteredUsers() {
             if (state.range === 'all') return state.users;
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - Number(state.range));
+            const cutoff = rangeCutoff();
             return state.users.filter(u => {
                 const d = tsToDate(u.createdAt);
                 return d && d >= cutoff;
@@ -3688,10 +3752,15 @@ incredibowl.my`,
         const MEAL_VOUCHER_FACE_VALUE = 18.50;
 
         // Accrual revenue for an order = cash total + MFRS 15 allocated revenue
-        // from any vouchers redeemed on this order. Delivery is intentionally
-        // excluded — caller adds o.deliveryFee separately where needed.
+        // from any vouchers redeemed on this order + allocated revenue from
+        // prepaid add-on credits (荷包蛋/温泉蛋/升级 predeposits — o.total was
+        // reduced by their coverage at save time, so the recognized allocation
+        // must be added back or it vanishes from every KPI). Delivery is
+        // intentionally excluded — caller adds o.deliveryFee separately.
         function orderAccrualRevenue(o) {
-            return (Number(o.total) || 0) + (Number(o.mealVoucherAllocatedRevenue) || 0);
+            return (Number(o.total) || 0)
+                 + (Number(o.mealVoucherAllocatedRevenue) || 0)
+                 + (Number(o.addonCreditsAllocatedRevenue) || 0);
         }
 
         // Filter voucher purchases that were actually paid within the active date range
@@ -3699,8 +3768,7 @@ incredibowl.my`,
         function filteredMealVoucherPurchases() {
             const all = (state.mealVoucherPurchases || []).filter(p => p.status === 'paid');
             if (state.range === 'all') return all;
-            const cutoff = new Date();
-            cutoff.setDate(cutoff.getDate() - Number(state.range));
+            const cutoff = rangeCutoff();  // 日历天口径，同 filteredOrders
             return all.filter(p => {
                 const d = tsToDate(p.paidAt) || tsToDate(p.createdAt);
                 return d && d >= cutoff;
@@ -3716,6 +3784,19 @@ incredibowl.my`,
                 const exp = tsToDate(v.expiresAt);
                 return exp && exp.getTime() > nowMs;
             });
+        }
+
+        // 单张餐券的摊销价：自身 allocatedValueRM → 关联购买记录 amountPaid/voucherCount
+        // → 面值兜底。旧券缺 allocatedValueRM 时直接用面值会虚高合同负债（漏掉批量折让）。
+        function voucherAllocatedRM(v) {
+            if (typeof v.allocatedValueRM === 'number') return v.allocatedValueRM;
+            if (v.purchaseId) {
+                const p = (state.mealVoucherPurchases || []).find(x => x.id === v.purchaseId);
+                const count = Number(p && p.voucherCount) || 0;
+                const paid = Number(p && p.amountPaid) || 0;
+                if (count > 0 && paid > 0) return paid / count;
+            }
+            return MEAL_VOUCHER_FACE_VALUE;
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -3987,6 +4068,21 @@ incredibowl.my`,
                 });
             }
 
+            // ─── Stale-status reconciliation warning ───
+            // 营收 KPI 只计 confirmed/delivered；若某单送达日已过还卡在 pending/preparing
+            // （webhook race 或忘了改状态），它会被做、被备餐，但营收永远少这一单。
+            // 这里显式点名，让老板去把状态改对，而不是账实静默漂移。
+            const staleActive = all.filter(o =>
+                (o.status === 'pending' || o.status === 'preparing')
+                && o.deliveryDate && o.deliveryDate < todayKey);
+            const staleWarnHtml = staleActive.length === 0 ? '' : `
+                <div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);font-size:12px;color:#92400E">
+                    ⚠️ <strong>${staleActive.length} 单送达日已过但状态还是 pending/preparing</strong> — 它们不计入营收 KPI。
+                    请核对后改成 confirmed/delivered（或取消）：${staleActive.slice(0, 5).map(o =>
+                        `<span class="mono">#${escapeHtml((o.id || '').slice(-6).toUpperCase())}</span> ${escapeHtml(o.userName || '匿名')} (${escapeHtml(o.deliveryDate)})`
+                    ).join(' · ')}${staleActive.length > 5 ? ` 等 ${staleActive.length} 单` : ''}
+                </div>`;
+
             // ─── Pagination ───
             const totalCount = filtered.length;
             const totalPages = Math.max(1, Math.ceil(totalCount / RECENT_PAGE_SIZE));
@@ -3997,7 +4093,7 @@ incredibowl.my`,
             const pageItems = filtered.slice(startIdx, startIdx + RECENT_PAGE_SIZE);
 
             if (totalCount === 0) {
-                $('#recentOrdersList').innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><div class="empty-state-msg">暂无订单</div></div>`;
+                $('#recentOrdersList').innerHTML = staleWarnHtml + `<div class="empty-state"><div class="empty-state-icon"></div><div class="empty-state-msg">暂无订单</div></div>`;
                 return;
             }
 
@@ -4109,7 +4205,7 @@ incredibowl.my`,
                    </div>`
                 : `<div style="text-align:center;padding:14px 0;font-size:12px;color:var(--text-muted)">共 ${totalCount} 单</div>`;
 
-            $('#recentOrdersList').innerHTML = ordersHtml + paginationHtml;
+            $('#recentOrdersList').innerHTML = staleWarnHtml + ordersHtml + paginationHtml;
         }
 
         function escapeHtml(s) {
@@ -4130,7 +4226,9 @@ incredibowl.my`,
 
         function kpi(label, value, deltaPct, foot) {
             let deltaHtml = '';
-            if (deltaPct == null) {
+            // Number.isFinite：NaN / Infinity（如对比期缺数）统一归到「—」，不渲染 ▼ NaN%
+            if (deltaPct == null || !Number.isFinite(deltaPct)) {
+                deltaPct = null;
                 deltaHtml = `<span class="kpi-delta flat">—</span>`;
             } else if (deltaPct === 0) {
                 deltaHtml = `<span class="kpi-delta flat">0%</span>`;
@@ -4916,13 +5014,12 @@ incredibowl.my`,
             const fOrders = paidOrders(filteredOrders());
             const fUsers = filteredUsers();
 
-            const totalSpend = arr.reduce((s, m) => {
-                if (state.range === 'all') return s + m.spend;
-                // crude: include months touched by date range
-                const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - Number(state.range));
-                const md = new Date(m.month + '-01');
-                return md >= startOfMonth(cutoff) ? s + m.spend : s;
-            }, 0);
+            // computeSpendInRange()：按天 pro-rata，跟预算页同一口径。之前的「整月
+            // touched 就全计」在 range=7 时能把花费虚报 ~4x，CAC / 回本单数跟着虚高，
+            // 且和预算页的「Meta Ads 总花费」对不上。
+            const totalSpend = state.range === 'all'
+                ? arr.reduce((s, m) => s + m.spend, 0)
+                : computeSpendInRange();
 
             // B1 fix: "新客" = customers whose FIRST EVER paid order's date is in range.
             // Previously this used fUsers.length (signups in range) which inflates the
@@ -4933,7 +5030,7 @@ incredibowl.my`,
             if (state.range === 'all') {
                 firstOrderInRange = Object.keys(firstOrderByCustomer).length;
             } else {
-                const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - Number(state.range));
+                const cutoff = rangeCutoff();  // 日历天口径，同 filteredOrders
                 firstOrderInRange = Object.values(firstOrderByCustomer).filter(v => v.d >= cutoff).length;
             }
             const effectiveCAC = firstOrderInRange ? totalSpend / firstOrderInRange : null;
@@ -5485,6 +5582,12 @@ incredibowl.my`,
                 if (fee > 0) razorpayOrderCount += 1;
                 totalPaymentFee += fee;
             });
+            // 餐券套餐购买（webapp FPX）的网关手续费也计入
+            filteredMealVoucherPurchases().forEach(p => {
+                const fee = paymentFeeForVoucherPurchase(p);
+                if (fee > 0) razorpayOrderCount += 1;
+                totalPaymentFee += fee;
+            });
 
             // Breakdown table — 6th element = clickable detail key
             const breakdownRows = [
@@ -5566,6 +5669,14 @@ incredibowl.my`,
                             addonsMissingCost.set(canonId, entry);
                         }
                     });
+                });
+                // Prepaid add-on redemptions live outside items (addonCreditsUsed) —
+                // the kitchen still cooks them, so their cost belongs in COGS.
+                (o.addonCreditsUsed || []).forEach(u => {
+                    const canonId = canonicalAddonId(u.addonId);
+                    const c = (addonCostById[canonId] || 0) * (Number(u.count) || 0);
+                    orderCOGS += c;
+                    totalCOGSAddons += c;
                 });
                 totalCOGS += orderCOGS;
                 if (hadCost) cogsCovered++;
@@ -5974,10 +6085,7 @@ incredibowl.my`,
 
             // ── 2. Outstanding voucher liability (point-in-time snapshot, ignores date range) ──
             const outstanding = outstandingMealVouchers();
-            const liabilityAllocated = outstanding.reduce((s, v) => {
-                const alloc = typeof v.allocatedValueRM === 'number' ? v.allocatedValueRM : MEAL_VOUCHER_FACE_VALUE;
-                return s + alloc;
-            }, 0);
+            const liabilityAllocated = outstanding.reduce((s, v) => s + voucherAllocatedRM(v), 0);
             const liabilityFaceValue = outstanding.length * MEAL_VOUCHER_FACE_VALUE;
             const bulkDiscount = liabilityFaceValue - liabilityAllocated;
 
@@ -6078,7 +6186,7 @@ incredibowl.my`,
             const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + 1); // exclusive
             const rangeStart = new Date(today); rangeStart.setDate(rangeStart.getDate() - Number(state.range) + 1);
             return Object.entries(state.spend).reduce((s, [k, v]) => {
-                const monthStart = new Date(k + '-01');
+                const monthStart = new Date(k + '-01T00:00:00');  // 本地时区解析
                 const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
                 const daysInMonth = Math.round((monthEnd - monthStart) / 86400000);
                 const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
@@ -6102,7 +6210,7 @@ incredibowl.my`,
             const rangeEnd = new Date(today); rangeEnd.setDate(rangeEnd.getDate() + 1); // exclusive
             const rangeStart = new Date(today); rangeStart.setDate(rangeStart.getDate() - Number(state.range) + 1);
             return Object.entries(state.fixedCosts).reduce((s, [k, v]) => {
-                const monthStart = new Date(k + '-01');
+                const monthStart = new Date(k + '-01T00:00:00');  // 本地时区解析
                 const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
                 const daysInMonth = Math.round((monthEnd - monthStart) / 86400000);
                 const overlapStart = monthStart > rangeStart ? monthStart : rangeStart;
@@ -6275,8 +6383,9 @@ incredibowl.my`,
                     const hasOrdered = orderedPhones.has(phoneNorm);
 
                     // Try to find name from existing customer aggregation
+                    // (phoneNorm 为空时跳过 — 否则会匹配到第一个没填电话的用户)
                     let name = '';
-                    const matchedCustomer = state.users.find(u => normalizePhone(u.phone) === phoneNorm);
+                    const matchedCustomer = phoneNorm ? state.users.find(u => normalizePhone(u.phone) === phoneNorm) : null;
                     if (matchedCustomer && matchedCustomer.displayName) name = matchedCustomer.displayName;
                     if (!name) {
                         const orderWithName = state.orders.find(o => normalizePhone(o.userPhone) === phoneNorm && o.userName);
@@ -7365,11 +7474,13 @@ incredibowl.my`,
             if (ok) toast('已开 WhatsApp · 用了 ③老客户模板', 'success');
         });
 
-        // Search + filter
+        // Search + filter（150ms debounce — 每键全表重渲在手机上会掉字）
+        let leadsSearchDebounce = null;
         document.addEventListener('input', (e) => {
             if (e.target.id === 'leadsSearch') {
                 state_leads.search = e.target.value;
-                renderLeads();
+                clearTimeout(leadsSearchDebounce);
+                leadsSearchDebounce = setTimeout(renderLeads, 150);
             }
         });
         document.addEventListener('click', (e) => {
@@ -7532,6 +7643,18 @@ incredibowl.my`,
             });
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') { panel.style.display = 'none'; input.blur(); }
+                // Enter = 选第一个匹配（不往上冒成表单提交）
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (panel.style.display !== 'none') {
+                        const first = panel.querySelector('.dish-combo-row');
+                        if (first) {
+                            rowEl.setDishValue(first.dataset.name);
+                            panel.style.display = 'none';
+                            input.blur();
+                        }
+                    }
+                }
             });
             panel.addEventListener('mousedown', (e) => {
                 const row = e.target.closest('.dish-combo-row');
@@ -7671,17 +7794,24 @@ incredibowl.my`,
                     addonCOGS += (addonCostById[canonicalAddonId(a.id)] || 0) * aQty;
                 });
             });
+            // Prepaid add-on redemptions live outside items (addonCreditsUsed) —
+            // the kitchen still cooks them, so their cost belongs in COGS.
+            (o.addonCreditsUsed || []).forEach(u => {
+                addonCOGS += (addonCostById[canonicalAddonId(u.addonId)] || 0) * (Number(u.count) || 0);
+            });
             const cogs = dishCOGS + addonCOGS;
 
-            // Delivery cost: override → cfg → 0 (self-pickup).
+            // Delivery cost: override → cfg → within2km fallback for legacy orders
+            // missing the field. ONLY deliveryZone === null means self-pickup (0 cost)
+            // — mirrors the Budget page loop so the same order nets the same number.
             // NOTE: each part of a multi-part order is a SEPARATE delivery day (own trip),
             // so every part legitimately carries its own full delivery cost — do NOT divide.
             let deliveryCost = 0;
-            if (o.deliveryZone) {
+            if (o.deliveryZone !== null) {
                 if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) {
                     deliveryCost = o.deliveryCostActual;
                 } else {
-                    deliveryCost = o.deliveryZone === 'outside2km'
+                    deliveryCost = (o.deliveryZone || 'within2km') === 'outside2km'
                         ? (Number(state.cfg.outside2kmCost) || 0)
                         : (Number(state.cfg.within2kmCost) || 0);
                 }
@@ -7719,9 +7849,15 @@ incredibowl.my`,
             const mealVoucherAllocatedRev = Number(o.mealVoucherAllocatedRevenue) || 0;
             const mealVouchersUsed = Number(o.mealVouchersUsed) || 0;
 
+            // Prepaid add-on credits (MFRS 15): those lines are NOT in items (they
+            // were paid at bundle time), so grossRev excludes them — only ADD the
+            // recognized allocation; there is no face value to net out of grossRev.
+            const addonCreditsAllocatedRev = Number(o.addonCreditsAllocatedRevenue) || 0;
+
             // Net profit
             const net = grossRev - cogs - deliveryCost - packaging - paymentFee
-                      - voucherDiscount - mealVoucherDiscount + mealVoucherAllocatedRev;
+                      - voucherDiscount - mealVoucherDiscount + mealVoucherAllocatedRev
+                      + addonCreditsAllocatedRev;
             const netMargin = grossRev > 0 ? (net / grossRev) : null;
 
             return {
@@ -7729,6 +7865,7 @@ incredibowl.my`,
                 cogs, dishCOGS, addonCOGS,
                 deliveryCost, packaging, paymentFee, voucherDiscount,
                 mealVoucherDiscount, mealVoucherAllocatedRev, mealVouchersUsed,
+                addonCreditsAllocatedRev,
                 net, netMargin,
                 mainCount, bags,
             };
@@ -7747,6 +7884,7 @@ incredibowl.my`,
                 ...(pl.voucherDiscount > 0 ? [['Voucher 折扣', pl.voucherDiscount, '-']] : []),
                 ...(pl.mealVoucherDiscount > 0 ? [[`餐券抵扣面值 (${pl.mealVouchersUsed} 张)`, pl.mealVoucherDiscount, '-']] : []),
                 ...(pl.mealVoucherAllocatedRev > 0 ? [['餐券摊销收入 (MFRS 15)', pl.mealVoucherAllocatedRev, '+']] : []),
+                ...(pl.addonCreditsAllocatedRev > 0 ? [['预付加料确认收入 (MFRS 15)', pl.addonCreditsAllocatedRev, '+']] : []),
             ];
             const netColor = pl.net >= 0 ? 'var(--success)' : 'var(--danger)';
             const normalizedItems = normalizeOrderItems(o);
@@ -8019,9 +8157,10 @@ incredibowl.my`,
         function computeExportKPISnapshot(orders, useFullHistory = false) {
             const paid = paidOrders(orders);
             const voucherAlloc = paid.reduce((s, o) => s + (Number(o.mealVoucherAllocatedRevenue) || 0), 0);
+            const addonCreditsAlloc = paid.reduce((s, o) => s + (Number(o.addonCreditsAllocatedRevenue) || 0), 0);
             const cashTotal = paid.reduce((s, o) => s + (Number(o.total) || 0), 0);
             const deliveryRev = paid.reduce((s, o) => s + (Number(o.deliveryFee) || 0), 0);
-            const totalRevenue = cashTotal + deliveryRev + voucherAlloc;
+            const totalRevenue = cashTotal + deliveryRev + voucherAlloc + addonCreditsAlloc;
 
             // COGS
             const addonCostById = {};
@@ -8038,6 +8177,13 @@ incredibowl.my`,
                         totalCOGS += c;
                         addonCOGS += c;
                     });
+                });
+                // Prepaid add-on redemptions live outside items (addonCreditsUsed) —
+                // the kitchen still cooks them, so their cost belongs in COGS.
+                (o.addonCreditsUsed || []).forEach(u => {
+                    const c = (addonCostById[canonicalAddonId(u.addonId)] || 0) * (Number(u.count) || 0);
+                    totalCOGS += c;
+                    addonCOGS += c;
                 });
             });
 
@@ -8059,6 +8205,11 @@ incredibowl.my`,
                 totalPackaging += packagingCostForOrder(o);
                 totalPaymentFee += paymentFeeForOrder(o);
             });
+            // 餐券套餐购买（webapp FPX）的网关手续费 — 跟 Budget 页同口径
+            const feePurchases = useFullHistory
+                ? (state.mealVoucherPurchases || []).filter(p => p.status === 'paid')
+                : filteredMealVoucherPurchases();
+            feePurchases.forEach(p => { totalPaymentFee += paymentFeeForVoucherPurchase(p); });
 
             // Promo voucher discount (RM-promo) — informational only.
             // 不计入 netProfit：promo 折扣已含在 o.total 净额里，再减就是重复扣。
@@ -8089,7 +8240,7 @@ incredibowl.my`,
             const vouchersRedeemedInPeriod = paid.reduce((s, o) => s + (Number(o.mealVouchersUsed) || 0), 0);
 
             const outstanding = outstandingMealVouchers();
-            const liabilityAllocated = outstanding.reduce((s, v) => s + (typeof v.allocatedValueRM === 'number' ? v.allocatedValueRM : MEAL_VOUCHER_FACE_VALUE), 0);
+            const liabilityAllocated = outstanding.reduce((s, v) => s + voucherAllocatedRM(v), 0);
 
             const grossProfit = totalRevenue - totalCOGS;
             const grossMargin = totalRevenue > 0 ? grossProfit / totalRevenue : null;
@@ -8785,10 +8936,12 @@ incredibowl.my`,
         });
 
         // Customers page: search + sort
+        let customerSearchDebounce = null;
         document.addEventListener('input', (e) => {
             if (e.target.id === 'customerSearch') {
                 customerSearchQuery = e.target.value;
-                renderCustomers();
+                clearTimeout(customerSearchDebounce);
+                customerSearchDebounce = setTimeout(renderCustomers, 150);  // debounce 防掉字
             }
         });
         document.addEventListener('click', (e) => {
@@ -9272,7 +9425,7 @@ incredibowl.my`,
         function openOrderModal(orderToEdit = null) {
             // Reset form
             $('#manualOrderForm').reset();
-            $('#moDate').value = new Date().toISOString().slice(0, 10);
+            $('#moDate').value = ymdKey(new Date());  // 本地日 — toISOString 是 UTC，MYT 凌晨 0-8 点会差一天
             $('#moDelivery').value = '0';
             $('#moZone').value = 'within2km';
             $('#moTotal').dataset.userTouched = '';
@@ -9310,7 +9463,9 @@ incredibowl.my`,
             if (orderToEdit) {
                 // ─── Edit mode: prefill modal with existing order ───
                 editingOrderId = orderToEdit.id;
-                $('.modal-title', modal).textContent = '编辑订单';
+                // modal.querySelector — $() 只收一个参数，第二参数会被静默忽略，
+                // 之前实际改的是 DOM 里第一个 .modal-title（查客户弹窗的标题）。
+                modal.querySelector('.modal-title').textContent = '编辑订单';
                 $('#submitOrderBtn').textContent = '保存修改';
 
                 $('#moName').value = orderToEdit.userName || '';
@@ -9339,7 +9494,9 @@ incredibowl.my`,
                 }
 
                 const orderDate = tsToDate(orderToEdit.createdAt);
-                if (orderDate) $('#moDate').value = orderDate.toISOString().slice(0, 10);
+                // ymdKey（本地日）：保存时用 ymdKey(origDate) !== date 判断日期是否被改过，
+                // 预填若用 UTC 截断，凌晨单每次编辑都会被误判「改了日期」并倒退一天。
+                if (orderDate) $('#moDate').value = ymdKey(orderDate);
 
                 selectedChannel = orderToEdit.channel || 'whatsapp';
                 selectedMeal = orderToEdit.mealType || 'lunch';
@@ -9375,7 +9532,7 @@ incredibowl.my`,
             } else {
                 // ─── New mode ───
                 editingOrderId = null;
-                $('.modal-title', modal).textContent = '+ 新增手动订单';
+                modal.querySelector('.modal-title').textContent = '+ 新增手动订单';
                 $('#submitOrderBtn').textContent = '保存';
 
                 selectedChannel = 'whatsapp';
@@ -9432,7 +9589,10 @@ incredibowl.my`,
         });
 
         function openBreakdownDetail(key) {
-            const orders = filteredOrders();
+            // paidOrders(): the breakdown TABLE this drills into sums over paid
+            // orders only — the detail must use the same population or its total
+            // exceeds the row it explains (pending/cancelled would leak in).
+            const orders = paidOrders(filteredOrders());
             let title = '', subtitle = '', rows = [], totalAmount = 0;
 
             if (key === 'razorpay') {
@@ -9558,7 +9718,7 @@ incredibowl.my`,
                     if (!byUser.has(u)) byUser.set(u, { vouchers: [], allocated: 0 });
                     const slot = byUser.get(u);
                     slot.vouchers.push(v);
-                    slot.allocated += typeof v.allocatedValueRM === 'number' ? v.allocatedValueRM : MEAL_VOUCHER_FACE_VALUE;
+                    slot.allocated += voucherAllocatedRM(v);
                 });
                 const holders = [...byUser.entries()].map(([userId, slot]) => {
                     const user = (state.users || []).find(u => u.id === userId);
@@ -10028,11 +10188,17 @@ incredibowl.my`,
                 if (!confirm(`确认删除 ${order.userName || '该客户'} 的这单（RM ${((order.total || 0) + (order.deliveryFee || 0)).toFixed(2)}）？\n该操作不可恢复。${voucherWarning}`)) return;
                 delBtn.disabled = true;
                 try {
-                    // Release claimed vouchers first (so they don't leak as permanently 'redeemed')
-                    if (claimedVoucherIds.length > 0) {
-                        await callAdminAPI('/api/admin/manual-voucher-release', { voucherIds: claimedVoucherIds });
-                    }
+                    // 先删订单再 release 餐券：反过来的话 deleteDoc 若失败，券已退回
+                    // 但订单还挂着 claimedMealVoucherIds → 客户双花。删除成功后 release
+                    // 失败则明确提示手动补救（券暂时锁死，不会双花，方向安全）。
                     await deleteDoc(doc(db, 'orders', id));
+                    if (claimedVoucherIds.length > 0) {
+                        try {
+                            await callAdminAPI('/api/admin/manual-voucher-release', { voucherIds: claimedVoucherIds });
+                        } catch (relErr) {
+                            toast(`订单已删，但 ${claimedVoucherIds.length} 张餐券 release 失败：${relErr.message} — 请在客户资料里手动退回`, 'error');
+                        }
+                    }
                     state.orders = state.orders.filter(o => o.id !== id);
                     $('#sysOrderCount').textContent = state.orders.length;
                     // ─── Credit stock back (dishStock + ingredients) ───
@@ -10210,7 +10376,7 @@ incredibowl.my`,
                 $('#invMatrixDays').addEventListener('change', loadInvMatrix);
                 // Default the 盘点 date to tomorrow (the prep horizon).
                 const t = new Date(); t.setDate(t.getDate() + 1);
-                $('#invIngDate').value = t.toISOString().slice(0, 10);
+                $('#invIngDate').value = ymdKey(t);  // 本地日，同 D2 时区修复
             }
             loadInvDishStock();
             loadInvIngredients($('#invIngDate').value);
@@ -10599,7 +10765,7 @@ incredibowl.my`,
             section.classList.remove('hidden');
             rows.innerHTML = entries.map(([id, c]) => `
                 <div style="display:grid;grid-template-columns:1fr 96px;gap:10px;align-items:center">
-                    <span style="font-size:12px">${c.name} <span style="color:var(--text-muted)">· 剩 ${c.remaining}</span></span>
+                    <span style="font-size:12px">${escapeHtml(c.name)} <span style="color:var(--text-muted)">· 剩 ${c.remaining}</span></span>
                     <input type="number" class="mo-prepaid-qty" data-id="${id}" min="0" max="${c.remaining}" step="1" value="0" placeholder="0" style="text-align:right" />
                 </div>
             `).join('');
@@ -10747,7 +10913,7 @@ incredibowl.my`,
             if (mvDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎫 餐券抵扣 ×${usableVouchers}</span><span>− RM ${mvDiscount.toFixed(2)}</span></div>`);
             if (promoDiscount > 0) lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🎟 优惠码 ${escapeHtml((state.moPromoValidated && state.moPromoValidated.code) || '')}</span><span>− RM ${promoDiscount.toFixed(2)}</span></div>`);
             prepaidLineInfos.forEach(p => {
-                lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🍳 预付${p.name} ×${p.count}（已付）</span><span>− RM ${p.amount.toFixed(2)}</span></div>`);
+                lines.push(`<div style="display:flex;justify-content:space-between;color:#7C5A2F"><span>🍳 预付${escapeHtml(p.name)} ×${p.count}（已付）</span><span>− RM ${p.amount.toFixed(2)}</span></div>`);
             });
             lines.push(row('🛵 配送费', deliveryFee > 0 ? `+ RM ${deliveryFee.toFixed(2)}` : '免费'));
             $('#moSummaryLines').innerHTML = lines.join('');
@@ -10993,7 +11159,7 @@ incredibowl.my`,
             $('#svmGrandTotal').textContent = `RM ${(pack + addonSub).toFixed(2)}`;
         }
         function openSellVoucherModal() {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = ymdKey(new Date());  // 本地日，同 D2 时区修复
             $('#svmDate').value = today;
             $('#svmName').value = '';
             $('#svmPhone').value = '';
@@ -11108,6 +11274,9 @@ incredibowl.my`,
         });
 
         // Submit
+        // Enter 提交：按钮是 type=submit（form 属性关联），表单原生 submit 只拦跳转，
+        // 实际保存仍走下面的 click handler（Enter 会先在默认按钮上 fire click）。
+        $('#manualOrderForm').addEventListener('submit', e => e.preventDefault());
         $('#submitOrderBtn').addEventListener('click', async () => {
             const errEl = $('#moError');
             errEl.classList.add('hidden');
@@ -11298,6 +11467,24 @@ incredibowl.my`,
                     const { createdAt, ...updateFields } = orderData;
                     // Only update createdAt if user changed the date
                     const orig = state.orders.find(o => o.id === editingOrderId);
+                    // 大改动确认：总额变 >15% 或菜品行变少 → 弹 before/after 摘要，
+                    // 防手滑（如 48.90 打成 4.89）无声改写历史营收。
+                    const origTotal = Number(orig && orig.total) || 0;
+                    const newTotal = Number(orderData.total) || 0;
+                    const origItemCount = (orig && Array.isArray(orig.items)) ? orig.items.length : 0;
+                    const bigTotalChange = origTotal > 0 && Math.abs(newTotal - origTotal) / origTotal > 0.15;
+                    const itemsShrank = items.length < origItemCount;
+                    if (bigTotalChange || itemsShrank) {
+                        const msg = `确认改动较大的修改？\n\n`
+                            + `金额：RM ${origTotal.toFixed(2)} → RM ${newTotal.toFixed(2)}\n`
+                            + `菜品行：${origItemCount} → ${items.length}\n\n`
+                            + `该修改会直接改写这单的历史营收。`;
+                        if (!confirm(msg)) {
+                            btn.disabled = false;
+                            btn.textContent = '保存修改';
+                            return;
+                        }
+                    }
                     const origDate = orig ? tsToDate(orig.createdAt) : null;
                     if (!origDate || ymdKey(origDate) !== date) {
                         updateFields.createdAt = createdAt;
@@ -11687,7 +11874,7 @@ incredibowl.my`,
                         <div><span style="color:var(--text-muted)">付款</span> <strong>${fmt.rm(p.voucherCashSpent)}</strong></div>
                         <div><span style="color:var(--text-muted)">已用</span> <strong>${p.totalVouchersUsed}</strong> / 余 <strong>${p.availableCount}</strong></div>
                         ${p.expiringSoonCount > 0 ? `<div style="color:#C62828"><span>⚠️ 7 天内过期</span> <strong>${p.expiringSoonCount}</strong> 张</div>` : ''}
-                        ${(() => { const e = Object.values(p.addonCredits || {}).filter(c => c.remaining > 0); return e.length ? `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px"><span style="color:var(--text-muted)">🍳 预付加料余额</span> <strong>${e.map(c => `${c.name} ${c.remaining}`).join(' · ')}</strong></div>` : ''; })()}
+                        ${(() => { const e = Object.values(p.addonCredits || {}).filter(c => c.remaining > 0); return e.length ? `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px"><span style="color:var(--text-muted)">🍳 预付加料余额</span> <strong>${e.map(c => `${escapeHtml(c.name)} ${c.remaining}`).join(' · ')}</strong></div>` : ''; })()}
                     </div>
                 </div>
                 ` : ''}
@@ -11807,6 +11994,17 @@ incredibowl.my`,
                 return;
             }
             customerLookupDebounce = setTimeout(() => renderCustomerSuggestions(q), 120);
+        });
+
+        // Enter = 直接打开第一个建议的客户档案（不用挪手到鼠标）
+        $('#customerLookupInput').addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const first = $('#customerLookupSuggestions').querySelector('.customer-suggest');
+            if (!first) return;
+            $('#customerLookupSuggestions').style.display = 'none';
+            const profile = buildCustomerProfile(first.dataset.key);
+            $('#customerProfileContainer').innerHTML = renderCustomerProfile(profile);
         });
 
         // Click a suggestion → render profile
