@@ -386,7 +386,15 @@ export default function V4BentoLayout() {
             </ErrorBoundary>
             )}
             <ErrorBoundary>
-                <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+                <AuthModal
+                    isOpen={isAuthOpen}
+                    onClose={() => setIsAuthOpen(false)}
+                    onProfileComplete={() => {
+                        // 资料存齐 → 关弹窗；购物车有东西就直接送回结账
+                        setIsAuthOpen(false);
+                        if (cart.length > 0) setIsCartOpen(true);
+                    }}
+                />
             </ErrorBoundary>
             {/* FPX redirect success overlay */}
             {fpxSuccess && (

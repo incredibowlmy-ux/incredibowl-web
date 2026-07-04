@@ -374,7 +374,15 @@ export default function EnglishHome() {
             </ErrorBoundary>
             )}
             <ErrorBoundary>
-                <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+                <AuthModal
+                    isOpen={isAuthOpen}
+                    onClose={() => setIsAuthOpen(false)}
+                    onProfileComplete={() => {
+                        // Profile complete → close modal; send back to checkout if cart has items
+                        setIsAuthOpen(false);
+                        if (cart.length > 0) setIsCartOpen(true);
+                    }}
+                />
             </ErrorBoundary>
 
             {fpxSuccess && (

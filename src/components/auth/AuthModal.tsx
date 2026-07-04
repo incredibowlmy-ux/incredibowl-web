@@ -14,7 +14,13 @@ import AuthProfileView from './AuthProfileView';
 
 type AuthView = 'main' | 'email-login' | 'email-signup' | 'profile';
 
-export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+export default function AuthModal({ isOpen, onClose, onProfileComplete }: {
+    isOpen: boolean,
+    onClose: () => void,
+    /** 资料保存成功且手机+地址齐全时回调 —— 首页用它自动关弹窗并重开购物车，
+        让（访客）用户存完资料直接回到结账，而不是被丢在会员资料页。 */
+    onProfileComplete?: () => void,
+}) {
     const { refreshProfile } = useAuth();
     const [view, setView] = useState<AuthView>('main');
     const [email, setEmail] = useState('');
@@ -172,7 +178,13 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
             // Propagate the new address/phone to the app-wide AuthProvider so the
             // cart (and anything else reading useAuth) reflects it immediately.
             await refreshProfile();
-            setTimeout(() => setMessage(''), 2000);
+            // 资料已齐（走到这里必然手机+地址+geocode 全过）→ 短暂展示 ✅ 后
+            // 交回给页面：关掉本弹窗、重开购物车继续结账。防逃运费机制不受
+            // 影响 —— 保存前的 geocode 验证和服务端下单比对一步没少。
+            setTimeout(() => {
+                setMessage('');
+                if (onProfileComplete) onProfileComplete();
+            }, 900);
         } catch (error: any) {
             setMessage(`⚠️ 更新失败: ${error.message}`);
         }
