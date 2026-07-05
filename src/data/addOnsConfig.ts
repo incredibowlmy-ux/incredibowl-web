@@ -67,6 +67,9 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Aussie Wagyu Patty Don (id:24) specials ───
   'extra-wagyu-patty': 17.50,
+  // 小番茄 + 洋葱沙拉，拌初榨橄榄油 + 少许盐（老板 2026-07-05 给价）。
+  // 与 'cherry-tomato'（纯小番茄 RM2.50）是两个不同商品，别合并。
+  'cherry-tomato-salad': 4.50,
 
   // ─── Angelica Chicken (Tuesday special, id:2) specials ─────
   'extra-herbal-leg-1': 16.50,

@@ -320,8 +320,13 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // 与主菜同一 TODO_CONFIRM — 碗妈确认实际每份采购克数后一起更新）。
   '加香煎三文鱼 (70g+)': [{ name: '三文鱼', qty: 120, unit: 'g' }],
 
-  // ─── Wagyu Patty Don add-on ────────────────────────────────
+  // ─── Wagyu Patty Don add-ons ───────────────────────────────
   '加澳洲和牛饼 (1块)': [{ name: '澳洲和牛饼', qty: 1, unit: '块' }],
+  // 小番茄洋葱沙拉（RM4.50）：小番茄 40g 按 3 颗计（同「爽脆多汁小番茄 (40g)」
+  // 换算，宁多勿少）；初榨橄榄油/盐按 pantry staples 惯例不计。
+  // TODO_CONFIRM: 洋葱每份克数老板未提供 → 不编造不计入，拿到准数后补一行
+  // { name: '黄洋葱', qty: X, unit: 'g' }。
+  '小番茄洋葱沙拉 (40g)': [{ name: '樱桃番茄', qty: 3, unit: '颗' }],
 
   // ─── Greek Lemon Chicken add-ons ──────────────────────────
   '【增肌极客】加柠香烤鸡胸 (180g)': [{ name: '鸡胸肉', qty: 200, unit: 'g' }],
@@ -466,6 +471,7 @@ export const addOnShortNames: Record<string, string> = {
   // Lemon Salmon / Wagyu Patty Don
   '加香煎三文鱼 (70g+)': '三文鱼',
   '加澳洲和牛饼 (1块)': '和牛饼',
+  '小番茄洋葱沙拉 (40g)': '茄沙拉',
 
   // Greek Lemon Chicken
   '【增肌极客】加柠香烤鸡胸 (180g)': '柠胸',

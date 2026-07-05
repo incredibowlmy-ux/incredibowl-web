@@ -232,15 +232,30 @@
 - 改完网页后同步 dashboard 及相关联动
 
 ## 计划
-- [ ] `src/data/addOnsConfig.ts`：新增 `extra-salmon-70g: 18.50`、`extra-wagyu-patty: 17.50`（submit-order 服务端校验自动生效）
-- [ ] `src/components/menu/AddOnModal.tsx`（ZH/EN 共用）：
+- [x] `src/data/addOnsConfig.ts`：新增 `extra-salmon-70g: 18.50`、`extra-wagyu-patty: 17.50`（submit-order 服务端校验自动生效）
+- [x] `src/components/menu/AddOnModal.tsx`（ZH/EN 共用）：
   - id 21 三文鱼 sides = 加三文鱼(70g+) + 毛豆(25g) + 玉米(25g) + 小番茄(40g) + 米饭项；alacarte 去重毛豆/玉米
   - id 24 和牛 sides = 加和牛饼(1块) + 小番茄(40g) + 米饭项
   - ⚠️ 三文鱼配菜里的西兰花 50g 没有任何独立加料定价 → 不编造，跳过并向老板报告
-- [ ] `src/data/dishIngredients.ts`：addOnRecipes + addOnShortNames 补两个新 label（三文鱼 120g 生重沿用菜品估算 TODO_CONFIRM；和牛饼 1 块）；dashboard label 与网页完全一致 → 不需要新 alias
-- [ ] Dashboard 源文件（Desktop incredibowl-dashboard.html）：
+- [x] `src/data/dishIngredients.ts`：addOnRecipes + addOnShortNames 补两个新 label（三文鱼 120g 生重沿用菜品估算 TODO_CONFIRM；和牛饼 1 块）；dashboard label 与网页完全一致 → 不需要新 alias
+- [x] Dashboard 源文件（Desktop incredibowl-dashboard.html）：
   - DISH_ADDON_MAP '21' / '24' 顶部加新加料
   - ADDON_SEED 加 2 行（加菜类，costPrice=0 等老板 Settings 填成本）
   - WEB_LABEL_TO_ADDON_ID 加 2 个映射
-- [ ] `npm run sync:dashboard` 回灌 public 副本
-- [ ] `npx tsc --noEmit` 验证；只 commit 相关文件
+- [x] `npm run sync:dashboard` 回灌 public 副本
+- [x] `npx tsc --noEmit` + `npm run build` 全绿；只 commit 5 个相关文件
+
+## Review（2026-07-05）
+- 第一轮已上线：commit c25e2e4 push main，线上无头浏览器点开两道菜弹窗验证通过。
+- 备餐联动自动生效：新 label 都进 addOnRecipes（食材清单/库存扣减/06:30 prep 按 label 聚合）。
+- Dashboard 手动单联动：label 与网页一字不差 → 免 MANUAL_LABEL_ALIASES；addons 集合下次打开 dashboard 自动补新 id（costPrice=0）。
+
+## 第二轮修正（老板反馈，2026-07-05）
+- 和牛的番茄不是现有小番茄 RM2.50 → 是新品「小番茄洋葱沙拉 (40g)」RM4.50
+  （小番茄+洋葱+初榨橄榄油+少许盐），新 id `cherry-tomato-salad`，与 `cherry-tomato` 分开。
+- 沙拉配方：樱桃番茄 3 颗（同 40g 换算）；洋葱克数未提供 → TODO_CONFIRM 不编造；油/盐 pantry 不计。
+- 本地 dev + 无头浏览器 dogfood：ZH/EN 和牛弹窗都出沙拉 RM4.50、三文鱼弹窗不受影响；tsc 绿。
+- ⚠️ 老板指示白天不 push（怕客户正在下单）→ 只 commit 留在本地，**等老板开口或截单后再 push**。
+  在此之前线上和牛弹窗仍是第一轮的小番茄 RM2.50。
+- ⏳ 待老板：① 西兰花独立加料给价后补上三文鱼 sides；② Settings 填新加料成本价
+  （加三文鱼/和牛饼/小番茄洋葱沙拉）；③ 三文鱼采购生重 120g 估算待确认；④ 沙拉洋葱克数待补。

@@ -2743,6 +2743,7 @@
             { id: 'extra-scallion-chop-side',    name: '【收工犒劳】多加一只葱香煎鸡扒',        price: 10.90, category: '加菜' },
             { id: 'extra-salmon-70g',            name: '加香煎三文鱼 (70g+)',                   price: 18.50, category: '加菜' },  // 新 add-on 2026-07-05（三文鱼饭）
             { id: 'extra-wagyu-patty',           name: '加澳洲和牛饼 (1块)',                    price: 17.50, category: '加菜' },  // 新 add-on 2026-07-05（和牛饼饭）
+            { id: 'cherry-tomato-salad',         name: '小番茄洋葱沙拉 (40g)',                  price: 4.50,  category: '加菜' },  // 新 add-on 2026-07-05（和牛饼饭；小番茄+洋葱+初榨橄榄油+盐）
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
@@ -3153,6 +3154,7 @@ incredibowl.my`,
             // 三文鱼 / 和牛饼 specials (2026-07-05)
             '加香煎三文鱼 (70g+)': 'extra-salmon-70g',
             '加澳洲和牛饼 (1块)': 'extra-wagyu-patty',
+            '小番茄洋葱沙拉 (40g)': 'cherry-tomato-salad',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -9291,8 +9293,9 @@ incredibowl.my`,
                 // 澳洲和牛饼饭（周二主推）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
                 // default 自带 1 温泉蛋（已含在菜里）+ 樱桃番茄莎莎；下方 add-on 是 EXTRA
                 // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:24 同步）
-                { id: 'extra-wagyu-patty', label: '加澳洲和牛饼 (1块)', price: 17.50 },
-                { id: 'cherry-tomato',     label: '小番茄 (40g)', price: 2.50 },
+                // 沙拉 = 小番茄+洋葱拌初榨橄榄油+盐，与纯小番茄(cherry-tomato RM2.50)是两个商品
+                { id: 'extra-wagyu-patty',   label: '加澳洲和牛饼 (1块)', price: 17.50 },
+                { id: 'cherry-tomato-salad', label: '小番茄洋葱沙拉 (40g)', price: 4.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },

@@ -297,7 +297,8 @@ export default function AddOnModal({
         }
 
         // If it's Aussie Wagyu Beef Patty Don (id: 24), sides carry the dish's own
-        // cherry-tomato salad plus an extra-patty upsell.
+        // cherry-tomato & onion salad (tossed in extra-virgin olive oil + pinch of
+        // salt — NOT the plain 'cherry-tomato' add-on) plus an extra-patty upsell.
         if (dish.id === 24) {
             return addOnSections.map(section => {
                 if (section.id === 'sides') {
@@ -306,7 +307,7 @@ export default function AddOnModal({
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
                             { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)', nameEn: 'Extra Aussie Wagyu Patty (1 pc)', price: p('extra-wagyu-patty', 17.50), category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato Salad', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato-salad', name: '小番茄洋葱沙拉 (40g)', nameEn: 'Cherry Tomato & Onion Salad (40g)', price: p('cherry-tomato-salad', 4.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
