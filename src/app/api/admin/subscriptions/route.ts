@@ -55,11 +55,43 @@ export async function GET(req: NextRequest) {
   if (!adminEmail) return adminJson({ error: '未授权' }, 401);
 
   const db = await getDb();
-  const [snap, usersSnap] = await Promise.all([
+  const [snap, usersSnap, ordersSnap] = await Promise.all([
     db.collection('subscriptions').orderBy('name').get(),
     db.collection('users').get(),
+    // 最近订单 — 聚合每个客户用过的地址/运费/配送区/备注，前端点选填充
+    db.collection('orders').orderBy('createdAt', 'desc').limit(1200)
+      .select('userId', 'userAddress', 'deliveryFee', 'deliveryZone', 'deliveryDistanceKm', 'note', 'deliveryDate', 'status', 'partIndex')
+      .get(),
   ]);
   const subscriptions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+  // 按客户去重聚合历史配送信息（最新在前，每人最多 5 组）。
+  // 多段单运费只挂 part 1，后续 part 会产生假的 RM0 选项 → 跳过。
+  const optionsByUser = new Map<string, { _k: string; address: string; fee: number; zone: string; distanceKm: number; note: string; lastDate: string }[]>();
+  for (const d of ordersSnap.docs) {
+    const v = d.data() || {};
+    if (v.status === 'cancelled') continue;
+    if (Number(v.partIndex) > 1) continue;
+    const uid = String(v.userId || '');
+    const address = String(v.userAddress || '').trim();
+    if (!uid || !address) continue;
+    // 「手动录入 · whatsapp…」是 dashboard 系统标记不是客户备注 → 不带出
+    const rawNote = String(v.note || '').trim();
+    const opt = {
+      address,
+      fee: Number(v.deliveryFee) || 0,
+      zone: v.deliveryZone === 'outside2km' ? 'outside2km' : v.deliveryZone === 'within2km' ? 'within2km' : '',
+      distanceKm: Number(v.deliveryDistanceKm) || 0,
+      note: rawNote.startsWith('手动录入') ? '' : rawNote,
+      lastDate: String(v.deliveryDate || ''),
+    };
+    const key = `${opt.address}|${opt.fee}|${opt.zone}|${opt.note}`;
+    const list = optionsByUser.get(uid) ?? [];
+    if (list.length >= 5 || list.some(o => o._k === key)) continue;
+    list.push({ ...opt, _k: key });
+    optionsByUser.set(uid, list);
+  }
+
   // 轻量客户名录 — 前端「新建常客」搜索自动填充用。userId=真实 uid，
   // 与餐券归属一致（手填 manual_电话 常与券的实际 owner 不符 → 扣券失败）。
   const customers = usersSnap.docs
@@ -71,6 +103,7 @@ export async function GET(req: NextRequest) {
         phone: String(v.phone || ''),
         address: String(v.address || ''),
         deliveryDistanceKm: Number(v.deliveryDistanceKm) || 0,
+        orderOptions: (optionsByUser.get(d.id) ?? []).map(({ _k, ...o }) => o),
       };
     })
     .filter(c => c.name || c.phone);

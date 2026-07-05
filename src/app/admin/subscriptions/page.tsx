@@ -27,7 +27,8 @@ const WD_LABEL: Record<string, string> = { '1': '周一', '2': '周二', '3': '�
 // 可选主菜：目录里未 hidden 未 retired 的全部（含常驻）
 const DISH_OPTIONS = weeklyMenu.filter(d => !d.hidden && !d.retired).map(d => d.name);
 
-interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number }
+interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | 'outside2km'; distanceKm: number; note: string; lastDate: string }
+interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
 interface PlanItem { dishName: string; qty: number; addOns: { label: string; price: number; quantity: number }[] }
 interface PlanDay { skip?: boolean; meal: 'lunch' | 'dinner'; time: string; items: PlanItem[] }
 interface Sub {
@@ -65,6 +66,7 @@ export default function SubscriptionsAdmin() {
     const [confirmingId, setConfirmingId] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState('');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+    const [custPicked, setCustPicked] = useState<Customer | null>(null);
 
     const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -142,6 +144,22 @@ export default function SubscriptionsAdmin() {
             (qd.length >= 3 && c.phone.replace(/\D/g, '').includes(qd)),
         ).slice(0, 8);
     })();
+    // 套用某一笔历史订单的地址/运费/配送区/备注
+    const applyOrderOption = (o: OrderOption) => setEditing(prev => {
+        if (!prev) return prev;
+        const zone = o.zone || prev.deliveryZone;
+        const km = o.distanceKm || prev.deliveryDistanceKm;
+        const tier = zone === 'within2km' ? 'near' as const : (km > 5 ? 'far' as const : 'mid' as const);
+        return {
+            ...prev,
+            address: o.address,
+            deliveryZone: zone,
+            deliveryTier: tier,
+            deliveryDistanceKm: km,
+            deliveryFeePerDelivery: o.fee,
+            note: o.note || prev.note,
+        };
+    });
     const fillFromCustomer = (c: Customer) => {
         setEditing(prev => {
             if (!prev) return prev;
@@ -164,6 +182,9 @@ export default function SubscriptionsAdmin() {
                 ...tierPatch,
             };
         });
+        // 有历史订单 → 自动套用最近一单的地址/运费/备注（下方还能点选换别组）
+        if (c.orderOptions?.[0]) applyOrderOption(c.orderOptions[0]);
+        setCustPicked(c);
         setCustQuery('');
     };
 
@@ -256,7 +277,7 @@ export default function SubscriptionsAdmin() {
                 {/* ── 订阅列表 ── */}
                 <div className="flex items-center justify-between">
                     <h2 className="font-black text-sm text-gray-500">常客模板（{subs.length}）</h2>
-                    <button onClick={() => { setCustQuery(''); setEditing({ ...EMPTY_SUB }); }} className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl text-xs font-black flex items-center gap-1.5"><Plus size={13} /> 新建常客</button>
+                    <button onClick={() => { setCustQuery(''); setCustPicked(null); setEditing({ ...EMPTY_SUB }); }} className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl text-xs font-black flex items-center gap-1.5"><Plus size={13} /> 新建常客</button>
                 </div>
                 {loading && <Loader2 className="animate-spin text-[#FF6B35] mx-auto" />}
                 {subs.map(s => (
@@ -268,7 +289,7 @@ export default function SubscriptionsAdmin() {
                                 <span className="text-xs text-gray-400 font-bold">{Object.entries(s.plan).filter(([, d]) => !d.skip).length} 天/周</span>
                             </button>
                             <div className="flex gap-2">
-                                <button onClick={() => { setCustQuery(''); setEditing(JSON.parse(JSON.stringify(s))); }} className="px-3 py-1.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold">编辑</button>
+                                <button onClick={() => { setCustQuery(''); setCustPicked(null); setEditing(JSON.parse(JSON.stringify(s))); }} className="px-3 py-1.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold">编辑</button>
                                 <button onClick={() => deleteSub(s.id!)} className="p-1.5 text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
                         </div>
@@ -315,6 +336,29 @@ export default function SubscriptionsAdmin() {
                                     <p className="mt-1 text-[11px] font-bold text-gray-400">没匹配到客户 — 可以直接手填下方字段</p>
                                 )}
                             </div>
+
+                            {/* 该客户历史订单用过的地址/运费/备注 — 最近一单已自动填入，点选可换 */}
+                            {custPicked && (custPicked.orderOptions?.length ?? 0) > 0 && (
+                                <div className="space-y-1.5">
+                                    <p className="text-[11px] font-bold text-gray-400">📦 {custPicked.name || custPicked.phone} 之前订单用过的地址/运费/备注（已自动填最近一单，点选可换）</p>
+                                    {custPicked.orderOptions!.map((o, i) => {
+                                        const selected = editing.address === o.address && editing.deliveryFeePerDelivery === o.fee;
+                                        return (
+                                            <button key={i} onClick={() => applyOrderOption(o)}
+                                                className={`w-full text-left px-3 py-2 border rounded-xl ${selected ? 'border-[#FF6B35] bg-[#FF6B35]/5' : 'border-gray-200 hover:border-[#FF6B35]/40'}`}>
+                                                <span className="text-xs font-bold">{o.address}</span>
+                                                <span className="block text-[11px] text-gray-400 font-bold">
+                                                    运费 RM{o.fee.toFixed(2)}
+                                                    {o.zone ? ` · ${o.zone === 'outside2km' ? '2km 外' : '2km 内'}` : ''}
+                                                    {o.distanceKm ? ` · ${o.distanceKm}km` : ''}
+                                                    {o.lastDate ? ` · 最近 ${o.lastDate}` : ''}
+                                                </span>
+                                                {o.note && <span className="block text-[11px] text-amber-600 font-bold">备注：{o.note}</span>}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {/* 复制现有模板的周计划 — 新客跟老客吃法一样时不用重填 */}
                             {!editing.id && subs.length > 0 && (
