@@ -255,7 +255,44 @@
   （小番茄+洋葱+初榨橄榄油+少许盐），新 id `cherry-tomato-salad`，与 `cherry-tomato` 分开。
 - 沙拉配方：樱桃番茄 3 颗（同 40g 换算）；洋葱克数未提供 → TODO_CONFIRM 不编造；油/盐 pantry 不计。
 - 本地 dev + 无头浏览器 dogfood：ZH/EN 和牛弹窗都出沙拉 RM4.50、三文鱼弹窗不受影响；tsc 绿。
-- ⚠️ 老板指示白天不 push（怕客户正在下单）→ 只 commit 留在本地，**等老板开口或截单后再 push**。
-  在此之前线上和牛弹窗仍是第一轮的小番茄 RM2.50。
+- ~~⚠️ 老板指示白天不 push~~ → 老板当天稍后开口 push；实际 b3912f2 已随老板另一会话
+  的白名单 commits（847d0e9/ea72433）一起上了 origin/main。线上无头浏览器复验：
+  ZH/EN 和牛弹窗=沙拉 RM4.50 ✓、三文鱼弹窗=纯小番茄不受影响 ✓（2026-07-05）。
 - ⏳ 待老板：① 西兰花独立加料给价后补上三文鱼 sides；② Settings 填新加料成本价
   （加三文鱼/和牛饼/小番茄洋葱沙拉）；③ 三文鱼采购生重 120g 估算待确认；④ 沙拉洋葱克数待补。
+
+---
+
+# 多日手动单（不扣券，正常收钱）（2026-07-05）
+
+老板需求：像 /admin/subscriptions 那样一次录好几天的单，但不是每周模板、不碰餐券——
+临时帮客户排几天的正常订单（现金/QR 收款）。
+
+## 设计
+- 新页 `/admin/multi-day`：客户搜索自动填充（复用 GET /api/admin/subscriptions 的
+  customers + orderOptions）→ 逐天加日期/时段/菜/加料 → 预览（服务端现价重算 +
+  停业/停菜/排期警告）→ 复制 WhatsApp 文字 → 确认建单。
+- 新 API `/api/admin/multi-day-orders`：POST preview/confirm。逻辑镜像
+  subscriptions/week 但零餐券字段；total=originalTotal（全额现金）；
+  paymentMethod qr / status confirmed / isManual / channel whatsapp / createdAt=配送日 04:00Z。
+- 幂等：preview 发 batchTag（multi-时间戳），confirm 查重拒绝双击重复建单。
+- 与 subscriptions 互挂入口链接。
+
+## 计划
+- [x] 1. API `src/app/api/admin/multi-day-orders/route.ts`（preview + confirm）
+- [x] 2. 页面 `src/app/admin/multi-day/page.tsx`
+- [x] 3. subscriptions 页头互挂链接
+- [x] 4. tsc + build 验证，只 commit 相关文件
+
+## Review（2026-07-05）
+- 入口：https://www.incredibowl.my/admin/multi-day（subscriptions 页头也有互链）。
+- 流程：搜客户自动填充（复用 subscriptions 的 customers API）→「加一天」逐天排菜
+  （新一天自动照抄上一天顺延一日）→ 生成预览 → 复制 WhatsApp 文字 → 确认建单。
+- 订单落库与周订阅同 schema 但零餐券字段：total=originalTotal 全额现金、
+  paymentMethod qr、status confirmed、isManual、createdAt=配送日 04:00Z（按日营收口径一致）。
+- 本地真实 dogfood 全过（scripts/dogfood-multi-day*.mjs，铸真 admin token 打本地 server）：
+  无 token 401 ✓ / 服务端现价重算 ✓ / 停业停菜排期周末警告 ✓ / 不存在的菜整天 blocked ✓ /
+  confirm 落 2 张字段逐项校验 7/7 ✓ / 双击重复 409 幂等 ✓ / 测试单已删干净 ✓。
+- 注意：与周订阅一样**不扣 dishStock/食材库存**（手动单走 dashboard 才扣）；预览警告
+  只提醒不阻挡（除停业/停菜/菜不存在是硬伤跳过）。
+- 另：本机有个别的会话留下的 next dev（port 3000, PID 2512）已卡死无响应，没动它。

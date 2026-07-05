@@ -18,7 +18,7 @@ import { weeklyMenu } from '@/data/weeklyMenu';
 import { DISH_ADDONS_BY_NAME, UNIVERSAL_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
-    ChevronDown, ChevronUp, LogOut, CalendarCheck, Loader2,
+    ChevronDown, ChevronUp, LogOut, CalendarCheck, CalendarDays, Loader2,
 } from 'lucide-react';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
@@ -218,7 +218,10 @@ export default function SubscriptionsAdmin() {
                         <Link href="/admin" className="p-2 bg-white rounded-xl border border-gray-200 hover:border-[#FF6B35]/40"><ArrowLeft size={16} /></Link>
                         <h1 className="text-xl font-black flex items-center gap-2"><CalendarCheck className="text-[#FF6B35]" size={20} /> 常客周计划</h1>
                     </div>
-                    <button onClick={logout} className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-500"><LogOut size={13} /> 退出</button>
+                    <div className="flex items-center gap-3">
+                        <Link href="/admin/multi-day" className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-[#FF6B35]"><CalendarDays size={13} /> 多日手动单</Link>
+                        <button onClick={logout} className="flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-red-500"><LogOut size={13} /> 退出</button>
+                    </div>
                 </div>
 
                 {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm font-bold text-red-600">{error}</div>}
