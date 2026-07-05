@@ -11,7 +11,7 @@ interface CartSuccessProps {
     onDone: () => void;
 }
 
-const WHATSAPP_NUMBER = '60103370197';
+const WHATSAPP_NUMBER = '60165119118';
 
 // Pixel tracking moved to CartDrawer where we have access to the
 // CAPI event IDs returned by /api/submit-order and /api/confirm-order

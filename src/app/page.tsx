@@ -428,7 +428,7 @@ export default function V4BentoLayout() {
                             order in the customer's own chat (their receipt) and
                             opens the private-domain channel in one tap. */}
                         <a
-                            href={`https://wa.me/60103370197?text=${encodeURIComponent([
+                            href={`https://wa.me/60165119118?text=${encodeURIComponent([
                                 '你好碗妈 👋 我刚在网站付款下单成功，想在 WhatsApp 接收订单确认：',
                                 `📌 订单号：#${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
                                 ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}（${it.date}）`),
