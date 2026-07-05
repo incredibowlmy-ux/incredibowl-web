@@ -298,4 +298,7 @@
 - 追加（老板问「能不能选 QR」）：加收款方式选择器 cash/qr/fpx/card/ewallet
   （与 dashboard moPaymentPills 同一套值，报表分桶兼容），默认 qr，服务端白名单校验；
   dogfood 复验：默认 qr ✓ / bitcoin 400 ✓ / cash 透传落库 ✓ / 测试单已清 ✓。
+- 追加（老板发截图对比）：菜品下拉换成 dashboard 录单同款可搜索选择器 ——
+  搜索框 + 按天分组（常驻·每日供应/周一~周五）+ 显示价格；暂别菜也列出带「暂别」
+  标注（服务端本就允许并警告）。纯客户端 UI 改动，tsc+build 绿。
 - 另：本机有个别的会话留下的 next dev（port 3000, PID 2512）已卡死无响应，没动它。
