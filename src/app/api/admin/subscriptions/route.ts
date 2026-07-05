@@ -58,9 +58,10 @@ export async function GET(req: NextRequest) {
   const [snap, usersSnap, ordersSnap] = await Promise.all([
     db.collection('subscriptions').orderBy('name').get(),
     db.collection('users').get(),
-    // 最近订单 — 聚合每个客户用过的地址/运费/配送区/备注，前端点选填充
+    // 最近订单 — 聚合每个客户用过的地址/运费/配送区/备注，前端点选填充；
+    // userName/userPhone 用来补「只有手动单、没有 users 档案」的客户进名录
     db.collection('orders').orderBy('createdAt', 'desc').limit(1200)
-      .select('userId', 'userAddress', 'deliveryFee', 'deliveryZone', 'deliveryDistanceKm', 'note', 'deliveryDate', 'status', 'partIndex')
+      .select('userId', 'userName', 'userPhone', 'userAddress', 'deliveryFee', 'deliveryZone', 'deliveryDistanceKm', 'note', 'deliveryDate', 'status', 'partIndex')
       .get(),
   ]);
   const subscriptions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -107,6 +108,28 @@ export async function GET(req: NextRequest) {
       };
     })
     .filter(c => c.name || c.phone);
+
+  // 补「只在订单里出现过、users 集合没档案」的客户（dashboard 手动单的
+  // manual_<电话> 客户，如 Peggy）—— 姓名/电话/地址取最近一单（docs 已按
+  // createdAt 倒序，首见即最新）。否则联想搜不到这些老客。
+  const knownIds = new Set(customers.map(c => c.userId));
+  for (const d of ordersSnap.docs) {
+    const v = d.data() || {};
+    if (v.status === 'cancelled') continue;
+    const uid = String(v.userId || '');
+    if (!uid || knownIds.has(uid)) continue;
+    const name = String(v.userName || '').trim();
+    const phone = String(v.userPhone || '').trim();
+    if (!name && !phone) continue;
+    knownIds.add(uid);
+    customers.push({
+      userId: uid,
+      name, phone,
+      address: String(v.userAddress || ''),
+      deliveryDistanceKm: Number(v.deliveryDistanceKm) || 0,
+      orderOptions: (optionsByUser.get(uid) ?? []).map(({ _k, ...o }) => o),
+    });
+  }
   return adminJson({ subscriptions, customers });
 }
 

@@ -301,4 +301,11 @@
 - 追加（老板发截图对比）：菜品下拉换成 dashboard 录单同款可搜索选择器 ——
   搜索框 + 按天分组（常驻·每日供应/周一~周五）+ 显示价格；暂别菜也列出带「暂别」
   标注（服务端本就允许并警告）。纯客户端 UI 改动，tsc+build 绿。
+- 追加：DishPicker 抽成共享组件 `src/components/admin/DishPicker.tsx`，
+  常客周计划模板编辑器也换上同款。
+- 追加（老板问「Peggy 搜不到」）：根因 = 客户联想数据源只扫 users 集合，
+  Peggy 只有 dashboard 手动单（manual_0163702408）没有 users 档案。
+  修法 = /api/admin/subscriptions GET 把「订单里出现过、users 无档案」的客户
+  并进名录（姓名/电话/地址取最近一单）；本地验证名录 71→124 位、Peggy 命中
+  且带 3 组历史地址/备注选项 ✓。多日手动单与常客周计划同吃这条 API 都受益。
 - 另：本机有个别的会话留下的 next dev（port 3000, PID 2512）已卡死无响应，没动它。

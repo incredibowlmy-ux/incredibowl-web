@@ -16,6 +16,7 @@ import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { DISH_ADDONS_BY_NAME, UNIVERSAL_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
+import DishPicker from '@/components/admin/DishPicker';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     ChevronDown, ChevronUp, LogOut, CalendarCheck, CalendarDays, Loader2,
@@ -426,10 +427,7 @@ export default function SubscriptionsAdmin() {
                                                         return (
                                                             <div key={i} className="space-y-1.5">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <select value={it.dishName} onChange={e => setItem({ dishName: e.target.value })} className="px-2 py-1 border rounded-lg text-xs font-bold flex-1 min-w-[160px]">
-                                                                        {!DISH_OPTIONS.includes(it.dishName) && <option value={it.dishName}>{it.dishName}（已不在目录）</option>}
-                                                                        {DISH_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
-                                                                    </select>
+                                                                    <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} />
                                                                     <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
                                                                     {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
                                                                     <select value="" onChange={e => {
