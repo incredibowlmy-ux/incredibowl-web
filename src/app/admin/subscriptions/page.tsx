@@ -316,6 +316,24 @@ export default function SubscriptionsAdmin() {
                                 )}
                             </div>
 
+                            {/* 复制现有模板的周计划 — 新客跟老客吃法一样时不用重填 */}
+                            {!editing.id && subs.length > 0 && (
+                                <label className="text-xs font-bold text-gray-500 block">📋 照抄现有模板的周计划（选一个常客，整套周一~周五的菜/加料/时段带过来再微调）
+                                    <select value="" onChange={e => {
+                                        const src = subs.find(s => s.id === e.target.value);
+                                        if (!src) return;
+                                        setEditing(prev => prev ? { ...prev, plan: JSON.parse(JSON.stringify(src.plan)) } : prev);
+                                    }} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                                        <option value="">选择要照抄的常客模板…</option>
+                                        {subs.map(s => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name} · {Object.entries(s.plan).filter(([, d]) => !d.skip).length} 天/周
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                            )}
+
                             <div className="grid grid-cols-2 gap-3">
                                 <label className="text-xs font-bold text-gray-500">姓名<input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
                                 <label className="text-xs font-bold text-gray-500">电话<input value={editing.phone} onChange={e => setEditing({ ...editing, phone: e.target.value, userId: editing.userId || `manual_${e.target.value.replace(/\D/g, '')}` })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
