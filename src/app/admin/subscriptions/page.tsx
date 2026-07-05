@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { weeklyMenu } from '@/data/weeklyMenu';
+import { DISH_ADDONS_BY_NAME, UNIVERSAL_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     ChevronDown, ChevronUp, LogOut, CalendarCheck, Loader2,
@@ -354,18 +355,50 @@ export default function SubscriptionsAdmin() {
                                             </div>
                                             {day && !day.skip && (
                                                 <div className="mt-2 space-y-2">
-                                                    {day.items.map((it, i) => (
-                                                        <div key={i} className="flex items-center gap-2 flex-wrap">
-                                                            <select value={it.dishName} onChange={e => { const items = [...day.items]; items[i] = { ...it, dishName: e.target.value }; setDay(wd, { ...day, items }); }} className="px-2 py-1 border rounded-lg text-xs font-bold flex-1 min-w-[160px]">
-                                                                {!DISH_OPTIONS.includes(it.dishName) && <option value={it.dishName}>{it.dishName}（已不在目录）</option>}
-                                                                {DISH_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
-                                                            </select>
-                                                            <input type="number" min={1} value={it.qty} onChange={e => { const items = [...day.items]; items[i] = { ...it, qty: Number(e.target.value) || 1 }; setDay(wd, { ...day, items }); }} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
-                                                            <input placeholder="加料标签（如 蒜蓉西兰花炒蛋）" value={it.addOns[0]?.label ?? ''} onChange={e => { const items = [...day.items]; const label = e.target.value; items[i] = { ...it, addOns: label ? [{ label, price: it.addOns[0]?.price ?? 0, quantity: it.addOns[0]?.quantity ?? 1 }] : [] }; setDay(wd, { ...day, items }); }} className="px-2 py-1 border rounded-lg text-xs flex-1 min-w-[140px]" />
-                                                            {it.addOns.length > 0 && <input type="number" step="0.1" placeholder="加料价" value={it.addOns[0].price} onChange={e => { const items = [...day.items]; items[i] = { ...it, addOns: [{ ...it.addOns[0], price: Number(e.target.value) || 0 }] }; setDay(wd, { ...day, items }); }} className="w-20 px-2 py-1 border rounded-lg text-xs" />}
-                                                            <button onClick={() => { const items = day.items.filter((_, x) => x !== i); setDay(wd, { ...day, items }); }} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
-                                                        </div>
-                                                    ))}
+                                                    {day.items.map((it, i) => {
+                                                        const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? UNIVERSAL_ADDON_OPTIONS;
+                                                        const setItem = (patch: Partial<PlanItem>) => { const items = [...day.items]; items[i] = { ...it, ...patch }; setDay(wd, { ...day, items }); };
+                                                        return (
+                                                            <div key={i} className="space-y-1.5">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <select value={it.dishName} onChange={e => setItem({ dishName: e.target.value })} className="px-2 py-1 border rounded-lg text-xs font-bold flex-1 min-w-[160px]">
+                                                                        {!DISH_OPTIONS.includes(it.dishName) && <option value={it.dishName}>{it.dishName}（已不在目录）</option>}
+                                                                        {DISH_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                                                                    </select>
+                                                                    <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
+                                                                    {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
+                                                                    <select value="" onChange={e => {
+                                                                        const opt = addonOptions.find(o => o.id === e.target.value);
+                                                                        if (!opt) return;
+                                                                        const exist = it.addOns.findIndex(a => a.label === opt.label);
+                                                                        const addOns = [...it.addOns];
+                                                                        if (exist >= 0) addOns[exist] = { ...addOns[exist], quantity: addOns[exist].quantity + 1 };
+                                                                        else addOns.push({ label: opt.label, price: opt.price, quantity: 1 });
+                                                                        setItem({ addOns });
+                                                                    }} className="px-2 py-1 border rounded-lg text-xs text-[#FF6B35] font-bold min-w-[120px]">
+                                                                        <option value="">＋ 加料…</option>
+                                                                        {addonOptions.map(o => <option key={o.id} value={o.id}>{o.label} · RM {o.price.toFixed(2)}</option>)}
+                                                                    </select>
+                                                                    <button onClick={() => { const items = day.items.filter((_, x) => x !== i); setDay(wd, { ...day, items }); }} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                                                                </div>
+                                                                {it.addOns.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1.5 pl-1">
+                                                                        {it.addOns.map((a, ai) => (
+                                                                            <span key={ai} className="inline-flex items-center gap-1 px-2 py-1 bg-[#FF6B35]/10 border border-[#FF6B35]/30 rounded-lg text-[11px] font-bold">
+                                                                                ＋{a.label} <span className="text-gray-400">RM {a.price.toFixed(2)}</span>
+                                                                                <input type="number" min={1} value={a.quantity} onChange={e => {
+                                                                                    const addOns = [...it.addOns];
+                                                                                    addOns[ai] = { ...a, quantity: Math.max(1, Number(e.target.value) || 1) };
+                                                                                    setItem({ addOns });
+                                                                                }} className="w-11 px-1 py-0.5 border rounded text-[11px] text-center" />
+                                                                                <button onClick={() => setItem({ addOns: it.addOns.filter((_, x) => x !== ai) })} className="text-gray-400 hover:text-red-500 font-black">×</button>
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
                                                     <button onClick={() => setDay(wd, { ...day, items: [...day.items, { dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] })} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
                                                 </div>
                                             )}

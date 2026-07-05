@@ -1,0 +1,1546 @@
+/**
+ * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
+ * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
+ * Regenerate: node scripts/gen-dish-addon-map.mjs
+ * Generated: 2026-07-05
+ */
+
+export interface DishAddonOption { id: string; label: string; price: number }
+
+/** 每道菜（按菜名）可选的加料，与 dashboard 手动录单完全一致（已含通用加料）。 */
+export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
+  "纳豆月见海苔饭": [
+    {
+      "id": "natto-super-combo",
+      "label": "灵魂三件套",
+      "price": 5
+    },
+    {
+      "id": "natto-side",
+      "label": "健康发酵纳豆",
+      "price": 4.9
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "nori",
+      "label": "海苔",
+      "price": 2
+    },
+    {
+      "id": "soy-sauce",
+      "label": "秘制日本酱油",
+      "price": 1.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "马铃薯炖花肉片": [
+    {
+      "id": "pork-potato-duo-combo",
+      "label": "薯肉双拼满足套",
+      "price": 13.4
+    },
+    {
+      "id": "extra-potato",
+      "label": "加马铃薯 (90g)",
+      "price": 3.5
+    },
+    {
+      "id": "extra-pork-belly",
+      "label": "加花肉片 (70g)",
+      "price": 11.9
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "参峇臭豆虾仁炒花肉": [
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "阿嫲古早味酱油鸡全腿": [
+    {
+      "id": "extra-soy-leg-1",
+      "label": "多加一只酱油全鸡腿",
+      "price": 16.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "绍兴酒蒸花肉": [
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "澳洲和牛饼饭": [
+    {
+      "id": "extra-wagyu-patty",
+      "label": "加澳洲和牛饼 (1块)",
+      "price": 17.5
+    },
+    {
+      "id": "cherry-tomato-salad",
+      "label": "小番茄洋葱沙拉 (40g)",
+      "price": 4.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "家常日式咖喱饭": [
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "柠香香煎三文鱼饭": [
+    {
+      "id": "extra-salmon-70g",
+      "label": "加香煎三文鱼 (70g+)",
+      "price": 18.5
+    },
+    {
+      "id": "cherry-tomato",
+      "label": "小番茄 (40g)",
+      "price": 2.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "招牌原盅当归蒸鸡全腿": [
+    {
+      "id": "extra-herbal-leg-1",
+      "label": "多加一只暖胃全鸡腿",
+      "price": 16.5
+    },
+    {
+      "id": "extra-herbal-leg-2",
+      "label": "加 2 只暖胃鸡腿 (legacy)",
+      "price": 27.8
+    },
+    {
+      "id": "extra-herbal-leg-3",
+      "label": "加 3 只暖胃鸡腿 (legacy)",
+      "price": 41.4
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "希腊柠香烤鸡胸": [
+    {
+      "id": "greek-protein-bomb-combo",
+      "label": "蛋白质核弹三件套",
+      "price": 15.9
+    },
+    {
+      "id": "extra-greek-chicken-180g",
+      "label": "加柠香烤鸡胸 (180g)",
+      "price": 11.9
+    },
+    {
+      "id": "extra-aus-potato-80g",
+      "label": "加马铃薯 (90g)",
+      "price": 3.5
+    },
+    {
+      "id": "extra-black-olive-12g",
+      "label": "加提鲜黑橄榄 (12g)",
+      "price": 1.5
+    },
+    {
+      "id": "extra-cauliflower-80g",
+      "label": "加脆甜椰菜花 (80g)",
+      "price": 3
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "山药云耳海陆双鲜炒": [
+    {
+      "id": "surf-turf-super-combo",
+      "label": "海陆澎湃三件套",
+      "price": 11.4
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
+      "id": "extra-chicken-breast",
+      "label": "嫩炒鸡丁 (50g)",
+      "price": 4.5
+    },
+    {
+      "id": "extra-yam",
+      "label": "鲜脆山药块 (90g)",
+      "price": 4
+    },
+    {
+      "id": "extra-fungus",
+      "label": "脆爽云耳 (20g)",
+      "price": 2.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "香煎金黄鸡扒饭": [
+    {
+      "id": "chicken-chop-nostalgia-combo",
+      "label": "古早味大满贯三件套",
+      "price": 12.9
+    },
+    {
+      "id": "extra-chicken-chop",
+      "label": "加香煎金鸡扒 (150g)",
+      "price": 10.9
+    },
+    {
+      "id": "cherry-tomato",
+      "label": "小番茄 (40g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "家乡豆酱焖花肉": [
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "金黄葱香煎鸡汤": [
+    {
+      "id": "scallion-soup-combo",
+      "label": "爆量满足三件套",
+      "price": 12.9
+    },
+    {
+      "id": "extra-scallion-chop-side",
+      "label": "加葱香煎鸡扒",
+      "price": 10.9
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ],
+  "古早味姜葱鱼片饭": [
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 3.5
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "shrimp-egg",
+      "label": "虾仁炒蛋",
+      "price": 12.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "chia-pudding",
+      "label": "奇亚籽布丁",
+      "price": 6.9
+    },
+    {
+      "id": "longjing-ice",
+      "label": "龙井 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "longjing-warm",
+      "label": "龙井 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-ice",
+      "label": "铁观音 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "tieguanyin-warm",
+      "label": "铁观音 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-ice",
+      "label": "水仙 (冰)",
+      "price": 3.8
+    },
+    {
+      "id": "shuixian-warm",
+      "label": "水仙 (温)",
+      "price": 3.8
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    }
+  ]
+};
+
+/** 菜名不在表里时的兜底（通用加料）。 */
+export const UNIVERSAL_ADDON_OPTIONS: DishAddonOption[] = [
+  {
+    "id": "shrimp-broccoli-steamed-egg",
+    "label": "鲜虾西兰花滑蒸蛋",
+    "price": 6.8
+  }
+];
