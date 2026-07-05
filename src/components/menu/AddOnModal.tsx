@@ -267,6 +267,54 @@ export default function AddOnModal({
             return [proteinBombSpecial, ...customSections];
         }
 
+        // If it's Lemon Pan-Seared Salmon (id: 21), sides carry the dish's own
+        // ingredients (edamame / corn / cherry tomato) plus an extra-salmon upsell.
+        // 西兰花 (50g) intentionally absent — no standalone add-on price provided yet.
+        if (dish.id === 21) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-salmon-70g', name: '加香煎三文鱼 (70g+)', nameEn: 'Extra Pan-Seared Salmon (70g+)', price: p('extra-salmon-70g', 18.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (25g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-corn-side', name: '金黄甜玉米 (25g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                if (section.id === 'alacarte') {
+                    // Remove global extra-edamame and extra-corn from alacarte for this dish
+                    return {
+                        ...section,
+                        items: section.items.filter(item => item.id !== 'extra-edamame' && item.id !== 'extra-corn')
+                    };
+                }
+                return section;
+            });
+        }
+
+        // If it's Aussie Wagyu Beef Patty Don (id: 24), sides carry the dish's own
+        // cherry-tomato salad plus an extra-patty upsell.
+        if (dish.id === 24) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)', nameEn: 'Extra Aussie Wagyu Patty (1 pc)', price: p('extra-wagyu-patty', 17.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato Salad', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
         // If it's Angelica Steamed Whole Chicken Leg (Tuesday special, id: 2), append specific add-ons to the sides
         if (dish.id === 2) {
             return addOnSections.map(section => {

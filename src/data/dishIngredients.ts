@@ -315,6 +315,14 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // ─── Chicken Chop add-on ───────────────────────────────────
   '加香煎金鸡扒 (150g)': [{ name: '鸡扒', qty: 1, unit: '块' }],
 
+  // ─── Lemon Salmon add-on ───────────────────────────────────
+  // 客人标签 70g+ = 熟重；采购生重沿用主菜三文鱼的 120g 估算（煎制失水约 20%，
+  // 与主菜同一 TODO_CONFIRM — 碗妈确认实际每份采购克数后一起更新）。
+  '加香煎三文鱼 (70g+)': [{ name: '三文鱼', qty: 120, unit: 'g' }],
+
+  // ─── Wagyu Patty Don add-on ────────────────────────────────
+  '加澳洲和牛饼 (1块)': [{ name: '澳洲和牛饼', qty: 1, unit: '块' }],
+
   // ─── Greek Lemon Chicken add-ons ──────────────────────────
   '【增肌极客】加柠香烤鸡胸 (180g)': [{ name: '鸡胸肉', qty: 200, unit: 'g' }],
   '【优质碳水】加马铃薯 (90g)': [{ name: '马铃薯', qty: 100, unit: 'g' }],
@@ -454,6 +462,10 @@ export const addOnShortNames: Record<string, string> = {
 
   // Chicken Chop
   '加香煎金鸡扒 (150g)': '加鸡扒',
+
+  // Lemon Salmon / Wagyu Patty Don
+  '加香煎三文鱼 (70g+)': '三文鱼',
+  '加澳洲和牛饼 (1块)': '和牛饼',
 
   // Greek Lemon Chicken
   '【增肌极客】加柠香烤鸡胸 (180g)': '柠胸',

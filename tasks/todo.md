@@ -221,3 +221,26 @@
   之前捆绑加料的现金在明细里也看不到（与手续费费基/客户档案口径统一）。
 - 顺带兼容：bundle 分布和明细行对 addon-topup 记录显示「加料充值」而非 "addon-topup 张装"。
 - ⏳ 待老板 dogfood：真实充值一笔 → 看客户档案余额 + 下单抵扣区能选到。
+
+---
+
+# 三文鱼 / 和牛 加料扩充（2026-07-05）
+
+老板需求：
+- 三文鱼饭（id 21）加料区要有这道菜本身的配料 + 新增「加香煎三文鱼 (70g+)」RM 18.50
+- 和牛饼饭（id 24）加料区要有：小番茄沙拉 (40g)、「加澳洲和牛饼 (1块)」RM 17.50
+- 改完网页后同步 dashboard 及相关联动
+
+## 计划
+- [ ] `src/data/addOnsConfig.ts`：新增 `extra-salmon-70g: 18.50`、`extra-wagyu-patty: 17.50`（submit-order 服务端校验自动生效）
+- [ ] `src/components/menu/AddOnModal.tsx`（ZH/EN 共用）：
+  - id 21 三文鱼 sides = 加三文鱼(70g+) + 毛豆(25g) + 玉米(25g) + 小番茄(40g) + 米饭项；alacarte 去重毛豆/玉米
+  - id 24 和牛 sides = 加和牛饼(1块) + 小番茄(40g) + 米饭项
+  - ⚠️ 三文鱼配菜里的西兰花 50g 没有任何独立加料定价 → 不编造，跳过并向老板报告
+- [ ] `src/data/dishIngredients.ts`：addOnRecipes + addOnShortNames 补两个新 label（三文鱼 120g 生重沿用菜品估算 TODO_CONFIRM；和牛饼 1 块）；dashboard label 与网页完全一致 → 不需要新 alias
+- [ ] Dashboard 源文件（Desktop incredibowl-dashboard.html）：
+  - DISH_ADDON_MAP '21' / '24' 顶部加新加料
+  - ADDON_SEED 加 2 行（加菜类，costPrice=0 等老板 Settings 填成本）
+  - WEB_LABEL_TO_ADDON_ID 加 2 个映射
+- [ ] `npm run sync:dashboard` 回灌 public 副本
+- [ ] `npx tsc --noEmit` 验证；只 commit 相关文件

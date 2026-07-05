@@ -2741,6 +2741,8 @@
             { id: 'extra-potato',                name: '【绵密软糯】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
             { id: 'extra-pork-belly',            name: '【浓香入味】加花肉片 (70g)',            price: 11.90, category: '加菜' },
             { id: 'extra-scallion-chop-side',    name: '【收工犒劳】多加一只葱香煎鸡扒',        price: 10.90, category: '加菜' },
+            { id: 'extra-salmon-70g',            name: '加香煎三文鱼 (70g+)',                   price: 18.50, category: '加菜' },  // 新 add-on 2026-07-05（三文鱼饭）
+            { id: 'extra-wagyu-patty',           name: '加澳洲和牛饼 (1块)',                    price: 17.50, category: '加菜' },  // 新 add-on 2026-07-05（和牛饼饭）
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
@@ -3148,6 +3150,9 @@ incredibowl.my`,
             '【浓香入味】加花肉片 (70g)': 'extra-pork-belly',
             // 葱煎鸡汤 specials
             '【收工犒劳】多加一只葱香煎鸡扒': 'extra-scallion-chop-side',
+            // 三文鱼 / 和牛饼 specials (2026-07-05)
+            '加香煎三文鱼 (70g+)': 'extra-salmon-70g',
+            '加澳洲和牛饼 (1块)': 'extra-wagyu-patty',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -9233,7 +9238,10 @@ incredibowl.my`,
             ],
             '21': [
                 // 柠香香煎三文鱼饭（周五）— RM 23.90，餐券抵扣需补 RM 4（voucherTopUp）
-                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:21 同步）：
+                // 加三文鱼 + 本菜自带配料（毛豆/玉米/小番茄，下方 alacarte 已有毛豆/玉米）
+                { id: 'extra-salmon-70g', label: '加香煎三文鱼 (70g+)', price: 18.50 },
+                { id: 'cherry-tomato',    label: '小番茄 (40g)', price: 2.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -9282,7 +9290,9 @@ incredibowl.my`,
             '24': [
                 // 澳洲和牛饼饭（周二主推）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
                 // default 自带 1 温泉蛋（已含在菜里）+ 樱桃番茄莎莎；下方 add-on 是 EXTRA
-                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:24 同步）
+                { id: 'extra-wagyu-patty', label: '加澳洲和牛饼 (1块)', price: 17.50 },
+                { id: 'cherry-tomato',     label: '小番茄 (40g)', price: 2.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },

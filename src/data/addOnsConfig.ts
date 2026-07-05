@@ -62,6 +62,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-fungus': 2.50,
   'extra-yam': 4.00,
 
+  // ─── Lemon Salmon (id:21) specials ─────────
+  'extra-salmon-70g': 18.50,
+
+  // ─── Aussie Wagyu Patty Don (id:24) specials ───
+  'extra-wagyu-patty': 17.50,
+
   // ─── Angelica Chicken (Tuesday special, id:2) specials ─────
   'extra-herbal-leg-1': 16.50,
 
