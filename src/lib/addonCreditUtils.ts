@@ -32,6 +32,12 @@ export interface MintAddonCreditsInput {
   purchasedAtMs?: number;
   /** Days until each credit batch expires (same as the bundle's vouchers). */
   validityDays: number;
+  /**
+   * Exact expiry override (ms epoch). When set, wins over validityDays —
+   * used by standalone top-ups to align exactly with the customer's
+   * latest voucher expiry instead of a fixed day count.
+   */
+  expiresAtMs?: number;
 }
 
 /**
@@ -59,9 +65,9 @@ export async function mintAddonCredits(
   const purchasedAt = input.purchasedAtMs
     ? Timestamp.fromMillis(input.purchasedAtMs)
     : Timestamp.now();
-  const expiresAt = Timestamp.fromMillis(
-    purchasedAt.toMillis() + validityDays * 86_400_000,
-  );
+  const expiresAt = input.expiresAtMs
+    ? Timestamp.fromMillis(input.expiresAtMs)
+    : Timestamp.fromMillis(purchasedAt.toMillis() + validityDays * 86_400_000);
 
   const batch = db.batch();
   const ids: string[] = [];

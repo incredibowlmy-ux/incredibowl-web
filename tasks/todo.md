@@ -187,3 +187,32 @@
       `pending + fpx + 超 1 小时`（?hours= 可调）→ 标 cancelled(fpx-timeout-auto) +
       回补 dishStock/食材（仅 06-29 后）+ releaseMealVouchers。**只碰 fpx**——QR pending
       是等人工核收据的正常态。⏳ 老板需在 n8n 加每小时 workflow 打这个端点。
+
+---
+
+# 2026-07-05 — 预付加料独立充值（addon top-up）+ 新增 2 个可预付加料
+
+## 背景
+客户买 20 张券时捆绑预付了加料/升级；第二周对剩余券临时追加买加料（top-up 付款）。
+现状：预付加料只能在卖券时捆绑售出（manual-voucher-purchase 强制 bundleId 5/10/20）。
+兑换侧（订单弹窗预付加料抵扣读 getAvailableAddonCredits）零改动，新 credits 自动可抵扣。
+
+## 新加料对应（价格与系统唯一吻合项）
+- family size vege RM10.90 = broccoli-egg 蒜蓉西兰花炒蛋
+- steam egg RM6.80 = shrimp-broccoli-steamed-egg 鲜虾西兰花滑蒸蛋
+
+## 计划
+- [ ] 1. addOnsConfig.ts：PREPAID_ADDON_OPTIONS 加上面 2 个（价格已在 ADD_ON_PRICES）
+- [ ] 2. addonCreditUtils.ts：mintAddonCredits 支持可选 expiresAtMs（精确对齐券到期日）
+- [ ] 3. 新 API /api/admin/manual-addon-topup：按电话找客户（必须已存在，不建 stub）→
+      白名单+服务端定价校验 → 有效期=客户可用券最晚 expiresAt（无有效券拒绝）→
+      写 mealVoucherPurchases 记录（amountPaid:0/addOnAmountPaid/totalAmountPaid，
+      type:'addon-topup'，voucherCount:0）→ mintAddonCredits（purchaseId 幂等）→ bump totalSpent
+- [ ] 4. Dashboard（Desktop 源文件）：卖餐券弹窗预付加料 picker 加 2 个新加料；
+      客户资料弹窗「预付加料余额」旁加「＋充值加料」按钮 + 新充值小弹窗 → 调新 API
+- [ ] 5. npm run sync:dashboard 回灌 public 副本
+- [ ] 6. 验证：tsc 全绿 + dashboard 内联 JS node --check
+- [ ] 7. commit + push（部署后 dashboard 才能调到新路由）
+
+## Review
+（完成后补）

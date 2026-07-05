@@ -2495,6 +2495,70 @@
         </div>
     </div>
 
+    <!-- ═══════════ ADDON TOP-UP MODAL（预付加料独立充值）═══════════ -->
+    <div id="addonTopupModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:460px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🍳 充值预付加料</div>
+                    <div class="modal-subtitle">客户中途加购加料 / 升级 — 有效期自动对齐其最晚餐券到期日</div>
+                </div>
+                <button class="modal-close" id="atmCloseBtn" type="button">&times;</button>
+            </div>
+            <form id="addonTopupForm" class="modal-body">
+                <div class="modal-row-2">
+                    <div>
+                        <label>电话 *</label>
+                        <input type="tel" id="atmPhone" required placeholder="0123456789" pattern="[0-9+\-\s]*" />
+                        <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="atmNameHint">必须是已有可用餐券的客户</div>
+                    </div>
+                    <div>
+                        <label>付款日期</label>
+                        <input type="date" id="atmDate" />
+                    </div>
+                </div>
+
+                <div class="modal-row">
+                    <label>支付方式 *</label>
+                    <div class="channel-pills" id="atmPaymentPills">
+                        <button type="button" class="channel-pill active" data-payment="cash">现金</button>
+                        <button type="button" class="channel-pill" data-payment="qr">QR / DuitNow</button>
+                        <button type="button" class="channel-pill" data-payment="fpx-manual">FPX 转账</button>
+                        <button type="button" class="channel-pill" data-payment="whatsapp">WhatsApp 内</button>
+                        <button type="button" class="channel-pill" data-payment="other">其他</button>
+                    </div>
+                </div>
+
+                <div class="modal-row" style="padding:12px 14px;background:rgba(201,152,92,0.08);border:1px solid rgba(201,152,92,0.25);border-radius:10px">
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                        <span>🍳 加料 / 升级 *</span>
+                        <span style="font-size:11px;color:var(--text-muted);font-weight:400">按面值收款 · 兑餐时自动 RM0</span>
+                    </label>
+                    <div id="atmRows" style="display:grid;gap:8px"></div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px dashed rgba(201,152,92,0.3);display:flex;justify-content:space-between;align-items:baseline">
+                        <span style="font-size:11px;color:var(--text-muted)">应收合计</span>
+                        <span id="atmSubtotal" class="num mono" style="font-weight:800;color:var(--primary)">RM 0.00</span>
+                    </div>
+                    <div style="margin-top:4px;font-size:10px;color:var(--text-muted)">合约负债（MFRS 15）· 兑餐时确认收入 · 到期日 = 客户最晚一张可用券的到期日</div>
+                </div>
+
+                <div class="modal-row">
+                    <label>备注（可选）</label>
+                    <input type="text" id="atmNote" maxlength="200" placeholder="例：第二周升级三文鱼 + 加蛋" />
+                </div>
+
+                <div id="atmError" class="login-error hidden" style="margin-top:10px"></div>
+            </form>
+            <div class="modal-footer">
+                <div class="modal-footer-hint">保存后 → mint 加料 credits + 计入预付加料负债 · 下单抵扣区自动可选</div>
+                <div class="modal-footer-actions">
+                    <button type="button" class="btn ghost" id="atmCancelBtn">取消</button>
+                    <button type="button" class="btn" id="atmSubmitBtn">保存 + 充值</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════ EXPORT AI REVIEW MODAL ═══════════ -->
     <div id="exportAIModal" class="modal-backdrop hidden">
         <div class="modal" style="max-width:520px">
@@ -6052,7 +6116,7 @@ incredibowl.my`,
             });
             const bundleBreakdown = Object.entries(byBundle)
                 .sort(([a], [b]) => Number(a) - Number(b))
-                .map(([id, v]) => `${id} 张装 × ${v.count}`)
+                .map(([id, v]) => id === 'addon-topup' ? `加料充值 × ${v.count}` : `${id} 张装 × ${v.count}`)
                 .join(' · ') || '—';
 
             // Redemption in current period (cross-reference orders that used vouchers)
@@ -9772,7 +9836,9 @@ incredibowl.my`,
                     const db_ = tsToDate(a.paidAt) || tsToDate(a.createdAt) || 0;
                     return da - db_;
                 });
-                totalAmount = purchases.reduce((s, p) => s + (Number(p.amountPaid) || 0), 0);
+                // 现金口径 = totalAmountPaid（含预付加料）?? amountPaid — 同手续费费基/客户档案，
+                // 否则捆绑加料现金和 addon-topup（amountPaid 恒 0）会从明细里消失。
+                totalAmount = purchases.reduce((s, p) => s + (Number(p.totalAmountPaid ?? p.amountPaid) || 0), 0);
                 const totalVouchers = purchases.reduce((s, p) => s + (Number(p.voucherCount) || 0), 0);
                 subtitle = `共 ${purchases.length} 笔 / ${totalVouchers} 张售出 · 合计现金 RM ${totalAmount.toFixed(2)}`;
                 rows = purchases.map(p => {
@@ -9791,13 +9857,16 @@ incredibowl.my`,
                         <div style="font-weight:600">${escapeHtml(p.userName || '匿名')}${isStub ? ' <span style="font-size:10px;color:#9A6E2F;font-weight:400">(stub)</span>' : ''}</div>
                         <div class="muted mono" style="font-size:11px;margin-top:2px">${escapeHtml(p.userPhone || '—')}</div>
                     `;
+                    const bundleCell = p.bundleId === 'addon-topup'
+                        ? `🍳 加料充值${Array.isArray(p.prepaidAddOns) && p.prepaidAddOns.length ? ' · ' + p.prepaidAddOns.map(a => `${escapeHtml(a.addonName || a.addonId)}×${Number(a.quantity) || 0}`).join(' ') : ''}`
+                        : `${p.bundleId || '?'} 张装 · 摊销 RM ${allocPerVoucher.toFixed(3)}`;
                     return `
                         <tr>
                             <td class="muted">${dateStr}</td>
                             <td>${customerCell}</td>
-                            <td>${channelLabel}<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${p.bundleId || '?'} 张装 · 摊销 RM ${allocPerVoucher.toFixed(3)}</div></td>
+                            <td>${channelLabel}<div style="font-size:10px;color:var(--text-muted);margin-top:2px">${bundleCell}</div></td>
                             <td class="r num">${p.voucherCount || '—'}</td>
-                            <td class="r num"><strong>${fmt.rm(Number(p.amountPaid) || 0)}</strong></td>
+                            <td class="r num"><strong>${fmt.rm(Number(p.totalAmountPaid ?? p.amountPaid) || 0)}</strong></td>
                             <td class="muted mono" style="font-size:11px">${(p.id || '').slice(-8)}</td>
                         </tr>
                     `;
@@ -11103,6 +11172,8 @@ incredibowl.my`,
             { id: 'potato-egg', name: '马铃薯煎蛋', price: 3.50 },
             { id: 'salmon-upgrade', name: '三文鱼升级', price: 4.00 },
             { id: 'wagyu-upgrade', name: '和牛饭升级', price: 3.00 },  // 2026-06-21：周二和牛饼饭 voucherTopUp=3
+            { id: 'broccoli-egg', name: '蒜蓉西兰花炒蛋', price: 10.90 },              // 2026-07-05 family size vege
+            { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 2026-07-05 steam egg
         ];
         // Per-user available prepaid add-on credits → { addonId: { name, remaining } }
         function availableAddonCreditsForUser(userId) {
@@ -11270,6 +11341,96 @@ incredibowl.my`,
             } finally {
                 btn.disabled = false;
                 btn.textContent = '保存 + 发券';
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //   ADDON TOP-UP MODAL（预付加料独立充值 — 客户中途加购）
+        // ═══════════════════════════════════════════════════════════════
+        let atmPaymentMethod = 'cash';
+        function renderAtmRows() {
+            const wrap = $('#atmRows');
+            if (!wrap) return;
+            wrap.innerHTML = PREPAID_ADDON_OPTIONS_DASHBOARD.map(o => `
+                <div style="display:grid;grid-template-columns:1fr 96px;gap:10px;align-items:center">
+                    <span style="font-size:12px">${o.name} <span style="color:var(--text-muted)">· RM ${o.price.toFixed(2)}</span></span>
+                    <input type="number" class="atm-qty" data-id="${o.id}" data-price="${o.price}" min="0" step="1" value="0" placeholder="0" style="text-align:right" />
+                </div>
+            `).join('');
+            wrap.querySelectorAll('.atm-qty').forEach(inp => inp.addEventListener('input', refreshAtmSubtotal));
+        }
+        function collectAtmAddOns() {
+            const out = [];
+            $$('#atmRows .atm-qty').forEach(inp => {
+                const q = parseInt(inp.value, 10) || 0;
+                if (q > 0) out.push({ addonId: inp.dataset.id, quantity: q, price: Number(inp.dataset.price) || 0 });
+            });
+            return out;
+        }
+        function refreshAtmSubtotal() {
+            const sub = collectAtmAddOns().reduce((s, a) => s + a.price * a.quantity, 0);
+            $('#atmSubtotal').textContent = `RM ${sub.toFixed(2)}`;
+        }
+        function openAddonTopupModal(prefill) {
+            $('#atmPhone').value = (prefill && prefill.phone) || '';
+            $('#atmDate').value = ymdKey(new Date());  // 本地日，同 svm
+            $('#atmNote').value = '';
+            $('#atmNameHint').textContent = (prefill && prefill.name) ? `客户：${prefill.name}` : '必须是已有可用餐券的客户';
+            atmPaymentMethod = 'cash';
+            $$('#atmPaymentPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.payment === atmPaymentMethod));
+            renderAtmRows();
+            refreshAtmSubtotal();
+            $('#atmError').classList.add('hidden');
+            $('#addonTopupModal').classList.remove('hidden');
+            setTimeout(() => { const first = $('#atmRows .atm-qty'); if (first) first.focus(); }, 100);
+        }
+        function closeAddonTopupModal() { $('#addonTopupModal').classList.add('hidden'); }
+        $('#atmCloseBtn').addEventListener('click', closeAddonTopupModal);
+        $('#atmCancelBtn').addEventListener('click', closeAddonTopupModal);
+        $('#addonTopupModal').addEventListener('click', (e) => { if (e.target === $('#addonTopupModal')) closeAddonTopupModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !$('#addonTopupModal').classList.contains('hidden')) closeAddonTopupModal();
+        });
+        $$('#atmPaymentPills .channel-pill').forEach(p => {
+            p.addEventListener('click', () => {
+                atmPaymentMethod = p.dataset.payment;
+                $$('#atmPaymentPills .channel-pill').forEach(x => x.classList.toggle('active', x === p));
+            });
+        });
+        $('#addonTopupForm').addEventListener('submit', e => e.preventDefault());
+        $('#atmSubmitBtn').addEventListener('click', async () => {
+            const errEl = $('#atmError');
+            errEl.classList.add('hidden');
+            const phone = $('#atmPhone').value.trim();
+            if (!phone || !dashboardNormalizePhone(phone)) { errEl.textContent = '电话格式无效'; errEl.classList.remove('hidden'); $('#atmPhone').focus(); return; }
+            const items = collectAtmAddOns();
+            if (items.length === 0) { errEl.textContent = '至少选一个加料'; errEl.classList.remove('hidden'); return; }
+            const date = $('#atmDate').value;
+            const paidAtMs = date ? new Date(date + 'T12:00:00').getTime() : undefined;
+            const btn = $('#atmSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = '正在充值...';
+            try {
+                const result = await callAdminAPI('/api/admin/manual-addon-topup', {
+                    phone,
+                    prepaidAddOns: items.map(a => ({ addonId: a.addonId, quantity: a.quantity })),
+                    paymentMethod: atmPaymentMethod,
+                    channel: 'whatsapp',
+                    paidAtMs,
+                    note: $('#atmNote').value.trim(),
+                });
+                const expStr = result.expiresAtMs ? new Date(result.expiresAtMs).toLocaleDateString('zh-CN') : '';
+                toast(`✅ 已给 ${result.userName || phone} 充值加料 RM ${result.addOnAmountPaid.toFixed(2)}${expStr ? ` · 有效期至 ${expStr}` : ''}`, 'success');
+                closeAddonTopupModal();
+                // Refresh so 预付加料负债 KPI + 客户档案余额 pick up the new credits
+                await loadAllData();
+            } catch (e2) {
+                errEl.textContent = '充值失败：' + e2.message;
+                errEl.classList.remove('hidden');
+                console.error(e2);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '保存 + 充值';
             }
         });
 
@@ -11868,7 +12029,10 @@ incredibowl.my`,
                 <!-- ─── 餐券 ─── -->
                 ${p.voucherPurchaseCount > 0 || p.availableCount > 0 ? `
                 <div style="padding:14px 16px;background:rgba(201,152,92,0.08);border-radius:10px;margin-bottom:10px;border-left:3px solid #C9985C">
-                    <div style="font-size:13px;font-weight:600;color:#9A6E2F;margin-bottom:8px">🎫 餐券</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div style="font-size:13px;font-weight:600;color:#9A6E2F">🎫 餐券</div>
+                        ${p.availableCount > 0 && p.phone ? `<button type="button" data-cust-action="addon-topup" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" style="padding:4px 10px;border-radius:7px;background:rgba(201,152,92,0.18);color:#9A6E2F;font-size:11px;font-weight:600;cursor:pointer">🍳 ＋充值加料</button>` : ''}
+                    </div>
                     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px">
                         <div><span style="color:var(--text-muted)">购买</span> <strong>${p.voucherPurchaseCount}</strong> 笔 / <strong>${p.voucherCountMinted}</strong> 张</div>
                         <div><span style="color:var(--text-muted)">付款</span> <strong>${fmt.rm(p.voucherCashSpent)}</strong></div>
@@ -12037,6 +12201,11 @@ incredibowl.my`,
                 navigator.clipboard.writeText(tmpl)
                     .then(() => toast(`已复制 ${name} 的 WA 文案`, 'success'))
                     .catch(() => toast('复制失败', 'error'));
+            } else if (action === 'addon-topup') {
+                const name = btn.dataset.name || '';
+                const phone = btn.dataset.phone || '';
+                closeCustomerLookup();
+                openAddonTopupModal({ name, phone });
             } else if (action === 'new-order') {
                 const name = btn.dataset.name || '';
                 const phone = btn.dataset.phone || '';
