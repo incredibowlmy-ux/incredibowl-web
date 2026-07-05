@@ -424,6 +424,22 @@ export default function V4BentoLayout() {
                             </div>
                         )}
                         <p className="text-xs text-gray-400 mt-3">订单已确认，感谢您的订购！</p>
+                        {/* WhatsApp confirmation deep link — puts a copy of the
+                            order in the customer's own chat (their receipt) and
+                            opens the private-domain channel in one tap. */}
+                        <a
+                            href={`https://wa.me/60103370197?text=${encodeURIComponent([
+                                '你好碗妈 👋 我刚在网站付款下单成功，想在 WhatsApp 接收订单确认：',
+                                `📌 订单号：#${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
+                                ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}（${it.date}）`),
+                                ...(fpxSuccess.total != null ? [`💰 已付 RM ${fpxSuccess.total.toFixed(2)}`] : []),
+                            ].join('\n'))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-bold hover:bg-[#1EBE57] transition-colors"
+                        >
+                            📲 WhatsApp 接收订单确认
+                        </a>
                         {/* Guest → Google upgrade: link in place, SAME uid, order
                             history preserved. Only shown to anonymous guests. */}
                         {currentUser?.isAnonymous && (

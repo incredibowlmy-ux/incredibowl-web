@@ -412,6 +412,22 @@ export default function EnglishHome() {
                             </div>
                         )}
                         <p className="text-xs text-gray-400 mt-3">Order confirmed, thank you!</p>
+                        {/* WhatsApp confirmation deep link — puts a copy of the
+                            order in the customer's own chat (their receipt) and
+                            opens the private-domain channel in one tap. */}
+                        <a
+                            href={`https://wa.me/60103370197?text=${encodeURIComponent([
+                                "Hi BowlMama 👋 I've just paid for my order and would like a WhatsApp confirmation:",
+                                `📌 Order: #${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
+                                ...fpxSuccess.items.map(it => `🍛 ${it.nameEn || it.name} ×${it.qty} (${it.date})`),
+                                ...(fpxSuccess.total != null ? [`💰 Paid RM ${fpxSuccess.total.toFixed(2)}`] : []),
+                            ].join('\n'))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-bold hover:bg-[#1EBE57] transition-colors"
+                        >
+                            📲 Get order confirmation on WhatsApp
+                        </a>
                         {/* Guest → Google upgrade: link in place, SAME uid, order
                             history preserved. Only shown to anonymous guests. */}
                         {currentUser?.isAnonymous && (

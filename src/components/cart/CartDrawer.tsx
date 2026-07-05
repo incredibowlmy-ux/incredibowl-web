@@ -62,7 +62,7 @@ export default function CartDrawer({
             setGuestLoading(false);
         }
     };
-    const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number } | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -448,13 +448,7 @@ export default function CartDrawer({
                 if (!confirmRes.ok) {
                     throw new Error((await confirmRes.json()).error || '订单确认失败');
                 }
-                setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
-                setTimeout(() => {
-                    onClearCart(); setOrderSuccess(null); setReceiptUploaded(false);
-                    setReceiptUrl(''); setOrderNote(''); setPromoCode('');
-                    setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0);
-                    onClose();
-                }, 4000);
+                showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
             } catch (err: any) {
                 // Rollback: if submit succeeded but confirm failed, cancel the
                 // pending order so claimed vouchers get released back to the user.
@@ -549,8 +543,7 @@ export default function CartDrawer({
                     }
                 }
                 localStorage.removeItem('fpx_pending_order');
-                setOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
-                setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
+                showOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
             } catch (err: any) {
                 // Cancel pending orders on any payment failure (dismiss, network error, verification fail, etc.)
                 // Pending orders may also be cancelled without a token (server pending-rule).
@@ -576,14 +569,25 @@ export default function CartDrawer({
         try {
             const result = await submitOrderViaAPI();
             trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
-            setOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
-            setTimeout(() => { onClearCart(); setOrderSuccess(null); setReceiptUploaded(false); setReceiptUrl(''); setOrderNote(''); setPromoCode(''); setPromoApplied(false); setPromoDiscount(0); setMealVouchersUsed(0); onClose(); }, 4000);
+            showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
     };
 
+    /** Show the success screen. Cart + form state are cleared IMMEDIATELY
+     *  (so a closed tab can't resurrect already-ordered items into a double
+     *  order), while the snapshot inside orderSuccess keeps the summary on
+     *  screen until the customer dismisses it — no more 4 s auto-close that
+     *  cut off reading / the WhatsApp confirmation tap. */
+    const showOrderSuccess = (id: string) => {
+        setOrderSuccess({ id, items: [...cart], total: cartTotal });
+        onClearCart(); setReceiptUploaded(false); setReceiptUrl('');
+        setOrderNote(''); setPromoCode(''); setPromoApplied(false);
+        setPromoDiscount(0); setMealVouchersUsed(0);
+    };
+
     if (orderSuccess) {
-        return <CartSuccess orderSuccess={orderSuccess} cart={cart} userProfile={userProfile} cartTotal={cartTotal} />;
+        return <CartSuccess orderSuccess={orderSuccess} userProfile={userProfile} onDone={() => { setOrderSuccess(null); onClose(); }} />;
     }
 
     return (
