@@ -125,6 +125,9 @@ export const PREPAID_ADDON_OPTIONS: PrepaidAddonOption[] = [
   { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋' },
   { id: 'extra-rice', name: '加饭' },
   { id: 'brown-rice', name: '白饭换糙米' },
+  { id: 'extra-greek-chicken-180g', name: '加柠香烤鸡胸 (180g)' },
+  { id: 'extra-salmon-70g', name: '加香煎三文鱼 (70g+)' },
+  { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)' },
 ];
 
 /** Fast lookup: is this add-on id allowed to be prepaid? */
