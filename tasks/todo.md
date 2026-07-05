@@ -295,4 +295,7 @@
   confirm 落 2 张字段逐项校验 7/7 ✓ / 双击重复 409 幂等 ✓ / 测试单已删干净 ✓。
 - 注意：与周订阅一样**不扣 dishStock/食材库存**（手动单走 dashboard 才扣）；预览警告
   只提醒不阻挡（除停业/停菜/菜不存在是硬伤跳过）。
+- 追加（老板问「能不能选 QR」）：加收款方式选择器 cash/qr/fpx/card/ewallet
+  （与 dashboard moPaymentPills 同一套值，报表分桶兼容），默认 qr，服务端白名单校验；
+  dogfood 复验：默认 qr ✓ / bitcoin 400 ✓ / cash 透传落库 ✓ / 测试单已清 ✓。
 - 另：本机有个别的会话留下的 next dev（port 3000, PID 2512）已卡死无响应，没动它。

@@ -30,10 +30,21 @@ interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | '
 interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
 interface PlanItem { dishName: string; qty: number; addOns: { label: string; price: number; quantity: number }[] }
 interface DayEntry { date: string; meal: 'lunch' | 'dinner'; time: string; items: PlanItem[] }
+type PaymentMethod = 'cash' | 'qr' | 'fpx' | 'card' | 'ewallet';
+// 与 dashboard 手动录单同一套值，报表按这些值分桶
+const PAYMENT_OPTIONS: { value: PaymentMethod; label: string }[] = [
+    { value: 'qr', label: 'QR / DuitNow' },
+    { value: 'cash', label: '现金' },
+    { value: 'fpx', label: 'FPX 转账' },
+    { value: 'card', label: '信用卡' },
+    { value: 'ewallet', label: 'E-wallet' },
+];
+
 interface Form {
     userId: string; name: string; phone: string; address: string;
     deliveryTier: 'near' | 'mid' | 'far'; deliveryZone: 'within2km' | 'outside2km';
     deliveryDistanceKm: number; deliveryFeePerDelivery: number; note: string;
+    paymentMethod: PaymentMethod;
     days: DayEntry[];
 }
 
@@ -57,7 +68,7 @@ function newDay(date: string): DayEntry {
 const EMPTY_FORM: Form = {
     userId: '', name: '', phone: '', address: '',
     deliveryTier: 'near', deliveryZone: 'within2km', deliveryDistanceKm: 0,
-    deliveryFeePerDelivery: 0, note: '', days: [newDay(tomorrow())],
+    deliveryFeePerDelivery: 0, note: '', paymentMethod: 'qr', days: [newDay(tomorrow())],
 };
 
 export default function MultiDayAdmin() {
@@ -104,6 +115,7 @@ export default function MultiDayAdmin() {
             deliveryDistanceKm: form.deliveryDistanceKm, deliveryFeePerDelivery: form.deliveryFeePerDelivery,
             note: form.note,
         },
+        paymentMethod: form.paymentMethod,
         days: form.days,
     });
 
@@ -281,7 +293,11 @@ export default function MultiDayAdmin() {
                                 <option value="near">near（邻里）</option><option value="mid">mid</option><option value="far">far</option>
                             </select></label>
                         <label className="text-xs font-bold text-gray-500">每次运费 RM<input type="number" step="0.5" value={form.deliveryFeePerDelivery} onChange={e => setForm({ ...form, deliveryFeePerDelivery: Number(e.target.value) })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
-                        <label className="text-xs font-bold text-gray-500 col-span-2">备注（会写进每张订单）<input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
+                        <label className="text-xs font-bold text-gray-500">收款方式
+                            <select value={form.paymentMethod} onChange={e => setForm({ ...form, paymentMethod: e.target.value as PaymentMethod })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                                {PAYMENT_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                            </select></label>
+                        <label className="text-xs font-bold text-gray-500">备注（会写进每张订单）<input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
                     </div>
                 </div>
 

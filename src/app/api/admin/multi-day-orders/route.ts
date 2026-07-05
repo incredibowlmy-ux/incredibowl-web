@@ -10,8 +10,8 @@ import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
  * 客户 WhatsApp 说「帮我排周二到周五的饭」，一次录好几天的普通订单，
  * 现金/QR 全额收款，完全不碰餐券。
  *
- * { action: 'preview', customer, days }             → dry-run：现价重算 + 警告，不写库
- * { action: 'confirm', customer, days, batchTag }   → 每天落一张 confirmed 手动单
+ * { action: 'preview', customer, days, paymentMethod? }           → dry-run：现价重算 + 警告，不写库
+ * { action: 'confirm', customer, days, paymentMethod?, batchTag } → 每天落一张 confirmed 手动单
  *
  * 订单 schema 镜像 subscriptions/week 的 confirm（isManual + channel:whatsapp +
  * batchTag + createdAt 落在配送日 04:00Z = KL 12:00，按日营收记在出餐当天），
@@ -31,6 +31,9 @@ async function getDb() {
 
 const round2 = (n: number) => Number(n.toFixed(2));
 const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+// 与 dashboard 手动录单同一套值（moPaymentPills），报表按这些值分桶
+const PAYMENT_METHODS = ['cash', 'qr', 'fpx', 'card', 'ewallet'] as const;
 
 interface PlannedItem {
   name: string;
@@ -154,6 +157,8 @@ export async function POST(req: NextRequest) {
   if (!customer?.phone) errs.push('缺电话');
   if (!customer?.address) errs.push('缺地址');
   if (rawDays.length === 0) errs.push('至少要加一天');
+  const paymentMethod = String(body?.paymentMethod || 'qr');
+  if (!PAYMENT_METHODS.includes(paymentMethod as any)) errs.push(`paymentMethod 必须是 ${PAYMENT_METHODS.join('/')}`);
   if (errs.length) return adminJson({ error: errs.join('；') }, 400);
 
   const deliveryFee = Number(customer.deliveryFeePerDelivery) || 0;
@@ -170,7 +175,7 @@ export async function POST(req: NextRequest) {
   // ── 预览 ─────────────────────────────────────────────
   if (action === 'preview') {
     return adminJson({
-      name, phone, userId, days, cashTotal,
+      name, phone, userId, days, cashTotal, paymentMethod,
       canConfirm: usable.length > 0,
       whatsappText: whatsappText(name, days),
       batchTag: `multi-${Date.now()}`,
@@ -204,7 +209,7 @@ export async function POST(req: NextRequest) {
         deliveryDistanceKm: Number(customer.deliveryDistanceKm) || 0,
         deliveryTier: ['near', 'mid', 'far'].includes(customer.deliveryTier) ? customer.deliveryTier : 'near',
         deliveryDate: d.date, deliveryTime: d.time,
-        paymentMethod: 'qr', receiptUploaded: true, status: 'confirmed',
+        paymentMethod, receiptUploaded: true, status: 'confirmed',
         isManual: true, channel: 'whatsapp', mealType: d.meal,
         note: `手动录入 · whatsapp · 多日批量${custNote ? ` · ${custNote}` : ''}`,
         batchTag,
