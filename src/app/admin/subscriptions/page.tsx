@@ -26,6 +26,7 @@ const WD_LABEL: Record<string, string> = { '1': '周一', '2': '周二', '3': '�
 // 可选主菜：目录里未 hidden 未 retired 的全部（含常驻）
 const DISH_OPTIONS = weeklyMenu.filter(d => !d.hidden && !d.retired).map(d => d.name);
 
+interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number }
 interface PlanItem { dishName: string; qty: number; addOns: { label: string; price: number; quantity: number }[] }
 interface PlanDay { skip?: boolean; meal: 'lunch' | 'dinner'; time: string; items: PlanItem[] }
 interface Sub {
@@ -51,6 +52,8 @@ export default function SubscriptionsAdmin() {
     const [user, setUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
     const [subs, setSubs] = useState<Sub[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [custQuery, setCustQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [editing, setEditing] = useState<Sub | null>(null);
     const [saving, setSaving] = useState(false);
@@ -79,7 +82,11 @@ export default function SubscriptionsAdmin() {
 
     const loadSubs = useCallback(async () => {
         setLoading(true); setError('');
-        try { setSubs((await api('/api/admin/subscriptions')).subscriptions); }
+        try {
+            const data = await api('/api/admin/subscriptions');
+            setSubs(data.subscriptions);
+            setCustomers(data.customers || []);
+        }
         catch (e: any) { setError(e.message); }
         finally { setLoading(false); }
     }, [api]);
@@ -122,6 +129,41 @@ export default function SubscriptionsAdmin() {
 
     const copyText = (id: string, text: string) => {
         navigator.clipboard.writeText(text).then(() => { setCopiedId(id); setTimeout(() => setCopiedId(''), 2000); });
+    };
+
+    // ── 客户搜索联想（同 dashboard 查客户的体验）──
+    const custMatches = (() => {
+        const q = custQuery.trim().toLowerCase();
+        if (!q) return [];
+        const qd = q.replace(/\D/g, '');
+        return customers.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            (qd.length >= 3 && c.phone.replace(/\D/g, '').includes(qd)),
+        ).slice(0, 8);
+    })();
+    const fillFromCustomer = (c: Customer) => {
+        setEditing(prev => {
+            if (!prev) return prev;
+            // 距离已知则顺带建议运费档（2.5km 内 near / 5km 内 mid / 以上 far）
+            const km = c.deliveryDistanceKm;
+            const tierPatch = km > 0
+                ? km <= 2.5
+                    ? { deliveryTier: 'near' as const, deliveryZone: 'within2km' as const }
+                    : km <= 5
+                        ? { deliveryTier: 'mid' as const, deliveryZone: 'outside2km' as const }
+                        : { deliveryTier: 'far' as const, deliveryZone: 'outside2km' as const }
+                : {};
+            return {
+                ...prev,
+                userId: c.userId,
+                name: c.name || prev.name,
+                phone: c.phone || prev.phone,
+                address: c.address || prev.address,
+                deliveryDistanceKm: km || prev.deliveryDistanceKm,
+                ...tierPatch,
+            };
+        });
+        setCustQuery('');
     };
 
     // ── 编辑器的 plan 修改 helpers ──
@@ -213,7 +255,7 @@ export default function SubscriptionsAdmin() {
                 {/* ── 订阅列表 ── */}
                 <div className="flex items-center justify-between">
                     <h2 className="font-black text-sm text-gray-500">常客模板（{subs.length}）</h2>
-                    <button onClick={() => setEditing({ ...EMPTY_SUB })} className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl text-xs font-black flex items-center gap-1.5"><Plus size={13} /> 新建常客</button>
+                    <button onClick={() => { setCustQuery(''); setEditing({ ...EMPTY_SUB }); }} className="px-4 py-2 bg-[#FF6B35] text-white rounded-xl text-xs font-black flex items-center gap-1.5"><Plus size={13} /> 新建常客</button>
                 </div>
                 {loading && <Loader2 className="animate-spin text-[#FF6B35] mx-auto" />}
                 {subs.map(s => (
@@ -225,7 +267,7 @@ export default function SubscriptionsAdmin() {
                                 <span className="text-xs text-gray-400 font-bold">{Object.entries(s.plan).filter(([, d]) => !d.skip).length} 天/周</span>
                             </button>
                             <div className="flex gap-2">
-                                <button onClick={() => setEditing(JSON.parse(JSON.stringify(s)))} className="px-3 py-1.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold">编辑</button>
+                                <button onClick={() => { setCustQuery(''); setEditing(JSON.parse(JSON.stringify(s))); }} className="px-3 py-1.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold">编辑</button>
                                 <button onClick={() => deleteSub(s.id!)} className="p-1.5 text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
                             </div>
                         </div>
@@ -249,6 +291,30 @@ export default function SubscriptionsAdmin() {
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto p-4">
                         <div className="bg-white rounded-2xl p-5 w-full max-w-2xl space-y-4 my-8">
                             <h3 className="font-black">{editing.id ? `编辑：${editing.name}` : '新建常客模板'}</h3>
+
+                            {/* 客户搜索自动填充 — userId 用真实 uid，和餐券归属一致 */}
+                            <div className="relative">
+                                <label className="text-xs font-bold text-gray-500">🔍 从现有客户填充（输姓名或电话，点选自动填 uid/姓名/电话/地址）
+                                    <input value={custQuery} onChange={e => setCustQuery(e.target.value)} placeholder="例：Thang 或 0122785765"
+                                        className="mt-1 w-full px-3 py-2 border-2 border-[#FF6B35]/40 rounded-xl text-sm" />
+                                </label>
+                                {custMatches.length > 0 && (
+                                    <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                        {custMatches.map(c => (
+                                            <button key={c.userId} onClick={() => fillFromCustomer(c)}
+                                                className="w-full text-left px-3 py-2 hover:bg-[#FF6B35]/10 border-b border-gray-100 last:border-0">
+                                                <span className="text-sm font-bold">{c.name || '（无名）'}</span>
+                                                <span className="text-xs text-gray-400 font-bold ml-2">{c.phone || '无电话'} · uid {c.userId.slice(0, 8)}…{c.deliveryDistanceKm ? ` · ${c.deliveryDistanceKm}km` : ''}</span>
+                                                {c.address && <span className="block text-[11px] text-gray-400 truncate">{c.address}</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                {custQuery.trim() && custMatches.length === 0 && (
+                                    <p className="mt-1 text-[11px] font-bold text-gray-400">没匹配到客户 — 可以直接手填下方字段</p>
+                                )}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-3">
                                 <label className="text-xs font-bold text-gray-500">姓名<input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>
                                 <label className="text-xs font-bold text-gray-500">电话<input value={editing.phone} onChange={e => setEditing({ ...editing, phone: e.target.value, userId: editing.userId || `manual_${e.target.value.replace(/\D/g, '')}` })} className="mt-1 w-full px-3 py-2 border rounded-xl text-sm" /></label>

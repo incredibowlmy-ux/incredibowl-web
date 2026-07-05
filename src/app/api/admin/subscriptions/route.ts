@@ -55,9 +55,26 @@ export async function GET(req: NextRequest) {
   if (!adminEmail) return adminJson({ error: '未授权' }, 401);
 
   const db = await getDb();
-  const snap = await db.collection('subscriptions').orderBy('name').get();
+  const [snap, usersSnap] = await Promise.all([
+    db.collection('subscriptions').orderBy('name').get(),
+    db.collection('users').get(),
+  ]);
   const subscriptions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  return adminJson({ subscriptions });
+  // 轻量客户名录 — 前端「新建常客」搜索自动填充用。userId=真实 uid，
+  // 与餐券归属一致（手填 manual_电话 常与券的实际 owner 不符 → 扣券失败）。
+  const customers = usersSnap.docs
+    .map(d => {
+      const v = d.data() || {};
+      return {
+        userId: d.id,
+        name: String(v.displayName || v.name || ''),
+        phone: String(v.phone || ''),
+        address: String(v.address || ''),
+        deliveryDistanceKm: Number(v.deliveryDistanceKm) || 0,
+      };
+    })
+    .filter(c => c.name || c.phone);
+  return adminJson({ subscriptions, customers });
 }
 
 export async function POST(req: NextRequest) {
