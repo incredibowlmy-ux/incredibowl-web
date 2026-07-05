@@ -202,17 +202,22 @@
 - steam egg RM6.80 = shrimp-broccoli-steamed-egg 鲜虾西兰花滑蒸蛋
 
 ## 计划
-- [ ] 1. addOnsConfig.ts：PREPAID_ADDON_OPTIONS 加上面 2 个（价格已在 ADD_ON_PRICES）
-- [ ] 2. addonCreditUtils.ts：mintAddonCredits 支持可选 expiresAtMs（精确对齐券到期日）
-- [ ] 3. 新 API /api/admin/manual-addon-topup：按电话找客户（必须已存在，不建 stub）→
+- [x] 1. addOnsConfig.ts：PREPAID_ADDON_OPTIONS 加上面 2 个（价格已在 ADD_ON_PRICES）
+- [x] 2. addonCreditUtils.ts：mintAddonCredits 支持可选 expiresAtMs（精确对齐券到期日）
+- [x] 3. 新 API /api/admin/manual-addon-topup：按电话找客户（必须已存在，不建 stub）→
       白名单+服务端定价校验 → 有效期=客户可用券最晚 expiresAt（无有效券拒绝）→
       写 mealVoucherPurchases 记录（amountPaid:0/addOnAmountPaid/totalAmountPaid，
       type:'addon-topup'，voucherCount:0）→ mintAddonCredits（purchaseId 幂等）→ bump totalSpent
-- [ ] 4. Dashboard（Desktop 源文件）：卖餐券弹窗预付加料 picker 加 2 个新加料；
-      客户资料弹窗「预付加料余额」旁加「＋充值加料」按钮 + 新充值小弹窗 → 调新 API
-- [ ] 5. npm run sync:dashboard 回灌 public 副本
-- [ ] 6. 验证：tsc 全绿 + dashboard 内联 JS node --check
-- [ ] 7. commit + push（部署后 dashboard 才能调到新路由）
+- [x] 4. Dashboard（Desktop 源文件）：加料 picker 数据源 +2；客户资料 🎫 区「＋充值加料」按钮
+      （仅有可用券时显示）+ 充值弹窗（atm* 前缀，抄 svm 模式）→ 调新 API → loadAllData
+- [x] 5. npm run sync:dashboard 回灌 public 副本
+- [x] 6. 验证：tsc 全绿 + dashboard 内联 JS node --check OK
+- [x] 7. commit 18b9922 + push；线上 smoke：新路由 403（鉴权拦截正常）+ 线上 dashboard 已含新功能
 
-## Review
-（完成后补）
+## Review（2026-07-05）
+- 入口：Dashboard 查客户 → 客户档案 🎫 餐券区右上「🍳 ＋充值加料」（有可用券才显示）。
+- 会计口径不变：加料现金全走合约负债（amountPaid=0），预付加料负债 KPI / P&L 兑餐确认收入自动闭合。
+- 附带修正：餐券销售明细「金额」列及合计从 amountPaid 改 totalAmountPaid ?? amountPaid——
+  之前捆绑加料的现金在明细里也看不到（与手续费费基/客户档案口径统一）。
+- 顺带兼容：bundle 分布和明细行对 addon-topup 记录显示「加料充值」而非 "addon-topup 张装"。
+- ⏳ 待老板 dogfood：真实充值一笔 → 看客户档案余额 + 下单抵扣区能选到。
