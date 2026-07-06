@@ -160,8 +160,10 @@ export async function GET(req: NextRequest) {
   if (soldOut.length) {
     lines.push(`今日售罄（不可点）：${soldOut.map(d => d.name).join('、')}`);
   }
+  // NOTE: today_menu is quoted VERBATIM to customers in the bot's greeting
+  // template — every line here must be customer-safe (no AI instructions).
   if (paused.length) {
-    lines.push(`暂别中（不可点,客户问起就说暂别、会回归）：${paused.map(d => d.name).join('、')}`);
+    lines.push(`暂别中（会回归哦）：${paused.map(d => d.name).join('、')}`);
   }
   const todayMenu = lines.join('\n');
 
