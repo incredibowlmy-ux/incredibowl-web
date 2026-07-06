@@ -492,9 +492,12 @@ export default function CartDrawer({
             // Cart snapshot for the post-redirect success modal (page.tsx / en/page.tsx)
             // — the cart itself is cleared by then, so the modal reads this instead.
             const summary = {
+                // Cart entries are CartBundle — the dish name lives on it.dish,
+                // not on the bundle itself (was it.name → "undefined" in the
+                // post-FPX success modal / WhatsApp prefill).
                 items: cart.map((it: any) => ({
-                    name: it.name,
-                    nameEn: it.nameEn || it.name,
+                    name: it.dish?.name || '',
+                    nameEn: it.dish?.nameEn || it.dish?.name || '',
                     qty: it.quantity || 1,
                     date: it.selectedDate || '',
                 })),
