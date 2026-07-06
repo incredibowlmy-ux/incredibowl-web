@@ -43,7 +43,7 @@ export default function V4BentoLayout() {
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccess, setFpxSuccess] = useState<{
         id: string;
-        items: { name: string; nameEn?: string; qty: number; date: string }[];
+        items: { name: string; nameEn?: string; qty: number; date: string; addOns?: string[]; addOnsEn?: string[] }[];
         total: number | null;
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
@@ -411,7 +411,7 @@ export default function V4BentoLayout() {
                             <div className="mt-3 bg-gray-50 rounded-xl p-3 text-left text-sm text-gray-600 space-y-1">
                                 {fpxSuccess.items.map((it, i) => (
                                     <div key={i} className="flex justify-between gap-3">
-                                        <span>{it.name} ×{it.qty}</span>
+                                        <span>{it.name} ×{it.qty}{it.addOns?.length ? ` + ${it.addOns.join(' + ')}` : ''}</span>
                                         <span className="text-gray-400 whitespace-nowrap">{it.date}</span>
                                     </div>
                                 ))}
@@ -431,7 +431,7 @@ export default function V4BentoLayout() {
                             href={`https://wa.me/60165119118?text=${encodeURIComponent([
                                 '你好碗妈 👋 我刚在网站付款下单成功，想在 WhatsApp 接收订单确认：',
                                 `📌 订单号：#${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
-                                ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}（${it.date}）`),
+                                ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}${it.addOns?.length ? ` + ${it.addOns.join(' + ')}` : ''}（${it.date}）`),
                                 ...(fpxSuccess.total != null ? [`💰 已付 RM ${fpxSuccess.total.toFixed(2)}`] : []),
                             ].join('\n'))}`}
                             target="_blank"

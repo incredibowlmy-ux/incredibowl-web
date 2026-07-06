@@ -495,12 +495,17 @@ export default function CartDrawer({
                 // Cart entries are CartBundle — the dish name lives on it.dish,
                 // not on the bundle itself (was it.name → "undefined" in the
                 // post-FPX success modal / WhatsApp prefill).
-                items: cart.map((it: any) => ({
-                    name: it.dish?.name || '',
-                    nameEn: it.dish?.nameEn || it.dish?.name || '',
-                    qty: it.quantity || 1,
-                    date: it.selectedDate || '',
-                })),
+                items: cart.map((it: any) => {
+                    const sel = (it.addOns || []).filter((a: any) => a?.item?.name);
+                    return {
+                        name: it.dish?.name || '',
+                        nameEn: it.dish?.nameEn || it.dish?.name || '',
+                        qty: it.quantity || 1,
+                        date: it.selectedDate || '',
+                        addOns: sel.map((a: any) => `${a.item.name}${a.quantity > 1 ? `×${a.quantity}` : ''}`),
+                        addOnsEn: sel.map((a: any) => `${a.item.nameEn || a.item.name}${a.quantity > 1 ? `×${a.quantity}` : ''}`),
+                    };
+                }),
                 total: finalTotal,
             };
             // localStorage（不是 sessionStorage）：手机 FPX 跳银行时浏览器常把

@@ -46,7 +46,7 @@ export default function EnglishHome() {
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccess, setFpxSuccess] = useState<{
         id: string;
-        items: { name: string; nameEn?: string; qty: number; date: string }[];
+        items: { name: string; nameEn?: string; qty: number; date: string; addOns?: string[]; addOnsEn?: string[] }[];
         total: number | null;
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
@@ -399,7 +399,7 @@ export default function EnglishHome() {
                             <div className="mt-3 bg-gray-50 rounded-xl p-3 text-left text-sm text-gray-600 space-y-1">
                                 {fpxSuccess.items.map((it, i) => (
                                     <div key={i} className="flex justify-between gap-3">
-                                        <span>{it.nameEn || it.name} ×{it.qty}</span>
+                                        <span>{it.nameEn || it.name} ×{it.qty}{(it.addOnsEn || it.addOns)?.length ? ` + ${(it.addOnsEn || it.addOns)!.join(' + ')}` : ''}</span>
                                         <span className="text-gray-400 whitespace-nowrap">{it.date}</span>
                                     </div>
                                 ))}
@@ -419,7 +419,7 @@ export default function EnglishHome() {
                             href={`https://wa.me/60165119118?text=${encodeURIComponent([
                                 "Hi BowlMama 👋 I've just paid for my order and would like a WhatsApp confirmation:",
                                 `📌 Order: #${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
-                                ...fpxSuccess.items.map(it => `🍛 ${it.nameEn || it.name} ×${it.qty} (${it.date})`),
+                                ...fpxSuccess.items.map(it => `🍛 ${it.nameEn || it.name} ×${it.qty}${(it.addOnsEn || it.addOns)?.length ? ` + ${(it.addOnsEn || it.addOns)!.join(' + ')}` : ''} (${it.date})`),
                                 ...(fpxSuccess.total != null ? [`💰 Paid RM ${fpxSuccess.total.toFixed(2)}`] : []),
                             ].join('\n'))}`}
                             target="_blank"
