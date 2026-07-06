@@ -927,6 +927,7 @@
         .order-status-pill.delivered { background: var(--success-soft); color: var(--success); }
         .order-status-pill.confirmed { background: var(--info-soft); color: var(--info); }
         .order-status-pill.preparing { background: var(--warning-soft); color: var(--warning); }
+        .order-status-pill.delivering { background: var(--info-soft); color: var(--info); }
         .order-status-pill.pending { background: var(--bg-subtle); color: var(--text-muted); }
         .order-status-pill.cancelled { background: var(--danger-soft); color: var(--danger); }
 
@@ -1222,6 +1223,9 @@
                     </button>
                     <button class="add-order-btn" id="lookupCustomerBtn" title="按姓名 / 电话查客户档案（订单史 · 消费 · 偏好 · 餐券余额）" style="background:linear-gradient(135deg,#4A7B8C,#6FA5B8);color:#fff">
                         <span class="plus">🔍</span><span>查客户</span>
+                    </button>
+                    <button class="add-order-btn" id="startDeliveryBtn" title="勾选今天要送的订单建立配送批次 — 订单转「配送中」，客户跟踪页出现实时地图" style="background:linear-gradient(135deg,#FF6B35,#FF8F5E);color:#fff">
+                        <span class="plus">🛵</span><span>开始配送</span>
                     </button>
                     <div class="date-picker" id="datePicker">
                         <button class="date-btn" data-range="7">7 日</button>
@@ -2495,6 +2499,42 @@
         </div>
     </div>
 
+    <!-- ═══════════ DELIVERY BATCH MODAL（开始配送批次）═══════════ -->
+    <div id="deliveryBatchModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:520px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🛵 开始配送</div>
+                    <div class="modal-subtitle">勾选本趟要送的订单 — 全部转「配送中」，客户跟踪页出现实时地图</div>
+                </div>
+                <button class="modal-close" id="dbmCloseBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-row">
+                    <label>时段</label>
+                    <div class="channel-pills" id="dbmSlotPills">
+                        <button type="button" class="channel-pill active" data-slot="all">全部</button>
+                        <button type="button" class="channel-pill" data-slot="lunch">🌞 午餐</button>
+                        <button type="button" class="channel-pill" data-slot="dinner">🌙 晚餐</button>
+                    </div>
+                </div>
+                <div class="modal-row">
+                    <label>今天的订单（已确认 / 准备中）</label>
+                    <div id="dbmOrderList" style="display:grid;gap:8px;max-height:320px;overflow-y:auto"></div>
+                </div>
+                <div id="dbmSuccess" class="hidden" style="padding:14px;background:var(--success-soft);border-radius:10px;font-size:13px;line-height:1.7"></div>
+                <div id="dbmError" class="login-error hidden" style="margin-top:10px"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-hint">建批次后在手机打开 www.incredibowl.my/driver 上报 GPS + 逐单送达</div>
+                <div class="modal-footer-actions">
+                    <button type="button" class="btn ghost" id="dbmCancelBtn">取消</button>
+                    <button type="button" class="btn" id="dbmSubmitBtn">🛵 开始配送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════ ADDON TOP-UP MODAL（预付加料独立充值）═══════════ -->
     <div id="addonTopupModal" class="modal-backdrop hidden">
         <div class="modal" style="max-width:460px">
@@ -3021,7 +3061,9 @@ incredibowl.my`,
         // "preparing" intentionally excluded: webhook race conditions could leave a
         // not-yet-settled order in this state. Revenue should only count confirmed +
         // delivered. Recent-orders list still shows preparing via filteredOrders().
-        const PAID_STATUSES = new Set(['confirmed', 'delivered']);
+        // "delivering" IS paid — batch-start only flips already-confirmed orders,
+        // so excluding it would make revenue KPI dip during every delivery run.
+        const PAID_STATUSES = new Set(['confirmed', 'delivering', 'delivered']);
 
         // ═══════════════════════════════════════════════════════════════
         //   DOMAIN HELPERS
@@ -4260,6 +4302,7 @@ incredibowl.my`,
                             status === 'delivered' ? '已送达' :
                             status === 'confirmed' ? '已确认' :
                             status === 'preparing' ? '准备中' :
+                            status === 'delivering' ? '配送中' :
                             status === 'cancelled' ? '已取消' : '待确认'
                         }</div>
                         ${actions}
@@ -11291,6 +11334,104 @@ incredibowl.my`,
         $('#svmCancelBtn').addEventListener('click', closeSellVoucherModal);
         $('#sellVoucherModal').addEventListener('click', (e) => {
             if (e.target === $('#sellVoucherModal')) closeSellVoucherModal();
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        //   DELIVERY BATCH（开始配送）— 建批次 → 订单转「配送中」→ /driver 上报 GPS
+        // ═══════════════════════════════════════════════════════════════
+        let dbmSlot = 'all';
+
+        function dbmEligibleOrders() {
+            const today = ymdKey(new Date());
+            return state.orders.filter(o =>
+                o.deliveryDate === today
+                && (o.status === 'confirmed' || o.status === 'preparing')
+                && (dbmSlot === 'all' || _cmMeal(o).toLowerCase() === dbmSlot));
+        }
+
+        function renderDbmList() {
+            const orders = dbmEligibleOrders();
+            $$('#dbmSlotPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.slot === dbmSlot));
+            if (orders.length === 0) {
+                $('#dbmOrderList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">今天该时段没有已确认的订单</div>';
+                return;
+            }
+            $('#dbmOrderList').innerHTML = orders.map(o => {
+                const meal = _cmMeal(o);
+                const mealLabel = meal === 'Lunch' ? '🌞午餐' : meal === 'Dinner' ? '🌙晚餐' : '';
+                const itemsPreview = (o.items || []).map(it => `${it.name} ×${it.quantity}`).join('、');
+                return `
+                    <label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg-subtle);border-radius:10px;cursor:pointer">
+                        <input type="checkbox" class="dbm-check" value="${o.id}" checked style="margin-top:3px;accent-color:#FF6B35" />
+                        <div style="min-width:0;font-size:13px;line-height:1.5">
+                            <div><strong>#${o.id.slice(-6).toUpperCase()}</strong> · ${escapeHtml(o.userName || '匿名')} ${mealLabel}</div>
+                            <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(itemsPreview)}</div>
+                            <div style="color:var(--text-muted);font-size:12px">📍 ${escapeHtml(o.userAddress || '无地址')}</div>
+                        </div>
+                    </label>`;
+            }).join('');
+        }
+
+        function openDeliveryBatchModal() {
+            dbmSlot = 'all';
+            $('#dbmSuccess').classList.add('hidden');
+            $('#dbmError').classList.add('hidden');
+            $('#dbmSubmitBtn').disabled = false;
+            $('#dbmSubmitBtn').textContent = '🛵 开始配送';
+            renderDbmList();
+            $('#deliveryBatchModal').classList.remove('hidden');
+        }
+        function closeDeliveryBatchModal() {
+            $('#deliveryBatchModal').classList.add('hidden');
+        }
+
+        $('#dbmSlotPills').addEventListener('click', (e) => {
+            const pill = e.target.closest('.channel-pill');
+            if (!pill) return;
+            dbmSlot = pill.dataset.slot;
+            renderDbmList();
+        });
+
+        $('#dbmSubmitBtn').addEventListener('click', async () => {
+            const orderIds = Array.from(document.querySelectorAll('.dbm-check:checked')).map(c => c.value);
+            const errEl = $('#dbmError');
+            errEl.classList.add('hidden');
+            if (orderIds.length === 0) {
+                errEl.textContent = '请至少勾选 1 个订单';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            const btn = $('#dbmSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = '建立批次中…';
+            try {
+                await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
+                // Reflect locally so the pills flip without a full reload
+                orderIds.forEach(id => {
+                    const idx = state.orders.findIndex(o => o.id === id);
+                    if (idx >= 0) state.orders[idx] = { ...state.orders[idx], status: 'delivering' };
+                });
+                renderAll();
+                const s = $('#dbmSuccess');
+                s.innerHTML = `✅ <strong>${orderIds.length} 单已转「配送中」</strong><br>`
+                    + `📱 在手机打开 <strong>www.incredibowl.my/driver</strong> 开始 GPS 上报 + 逐单点送达<br>`
+                    + `🗺️ 客户跟踪页现在会显示你的实时位置`;
+                s.classList.remove('hidden');
+                $('#dbmOrderList').innerHTML = '';
+                btn.textContent = '已开始';
+            } catch (err) {
+                errEl.textContent = err.message || '建立批次失败';
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = '🛵 开始配送';
+            }
+        });
+
+        $('#startDeliveryBtn').addEventListener('click', openDeliveryBatchModal);
+        $('#dbmCloseBtn').addEventListener('click', closeDeliveryBatchModal);
+        $('#dbmCancelBtn').addEventListener('click', closeDeliveryBatchModal);
+        $('#deliveryBatchModal').addEventListener('click', (e) => {
+            if (e.target === $('#deliveryBatchModal')) closeDeliveryBatchModal();
         });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !$('#sellVoucherModal').classList.contains('hidden')) closeSellVoucherModal();
