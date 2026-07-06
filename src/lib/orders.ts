@@ -9,7 +9,7 @@ export interface OrderItem {
     image?: string;
 }
 
-export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivered' | 'cancelled';
+export type OrderStatus = 'pending' | 'confirmed' | 'preparing' | 'delivering' | 'delivered' | 'cancelled';
 
 export interface OrderData {
     userId: string;
@@ -39,6 +39,8 @@ export interface OrderData {
     partIndex?: number;
     totalParts?: number;
     groupId?: string;
+    trackToken?: string;   // public tracking-page credential — NOT the doc id (doc id is an auth subject)
+    batchId?: string;      // deliveryBatches doc id while out for delivery
 }
 
 // Submit a new order (points NO LONGER awarded here)

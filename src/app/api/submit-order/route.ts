@@ -8,6 +8,8 @@ import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 
+import { generateTrackToken } from '@/lib/trackingUtils';
+
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -370,6 +372,7 @@ export async function POST(req: Request) {
 
       const payload: Record<string, any> = {
         userId, userName, userEmail, userPhone, userAddress,
+        trackToken: generateTrackToken(),
         items,
         total: finalTotal,
         originalTotal: group.subtotal,
@@ -502,6 +505,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       orderIds,
+      // Aligned with orderIds — client builds /track/<token> links for the WA message
+      trackInfo: payloads.map((p: any) => ({
+        token: p.trackToken,
+        date: p.deliveryDate,
+        time: p.deliveryTime,
+      })),
       groupId: groupId || null,
       isMultiPart,
       // serverTotal = food (after voucher) + delivery — what customer actually pays

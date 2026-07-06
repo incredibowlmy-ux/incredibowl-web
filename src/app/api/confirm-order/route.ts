@@ -45,7 +45,7 @@ function isValidRazorpaySignature(orderId: string, paymentId: string, signature:
  *   → cancelled:  admin | owner token | order still 'pending' (unpaid
  *                 throwaway — redirect-failure flows cancel without a session;
  *                 doc ids are unguessable)
- *   → preparing/delivered: admin only
+ *   → preparing/delivering/delivered: admin only
  */
 export async function POST(req: Request) {
   try {
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0 || orderIds.length > 20) {
       return NextResponse.json({ error: '缺少订单 ID' }, { status: 400 });
     }
-    if (!status || !['confirmed', 'cancelled', 'preparing', 'delivered'].includes(status)) {
+    if (!status || !['confirmed', 'cancelled', 'preparing', 'delivering', 'delivered'].includes(status)) {
       return NextResponse.json({ error: '无效状态' }, { status: 400 });
     }
 

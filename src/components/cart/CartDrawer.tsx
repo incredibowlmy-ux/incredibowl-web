@@ -62,7 +62,7 @@ export default function CartDrawer({
             setGuestLoading(false);
         }
     };
-    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number } | null>(null);
+    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] } | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -395,6 +395,7 @@ export default function CartDrawer({
             isMultiPart: boolean;
             serverTotal: number;
             checkoutEventId?: string;
+            trackInfo?: { token: string; date: string; time: string }[];
         };
     };
 
@@ -448,7 +449,7 @@ export default function CartDrawer({
                 if (!confirmRes.ok) {
                     throw new Error((await confirmRes.json()).error || '订单确认失败');
                 }
-                showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
+                showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0], result.trackInfo);
             } catch (err: any) {
                 // Rollback: if submit succeeded but confirm failed, cancel the
                 // pending order so claimed vouchers get released back to the user.
@@ -474,12 +475,14 @@ export default function CartDrawer({
             let isMultiPart = false;
             let groupId: string | null = null;
             let checkoutEventId: string | undefined;
+            let trackInfo: { token: string; date: string; time: string }[] | undefined;
             try {
                 const result = await submitOrderViaAPI();
                 orderIds = result.orderIds;
                 isMultiPart = result.isMultiPart;
                 groupId = result.groupId;
                 checkoutEventId = result.checkoutEventId;
+                trackInfo = result.trackInfo;
                 // Fire browser-side InitiateCheckout (deduped against CAPI by eventID)
                 trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, checkoutEventId);
             } catch (err: any) {
@@ -507,6 +510,7 @@ export default function CartDrawer({
                     };
                 }),
                 total: finalTotal,
+                trackInfo: trackInfo || [],
             };
             // localStorage（不是 sessionStorage）：手机 FPX 跳银行时浏览器常把
             // 原标签页杀掉，sessionStorage 随之丢失 → 跳回后成功弹窗渲染不出
@@ -551,7 +555,7 @@ export default function CartDrawer({
                     }
                 }
                 localStorage.removeItem('fpx_pending_order');
-                showOrderSuccess(isMultiPart ? groupId! : orderIds[0]);
+                showOrderSuccess(isMultiPart ? groupId! : orderIds[0], trackInfo);
             } catch (err: any) {
                 // Cancel pending orders on any payment failure (dismiss, network error, verification fail, etc.)
                 // Pending orders may also be cancelled without a token (server pending-rule).
@@ -577,7 +581,7 @@ export default function CartDrawer({
         try {
             const result = await submitOrderViaAPI();
             trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
-            showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0]);
+            showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0], result.trackInfo);
         } catch (error: any) { alert(`下单失败: ${error.message}`); }
         setSubmitting(false);
     };
@@ -587,8 +591,8 @@ export default function CartDrawer({
      *  order), while the snapshot inside orderSuccess keeps the summary on
      *  screen until the customer dismisses it — no more 4 s auto-close that
      *  cut off reading / the WhatsApp confirmation tap. */
-    const showOrderSuccess = (id: string) => {
-        setOrderSuccess({ id, items: [...cart], total: cartTotal });
+    const showOrderSuccess = (id: string, trackInfo?: { token: string; date: string; time: string }[]) => {
+        setOrderSuccess({ id, items: [...cart], total: cartTotal, trackInfo });
         onClearCart(); setReceiptUploaded(false); setReceiptUrl('');
         setOrderNote(''); setPromoCode(''); setPromoApplied(false);
         setPromoDiscount(0); setMealVouchersUsed(0);

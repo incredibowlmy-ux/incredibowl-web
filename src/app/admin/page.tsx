@@ -20,7 +20,8 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; labelCn: string; color
     pending: { label: 'Pending', labelCn: '待确认', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
     confirmed: { label: 'Confirmed', labelCn: '已确认', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: CheckCircle },
     preparing: { label: 'Preparing', labelCn: '准备中', color: 'bg-purple-100 text-purple-700 border-purple-200', icon: ChefHat },
-    delivered: { label: 'Delivered', labelCn: '已送达', color: 'bg-green-100 text-green-700 border-green-200', icon: Truck },
+    delivering: { label: 'Delivering', labelCn: '配送中', color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Truck },
+    delivered: { label: 'Delivered', labelCn: '已送达', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle },
     cancelled: { label: 'Cancelled', labelCn: '已取消', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
 };
 

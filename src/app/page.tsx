@@ -45,6 +45,7 @@ export default function V4BentoLayout() {
         id: string;
         items: { name: string; nameEn?: string; qty: number; date: string; addOns?: string[]; addOnsEn?: string[] }[];
         total: number | null;
+        trackInfo?: { token: string; date: string; time: string }[];
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
 
@@ -188,6 +189,7 @@ export default function V4BentoLayout() {
                             id: successId,
                             items: Array.isArray(summary?.items) ? summary.items : [],
                             total: typeof summary?.total === 'number' ? summary.total : null,
+                            trackInfo: Array.isArray(summary?.trackInfo) ? summary.trackInfo : [],
                         });
                         clearCart();
                     })
@@ -433,6 +435,8 @@ export default function V4BentoLayout() {
                                 `📌 订单号：#${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
                                 ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}${it.addOns?.length ? ` + ${it.addOns.join(' + ')}` : ''}（${it.date}）`),
                                 ...(fpxSuccess.total != null ? [`💰 已付 RM ${fpxSuccess.total.toFixed(2)}`] : []),
+                                ...(fpxSuccess.trackInfo || []).map(t =>
+                                    `📍 跟踪订单${(fpxSuccess.trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}：https://www.incredibowl.my/track/${t.token}`),
                             ].join('\n'))}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -440,6 +444,17 @@ export default function V4BentoLayout() {
                         >
                             📲 WhatsApp 接收订单确认
                         </a>
+                        {(fpxSuccess.trackInfo || []).map(t => (
+                            <a
+                                key={t.token}
+                                href={`/track/${t.token}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-black hover:bg-[#FF6B35]/5 transition-colors"
+                            >
+                                📍 跟踪订单{(fpxSuccess.trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}
+                            </a>
+                        ))}
                         {/* Guest → Google upgrade: link in place, SAME uid, order
                             history preserved. Only shown to anonymous guests. */}
                         {currentUser?.isAnonymous && (

@@ -6,7 +6,7 @@ import { CheckCircle } from 'lucide-react';
 interface CartSuccessProps {
     // Snapshot taken at submit time — the live cart is cleared the moment
     // the order succeeds, so this screen must not read from it.
-    orderSuccess: { id: string; items: any[]; total: number };
+    orderSuccess: { id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] };
     userProfile: any;
     onDone: () => void;
 }
@@ -18,9 +18,14 @@ const WHATSAPP_NUMBER = '60165119118';
 // — needed to deduplicate browser events against the server-side
 // Conversions API events fired from those routes.
 export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartSuccessProps) {
-    const { id, items, total } = orderSuccess;
+    const { id, items, total, trackInfo } = orderSuccess;
     const isGroup = id.startsWith('GRP');
     const displayId = isGroup ? id : id.slice(-6).toUpperCase();
+
+    // Tracking links (one per delivery) — absolute URLs so they survive
+    // inside the customer's own WhatsApp chat as their receipt.
+    const trackLines = (trackInfo || []).map(t =>
+        `📍 跟踪订单${(trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}：https://www.incredibowl.my/track/${t.token}`);
 
     const waText = [
         '你好碗妈 👋 我刚在网站下单了，想在 WhatsApp 接收订单确认：',
@@ -28,6 +33,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
         ...items.map((item: any) =>
             `🍛 ${item.dish?.name || ''} ×${item.quantity || 1}（${item.selectedDate || '日期未定'} ${item.selectedTime?.includes('Lunch') ? '午餐' : '晚餐'}）`),
         `💰 RM ${total.toFixed(2)}`,
+        ...trackLines,
     ].join('\n');
     const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}`;
 
@@ -78,6 +84,21 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
                     >
                         📲 WhatsApp 接收订单确认
                     </a>
+                    {(trackInfo || []).length > 0 && (
+                        <div className="space-y-2">
+                            {(trackInfo || []).map((t) => (
+                                <a
+                                    key={t.token}
+                                    href={`/track/${t.token}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full py-3 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-2xl text-sm font-black hover:bg-[#FF6B35]/5 transition-colors"
+                                >
+                                    📍 跟踪订单{(trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}
+                                </a>
+                            ))}
+                        </div>
+                    )}
                     <button
                         onClick={onDone}
                         className="w-full py-2.5 text-sm font-bold text-gray-400 hover:text-[#1A2D23] transition-colors"

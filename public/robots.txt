@@ -8,6 +8,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # GPTBot
 User-agent: GPTBot
@@ -19,6 +21,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # OAI-SearchBot
 User-agent: OAI-SearchBot
@@ -30,6 +34,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # ChatGPT-User
 User-agent: ChatGPT-User
@@ -41,6 +47,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # ClaudeBot
 User-agent: ClaudeBot
@@ -52,6 +60,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # Claude-Web
 User-agent: Claude-Web
@@ -63,6 +73,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # PerplexityBot
 User-agent: PerplexityBot
@@ -74,6 +86,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # Google-Extended
 User-agent: Google-Extended
@@ -85,6 +99,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # Applebot-Extended
 User-agent: Applebot-Extended
@@ -96,6 +112,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # CCBot
 User-agent: CCBot
@@ -107,6 +125,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # Bytespider
 User-agent: Bytespider
@@ -118,6 +138,8 @@ Disallow: /account
 Disallow: /login
 Disallow: /api
 Disallow: /dashboard-
+Disallow: /driver
+Disallow: /track
 
 # Host
 Host: https://www.incredibowl.my
