@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle, Loader2, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 import { tierFromDistance, tierFeeHintZh, tierLabelZh, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
-import { selectSavedAddress, removeSavedAddress, MAX_SAVED_ADDRESSES, type SavedAddress } from '@/lib/auth';
+import { selectSavedAddress, removeSavedAddress, upsertSavedAddress, MAX_SAVED_ADDRESSES, type SavedAddress } from '@/lib/auth';
 
 interface GeocodeResult {
     lat: number;
@@ -48,12 +48,48 @@ export default function AuthProfileView({
     const savedAddresses: SavedAddress[] = Array.isArray(profileData?.savedAddresses)
         ? profileData.savedAddresses
         : [];
-    const showAddressBook = !currentUser.isAnonymous && savedAddresses.length > 0;
+    // 空簿也要显示入口（否则「+新增地址」永远出不来）；只要有当前地址就展示
+    const showAddressBook = !currentUser.isAnonymous && (savedAddresses.length > 0 || !!profileData?.address);
     const [addressLabel, setAddressLabel] = useState('');
     const [bookBusyId, setBookBusyId] = useState('');   // 正在切换/删除的条目 id
     const [bookError, setBookError] = useState('');
 
     const currentAddressKey = (profileData?.address || '').trim();
+
+    // 懒迁移：老账号地址簿为空但顶层已有完整 geocode 数据 → 打开资料页时
+    // 自动把当前地址收编成第 1 条（每次挂载最多试一次；写失败只 warn，
+    // 比如规则还没发布时，不影响任何现有功能）。
+    const seededBook = useRef(false);
+    useEffect(() => {
+        if (seededBook.current || currentUser.isAnonymous) return;
+        const p = profileData;
+        if (!p?.address || savedAddresses.length > 0) return;
+        if (typeof p.addressLat !== 'number' || typeof p.addressLng !== 'number'
+            || typeof p.addressDistanceKm !== 'number'
+            || (p.deliveryZone !== 'within2km' && p.deliveryZone !== 'outside2km')) return;
+        seededBook.current = true;
+        (async () => {
+            try {
+                await upsertSavedAddress(currentUser.uid, {
+                    label: '',
+                    address: p.address.trim(),
+                    lat: p.addressLat,
+                    lng: p.addressLng,
+                    distanceKm: p.addressDistanceKm,
+                    zone: p.deliveryZone,
+                    formatted: p.addressFormatted || '',
+                    verifiedText: p.addressVerifiedText || p.address.trim(),
+                    verifiedAtMs: typeof p.addressVerifiedAt?.seconds === 'number'
+                        ? p.addressVerifiedAt.seconds * 1000
+                        : Date.now(),
+                });
+                await onReloadProfile();
+            } catch (e) {
+                console.warn('[profile] 地址簿懒迁移失败（不影响现有资料）', e);
+            }
+        })();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profileData]);
 
     const handleSelectSaved = async (entry: SavedAddress) => {
         if (bookBusyId || entry.address.trim() === currentAddressKey) return;
@@ -316,6 +352,11 @@ export default function AuthProfileView({
                                 <span className="text-gray-300 normal-case">已满，删除后可再加</span>
                             )}
                         </label>
+                        {savedAddresses.length === 0 && (
+                            <p className="mt-1 px-3 py-2.5 bg-white rounded-xl border border-dashed border-gray-200 text-[10px] text-gray-400 leading-relaxed">
+                                最多可存 {MAX_SAVED_ADDRESSES} 个常用地址（家 / 公司…），下单时一键切换。点右上「+ 新增地址」开始。
+                            </p>
+                        )}
                         <div className="mt-1 space-y-1.5">
                             {savedAddresses.map((entry) => {
                                 const isCurrent = entry.address.trim() === currentAddressKey;
