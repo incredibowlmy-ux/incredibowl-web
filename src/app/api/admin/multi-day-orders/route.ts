@@ -220,6 +220,24 @@ export async function POST(req: NextRequest) {
         updatedAt: FieldValue.serverTimestamp(),
       });
       created.push({ orderId: orderRef.id, date: d.date });
+
+      // 与 dashboard 手动单同款扣库存（老板拍板 2026-07-05：提前单也建单即扣）：
+      // dishStock 宽松扣（可到 0 不阻挡）+ ingredientStock best-effort。
+      // 绝不能影响已建的单 —— 全部吞错误只留日志。
+      try {
+        const dishItems = d.items
+          .map(it => {
+            const dish = weeklyMenu.find(x => x.name === it.name);
+            return dish ? { dishId: dish.id, qty: it.quantity, name: it.name } : null;
+          })
+          .filter((x): x is { dishId: number; qty: number; name: string } => x !== null);
+        const { decrementDishStockLenient } = await import('@/lib/stockUtils');
+        await decrementDishStockLenient(db, dishItems);
+        const { consumeIngredientStock } = await import('@/lib/ingredientStock');
+        await consumeIngredientStock(db, d.items, { source: '多日手动单', orderId: orderRef.id });
+      } catch (err) {
+        console.error(`[multi-day-orders] 扣库存失败（订单 ${orderRef.id} 已建，不受影响）:`, err);
+      }
     }
 
     console.log(`[multi-day-orders] ${adminEmail} 为 ${name} 建 ${created.length} 单（${batchTag}）`);

@@ -1,3 +1,33 @@
+# 会员地址簿（最多 5 个地址）— 2026-07-07
+
+## 方案
+顶层 `address + geocode` 字段 = 「当前配送地址」指针，下单/运费/履约链路零改动。
+新增 `users/{uid}.savedAddresses` 数组（≤5），每条带完整 geocode 数据包 + verifiedText
+（submit-order 防换址比对要求 addressVerifiedText === address，切换时整包复制）。
+仅注册（非匿名）会员显示地址簿 UI。
+
+## Todo
+- [x] auth.ts: `SavedAddress` 类型 + `upsertSavedAddress`（满 5 拒收新条目）/ `removeSavedAddress` / `selectSavedAddress`（复制到顶层字段）
+- [x] AuthModal: 保存资料后自动 upsert 进地址簿 + 传 onReloadProfile
+- [x] AuthProfileView: 非编辑态显示地址簿列表（当前打钩/使用/删除/+新增，满 5 提示）+ 编辑态可选 label 输入 + 取消按钮（仅资料已完整）
+- [x] MemberView: 保存资料后同样 upsert 进地址簿
+- [x] CartDrawer: 送达地址区加切换 chips（≥2 条才显示，匿名不显示），切换后运费自动跟着变
+- [x] firestore.rules: userSafeFields 加 `savedAddresses` + update 加 size ≤5 校验
+- [x] 验证: tsc + build 全绿
+- [x] commit 本地 72d625a；等低峰/老板指示再 push
+
+## Review（2026-07-07）
+- 已 commit 72d625a（本地未 push）。tsc + npm run build 全绿。
+- **UI dogfood 未做**：地址簿要真实登录账号才能走通，无头环境登不了 Google。
+  部署后老板 2 分钟手测清单：个人资料弹窗看到地址簿 → +新增第二个地址（验证+保存）
+  → 购物车出现切换 chips → 点切换看运费变 → 删除一条。
+- **部署顺序**：先 Console 发布 firestore.rules（向后兼容、随时可发），再 push 代码。
+  顺序反了也不炸：upsert 被 try/catch 包住，地址簿保持空、保存当前地址照常。
+- 老用户懒迁移：第一次「验证并保存」地址时自动收编成第 1 条，无需跑脚本。
+- 防换址检查兼容：selectSavedAddress 整包复制含 verifiedText，submit-order 比对照过。
+
+---
+
 # Incredibowl 安全修复 + Bug + 优化 — 总计划
 
 > 状态：待审批。生产环境有真实客户/营收，支付链改动属高风险，每阶段改完按「push 前必须先验证」规则本地 tsc + dogfood 再 commit。
@@ -303,6 +333,12 @@
   标注（服务端本就允许并警告）。纯客户端 UI 改动，tsc+build 绿。
 - 追加：DishPicker 抽成共享组件 `src/components/admin/DishPicker.tsx`，
   常客周计划模板编辑器也换上同款。
+- 追加（老板拍板方案 2，2026-07-05）：订阅确认建单 + 多日手动单确认建单
+  现在**建单即扣库存**，与 dashboard 手动单同款 —— dishStock 宽松扣（可到 0
+  不阻挡）+ ingredientStock best-effort，全吞错误绝不影响建单/扣券。
+  dogfood：临时设限量 10 → 建单后 9/8 ✓ 食材 3 项同步扣 ✓ → consume-stock
+  release 回补全归位 ✓ → dishStock/orders 测试数据全还原。dashboard 删单
+  release 对这些单同样生效（同一条 items 通道）。
 - 追加（老板问「Peggy 搜不到」）：根因 = 客户联想数据源只扫 users 集合，
   Peggy 只有 dashboard 手动单（manual_0163702408）没有 users 档案。
   修法 = /api/admin/subscriptions GET 把「订单里出现过、users 无档案」的客户
