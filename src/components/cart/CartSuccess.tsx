@@ -31,7 +31,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
         '你好碗妈 👋 我刚在网站下单了，想在 WhatsApp 接收订单确认：',
         `📌 ${isGroup ? '订单群组编号' : '订单编号'}：#${displayId}`,
         ...items.map((item: any) =>
-            `🍛 ${item.dish?.name || ''} ×${item.quantity || 1}（${item.selectedDate || '日期未定'} ${item.selectedTime?.includes('Lunch') ? '午餐' : '晚餐'}）`),
+            `🍛 ${item.dish?.name || ''} ×${(item.dishQty || 1) * (item.quantity || 1)}（${item.selectedDate || '日期未定'} ${item.selectedTime?.includes('Lunch') ? '午餐' : '晚餐'}）`),
         `💰 RM ${total.toFixed(2)}`,
         ...trackLines,
     ].join('\n');

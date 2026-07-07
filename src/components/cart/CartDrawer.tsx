@@ -520,13 +520,18 @@ export default function CartDrawer({
                 // post-FPX success modal / WhatsApp prefill).
                 items: cart.map((it: any) => {
                     const sel = (it.addOns || []).filter((a: any) => a?.item?.name);
+                    // 份数 = dishQty × quantity，加料 = quantity × bundle 数 —
+                    // 与 /api/submit-order 写进 Firestore 的 items[].quantity 一致
+                    // （只读 it.quantity 会把「1 个 bundle 点 5 份」显示成 ×1）。
+                    const bundles = it.quantity || 1;
+                    const aQty = (a: any) => a.quantity * bundles;
                     return {
                         name: it.dish?.name || '',
                         nameEn: it.dish?.nameEn || it.dish?.name || '',
-                        qty: it.quantity || 1,
+                        qty: (it.dishQty || 1) * bundles,
                         date: it.selectedDate || '',
-                        addOns: sel.map((a: any) => `${a.item.name}${a.quantity > 1 ? `×${a.quantity}` : ''}`),
-                        addOnsEn: sel.map((a: any) => `${a.item.nameEn || a.item.name}${a.quantity > 1 ? `×${a.quantity}` : ''}`),
+                        addOns: sel.map((a: any) => `${a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
+                        addOnsEn: sel.map((a: any) => `${a.item.nameEn || a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
                     };
                 }),
                 total: finalTotal,
