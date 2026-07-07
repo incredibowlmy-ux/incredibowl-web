@@ -19,6 +19,8 @@ import {
     type DeliveryTier,
 } from '@/lib/deliveryUtils';
 import { MEMBER_DICT, type Locale } from './dict';
+import { useAuth } from '@/context/AuthContext';
+import AddressBook from '@/components/auth/AddressBook';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
 import { useCartStore } from '@/store/cartStore';
 import { weeklyMenu } from '@/data/weeklyMenu';
@@ -66,6 +68,8 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
     const [profileData, setProfileData] = useState<any>(null);
+    // 地址簿切换/删除后要同步刷新 AuthProvider 的缓存（购物车读那份）
+    const { refreshProfile: refreshGlobalProfile } = useAuth();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
@@ -143,6 +147,15 @@ export default function MemberView({ locale }: { locale: Locale }) {
             setVerifiedFor('');
         }
     }, [isEditing]);
+
+    // 地址簿的 onReload：拉权威 profile 回本页 state + 刷全局缓存
+    const reloadProfileOnly = async () => {
+        if (!currentUser) return;
+        const p = await getUserProfile(currentUser.uid);
+        setProfileData(p);
+        setEditAddress(p?.address || '');
+        await refreshGlobalProfile();
+    };
 
     const addressChangedSinceProfile = editAddress.trim() !== (profileData?.address || '').trim();
     const addressChangedSinceVerify = !!geocodeResult && editAddress.trim() !== verifiedFor;
@@ -453,6 +466,21 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             <p className="font-black text-[#1A2D23] truncate">{favDish[0]}</p>
                             <p className="text-xs text-[#E65100]/60">{t.favDishOrderCount(favDish[1])}</p>
                         </div>
+                    </div>
+                )}
+
+                {/* 地址簿：最多 5 个常用地址，切换当前配送地址（逻辑在共享组件）。
+                    条件与组件内 null 分支一致，避免空白卡壳。 */}
+                {currentUser && !currentUser.isAnonymous
+                    && (profileData?.address || (Array.isArray(profileData?.savedAddresses) && profileData.savedAddresses.length > 0)) && (
+                    <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-4 shadow-lg shadow-black/5 border border-white">
+                        <AddressBook
+                            currentUser={currentUser}
+                            profileData={profileData}
+                            onReload={reloadProfileOnly}
+                            onAddNew={() => { setEditAddress(''); setIsEditing(true); }}
+                            locale={locale}
+                        />
                     </div>
                 )}
 
