@@ -529,16 +529,17 @@ export default function AdminPage() {
     const displayLabel = statsDaysList.find(d => d.date === statsDate)?.label || '数据';
 
     const upcomingOrdersCount = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').length;
-    // MFRS 15 accrual revenue per order:
-    //   cash (order.total) + voucher allocated revenue (sum of redeemed
-    //   vouchers' allocatedValueRM, captured at claim time).
-    // For non-voucher orders this collapses to order.total (= food face value).
-    // For voucher orders, this is the precise revenue recognized at redemption
-    // — between cash (under-states by voucher revenue) and food face value
-    // (over-states by the bulk discount portion ~5–10%).
-    const orderMfrs15Revenue = (o: any) => Number(o.total ?? 0) + Number(o.mealVoucherAllocatedRevenue ?? 0);
+    // MFRS 15 accrual revenue per order — same口径 as desktop dashboard's
+    // orderAccrualRevenue(o) + deliveryFee:
+    //   cash (order.total, excludes delivery) + delivery fee
+    //   + voucher allocated revenue (redeemed vouchers' allocatedValueRM)
+    //   + prepaid add-on allocated revenue (addonCreditsAllocatedRevenue).
+    // For non-voucher orders this collapses to order.total + deliveryFee.
+    const orderMfrs15Revenue = (o: any) => Number(o.total ?? 0) + Number(o.deliveryFee ?? 0) + Number(o.mealVoucherAllocatedRevenue ?? 0) + Number(o.addonCreditsAllocatedRevenue ?? 0);
+    // Cash actually received on the order (food + delivery; amortized portions excluded)
+    const orderCashRevenue = (o: any) => Number(o.total ?? 0) + Number(o.deliveryFee ?? 0);
     const upcomingMfrs15Revenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + orderMfrs15Revenue(o), 0);
-    const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + (o.total || 0), 0);
+    const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + orderCashRevenue(o), 0);
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
     // Build upcoming days (today + next 7 days). When a specific date chip
@@ -651,7 +652,7 @@ export default function AdminPage() {
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{displayLabel} · 营业额</p>
                         <p className="text-3xl font-black text-green-600 relative">RM {upcomingMfrs15Revenue.toFixed(0)}</p>
                         {upcomingMfrs15Revenue > upcomingRevenue + 0.5 ? (
-                            <p className="text-[10px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
+                            <p className="text-[10px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券/加料摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
                         ) : (
                             <p className="text-[10px] text-gray-300 mt-1">MFRS 15 应计</p>
                         )}
@@ -701,8 +702,8 @@ export default function AdminPage() {
                                             )}
                                         </div>
                                         {(() => {
-                                            const dayCash = day.orders.reduce((s: number, o: any) => s + (o.total || 0), 0);
-                                            const dayMfrs15 = day.orders.reduce((s: number, o: any) => s + Number(o.total ?? 0) + Number((o as any).mealVoucherAllocatedRevenue ?? 0), 0);
+                                            const dayCash = day.orders.reduce((s: number, o: any) => s + orderCashRevenue(o), 0);
+                                            const dayMfrs15 = day.orders.reduce((s: number, o: any) => s + orderMfrs15Revenue(o), 0);
                                             const hasVoucherImpact = dayMfrs15 > dayCash + 0.5;
                                             return (
                                                 <div className="flex items-center gap-4">
