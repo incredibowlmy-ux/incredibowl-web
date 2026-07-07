@@ -73,6 +73,26 @@ export default function CartDrawer({
     const [availableMealVouchers, setAvailableMealVouchers] = useState(0);
     const [mealVouchersUsed, setMealVouchersUsed] = useState(0);
 
+    // ── 地址簿快速切换 ──────────────────────────────────────
+    // savedAddresses 来自 users/{uid}（AuthProvider 提供），每条自带 geocode
+    // 数据包；切换只是把那条复制成顶层「当前地址」，运费推导（distanceKm/
+    // deliveryZone 都读 userProfile）随 refreshProfile 自动更新。
+    const savedAddresses: any[] = Array.isArray(userProfile?.savedAddresses) ? userProfile.savedAddresses : [];
+    const [switchingAddress, setSwitchingAddress] = useState('');   // 切换中的条目 id
+    const handleSwitchAddress = async (entry: any) => {
+        if (switchingAddress || !currentUser) return;
+        setSwitchingAddress(entry.id);
+        try {
+            const { selectSavedAddress } = await import('@/lib/auth');
+            await selectSavedAddress(currentUser.uid, entry);
+            await refreshProfile();
+        } catch (e) {
+            console.error('[cart] 切换地址失败', e);
+        } finally {
+            setSwitchingAddress('');
+        }
+    };
+
     // Auto-clean cart items whose selectedDate has rotted (e.g. customer left
     // the cart open overnight and the 6 AM cutoff passed). Also reset checkout
     // state so the user re-validates voucher + re-picks payment for the new
@@ -632,6 +652,26 @@ export default function CartDrawer({
                                     {userProfile?.address || <span className="text-red-500">尚未填写 (请在下方补充)</span>}
                                 </span>
                             </p>
+                            {/* 地址簿快速切换：注册会员存了 ≥2 个地址才显示。切换 =
+                                整包复制到顶层字段（含 verifiedText，防换址检查照过），
+                                refreshProfile 后运费/免运门槛自动按新距离重算。 */}
+                            {savedAddresses.length >= 2 && !currentUser?.isAnonymous && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {savedAddresses.map((entry: any) => {
+                                        const isCurrent = (entry?.address || '').trim() === (userProfile?.address || '').trim();
+                                        return (
+                                            <button key={entry.id}
+                                                onClick={() => handleSwitchAddress(entry)}
+                                                disabled={!!switchingAddress || isCurrent}
+                                                className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all disabled:cursor-default ${isCurrent
+                                                    ? 'bg-[#FF6B35] text-white border-[#FF6B35]'
+                                                    : 'bg-white text-[#1A2D23] border-[#E3EADA] hover:border-[#FF6B35] disabled:opacity-50'}`}>
+                                                {switchingAddress === entry.id ? '切换中…' : (entry.label || `${(entry.address || '').slice(0, 14)}…`)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 

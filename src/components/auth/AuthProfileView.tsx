@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle, Loader2, AlertCircle, Trash2, Plus } from 'lucide-react';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 import { tierFromDistance, tierFeeHintZh, tierLabelZh, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
+import { selectSavedAddress, removeSavedAddress, MAX_SAVED_ADDRESSES, type SavedAddress } from '@/lib/auth';
 
 interface GeocodeResult {
     lat: number;
@@ -24,7 +25,8 @@ interface AuthProfileViewProps {
     editingProfile: boolean; setEditingProfile: (v: boolean) => void;
     loading: boolean;
     message: string;
-    onUpdateProfile: (geocode?: GeocodeResult) => void;
+    onUpdateProfile: (geocode?: GeocodeResult, addressLabel?: string) => void;
+    onReloadProfile: () => Promise<void>;
     onLogout: () => void;
     onClose: () => void;
 }
@@ -33,7 +35,7 @@ export default function AuthProfileView({
     currentUser, profileData,
     phone, setPhone, address, setAddress,
     editingProfile, setEditingProfile,
-    loading, message, onUpdateProfile, onLogout, onClose,
+    loading, message, onUpdateProfile, onReloadProfile, onLogout, onClose,
 }: AuthProfileViewProps) {
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
@@ -41,14 +43,66 @@ export default function AuthProfileView({
     // Track which address text the geocode result was for; if user edits the address afterward
     // we must re-verify before saving.
     const [verifiedFor, setVerifiedFor] = useState('');
+    // 地址簿：仅注册（非匿名）会员可见。savedAddresses 是资料层的地址簿，
+    // 顶层 address 字段仍是「当前配送地址」，选用 = 整包复制（lib/auth.ts）。
+    const savedAddresses: SavedAddress[] = Array.isArray(profileData?.savedAddresses)
+        ? profileData.savedAddresses
+        : [];
+    const showAddressBook = !currentUser.isAnonymous && savedAddresses.length > 0;
+    const [addressLabel, setAddressLabel] = useState('');
+    const [bookBusyId, setBookBusyId] = useState('');   // 正在切换/删除的条目 id
+    const [bookError, setBookError] = useState('');
 
-    // Reset geocode state when entering edit mode
+    const currentAddressKey = (profileData?.address || '').trim();
+
+    const handleSelectSaved = async (entry: SavedAddress) => {
+        if (bookBusyId || entry.address.trim() === currentAddressKey) return;
+        setBookBusyId(entry.id);
+        setBookError('');
+        try {
+            await selectSavedAddress(currentUser.uid, entry);
+            await onReloadProfile();
+        } catch (e) {
+            setBookError(e instanceof Error ? e.message : '切换失败，请重试');
+        } finally {
+            setBookBusyId('');
+        }
+    };
+
+    const handleRemoveSaved = async (entry: SavedAddress) => {
+        if (bookBusyId) return;
+        if (!window.confirm(`删除地址「${entry.label || entry.address}」？`)) return;
+        setBookBusyId(entry.id);
+        setBookError('');
+        try {
+            await removeSavedAddress(currentUser.uid, entry.id);
+            await onReloadProfile();
+        } catch (e) {
+            setBookError(e instanceof Error ? e.message : '删除失败，请重试');
+        } finally {
+            setBookBusyId('');
+        }
+    };
+
+    // 「+ 新增地址」：清空地址进编辑模式，走既有的 geocode 验证 + 保存流程，
+    // 保存成功即成为当前地址并自动收编进地址簿（AuthModal.handleUpdateProfile）。
+    const handleAddNew = () => {
+        setAddress('');
+        setAddressLabel('');
+        setEditingProfile(true);
+    };
+
+    // Reset geocode state when entering edit mode; prefill the label if the
+    // address being edited is already in the book (add-new cleared it first).
     useEffect(() => {
         if (editingProfile) {
             setGeocodeResult(null);
             setGeocodeError('');
             setVerifiedFor('');
+            const match = savedAddresses.find(a => (a?.address || '').trim() === address.trim());
+            setAddressLabel(match?.label || '');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingProfile]);
 
     const addressChangedSinceVerify = !!geocodeResult && address.trim() !== verifiedFor;
@@ -60,7 +114,7 @@ export default function AuthProfileView({
     const handleVerifyAndSave = async () => {
         // 已验证且地址没改 → 直接保存
         if (geocodeResult && !addressChangedSinceVerify) {
-            onUpdateProfile(geocodeResult);
+            onUpdateProfile(geocodeResult, addressLabel);
             return;
         }
         if (!address || address.trim().length < 10) {
@@ -86,7 +140,7 @@ export default function AuthProfileView({
             setVerifiedFor(address.trim());
             // 验证通过 → 直接续接保存（运费档位卡会闪现展示；保存成功后
             // 回到购物车还有完整费用明细）
-            onUpdateProfile(data);
+            onUpdateProfile(data, addressLabel);
         } catch (e) {
             setGeocodeError(e instanceof Error ? e.message : '网络错误，请重试');
         } finally {
@@ -162,6 +216,11 @@ export default function AuthProfileView({
                             <textarea value={address} onChange={(e) => setAddress(e.target.value)}
                                 placeholder="例: Pearl Point, Block B-12-3, Jalan 1/116B, OKR, 58000 KL"
                                 rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
+                            {!currentUser.isAnonymous && (
+                                <input type="text" value={addressLabel} onChange={(e) => setAddressLabel(e.target.value)}
+                                    placeholder="备注（选填）如：家 / 公司" maxLength={12}
+                                    className="w-full mt-2 px-4 py-2 bg-white border-2 border-[#E3EADA] rounded-xl text-xs outline-none focus:border-[#FF6B35] transition-colors" />
+                            )}
 
                             {geocodeError && (
                                 <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5">
@@ -244,16 +303,88 @@ export default function AuthProfileView({
                     )}
                 </div>
 
+                {/* 地址簿：注册会员最多存 5 个已验证地址，点「使用」切换当前配送地址 */}
+                {!editingProfile && showAddressBook && (
+                    <div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                            <span className="flex items-center gap-1"><MapPin size={10} /> 地址簿（{savedAddresses.length}/{MAX_SAVED_ADDRESSES}）</span>
+                            {savedAddresses.length < MAX_SAVED_ADDRESSES ? (
+                                <button onClick={handleAddNew} className="flex items-center gap-0.5 text-[#FF6B35] font-black hover:underline">
+                                    <Plus size={10} /> 新增地址
+                                </button>
+                            ) : (
+                                <span className="text-gray-300 normal-case">已满，删除后可再加</span>
+                            )}
+                        </label>
+                        <div className="mt-1 space-y-1.5">
+                            {savedAddresses.map((entry) => {
+                                const isCurrent = entry.address.trim() === currentAddressKey;
+                                const busy = bookBusyId === entry.id;
+                                // 老客户 2km 内保留免运档，与当前地址徽章同一套规则
+                                const createdAtSec = profileData?.createdAt?.seconds;
+                                const isExistingCustomer =
+                                    typeof createdAtSec === 'number' && createdAtSec * 1000 < PRICING_V2_CUTOFF_MS;
+                                const tier: DeliveryTier =
+                                    isExistingCustomer && entry.distanceKm <= FREE_DELIVERY_RADIUS_KM
+                                        ? 'free'
+                                        : tierFromDistance(entry.distanceKm);
+                                return (
+                                    <div key={entry.id}
+                                        className={`px-3 py-2.5 bg-white rounded-xl border flex items-center gap-2 text-xs ${isCurrent ? 'border-[#FF6B35] ring-1 ring-[#FF6B35]/30' : 'border-gray-100'}`}>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-[#1A2D23] truncate">
+                                                {entry.label && <span className="mr-1.5 px-1.5 py-0.5 bg-[#E3EADA] rounded text-[10px]">{entry.label}</span>}
+                                                {entry.address}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5">{tierLabelZh(tier)} · {entry.distanceKm}km</p>
+                                        </div>
+                                        {isCurrent ? (
+                                            <span className="shrink-0 flex items-center gap-1 text-[#FF6B35] font-black text-[10px]">
+                                                <CheckCircle size={12} /> 当前
+                                            </span>
+                                        ) : (
+                                            <button onClick={() => handleSelectSaved(entry)} disabled={!!bookBusyId}
+                                                className="shrink-0 px-2.5 py-1.5 bg-[#1A2D23] text-white rounded-lg font-black text-[10px] hover:bg-[#2A3D33] transition-all disabled:opacity-50">
+                                                {busy ? <Loader2 size={12} className="animate-spin" /> : '使用'}
+                                            </button>
+                                        )}
+                                        <button onClick={() => handleRemoveSaved(entry)} disabled={!!bookBusyId}
+                                            className="shrink-0 p-1.5 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50" aria-label="删除地址">
+                                            {busy ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {bookError && (
+                            <p className="mt-1 text-[10px] text-red-500 font-bold flex items-center gap-1"><AlertCircle size={10} /> {bookError}</p>
+                        )}
+                    </div>
+                )}
+
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-2">
                 {editingProfile ? (
-                    <button onClick={handleVerifyAndSave} disabled={loading || geocoding || !phone.trim() || !address.trim()}
-                        className="w-full py-3 bg-[#FF6B35] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF6B35]/20">
-                        {geocoding ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                        {geocoding ? '验证地址中…' : loading ? '保存中...' : needsReVerify ? '📍 验证地址并保存' : '保存资料'}
-                    </button>
+                    <>
+                        <button onClick={handleVerifyAndSave} disabled={loading || geocoding || !phone.trim() || !address.trim()}
+                            className="w-full py-3 bg-[#FF6B35] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF6B35]/20">
+                            {geocoding ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {geocoding ? '验证地址中…' : loading ? '保存中...' : needsReVerify ? '📍 验证地址并保存' : '保存资料'}
+                        </button>
+                        {/* 资料已完整才给取消（新账号缺手机/地址时必须先填完，不能退出编辑） */}
+                        {profileData?.phone && profileData?.address && (
+                            <button onClick={() => {
+                                setPhone(profileData.phone || '');
+                                setAddress(profileData.address || '');
+                                setEditingProfile(false);
+                            }} disabled={loading || geocoding}
+                                className="w-full py-2 text-gray-400 text-xs font-bold hover:text-gray-600 transition-colors disabled:opacity-50">
+                                取消，保持原资料
+                            </button>
+                        )}
+                    </>
                 ) : (
                     <button onClick={() => setEditingProfile(true)}
                         className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#2A3D33] transition-all">

@@ -29,6 +29,7 @@ service cloud.firestore {
         'address', 'addressLat', 'addressLng', 'addressDistanceKm',
         'deliveryZone', 'addressFormatted',
         'addressVerifiedAt', 'addressVerifiedText',
+        'savedAddresses',
         'createdAt', 'lastLoginAt', 'updatedAt'
       ];
     }
@@ -48,10 +49,11 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == userId
                     && safeInitialDefaults();
 
-      // 更新：本人 + 只能改安全字段
+      // 更新：本人 + 只能改安全字段；地址簿（savedAddresses）最多 5 条
       allow update: if isSignedIn() && request.auth.uid == userId
                     && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(userSafeFields());
+                       .hasOnly(userSafeFields())
+                    && request.resource.data.get('savedAddresses', []).size() <= 5;
 
       // 读：本人或管理员
       allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());

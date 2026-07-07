@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile } from '@/lib/auth';
+import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, upsertSavedAddress } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
@@ -150,7 +150,7 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete }: {
         setLoading(false);
     };
 
-    const handleUpdateProfile = async (geocode?: { lat: number; lng: number; distanceKm: number; zone: 'within2km' | 'outside2km'; formattedAddress: string }) => {
+    const handleUpdateProfile = async (geocode?: { lat: number; lng: number; distanceKm: number; zone: 'within2km' | 'outside2km'; formattedAddress: string }, addressLabel?: string) => {
         if (!currentUser) return;
         if (!phone || !address) { setMessage('⚠️ 手机号码和配送地址为必填'); return; }
         if (!isValidMyPhone(phone)) { setMessage('⚠️ 手机格式不正确，例: 010-337 0197'); return; }
@@ -171,6 +171,26 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete }: {
                 addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
             };
             await updateUserProfile(currentUser.uid, updateData);
+
+            // 已验证的地址顺手收编进地址簿（≤5 条自动收，满了不打断保存）。
+            // 匿名访客不建地址簿——升级成正式账号前只维护单一当前地址。
+            if (!currentUser.isAnonymous) {
+                try {
+                    await upsertSavedAddress(currentUser.uid, {
+                        label: (addressLabel || '').trim(),
+                        address: address.trim(),
+                        lat: geocode.lat,
+                        lng: geocode.lng,
+                        distanceKm: geocode.distanceKm,
+                        zone: geocode.zone,
+                        formatted: geocode.formattedAddress,
+                        verifiedText: address.trim(),
+                        verifiedAtMs: Date.now(),
+                    });
+                } catch (e) {
+                    console.warn('[profile] 地址簿同步失败（当前地址已保存）', e);
+                }
+            }
 
             setMessage('✅ 资料已更新！');
             setEditingProfile(false);
@@ -218,6 +238,10 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete }: {
                         editingProfile={editingProfile} setEditingProfile={setEditingProfile}
                         loading={loading} message={message}
                         onUpdateProfile={handleUpdateProfile}
+                        onReloadProfile={async () => {
+                            await loadProfile(currentUser.uid);
+                            await refreshProfile();
+                        }}
                         onLogout={handleLogout}
                         onClose={onClose}
                     />

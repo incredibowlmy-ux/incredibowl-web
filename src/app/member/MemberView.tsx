@@ -209,6 +209,27 @@ export default function MemberView({ locale }: { locale: Locale }) {
             }
             await updateUserProfile(currentUser.uid, updateData);
 
+            // 新验证的地址顺手收编进地址簿（≤5 条；满了不打断保存）。
+            // 匿名访客不建地址簿。
+            if (geocodeResult && !currentUser.isAnonymous) {
+                try {
+                    const { upsertSavedAddress } = await import('@/lib/auth');
+                    await upsertSavedAddress(currentUser.uid, {
+                        label: '',
+                        address: editAddress.trim(),
+                        lat: geocodeResult.lat,
+                        lng: geocodeResult.lng,
+                        distanceKm: geocodeResult.distanceKm,
+                        zone: geocodeResult.zone,
+                        formatted: geocodeResult.formattedAddress,
+                        verifiedText: editAddress.trim(),
+                        verifiedAtMs: Date.now(),
+                    });
+                } catch (e) {
+                    console.warn('[member] 地址簿同步失败（当前地址已保存）', e);
+                }
+            }
+
             setProfileData((prev: any) => ({
                 ...prev,
                 displayName: editName,

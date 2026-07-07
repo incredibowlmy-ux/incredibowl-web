@@ -12,7 +12,7 @@ import {
     User,
     updateProfile
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { normalizePhone } from "./phoneUtils";
 
@@ -164,6 +164,78 @@ export const updateUserProfile = async (
     // creates it on the spot and is a plain field-merge when it already exists,
     // so saving a profile can never hard-fail on a missing doc.
     await setDoc(userRef, payload, { merge: true });
+};
+
+// ───────────── 地址簿（最多 5 个已验证地址）─────────────
+// 顶层 address/addressLat/…/addressVerifiedText 字段保持「当前配送地址」语义
+// 不变，下单、运费、履约链路零改动；savedAddresses 只是资料层的地址簿。
+// 每条必须带完整 geocode 数据包（运费档位靠 distanceKm）和 verifiedText ——
+// submit-order 的防换址检查要求 addressVerifiedText === address 原文，所以
+// 「选用」= 整包复制到顶层字段，缺一不可。
+// ⚠️ Firestore 数组元素里不能放 serverTimestamp()，验证时间存客户端 ms。
+
+export const MAX_SAVED_ADDRESSES = 5;
+
+export interface SavedAddress {
+    id: string;
+    label: string;          // 可选备注，如「家」「公司」，可为空串
+    address: string;
+    lat: number;
+    lng: number;
+    distanceKm: number;
+    zone: 'within2km' | 'outside2km';
+    formatted: string;
+    verifiedText: string;   // geocode 当时的地址原文（= address.trim()）
+    verifiedAtMs: number;
+}
+
+// 新增或更新一条地址（按地址原文去重）。已存在 → 原位更新；新条目且已满
+// 5 条 → 不写入，返回 full 让调用方决定是否提示（保存当前地址本身不受影响）。
+export const upsertSavedAddress = async (
+    uid: string,
+    entry: Omit<SavedAddress, 'id'>,
+): Promise<{ saved: boolean; full: boolean }> => {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    const raw = snap.exists() ? snap.data().savedAddresses : null;
+    const list: SavedAddress[] = Array.isArray(raw) ? [...raw] : [];
+    const key = entry.address.trim();
+    const idx = list.findIndex(a => (a?.address || '').trim() === key);
+    if (idx >= 0) {
+        // 空 label 视为「未指定」，保留原备注不抹掉
+        list[idx] = { ...entry, label: entry.label || list[idx].label || '', id: list[idx].id };
+    } else {
+        if (list.length >= MAX_SAVED_ADDRESSES) return { saved: false, full: true };
+        list.push({ ...entry, id: `addr-${Date.now()}` });
+    }
+    await setDoc(userRef, { savedAddresses: list, updatedAt: serverTimestamp() }, { merge: true });
+    return { saved: true, full: false };
+};
+
+export const removeSavedAddress = async (uid: string, id: string): Promise<void> => {
+    const userRef = doc(db, "users", uid);
+    const snap = await getDoc(userRef);
+    const raw = snap.exists() ? snap.data().savedAddresses : null;
+    if (!Array.isArray(raw)) return;
+    await setDoc(userRef, {
+        savedAddresses: raw.filter((a: SavedAddress) => a?.id !== id),
+        updatedAt: serverTimestamp(),
+    }, { merge: true });
+};
+
+// 选用地址簿里的一条：整包复制到顶层「当前配送地址」字段。verifiedAt 保留
+// 原始验证时间（不是选用时间），verifiedText 原样带上以通过服务端防换址比对。
+export const selectSavedAddress = async (uid: string, entry: SavedAddress): Promise<void> => {
+    await updateUserProfile(uid, {
+        address: entry.address,
+        addressLat: entry.lat,
+        addressLng: entry.lng,
+        addressDistanceKm: entry.distanceKm,
+        deliveryZone: entry.zone,
+        addressFormatted: entry.formatted,
+        addressVerifiedAt: entry.verifiedAtMs ? Timestamp.fromMillis(entry.verifiedAtMs) : serverTimestamp(),
+        addressVerifiedText: entry.verifiedText || entry.address.trim(),
+    });
 };
 
 // Get user profile from Firestore
