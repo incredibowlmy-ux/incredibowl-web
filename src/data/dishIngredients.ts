@@ -241,12 +241,18 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
-    // 新菜 2026-06-29 入系统（鸡胸肉）。ingredients 暂留空 = 份量数据未提供，
-    // 备餐聚合会静默跳过（菜品计数仍在，只是不进食材汇总）。
-    // ⚠️ DO NOT fabricate quantities — 等碗妈提供鸡胸/咖喱/配菜每份克数后再补。
+    // 新菜 2026-06-29 入系统。份量老板 2026-07-07 提供。
+    // 鸡肉按「鸡胸肉」入桶（菜单描述=嫩煎鸡胸），与现有采购/库存桶合并。
+    // 咖喱块按块的小数计（0.4块/份）——采购聚合到整块很直观（14 份 = 5.6块）。
     name: '家常日式咖喱饭',
     shortName: '咖喱',
-    ingredients: [],
+    ingredients: [
+      { name: '鸡胸肉', qty: 60, unit: 'g' },
+      { name: '马铃薯', qty: 70, unit: 'g' },
+      { name: '红萝卜', qty: 60, unit: 'g' },
+      { name: '咖喱块', qty: 0.4, unit: '块' },
+      { name: '白饭', qty: 180, unit: 'g' },
+    ],
   },
 ];
 
