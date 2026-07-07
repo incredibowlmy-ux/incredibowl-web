@@ -243,20 +243,10 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 }
             }
 
-            setProfileData((prev: any) => ({
-                ...prev,
-                displayName: editName,
-                phone: editPhone,
-                address: editAddress,
-                ...(geocodeResult ? {
-                    addressLat: geocodeResult.lat,
-                    addressLng: geocodeResult.lng,
-                    addressDistanceKm: geocodeResult.distanceKm,
-                    deliveryZone: geocodeResult.zone,
-                    addressFormatted: geocodeResult.formattedAddress,
-                    addressVerifiedText: editAddress.trim(),
-                } : {}),
-            }));
+            // 重拉权威 profile 而不是手动拼本地 state —— 手动拼漏掉
+            // savedAddresses，地址簿要刷新页面才更新；重拉顺带同步
+            // AuthProvider 全局缓存（购物车读那份）。
+            await reloadProfileOnly();
             setIsEditing(false);
         } catch (error) {
             console.error('[member] profile save failed:', error);
