@@ -290,16 +290,34 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     );
 
     // 匿名访客视同未登录：券绑身份，必须真账号才能买（下单可以访客，买券不行）。
+    // 但访客不再是死胡同 —— 给「绑定 Google」原地升级入口（linkWithPopup 同 uid，
+    // 订单保留）。成功后整页刷新，onAuthChange 重新发出非匿名用户，购买界面解锁。
     if (authChecked && (!currentUser || currentUser.isAnonymous)) {
+        const isGuest = !!currentUser?.isAnonymous;
+        const handleGuestUpgrade = async () => {
+            try {
+                const { linkGuestToGoogle } = await import('@/lib/auth');
+                await linkGuestToGoogle();
+                window.location.reload();
+            } catch (e: any) {
+                alert(e?.code === 'auth/credential-already-in-use' ? t.guestUpgradeConflict : t.guestUpgradeFailed);
+            }
+        };
         return (
             <div className="min-h-screen bg-[#FDFBF7] py-10">
                 <SeoIntro />
                 <div className="max-w-2xl mx-auto px-6 mt-4">
                     <div className="bg-white rounded-2xl border border-[#E3EADA] p-6 text-center space-y-4">
-                        <p className="text-gray-500 text-sm">{t.loginRequired}</p>
-                        <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
-                            <ArrowLeft size={16} /> {t.loginReturnHome}
-                        </Link>
+                        <p className="text-gray-500 text-sm">{isGuest ? t.guestUpgradeHint : t.loginRequired}</p>
+                        {isGuest ? (
+                            <button onClick={handleGuestUpgrade} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                                {t.guestUpgradeButton}
+                            </button>
+                        ) : (
+                            <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                                <ArrowLeft size={16} /> {t.loginReturnHome}
+                            </Link>
+                        )}
                     </div>
                 </div>
             </div>

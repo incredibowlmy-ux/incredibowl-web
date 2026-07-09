@@ -50,6 +50,24 @@ export default function AuthProfileView({
         ? profileData.savedAddresses
         : [];
     const [addressLabel, setAddressLabel] = useState('');
+    const [linkingGoogle, setLinkingGoogle] = useState(false);
+
+    // 访客 → Google 原地升级（同 uid，订单保留）。付款成功弹窗只出现一次，
+    // 这里是错过后的常驻自助入口（买餐券也必须真账号）。
+    const handleLinkGoogle = async () => {
+        setLinkingGoogle(true);
+        try {
+            const { linkGuestToGoogle } = await import('@/lib/auth');
+            await linkGuestToGoogle();
+            alert('✅ 已绑定 Google！订单记录已保存，下次可一键回购');
+            await onReloadProfile();
+        } catch (e: any) {
+            alert(e?.code === 'auth/credential-already-in-use'
+                ? '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理'
+                : '绑定未完成，可稍后再试');
+        }
+        setLinkingGoogle(false);
+    };
 
     // 「+ 新增地址」：清空地址进编辑模式，走既有的 geocode 验证 + 保存流程，
     // 保存成功即成为当前地址并自动收编进地址簿（AuthModal.handleUpdateProfile）。
@@ -130,6 +148,23 @@ export default function AuthProfileView({
                 <h3 className="font-bold text-[#1A2D23] text-lg">{currentUser.displayName || '会员'}</h3>
                 <p className="text-xs text-gray-500">{currentUser.email}</p>
             </div>
+
+            {/* 访客账号提示 + 绑定 Google 升级入口（仅匿名账号可见） */}
+            {currentUser.isAnonymous && (
+                <div className="bg-[#FFF7ED] border border-[#FF6B35]/30 rounded-2xl p-4 space-y-2">
+                    <p className="text-xs font-bold text-[#1A2D23]">👋 你正在使用访客账号</p>
+                    <p className="text-[11px] text-gray-500 leading-relaxed">
+                        换手机或清浏览器数据后订单记录将无法找回；绑定 Google 后永久保留，还能购买餐券预付包。
+                    </p>
+                    <button
+                        onClick={handleLinkGoogle}
+                        disabled={linkingGoogle}
+                        className="w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors disabled:opacity-50"
+                    >
+                        {linkingGoogle ? '绑定中…' : '🔗 绑定 Google 保存订单记录'}
+                    </button>
+                </div>
+            )}
 
             {/* Order summary (replaces the legacy points dashboard) */}
             {profileData === null ? (

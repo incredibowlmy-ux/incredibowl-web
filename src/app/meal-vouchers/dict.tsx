@@ -19,6 +19,11 @@ interface MealVouchersDictShape {
     pageTitle: string;
     loginRequired: string;
     loginReturnHome: string;
+    // Anonymous guest → in-place Google upgrade (same uid, keeps orders)
+    guestUpgradeHint: string;
+    guestUpgradeButton: string;
+    guestUpgradeConflict: string;
+    guestUpgradeFailed: string;
 
     // SEO intro — rendered in the static-prerender / logged-out states so
     // crawlers & AI engines index real content (the purchase widget itself is
@@ -123,6 +128,10 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         pageTitle: '餐券预付包',
         loginRequired: '请先在首页登录后再购买餐券',
         loginReturnHome: '返回首页登录',
+        guestUpgradeHint: '你正在使用访客账号。餐券绑定账号保存，绑定 Google 后即可购买，订单记录也会永久保留。',
+        guestUpgradeButton: '🔗 绑定 Google，继续购买',
+        guestUpgradeConflict: '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理',
+        guestUpgradeFailed: '绑定未完成，可稍后再试',
 
         seoHeading: 'Incredibowl 餐券预付包：一次买，慢慢吃',
         seoLead:
@@ -222,6 +231,10 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     en: {
         pageTitle: 'Meal Voucher Bundles',
         loginRequired: 'Please sign in from the homepage first to buy vouchers.',
+        guestUpgradeHint: 'You are browsing as a guest. Vouchers are saved to your account — link Google to buy, and your order history will be kept permanently too.',
+        guestUpgradeButton: '🔗 Link Google to continue',
+        guestUpgradeConflict: 'This Google account already has a member record. WhatsApp us to merge the two.',
+        guestUpgradeFailed: 'Linking didn\'t complete — please try again later.',
         seoHeading: 'Incredibowl Meal Voucher Bundles: Buy Once, Eat Anytime',
         seoLead:
             'Meal voucher bundles let you pre-pay once and redeem anytime within the validity period. 1 voucher = 1 main dish (any dish on the menu, add-ons not included) — MSG-free home-cooked food, freshly sourced from the wet market every morning, delivered from Pearl Point across Old Klang Road / OUG.',
