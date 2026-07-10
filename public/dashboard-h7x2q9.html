@@ -2793,6 +2793,7 @@
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
             { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋',                      price: 6.80,  category: '单点' },  // 新 add-on 2026-06-29，通用配菜（所有菜可加）
+            { id: 'side-soup',                   name: '汤 (Soup)',                             price: 18.50, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；具体汤名待老板提供后更新
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (25g)',                  price: 2.50,  category: '单点' },
             { id: 'extra-corn',                  name: '金黄甜玉米 (25g)',                      price: 2.50,  category: '单点' },
             { id: 'chia-pudding',                name: '奇亚籽布丁',                            price: 6.90,  category: '单点' },
@@ -9375,6 +9376,7 @@ incredibowl.my`,
         // 避免逐道菜往 DISH_ADDON_MAP 复制。如该菜已自列同 id 则去重。
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
+            { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard
         ];
         function getDishAddons(dishName) {
             if (!dishName) return [];
