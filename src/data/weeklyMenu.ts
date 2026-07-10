@@ -42,6 +42,14 @@ export interface MenuItem {
      * skip the greyed card). e.g. 马铃薯炖花肉片 = [4,5] (Thu & Fri only).
      */
     availableWeekdays?: number[];
+    /**
+     * Daily/常驻 dish with `availableWeekdays` that should DISPLAY inside each
+     * available day's 每日精选 column (menu weekly grid) instead of the 常驻 band.
+     * Display-only — ordering rules stay with availableWeekdays. Used when the
+     * boss wants a multi-day dish shown as a day special but the schedule
+     * derivation only allows one weekday per dish (e.g. 绍兴酒蒸花肉 周一+周四).
+     */
+    featureOnAvailableDays?: boolean;
     /** Short reason shown on a disabled card (retired / weekday-excluded). */
     unavailableNote?: string;
     unavailableNoteEn?: string;
@@ -171,6 +179,8 @@ const DISH_CATALOG: DishData[] = [
         // 2026-07-13 起一周两天（老板菜单：周一+周四）。同一道菜不能在
         // WEEKLY_SCHEDULE 出现两次（推导层防重），多天供应走常驻+availableWeekdays。
         availableWeekdays: [1, 4],
+        // 老板 2026-07-13：从常驻区挪进每日精选 —— 周一、周四两列都显示
+        featureOnAvailableDays: true,
         unavailableNote: "仅周一、周四供应",
         unavailableNoteEn: "Mon & Thu only",
         image: "/shaoxing_pork_belly.webp",

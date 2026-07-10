@@ -34,13 +34,19 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
     const groups = useMemo(() => {
         if (!ready) return null;
         const active = weeklyMenu.filter(d => !d.retired && !d.hidden);
-        const daily = active.filter(d => d.weekday == null);
+        // featureOnAvailableDays daily dishes (e.g. Shaoxing pork belly Mon+Thu)
+        // display inside each available day's column instead of the daily band.
+        const featured = (d: MenuItem) => d.weekday == null && !!d.featureOnAvailableDays && !!d.availableWeekdays?.length;
+        const daily = active.filter(d => d.weekday == null && !featured(d));
         const days = [1, 2, 3, 4, 5]
             .map(wd => ({
                 wd,
-                dishes: active
-                    .filter(d => d.weekday === wd)
-                    .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)),
+                dishes: [
+                    ...active
+                        .filter(d => d.weekday === wd)
+                        .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)),
+                    ...active.filter(d => featured(d) && d.availableWeekdays!.includes(wd)),
+                ],
             }))
             .filter(g => g.dishes.length > 0);
         const retired = weeklyMenu.filter(d => d.retired);

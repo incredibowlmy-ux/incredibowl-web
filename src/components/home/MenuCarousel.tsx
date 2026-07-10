@@ -34,13 +34,19 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
     const groups = useMemo(() => {
         if (!ready) return null;
         const active = weeklyMenu.filter(d => !d.retired && !d.hidden);
-        const daily = active.filter(d => d.weekday == null);
+        // featureOnAvailableDays 常驻菜（如绍兴酒蒸花肉 周一+周四）改进每个
+        // 供应日的列里展示，不占常驻区；排它日的特餐后面，日期头仍取特餐。
+        const featured = (d: MenuItem) => d.weekday == null && !!d.featureOnAvailableDays && !!d.availableWeekdays?.length;
+        const daily = active.filter(d => d.weekday == null && !featured(d));
         const days = [1, 2, 3, 4, 5]
             .map(wd => ({
                 wd,
-                dishes: active
-                    .filter(d => d.weekday === wd)
-                    .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)),
+                dishes: [
+                    ...active
+                        .filter(d => d.weekday === wd)
+                        .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)),
+                    ...active.filter(d => featured(d) && d.availableWeekdays!.includes(wd)),
+                ],
             }))
             .filter(g => g.dishes.length > 0);
         const retired = weeklyMenu.filter(d => d.retired);
