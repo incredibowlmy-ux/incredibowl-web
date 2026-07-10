@@ -220,10 +220,11 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                     )}
                 </div>
 
-                <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23]">{dish.name}</h3>
-                <h4 className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400">{dish.nameEn}</h4>
+                {/* 名称/英文名/标签固定高度 —— 5 列日历里每张卡等高，行与行对齐不参差 */}
+                <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23] line-clamp-2 min-h-[56px]">{dish.name}</h3>
+                <h4 className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400 line-clamp-2 min-h-[49px]">{dish.nameEn}</h4>
 
-                <div className="flex flex-wrap gap-1.5 mb-5">
+                <div className="flex flex-wrap gap-1.5 mb-5 content-start min-h-[62px] max-h-[62px] overflow-hidden">
                     {dish.tags.map(tag => (
                         <span key={tag} className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#E3EADA]/70 text-[#1A2D23]">
                             {tag}
@@ -403,7 +404,8 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                                                     <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
                                                 </span>
                                                 <span className="text-[13px] font-bold text-gray-500 mt-1.5">{dayDateSub(g.dishes[0])}</span>
-                                                {isNext && <span className="mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ 下一餐</span>}
+                                                {/* 非下一餐用 invisible 占位 —— 5 个列头等高，第一行卡片顶对齐 */}
+                                                <span className={`mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>✨ 下一餐</span>
                                             </div>
                                             {g.dishes.map(renderDesktopCard)}
                                         </div>

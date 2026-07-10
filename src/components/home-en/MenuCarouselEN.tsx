@@ -220,10 +220,11 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                     )}
                 </div>
 
-                <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23]">{dish.nameEn}</h3>
-                <h4 lang="zh" className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400">{dish.name}</h4>
+                {/* Fixed-height name/subtitle/tags — equal card heights so the 5-day calendar rows align */}
+                <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23] line-clamp-2 min-h-[56px]">{dish.nameEn}</h3>
+                <h4 lang="zh" className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400 line-clamp-2 min-h-[49px]">{dish.name}</h4>
 
-                <div className="flex flex-wrap gap-1.5 mb-5">
+                <div className="flex flex-wrap gap-1.5 mb-5 content-start min-h-[62px] max-h-[62px] overflow-hidden">
                     {(dish.tagsEn ?? dish.tags).map(tag => (
                         <span key={tag} className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#E3EADA]/70 text-[#1A2D23]">
                             {tag}
@@ -403,7 +404,8 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                                                     <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
                                                 </span>
                                                 <span className="text-[13px] font-bold text-gray-500 mt-1.5">{dayDateSub(g.dishes[0])}</span>
-                                                {isNext && <span className="mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5">✨ Up next</span>}
+                                                {/* Invisible placeholder when not next — equal header heights, row 1 tops align */}
+                                                <span className={`mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>✨ Up next</span>
                                             </div>
                                             {g.dishes.map(renderDesktopCard)}
                                         </div>
