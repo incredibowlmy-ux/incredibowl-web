@@ -1,3 +1,21 @@
+# 自动化层：消灭每周人肉仪式 — 2026-07-10
+
+源自使用回顾报告建议 1。四件套进度：
+
+- [x] ① Meta B档 CAPI 直推：scripts/meta-capi-upload.mjs（直读 Firestore、共用状态文件、--check/--dry/--test/--cron）；首跑生产发送 44 笔/RM2332.60 成功；Task Scheduler `Incredibowl\MetaWeeklyCAPI` 周一 23:00
+- [x] ② 换菜 skill：.claude/skills/weekly-menu/SKILL.md（本机生效，.claude 在 gitignore）；三模板等老板选
+- [x] ③ 订阅阶段 2 余券不足方案：已答复（确认页内嵌补购券，见会话记录），实施排第 3~4 周
+- [x] ④ 记账每日 23:00：零权限提醒版已上线（Incredibowl\DailyBookkeepingCheck → C:\Users\User\.incredibowl\cron-bookkeeping-check.ps1）
+- [ ] ⏳ 老板提供 Telegram bot token + chat_id → 写 C:\Users\User\.incredibowl\telegram-config.json
+- [ ] ⏳ 全自动记账版：需老板亲自批准 headless 权限（分类器拦截了无人值守 skip-permissions 和通配 allowlist，属正确拦截）
+- [ ] ⏳ chatbot 菜单 context 确切格式（老板从 n8n 贴出）→ 回写 weekly-menu skill 第 6 步
+- [ ] 订阅引擎阶段 2 实施（tokenized 确认深链 + 余券不足补购）
+
+## Review
+Meta 直推验证链：test_event_code 探针 events_received=1 → --dry 44 笔与旧口径一致（含浮点尘埃修复，54 单券全抵常规跳过）→ 生产 events_received=44 → 复跑 --dry=0 笔证明状态防重生效。退出码修复后 ExitCode=0。
+
+---
+
 # 会员地址簿（最多 5 个地址）— 2026-07-07
 
 ## 方案

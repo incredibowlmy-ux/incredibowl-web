@@ -39,5 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cron logs (Task Scheduler jobs)
+/tasks/logs/
 .gstack/
 .claude/
+
+.vercel
+.env*
