@@ -78,6 +78,13 @@ export const metadata: Metadata = {
     "healthy food delivery KL",
     "healthy bowl KL",
     "home-cooked food delivery KL",
+    "到会 KL",
+    "公司订餐 KL",
+    "团体订餐外送",
+    "包伙食 KL",
+    "catering Old Klang Road",
+    "catering OUG",
+    "home-cooked catering KL",
     ...COVERAGE_AREAS.flatMap((a) => [`${a} 外送`, `${a} food delivery`]),
   ],
   alternates: {
@@ -152,7 +159,11 @@ export default function RootLayout({
                   inLanguage: "zh-MY"
                 },
                 {
-                  "@type": "Restaurant",
+                  // Dual-typed: Restaurant (delivery meals) + Caterer (group meal
+                  // boxes / 到会). Both are FoodEstablishment subtypes — the array
+                  // form is valid schema.org and lets search/AI engines surface us
+                  // for catering queries, mirroring the GBP secondary category.
+                  "@type": ["Restaurant", "Caterer"],
                   "@id": "https://www.incredibowl.my/#restaurant",
                   name: "Incredibowl",
                   alternateName: "碗妈私厨 (BowlMama)",

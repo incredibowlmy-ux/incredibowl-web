@@ -20,6 +20,8 @@ export default function Footer() {
                     </div>
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
                         <Link href="/blog" className="hover:text-[#FF6B35] transition-colors">Blog</Link>
+                        {/* 移动端冻结：新链接只在桌面端露出（hidden lg:inline） */}
+                        <Link href="/catering" className="hidden lg:inline hover:text-[#FF6B35] transition-colors">Catering 到会</Link>
                         <Link href="/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
                         <Link href="/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
                         <Link href="/refund" className="hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>

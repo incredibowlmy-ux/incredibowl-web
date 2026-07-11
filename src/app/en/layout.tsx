@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     "healthy food delivery KL",
     "healthy bowl KL",
     "no MSG food delivery",
+    "catering Old Klang Road",
+    "catering OUG KL",
+    "home-cooked catering KL",
+    "office lunch catering KL",
+    "group meal boxes KL",
     ...COVERAGE_AREAS.map((a) => `${a} food delivery`),
   ],
   alternates: {
