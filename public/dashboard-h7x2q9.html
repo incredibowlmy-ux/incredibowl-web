@@ -9556,6 +9556,9 @@ incredibowl.my`,
                 total += dishPrice * qty + addonSum;
             });
             const totalInput = $('#moTotal');
+            // 'prefill' = 编辑模式软锁（打开时保留已存总额；一旦动了菜/数量/加料，
+            // recomputeTotal 只会因真实交互触发，此处解锁重算）。'1' = 手动输入硬锁，永不覆盖。
+            if (totalInput.dataset.userTouched === 'prefill') totalInput.dataset.userTouched = '';
             if (!totalInput.dataset.userTouched) {
                 totalInput.value = total > 0 ? total.toFixed(2) : '';
             }
@@ -9614,7 +9617,7 @@ incredibowl.my`,
                 // Use the food FACE value (originalTotal), not the post-discount cash total —
                 // otherwise the live summary subtracts the voucher/promo discount a 2nd time.
                 $('#moTotal').value = ((orderToEdit.originalTotal ?? orderToEdit.total) || 0).toFixed(2);
-                $('#moTotal').dataset.userTouched = '1'; // don't auto-recompute
+                $('#moTotal').dataset.userTouched = 'prefill'; // 软锁：仅保护打开瞬间的已存总额；动了菜/加料即重算（硬锁 '1' 只给手动输入）
                 $('#moDelivery').value = (orderToEdit.deliveryFee || 0).toFixed(2);
                 $('#moZone').value = orderToEdit.deliveryZone || 'within2km';
 
