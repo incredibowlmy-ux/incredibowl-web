@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/generate-meta-jpgs.mjs",
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start",
@@ -22,6 +23,7 @@
     "razorpay": "^2.9.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "sharp": "^0.35.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

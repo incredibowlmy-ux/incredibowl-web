@@ -42,6 +42,10 @@ next-env.d.ts
 
 # cron logs (Task Scheduler jobs)
 /tasks/logs/
+
+# build artifact: WebP→JPEG renditions for the Meta catalogue feed
+# (regenerated every build by scripts/generate-meta-jpgs.mjs via prebuild)
+/public/meta-jpg/
 .gstack/
 .claude/
 

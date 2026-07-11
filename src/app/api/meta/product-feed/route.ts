@@ -42,7 +42,9 @@ export async function GET() {
       'new',
       `${d.price.toFixed(2)} MYR`,
       `${SITE}/?dish=${d.id}&utm_source=meta&utm_medium=catalog`,
-      `${SITE}${d.image}`,
+      // Meta's catalogue rejects WebP (JPG/PNG only) — point at the JPEG
+      // rendition generated at build time by scripts/generate-meta-jpgs.mjs.
+      `${SITE}/meta-jpg/${d.image.slice(1).replace(/\.webp$/, '.jpg')}`,
       'Incredibowl 碗妈私厨',
     ].map(csv).join(','));
 
