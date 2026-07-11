@@ -71,6 +71,7 @@ interface OrderShape {
   total?: number;
   mealVouchersUsed?: number;
   mealVoucherAllocatedRevenue?: number;
+  addonCreditsAllocatedRevenue?: number;
   items?: { name: string; quantity?: number; note?: string; addOns?: unknown[] }[];
   note?: string;
 }
@@ -181,8 +182,10 @@ export async function GET(req: NextRequest) {
 
     const cashRevenueRM = todayOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
     const deliveryRevenueRM = todayOrders.reduce((s, o) => s + (Number(o.deliveryFee) || 0), 0);
+    // 与 desktop dashboard orderAccrualRevenue 同口径：现金 + 餐券摊销 + 预付加料/升级确认
     const mfrs15RevenueRM = todayOrders.reduce(
-      (s, o) => s + (Number(o.total) || 0) + (Number(o.mealVoucherAllocatedRevenue) || 0),
+      (s, o) => s + (Number(o.total) || 0) + (Number(o.mealVoucherAllocatedRevenue) || 0)
+        + (Number(o.addonCreditsAllocatedRevenue) || 0),
       0,
     );
 
