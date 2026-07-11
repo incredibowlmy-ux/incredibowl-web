@@ -24,9 +24,17 @@ import { weeklyMenu } from '@/data/weeklyMenu';
 
 const SITE = 'https://www.incredibowl.my';
 
-/** RFC-4180 CSV field: always quoted, inner quotes doubled, newlines flattened. */
+/**
+ * CSV field with MINIMAL quoting: only quote when the field actually contains
+ * an ASCII comma / quote / newline. Meta's feed parser chokes on files where
+ * every field is quoted (its quote autodetection keys off the unquoted header
+ * row) — verified empirically 2026-07-11: fully-quoted file → all 10 rows
+ * invalid; identical unquoted file → 10/10 persisted. Chinese full-width
+ * punctuation（，。｜）is not a delimiter, so dish rows normally need no quotes.
+ */
 function csv(field: string): string {
-  return `"${field.replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+  const flat = field.replace(/\r?\n/g, ' ');
+  return /[",]/.test(flat) ? `"${flat.replace(/"/g, '""')}"` : flat;
 }
 
 export async function GET() {
