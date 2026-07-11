@@ -9378,12 +9378,29 @@ incredibowl.my`,
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
             { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard
         ];
+        // 新菜兜底加料：DISH_ADDON_MAP 还没登记的菜（刚上架的新菜）自动拿这套
+        // 标准 à la carte + 饭量 + 饮品，不用先来这里抄一份才有加料可选。
+        // 该菜有专属加料时再去 DISH_ADDON_MAP 建正式条目（照惯例把标准块抄全）。
+        const DEFAULT_ADDONS = [
+            { id: 'less-rice',     label: '少饭', price: 0.00 },
+            { id: 'extra-rice',    label: '加饭', price: 2.00 },
+            { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+            { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+            { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+            { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+            { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+            { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+            { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+            { id: 'extra-corn',    label: '甜玉米 (25g)', price: 2.50 },
+            { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+            ...DRINKS_PILLS,
+        ];
         function getDishAddons(dishName) {
             if (!dishName) return [];
             const canon = canonicalDishName(dishName);
             const dish = (state.menu || []).find(m => canonicalDishName(m.name) === canon);
             if (!dish) return [];
-            const base = DISH_ADDON_MAP[String(dish.id)] || [];
+            const base = DISH_ADDON_MAP[String(dish.id)] || DEFAULT_ADDONS;
             const extras = UNIVERSAL_ADDONS.filter(u => !base.some(b => b.id === u.id));
             return [...base, ...extras];
         }

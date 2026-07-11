@@ -81,6 +81,9 @@ const out = 'public/<菜名>.webp';
 | `src/data/dishIngredients.ts` | 想要备餐采购汇总 | `name` 必须与 `weeklyMenu.name` **逐字一致** |
 | `src/data/blockedDates.ts` | 某天售罄/停售 | 键 = 菜品 `id` |
 | `src/lib/dishAliases.ts` | **改名**老菜 | 做历史菜名映射,避免旧订单对不上 |
+| Dashboard `DISH_ADDON_MAP` | **仅**该菜有专属加料时 | 2026-07-11 起 `getDishAddons` 对未登记的菜自动兜底 `DEFAULT_ADDONS`(标准 à la carte + 饭量 + 饮品) + `UNIVERSAL_ADDONS`,新菜**不登记也有全套标准加料**。要建条目时照惯例把标准块抄全(登记后兜底即失效)。改 Desktop 副本再 `npm run sync:dashboard`。 |
+
+> ⚠️ Dashboard `MENU_SEED` 仍要加新菜(day/active/topUp;价格老板在 Settings 手动改)——见 add-new-dish skill 第 3 步。
 
 ---
 
