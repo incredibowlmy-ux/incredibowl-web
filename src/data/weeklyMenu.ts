@@ -30,6 +30,14 @@ export interface MenuItem {
      */
     voucherTopUp?: number;
     /**
+     * Prepaid upgrade-credit id (mealVoucherAddonCredits pool, see
+     * PREPAID_ADDON_OPTIONS in addOnsConfig.ts) that covers this dish's
+     * `voucherTopUp`. Only set on dishes whose top-up is sold as a prepaid
+     * upgrade (e.g. salmon/wagyu). The subscription engine auto-consumes
+     * these credits before charging the top-up as cash.
+     */
+    topUpAddonId?: string;
+    /**
      * Dish removed from rotation: shown greyed-out on the menu, not orderable.
      * DERIVED from PAUSED_DISHES below.
      */
@@ -199,6 +207,7 @@ const DISH_CATALOG: DishData[] = [
         nameEn: "Aussie Wagyu Beef Patty Don",
         price: 22.90,
         voucherTopUp: 3,
+        topUpAddonId: "wagyu-upgrade",
         image: "/wagyu_beef_patty.webp",
         tags: ["高蛋白 32g+", "澳洲和牛饼", "温泉蛋拌饭", "番茄莎莎清爽"],
         tagsEn: ["32g+ protein", "Aussie wagyu patty", "Onsen egg over rice", "Zesty tomato salsa"],
@@ -240,6 +249,7 @@ const DISH_CATALOG: DishData[] = [
         nameEn: "Lemon Pan-Seared Salmon",
         price: 23.90,
         voucherTopUp: 4,
+        topUpAddonId: "salmon-upgrade",
         image: "/lemon_salmon.webp",
         tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM4"],
         tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],

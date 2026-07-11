@@ -3,6 +3,8 @@ import { corsPreflight, adminJson, verifyAdminEmail } from '@/lib/adminApi';
 import { weeklyMenu, dishVoucherValue, type MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
+import { getAvailableAddonCredits, claimAddonCredits } from '@/lib/addonCreditUtils';
+import { getPrepaidAddonOption } from '@/data/addOnsConfig';
 
 /**
  * POST /api/admin/subscriptions/week — 常客周计划的「生成预览 / 确认建单」。
@@ -53,7 +55,13 @@ interface PlannedDay {
   vCount: number;        // 本单消耗餐券张数（= 主菜总份数）
   coverage: number;      // 餐券抵扣的面值 RM（Σ dishVoucherValue × qty）
   originalTotal: number; // 菜金小计（含加料）
-  cashDue: number;       // 现金应收 = originalTotal − coverage + deliveryFee
+  cashDue: number;       // 现金应收 = originalTotal − coverage − upgradeCoverage + deliveryFee
+  /** 本天高价菜 top-up 所需的预付升级 credit（dish.topUpAddonId × 份数）。 */
+  upgradeNeeds: { addonId: string; count: number; unitRM: number }[];
+  /** allocateUpgradeCredits 分配结果：实际用掉的 credit。 */
+  upgradeUsed: { addonId: string; count: number }[];
+  /** 被预付升级 credit 覆盖的 top-up 金额 RM（已从 cashDue 扣除）。 */
+  upgradeCoverage: number;
   warnings: string[];
   blocked: boolean;      // 有硬伤（菜不存在/当日停业等）→ confirm 时整天跳过
 }
@@ -74,6 +82,7 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
     if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
 
     const items: PlannedItem[] = [];
+    const upgradeNeeds = new Map<string, { addonId: string; count: number; unitRM: number }>();
     let vCount = 0, coverage = 0, originalTotal = 0;
 
     for (const raw of entry.items ?? []) {
@@ -103,6 +112,12 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
       vCount += qty;
       coverage += dishVoucherValue(dish.price, dish) * qty;
       originalTotal += dish.price * qty + addOnSum;
+
+      if (dish.topUpAddonId && (dish.voucherTopUp ?? 0) > 0) {
+        const prev = upgradeNeeds.get(dish.topUpAddonId);
+        if (prev) prev.count += qty;
+        else upgradeNeeds.set(dish.topUpAddonId, { addonId: dish.topUpAddonId, count: qty, unitRM: dish.voucherTopUp! });
+      }
     }
 
     if (items.length === 0) { topWarnings.push(`周${WD_CN[wd]} 没有可用主菜，整天跳过`); continue; }
@@ -116,10 +131,44 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
       time: String(entry.time || (entry.meal === 'dinner' ? '19:00' : '12:00')),
       items, vCount, coverage, originalTotal,
       cashDue: round2(originalTotal - coverage + deliveryFee),
+      upgradeNeeds: [...upgradeNeeds.values()],
+      upgradeUsed: [],
+      upgradeCoverage: 0,
       warnings, blocked,
     });
   }
   return { days, warnings: topWarnings };
+}
+
+/**
+ * 把客户账上的预付升级 credit（salmon-upgrade/wagyu-upgrade…）按日期顺序
+ * 分给非 blocked 天的 top-up 需求：填 upgradeUsed/upgradeCoverage 并把
+ * cashDue 扣掉被覆盖的部分。preview 与 confirm 用同一份分配逻辑（同源），
+ * 两边各自现拉一次余额 —— 只要中间没人动 credit，结果一致。
+ * 返回不足清单（addonId → 还差几个），给 preview 出警告。
+ */
+function allocateUpgradeCredits(
+  days: PlannedDay[],
+  available: Map<string, number>,
+): Map<string, number> {
+  const shortfall = new Map<string, number>();
+  for (const d of days) {
+    if (d.blocked) continue;
+    for (const need of d.upgradeNeeds) {
+      const remaining = available.get(need.addonId) ?? 0;
+      const take = Math.min(remaining, need.count);
+      if (take > 0) {
+        available.set(need.addonId, remaining - take);
+        d.upgradeUsed.push({ addonId: need.addonId, count: take });
+        d.upgradeCoverage = round2(d.upgradeCoverage + take * need.unitRM);
+        d.cashDue = round2(d.cashDue - take * need.unitRM);
+      }
+      if (take < need.count) {
+        shortfall.set(need.addonId, (shortfall.get(need.addonId) ?? 0) + (need.count - take));
+      }
+    }
+  }
+  return shortfall;
 }
 
 /** 生成给老板复制转发的 WhatsApp 确认消息（保持老板的号、老板的人情味）。 */
@@ -129,9 +178,11 @@ function whatsappText(sub: any, days: PlannedDay[], vouchersLeftAfter: number): 
     const addons = d.items.flatMap(it => it.addOns).map(a => a.label).filter(Boolean);
     return `周${WD_CN[d.weekday]}（${d.date.slice(5).replace('-', '/')}）${d.meal === 'dinner' ? '晚餐' : '午餐'}：${dishes}${addons.length ? ` +${addons.join('+')}` : ''}`;
   });
-  const totalV = days.filter(d => !d.blocked).reduce((s, d) => s + d.vCount, 0);
-  const totalCash = round2(days.filter(d => !d.blocked).reduce((s, d) => s + d.cashDue, 0));
-  return `${sub.name} 你好！碗妈下周给你排的菜 🍛\n${lines.join('\n')}\n\n共扣 ${totalV} 张餐券（用完剩 ${vouchersLeftAfter} 张）${totalCash > 0 ? `，加料/补差现金 RM ${totalCash.toFixed(2)}` : ''}。\n没问题回 OK，想换哪天直接说 👌`;
+  const usableDays = days.filter(d => !d.blocked);
+  const totalV = usableDays.reduce((s, d) => s + d.vCount, 0);
+  const totalCash = round2(usableDays.reduce((s, d) => s + d.cashDue, 0));
+  const totalUpgrade = usableDays.reduce((s, d) => s + d.upgradeUsed.reduce((x, u) => x + u.count, 0), 0);
+  return `${sub.name} 你好！碗妈下周给你排的菜 🍛\n${lines.join('\n')}\n\n共扣 ${totalV} 张餐券（用完剩 ${vouchersLeftAfter} 张）${totalUpgrade > 0 ? `，升级补差用预付额度 ${totalUpgrade} 份` : ''}${totalCash > 0 ? `，加料/补差现金 RM ${totalCash.toFixed(2)}` : ''}。\n没问题回 OK，想换哪天直接说 👌`;
 }
 
 export async function OPTIONS() { return corsPreflight(); }
@@ -155,6 +206,18 @@ export async function POST(req: NextRequest) {
     for (const doc of snap.docs) {
       const sub = { id: doc.id, ...doc.data() } as any;
       const { days, warnings } = buildWeekPlan(sub, weekStart);
+
+      // 预付升级 credit（salmon/wagyu top-up）——有就自动抵，现金只收缺口
+      if (days.some(d => !d.blocked && d.upgradeNeeds.length > 0)) {
+        const credits = await getAvailableAddonCredits(db, sub.userId);
+        const availMap = new Map(credits.map(c => [c.addonId, c.remaining]));
+        const shortfall = allocateUpgradeCredits(days, availMap);
+        for (const [addonId, miss] of shortfall) {
+          const name = getPrepaidAddonOption(addonId)?.name || addonId;
+          warnings.push(`预付升级「${name}」不足：还差 ${miss} 份，差额按现金收`);
+        }
+      }
+
       const vouchersNeeded = days.filter(d => !d.blocked).reduce((s, d) => s + d.vCount, 0);
       const vouchersAvailable = await countAvailableVouchers(db, sub.userId);
       if (vouchersAvailable < vouchersNeeded) {
@@ -198,6 +261,13 @@ export async function POST(req: NextRequest) {
     const usable = days.filter(d => !d.blocked);
     if (usable.length === 0) return adminJson({ error: '本周没有可建的单（全部被硬伤拦下），看预览的警告' }, 400);
 
+    // 预付升级 credit：现拉余额按日期分配（与 preview 同一份逻辑），
+    // 有多少抵多少，缺口照旧收现金 —— 不足不拦确认。
+    if (usable.some(d => d.upgradeNeeds.length > 0)) {
+      const credits = await getAvailableAddonCredits(db, sub.userId);
+      allocateUpgradeCredits(days, new Map(credits.map(c => [c.addonId, c.remaining])));
+    }
+
     const vouchersNeeded = usable.reduce((s, d) => s + d.vCount, 0);
     const available = await countAvailableVouchers(db, sub.userId);
     if (available < vouchersNeeded) {
@@ -211,13 +281,20 @@ export async function POST(req: NextRequest) {
     // 天 —— batchTag 幂等锁保证不会重复整周，剩余天数看 error 手动补。
     for (const d of usable) {
       const orderRef = db.collection('orders').doc();
+      // 先扣升级 credit 再扣餐券：credit 靠上面的现拉分配，撞到并发不足会
+      // throw —— 此时餐券还没动，中断面更小。
+      const addonClaim = d.upgradeUsed.length > 0
+        ? await claimAddonCredits(db, sub.userId, d.upgradeUsed, orderRef.id)
+        : { recognizedRevenueRM: 0, lines: [] };
       const claim = await claimMealVouchers(db, sub.userId, d.vCount, orderRef.id);
       const deliveryFee = Number(sub.deliveryFeePerDelivery) || 0;
       await orderRef.set({
         userId: sub.userId, userName: sub.name, userPhone: sub.phone, userEmail: '',
         userAddress: sub.address,
         items: d.items,
-        total: round2(d.originalTotal - d.coverage),
+        // 现金应收：菜金 − 餐券面值 − 预付升级覆盖（口径 = dashboard 手动单，
+        // 预付加料是现金折扣不是 RM0 行项目）
+        total: round2(d.originalTotal - d.coverage - d.upgradeCoverage),
         originalTotal: d.originalTotal,
         deliveryFee,
         deliveryZone: sub.deliveryZone || 'within2km',
@@ -233,6 +310,10 @@ export async function POST(req: NextRequest) {
         mealVouchersUsed: d.vCount,
         claimedMealVoucherIds: claim.ids,
         mealVoucherAllocatedRevenue: claim.allocatedTotalRM,
+        ...(addonClaim.lines.length > 0 ? {
+          addonCreditsUsed: addonClaim.lines.map(l => ({ addonId: l.addonId, count: l.count })),
+          addonCreditsAllocatedRevenue: addonClaim.recognizedRevenueRM,
+        } : {}),
         redemptionRecordedBy: adminEmail,
         // createdAt 落在配送日中午（04:00Z = KL 12:00），与手写周脚本一致，
         // 让按日营收报表把摊销记在出餐当天。

@@ -270,6 +270,7 @@ export default function SubscriptionsAdmin() {
                                     <span className="text-gray-400">{d.date} {WD_LABEL[String(d.weekday)]} {d.meal === 'dinner' ? '晚' : '午'} {d.time}</span>
                                     <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
                                     <span className="text-[#FF6B35]">{d.vCount}券抵{d.coverage.toFixed(2)}</span>
+                                    {d.upgradeCoverage > 0 && <span className="text-emerald-600">预付升级抵{d.upgradeCoverage.toFixed(2)}</span>}
                                     <span className="text-gray-400">现金 {d.cashDue.toFixed(2)}</span>
                                     {d.warnings.map((w: string, i: number) => <span key={i} className="text-amber-600">⚠ {w}</span>)}
                                 </div>
