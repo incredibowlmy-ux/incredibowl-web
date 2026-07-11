@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { corsPreflight, adminJson, verifyAdminEmail } from '@/lib/adminApi';
+import { normalizePhone } from '@/lib/phoneUtils';
 import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 
@@ -169,7 +170,19 @@ export async function POST(req: NextRequest) {
   const usable = days.filter(d => !d.blocked);
   const name = String(customer.name).trim();
   const phone = String(customer.phone).trim();
-  const userId = String(customer.userId || '').trim() || `manual_${phone.replace(/\D/g, '')}`;
+  // userId 归属：显式传入 > 电话唯一匹配的真实账号 > manual_<电话> 兜底。
+  // 不查真实账号会把同一客户劈成 manual_* + 真实 uid 两个档案（统计/会员历史全失真）。
+  let userId = String(customer.userId || '').trim();
+  if (!userId) {
+    const normalized = normalizePhone(phone);
+    if (normalized) {
+      const db = await getDb();
+      const match = await db.collection('users')
+        .where('phoneNormalized', '==', normalized).limit(2).get();
+      if (match.size === 1) userId = match.docs[0].id;
+    }
+    if (!userId) userId = `manual_${phone.replace(/\D/g, '')}`;
+  }
   const cashTotal = round2(usable.reduce((s, d) => s + d.cashDue, 0));
 
   // ── 预览 ─────────────────────────────────────────────

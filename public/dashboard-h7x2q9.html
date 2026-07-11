@@ -11726,7 +11726,11 @@ incredibowl.my`,
                 mealVoucherDiscount = mainDishUnitPrices.slice(0, vouchersUsed).reduce((s, p) => s + p, 0);
             }
 
-            // Build userId — use real userId when redeeming vouchers; else synthetic manual_*
+            // Build userId — ALWAYS bind to the real webapp account when the phone
+            // matches one (not only when redeeming vouchers), so the same customer
+            // never splits into manual_* + real-uid two profiles. Synthetic manual_*
+            // only when no registered account exists for this phone.
+            if (!realUserMatch && phoneRaw) realUserMatch = findRealUserByPhone(phoneRaw);
             const phoneDigits = phoneRaw.replace(/\D/g, '');
             const userId = realUserMatch
                 ? realUserMatch.userId
