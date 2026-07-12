@@ -1329,6 +1329,7 @@
                                 <div class="card-sub">默认按下单时间倒序；选「今天/明天/午/晚」时按送达时间升序</div>
                             </div>
                             <div style="display:flex;flex-wrap:wrap;gap:8px">
+                                <input type="search" id="recentSearch" placeholder="🔍 客户名 / 电话 / 单号" style="font-size:12px;padding:4px 8px;width:170px;border:1px solid var(--border);border-radius:8px;background:var(--bg-subtle)" title="按客户名、电话或订单号过滤最近订单（与右边筛选叠加）" />
                                 <div class="seg" id="recentFilter">
                                     <button class="active" data-filter="all">全部</button>
                                     <button data-filter="web">网站</button>
@@ -4155,6 +4156,7 @@ incredibowl.my`,
         let recentFilter = 'all';
         let recentDeliveryFilter = 'all'; // 'all' | 'today' | 'tomorrow' | 'lunch' | 'dinner'
         let recentOrdersPage = 0;          // 0-based page index for pagination
+        let recentSearch = '';             // 客户名 / 电话 / 单号 关键字（与其他筛选叠加）
         const RECENT_PAGE_SIZE = 15;       // orders per page
         function renderRecentOrders() {
             // Use full filteredOrders (no cap) so pagination can walk back through entire range
@@ -4172,6 +4174,17 @@ incredibowl.my`,
             else if (df === 'tomorrow') filtered = filtered.filter(o => o.deliveryDate === tomorrowKey);
             else if (df === 'lunch') filtered = filtered.filter(o => mealType(o) === 'lunch');
             else if (df === 'dinner') filtered = filtered.filter(o => mealType(o) === 'dinner');
+
+            // Search axis (orthogonal): 客户名 / 电话 / 单号（#K66XNS 式 8 位尾码或完整 id）
+            const q = recentSearch.trim().toLowerCase().replace(/^#/, '');
+            if (q) {
+                const qDigits = q.replace(/\D/g, '');
+                filtered = filtered.filter(o => {
+                    if ((o.userName || '').toLowerCase().includes(q)) return true;
+                    if (qDigits.length >= 3 && String(o.userPhone || '').replace(/\D/g, '').includes(qDigits)) return true;
+                    return (o.id || '').toLowerCase().includes(q);
+                });
+            }
 
             // When a delivery filter is active, sort ASC by delivery date+time (prep order).
             // Otherwise keep createdAt-desc (existing behavior — already sorted upstream).
@@ -8610,6 +8623,13 @@ incredibowl.my`,
             recentOrdersPage = 0;  // reset to first page when filter changes
             renderRecentOrders();
         }));
+
+        // Recent orders search — 客户名 / 电话 / 单号（input 即时过滤，search 型自带清空 ×）
+        if ($('#recentSearch')) $('#recentSearch').addEventListener('input', (e) => {
+            recentSearch = e.target.value;
+            recentOrdersPage = 0;  // reset to first page when search changes
+            renderRecentOrders();
+        });
 
         // Recent orders filter — delivery axis (today/tomorrow/lunch/dinner)
         $$('#recentDeliveryFilter button').forEach(b => b.addEventListener('click', () => {
