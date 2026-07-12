@@ -28,17 +28,19 @@ const code = [
   slice('DRINKS_PILLS', '\n        ];'),
   slice('DISH_ADDON_MAP', '\n        };'),
   slice('UNIVERSAL_ADDONS', '\n        ];'),
-  'RESULT = { MENU_SEED, DISH_ADDON_MAP, UNIVERSAL_ADDONS };',
+  slice('DEFAULT_ADDONS', '\n        ];'),
+  'RESULT = { MENU_SEED, DISH_ADDON_MAP, UNIVERSAL_ADDONS, DEFAULT_ADDONS };',
 ].join('\n');
 
 const sandbox = { RESULT: null };
 vm.runInNewContext(code, sandbox);
-const { MENU_SEED, DISH_ADDON_MAP, UNIVERSAL_ADDONS } = sandbox.RESULT;
+const { MENU_SEED, DISH_ADDON_MAP, UNIVERSAL_ADDONS, DEFAULT_ADDONS } = sandbox.RESULT;
 
 // Resolve per dish NAME (subscriptions editor picks dishes by weeklyMenu name).
+// Mirrors dashboard getDishAddons(): no DISH_ADDON_MAP entry → DEFAULT_ADDONS fallback.
 const byName = {};
 for (const m of MENU_SEED) {
-  const base = DISH_ADDON_MAP[String(m.id)] || [];
+  const base = DISH_ADDON_MAP[String(m.id)] || DEFAULT_ADDONS;
   const extras = UNIVERSAL_ADDONS.filter((u) => !base.some((b) => b.id === u.id));
   byName[m.name] = [...base, ...extras].map(({ id, label, price }) => ({ id, label, price }));
 }
@@ -48,7 +50,11 @@ const weeklyMenuSrc = fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 
 const missing = Object.keys(byName).filter((n) => !weeklyMenuSrc.includes(`'${n}'`) && !weeklyMenuSrc.includes(`"${n}"`));
 if (missing.length) console.warn('⚠ 这些 dashboard 菜名在 weeklyMenu.ts 里没找到（名字可能不一致）:', missing.join(' / '));
 
-const universal = UNIVERSAL_ADDONS.map(({ id, label, price }) => ({ id, label, price }));
+// Page-side fallback for dish names missing from this table entirely
+// (e.g. weeklyMenu dish not yet in dashboard MENU_SEED): full default set,
+// same shape as a DEFAULT_ADDONS dish above.
+const fallbackExtras = UNIVERSAL_ADDONS.filter((u) => !DEFAULT_ADDONS.some((b) => b.id === u.id));
+const defaultOptions = [...DEFAULT_ADDONS, ...fallbackExtras].map(({ id, label, price }) => ({ id, label, price }));
 
 const ts = `/**
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
@@ -62,10 +68,10 @@ export interface DishAddonOption { id: string; label: string; price: number }
 /** 每道菜（按菜名）可选的加料，与 dashboard 手动录单完全一致（已含通用加料）。 */
 export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = ${JSON.stringify(byName, null, 2)};
 
-/** 菜名不在表里时的兜底（通用加料）。 */
-export const UNIVERSAL_ADDON_OPTIONS: DishAddonOption[] = ${JSON.stringify(universal, null, 2)};
+/** 菜名不在表里时的兜底：标准加料全套（与 dashboard DEFAULT_ADDONS 一致，已含通用加料）。 */
+export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = ${JSON.stringify(defaultOptions, null, 2)};
 `;
 
 fs.writeFileSync(OUT, ts);
 console.log(`✓ 生成 ${OUT}`);
-console.log(`  ${Object.keys(byName).length} 道菜 · 通用加料 ${universal.length} 个`);
+console.log(`  ${Object.keys(byName).length} 道菜 · 兜底加料 ${defaultOptions.length} 个`);

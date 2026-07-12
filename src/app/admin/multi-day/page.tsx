@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { weeklyMenu } from '@/data/weeklyMenu';
-import { DISH_ADDONS_BY_NAME, UNIVERSAL_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
+import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 import DishPicker from '@/components/admin/DishPicker';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
@@ -318,7 +318,7 @@ export default function MultiDayAdmin() {
                             </div>
                             <div className="mt-2 space-y-2">
                                 {day.items.map((it, i) => {
-                                    const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? UNIVERSAL_ADDON_OPTIONS;
+                                    const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? DEFAULT_ADDON_OPTIONS;
                                     const setItem = (patch: Partial<PlanItem>) => { const items = [...day.items]; items[i] = { ...it, ...patch }; setDay(idx, { ...day, items }); };
                                     return (
                                         <div key={i} className="space-y-1.5">
