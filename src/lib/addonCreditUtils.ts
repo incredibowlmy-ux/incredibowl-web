@@ -260,3 +260,88 @@ export async function claimAddonCredits(
     lines: [...linesByAddon.values()],
   };
 }
+
+/**
+ * Give back prepaid add-on credits after an order is deleted / cancelled —
+ * the reverse of claimAddonCredits. Mirrors releaseMealVouchers semantics:
+ * restored units land back in the user's batch docs (available again unless
+ * the batch has expired, in which case the customer loses them, same as an
+ * expired voucher).
+ *
+ * Placement per addonId, capped at each batch's quantityTotal:
+ *   1. batches this order claimed from (lastRedeemedOrderId === orderId)
+ *   2. any other batch with headroom, oldest expiry first (mirrors FIFO claim)
+ *
+ * Returns any counts that couldn't be placed (no batch headroom — data was
+ * mutated out-of-band) so callers can surface a manual-fix warning.
+ */
+export async function releaseAddonCredits(
+  db: Firestore,
+  userId: string,
+  items: Array<{ addonId: string; count: number }>,
+  orderId: string,
+): Promise<{ unplaced: Array<{ addonId: string; count: number }> }> {
+  const wanted = (items || []).filter(i => i && i.addonId && i.count > 0);
+  if (wanted.length === 0) return { unplaced: [] };
+
+  const now = Timestamp.now();
+  type PlanEntry = { id: string; give: number };
+  const plan: PlanEntry[] = [];
+  const unplaced: Array<{ addonId: string; count: number }> = [];
+
+  for (const { addonId, count } of wanted) {
+    const snap = await db.collection('mealVoucherAddonCredits')
+      .where('userId', '==', userId)
+      .where('addonId', '==', addonId)
+      .get();
+
+    const candidates = snap.docs
+      .map(d => {
+        const v = d.data() || {};
+        return {
+          id: d.id,
+          headroom: (Number(v.quantityTotal) || 0) - (Number(v.quantityRemaining) || 0),
+          fromThisOrder: v.lastRedeemedOrderId === orderId,
+          expiresMs: (v.expiresAt as Timestamp | undefined)?.toMillis() ?? 0,
+        };
+      })
+      .filter(c => c.headroom > 0)
+      .sort((a, b) =>
+        (Number(b.fromThisOrder) - Number(a.fromThisOrder)) || (a.expiresMs - b.expiresMs));
+
+    let need = count;
+    for (const c of candidates) {
+      if (need <= 0) break;
+      const give = Math.min(c.headroom, need);
+      plan.push({ id: c.id, give });
+      need -= give;
+    }
+    if (need > 0) unplaced.push({ addonId, count: need });
+  }
+
+  if (plan.length > 0) {
+    await db.runTransaction(async (tx) => {
+      const refs = plan.map(p => db.collection('mealVoucherAddonCredits').doc(p.id));
+      const fresh = await Promise.all(refs.map(r => tx.get(r)));
+      for (let i = 0; i < refs.length; i++) {
+        if (!fresh[i].exists) continue;
+        const v = fresh[i].data() || {};
+        const total = Number(v.quantityTotal) || 0;
+        const rem = Number(v.quantityRemaining) || 0;
+        // Re-cap inside the tx: never restore beyond what the batch ever held.
+        const give = Math.min(plan[i].give, Math.max(0, total - rem));
+        if (give <= 0) continue;
+        const exp = v.expiresAt as Timestamp | undefined;
+        const expired = !exp || exp.toMillis() <= now.toMillis();
+        tx.update(refs[i], {
+          quantityRemaining: rem + give,
+          status: expired ? 'expired' : 'available',
+          lastReleasedOrderId: orderId,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
+    });
+  }
+
+  return { unplaced };
+}

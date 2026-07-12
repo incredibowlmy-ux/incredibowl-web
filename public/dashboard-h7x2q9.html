@@ -10330,21 +10330,32 @@ incredibowl.my`,
                 const order = state.orders.find(o => o.id === id);
                 if (!order) return;
                 const claimedVoucherIds = Array.isArray(order.claimedMealVoucherIds) ? order.claimedMealVoucherIds : [];
-                const voucherWarning = claimedVoucherIds.length > 0
-                    ? `\n\n⚠️ 这单抵扣了 ${claimedVoucherIds.length} 张餐券 — 删除后会自动 release 回客户账户（重新可用）。`
+                // 预付升级/加料 credit（订阅建单、手动核销扣的）删除后同样要退回
+                const addonCreditsUsed = (Array.isArray(order.addonCreditsUsed) ? order.addonCreditsUsed : [])
+                    .filter(a => a && a.addonId && (Number(a.count) || 0) > 0);
+                const addonCreditCount = addonCreditsUsed.reduce((s, a) => s + (Number(a.count) || 0), 0);
+                const releaseNotes = [
+                    claimedVoucherIds.length > 0 ? `${claimedVoucherIds.length} 张餐券` : '',
+                    addonCreditCount > 0 ? `${addonCreditCount} 份预付升级/加料 credit` : '',
+                ].filter(Boolean).join(' + ');
+                const voucherWarning = releaseNotes
+                    ? `\n\n⚠️ 这单抵扣了 ${releaseNotes} — 删除后会自动 release 回客户账户（重新可用）。`
                     : '';
                 if (!confirm(`确认删除 ${order.userName || '该客户'} 的这单（RM ${((order.total || 0) + (order.deliveryFee || 0)).toFixed(2)}）？\n该操作不可恢复。${voucherWarning}`)) return;
                 delBtn.disabled = true;
                 try {
-                    // 先删订单再 release 餐券：反过来的话 deleteDoc 若失败，券已退回
+                    // 先删订单再 release 餐券/credit：反过来的话 deleteDoc 若失败，券已退回
                     // 但订单还挂着 claimedMealVoucherIds → 客户双花。删除成功后 release
                     // 失败则明确提示手动补救（券暂时锁死，不会双花，方向安全）。
                     await deleteDoc(doc(db, 'orders', id));
-                    if (claimedVoucherIds.length > 0) {
+                    if (claimedVoucherIds.length > 0 || addonCreditCount > 0) {
                         try {
-                            await callAdminAPI('/api/admin/manual-voucher-release', { voucherIds: claimedVoucherIds });
+                            await callAdminAPI('/api/admin/manual-voucher-release', {
+                                ...(claimedVoucherIds.length > 0 ? { voucherIds: claimedVoucherIds } : {}),
+                                ...(addonCreditCount > 0 ? { addonCredits: { userId: order.userId, orderId: id, items: addonCreditsUsed } } : {}),
+                            });
                         } catch (relErr) {
-                            toast(`订单已删，但 ${claimedVoucherIds.length} 张餐券 release 失败：${relErr.message} — 请在客户资料里手动退回`, 'error');
+                            toast(`订单已删，但 ${releaseNotes} release 失败：${relErr.message} — 请在客户资料里手动退回`, 'error');
                         }
                     }
                     state.orders = state.orders.filter(o => o.id !== id);
@@ -10360,11 +10371,11 @@ incredibowl.my`,
                         try { await callAdminAPI('/api/admin/consume-stock', { items: order.items, release: true, orderId: id }); }
                         catch (relErr) { console.warn('[delete-order] stock release skipped:', relErr && relErr.message); }
                     }
-                    // Refresh state so released vouchers reappear as available
-                    if (claimedVoucherIds.length > 0) await loadAllData();
+                    // Refresh state so released vouchers/credits reappear as available
+                    if (claimedVoucherIds.length > 0 || addonCreditCount > 0) await loadAllData();
                     renderAll();
-                    toast(claimedVoucherIds.length > 0
-                        ? `订单已删除 · ${claimedVoucherIds.length} 张餐券已 release 回客户账户`
+                    toast(releaseNotes
+                        ? `订单已删除 · ${releaseNotes} 已 release 回客户账户`
                         : '订单已删除（库存已回补）', 'success');
                 } catch (err) {
                     toast('删除失败：' + err.message, 'error');
