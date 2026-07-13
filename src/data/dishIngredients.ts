@@ -254,6 +254,20 @@ export const dishRecipes: DishRecipe[] = [
       { name: '白饭', qty: 180, unit: 'g' },
     ],
   },
+  {
+    // 新菜 2026-07-10 入系统，2026-07-13 上线主打。份量老板 2026-07-13 拍板：
+    // 配菜与香煎金黄鸡扒饭同一套；柠檬蜜糖酱（柠檬+蜜糖）按瓶装常备调味
+    // 惯例不计入每日采购汇总。鸡扒与鸡扒饭/葱汤共用同一采购 SKU（按块计）。
+    name: '柠檬蜜糖煎鸡扒',
+    shortName: '柠扒',
+    ingredients: [
+      { name: '鸡扒', qty: 1, unit: '块' },
+      { name: '白饭', qty: 80, unit: 'g' },
+      { name: '毛豆', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 25, unit: 'g' },
+      { name: '樱桃番茄', qty: 2, unit: '颗' },
+    ],
+  },
 ];
 
 /**

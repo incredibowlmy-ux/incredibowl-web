@@ -6,10 +6,12 @@
 - [x] ② 换菜 skill：.claude/skills/weekly-menu/SKILL.md（本机生效，.claude 在 gitignore）；三模板等老板选
 - [x] ③ 订阅阶段 2 余券不足方案：已答复（确认页内嵌补购券，见会话记录），实施排第 3~4 周
 - [x] ④ 记账每日 23:00：零权限提醒版已上线（Incredibowl\DailyBookkeepingCheck → C:\Users\User\.incredibowl\cron-bookkeeping-check.ps1）
-- [ ] ⏳ 老板提供 Telegram bot token + chat_id → 写 C:\Users\User\.incredibowl\telegram-config.json
-- [ ] ⏳ 全自动记账版：需老板亲自批准 headless 权限（分类器拦截了无人值守 skip-permissions 和通配 allowlist，属正确拦截）
-- [ ] ⏳ chatbot 菜单 context 确切格式（老板从 n8n 贴出）→ 回写 weekly-menu skill 第 6 步
-- [ ] 订阅引擎阶段 2 实施（tokenized 确认深链 + 余券不足补购）
+- [x] Telegram 配置：token+chat_id 已写入 C:\Users\User\.incredibowl\telegram-config.json，记账提醒 07-10 实测送达
+- [x] chatbot 菜单同步：确认 Context Builder 瘦身版吃 /api/n8n/menu 活数据，换菜 push 后自动同步，无需人肉贴（skill 第 6 步已更新）
+- [x] 全自动记账版：另一会话已在 Services 项目落地（night_run.ps1 + allowlist + 夜间加严 prompt）；我方 07-11 配套=退役 23:00 提醒、新增 07:30 Telegram 夜报推送
+- [ ] ⏳ **老板本人**粘贴注册 IncredibowlNightBookkeeping（每天 3:03）——分类器不允许代注册，截图里那段 PowerShell 就是
+- [ ] 订阅引擎阶段 2 实施（tokenized 确认深链 + 余券不足三选项：补购券/FPX差额/DuitNow QR 人工放行——Curlec 不支持 QR，走 FPX-pending 式页面 + WhatsApp 碗妈 + dashboard 手动放行，老板 07-10 拍板）
+- [ ] ⏳ 新菜柠檬蜜糖煎鸡扒：实拍图（老板说 later）；图好后换 webp + Google Sheet dishes 表加发图行。✅ 配方已补 2026-07-13（dishIngredients.ts：鸡扒1块+白饭80g+毛豆25g+玉米25g+樱桃番茄2颗，shortName 柠扒；柠檬蜜糖酱按常备调味不计采购，老板拍板；奇亚籽布丁无配方老板说先不动）
 
 ## Review
 Meta 直推验证链：test_event_code 探针 events_received=1 → --dry 44 笔与旧口径一致（含浮点尘埃修复，54 单券全抵常规跳过）→ 生产 events_received=44 → 复跑 --dry=0 笔证明状态防重生效。退出码修复后 ExitCode=0。
@@ -363,3 +365,47 @@ Meta 直推验证链：test_event_code 探针 events_received=1 → --dry 44 笔
   并进名录（姓名/电话/地址取最近一单）；本地验证名录 71→124 位、Peggy 命中
   且带 3 组历史地址/备注选项 ✓。多日手动单与常客周计划同吃这条 API 都受益。
 - 另：本机有个别的会话留下的 next dev（port 3000, PID 2512）已卡死无响应，没动它。
+
+# 订阅引擎自动用预付升级 credit — 2026-07-11
+
+根因：/api/admin/subscriptions/week 只认餐券，不读 mealVoucherAddonCredits，
+salmon-upgrade/wagyu-upgrade 预付 credit 躺着不用，top-up 全当现金收。
+
+- [x] ① weeklyMenu.ts：MenuItem 加 `topUpAddonId?`，三文鱼→salmon-upgrade、和牛饼→wagyu-upgrade
+- [x] ② week/route.ts buildWeekPlan：每天产出 upgradeNeeds（按 dish.topUpAddonId × qty）
+- [x] ③ week/route.ts allocateUpgradeCredits：按日期 FIFO 把可用 credit 分给非 blocked 天，减 cashDue；preview/confirm 同源
+- [x] ④ preview：拉 getAvailableAddonCredits → 分配 → 警告不足；whatsappText 报「升级补差用预付额度 N 份」
+- [x] ⑤ confirm：每天 claimAddonCredits（原子 FIFO，先扣 credit 再扣券缩小中断面）→ 订单写 addonCreditsUsed + addonCreditsAllocatedRevenue，total 扣掉被覆盖的 top-up（口径=dashboard 手动单：预付=现金折扣）
+- [x] ⑥ page.tsx：日行显示「预付升级抵 X.XX」（绿色）
+- [x] ⑦ 验证：tsc 0 error + scripts/dogfood-subscription-upgrade-credits.mjs 10/10 pass
+- [x] ⑧ 老板拍板后已 push（a91904a）；生产 smoke=BASE 指向 www.incredibowl.my 复跑 dogfood 10/10 pass（首次尝试即过）
+
+## Review（升级 credit · 2026-07-11）
+dogfood 对 5 个 active 订阅全量 preview dry-run，与 Firestore ground truth 逐日核对：
+- HuannMean：现金 10.00 → **0.00**（wagyu-upgrade×2 抵 6.00 + salmon-upgrade×1 抵 4.00），WhatsApp 文案「升级补差用预付额度 3 份」
+- PY•玉 / Claudia：各自 credit 正确抵扣（8.00 / 6.00），金额与账上余额一致
+- Hony：三文鱼×3 无 credit → 正确出「预付升级不足，差额按现金收」警告，现金 12.00 不变
+- cashTotal = Σ 非blocked cashDue 恒等式 5/5 过；无 token 401 ✓
+confirm 与 preview 共用 buildWeekPlan + allocateUpgradeCredits（同源），扣 credit 走生产
+验证过的 claimAddonCredits 原子事务。confirm 未实测（会写真单）——首次真实建单时核一眼
+订单 total 与 addonCreditsUsed 字段。
+
+## Catering SEO/GEO 覆盖（2026-07-12）
+目标：让 Google / AI 搜索把 Incredibowl 归入 catering（到会/团体订餐）类目。
+- [x] ① layout.tsx JSON-LD：@type 改 ["Restaurant","Caterer"]（schema.org 双类型，Google 支持）
+- [x] ② 根 metadata + en/layout.tsx metadata：补 catering 中英关键词
+- [x] ③ 新建 /catering 中文落地页（Service+FAQPage schema，WhatsApp 询价 CTA，不编价格/人数）
+- [x] ④ 新建 /en/catering 英文落地页（canonical 互指 hreflang）
+- [x] ⑤ Footer/FooterEN 导航加 Catering 链接（hidden lg: 桌面 only，移动端冻结不动）
+- [x] ⑥ tsc 验证 + commit 留本地（不 push，等老板指示）
+- 注：sitemap 由 next-sitemap postbuild 自动生成，新页面无需手动加
+- 注：Google Business Profile 加 "Caterer" 副类目要老板在 GBP 后台手动加（代码做不到）
+
+## 手动单 stub uid 分裂修复（2026-07-12）
+问题：dashboard 手动单只在扣券时才查真实账号，纯现金单一律 manual_<电话>，同一客户被劈成两个档案（Andrea Lim 27+8 单分裂；新客数虚高、流失名单假阳性）。
+- [x] ① dashboard（Desktop 源）手动单一律先 findRealUserByPhone 再兜底 manual_* + sync:dashboard
+- [x] ② api/admin/multi-day-orders 服务端按 phoneNormalized 唯一匹配真实 uid（≥2 匹配不猜）
+- [x] ③ 历史归并：59 单 20 stub → 真实 uid（scripts/merge-manual-stub-uids.mjs，dry-run 先审 0 歧义；每单留 userIdMergedFrom；回滚日志在 Desktop/Incredibowl Services/）
+- [x] ④ 统计脚本 custKey 改电话优先（cohort + weekly）；weekly 券购买匹配改 uid+电话+名字三路
+- [x] ⑤ 验证：tsc 0 错；重跑 audit 可归并=0；重跑周报新客 17→16、流失预警 16→12（假阳性消失）
+- 注：剩 45 个 manual_* = 纯 WhatsApp 客户没网页账号，属正常态；注册后新单自动换绑，旧单可重跑归并脚本
