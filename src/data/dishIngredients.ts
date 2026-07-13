@@ -251,7 +251,9 @@ export const dishRecipes: DishRecipe[] = [
       { name: '马铃薯', qty: 70, unit: 'g' },
       { name: '红萝卜', qty: 60, unit: 'g' },
       { name: '咖喱块', qty: 0.4, unit: '块' },
-      { name: '白饭', qty: 180, unit: 'g' },
+      // 白饭存 80g 生米采购重（入库时误按 180g 熟饭重录入，老板 2026-07-14 确认
+      // 一份 80g 生米，对齐全表口径；换糙米 -80g 也随之自洽）。
+      { name: '白饭', qty: 80, unit: 'g' },
     ],
   },
   {
