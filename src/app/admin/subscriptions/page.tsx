@@ -30,7 +30,7 @@ const DISH_OPTIONS = weeklyMenu.filter(d => !d.hidden && !d.retired).map(d => d.
 
 interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | 'outside2km'; distanceKm: number; note: string; lastDate: string }
 interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
-interface PlanItem { dishName: string; qty: number; addOns: { label: string; price: number; quantity: number }[] }
+interface PlanItem { dishName: string; qty: number; addOns: { id?: string; label: string; price: number; quantity: number }[] }
 interface PlanDay { skip?: boolean; meal: 'lunch' | 'dinner'; time: string; items: PlanItem[] }
 interface Sub {
     id?: string; userId: string; name: string; phone: string; address: string;
@@ -270,7 +270,7 @@ export default function SubscriptionsAdmin() {
                                     <span className="text-gray-400">{d.date} {WD_LABEL[String(d.weekday)]} {d.meal === 'dinner' ? '晚' : '午'} {d.time}</span>
                                     <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
                                     <span className="text-[#FF6B35]">{d.vCount}券抵{d.coverage.toFixed(2)}</span>
-                                    {d.upgradeCoverage > 0 && <span className="text-emerald-600">预付升级抵{d.upgradeCoverage.toFixed(2)}</span>}
+                                    {d.upgradeCoverage > 0 && <span className="text-emerald-600">预付储值抵{d.upgradeCoverage.toFixed(2)}</span>}
                                     <span className="text-gray-400">现金 {d.cashDue.toFixed(2)}</span>
                                     {d.warnings.map((w: string, i: number) => <span key={i} className="text-amber-600">⚠ {w}</span>)}
                                 </div>
@@ -437,7 +437,8 @@ export default function SubscriptionsAdmin() {
                                                                         const exist = it.addOns.findIndex(a => a.label === opt.label);
                                                                         const addOns = [...it.addOns];
                                                                         if (exist >= 0) addOns[exist] = { ...addOns[exist], quantity: addOns[exist].quantity + 1 };
-                                                                        else addOns.push({ label: opt.label, price: opt.price, quantity: 1 });
+                                                                        // 存 id：服务端靠它精确匹配加料储值抵扣（label 只是老模板的回溯路径）
+                                                                        else addOns.push({ id: opt.id, label: opt.label, price: opt.price, quantity: 1 });
                                                                         setItem({ addOns });
                                                                     }} className="px-2 py-1 border rounded-lg text-xs text-[#FF6B35] font-bold min-w-[120px]">
                                                                         <option value="">＋ 加料…</option>

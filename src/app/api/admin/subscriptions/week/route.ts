@@ -4,7 +4,8 @@ import { weeklyMenu, dishVoucherValue, type MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 import { getAvailableAddonCredits, claimAddonCredits } from '@/lib/addonCreditUtils';
-import { getPrepaidAddonOption } from '@/data/addOnsConfig';
+import { getPrepaidAddonOption, PREPAID_ADDON_OPTIONS } from '@/data/addOnsConfig';
+import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 
 /**
  * POST /api/admin/subscriptions/week — 常客周计划的「生成预览 / 确认建单」。
@@ -16,6 +17,8 @@ import { getPrepaidAddonOption } from '@/data/addOnsConfig';
  *   - 订单 schema 与脚本一字不差（isManual + channel:whatsapp + batchTag +
  *     mealVoucherAllocatedRevenue 摊销 + createdAt 落在配送日 04:00Z）
  *   - 扣券改用生产共享的 claimMealVouchers（原子事务，FIFO 最早到期先用）
+ *   - 预付储值自动抵扣：高价菜升级补差（dish.topUpAddonId）+ 计划里手选的
+ *     可预付加料（PREPAID_ADDON_OPTIONS 白名单）都先用客户储值抵，缺口收现金
  *   - 幂等：batchTag = sub-<weekStart>-<subscriptionId>，已存在即拒绝
  *
  * confirm 不接受客户端传来的价格/菜单 —— 一切从订阅模板 + DISH_CATALOG 现价
@@ -32,6 +35,16 @@ async function getDb() {
 
 const round2 = (n: number) => Number(n.toFixed(2));
 const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+// 加料储值抵扣映射：加料选择器 label → 预付 addonId。老订阅模板的 addOns 只存了
+// label 没存 id，靠这张表回溯（例：选择器叫「换糙米」，预付名叫「白饭换糙米」，
+// 都指 brown-rice）。只收 PREPAID_ADDON_OPTIONS 白名单里的 id —— 同名的
+// alacarte 变体（sunny-egg-alacarte 等）不会被误映射成可抵扣。
+const PREPAID_LABEL_TO_ID = new Map<string, string>();
+for (const opts of [...Object.values(DISH_ADDONS_BY_NAME), DEFAULT_ADDON_OPTIONS]) {
+  for (const o of opts) if (getPrepaidAddonOption(o.id)) PREPAID_LABEL_TO_ID.set(o.label, o.id);
+}
+for (const o of PREPAID_ADDON_OPTIONS) PREPAID_LABEL_TO_ID.set(o.name, o.id);
 
 function addDays(ymd: string, days: number): string {
   const d = new Date(`${ymd}T00:00:00`);
@@ -56,8 +69,11 @@ interface PlannedDay {
   coverage: number;      // 餐券抵扣的面值 RM（Σ dishVoucherValue × qty）
   originalTotal: number; // 菜金小计（含加料）
   cashDue: number;       // 现金应收 = originalTotal − coverage − upgradeCoverage + deliveryFee
-  /** 本天高价菜 top-up 所需的预付升级 credit（dish.topUpAddonId × 份数）。 */
-  upgradeNeeds: { addonId: string; count: number; unitRM: number }[];
+  /**
+   * 本天可用预付储值抵的需求：高价菜 top-up（dish.topUpAddonId × 份数，
+   * source='topup'）+ 计划里手选的可预付加料（荷包蛋/加饭等，source='addon'）。
+   */
+  upgradeNeeds: { addonId: string; count: number; unitRM: number; source: 'topup' | 'addon' }[];
   /** allocateUpgradeCredits 分配结果：实际用掉的 credit。 */
   upgradeUsed: { addonId: string; count: number }[];
   /** 被预付升级 credit 覆盖的 top-up 金额 RM（已从 cashDue 扣除）。 */
@@ -82,7 +98,9 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
     if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
 
     const items: PlannedItem[] = [];
-    const upgradeNeeds = new Map<string, { addonId: string; count: number; unitRM: number }>();
+    // key = addonId|unitRM|source：同一储值不同来源/单价分开记，抵扣金额才精确；
+    // allocateUpgradeCredits 的余额池按 addonId 共享，不受 key 拆分影响。
+    const upgradeNeeds = new Map<string, { addonId: string; count: number; unitRM: number; source: 'topup' | 'addon' }>();
     let vCount = 0, coverage = 0, originalTotal = 0;
 
     for (const raw of entry.items ?? []) {
@@ -114,9 +132,23 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
       originalTotal += dish.price * qty + addOnSum;
 
       if (dish.topUpAddonId && (dish.voucherTopUp ?? 0) > 0) {
-        const prev = upgradeNeeds.get(dish.topUpAddonId);
+        const key = `${dish.topUpAddonId}|${dish.voucherTopUp}|topup`;
+        const prev = upgradeNeeds.get(key);
         if (prev) prev.count += qty;
-        else upgradeNeeds.set(dish.topUpAddonId, { addonId: dish.topUpAddonId, count: qty, unitRM: dish.voucherTopUp! });
+        else upgradeNeeds.set(key, { addonId: dish.topUpAddonId, count: qty, unitRM: dish.voucherTopUp!, source: 'topup' });
+      }
+
+      // 手选加料若在可预付白名单里（荷包蛋/温泉蛋/加饭…），也登记成储值需求：
+      // 客户有储值就自动抵、不收现金；没储值走缺口逻辑照旧收现金。
+      // 老模板没存 addon id → 按 label 回溯。price<=0 的不抵（白抵储值还不减钱）。
+      for (const a of addOns) {
+        if (a.price <= 0) continue;
+        const creditId = a.id && getPrepaidAddonOption(a.id) ? a.id : PREPAID_LABEL_TO_ID.get(a.label);
+        if (!creditId) continue;
+        const key = `${creditId}|${a.price}|addon`;
+        const prev = upgradeNeeds.get(key);
+        if (prev) prev.count += a.quantity;
+        else upgradeNeeds.set(key, { addonId: creditId, count: a.quantity, unitRM: a.price, source: 'addon' });
       }
     }
 
@@ -141,9 +173,10 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
 }
 
 /**
- * 把客户账上的预付升级 credit（salmon-upgrade/wagyu-upgrade…）按日期顺序
- * 分给非 blocked 天的 top-up 需求：填 upgradeUsed/upgradeCoverage 并把
- * cashDue 扣掉被覆盖的部分。preview 与 confirm 用同一份分配逻辑（同源），
+ * 把客户账上的预付储值（升级 credit salmon-upgrade/wagyu-upgrade + 加料储值
+ * sunny-egg/extra-rice…）按日期顺序分给非 blocked 天的需求：填
+ * upgradeUsed/upgradeCoverage 并把 cashDue 扣掉被覆盖的部分。
+ * preview 与 confirm 用同一份分配逻辑（同源），
  * 两边各自现拉一次余额 —— 只要中间没人动 credit，结果一致。
  * 返回不足清单（addonId → 还差几个），给 preview 出警告。
  */
@@ -159,7 +192,11 @@ function allocateUpgradeCredits(
       const take = Math.min(remaining, need.count);
       if (take > 0) {
         available.set(need.addonId, remaining - take);
-        d.upgradeUsed.push({ addonId: need.addonId, count: take });
+        // 按 addonId 合并：claimAddonCredits 不接受同一 addonId 重复行
+        //（同一批次文档会被重复规划扣减）。
+        const used = d.upgradeUsed.find(u => u.addonId === need.addonId);
+        if (used) used.count += take;
+        else d.upgradeUsed.push({ addonId: need.addonId, count: take });
         d.upgradeCoverage = round2(d.upgradeCoverage + take * need.unitRM);
         d.cashDue = round2(d.cashDue - take * need.unitRM);
       }
@@ -182,7 +219,7 @@ function whatsappText(sub: any, days: PlannedDay[], vouchersLeftAfter: number): 
   const totalV = usableDays.reduce((s, d) => s + d.vCount, 0);
   const totalCash = round2(usableDays.reduce((s, d) => s + d.cashDue, 0));
   const totalUpgrade = usableDays.reduce((s, d) => s + d.upgradeUsed.reduce((x, u) => x + u.count, 0), 0);
-  return `${sub.name} 你好！碗妈下周给你排的菜 🍛\n${lines.join('\n')}\n\n共扣 ${totalV} 张餐券（用完剩 ${vouchersLeftAfter} 张）${totalUpgrade > 0 ? `，升级补差用预付额度 ${totalUpgrade} 份` : ''}${totalCash > 0 ? `，加料/补差现金 RM ${totalCash.toFixed(2)}` : ''}。\n没问题回 OK，想换哪天直接说 👌`;
+  return `${sub.name} 你好！碗妈下周给你排的菜 🍛\n${lines.join('\n')}\n\n共扣 ${totalV} 张餐券（用完剩 ${vouchersLeftAfter} 张）${totalUpgrade > 0 ? `，预付储值抵 ${totalUpgrade} 份加料/升级` : ''}${totalCash > 0 ? `，加料/补差现金 RM ${totalCash.toFixed(2)}` : ''}。\n没问题回 OK，想换哪天直接说 👌`;
 }
 
 export async function OPTIONS() { return corsPreflight(); }
@@ -207,14 +244,20 @@ export async function POST(req: NextRequest) {
       const sub = { id: doc.id, ...doc.data() } as any;
       const { days, warnings } = buildWeekPlan(sub, weekStart);
 
-      // 预付升级 credit（salmon/wagyu top-up）——有就自动抵，现金只收缺口
+      // 预付储值（高价菜升级补差 + 加料储值）——有就自动抵，现金只收缺口
       if (days.some(d => !d.blocked && d.upgradeNeeds.length > 0)) {
         const credits = await getAvailableAddonCredits(db, sub.userId);
         const availMap = new Map(credits.map(c => [c.addonId, c.remaining]));
+        const initial = new Map(availMap);
         const shortfall = allocateUpgradeCredits(days, availMap);
         for (const [addonId, miss] of shortfall) {
+          // 升级补差（topup）不足永远提醒；普通加料客户本来就没储值 = 正常现金
+          // 加料，不吵 —— 只在「有储值但不够」时提醒。
+          const fromTopUp = days.some(d => !d.blocked
+            && d.upgradeNeeds.some(n => n.addonId === addonId && n.source === 'topup'));
+          if (!fromTopUp && (initial.get(addonId) ?? 0) === 0) continue;
           const name = getPrepaidAddonOption(addonId)?.name || addonId;
-          warnings.push(`预付升级「${name}」不足：还差 ${miss} 份，差额按现金收`);
+          warnings.push(`预付「${name}」不足：还差 ${miss} 份，差额按现金收`);
         }
       }
 
@@ -261,8 +304,8 @@ export async function POST(req: NextRequest) {
     const usable = days.filter(d => !d.blocked);
     if (usable.length === 0) return adminJson({ error: '本周没有可建的单（全部被硬伤拦下），看预览的警告' }, 400);
 
-    // 预付升级 credit：现拉余额按日期分配（与 preview 同一份逻辑），
-    // 有多少抵多少，缺口照旧收现金 —— 不足不拦确认。
+    // 预付储值（升级补差 + 加料储值）：现拉余额按日期分配（与 preview 同一份
+    // 逻辑），有多少抵多少，缺口照旧收现金 —— 不足不拦确认。
     if (usable.some(d => d.upgradeNeeds.length > 0)) {
       const credits = await getAvailableAddonCredits(db, sub.userId);
       allocateUpgradeCredits(days, new Map(credits.map(c => [c.addonId, c.remaining])));
