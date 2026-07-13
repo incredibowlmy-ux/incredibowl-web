@@ -2775,7 +2775,7 @@
             { id: 'extra-herbal-leg-3',          name: '加 3 只暖胃鸡腿 (legacy)',              price: 41.40, category: '加菜' },
             { id: 'extra-soy-leg-1',             name: '【犒劳自己】多加一只酱油全鸡腿',        price: 16.50, category: '加菜' },
             { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 10.90, category: '加菜' },
-            { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (40g)',                  price: 2.50,  category: '加菜' },
+            { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
             { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (180g)',       price: 11.90, category: '加菜' },
             { id: 'extra-aus-potato-80g',        name: '【优质碳水】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
             { id: 'extra-black-olive-12g',       name: '【地中海风味】加提鲜黑橄榄 (12g)',      price: 1.50,  category: '加菜' },
@@ -3187,7 +3187,8 @@ incredibowl.my`,
             '【抗氧高纤】加脆甜椰菜花 (80g)': 'extra-cauliflower-80g',    // updated webapp label
             '【地中海风味】加 12g 提鲜黑橄榄': 'extra-black-olive-12g',
             '【地中海风味】加提鲜黑橄榄 (12g)': 'extra-black-olive-12g',  // updated webapp label
-            '爽脆多汁小番茄 (40g)': 'cherry-tomato',                       // updated webapp label
+            '爽脆多汁小番茄 (20g)': 'cherry-tomato',                       // current webapp label（2026-07-14 全局 40g→20g）
+            '爽脆多汁小番茄 (40g)': 'cherry-tomato',                       // legacy webapp label
             '爽脆多汁小番茄 (50g)': 'cherry-tomato',                       // legacy webapp label
             '【犒劳自己】多加一只酱油全鸡腿': 'extra-soy-leg-1',          // C: new add-on for dish 14
             '【犒劳自己】多加一只暖胃全鸡腿': 'extra-herbal-leg-1',       // already canonical, in case of strict match
@@ -9199,7 +9200,7 @@ incredibowl.my`,
             '1': [
                 { id: 'chicken-chop-nostalgia-combo', label: '古早味大满贯三件套', price: 12.90 },
                 { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 10.90 },
-                { id: 'cherry-tomato',                label: '小番茄 (40g)', price: 2.50 },
+                { id: 'cherry-tomato',                label: '小番茄 (20g)', price: 2.50 },
                 { id: 'extra-edamame',                label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',                   label: '甜玉米 (25g)', price: 2.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
@@ -9308,7 +9309,7 @@ incredibowl.my`,
                 // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:21 同步）：
                 // 加三文鱼 + 本菜自带配料（毛豆/玉米/小番茄，下方 alacarte 已有毛豆/玉米）
                 { id: 'extra-salmon-70g', label: '加香煎三文鱼 (70g+)', price: 18.50 },
-                { id: 'cherry-tomato',    label: '小番茄 (40g)', price: 2.50 },
+                { id: 'cherry-tomato',    label: '小番茄 (20g)', price: 2.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -9388,6 +9389,27 @@ incredibowl.my`,
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (25g)', price: 2.50 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '26': [
+                // 柠檬蜜糖煎鸡扒（周二 Hero，🆕 2026-07-13）— RM 18.50
+                // 加料与鸡扒系列（'1' 香煎金黄鸡扒饭）整套看齐，含三件套照搬（老板 2026-07-14 拍板）
+                { id: 'chicken-chop-nostalgia-combo', label: '古早味大满贯三件套', price: 12.90 },
+                { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 10.90 },
+                { id: 'cherry-tomato',                label: '小番茄 (20g)', price: 2.50 },
+                { id: 'extra-edamame',                label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',                   label: '甜玉米 (25g)', price: 2.50 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                // ─── A la carte (default, minus extra-edamame/corn since already in sides) ───
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                // ─── Drinks ───
                 ...DRINKS_PILLS,
             ],
         };

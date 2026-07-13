@@ -315,10 +315,13 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // ─── Generic sides (40g format) ───────────────────────────
   '清甜水煮毛豆仁 (25g)': [{ name: '毛豆', qty: 25, unit: 'g' }],
   '金黄甜玉米 (25g)': [{ name: '玉米', qty: 25, unit: 'g' }],
+  // 2026-07-14 全局 40g→20g（老板拍板）；备料按颗：20g ÷ 15g/颗 ≈ 1.33 →
+  // 取 2 颗（宁多勿少，同 40g→3 颗的取整惯例）。价格不变 RM2.50。
+  '爽脆多汁小番茄 (20g)': [{ name: '樱桃番茄', qty: 2, unit: '颗' }],
   // legacy labels (历史 / 改版前已下的在途订单仍能正确聚合备料)
   '清甜水煮毛豆仁 (40g)': [{ name: '毛豆', qty: 40, unit: 'g' }],
   '金黄甜玉米 (40g)': [{ name: '玉米', qty: 40, unit: 'g' }],
-  // 客人标签仍写 40g；备料按颗：40g ÷ 15g/颗 ≈ 2.7 → 取 3 颗（宁多勿少）。
+  // 40g ÷ 15g/颗 ≈ 2.7 → 3 颗
   '爽脆多汁小番茄 (40g)': [{ name: '樱桃番茄', qty: 3, unit: '颗' }],
 
   // ─── Natto menu add-ons ────────────────────────────────────
@@ -467,9 +470,10 @@ export const addOnShortNames: Record<string, string> = {
   '蒜蓉西兰花炒蛋': '西兰花蛋',
   '鲜虾西兰花滑蒸蛋': '鲜虾蛋',
 
-  // Generic 40g sides
+  // Generic sides (current + legacy gram labels)
   '清甜水煮毛豆仁 (25g)': '毛豆',
   '金黄甜玉米 (25g)': '玉米',
+  '爽脆多汁小番茄 (20g)': '番茄',
   '清甜水煮毛豆仁 (40g)': '毛豆',
   '金黄甜玉米 (40g)': '玉米',
   '爽脆多汁小番茄 (40g)': '番茄',
@@ -553,7 +557,8 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   // Plain-named sides (web uses a descriptive prefix)
   '毛豆仁 (25g)': '清甜水煮毛豆仁 (25g)',
   '甜玉米 (25g)': '金黄甜玉米 (25g)',
-  '小番茄 (40g)': '爽脆多汁小番茄 (40g)',
+  '小番茄 (20g)': '爽脆多汁小番茄 (20g)',
+  '小番茄 (40g)': '爽脆多汁小番茄 (40g)',  // legacy 手动标签（改版前在途订单）
   // Combos (drop "(原价 RM …)" suffix)
   '灵魂三件套': '灵魂三件套 (原价 RM 6.0)',
   '海陆澎湃三件套': '海陆澎湃三件套 (原价 RM 14.0)',

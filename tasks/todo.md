@@ -11,7 +11,8 @@
 - [x] 全自动记账版：另一会话已在 Services 项目落地（night_run.ps1 + allowlist + 夜间加严 prompt）；我方 07-11 配套=退役 23:00 提醒、新增 07:30 Telegram 夜报推送
 - [ ] ⏳ **老板本人**粘贴注册 IncredibowlNightBookkeeping（每天 3:03）——分类器不允许代注册，截图里那段 PowerShell 就是
 - [ ] 订阅引擎阶段 2 实施（tokenized 确认深链 + 余券不足三选项：补购券/FPX差额/DuitNow QR 人工放行——Curlec 不支持 QR，走 FPX-pending 式页面 + WhatsApp 碗妈 + dashboard 手动放行，老板 07-10 拍板）
-- [ ] ⏳ 新菜柠檬蜜糖煎鸡扒：实拍图（老板说 later）；图好后换 webp + Google Sheet dishes 表加发图行。✅ 配方已补 2026-07-13（dishIngredients.ts：鸡扒1块+白饭80g+毛豆25g+玉米25g+樱桃番茄2颗，shortName 柠扒；柠檬蜜糖酱按常备调味不计采购，老板拍板；奇亚籽布丁无配方老板说先不动）
+- [ ] ⏳ 新菜柠檬蜜糖煎鸡扒：实拍图（老板说 later）；图好后换 webp + Google Sheet dishes 表加发图行。✅ 配方已补 2026-07-13（dishIngredients.ts：鸡扒1块+白饭80g+毛豆25g+玉米25g+樱桃番茄2颗，shortName 柠扒；柠檬蜜糖酱按常备调味不计采购，老板拍板；奇亚籽布丁无配方老板说先不动）。✅ 加料已与鸡扒系列看齐 2026-07-14（AddOnModal id26 并入 id14 分支 + dashboard DISH_ADDON_MAP '26'，三件套照搬，老板拍板）
+- [x] 小番茄全局 40g→20g 2026-07-14（老板拍板）：web/dashboard 标签改 (20g)、备料 2颗（1颗≈15g 宁多勿少）、价不变 RM2.50、40g 留 legacy 聚合在途订单；小番茄洋葱沙拉不动
 
 ## Review
 Meta 直推验证链：test_event_code 探针 events_received=1 → --dry 44 笔与旧口径一致（含浮点尘埃修复，54 单券全抵常规跳过）→ 生产 events_received=44 → 复跑 --dry=0 笔证明状态防重生效。退出码修复后 ExitCode=0。

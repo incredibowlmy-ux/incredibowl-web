@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-07-12
+ * Generated: 2026-07-13
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -531,6 +531,31 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "柠檬蜜糖煎鸡扒": [
     {
+      "id": "chicken-chop-nostalgia-combo",
+      "label": "古早味大满贯三件套",
+      "price": 12.9
+    },
+    {
+      "id": "extra-chicken-chop",
+      "label": "加香煎金鸡扒 (150g)",
+      "price": 10.9
+    },
+    {
+      "id": "cherry-tomato",
+      "label": "小番茄 (20g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (25g)",
+      "price": 2.5
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -569,16 +594,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-egg",
       "label": "虾仁炒蛋",
       "price": 12.9
-    },
-    {
-      "id": "extra-edamame",
-      "label": "毛豆仁 (25g)",
-      "price": 2.5
-    },
-    {
-      "id": "extra-corn",
-      "label": "甜玉米 (25g)",
-      "price": 2.5
     },
     {
       "id": "chia-pudding",
@@ -731,7 +746,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "cherry-tomato",
-      "label": "小番茄 (40g)",
+      "label": "小番茄 (20g)",
       "price": 2.5
     },
     {
@@ -955,7 +970,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "cherry-tomato",
-      "label": "小番茄 (40g)",
+      "label": "小番茄 (20g)",
       "price": 2.5
     },
     {

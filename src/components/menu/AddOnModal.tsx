@@ -197,8 +197,10 @@ export default function AddOnModal({
             return [surfTurfSpecial, ...customSections];
         }
 
-        // If it's Golden Crispy Chicken Chop (now daily, id: 14), append specific add-ons to the sides
-        if (dish.id === 14) {
+        // If it's Golden Crispy Chicken Chop (now daily, id: 14) or Honey Lemon
+        // Glazed Chicken Chop (id: 26), append the chop-series add-ons to the
+        // sides. 柠扒与鸡扒同系列，配菜+三件套整套看齐（老板 2026-07-14 拍板）。
+        if (dish.id === 14 || dish.id === 26) {
             const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
@@ -219,7 +221,7 @@ export default function AddOnModal({
                             { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop (150g)', price: p('extra-chicken-chop', 10.90), category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (25g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
                             { id: 'extra-corn-side', name: '金黄甜玉米 (25g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (20g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -280,7 +282,7 @@ export default function AddOnModal({
                             { id: 'extra-salmon-70g', name: '加香煎三文鱼 (70g+)', nameEn: 'Extra Pan-Seared Salmon (70g+)', price: p('extra-salmon-70g', 18.50), category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (25g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
                             { id: 'extra-corn-side', name: '金黄甜玉米 (25g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
-                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (40g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
+                            { id: 'cherry-tomato', name: '爽脆多汁小番茄 (20g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
