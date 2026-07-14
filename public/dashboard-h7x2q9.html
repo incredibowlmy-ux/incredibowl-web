@@ -8726,9 +8726,6 @@ incredibowl.my`,
                 .paid { color:#0a7a0a; }
                 .orem { margin-top:4px; padding:4px 6px; background:#fff7d6; border:1px solid #f0d000; border-radius:4px; font-weight:700; }
                 .empty { font-size:14px; color:#888; }
-                .day { border:1px solid #bfd9f2; background:#f0f7ff; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:13px; line-height:1.55; }
-                .day-t { font-weight:800; color:#1d4ed8; margin-bottom:3px; }
-                .day-d { color:#1d4ed8; font-weight:800; }
                 .rice { border:1px solid #f0c48e; background:#fff8ef; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.55; }
                 .rice-t { font-weight:800; color:#b45309; margin-bottom:3px; }
                 .rice-g { margin:5px 0 2px; font-weight:800; }
@@ -8857,7 +8854,8 @@ incredibowl.my`,
 
             // Render the per-dish ingredient list (with cook-once dishes marked 全天).
             // ingMeal = { groups:[{dish,servings,allDay,text}], addOnText } from the server, or null.
-            function renderIngredients(ingMeal) {
+            // dayTotals = 全天结构化食材合计（毛豆/玉米/樱桃番茄行的数据源），可为空。
+            function renderIngredients(ingMeal, dayTotals) {
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
                 const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
@@ -8871,24 +8869,26 @@ incredibowl.my`,
                 ].filter(Boolean).join(' · ');
                 const riceRow = staples ? `<div class="ing-row">${staples}</div>` : '';
                 const addOnRow = hasAddOn ? `<div class="ing-row"><b class="ing-d">加料</b> ${escP(ingMeal.addOnText)}</div>` : '';
-                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${addOnRow}</div>`;
+                // 老板指定：全天合计行卡在「白饭（统一煮）」和「加料」两行中间。
+                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}</div>`;
             }
 
             // 全天合计：毛豆/玉米/樱桃番茄是一次备一天的量（老板 07-15 要求），
-            // 午+晚合并显示在单子最顶。数据来自 /api/admin/daily-prep 的 dayTotals
-            //（服务器配方聚合，菜自带 + 客户加料都算）；旧版 API 没这字段时整块隐藏。
+            // 午+晚合并成一行，插在食材清单的「白饭（统一煮）」行和「加料」行
+            // 中间（老板指定位置）。数据来自 /api/admin/daily-prep 的 dayTotals
+            //（服务器配方聚合，菜自带 + 客户加料都算）；旧版 API 没这字段时整行隐藏。
             const DAY_SUM_INGREDIENTS = ['毛豆', '玉米', '樱桃番茄'];
-            function daySumBlock(ing) {
-                if (!ing || !Array.isArray(ing.dayTotals)) return '';
+            function daySumRow(dayTotals) {
+                if (!Array.isArray(dayTotals)) return '';
                 const fmt = (l) => (l.unit === 'g' && l.qty >= 1000)
                     ? `${(l.qty / 1000).toFixed(2).replace(/\.?0+$/, '')} kg`
                     : `${Math.round(l.qty * 100) / 100} ${l.unit}`;
-                const rows = DAY_SUM_INGREDIENTS
-                    .map(name => ing.dayTotals.find(l => l.name === name))
+                const parts = DAY_SUM_INGREDIENTS
+                    .map(name => dayTotals.find(l => l.name === name))
                     .filter(l => l && l.qty > 0)
-                    .map(l => `<b class="day-d">${escP(l.name)}</b> ${escP(fmt(l))}`);
-                if (rows.length === 0) return '';
-                return `<div class="day"><div class="day-t">🥬 全天合计（午+晚一次备好）</div><div>${rows.join(' · ')}</div></div>`;
+                    .map(l => `${escP(l.name)} ${escP(fmt(l))}`);
+                if (parts.length === 0) return '';
+                return `<div class="ing-row"><b class="ing-d">🥬 全天合计（午+晚一次备好）</b> ${parts.join(' · ')}</div>`;
             }
 
             // 装碗分组：白饭/糙米 × 正常/少饭 逐碗核对 — 与「装碗打包」页共用 collectPackingData 同一套口径
@@ -8913,12 +8913,12 @@ incredibowl.my`,
                 </div>`;
             }
 
-            function mealSection(title, orders, ingMeal) {
+            function mealSection(title, orders, ingMeal, dayTotals) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
                 const agg = aggregate(sorted);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
-                const ingHtml = renderIngredients(ingMeal);
+                const ingHtml = renderIngredients(ingMeal, dayTotals);
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -8943,9 +8943,10 @@ incredibowl.my`,
                 const printedAt = new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
                 // ing = { lunch:{ingredientText}, dinner:{ingredientText} } from /api/admin/daily-prep, or null on failure.
                 const ingFail = ing ? '' : '<div class="ingfail">⚠️ 食材清单加载失败（菜品/备餐汇总不受影响）— 检查网络后重新打印</div>';
-                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch)
-                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner)
-                    + mealSection('其他 / 未分类', other, null);
+                const dayTotals = ing && ing.dayTotals;
+                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals)
+                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals)
+                    + mealSection('其他 / 未分类', other, null, null);
                 return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
                     <header class="sheet-head">
                         <div class="brand">Incredibowl 备餐单</div>
@@ -8953,7 +8954,6 @@ incredibowl.my`,
                         <div class="printed">打印于 ${escP(printedAt)}</div>
                     </header>
                     ${ingFail}
-                    ${daySumBlock(ing)}
                     ${body || '<p class="empty">这一天暂无订单。</p>'}
                 </body></html>`;
             }
