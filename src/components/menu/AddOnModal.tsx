@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar } from 'lucide-react';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import type { Locale } from '@/lib/locale';
+import { ADDON_DICT } from './dict';
 
 /** Resolve add-on price from the centralized config (single source of truth). */
 function p(id: string, fallback: number): number {
@@ -27,6 +29,8 @@ export interface AddOnSection {
     id: string;
     title: string;
     titleEn: string;
+    /** EN 渲染专用主标题（特惠 combo 的 titleEn 混了中文时用它兜底）。 */
+    titleDisplayEn?: string;
     minSelect: number;
     maxSelect: number;
     items: AddOnItem[];
@@ -88,6 +92,7 @@ interface AddOnModalProps {
     isDaily?: boolean;
     minDate?: string;
     dateLabel?: string;
+    locale?: Locale;
     initialConfig?: {
         cartItemId: string;
         quantities: Record<string, number>;
@@ -110,8 +115,12 @@ export default function AddOnModal({
     isDaily = false,
     minDate = '',
     dateLabel = '',
+    locale = 'zh',
     initialConfig = null,
 }: AddOnModalProps) {
+    // 渲染层文案（zh 与旧字面量逐字一致）；加料 name 是订单 key 不经过字典。
+    const t = ADDON_DICT[locale];
+    const isEn = locale === 'en';
     // Track quantities per add-on item
     const [quantities, setQuantities] = useState<Record<string, number>>({});
     // Track which sections are expanded
@@ -132,13 +141,15 @@ export default function AddOnModal({
 
         // If it's Natto Rice Bowl (id: 11), prepend a special combo section
         if (dish.id === 11) {
-            const nattoSpecial: AddOnSection & { extraDesc?: string } = {
+            const nattoSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'natto-combo',
                 title: '✨ 升级你的 Incredibowl！',
                 titleEn: '灵魂三件套 (Soulful Trio) (+ RM 5) · Max 3',
+                titleDisplayEn: '✨ Upgrade your Incredibowl! Soulful Trio (+ RM 5) · Max 3',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：浓厚温泉蛋 + 脆质海苔 + 特制日本酱油\n“当酱油遇见脆爽海苔，在流心月见的温柔包裹下，瞬间唤醒纳豆沉睡的‘极鲜’灵魂。”',
+                extraDescEn: 'Includes: rich onsen egg + crispy nori + special Japanese soy sauce\n"When soy sauce meets crisp nori, wrapped in a silky moon-gazing egg, natto\'s sleeping umami soul awakens."',
                 items: [
                     { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.0)', nameEn: 'Soulful Trio', price: p('natto-super-combo', 5), category: 'combo' }
                 ]
@@ -170,13 +181,14 @@ export default function AddOnModal({
 
         // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         if (dish.id === 12) {
-            const surfTurfSpecial: AddOnSection & { extraDesc?: string } = {
+            const surfTurfSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'surf-turf-combo',
                 title: '✨ 鲜上加鲜！海陆澎湃大翻倍',
                 titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.40)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：鲜甜大虾仁 4只 + 嫩炒鸡丁 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
+                extraDescEn: 'Includes: 4 sweet prawns + 50g tender stir-fried chicken + 20g crisp black fungus\n"Craving big bites of protein? The ultimate protein-and-fibre power-up."',
                 items: [
                     { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: p('surf-turf-super-combo', 11.40), category: 'combo' }
                 ]
@@ -203,13 +215,14 @@ export default function AddOnModal({
         // Glazed Chicken Chop (id: 26), append the chop-series add-ons to the
         // sides. 柠扒与鸡扒同系列，配菜+三件套整套看齐（老板 2026-07-14 拍板）。
         if (dish.id === 14 || dish.id === 26) {
-            const chickenChopSpecial: AddOnSection & { extraDesc?: string } = {
+            const chickenChopSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
                 titleEn: 'Ultimate Nostalgia Combo (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
+                extraDescEn: 'Includes: one extra pan-fried golden chicken chop + sunny-side-up egg + extra rice\n"A double-chop feast with a runny-yolk egg stirred into rice — the ultimate treat for big eaters!"',
                 items: [
                     { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 15.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.90), category: 'combo' }
                 ]
@@ -242,13 +255,14 @@ export default function AddOnModal({
 
         // If it's Greek Mediterranean Lemon Chicken (id: 3), prepend a special combo section
         if (dish.id === 3) {
-            const proteinBombSpecial: AddOnSection & { extraDesc?: string } = {
+            const proteinBombSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'greek-combo',
                 title: '✨ 终极爆肌！蛋白质核弹三件套',
                 titleEn: 'Ultimate Protein Bomb Trio (+ RM 15.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：180g 柠香烤鸡胸 + 90g 马铃薯 + 80g 脆甜椰菜花\n“突破百克优质蛋白的终极归宿，练后快速回血、饱腹无负担。”',
+                extraDescEn: 'Includes: 180g lemon roast chicken breast + 90g potato + 80g sweet cauliflower\n"Over 100g of quality protein — fast post-workout recovery, filling without the guilt."',
                 items: [
                     { id: 'greek-protein-bomb-combo', name: '蛋白质核弹三件套 (原价 RM 18.40)', nameEn: 'Protein Bomb Trio', price: p('greek-protein-bomb-combo', 15.90), category: 'combo' }
                 ]
@@ -356,13 +370,14 @@ export default function AddOnModal({
 
         // If it's Golden Scallion Pan-Fried Chicken Soup (id: 5), prepend combo + chicken leg add-ons
         if (dish.id === 5) {
-            const scallionCombo: AddOnSection & { extraDesc?: string } = {
+            const scallionCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'scallion-combo',
                 title: '✨ 葱汤干饭王！爆量满足三件套',
                 titleEn: 'Scallion Soup Rice King Trio (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：香煎金鸡扒 150g + 古早味荷包蛋 + 加饭\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"',
+                extraDescEn: 'Includes: 150g pan-fried golden chicken chop + old-school sunny-side-up egg + extra rice\n"Steaming scallion soup with a crispy chop and a runny egg over rice — Fridays done right!"',
                 items: [
                     { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 15.40)', nameEn: 'Rice King Trio', price: p('scallion-soup-combo', 12.90), category: 'combo' }
                 ]
@@ -385,13 +400,14 @@ export default function AddOnModal({
 
         // If it's Potato Pork Belly Stew (now daily, id: 13), prepend a special combo section
         if (dish.id === 13) {
-            const porkPotatoCombo: AddOnSection & { extraDesc?: string } = {
+            const porkPotatoCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'pork-potato-combo',
                 title: '✨ 薯肉双拼满足套',
                 titleEn: 'Potato & Pork Belly Duo (+ RM 13.40)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：绵密马铃薯 90g + 香滑花肉片 70g\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"',
+                extraDescEn: 'Includes: 90g creamy potato + 70g silky pork belly slices\n"Soft potato coated in rich gravy with melt-in-your-mouth pork belly — the taste of home."',
                 items: [
                     { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 15.40)', nameEn: 'Potato & Pork Belly Duo', price: p('pork-potato-duo-combo', 13.40), category: 'combo' }
                 ]
@@ -565,15 +581,15 @@ export default function AddOnModal({
                         </div>
 
                         <h2 className="text-2xl font-extrabold text-[#3B2A1A] leading-tight mb-1">
-                            {dish.name}
+                            {isEn ? dish.nameEn : dish.name}
                         </h2>
                         <p className="text-sm font-medium text-[#8B7355] mb-3">
-                            {dish.nameEn}
+                            {isEn ? dish.name : dish.nameEn}
                         </p>
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-1.5 mb-1.5">
-                            {dish.tags.map(tag => (
+                            {(isEn ? ((dish as any).tagsEn || dish.tags) : dish.tags).map((tag: string) => (
                                 <span
                                     key={tag}
                                     className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#C76F40]/15 text-[#C76F40]"
@@ -582,11 +598,11 @@ export default function AddOnModal({
                                 </span>
                             ))}
                         </div>
-                        <p className="text-[11px] font-medium text-[#8B7355]/65 mb-4">* 营养数据为估算值，实际可能因食材批次略有差异。</p>
+                        <p className="text-[11px] font-medium text-[#8B7355]/65 mb-4">{t.nutritionDisclaimer}</p>
 
                         {/* Description */}
                         <p className="text-sm text-[#5C4A32]/80 leading-relaxed mb-4 italic">
-                            &ldquo;{dish.desc}&rdquo;
+                            &ldquo;{isEn ? ((dish as any).descEn || dish.desc) : dish.desc}&rdquo;
                         </p>
 
                         {/* Price + Qty */}
@@ -640,14 +656,14 @@ export default function AddOnModal({
                                     >
                                         <div className="text-left">
                                             <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
-                                                {section.title}
+                                                {isEn ? (section.titleDisplayEn || section.titleEn) : section.title}
                                             </h3>
                                             <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
-                                                {section.titleEn}
+                                                {isEn ? section.title : section.titleEn}
                                             </p>
-                                            {(section as any).extraDesc && (
+                                            {((section as any).extraDesc || (section as any).extraDescEn) && (
                                                 <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-[#FF6B35]/70 lg:text-[#FF6B35]/85 whitespace-pre-wrap">
-                                                    {(section as any).extraDesc}
+                                                    {isEn ? ((section as any).extraDescEn || (section as any).extraDesc) : (section as any).extraDesc}
                                                 </p>
                                             )}
                                         </div>
@@ -691,10 +707,10 @@ export default function AddOnModal({
                                                         {/* Item Info */}
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-bold text-[#3B2A1A] truncate">
-                                                                {item.name}
+                                                                {isEn ? item.nameEn : item.name}
                                                             </p>
                                                             <p className="text-[11px] lg:text-[12px] text-[#8B7355]">
-                                                                {item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>
+                                                                {isEn ? item.name : item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>
                                                             </p>
                                                         </div>
 
@@ -732,7 +748,7 @@ export default function AddOnModal({
                     <div className="px-5 md:px-6 mt-4 order-1">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
-                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">送达时间 / Delivery Schedule</h3>
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">{t.scheduleTitle}</h3>
                         </div>
                         <div className="flex flex-col gap-3">
                             {isDaily ? (
@@ -751,22 +767,20 @@ export default function AddOnModal({
                                             // 0=Sunday, 6=Saturday
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
-                                                alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for BowlMama's rest!)");
+                                                alert(t.weekendAlert);
                                                 return;
                                             }
                                             const allow = dish?.availableWeekdays;
                                             if (allow && allow.length && !allow.includes(day)) {
-                                                const wdCn = ['日', '一', '二', '三', '四', '五', '六'];
-                                                const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                                alert(`这道菜仅周${allow.map(d => wdCn[d]).join('、周')}供应，请另选日期。 (This dish is served on ${allow.map(d => wdEn[d]).join(' & ')} only — please pick another day.)`);
+                                                alert(t.weekdayOnlyAlert(allow));
                                                 return;
                                             }
                                             if (dish && isDishBlockedOn(dish.id, selected)) {
-                                                alert("这道菜该日暂停供应，请另选日期。 (This dish is paused on the selected date — please pick another day.)");
+                                                alert(t.dishPausedAlert);
                                                 return;
                                             }
                                             if (isDateClosed(selected)) {
-                                                alert("该日已售罄，暂停接单，请另选日期。 (That day is sold out — please pick another day.)");
+                                                alert(t.dateClosedAlert);
                                                 return;
                                             }
                                             if (selected < (minDate || "")) {
@@ -780,7 +794,7 @@ export default function AddOnModal({
                             ) : (
                                 <div className="w-full px-4 py-3 bg-[#E8DFD0]/30 border border-[#E8DFD0] rounded-2xl text-sm font-bold text-[#3B2A1A] flex items-center gap-2">
                                     <Calendar size={16} className="text-[#2D5F3E]" />
-                                    {dateLabel || selectedDate} (固定款)
+                                    {dateLabel || selectedDate} {t.fixedDateSuffix}
                                 </div>
                             )}
                             {/* Both breakpoints: the two slots as big one-tap targets.
@@ -788,8 +802,8 @@ export default function AddOnModal({
                                 an iOS picker wheel for a two-option choice.) */}
                             <div className="grid grid-cols-2 gap-3">
                                 {([
-                                    { value: 'Lunch (11AM-1PM)', label: '🌞 午餐 11AM - 1PM' },
-                                    { value: 'Dinner (5PM-8PM)', label: '🌙 晚餐 5PM - 8PM' },
+                                    { value: 'Lunch (11AM-1PM)', label: t.lunchSlot },
+                                    { value: 'Dinner (5PM-8PM)', label: t.dinnerSlot },
                                 ] as const).map(slot => (
                                     <button
                                         key={slot.value}
@@ -813,12 +827,12 @@ export default function AddOnModal({
                     {/* ─── Note to Restaurant ─── */}
                     <div className="px-5 md:px-6 mt-6">
                         <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">备注 / Note to Kitchen</h3>
+                            <h3 className="text-sm font-extrabold text-[#3B2A1A]">{t.noteTitle}</h3>
                         </div>
                         <textarea
                             value={note}
                             onChange={(e) => setNote(e.target.value)}
-                            placeholder="告诉碗妈你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)..."
+                            placeholder={t.notePlaceholder}
                             className="w-full h-24 p-4 bg-white rounded-2xl border border-[#E8DFD0] text-sm text-[#3B2A1A] placeholder:text-[#8B7355]/40 outline-none focus:ring-2 focus:ring-[#2D5F3E]/20 transition-all resize-none"
                         />
                     </div>
@@ -830,7 +844,7 @@ export default function AddOnModal({
                     {/* Add-on summary (if any) */}
                     {addOnsTotal > 0 && (
                         <div className="flex justify-between items-center text-xs text-[#8B7355] mb-2 px-1">
-                            <span>主菜 RM {(dish.price * dishQty).toFixed(2)} + 加购 RM {addOnsTotal.toFixed(2)}</span>
+                            <span>{t.summaryLine((dish.price * dishQty).toFixed(2), addOnsTotal.toFixed(2))}</span>
                         </div>
                     )}
                     <button
@@ -842,7 +856,7 @@ export default function AddOnModal({
                             }`}
                     >
                         <ShoppingBag size={20} />
-                        {selectedTime ? (initialConfig ? `更新订单配置 · RM ${grandTotal.toFixed(2)}` : `加入预订 · RM ${grandTotal.toFixed(2)}`) : '请先选择送达时段 👆'}
+                        {selectedTime ? (initialConfig ? t.updateCart(grandTotal.toFixed(2)) : t.addToCart(grandTotal.toFixed(2))) : t.pickTimeFirst}
                     </button>
                 </div>
             </div>

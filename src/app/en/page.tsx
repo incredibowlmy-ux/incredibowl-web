@@ -486,6 +486,7 @@ export default function EnglishHome() {
                     isDaily={selectedDish.day === 'Daily / 常驻'}
                     minDate={minDate}
                     dateLabel={menuDates[selectedDish.id]?.topTag}
+                    locale="en"
                     initialConfig={editConfig}
                 />
             )}
