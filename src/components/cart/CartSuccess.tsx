@@ -33,8 +33,10 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
     // Tracking links (one per delivery) — absolute URLs so they survive
     // inside the customer's own WhatsApp chat as their receipt.
     const multiTrack = (trackInfo || []).length > 1;
+    // EN 客户拿到的 track 链接带 ?lang=en，打开即英文（页内切换仍可换回）
+    const trackQuery = locale === 'en' ? '?lang=en' : '';
     const trackLines = (trackInfo || []).map(tr =>
-        t.waTrack(multiTrack, tr.date, t.mealWord(tr.time), `https://www.incredibowl.my/track/${tr.token}`));
+        t.waTrack(multiTrack, tr.date, t.mealWord(tr.time), `https://www.incredibowl.my/track/${tr.token}${trackQuery}`));
 
     const waText = [
         t.waIntro,
@@ -98,7 +100,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                             {(trackInfo || []).map((tr) => (
                                 <a
                                     key={tr.token}
-                                    href={`/track/${tr.token}`}
+                                    href={`/track/${tr.token}${trackQuery}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="block w-full py-3 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-2xl text-sm font-black hover:bg-[#FF6B35]/5 transition-colors"

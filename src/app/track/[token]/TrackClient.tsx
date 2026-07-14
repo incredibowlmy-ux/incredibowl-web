@@ -33,11 +33,81 @@ const STEPS = [
     { key: 'delivered', icon: '🎉', zh: '已送达', en: 'Delivered' },
 ] as const;
 
+// 页内语言切换（不开 /en/track 新路由：链接下单时已生成、随 WhatsApp 发出，
+// 老链接无法换路由；页面 noindex 也无 SEO 需求）。?lang=en 由 EN 侧下单
+// 成功页/FPX 弹窗生成；再用 localStorage 记住手动切换。zh 值保持原字面量。
+type TrackLang = 'zh' | 'en';
+const TRACK_LANG_KEY = 'ib_track_lang';
+const TRACK_DICT = {
+    zh: {
+        subtitle: '订单跟踪 · Order Tracking',
+        checking: '查询订单中…',
+        notFoundTitle: '找不到这个订单',
+        notFoundSub: '链接无效或已失效 · Invalid tracking link',
+        orderLabel: '订单编号 Order',
+        deliveryLabel: '配送时段 Delivery',
+        lunch: '🌞午餐',
+        dinner: '🌙晚餐',
+        cancelledTitle: '订单已取消 · Cancelled',
+        cancelledSub: '有疑问请 WhatsApp 联系碗妈',
+        pendingTitle: '⏳ 碗妈正在核对付款，请稍候',
+        pendingSub: 'Awaiting confirmation',
+        driverOnWay: '🛵 碗妈正在路上',
+        driverOnWaySub: 'Driver on the way',
+        gettingLocation: '📡 正在获取司机位置…（司机手机信号恢复后自动更新）',
+        locationUpdatedAt: (time: string) => `位置更新于 ${time}`,
+        deliveredTitle: '已送达，请享用！',
+        deliveredSub: 'Delivered — enjoy your meal!',
+        autoRefresh: '页面每 10 秒自动更新 · Auto-refreshes every 10s',
+        timeLocale: 'zh-CN',
+    },
+    en: {
+        subtitle: 'Order Tracking',
+        checking: 'Looking up your order…',
+        notFoundTitle: 'Order not found',
+        notFoundSub: 'Invalid or expired tracking link',
+        orderLabel: 'Order',
+        deliveryLabel: 'Delivery',
+        lunch: '🌞 Lunch',
+        dinner: '🌙 Dinner',
+        cancelledTitle: 'Order cancelled',
+        cancelledSub: 'Questions? WhatsApp BowlMama',
+        pendingTitle: '⏳ BowlMama is verifying your payment, hang tight',
+        pendingSub: 'Awaiting confirmation',
+        driverOnWay: '🛵 BowlMama is on the way',
+        driverOnWaySub: 'Live driver location',
+        gettingLocation: "📡 Locating the driver… (updates automatically once the driver's phone signal returns)",
+        locationUpdatedAt: (time: string) => `Location updated at ${time}`,
+        deliveredTitle: 'Delivered — enjoy your meal!',
+        deliveredSub: 'Thank you for ordering!',
+        autoRefresh: 'Auto-refreshes every 10s',
+        timeLocale: 'en-MY',
+    },
+} as const;
+
 export default function TrackClient({ token }: { token: string }) {
     const [data, setData] = useState<TrackData | null>(null);
     const [notFound, setNotFound] = useState(false);
     const [loading, setLoading] = useState(true);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // 首屏固定 zh（防 hydration mismatch），mount 后按 ?lang= → localStorage 切换
+    const [lang, setLang] = useState<TrackLang>('zh');
+    useEffect(() => {
+        try {
+            const q = new URLSearchParams(window.location.search).get('lang');
+            if (q === 'en' || q === 'zh') {
+                setLang(q);
+                localStorage.setItem(TRACK_LANG_KEY, q);
+                return;
+            }
+            if (localStorage.getItem(TRACK_LANG_KEY) === 'en') setLang('en');
+        } catch { /* storage blocked — stay zh */ }
+    }, []);
+    const switchLang = (l: TrackLang) => {
+        setLang(l);
+        try { localStorage.setItem(TRACK_LANG_KEY, l); } catch { /* ignore */ }
+    };
+    const t = TRACK_DICT[lang];
 
     const fetchStatus = useCallback(async () => {
         try {
@@ -85,21 +155,32 @@ export default function TrackClient({ token }: { token: string }) {
             <div className="w-full max-w-md space-y-5">
                 {/* Header */}
                 <div className="text-center space-y-1">
-                    <a href="/" className="text-2xl font-black text-[#1A2D23]">🍛 Incredibowl</a>
-                    <p className="text-sm font-bold text-gray-400">订单跟踪 · Order Tracking</p>
+                    <a href={lang === 'en' ? '/en' : '/'} className="text-2xl font-black text-[#1A2D23]">🍛 Incredibowl</a>
+                    <p className="text-sm font-bold text-gray-400">{t.subtitle}</p>
+                    {/* 语言小切换（页内 state + localStorage，不换路由） */}
+                    <div className="inline-flex items-center gap-0.5 bg-white border border-[#E3EADA] rounded-full p-0.5 text-[11px] font-black">
+                        <button type="button" onClick={() => switchLang('zh')}
+                            className={`px-2.5 py-1 rounded-full transition-colors ${lang === 'zh' ? 'bg-[#1A2D23] text-white' : 'text-gray-400 hover:text-[#1A2D23]'}`}>
+                            中文
+                        </button>
+                        <button type="button" onClick={() => switchLang('en')}
+                            className={`px-2.5 py-1 rounded-full transition-colors ${lang === 'en' ? 'bg-[#1A2D23] text-white' : 'text-gray-400 hover:text-[#1A2D23]'}`}>
+                            EN
+                        </button>
+                    </div>
                 </div>
 
                 {loading && (
                     <div className="bg-white rounded-2xl border border-[#E3EADA] p-8 text-center text-gray-400 text-sm animate-pulse">
-                        查询订单中…
+                        {t.checking}
                     </div>
                 )}
 
                 {notFound && (
                     <div className="bg-white rounded-2xl border border-[#E3EADA] p-8 text-center space-y-2">
                         <p className="text-3xl">🔍</p>
-                        <p className="font-black text-[#1A2D23]">找不到这个订单</p>
-                        <p className="text-xs text-gray-400">链接无效或已失效 · Invalid tracking link</p>
+                        <p className="font-black text-[#1A2D23]">{t.notFoundTitle}</p>
+                        <p className="text-xs text-gray-400">{t.notFoundSub}</p>
                     </div>
                 )}
 
@@ -108,23 +189,26 @@ export default function TrackClient({ token }: { token: string }) {
                         {/* Order summary */}
                         <div className="bg-white rounded-2xl border border-[#E3EADA] p-5 space-y-2">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500">订单编号 Order</span>
+                                <span className="text-sm text-gray-500">{t.orderLabel}</span>
                                 <span className="font-black text-[#FF6B35]">#{data.orderNo}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500">配送时段 Delivery</span>
+                                <span className="text-sm text-gray-500">{t.deliveryLabel}</span>
                                 <span className="font-bold text-[#1A2D23] text-sm">
-                                    {data.deliveryDate} {isLunch ? '🌞午餐' : '🌙晚餐'}
+                                    {data.deliveryDate} {isLunch ? t.lunch : t.dinner}
                                 </span>
                             </div>
                             {data.items.length > 0 && (
                                 <div className="pt-2 border-t border-[#E3EADA]/70 space-y-1">
-                                    {data.items.map((it, i) => (
-                                        <p key={i} className="text-sm text-[#1A2D23]">
-                                            {it.name.startsWith('↳') ? <span className="text-gray-400 pl-3">{it.name}</span> : it.name}
-                                            <span className="text-gray-400"> ×{it.quantity}</span>
-                                        </p>
-                                    ))}
+                                    {data.items.map((it, i) => {
+                                        const display = lang === 'en' ? (it.nameEn || it.name) : it.name;
+                                        return (
+                                            <p key={i} className="text-sm text-[#1A2D23]">
+                                                {it.name.startsWith('↳') ? <span className="text-gray-400 pl-3">{display}</span> : display}
+                                                <span className="text-gray-400"> ×{it.quantity}</span>
+                                            </p>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -133,16 +217,16 @@ export default function TrackClient({ token }: { token: string }) {
                         {data.status === 'cancelled' && (
                             <div className="bg-red-50 rounded-2xl border border-red-200 p-5 text-center space-y-1">
                                 <p className="text-2xl">😔</p>
-                                <p className="font-black text-red-500">订单已取消 · Cancelled</p>
-                                <p className="text-xs text-gray-400">有疑问请 WhatsApp 联系碗妈</p>
+                                <p className="font-black text-red-500">{t.cancelledTitle}</p>
+                                <p className="text-xs text-gray-400">{t.cancelledSub}</p>
                             </div>
                         )}
 
                         {/* Pending — before boss confirms */}
                         {data.status === 'pending' && (
                             <div className="bg-white rounded-2xl border border-[#E3EADA] p-5 text-center space-y-1">
-                                <p className="text-sm font-bold text-[#FF6B35] animate-pulse">⏳ 碗妈正在核对付款，请稍候</p>
-                                <p className="text-xs text-gray-400">Awaiting confirmation</p>
+                                <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.pendingTitle}</p>
+                                <p className="text-xs text-gray-400">{t.pendingSub}</p>
                             </div>
                         )}
 
@@ -167,9 +251,9 @@ export default function TrackClient({ token }: { token: string }) {
                                                 </div>
                                                 <div className="pt-1.5">
                                                     <p className={`text-sm font-black leading-tight ${reached ? 'text-[#1A2D23]' : 'text-gray-300'}`}>
-                                                        {step.zh}
+                                                        {lang === 'en' ? step.en : step.zh}
                                                     </p>
-                                                    <p className={`text-[10px] ${reached ? 'text-gray-400' : 'text-gray-300'}`}>{step.en}</p>
+                                                    <p className={`text-[10px] ${reached ? 'text-gray-400' : 'text-gray-300'}`}>{lang === 'en' ? step.zh : step.en}</p>
                                                 </div>
                                             </div>
                                         );
@@ -182,16 +266,16 @@ export default function TrackClient({ token }: { token: string }) {
                         {data.status === 'delivering' && (
                             <div className="bg-white rounded-2xl border border-[#E3EADA] p-3 space-y-2">
                                 <p className="text-sm font-black text-[#1A2D23] px-2 pt-1">
-                                    🛵 碗妈正在路上 <span className="text-[10px] font-bold text-gray-400">Driver on the way</span>
+                                    {t.driverOnWay} <span className="text-[10px] font-bold text-gray-400">{t.driverOnWaySub}</span>
                                 </p>
                                 {data.driver ? (
                                     <DriverMap driver={data.driver} dest={data.dest} />
                                 ) : (
-                                    <p className="text-xs text-gray-400 px-2 pb-1">📡 正在获取司机位置…（司机手机信号恢复后自动更新）</p>
+                                    <p className="text-xs text-gray-400 px-2 pb-1">{t.gettingLocation}</p>
                                 )}
                                 {data.driver?.updatedAt && (
                                     <p className="text-[10px] text-gray-300 px-2 pb-1">
-                                        位置更新于 {new Date(data.driver.updatedAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                        {t.locationUpdatedAt(new Date(data.driver.updatedAt).toLocaleTimeString(t.timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }))}
                                     </p>
                                 )}
                             </div>
@@ -200,15 +284,15 @@ export default function TrackClient({ token }: { token: string }) {
                         {data.status === 'delivered' && (
                             <div className="bg-green-50 rounded-2xl border border-green-200 p-5 text-center space-y-1">
                                 <p className="text-2xl">🎉</p>
-                                <p className="font-black text-green-600">已送达，请享用！</p>
-                                <p className="text-xs text-gray-400">Delivered — enjoy your meal!</p>
+                                <p className="font-black text-green-600">{t.deliveredTitle}</p>
+                                <p className="text-xs text-gray-400">{t.deliveredSub}</p>
                             </div>
                         )}
                     </>
                 )}
 
                 <p className="text-center text-[10px] text-gray-300">
-                    页面每 10 秒自动更新 · Auto-refreshes every 10s
+                    {t.autoRefresh}
                 </p>
             </div>
         </main>

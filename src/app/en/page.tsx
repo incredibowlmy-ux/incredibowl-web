@@ -426,7 +426,7 @@ export default function EnglishHome() {
                                 ...fpxSuccess.items.map(it => `🍛 ${it.nameEn || it.name} ×${it.qty}${(it.addOnsEn || it.addOns)?.length ? ` + ${(it.addOnsEn || it.addOns)!.join(' + ')}` : ''} (${it.date})`),
                                 ...(fpxSuccess.total != null ? [`💰 Paid RM ${fpxSuccess.total.toFixed(2)}`] : []),
                                 ...(fpxSuccess.trackInfo || []).map(t =>
-                                    `📍 Track your order${(fpxSuccess.trackInfo || []).length > 1 ? ` (${t.date} ${t.time?.includes('Lunch') ? 'Lunch' : 'Dinner'})` : ''}: https://www.incredibowl.my/track/${t.token}`),
+                                    `📍 Track your order${(fpxSuccess.trackInfo || []).length > 1 ? ` (${t.date} ${t.time?.includes('Lunch') ? 'Lunch' : 'Dinner'})` : ''}: https://www.incredibowl.my/track/${t.token}?lang=en`),
                             ].join('\n'))}`}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -437,7 +437,7 @@ export default function EnglishHome() {
                         {(fpxSuccess.trackInfo || []).map(t => (
                             <a
                                 key={t.token}
-                                href={`/track/${t.token}`}
+                                href={`/track/${t.token}?lang=en`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-black hover:bg-[#FF6B35]/5 transition-colors"
