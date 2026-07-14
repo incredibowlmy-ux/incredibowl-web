@@ -8888,7 +8888,7 @@ incredibowl.my`,
                     .filter(l => l && l.qty > 0)
                     .map(l => `${escP(l.name)} ${escP(fmt(l))}`);
                 if (parts.length === 0) return '';
-                return `<div class="ing-row"><b class="ing-d">🥬 全天合计（午+晚一次备好）</b> ${parts.join(' · ')}</div>`;
+                return `<div class="ing-row"><b class="ing-d">全天合计（午+晚一次备好）</b> ${parts.join(' · ')}</div>`;
             }
 
             // 装碗分组：白饭/糙米 × 正常/少饭 逐碗核对 — 与「装碗打包」页共用 collectPackingData 同一套口径
