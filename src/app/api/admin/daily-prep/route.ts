@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
+import { aggregateIngredients, buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
 
 /**
  * POST /api/admin/daily-prep
@@ -83,9 +83,13 @@ export async function POST(req: NextRequest) {
     // Per-dish ingredient lists with the cook-once rule applied (马铃薯炖肉 etc.
     // roll into lunch). Order counts stay per-meal; only the ingredients move.
     const { lunch, dinner } = buildDailyPrepIngredients(lunchOrders, dinnerOrders);
+    // Whole-day structured totals (dish built-ins + add-ons, same recipes) —
+    // the prep sheet shows a day-level sum for once-a-day preps (毛豆/玉米/樱桃番茄).
+    const dayTotals = aggregateIngredients(orders).lines;
 
     return corsify(NextResponse.json({
       date,
+      dayTotals,
       lunch: { count: lunchOrders.length, groups: lunch.groups, riceText: lunch.riceText, brownRiceText: lunch.brownRiceText, addOnText: lunch.addOnText },
       dinner: { count: dinnerOrders.length, groups: dinner.groups, riceText: dinner.riceText, brownRiceText: dinner.brownRiceText, addOnText: dinner.addOnText },
     }));
