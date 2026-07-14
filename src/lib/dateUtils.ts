@@ -99,21 +99,32 @@ export function computeMenuDates(
         // Daily/permanent items are identified by their day field, not hardcoded IDs
         if (dish.day === 'Daily / 常驻') {
             // A daily dish may be restricted to a subset of weekdays
-            // (e.g. 马铃薯炖花肉片 = 周四五供应). It still SHOWS — just greyed-out +
-            // not orderable when the next delivery date falls outside that set.
-            // Also unavailable on a one-off blocked date (boss put on hold).
+            // (e.g. 绍兴酒蒸花肉 = 周一/四供应). When the next delivery date falls
+            // outside that set (or on a one-off blocked/closed date), roll
+            // forward to the dish's next serve date — mirroring the weekly
+            // specials' roll-forward — so it stays pre-orderable all week
+            // instead of greying out until the eve of a serve day.
             const allowList = dish.availableWeekdays;
             const topTag = allowList && allowList.length
                 ? (en
                     ? allowList.map(d => wdEn[d]).join(' & ')
                     : `${allowList.map(d => wdCn[d]).join('、')} · ${allowList.map(d => wdEn[d]).join(' & ')}`)
                 : (en ? 'Mon–Fri' : '周一至五 · Mon–Fri');
-            const dayAllowed = !allowList || allowList.length === 0 || allowList.includes(nextAvail.getDay());
-            const blockedToday = isDishBlockedOn(dish.id, nextAvailStr);
-            if (!dayAllowed || blockedToday) {
-                const note = !dayAllowed
-                    ? (en ? (dish.unavailableNoteEn ?? 'Not available') : (dish.unavailableNote ?? '当日不供应'))
-                    : (en ? 'Paused today' : '当日暂停');
+            const serveable = (d: Date) =>
+                (!allowList || allowList.length === 0 || allowList.includes(d.getDay()))
+                && !isDishBlockedOn(dish.id, formatYMD(d))
+                && !isDateClosed(formatYMD(d));
+            const target = new Date(nextAvail);
+            let rollSafety = 21;
+            while (rollSafety-- > 0 && !serveable(target)) {
+                target.setDate(target.getDate() + 1);
+                if (target.getDay() === 6) target.setDate(target.getDate() + 2);
+                else if (target.getDay() === 0) target.setDate(target.getDate() + 1);
+            }
+            if (!serveable(target)) {
+                // No serve date within the safety window (e.g. weeks of blocks) —
+                // fall back to the greyed card.
+                const note = en ? (dish.unavailableNoteEn ?? 'Not available') : (dish.unavailableNote ?? '当日不供应');
                 menuDates[dish.id] = {
                     topTag,
                     btnText: note,
@@ -121,12 +132,25 @@ export function computeMenuDates(
                     actualDate: nextAvailStr,
                     reasonShort: note,
                 };
-            } else {
+                return;
+            }
+            const targetStr = formatYMD(target);
+            if (targetStr === nextAvailStr) {
                 menuDates[dish.id] = {
                     topTag,
                     btnText: en ? dailyOrderEn : `加入${relativeDay}的预订 · RM ${dish.price.toFixed(2)}`,
                     disabled: false,
                     actualDate: nextAvailStr,
+                };
+            } else {
+                const wd = target.getDay();
+                menuDates[dish.id] = {
+                    topTag,
+                    btnText: en
+                        ? `Order ${formatMDEn(target)} (${wdEn[wd]})`
+                        : `预订 ${formatMD(target)} (${wdCn[wd]}) · RM ${dish.price.toFixed(2)}`,
+                    disabled: false,
+                    actualDate: targetStr,
                 };
             }
             return;

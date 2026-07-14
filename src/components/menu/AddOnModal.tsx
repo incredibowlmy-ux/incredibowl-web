@@ -74,6 +74,8 @@ interface DishItem {
     image: string;
     tags: string[];
     desc: string;
+    /** Daily dish restricted to these weekdays (0=Sun…6=Sat); date picker rejects others. */
+    availableWeekdays?: number[];
 }
 
 interface AddOnModalProps {
@@ -750,6 +752,13 @@ export default function AddOnModal({
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
                                                 alert("周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for BowlMama's rest!)");
+                                                return;
+                                            }
+                                            const allow = dish?.availableWeekdays;
+                                            if (allow && allow.length && !allow.includes(day)) {
+                                                const wdCn = ['日', '一', '二', '三', '四', '五', '六'];
+                                                const wdEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                                alert(`这道菜仅周${allow.map(d => wdCn[d]).join('、周')}供应，请另选日期。 (This dish is served on ${allow.map(d => wdEn[d]).join(' & ')} only — please pick another day.)`);
                                                 return;
                                             }
                                             if (dish && isDishBlockedOn(dish.id, selected)) {
