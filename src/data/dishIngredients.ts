@@ -97,7 +97,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '毛豆', qty: 25, unit: 'g' },
-      { name: '玉米', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 30, unit: 'g' },
       // 樱桃番茄统一按「颗」计（2026-07-02 老板拍板：鸡扒饭 2 颗、和牛饼饭 3 颗）。
       // 原 30g ≈ 2 颗 → 隐含 1 颗 ≈ 15g，其他克数按此换算。
       { name: '樱桃番茄', qty: 2, unit: '颗' },
@@ -235,7 +235,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '西兰花', qty: 50, unit: 'g' },
       { name: '毛豆', qty: 25, unit: 'g' },
-      { name: '玉米', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 30, unit: 'g' },
       // 与鸡扒饭同一套配菜（原 30g）→ 同按 2 颗计。
       { name: '樱桃番茄', qty: 2, unit: '颗' },
     ],
@@ -266,7 +266,7 @@ export const dishRecipes: DishRecipe[] = [
       { name: '鸡扒', qty: 1, unit: '块' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '毛豆', qty: 25, unit: 'g' },
-      { name: '玉米', qty: 25, unit: 'g' },
+      { name: '玉米', qty: 30, unit: 'g' },
       { name: '樱桃番茄', qty: 2, unit: '颗' },
     ],
   },
@@ -316,12 +316,14 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
 
   // ─── Generic sides (40g format) ───────────────────────────
   '清甜水煮毛豆仁 (25g)': [{ name: '毛豆', qty: 25, unit: 'g' }],
-  '金黄甜玉米 (25g)': [{ name: '玉米', qty: 25, unit: 'g' }],
+  // 2026-07-15 玉米全局 25g→30g（老板拍板）。价格不变 RM2.50。
+  '金黄甜玉米 (30g)': [{ name: '玉米', qty: 30, unit: 'g' }],
   // 2026-07-14 全局 40g→20g（老板拍板）；备料按颗：20g ÷ 15g/颗 ≈ 1.33 →
   // 取 2 颗（宁多勿少，同 40g→3 颗的取整惯例）。价格不变 RM2.50。
   '爽脆多汁小番茄 (20g)': [{ name: '樱桃番茄', qty: 2, unit: '颗' }],
   // legacy labels (历史 / 改版前已下的在途订单仍能正确聚合备料)
   '清甜水煮毛豆仁 (40g)': [{ name: '毛豆', qty: 40, unit: 'g' }],
+  '金黄甜玉米 (25g)': [{ name: '玉米', qty: 25, unit: 'g' }],
   '金黄甜玉米 (40g)': [{ name: '玉米', qty: 40, unit: 'g' }],
   // 40g ÷ 15g/颗 ≈ 2.7 → 3 颗
   '爽脆多汁小番茄 (40g)': [{ name: '樱桃番茄', qty: 3, unit: '颗' }],
@@ -474,6 +476,7 @@ export const addOnShortNames: Record<string, string> = {
 
   // Generic sides (current + legacy gram labels)
   '清甜水煮毛豆仁 (25g)': '毛豆',
+  '金黄甜玉米 (30g)': '玉米',
   '金黄甜玉米 (25g)': '玉米',
   '爽脆多汁小番茄 (20g)': '番茄',
   '清甜水煮毛豆仁 (40g)': '毛豆',
@@ -558,7 +561,8 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '加花肉片 (70g)': '【浓香入味】加花肉片 (70g)',
   // Plain-named sides (web uses a descriptive prefix)
   '毛豆仁 (25g)': '清甜水煮毛豆仁 (25g)',
-  '甜玉米 (25g)': '金黄甜玉米 (25g)',
+  '甜玉米 (30g)': '金黄甜玉米 (30g)',
+  '甜玉米 (25g)': '金黄甜玉米 (25g)',  // legacy 手动标签（改版前在途订单）
   '小番茄 (20g)': '爽脆多汁小番茄 (20g)',
   '小番茄 (40g)': '爽脆多汁小番茄 (40g)',  // legacy 手动标签（改版前在途订单）
   // Combos (drop "(原价 RM …)" suffix)

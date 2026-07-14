@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-07-13
+ * Generated: 2026-07-14
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -72,7 +72,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -184,7 +184,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -281,7 +281,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -378,7 +378,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -480,7 +480,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -552,7 +552,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -689,7 +689,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -796,7 +796,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -908,7 +908,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -980,7 +980,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1142,7 +1142,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1239,7 +1239,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1336,7 +1336,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1443,7 +1443,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1550,7 +1550,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1672,7 +1672,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-corn",
-      "label": "甜玉米 (25g)",
+      "label": "甜玉米 (30g)",
       "price": 2.5
     },
     {
@@ -1772,7 +1772,7 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
   },
   {
     "id": "extra-corn",
-    "label": "甜玉米 (25g)",
+    "label": "甜玉米 (30g)",
     "price": 2.5
   },
   {
