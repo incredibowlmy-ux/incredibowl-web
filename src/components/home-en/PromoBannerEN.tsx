@@ -1,7 +1,7 @@
 "use client";
 
-import { MessageCircleHeart, ArrowRight, Star, Ticket } from 'lucide-react';
-import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
+import { MessageCircleHeart, ArrowRight, Star, Salad, ExternalLink } from 'lucide-react';
+import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 
 export default function PromoBannerEN() {
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
@@ -18,30 +18,29 @@ export default function PromoBannerEN() {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-black tracking-widest border border-[#FF6B35]/30">
-                                    NEW OPENING
+                                    NEIGHBOUR THANKS
                                 </span>
                                 <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
                                     Thank-you discount
                                 </h3>
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
-                                Just opened, thank you to the neighbourhood 🎉<br />
-                                Your voice matters — leave a review for an RM5 voucher
+                                Thank you neighbours for your support 🧡<br />
+                                Your voice matters — leave a review for a surprise side dish
                             </p>
                         </div>
 
                         <div className="hidden lg:flex items-center gap-4 p-4 bg-gradient-to-br from-[#FF6B35]/12 via-[#FF6B35]/8 to-transparent border-2 border-dashed border-[#FF9B50]/40 rounded-2xl relative overflow-hidden">
                             <div className="absolute -top-8 -right-8 w-24 h-24 bg-[#FF6B35] rounded-full blur-2xl opacity-20 pointer-events-none" />
-                            <div className="absolute top-2.5 right-3">
-                                <Ticket size={14} className="text-[#FF9B50]/45" strokeWidth={2.5} />
+
+                            <div className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
+                                <Salad size={26} className="text-[#FF9B50]" strokeWidth={2.5} />
+                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">FREE</span>
                             </div>
-                            <div className="flex-shrink-0 flex items-baseline gap-1 px-3.5 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
-                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider">RM</span>
-                                <span className="text-[34px] font-black text-[#FF9B50] leading-none tracking-tighter">5</span>
-                            </div>
+
                             <div className="flex-1 min-w-0 relative">
-                                <p className="text-sm font-black text-white leading-tight">Voucher</p>
-                                <p className="text-[12px] text-white/75 leading-snug mt-1">Valid 30 days · Auto-issued</p>
+                                <p className="text-sm font-black text-white leading-tight">Surprise Side / Free Side</p>
+                                <p className="text-[12px] text-white/75 leading-snug mt-1">Added to your next order · cooked fresh that day</p>
                             </div>
                         </div>
 
@@ -60,23 +59,32 @@ export default function PromoBannerEN() {
                             <div>
                                 <div className="flex items-center gap-2 mb-3">
                                     <MessageCircleHeart size={18} className="text-[#FF9B50]" strokeWidth={2.5} />
-                                    <p className="text-[#FF9B50] font-black text-[15px]">Review-for-voucher</p>
+                                    <p className="text-[#FF9B50] font-black text-[15px]">Review-for-side-dish</p>
                                 </div>
                                 <p className="text-white/85 text-[15px] leading-relaxed">
-                                    Share your honest review, get an <span className="text-[#FF9B50] font-black">RM 5 voucher</span>.
+                                    Share your review, get a <span className="text-[#FF9B50] font-black">surprise side dish</span>.
                                 </p>
                             </div>
 
                             <div className="hidden lg:flex items-center gap-4 py-3 px-1">
-                                <div className="flex items-center gap-1.5">
-                                    <Star size={14} className="text-[#FF9B50] fill-[#FF9B50]" strokeWidth={0} />
-                                    <span className="text-white font-black text-sm leading-none">{GOOGLE_RATING_VALUE}</span>
-                                </div>
-                                <span className="w-px h-4 bg-white/15" aria-hidden="true" />
-                                <div className="text-xs leading-none">
-                                    <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
-                                    <span className="text-white/70 font-medium ml-1">Google reviews</span>
-                                </div>
+                                <a
+                                    href={GOOGLE_REVIEWS_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="View reviews on Google"
+                                    className="group inline-flex items-center gap-4 rounded-md hover:opacity-90 transition-opacity"
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <Star size={14} className="text-[#FF9B50] fill-[#FF9B50]" strokeWidth={0} />
+                                        <span className="text-white font-black text-sm leading-none">{GOOGLE_RATING_VALUE}</span>
+                                    </div>
+                                    <span className="w-px h-4 bg-white/15" aria-hidden="true" />
+                                    <div className="text-xs leading-none inline-flex items-center gap-1">
+                                        <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
+                                        <span className="text-white/70 font-medium">Google reviews</span>
+                                        <ExternalLink size={11} className="text-white/40 group-hover:text-[#FF9B50] transition-colors" strokeWidth={2.5} />
+                                    </div>
+                                </a>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
                                     <span className="text-white font-black">100%</span>
@@ -92,11 +100,11 @@ export default function PromoBannerEN() {
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">2</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">Leave a Google / Facebook review (photos welcome)</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">Leave a review on Facebook (photos even better)</p>
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">3</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">WhatsApp BowlMama a screenshot to claim</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">WhatsApp BowlMama a screenshot to claim your side dish</p>
                                 </div>
                             </div>
 
@@ -107,7 +115,7 @@ export default function PromoBannerEN() {
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-bold leading-tight">See the menu</span>
-                                    <span className="text-[11px] lg:text-[12px] font-medium text-white/75 leading-tight">Earn RM 5 voucher</span>
+                                    <span className="text-[11px] lg:text-[12px] font-medium text-white/75 leading-tight">A review earns a free side</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>
