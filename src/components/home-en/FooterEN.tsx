@@ -21,9 +21,9 @@ export default function FooterEN() {
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
                         {/* Mobile frozen: new links are desktop-only (hidden lg:inline) */}
                         <Link href="/en/catering" className="hidden lg:inline hover:text-[#FF6B35] transition-colors">Catering</Link>
-                        <Link href="/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
-                        <Link href="/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
-                        <Link href="/refund" className="hover:text-[#FF6B35] transition-colors">Refund &amp; Cancellation</Link>
+                        <Link href="/en/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
+                        <Link href="/en/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
+                        <Link href="/en/refund" className="hover:text-[#FF6B35] transition-colors">Refund &amp; Cancellation</Link>
                     </div>
                 </div>
 

@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     "Incredibowl（Incredibowl Services SA0649425-V）隐私政策：我们如何收集、使用与保护你的个人资料。",
   alternates: {
     canonical: "/privacy",
+    languages: { "zh-MY": "/privacy", "en-MY": "/en/privacy", "x-default": "/privacy" },
   },
 };
 

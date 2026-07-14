@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     "Incredibowl 退款与取消政策：订单取消、退款条件与流程说明。",
   alternates: {
     canonical: "/refund",
+    languages: { "zh-MY": "/refund", "en-MY": "/en/refund", "x-default": "/refund" },
   },
 };
 

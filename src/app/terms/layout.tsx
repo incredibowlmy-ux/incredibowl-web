@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     "Incredibowl 服务条款：下单、配送、付款与使用条款。",
   alternates: {
     canonical: "/terms",
+    languages: { "zh-MY": "/terms", "en-MY": "/en/terms", "x-default": "/terms" },
   },
 };
 
