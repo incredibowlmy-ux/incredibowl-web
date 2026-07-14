@@ -8872,7 +8872,6 @@ incredibowl.my`,
                     const rows = groups[g.key];
                     const total = rows.reduce((s, r) => s + r.count, 0);
                     if (total === 0) return '';
-                    rows.sort((a, b) => a.dish.localeCompare(b.dish, 'zh'));
                     const lines = rows.map(r =>
                         `<div class="rice-row">☐ <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)} ${escP(r.code)}</span></div>`
                     ).join('');
@@ -8988,7 +8987,7 @@ incredibowl.my`,
                 normalizeOrderItems(o).forEach(it => {
                     const qty = Math.max(1, Number(it.quantity) || 1);
                     const dish = canonicalDishName(it.name) || '—';
-                    let brownQty = 0, lessQty = 0, extraQty = 0;
+                    let brownQty = 0, lessQty = 0, extraQty = 0, tagQty = 0;
                     const tags = [];
                     (it.addOns || []).forEach(a => {
                         const label = String(a.label || a.name || a.id || '加料');
@@ -8996,8 +8995,9 @@ incredibowl.my`,
                         const cid = canonicalAddonId(a.id || lookupAddonId(labelToId, label) || label);
                         if (cid === 'brown-rice') { brownQty += q; return; }
                         if (cid === 'less-rice') { lessQty += q; return; }
-                        if (cid === 'extra-rice') { extraQty += q; tags.push(`加饭 ×${q}`); return; }
+                        if (cid === 'extra-rice') { extraQty += q; tagQty += q; tags.push(`加饭 ×${q}`); return; }
                         if (PACKING_COMBO_EXTRA_RICE.has(cid)) { extraQty += q; }
+                        tagQty += q;
                         tags.push(`${label.replace(ADDON_PRICE_SUFFIX_RE, '')} ×${q}`);
                         const seed = (state.addons || []).find(x => x.id === cid);
                         const cur = sides.get(cid) || { name: (seed && seed.name) || label.replace(ADDON_PRICE_SUFFIX_RE, ''), qty: 0 };
@@ -9013,7 +9013,7 @@ incredibowl.my`,
                     const noteParts = [];
                     if (it.note) noteParts.push(String(it.note).trim());
                     if (orderNote) noteParts.push(orderNote);
-                    const row = { dish, tags, note: noteParts.join('；'), who, code, extraQty };
+                    const row = { dish, tags, tagQty, note: noteParts.join('；'), who, code, extraQty };
                     if (wn > 0) groups.whiteNormal.push({ ...row, count: wn });
                     if (wl > 0) groups.whiteLess.push({ ...row, count: wl });
                     if (bn > 0) groups.brownNormal.push({ ...row, count: bn });
@@ -9022,6 +9022,11 @@ incredibowl.my`,
                     extraRiceTotal += extraQty;
                 });
             });
+            // 组内排序：有加料的排前面、加料份数越多越靠前（老板 07-15 要求——
+            // 有料的碗最容易装错，先做需要专注的）；同加料数按菜名归拢。
+            Object.values(groups).forEach(rows => rows.sort((a, b) =>
+                (b.tagQty - a.tagQty) || a.dish.localeCompare(b.dish, 'zh')
+            ));
             return { groups, sides, bowlTotal, extraRiceTotal };
         }
 
@@ -9064,7 +9069,6 @@ incredibowl.my`,
                 const rows = groups[g.key];
                 const total = rows.reduce((s, r) => s + r.count, 0);
                 if (total === 0) return '';
-                rows.sort((a, b) => a.dish.localeCompare(b.dish, 'zh'));
                 const trs = rows.map(r => `<tr>
                     <td class="r num" style="width:56px"><b>×${r.count}</b></td>
                     <td style="font-weight:600">${escapeHtml(r.dish)}${r.extraQty > 0 ? ' <span class="pill warn" style="font-size:10px">加饭</span>' : ''}</td>
