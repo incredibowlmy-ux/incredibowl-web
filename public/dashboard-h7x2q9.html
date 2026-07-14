@@ -8726,8 +8726,15 @@ incredibowl.my`,
                 .paid { color:#0a7a0a; }
                 .orem { margin-top:4px; padding:4px 6px; background:#fff7d6; border:1px solid #f0d000; border-radius:4px; font-weight:700; }
                 .empty { font-size:14px; color:#888; }
+                .rice { border:1px solid #f0c48e; background:#fff8ef; border-radius:6px; padding:7px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.55; }
+                .rice-t { font-weight:800; color:#b45309; margin-bottom:3px; }
+                .rice-g { margin:5px 0 2px; font-weight:800; }
+                .rice-row { margin:1px 0 1px 14px; }
+                .rice-who { color:#666; }
+                /* 每个餐段（午餐→晚餐→其他）都从新的一页开始，晚餐不再接在午餐尾巴上 */
+                section.meal + section.meal { break-before:page; page-break-before:always; }
                 @page { size:A4; margin:12mm; }
-                @media print { .order { page-break-inside:avoid; } .meal > h2 { page-break-after:avoid; } }
+                @media print { .order { page-break-inside:avoid; } .meal > h2 { page-break-after:avoid; } .rice { page-break-inside:avoid; } }
             `;
 
             const escP = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
@@ -8857,6 +8864,26 @@ incredibowl.my`,
                 return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${addOnRow}</div>`;
             }
 
+            // 装碗分组：白饭/糙米 × 正常/少饭 逐碗核对 — 与「装碗打包」页共用 collectPackingData 同一套口径
+            function riceGroupBlock(orders) {
+                const { groups, bowlTotal, extraRiceTotal } = collectPackingData(orders, packingLabelToId());
+                if (bowlTotal === 0) return '';
+                const blocks = PACKING_RICE_GROUPS.map(g => {
+                    const rows = groups[g.key];
+                    const total = rows.reduce((s, r) => s + r.count, 0);
+                    if (total === 0) return '';
+                    rows.sort((a, b) => a.dish.localeCompare(b.dish, 'zh'));
+                    const lines = rows.map(r =>
+                        `<div class="rice-row">☐ <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)} ${escP(r.code)}</span></div>`
+                    ).join('');
+                    return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${lines}`;
+                }).join('');
+                return `<div class="rice">
+                    <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份` : ''}）</div>
+                    ${blocks}
+                </div>`;
+            }
+
             function mealSection(title, orders, ingMeal) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
@@ -8872,6 +8899,7 @@ incredibowl.my`,
                         ${agg.totalEggs > 0 ? `<div class="agg-row"><span class="agg-l">🥚 鸡蛋合计</span>${agg.eggsHtml}</div>` : ''}
                     </div>
                     ${ingHtml}
+                    ${riceGroupBlock(sorted)}
                     ${sorted.map(orderCard).join('')}
                 </section>`;
             }
@@ -8939,36 +8967,16 @@ incredibowl.my`,
         // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
         const PACKING_COMBO_EXTRA_RICE = new Set(['chicken-chop-nostalgia-combo', 'scallion-soup-combo']);
 
-        function renderPacking() {
-            const box = $('#packingContent');
-            const sub = $('#packingDateSub');
-            if (!box) return;
-
-            const todayKey = ymdKey(new Date());
-            const dd = new Date(todayKey + 'T00:00:00');
-            const wk = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dd.getDay()];
-            const orders = (state.orders || []).filter(o => o.deliveryDate === todayKey && o.status !== 'cancelled');
-            if (sub) sub.textContent = `${todayKey}（${wk}）· 共 ${orders.length} 单（除取消单外全算，含未付款 pending）`;
-
-            if (orders.length === 0) {
-                box.innerHTML = '<div class="card" style="margin-top:18px"><div class="card-content" style="color:var(--text-muted)">今天没有要打包的订单。</div></div>';
-                return;
-            }
-
-            // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
-            const labelToId = new Map(Object.entries(WEB_LABEL_TO_ADDON_ID));
-            (state.addons || []).forEach(a => { if (a.name && !labelToId.has(a.name)) labelToId.set(a.name, a.id); });
-
-            const lunch = orders.filter(o => mealType(o) === 'lunch');
-            const dinner = orders.filter(o => mealType(o) === 'dinner');
-            const unknown = orders.filter(o => mealType(o) === 'unknown');
-
-            let html = packingMealHtml('☀️ 午餐', lunch, labelToId) + packingMealHtml('🌙 晚餐', dinner, labelToId);
-            if (unknown.length > 0) html += packingMealHtml('⚠️ 未识别时段（检查配送时间）', unknown, labelToId);
-            box.innerHTML = html;
+        // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
+        function packingLabelToId() {
+            const m = new Map(Object.entries(WEB_LABEL_TO_ADDON_ID));
+            (state.addons || []).forEach(a => { if (a.name && !m.has(a.name)) m.set(a.name, a.id); });
+            return m;
         }
 
-        function packingMealHtml(title, orders, labelToId) {
+        // 汇集一批订单的装碗数据（纯数据，「装碗打包」页与打印备餐单共用同一套口径）。
+        // 返回 { groups: {whiteNormal/whiteLess/brownNormal/brownLess: 行数组}, sides: Map, bowlTotal, extraRiceTotal }
+        function collectPackingData(orders, labelToId) {
             const groups = { whiteNormal: [], whiteLess: [], brownNormal: [], brownLess: [] };
             const sides = new Map();   // canonical id → { name, qty }
             let bowlTotal = 0, extraRiceTotal = 0;
@@ -9014,6 +9022,38 @@ incredibowl.my`,
                     extraRiceTotal += extraQty;
                 });
             });
+            return { groups, sides, bowlTotal, extraRiceTotal };
+        }
+
+        function renderPacking() {
+            const box = $('#packingContent');
+            const sub = $('#packingDateSub');
+            if (!box) return;
+
+            const todayKey = ymdKey(new Date());
+            const dd = new Date(todayKey + 'T00:00:00');
+            const wk = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dd.getDay()];
+            const orders = (state.orders || []).filter(o => o.deliveryDate === todayKey && o.status !== 'cancelled');
+            if (sub) sub.textContent = `${todayKey}（${wk}）· 共 ${orders.length} 单（除取消单外全算，含未付款 pending）`;
+
+            if (orders.length === 0) {
+                box.innerHTML = '<div class="card" style="margin-top:18px"><div class="card-content" style="color:var(--text-muted)">今天没有要打包的订单。</div></div>';
+                return;
+            }
+
+            const labelToId = packingLabelToId();
+
+            const lunch = orders.filter(o => mealType(o) === 'lunch');
+            const dinner = orders.filter(o => mealType(o) === 'dinner');
+            const unknown = orders.filter(o => mealType(o) === 'unknown');
+
+            let html = packingMealHtml('☀️ 午餐', lunch, labelToId) + packingMealHtml('🌙 晚餐', dinner, labelToId);
+            if (unknown.length > 0) html += packingMealHtml('⚠️ 未识别时段（检查配送时间）', unknown, labelToId);
+            box.innerHTML = html;
+        }
+
+        function packingMealHtml(title, orders, labelToId) {
+            const { groups, sides, bowlTotal, extraRiceTotal } = collectPackingData(orders, labelToId);
 
             const kpiPills = PACKING_RICE_GROUPS.map(g => {
                 const n = groups[g.key].reduce((s, r) => s + r.count, 0);

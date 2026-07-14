@@ -23,6 +23,12 @@
 - [x] 验证：node --check 语法过；括号配平抽真代码跑合成订单 12/12 断言过（网页 flat ↳ 加料、手动嵌套短 label、qty=2 拆碗、糙米+少饭同碗、套餐自带加饭、备注双层、sides 排除饭型修饰）；headless 浏览器打开无 console 错误、截图排版正确
 - [x] commit 留本地不 push（等老板指示）
 
+## 追加（老板 07-14 二次需求）
+- [x] 打印备餐单每餐段加「🍚 装碗分组」块（备餐汇总/食材清单之下、订单卡之上）
+- [x] 午餐/晚餐强制分页：`section.meal + section.meal { break-before:page }`，晚餐不再接午餐尾巴
+- [x] 重构：collectPackingData() + packingLabelToId() 抽成共用——装碗页和备餐单同一套口径，改一处两边生效
+- [x] 验证：node --check 过；断言 18/18（含备餐单块 5 条+分页 CSS 1 条）；真 PREP_CSS 拼双餐段 mock 转 PDF 实证第 2 页从晚餐开头
+
 ## Review
 - 未登录时 Firestore 读不到单（页面显示 0 单）属预期——老板日常是登录态。
 - 视觉验证走「隐藏 loginScreen + 注入合成 HTML」路线，未碰真实数据、未登录。
