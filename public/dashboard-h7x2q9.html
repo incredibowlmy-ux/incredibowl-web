@@ -1182,6 +1182,11 @@
                     <span>库存</span>
                 </button>
 
+                <button class="nav-item" data-page="packing">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><polyline points="9 12 11 14 15 10"/></svg>
+                    <span>装碗打包</span>
+                </button>
+
                 <button class="nav-item" data-page="settings">
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span>设置</span>
@@ -2051,6 +2056,19 @@
                         </div>
                     </div>
 
+                </div>
+
+                <div class="page" id="page-packing">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">🥡 今日装碗打包</div>
+                                <div class="card-sub" id="packingDateSub">—</div>
+                            </div>
+                            <button class="btn ghost sm" id="packingRefresh">↻ 拉最新订单</button>
+                        </div>
+                    </div>
+                    <div id="packingContent"></div>
                 </div>
 
             </div>
@@ -7468,6 +7486,7 @@ incredibowl.my`,
             leads:     { title: '潜在客户', sub: 'WA 聊过但没下单的人 · 跟进转化用' },
             calculator:{ title: '订单计算器', sub: '查现有订单净利 · 或手动加菜模拟一单' },
             inventory: { title: '库存',     sub: '按菜可售份数 · 食材原料盘点' },
+            packing:   { title: '装碗打包', sub: '今日订单按饭型分组 · 逐碗核对不装错' },
             settings:  { title: '设置',     sub: '菜单管理 · 固定成本 · 营销开支' },
         };
 
@@ -7497,6 +7516,11 @@ incredibowl.my`,
             // Initialize inventory (stock count) on first open
             if (page === 'inventory' && typeof initInventory === 'function') {
                 initInventory();
+            }
+
+            // Re-render packing sheet every time it opens (orders change during the day)
+            if (page === 'packing' && typeof renderPacking === 'function') {
+                renderPacking();
             }
 
             // Resize charts that became visible
@@ -8897,6 +8921,161 @@ incredibowl.my`,
                 setTimeout(() => { try { w.print(); } catch (e) {} }, 400);
             });
         })();
+
+        // ═══════════════════════════════════════════════════════════════
+        //   PACKING — 装碗打包页：今日订单按饭型分组，逐碗核对
+        // ═══════════════════════════════════════════════════════════════
+        // 饭型推导（与 webapp AddOnModal.tsx / dishIngredients.ts 口径一致）：
+        //   每道主菜默认自带白饭；加料 brown-rice → 糙米、less-rice → 少饭；
+        //   extra-rice（加饭）不改变分组，只作碗行标注 + 汇总统计。
+        //   行数量 qty>1 而修饰加料数量不足整行时按数量拆碗；糙米与少饭同时
+        //   出现视为作用在同一批碗上（网页端两者 maxQty=1，qty=1 时天然成立）。
+        const PACKING_RICE_GROUPS = [
+            { key: 'brownNormal', label: '🟤 糙米 · 正常' },
+            { key: 'brownLess',   label: '🟤 糙米 · 少饭' },
+            { key: 'whiteNormal', label: '⚪ 白饭 · 正常' },
+            { key: 'whiteLess',   label: '⚪ 白饭 · 少饭' },
+        ];
+        // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
+        const PACKING_COMBO_EXTRA_RICE = new Set(['chicken-chop-nostalgia-combo', 'scallion-soup-combo']);
+
+        function renderPacking() {
+            const box = $('#packingContent');
+            const sub = $('#packingDateSub');
+            if (!box) return;
+
+            const todayKey = ymdKey(new Date());
+            const dd = new Date(todayKey + 'T00:00:00');
+            const wk = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dd.getDay()];
+            const orders = (state.orders || []).filter(o => o.deliveryDate === todayKey && o.status !== 'cancelled');
+            if (sub) sub.textContent = `${todayKey}（${wk}）· 共 ${orders.length} 单（除取消单外全算，含未付款 pending）`;
+
+            if (orders.length === 0) {
+                box.innerHTML = '<div class="card" style="margin-top:18px"><div class="card-content" style="color:var(--text-muted)">今天没有要打包的订单。</div></div>';
+                return;
+            }
+
+            // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
+            const labelToId = new Map(Object.entries(WEB_LABEL_TO_ADDON_ID));
+            (state.addons || []).forEach(a => { if (a.name && !labelToId.has(a.name)) labelToId.set(a.name, a.id); });
+
+            const lunch = orders.filter(o => mealType(o) === 'lunch');
+            const dinner = orders.filter(o => mealType(o) === 'dinner');
+            const unknown = orders.filter(o => mealType(o) === 'unknown');
+
+            let html = packingMealHtml('☀️ 午餐', lunch, labelToId) + packingMealHtml('🌙 晚餐', dinner, labelToId);
+            if (unknown.length > 0) html += packingMealHtml('⚠️ 未识别时段（检查配送时间）', unknown, labelToId);
+            box.innerHTML = html;
+        }
+
+        function packingMealHtml(title, orders, labelToId) {
+            const groups = { whiteNormal: [], whiteLess: [], brownNormal: [], brownLess: [] };
+            const sides = new Map();   // canonical id → { name, qty }
+            let bowlTotal = 0, extraRiceTotal = 0;
+
+            orders.forEach(o => {
+                const code = '#' + String(o.id || '').slice(-6).toUpperCase();
+                const who = o.userName || '匿名';
+                const orderNote = String(o.note || '').trim();
+                normalizeOrderItems(o).forEach(it => {
+                    const qty = Math.max(1, Number(it.quantity) || 1);
+                    const dish = canonicalDishName(it.name) || '—';
+                    let brownQty = 0, lessQty = 0, extraQty = 0;
+                    const tags = [];
+                    (it.addOns || []).forEach(a => {
+                        const label = String(a.label || a.name || a.id || '加料');
+                        const q = Math.max(1, Number(a.quantity) || 1);
+                        const cid = canonicalAddonId(a.id || lookupAddonId(labelToId, label) || label);
+                        if (cid === 'brown-rice') { brownQty += q; return; }
+                        if (cid === 'less-rice') { lessQty += q; return; }
+                        if (cid === 'extra-rice') { extraQty += q; tags.push(`加饭 ×${q}`); return; }
+                        if (PACKING_COMBO_EXTRA_RICE.has(cid)) { extraQty += q; }
+                        tags.push(`${label.replace(ADDON_PRICE_SUFFIX_RE, '')} ×${q}`);
+                        const seed = (state.addons || []).find(x => x.id === cid);
+                        const cur = sides.get(cid) || { name: (seed && seed.name) || label.replace(ADDON_PRICE_SUFFIX_RE, ''), qty: 0 };
+                        cur.qty += q;
+                        sides.set(cid, cur);
+                    });
+                    brownQty = Math.min(brownQty, qty);
+                    lessQty = Math.min(lessQty, qty);
+                    const bl = Math.min(brownQty, lessQty);   // 糙米+少饭重叠碗数
+                    const bn = brownQty - bl;
+                    const wl = lessQty - bl;
+                    const wn = qty - brownQty - wl;
+                    const noteParts = [];
+                    if (it.note) noteParts.push(String(it.note).trim());
+                    if (orderNote) noteParts.push(orderNote);
+                    const row = { dish, tags, note: noteParts.join('；'), who, code, extraQty };
+                    if (wn > 0) groups.whiteNormal.push({ ...row, count: wn });
+                    if (wl > 0) groups.whiteLess.push({ ...row, count: wl });
+                    if (bn > 0) groups.brownNormal.push({ ...row, count: bn });
+                    if (bl > 0) groups.brownLess.push({ ...row, count: bl });
+                    bowlTotal += qty;
+                    extraRiceTotal += extraQty;
+                });
+            });
+
+            const kpiPills = PACKING_RICE_GROUPS.map(g => {
+                const n = groups[g.key].reduce((s, r) => s + r.count, 0);
+                return `<span class="pill ${n > 0 ? 'info' : 'muted'}" style="font-size:12px">${g.label} <b>${n}</b> 碗</span>`;
+            }).join(' ') + (extraRiceTotal > 0 ? ` <span class="pill warn" style="font-size:12px">🍚 加饭共 <b>${extraRiceTotal}</b> 份</span>` : '');
+
+            const groupBlocks = PACKING_RICE_GROUPS.map(g => {
+                const rows = groups[g.key];
+                const total = rows.reduce((s, r) => s + r.count, 0);
+                if (total === 0) return '';
+                rows.sort((a, b) => a.dish.localeCompare(b.dish, 'zh'));
+                const trs = rows.map(r => `<tr>
+                    <td class="r num" style="width:56px"><b>×${r.count}</b></td>
+                    <td style="font-weight:600">${escapeHtml(r.dish)}${r.extraQty > 0 ? ' <span class="pill warn" style="font-size:10px">加饭</span>' : ''}</td>
+                    <td>${r.tags.length ? r.tags.map(escapeHtml).join('<br/>') : '<span class="muted">—</span>'}</td>
+                    <td>${r.note ? '📝 ' + escapeHtml(r.note) : '<span class="muted">—</span>'}</td>
+                    <td class="muted" style="white-space:nowrap">${escapeHtml(r.who)} <span class="mono" style="font-size:11px">${escapeHtml(r.code)}</span></td>
+                </tr>`).join('');
+                return `<div style="margin-top:16px">
+                    <div style="font-weight:700;font-size:14px;margin-bottom:8px">${g.label} — 共 <span style="font-size:16px">${total}</span> 碗</div>
+                    <div class="table-wrap"><table class="dt">
+                        <thead><tr><th class="r">碗数</th><th>主菜</th><th>加料</th><th>备注</th><th>客户 / 单号</th></tr></thead>
+                        <tbody>${trs}</tbody>
+                    </table></div>
+                </div>`;
+            }).join('');
+
+            const sideRows = [...sides.values()].sort((a, b) => b.qty - a.qty)
+                .map(s => `<tr><td>${escapeHtml(s.name)}</td><td class="r num"><b>×${s.qty}</b></td></tr>`).join('');
+            const sidesBlock = `<div style="margin-top:16px">
+                <div style="font-weight:700;font-size:14px;margin-bottom:8px">🥚 Sides / 加料汇总 — 共 ${[...sides.values()].reduce((s, x) => s + x.qty, 0)} 份</div>
+                ${sideRows
+                    ? `<div class="table-wrap"><table class="dt" style="max-width:420px">
+                        <thead><tr><th>加料</th><th class="r">份数</th></tr></thead>
+                        <tbody>${sideRows}</tbody>
+                       </table></div>
+                       <div class="muted" style="font-size:11px;margin-top:6px">三件套按「套」计（内容物看套餐名）；少饭 / 换糙米不在此表 — 已计入上方饭型分组。</div>`
+                    : '<div class="muted">无加料。</div>'}
+            </div>`;
+
+            return `<div class="card" style="margin-top:18px">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">${title} — 共 ${bowlTotal} 碗 · ${orders.length} 单</div>
+                        <div class="card-sub" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">${kpiPills}</div>
+                    </div>
+                </div>
+                <div class="card-content">
+                    ${bowlTotal > 0 ? groupBlocks + sidesBlock : '<div class="muted">无碗可装。</div>'}
+                </div>
+            </div>`;
+        }
+
+        // 刷新 = 重拉 Firestore（新单会随时进来），完成后重画本页
+        $('#packingRefresh')?.addEventListener('click', async () => {
+            const btn = $('#packingRefresh');
+            btn.disabled = true;
+            try { await loadAllData(); }
+            catch (e) { toast('刷新失败：' + (e && e.message || e), 'error'); }
+            btn.disabled = false;
+            renderPacking();
+        });
 
         // C2: 客户流失 pills + WA copy buttons (delegated so re-renders survive)
         document.addEventListener('click', (e) => {

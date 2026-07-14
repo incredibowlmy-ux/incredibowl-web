@@ -1,3 +1,36 @@
+# 装碗打包页（Dashboard 新 page）— 2026-07-14
+
+## 需求（老板确认）
+单量上升装碗常错。新增「装碗打包」页：
+1. 糙米/白饭各自：总碗数 + 正常/少饭分组 + 逐碗明细（主菜+加料+备注）
+2. Sides：所有加料按种类汇总数量
+- 位置：Desktop incredibowl-dashboard.html 新 sidebar page（sync 到 public）
+- 范围：今天，午餐/晚餐分开区块；逐碗列明细
+
+## 设计要点
+- 饭型推导：默认白饭；加料 brown-rice→糙米、less-rice→少饭；加饭不分组只做组头统计
+- 自带加饭的套餐：chicken-chop-nostalgia-combo、scallion-soup-combo（extraDesc 核实）
+- qty>1 且修饰加料部分数量时按数量拆碗（brown/less 重叠优先，注释说明假设）
+- Sides 汇总排除 less-rice/brown-rice（已体现在分组），其余全计
+- 复用：mealType()/normalizeOrderItems()/ymdKey()/canonicalAddonId()；过滤 deliveryDate==今天 && status!=cancelled
+- 接入点：nav 工具区按钮 + page-packing div + PAGE_INFO 条目（必须，否则 switchPage 抛错）+ 懒渲染钩子
+
+## Checklist
+- [x] 澄清需求（位置/日期/sides 定义/粒度）
+- [x] Explore agent 摸清 dashboard 结构（page 系统 7472/订单 schema/mealType 3328/normalizeOrderItems 3226）
+- [x] Desktop dashboard 加「装碗打包」页（5 处：nav 按钮/page-packing div/PAGE_INFO/switchPage 钩子/renderPacking+packingMealHtml）
+- [x] npm run sync:dashboard 回灌 public（753.1 KB）
+- [x] 验证：node --check 语法过；括号配平抽真代码跑合成订单 12/12 断言过（网页 flat ↳ 加料、手动嵌套短 label、qty=2 拆碗、糙米+少饭同碗、套餐自带加饭、备注双层、sides 排除饭型修饰）；headless 浏览器打开无 console 错误、截图排版正确
+- [x] commit 留本地不 push（等老板指示）
+
+## Review
+- 未登录时 Firestore 读不到单（页面显示 0 单）属预期——老板日常是登录态。
+- 视觉验证走「隐藏 loginScreen + 注入合成 HTML」路线，未碰真实数据、未登录。
+- 局限：套餐内容物不拆解到 sides（按「套」计，与备餐单口径一致）；只有大满贯/爆量两套餐计入加饭统计（extraDesc 核实）。
+- 测试台 scratchpad/test-packing.mjs（会话临时目录，阅后即焚）。
+
+---
+
 # 自动化层：消灭每周人肉仪式 — 2026-07-10
 
 源自使用回顾报告建议 1。四件套进度：
@@ -410,3 +443,12 @@ confirm 与 preview 共用 buildWeekPlan + allocateUpgradeCredits（同源），
 - [x] ④ 统计脚本 custKey 改电话优先（cohort + weekly）；weekly 券购买匹配改 uid+电话+名字三路
 - [x] ⑤ 验证：tsc 0 错；重跑 audit 可归并=0；重跑周报新客 17→16、流失预警 16→12（假阳性消失）
 - 注：剩 45 个 manual_* = 纯 WhatsApp 客户没网页账号，属正常态；注册后新单自动换绑，旧单可重跑归并脚本
+
+## 绍兴酒蒸花肉周四订不到修复（2026-07-14）
+问题：客户反映周四订不到绍兴。07-13 起绍兴改「周一+周四」走常驻+availableWeekdays，但 computeMenuDates 常驻分支日期钉死在下一配送日，非供应日整卡灰显——只有周三截单后~周四 06:00 这个窗口能订周四，其余时间菜单周四列展示着却点不了。
+- [x] ① dateUtils.ts 常驻分支：非供应日往后滚到下一供应日（跳周末/BLOCKED_DATES/CLOSED_DATES），按钮「预订 X月X日 (周X)」与特餐对齐
+- [x] ② AddOnModal 日期选择器补 availableWeekdays 校验（此前只拦周末/停售日，手动选周三要到服务端才被拒）
+- [x] ③ 验证：tsc 0 错 + mock 时钟 dogfood 17/17（绍兴/马铃薯/纳豆/特餐14 回归 + EN locale + 截单前后 + 周末）
+- [x] ④ commit f3565b1 留本地，待老板同意后 push
+- 注：服务端 submit-order 本来就按「所选日期周几 ∈ availableWeekdays」校验，提前订单能过，无需改
+- 注：副作用（合理）：常驻菜被 BLOCKED 当日不再灰显「当日暂停」，改为直接可订下一个供应日
