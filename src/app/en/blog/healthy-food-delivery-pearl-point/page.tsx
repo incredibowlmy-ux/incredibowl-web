@@ -2,22 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  DELIVERY_PROSE_ZH,
-  tierProseZh,
+  DELIVERY_PROSE_EN,
+  tierProseEn,
   TIER_INNER,
   TIER_OUTER,
   TIER_MID,
   COVERAGE_AREAS,
 } from "@/lib/deliveryCopy";
+import SetHtmlLang from "@/components/home-en/SetHtmlLang";
 
+// 英文版博文：与 ZH 版 src/app/blog/healthy-food-delivery-pearl-point 同源，
+// 结构/样式逐行对齐；运费/覆盖区全部走 deliveryCopy 的 _EN 常量，绝不硬编码数字。
 export const metadata: Metadata = {
   title:
-    "Best Healthy Food Delivery Near Pearl Point | Pearl Point 健康餐外送 — Incredibowl",
+    "Best Healthy Food Delivery Near Pearl Point — Incredibowl",
   description:
-    "Looking for healthy food delivery near Pearl Point, Old Klang Road? Incredibowl cooks MSG-free home-cooked meals, freshly sourced every morning, with real protein portions. Pearl Point 健康家常餐外送，无味精、每天巴刹现采。",
+    "Looking for healthy food delivery near Pearl Point, Old Klang Road? Incredibowl cooks MSG-free home-cooked meals, freshly sourced every morning, with real protein portions.",
   alternates: {
     canonical:
-      "https://www.incredibowl.my/blog/healthy-food-delivery-pearl-point",
+      "https://www.incredibowl.my/en/blog/healthy-food-delivery-pearl-point",
     languages: {
       "zh-MY": "/blog/healthy-food-delivery-pearl-point",
       "en-MY": "/en/blog/healthy-food-delivery-pearl-point",
@@ -27,8 +30,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Best Healthy Food Delivery Near Pearl Point — Incredibowl",
     description:
-      "MSG-free, freshly sourced home-cooked meals with real protein portions, delivered near Pearl Point / Old Klang Road. 无味精、每天巴刹现采、真实蛋白克数。",
-    url: "https://www.incredibowl.my/blog/healthy-food-delivery-pearl-point",
+      "MSG-free, freshly sourced home-cooked meals with real protein portions, delivered near Pearl Point / Old Klang Road.",
+    url: "https://www.incredibowl.my/en/blog/healthy-food-delivery-pearl-point",
     siteName: "Incredibowl Malaysia",
     images: [
       {
@@ -38,13 +41,13 @@ export const metadata: Metadata = {
         alt: "Healthy food delivery near Pearl Point — Incredibowl lemon salmon",
       },
     ],
-    locale: "zh_MY",
+    locale: "en_MY",
     type: "article",
     publishedTime: "2026-06-24T00:00:00+08:00",
   },
 };
 
-export default function HealthyFoodDeliveryPearlPoint() {
+export default function HealthyFoodDeliveryPearlPointEN() {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -70,7 +73,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id":
-        "https://www.incredibowl.my/blog/healthy-food-delivery-pearl-point",
+        "https://www.incredibowl.my/en/blog/healthy-food-delivery-pearl-point",
     },
   };
 
@@ -88,18 +91,18 @@ export default function HealthyFoodDeliveryPearlPoint() {
       },
       {
         "@type": "Question",
-        name: "怎么判断一份外送是不是真的「健康」？",
+        name: "How can you tell whether a delivery meal is actually healthy?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "别只看「健康」「轻食」这类标签。可以看三点：是否不加味精、食材是否每天新鲜采购（而非冷冻预制）、以及有没有标真实的蛋白克数和份量。三点都清楚的，才比较可信。Incredibowl 这三点都公开。",
+          text: "Don't just go by labels like \"healthy\" or \"light meal\". Check three things: whether it's cooked without MSG, whether the ingredients are freshly bought each day (rather than frozen and pre-prepped), and whether real protein grams and portion sizes are labelled. Only when all three are clear is it credible. Incredibowl is open about all three.",
         },
       },
       {
         "@type": "Question",
-        name: "Pearl Point 送餐范围与运费？",
+        name: "What is the Pearl Point delivery coverage and fee?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}，${tierProseZh(TIER_MID)}。覆盖 ${COVERAGE_AREAS.join("、")} 等。每日早上 6AM 截单。`,
+          text: `From Pearl Point: ${tierProseEn(TIER_INNER)}, ${tierProseEn(TIER_OUTER)}, ${tierProseEn(TIER_MID)}. Covers ${COVERAGE_AREAS.join(", ")} and more. Orders close at 6AM daily.`,
         },
       },
     ],
@@ -107,6 +110,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
 
   return (
     <article className="min-h-screen bg-[#FDFBF7] text-[#1A2D23]">
+      <SetHtmlLang />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
@@ -118,18 +122,18 @@ export default function HealthyFoodDeliveryPearlPoint() {
 
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-16">
         <Link
-          href="/blog"
+          href="/en/blog"
           className="text-[#FF6B35] font-bold mb-6 inline-block hover:underline"
         >
-          ← 返回博客
+          ← Back to Blog
         </Link>
 
         <header className="mb-10">
           <p className="text-xs font-bold uppercase tracking-widest text-[#1A2D23]/50 mb-3">
-            <time dateTime="2026-06-24">2026 年 6 月 24 日</time> · 6 min read
+            <time dateTime="2026-06-24">24 June 2026</time> · 6 min read
           </p>
           <h1 className="text-3xl md:text-5xl font-black leading-tight mb-4">
-            Pearl Point 附近的健康餐外送：怎么定义「健康」才不踩雷
+            Healthy Food Delivery Near Pearl Point: How to Define &ldquo;Healthy&rdquo; Without Getting Burned
           </h1>
           <p className="text-lg text-[#1A2D23]/65 italic">
             Best Healthy Food Delivery Near Pearl Point
@@ -139,7 +143,7 @@ export default function HealthyFoodDeliveryPearlPoint() {
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-10 bg-[#E3EADA]">
           <Image
             src="/lemon_salmon.webp"
-            alt="Healthy food delivery near Pearl Point - Incredibowl 柠檬三文鱼健康家常餐"
+            alt="Healthy food delivery near Pearl Point - Incredibowl lemon salmon healthy home-cooked meal"
             fill
             className="object-cover"
             priority
@@ -156,67 +160,67 @@ export default function HealthyFoodDeliveryPearlPoint() {
             kitchen cooking MSG-free home-cooked meals — freshly sourced every
             morning, with real protein portions labelled on each dish. Order by
             6AM at{" "}
-            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
+            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>
-            . 无味精 · 每天巴刹现采 · 真实蛋白克数 · {tierProseZh(TIER_INNER)}。
+            . No MSG · Wet-market fresh every morning · Real protein grams · {tierProseEn(TIER_INNER)}.
           </p>
         </div>
 
         <div className="prose prose-lg max-w-none space-y-6 leading-relaxed text-[#1A2D23]/85 text-[16px] md:text-[17px]">
           <p>
-            「健康餐」是个被用滥的词。在 <strong>Pearl Point</strong>、<strong>Old Klang Road</strong> 一带搜外送，会看到一堆挂着「健康」「轻食」「low fat」的便当——但真正吃进嘴里，未必健康到哪去。
+            &ldquo;Healthy food&rdquo; is one of the most overused labels around. Search for delivery around <strong>Pearl Point</strong> and <strong>Old Klang Road</strong> and you&rsquo;ll find plenty of meal boxes tagged &ldquo;healthy&rdquo;, &ldquo;light&rdquo; or &ldquo;low fat&rdquo; — but what actually ends up in your mouth may not be all that healthy.
           </p>
           <p>
-            这篇不推销，先讲清楚：在 Pearl Point 附近点外送，<strong>到底该用什么标准判断「健康」</strong>，再看哪些选项对得上。
+            This post isn&rsquo;t a sales pitch. First, let&rsquo;s get clear on <strong>what standards you should actually use to judge &ldquo;healthy&rdquo;</strong> when ordering delivery near Pearl Point — then see which options measure up.
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            一、「健康」该怎么定义？看这三点
+            1. How Should &ldquo;Healthy&rdquo; Be Defined? Check These Three Things
           </h2>
           <ol className="list-decimal pl-6 space-y-3">
             <li>
-              <strong>有没有味精</strong>。再「轻」的便当，如果靠味精提鲜，对味精敏感的人一样吃完口干头昏。无味精是健康的底线之一。
+              <strong>Is there MSG?</strong> However &ldquo;light&rdquo; a meal box looks, if it leans on MSG for flavour, anyone sensitive to it still finishes lunch thirsty and groggy. No MSG is one of the baselines of healthy.
             </li>
             <li>
-              <strong>食材新不新鲜</strong>。当天巴刹采购、当天烹饪，和中央厨房冷冻预制 + 现场加热，是两回事。新鲜本身就是健康的一部分。
+              <strong>Are the ingredients fresh?</strong> Bought at the wet market and cooked the same day is a very different thing from central-kitchen frozen prep reheated on site. Freshness is itself part of being healthy.
             </li>
             <li>
-              <strong>蛋白质够不够、标不标</strong>。健康不等于「吃得少」，而是<strong>蛋白质足、配比合理</strong>。敢标真实蛋白克数的，通常做工扎实。
+              <strong>Is there enough protein — and is it labelled?</strong> Healthy doesn&rsquo;t mean &ldquo;eating less&rdquo;; it means <strong>enough protein in a sensible balance</strong>. Kitchens that dare to label real protein grams usually do solid work.
             </li>
           </ol>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            二、常见的「伪健康」陷阱
+            2. Common &ldquo;Fake Healthy&rdquo; Traps
           </h2>
           <ul className="list-disc pl-6 space-y-2">
-            <li>只写「健康 / 轻食」，但说不清食材来源；</li>
-            <li>沙拉看着清爽，酱料却是高油高糖；</li>
-            <li>份量小、蛋白少，吃完很快又饿，反而乱吃零食。</li>
+            <li>The label says &ldquo;healthy / light meal&rdquo;, but nobody can tell you where the ingredients come from;</li>
+            <li>The salad looks refreshing, but the dressing is loaded with oil and sugar;</li>
+            <li>Small portions with little protein — you&rsquo;re hungry again in no time and end up snacking on junk.</li>
           </ul>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            三、Incredibowl 对得上哪几点
+            3. Which of These Boxes Incredibowl Ticks
           </h2>
           <p>
-            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link>（碗妈私厨）从 Pearl Point 家庭厨房出餐，刚好对上面三条标准：
+            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link> (BowlMama&rsquo;s home kitchen) cooks out of a home kitchen at Pearl Point, and happens to match all three standards above:
           </p>
           <ul className="list-disc pl-6 space-y-2">
-            <li><strong>零味精</strong>，靠天然食材提味；</li>
-            <li><strong>每天清晨巴刹采购、当天现煮</strong>，不冷冻预制；</li>
-            <li>主菜<strong>明标蛋白克数</strong>（如招牌当归蒸鸡全腿 45g+ 蛋白、柠檬三文鱼等高蛋白选项）；</li>
-            <li>家常做法、少油少盐，长期吃得下去——健康的关键是<em>可持续</em>，而不是吃两天就放弃的「减脂餐」。</li>
+            <li><strong>Zero MSG</strong> — flavour comes from natural ingredients;</li>
+            <li><strong>Sourced from the wet market early every morning and cooked fresh the same day</strong> — no frozen pre-prep;</li>
+            <li>Mains carry <strong>real protein gram counts</strong> (like the signature dang gui steamed whole chicken leg with 45g+ protein, or high-protein options like the lemon salmon);</li>
+            <li>Home-style cooking, light on oil and salt, that you can keep eating long term — the key to healthy is being <em>sustainable</em>, not a &ldquo;diet meal&rdquo; you give up on after two days.</li>
           </ul>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            四、配送范围与下单
+            4. Delivery Coverage and Ordering
           </h2>
           <p>
-            Pearl Point 出发，配送范围覆盖 {COVERAGE_AREAS.join("、")} 等。<strong>运费</strong>：{DELIVERY_PROSE_ZH}。每日早上 <strong>6AM 截单</strong>。
+            From Pearl Point, the delivery zone covers {COVERAGE_AREAS.join(", ")} and more. <strong>Delivery fee</strong>: {DELIVERY_PROSE_EN}. Orders close at <strong>6AM daily</strong>.
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            常见问题 FAQ
+            FAQ
           </h2>
           <div className="space-y-5">
             <div>
@@ -224,27 +228,27 @@ export default function HealthyFoodDeliveryPearlPoint() {
               <p>Incredibowl is a home kitchen at Pearl Point cooking MSG-free meals, freshly sourced each morning with real protein portions labelled on each dish, delivered within ~5km. Order by 6AM at www.incredibowl.my.</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: 怎么判断一份外送是不是真的健康？</h3>
-              <p>别只看「健康 / 轻食」标签。看三点：是否不加味精、食材是否每天新鲜采购、有没有标真实蛋白克数和份量。三点都清楚才可信。</p>
+              <h3 className="font-black text-lg mb-1">Q: How can you tell whether a delivery meal is actually healthy?</h3>
+              <p>Don&rsquo;t just go by &ldquo;healthy / light meal&rdquo; labels. Check three things: whether it&rsquo;s cooked without MSG, whether the ingredients are freshly bought each day, and whether real protein grams and portion sizes are labelled. Only when all three are clear is it credible.</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: Pearl Point 送餐范围与运费？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}、{tierProseZh(TIER_MID)}。覆盖 {COVERAGE_AREAS.join("、")} 等。</p>
+              <h3 className="font-black text-lg mb-1">Q: What is the Pearl Point delivery coverage and fee?</h3>
+              <p>From Pearl Point: {tierProseEn(TIER_INNER)}, {tierProseEn(TIER_OUTER)}, {tierProseEn(TIER_MID)}. Covers {COVERAGE_AREAS.join(", ")} and more.</p>
             </div>
           </div>
 
           <div className="mt-16 p-6 md:p-8 bg-[#FF6B35]/8 border-2 border-[#FF6B35]/20 rounded-2xl text-center">
             <h3 className="text-xl md:text-2xl font-black mb-3 text-[#1A2D23]">
-              想吃得健康一点，又不想吃草？
+              Want to eat a little healthier — without living on salad?
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              Pearl Point 出发 · 无味精 · 每天巴刹采购 · 真实蛋白克数 · 满额免运
+              From Pearl Point · No MSG · Wet-market fresh every day · Real protein grams · Free delivery over the threshold
             </p>
             <Link
-              href="/"
+              href="/en"
               className="inline-block bg-[#FF6B35] text-white font-bold px-8 py-3 rounded-full hover:bg-[#E55A24] transition-colors"
             >
-              查看今日菜单 →
+              View Today&rsquo;s Menu →
             </Link>
           </div>
         </div>

@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical:
       "https://www.incredibowl.my/blog/no-msg-food-delivery-old-klang-road",
+    languages: {
+      "zh-MY": "/blog/no-msg-food-delivery-old-klang-road",
+      "en-MY": "/en/blog/no-msg-food-delivery-old-klang-road",
+      "x-default": "/blog/no-msg-food-delivery-old-klang-road",
+    },
   },
   openGraph: {
     title: "No MSG Food Delivery in Old Klang Road — Incredibowl",

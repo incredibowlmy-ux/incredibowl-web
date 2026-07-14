@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   description: "住在 Old Klang Road、Pearl Point、OUG、Millerz Square？这篇指南帮你梳理本地家常菜外送选项：价格、配送时间、健康度对比，以及为什么越来越多邻居选择私厨直送。",
   alternates: {
     canonical: "https://www.incredibowl.my/blog/old-klang-road-food-delivery-guide",
+    languages: {
+      "zh-MY": "/blog/old-klang-road-food-delivery-guide",
+      "en-MY": "/en/blog/old-klang-road-food-delivery-guide",
+      "x-default": "/blog/old-klang-road-food-delivery-guide",
+    },
   },
   openGraph: {
     title: "Old Klang Road 食物外送完整指南 — Pearl Point 家常便当",

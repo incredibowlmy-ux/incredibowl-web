@@ -12,14 +12,15 @@ interface LanguageSwitcherProps {
 // Pages that exist in BOTH /zh and /en variants. Toggle preserves the
 // current page for these; for any other path (admin, track) the switcher
 // falls back to the locale homepage so we don't ship users into a 404.
-const BILINGUAL_ROUTES = new Set(['', '/order', '/member', '/meal-vouchers', '/catering', '/terms', '/privacy', '/refund']);
+const BILINGUAL_ROUTES = new Set(['', '/order', '/member', '/meal-vouchers', '/catering', '/terms', '/privacy', '/refund', '/blog']);
 
 function computeTargets(pathname: string | null): { zhHref: string; enHref: string } {
     // Strip /en prefix to get the "shared" path; '' === root.
     const shared = pathname?.startsWith('/en')
         ? pathname.replace(/^\/en/, '')
         : pathname || '';
-    const isMirrored = BILINGUAL_ROUTES.has(shared);
+    // /blog/[slug] 五篇 1:1 镜像，用前缀匹配免逐篇登记
+    const isMirrored = BILINGUAL_ROUTES.has(shared) || shared.startsWith('/blog/');
     return {
         zhHref: isMirrored ? (shared || '/') : '/',
         enHref: isMirrored ? `/en${shared}` : '/en',

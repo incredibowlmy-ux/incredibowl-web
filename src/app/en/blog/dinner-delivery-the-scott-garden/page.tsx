@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { tierProseZh, TIER_INNER, TIER_OUTER, COVERAGE_AREAS } from "@/lib/deliveryCopy";
+import { tierProseEn, TIER_INNER, TIER_OUTER, COVERAGE_AREAS } from "@/lib/deliveryCopy";
+import SetHtmlLang from "@/components/home-en/SetHtmlLang";
 
 export const metadata: Metadata = {
   title:
-    "Dinner Delivery Near The Scott Garden | The Scott Garden 晚餐外送 — Incredibowl",
+    "Dinner Delivery Near The Scott Garden | Home-Cooked & MSG-Free — Incredibowl",
   description:
-    "Home-cooked dinner delivery near The Scott Garden, Old Klang Road. No MSG, freshly cooked the same day, warm comforting dishes. Order by 6AM, dinner from 5PM. The Scott Garden 附近家常晚餐外送。",
+    "Home-cooked dinner delivery near The Scott Garden, Old Klang Road. No MSG, freshly cooked the same day, warm comforting dishes. Order by 6AM, dinner from 5PM.",
   alternates: {
     canonical:
-      "https://www.incredibowl.my/blog/dinner-delivery-the-scott-garden",
+      "https://www.incredibowl.my/en/blog/dinner-delivery-the-scott-garden",
     languages: {
       "zh-MY": "/blog/dinner-delivery-the-scott-garden",
       "en-MY": "/en/blog/dinner-delivery-the-scott-garden",
@@ -20,8 +21,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Dinner Delivery Near The Scott Garden — Incredibowl",
     description:
-      "MSG-free home-cooked dinner delivery near The Scott Garden / Old Klang Road. Order by 6AM, dinner from 5PM. 无味精家常晚餐，当天现煮。",
-    url: "https://www.incredibowl.my/blog/dinner-delivery-the-scott-garden",
+      "MSG-free home-cooked dinner delivery near The Scott Garden / Old Klang Road. Order by 6AM, dinner from 5PM. Freshly cooked the same day.",
+    url: "https://www.incredibowl.my/en/blog/dinner-delivery-the-scott-garden",
     siteName: "Incredibowl Malaysia",
     images: [
       {
@@ -31,13 +32,13 @@ export const metadata: Metadata = {
         alt: "Dinner delivery near The Scott Garden — Incredibowl home-cooked soup",
       },
     ],
-    locale: "zh_MY",
+    locale: "en_MY",
     type: "article",
     publishedTime: "2026-06-24T00:00:00+08:00",
   },
 };
 
-export default function DinnerDeliveryTheScottGarden() {
+export default function DinnerDeliveryTheScottGardenEN() {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -63,7 +64,7 @@ export default function DinnerDeliveryTheScottGarden() {
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id":
-        "https://www.incredibowl.my/blog/dinner-delivery-the-scott-garden",
+        "https://www.incredibowl.my/en/blog/dinner-delivery-the-scott-garden",
     },
   };
 
@@ -81,18 +82,18 @@ export default function DinnerDeliveryTheScottGarden() {
       },
       {
         "@type": "Question",
-        name: "晚餐也要早上 6 点前下单吗？",
+        name: "Do dinner orders also close at 6AM?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "是的。因为碗妈是当天清晨去巴刹采购、当天现煮，所有订单（含晚餐）都在早上 6AM 截单。想吃当天晚餐，前一晚或当天 6 点前下单即可，晚餐从 5PM 起送。",
+          text: "Yes. Because BowlMama shops at the wet market early in the morning and cooks everything fresh the same day, all orders (dinner included) close at 6AM. To have dinner that same day, just order the night before or by 6AM, and dinner is delivered from 5PM.",
         },
       },
       {
         "@type": "Question",
-        name: "The Scott Garden 送餐运费多少？",
+        name: "How much is the delivery fee to The Scott Garden?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，配送范围覆盖 ${COVERAGE_AREAS.join("、")}。注册账号填地址后系统会自动核对实际距离与运费。`,
+          text: `From Pearl Point: ${tierProseEn(TIER_INNER)}, ${tierProseEn(TIER_OUTER)}. The Scott Garden is within the delivery zone, which covers ${COVERAGE_AREAS.join(", ")}. Once you sign up and enter your address, the system automatically checks the actual distance and delivery fee.`,
         },
       },
     ],
@@ -100,6 +101,7 @@ export default function DinnerDeliveryTheScottGarden() {
 
   return (
     <article className="min-h-screen bg-[#FDFBF7] text-[#1A2D23]">
+      <SetHtmlLang />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
@@ -111,28 +113,28 @@ export default function DinnerDeliveryTheScottGarden() {
 
       <div className="max-w-3xl mx-auto px-6 py-12 md:py-16">
         <Link
-          href="/blog"
+          href="/en/blog"
           className="text-[#FF6B35] font-bold mb-6 inline-block hover:underline"
         >
-          ← 返回博客
+          ← Back to Blog
         </Link>
 
         <header className="mb-10">
           <p className="text-xs font-bold uppercase tracking-widest text-[#1A2D23]/50 mb-3">
-            <time dateTime="2026-06-24">2026 年 6 月 24 日</time> · 5 min read
+            <time dateTime="2026-06-24">24 June 2026</time> · 5 min read
           </p>
           <h1 className="text-3xl md:text-5xl font-black leading-tight mb-4">
-            The Scott Garden 附近的晚餐外送：下班回家就有热饭
+            Dinner Delivery Near The Scott Garden: A Hot Meal Waiting When You Get Home
           </h1>
           <p className="text-lg text-[#1A2D23]/65 italic">
-            Dinner Delivery Near The Scott Garden
+            Home-cooked, MSG-free, freshly cooked the same day
           </p>
         </header>
 
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-10 bg-[#E3EADA]">
           <Image
             src="/scallion_chicken_soup.webp"
-            alt="Dinner delivery near The Scott Garden - Incredibowl 葱香鸡汤家常晚餐"
+            alt="Dinner delivery near The Scott Garden - Incredibowl scallion chicken soup, a home-cooked dinner"
             fill
             className="object-cover"
             priority
@@ -148,50 +150,50 @@ export default function DinnerDeliveryTheScottGarden() {
             For dinner delivery near The Scott Garden, Incredibowl is a home
             kitchen at nearby Pearl Point cooking MSG-free home-cooked dinners,
             freshly cooked the same day. Order by 6AM at{" "}
-            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
+            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>{" "}
-            and dinner arrives from 5PM. 无味精家常晚餐 · 当天现煮 · {tierProseZh(TIER_INNER)}。
+            and dinner arrives from 5PM. MSG-free home cooking · freshly cooked the same day · {tierProseEn(TIER_INNER)}.
           </p>
         </div>
 
         <div className="prose prose-lg max-w-none space-y-6 leading-relaxed text-[#1A2D23]/85 text-[16px] md:text-[17px]">
           <p>
-            下班回到 <strong>The Scott Garden</strong> 一带，最不想做的事就是再出门买饭、或对着 GrabFood 滑半天还是点了和昨天一样的快餐。忙了一天，晚餐最想要的其实很简单：<strong>一口热乎、不油不咸、像家里煮的饭</strong>。
+            Getting back to the <strong>The Scott Garden</strong> area after work, the last thing you want to do is head out again for food — or scroll GrabFood for ages only to order the same fast food as yesterday. After a long day, what you really want for dinner is simple: <strong>something hot, not too oily or salty, that tastes like a meal cooked at home</strong>.
           </p>
           <p>
-            这篇讲讲 The Scott Garden 附近，怎么点到当天现煮、不加味精的家常晚餐。
-          </p>
-
-          <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            一、晚餐外送，难的是「家的感觉」
-          </h2>
-          <p>
-            连锁外卖味道稳定，但吃久了腻；Mamak、快餐方便，但谈不上滋补。一顿好的晚餐，应该能让你<strong>放松下来、把一天的疲惫放下</strong>——这正是家庭式私厨能做、而中央厨房做不到的事。
+            This post is about how to order a home-cooked dinner near The Scott Garden — freshly cooked the same day, with no MSG added.
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            二、Incredibowl 的家常晚餐
+            1. The Hardest Thing for Dinner Delivery to Get Right: The Feeling of Home
           </h2>
           <p>
-            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link>（碗妈私厨）从 The Scott Garden 附近的 Pearl Point 家庭厨房出餐：
+            Chain delivery food is consistent, but you tire of it after a while; mamak and fast food are convenient, but hardly nourishing. A good dinner should let you <strong>unwind and set down the day&apos;s fatigue</strong> — and that is exactly what a family-style home kitchen can do, and a central kitchen cannot.
+          </p>
+
+          <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
+            2. Incredibowl&apos;s Home-Cooked Dinners
+          </h2>
+          <p>
+            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link> (BowlMama&apos;s home kitchen) cooks from a home kitchen at Pearl Point, near The Scott Garden:
           </p>
           <ul className="list-disc pl-6 space-y-2">
-            <li><strong>当天清晨巴刹采购、当天现煮</strong>，不是冷冻加热；</li>
-            <li>每一道<strong>不加味精</strong>，靠当归、姜葱等天然食材提味，适合晚上吃得舒服；</li>
-            <li>有暖身滋补类（如当归蒸鸡、清炖汤品），也有下饭的家常菜；</li>
-            <li>主菜标<strong>真实蛋白克数</strong>，一顿吃得饱也吃得安心。</li>
+            <li><strong>Ingredients bought at the wet market early the same morning, cooked fresh the same day</strong> — never frozen and reheated;</li>
+            <li>Every dish is made with <strong>no MSG added</strong>, drawing flavour from natural ingredients like dang gui (Chinese angelica), ginger and scallions — easy on the body in the evening;</li>
+            <li>There are warming, nourishing options (like dang gui steamed chicken and clear simmered soups), as well as home-cooked dishes that go perfectly with rice;</li>
+            <li>Mains are labelled with <strong>real protein gram counts</strong> — a dinner that fills you up and puts your mind at ease.</li>
           </ul>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            三、晚餐下单时间（重点：仍是早上 6AM 截单）
+            3. When to Order Dinner (Key Point: The Cutoff Is Still 6AM)
           </h2>
           <p>
-            很多人以为晚餐可以临时点——但因为碗妈是<strong>当天清晨买菜、当天煮</strong>，所有订单（含晚餐）都在<strong>早上 6AM 截单</strong>。想吃当天晚餐，前一晚或当天 6 点前下好单即可，<strong>晚餐从 5PM 起送</strong>。
+            Many people assume dinner can be ordered last-minute — but because BowlMama <strong>buys ingredients early in the morning and cooks the same day</strong>, all orders (dinner included) close at <strong>6AM</strong>. To have dinner that same day, just place your order the night before or by 6AM, and <strong>dinner is delivered from 5PM</strong>.
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
-            常见问题 FAQ
+            FAQ
           </h2>
           <div className="space-y-5">
             <div>
@@ -199,27 +201,27 @@ export default function DinnerDeliveryTheScottGarden() {
               <p>Yes — Incredibowl is a home kitchen at nearby Pearl Point, delivering MSG-free home-cooked dinners. The Scott Garden is within the delivery zone. Order by 6AM, dinner from 5PM.</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: 晚餐也要早上 6 点前下单吗？</h3>
-              <p>是的。碗妈当天清晨采购、当天现煮，所有订单（含晚餐）早上 6AM 截单。晚餐从 5PM 起送。</p>
+              <h3 className="font-black text-lg mb-1">Q: Do dinner orders also close at 6AM?</h3>
+              <p>Yes. BowlMama shops early in the morning and cooks fresh the same day, so all orders (dinner included) close at 6AM. Dinner is delivered from 5PM.</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: The Scott Garden 送餐运费多少？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。The Scott Garden 在配送范围内，配送范围覆盖 {COVERAGE_AREAS.join("、")}。注册填地址后系统自动核对。</p>
+              <h3 className="font-black text-lg mb-1">Q: How much is the delivery fee to The Scott Garden?</h3>
+              <p>From Pearl Point: {tierProseEn(TIER_INNER)}, {tierProseEn(TIER_OUTER)}. The Scott Garden is within the delivery zone, which covers {COVERAGE_AREAS.join(", ")}. Once you sign up and enter your address, the system checks it automatically.</p>
             </div>
           </div>
 
           <div className="mt-16 p-6 md:p-8 bg-[#FF6B35]/8 border-2 border-[#FF6B35]/20 rounded-2xl text-center">
             <h3 className="text-xl md:text-2xl font-black mb-3 text-[#1A2D23]">
-              今晚想吃一顿像家里煮的晚餐？
+              Craving a dinner tonight that tastes like home cooking?
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              The Scott Garden 附近 · 无味精 · 当天现煮 · 6AM 截单 · 5PM 起送
+              Near The Scott Garden · No MSG · Freshly cooked the same day · Order by 6AM · Dinner from 5PM
             </p>
             <Link
-              href="/"
+              href="/en"
               className="inline-block bg-[#FF6B35] text-white font-bold px-8 py-3 rounded-full hover:bg-[#E55A24] transition-colors"
             >
-              查看今日菜单 →
+              See Today&apos;s Menu →
             </Link>
           </div>
         </div>
