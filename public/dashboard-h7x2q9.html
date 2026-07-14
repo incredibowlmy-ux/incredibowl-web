@@ -8784,6 +8784,10 @@ incredibowl.my`,
                     cur[kind] += qty;
                     eggCounts.set(type, cur);
                 };
+                // 加料显示名归一：手动短 label（换糙米）和网页长 label（白饭换糙米 (180g)）
+                // 是同一种料，按 canonical id 合并成一条，用 ADDON_SEED 短名显示——
+                // 老板 07-15 反馈两条并列看着像两种料。
+                const labelToId = packingLabelToId();
                 orders.forEach(o => normalizeOrderItems(o).forEach(it => {
                     const name = canonicalDishName(it.name);
                     const qty = Number(it.quantity) || 1;
@@ -8796,7 +8800,10 @@ incredibowl.my`,
                         }
                     }
                     (it.addOns || []).forEach(a => {
-                        const lbl = a.label || a.name || a.id || '加料';
+                        const raw = String(a.label || a.name || a.id || '加料');
+                        const cid = canonicalAddonId(a.id || lookupAddonId(labelToId, raw) || raw);
+                        const seed = (state.addons || []).find(x => x.id === cid);
+                        const lbl = (seed && seed.name) || raw.replace(ADDON_PRICE_SUFFIX_RE, '');
                         const aq = Number(a.quantity) || 1;
                         addons.set(lbl, (addons.get(lbl) || 0) + aq);
                         if (EGG_ADDON_TYPES.has(lbl)) bumpEgg(lbl, 'addon', aq);
@@ -8868,17 +8875,20 @@ incredibowl.my`,
             function riceGroupBlock(orders) {
                 const { groups, bowlTotal, extraRiceTotal } = collectPackingData(orders, packingLabelToId());
                 if (bowlTotal === 0) return '';
+                const sum = rows => rows.reduce((s, r) => s + r.count, 0);
+                const whiteBowls = sum(groups.whiteNormal) + sum(groups.whiteLess);
+                const brownBowls = sum(groups.brownNormal) + sum(groups.brownLess);
                 const blocks = PACKING_RICE_GROUPS.map(g => {
                     const rows = groups[g.key];
-                    const total = rows.reduce((s, r) => s + r.count, 0);
+                    const total = sum(rows);
                     if (total === 0) return '';
                     const lines = rows.map(r =>
-                        `<div class="rice-row">☐ <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)} ${escP(r.code)}</span></div>`
+                        `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`
                     ).join('');
                     return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${lines}`;
                 }).join('');
                 return `<div class="rice">
-                    <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份` : ''}）</div>
+                    <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗 = ⚪ 白饭 ${whiteBowls} + 🟤 糙米 ${brownBowls}${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份` : ''}）</div>
                     ${blocks}
                 </div>`;
             }
@@ -8973,6 +8983,16 @@ incredibowl.my`,
             return m;
         }
 
+        // 机器备注过滤：dashboard 手动单/多日批量/周订阅 API 会往 o.note 写
+        // 「手动录入 · whatsapp（ · 多日批量/餐券抵扣 · 周订阅自动生成）」等操作
+        // 痕迹，装碗行只留真客户备注（订单卡仍显示完整原文）。三种模板见
+        // 手动单保存、multi-day-orders API、subscriptions/week API。
+        function stripMachineNote(note) {
+            const s = String(note || '').trim();
+            if (!s.startsWith('手动录入')) return s;
+            return s.replace(/^手动录入( · [A-Za-z][\w-]*)?( · 餐券抵扣 · 周订阅自动生成| · 多日批量)?( · )?/, '').trim();
+        }
+
         // 汇集一批订单的装碗数据（纯数据，「装碗打包」页与打印备餐单共用同一套口径）。
         // 返回 { groups: {whiteNormal/whiteLess/brownNormal/brownLess: 行数组}, sides: Map, bowlTotal, extraRiceTotal }
         function collectPackingData(orders, labelToId) {
@@ -8983,7 +9003,7 @@ incredibowl.my`,
             orders.forEach(o => {
                 const code = '#' + String(o.id || '').slice(-6).toUpperCase();
                 const who = o.userName || '匿名';
-                const orderNote = String(o.note || '').trim();
+                const orderNote = stripMachineNote(o.note);
                 normalizeOrderItems(o).forEach(it => {
                     const qty = Math.max(1, Number(it.quantity) || 1);
                     const dish = canonicalDishName(it.name) || '—';
@@ -9024,9 +9044,30 @@ incredibowl.my`,
             });
             // 组内排序：有加料的排前面、加料份数越多越靠前（老板 07-15 要求——
             // 有料的碗最容易装错，先做需要专注的）；同加料数按菜名归拢。
-            Object.values(groups).forEach(rows => rows.sort((a, b) =>
-                (b.tagQty - a.tagQty) || a.dish.localeCompare(b.dish, 'zh')
-            ));
+            // 排序后把「无加料、无备注」的同一道菜合并成一行（客户名单串起来），
+            // 净版碗一眼看总数，单子更短；有料/有备注的仍逐碗一行。
+            Object.keys(groups).forEach(k => {
+                const rows = groups[k];
+                rows.sort((a, b) => (b.tagQty - a.tagQty) || a.dish.localeCompare(b.dish, 'zh'));
+                const merged = [];
+                const plainIdx = new Map();   // dish → merged 中的下标
+                rows.forEach(r => {
+                    if (r.tags.length === 0 && !r.note) {
+                        const buyer = `${r.who} ${r.code}`;
+                        const i = plainIdx.get(r.dish);
+                        if (i != null) {
+                            merged[i].count += r.count;
+                            merged[i].who += '、' + buyer;
+                            return;
+                        }
+                        plainIdx.set(r.dish, merged.length);
+                        merged.push({ ...r, who: buyer, code: '' });
+                        return;
+                    }
+                    merged.push({ ...r });
+                });
+                groups[k] = merged;
+            });
             return { groups, sides, bowlTotal, extraRiceTotal };
         }
 
