@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { CheckCircle } from 'lucide-react';
+import type { Locale } from '@/lib/locale';
+import { CART_DICT } from './dict';
 
 interface CartSuccessProps {
     // Snapshot taken at submit time — the live cart is cleared the moment
@@ -9,6 +11,7 @@ interface CartSuccessProps {
     orderSuccess: { id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] };
     userProfile: any;
     onDone: () => void;
+    locale?: Locale;
 }
 
 const WHATSAPP_NUMBER = '60165119118';
@@ -17,21 +20,27 @@ const WHATSAPP_NUMBER = '60165119118';
 // CAPI event IDs returned by /api/submit-order and /api/confirm-order
 // — needed to deduplicate browser events against the server-side
 // Conversions API events fired from those routes.
-export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartSuccessProps) {
+export default function CartSuccess({ orderSuccess, userProfile, onDone, locale = 'zh' }: CartSuccessProps) {
+    const t = CART_DICT[locale].success;
     const { id, items, total, trackInfo } = orderSuccess;
     const isGroup = id.startsWith('GRP');
     const displayId = isGroup ? id : id.slice(-6).toUpperCase();
+    // 渲染层菜名：EN 显示 nameEn 兜底 name；订单 payload 早已提交，不受影响。
+    const dishName = (item: any) => (locale === 'en'
+        ? (item.dish?.nameEn || item.dish?.name || '')
+        : (item.dish?.name || ''));
 
     // Tracking links (one per delivery) — absolute URLs so they survive
     // inside the customer's own WhatsApp chat as their receipt.
-    const trackLines = (trackInfo || []).map(t =>
-        `📍 跟踪订单${(trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}：https://www.incredibowl.my/track/${t.token}`);
+    const multiTrack = (trackInfo || []).length > 1;
+    const trackLines = (trackInfo || []).map(tr =>
+        t.waTrack(multiTrack, tr.date, t.mealWord(tr.time), `https://www.incredibowl.my/track/${tr.token}`));
 
     const waText = [
-        '你好碗妈 👋 我刚在网站下单了，想在 WhatsApp 接收订单确认：',
-        `📌 ${isGroup ? '订单群组编号' : '订单编号'}：#${displayId}`,
+        t.waIntro,
+        t.waOrderNo(isGroup, displayId),
         ...items.map((item: any) =>
-            `🍛 ${item.dish?.name || ''} ×${(item.dishQty || 1) * (item.quantity || 1)}（${item.selectedDate || '日期未定'} ${item.selectedTime?.includes('Lunch') ? '午餐' : '晚餐'}）`),
+            t.waItem(dishName(item), (item.dishQty || 1) * (item.quantity || 1), item.selectedDate || t.dateTbdWa, t.mealWord(item.selectedTime))),
         `💰 RM ${total.toFixed(2)}`,
         ...trackLines,
     ].join('\n');
@@ -45,32 +54,32 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
                     <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
                         <CheckCircle size={48} className="text-green-500" />
                     </div>
-                    <h2 className="text-3xl font-black text-[#1A2D23]">订单已提交！🍛</h2>
+                    <h2 className="text-3xl font-black text-[#1A2D23]">{t.title}</h2>
                     <p className="text-gray-500 flex flex-col items-center gap-1">
                         <span>
-                            {isGroup ? '订单群组编号：' : '订单编号：'}
+                            {t.orderIdLabel(isGroup)}
                             <span className="font-bold text-[#FF6B35]">#{displayId}</span>
                         </span>
                         {isGroup && (
                             <span className="text-[10px] font-bold text-[#FF6B35]/70 bg-[#FF6B35]/10 px-2 py-0.5 rounded-full mt-1">
-                                你的订单已按送达日期自动拆分方便碗妈备餐
+                                {t.groupSplitNote}
                             </span>
                         )}
                     </p>
                     <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
                         <p className="text-sm">
-                            <span className="font-bold">📅 配送安排：</span>
+                            <span className="font-bold">{t.deliveryPlan}</span>
                             <span className="text-[#FF6B35] font-black">
                                 {isGroup
-                                    ? '多日配送 (已各自独立建单)'
-                                    : `${items[0]?.selectedDate || '未定'} ${items[0]?.selectedTime?.includes('Lunch') ? '🌞午餐' : '🌙晚餐'}`}
+                                    ? t.multiDay
+                                    : `${items[0]?.selectedDate || t.dateTbd} ${items[0]?.selectedTime?.includes('Lunch') ? t.lunchEmoji : t.dinnerEmoji}`}
                             </span>
                         </p>
-                        <p className="text-sm"><span className="font-bold">📍 地址：</span>{userProfile?.address}</p>
-                        <p className="text-sm"><span className="font-bold">💰 金额：</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
+                        <p className="text-sm"><span className="font-bold">{t.addressLabel}</span>{userProfile?.address}</p>
+                        <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
                     </div>
-                    <p className="text-sm font-bold text-[#FF6B35] animate-pulse">碗妈正在核对付款截图，请耐心等候 💬</p>
-                    <p className="text-xs text-gray-400">核对成功后，碗妈会确认你的订单 ✅</p>
+                    <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.verifying}</p>
+                    <p className="text-xs text-gray-400">{t.verifiedNote}</p>
 
                     {/* WhatsApp confirmation deep link — puts a copy of the order
                         in the customer's own chat (their receipt) and opens the
@@ -82,19 +91,19 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
                         rel="noopener noreferrer"
                         className="block w-full py-3.5 bg-[#25D366] text-white rounded-2xl text-sm font-black hover:bg-[#1EBE57] transition-colors shadow-lg shadow-[#25D366]/25"
                     >
-                        📲 WhatsApp 接收订单确认
+                        {t.waButton}
                     </a>
                     {(trackInfo || []).length > 0 && (
                         <div className="space-y-2">
-                            {(trackInfo || []).map((t) => (
+                            {(trackInfo || []).map((tr) => (
                                 <a
-                                    key={t.token}
-                                    href={`/track/${t.token}`}
+                                    key={tr.token}
+                                    href={`/track/${tr.token}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="block w-full py-3 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-2xl text-sm font-black hover:bg-[#FF6B35]/5 transition-colors"
                                 >
-                                    📍 跟踪订单{(trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}
+                                    {t.trackBtn(multiTrack, tr.date, t.mealWord(tr.time))}
                                 </a>
                             ))}
                         </div>
@@ -103,7 +112,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone }: CartS
                         onClick={onDone}
                         className="w-full py-2.5 text-sm font-bold text-gray-400 hover:text-[#1A2D23] transition-colors"
                     >
-                        完成，返回首页
+                        {t.done}
                     </button>
                 </div>
             </div>

@@ -21,6 +21,7 @@ import { dishVoucherValue } from '@/data/weeklyMenu';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
+import { CART_DICT } from './dict';
 
 export default function CartDrawer({
     isOpen,
@@ -31,8 +32,11 @@ export default function CartDrawer({
     cartCount,
     onAuthOpen,
     onClearCart,
-    onEditItem
+    onEditItem,
+    locale = 'zh'
 }: any) {
+    // 渲染层文案字典（zh 值与旧字面量逐字一致）。订单 payload 永远不经过它。
+    const t = CART_DICT[(locale === 'en' ? 'en' : 'zh') as 'zh' | 'en'].drawer;
     // Auth + profile (address/phone) come from the app-wide AuthProvider, which
     // survives page navigation — so reopening the cart after visiting another
     // page shows the saved address/phone instantly, no refresh needed.
@@ -56,7 +60,7 @@ export default function CartDrawer({
             onAuthOpen();
         } catch (e) {
             console.error('[guest] anonymous sign-in failed:', e);
-            alert('访客模式暂时不可用，请用 Google 登录下单（一样很快）');
+            alert(t.guestUnavailable);
             onAuthOpen();
         } finally {
             setGuestLoading(false);
@@ -113,7 +117,7 @@ export default function CartDrawer({
         setReceiptUploaded(false);
         setReceiptUrl('');
         setMealVouchersUsed(0);
-        setStaleNotice(`已自动移除 ${stale.length} 个过期项目（截单已过），请重新加入今日菜单`);
+        setStaleNotice(t.staleRemoved(stale.length));
     }, [isOpen, cart, removeFromCart]);
 
     // ── Meal voucher math ──────────────────────────────────────
@@ -171,7 +175,7 @@ export default function CartDrawer({
     const deliveryGroups = (() => {
         const grouped: Record<string, { date: string; time: string; subtotal: number }> = {};
         for (const item of cart) {
-            const date = item.selectedDate || '未定';
+            const date = item.selectedDate || t.dateTbd;
             const time = item.selectedTime || 'Lunch';
             const key = `${date}|${time}`;
             if (!grouped[key]) grouped[key] = { date, time, subtotal: 0 };
@@ -221,7 +225,7 @@ export default function CartDrawer({
             });
             const data = await res.json();
             if (!res.ok) {
-                setPromoError(data.error || '优惠码无效');
+                setPromoError(data.error || t.promoInvalid);
                 setPromoApplied(false); setPromoDiscount(0);
                 return;
             }
@@ -229,7 +233,7 @@ export default function CartDrawer({
             setPromoApplied(true);
             setPromoError('');
         } catch (err) {
-            setPromoError('验证失败，请稍后再试');
+            setPromoError(t.promoCheckFailed);
         } finally {
             setIsCheckingPromo(false);
         }
@@ -261,12 +265,12 @@ export default function CartDrawer({
                     body: JSON.stringify({ orderIds: orderIdsToPay }),
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || '创建支付订单失败');
+                if (!res.ok) throw new Error(data.error || t.createPaymentFailed);
                 let resolved = false;
                 const options = {
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
-                    name: 'Incredibowl', description: '餐点预订',
+                    name: 'Incredibowl', description: t.razorpayDescription,
                     callback_url: `${window.location.origin}/api/payment/fpx-callback`,
                     redirect: true,
                     handler: (response: any) => { resolved = true; resolve(response); },
@@ -274,7 +278,7 @@ export default function CartDrawer({
                         ondismiss: () => {
                             // Razorpay test mode may fire ondismiss BEFORE handler.
                             // Wait 1.5 s to give handler a chance to settle first.
-                            setTimeout(() => { if (!resolved) reject(new Error('已取消支付')); }, 1500);
+                            setTimeout(() => { if (!resolved) reject(new Error(t.paymentCancelled)); }, 1500);
                         },
                     },
                     prefill: {
@@ -328,18 +332,18 @@ export default function CartDrawer({
 
         // Guard 1: must be image
         if (!file.type.startsWith('image/')) {
-            alert('请上传图片文件（JPG / PNG）');
+            alert(t.uploadImageOnly);
             return;
         }
         // Guard 2: max 5MB (must match Storage Rules size limit)
         const MAX_BYTES = 5 * 1024 * 1024;
         if (file.size > MAX_BYTES) {
-            alert(`图片太大（${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩后上传，最大 5MB`);
+            alert(t.uploadTooLarge((file.size / 1024 / 1024).toFixed(1)));
             return;
         }
         // Guard 3: must be authenticated (Storage Rules 通常要求 request.auth != null)
         if (!currentUser) {
-            alert('请先登录再上传付款凭证');
+            alert(t.loginBeforeUpload);
             return;
         }
 
@@ -355,12 +359,12 @@ export default function CartDrawer({
         } catch (err: any) {
             console.error('[Receipt upload failed]', err);
             const code = err?.code || '';
-            let msg = '上传失败，请重试';
-            if (code === 'storage/unauthorized') msg = '上传被拒绝（Storage 权限规则未授权）。请联系客服并截图发 WhatsApp。';
-            else if (code === 'storage/canceled') msg = '上传被取消，请重试';
-            else if (code === 'storage/retry-limit-exceeded') msg = '网络太慢，请换 Wi-Fi 重试';
-            else if (code === 'storage/quota-exceeded') msg = '存储空间已满，请联系客服';
-            else if (err?.message) msg = `上传失败：${err.message}`;
+            let msg = t.uploadFailedRetry;
+            if (code === 'storage/unauthorized') msg = t.uploadUnauthorized;
+            else if (code === 'storage/canceled') msg = t.uploadCancelled;
+            else if (code === 'storage/retry-limit-exceeded') msg = t.uploadSlowNetwork;
+            else if (code === 'storage/quota-exceeded') msg = t.uploadQuota;
+            else if (err?.message) msg = t.uploadFailedWithMsg(err.message);
             alert(msg);
         }
         setUploading(false);
@@ -408,7 +412,7 @@ export default function CartDrawer({
         });
 
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || '提交订单失败');
+        if (!res.ok) throw new Error(data.error || t.submitOrderFailed);
         return data as {
             orderIds: string[];
             groupId: string | null;
@@ -443,10 +447,10 @@ export default function CartDrawer({
         if (!currentUser) { onAuthOpen(); return; }
         if (!userProfile?.phone || !userProfile?.address) { onAuthOpen(); return; }
         if (!isValidMyPhone(userProfile.phone)) {
-            alert("手机号码格式不正确，请到会员资料更新，例: 010-337 0197"); onAuthOpen(); return;
+            alert(t.invalidPhone); onAuthOpen(); return;
         }
         if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
-            alert("部分菜品未选择配送日期，请移除后重试！"); return;
+            alert(t.missingDate); return;
         }
 
         // Voucher-only flow: meal vouchers covered the entire bill (no cash).
@@ -467,7 +471,7 @@ export default function CartDrawer({
                     body: JSON.stringify({ orderIds: result.orderIds, status: 'confirmed' }),
                 });
                 if (!confirmRes.ok) {
-                    throw new Error((await confirmRes.json()).error || '订单确认失败');
+                    throw new Error((await confirmRes.json()).error || t.confirmFailed);
                 }
                 showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0], result.trackInfo);
             } catch (err: any) {
@@ -480,13 +484,13 @@ export default function CartDrawer({
                         body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled' }),
                     }).catch(() => {});
                 }
-                alert(err.message || '下单失败，请重试');
+                alert(err.message || t.placeOrderFailed);
             }
             setSubmitting(false);
             return;
         }
 
-        if (paymentMethod === 'qr' && !receiptUploaded) { alert("请先上传付款截图！"); return; }
+        if (paymentMethod === 'qr' && !receiptUploaded) { alert(t.uploadReceiptFirstAlert); return; }
 
         if (paymentMethod === 'fpx') {
             // Step 1: Submit orders via server-side validated API as 'pending' BEFORE opening payment.
@@ -506,7 +510,7 @@ export default function CartDrawer({
                 // Fire browser-side InitiateCheckout (deduped against CAPI by eventID)
                 trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, checkoutEventId);
             } catch (err: any) {
-                alert(err.message || '建立订单失败，请重试');
+                alert(err.message || t.createOrderFailed);
                 setSubmitting(false);
                 return;
             }
@@ -550,7 +554,7 @@ export default function CartDrawer({
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { alert('支付验证失败，请联系客服'); return; }
+                if (!verifyData.verified) { alert(t.verifyFailed); return; }
                 setSubmitting(true);
                 const payData = {
                     razorpayPaymentId: paymentResult.razorpay_payment_id,
@@ -565,7 +569,7 @@ export default function CartDrawer({
                     headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
                     body: JSON.stringify({ orderIds, status: 'confirmed', paymentData: payData }),
                 });
-                if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || '订单确认失败');
+                if (!confirmRes.ok) throw new Error((await confirmRes.json()).error || t.confirmFailed);
                 const confirmData = await confirmRes.json().catch(() => ({}));
                 // Fire browser-side Purchase per order (deduped against CAPI by eventID).
                 // Server-side CAPI events have authoritative per-order values; the
@@ -590,8 +594,8 @@ export default function CartDrawer({
                     body: JSON.stringify({ orderIds, status: 'cancelled' }),
                 }).catch(() => {});
                 localStorage.removeItem('fpx_pending_order');
-                if (err.message !== '已取消支付') {
-                    alert(err.message || '支付失败，请重试');
+                if (err.message !== t.paymentCancelled) {
+                    alert(err.message || t.payFailed);
                 }
             }
             setSubmitting(false);
@@ -607,7 +611,7 @@ export default function CartDrawer({
             const result = await submitOrderViaAPI();
             trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
             showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0], result.trackInfo);
-        } catch (error: any) { alert(`下单失败: ${error.message}`); }
+        } catch (error: any) { alert(t.qrSubmitFailed(error.message)); }
         setSubmitting(false);
     };
 
@@ -624,7 +628,7 @@ export default function CartDrawer({
     };
 
     if (orderSuccess) {
-        return <CartSuccess orderSuccess={orderSuccess} userProfile={userProfile} onDone={() => { setOrderSuccess(null); onClose(); }} />;
+        return <CartSuccess orderSuccess={orderSuccess} userProfile={userProfile} locale={locale} onDone={() => { setOrderSuccess(null); onClose(); }} />;
     }
 
     return (
@@ -635,7 +639,7 @@ export default function CartDrawer({
                 {/* Header */}
                 <div className="p-6 bg-white border-b border-[#E3EADA] flex justify-between items-center">
                     <h2 className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
-                        <ShoppingBag size={22} /> 我的订单 ({cartCount})
+                        <ShoppingBag size={22} /> {t.title} ({cartCount})
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400"><X size={22} /></button>
                 </div>
@@ -652,9 +656,9 @@ export default function CartDrawer({
                     {cart.length > 0 && (
                         <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] shrink-0">
                             <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50 text-xs font-bold text-[#1A2D23]">
-                                <span className="text-gray-500 font-medium shrink-0">📍 送达地址</span>
+                                <span className="text-gray-500 font-medium shrink-0">{t.deliveryAddress}</span>
                                 <span className="truncate ml-4 text-right">
-                                    {userProfile?.address || <span className="text-red-500">尚未填写 (请在下方补充)</span>}
+                                    {userProfile?.address || <span className="text-red-500">{t.addressMissing}</span>}
                                 </span>
                             </p>
                             {/* 地址簿快速切换：注册会员存了 ≥2 个地址才显示。切换 =
@@ -671,7 +675,7 @@ export default function CartDrawer({
                                                 className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all disabled:cursor-default ${isCurrent
                                                     ? 'bg-[#FF6B35] text-white border-[#FF6B35]'
                                                     : 'bg-white text-[#1A2D23] border-[#E3EADA] hover:border-[#FF6B35] disabled:opacity-50'}`}>
-                                                {switchingAddress === entry.id ? '切换中…' : (entry.label || `${(entry.address || '').slice(0, 14)}…`)}
+                                                {switchingAddress === entry.id ? t.switching : (entry.label || `${(entry.address || '').slice(0, 14)}…`)}
                                             </button>
                                         );
                                     })}
@@ -688,18 +692,18 @@ export default function CartDrawer({
                                     <div className="w-20 h-20 bg-[#FF6B35]/5 rounded-full flex items-center justify-center mb-4">
                                         <Utensils className="w-10 h-10 text-[#FF6B35]/60" />
                                     </div>
-                                    <p className="font-bold text-lg mb-2 text-[#3B2A1A]">碗妈的锅已经热好了 🍳</p>
-                                    <p className="text-sm font-medium text-[#8B7355] max-w-[200px] leading-relaxed mx-auto">快去选一道今天心仪的家常菜吧！</p>
+                                    <p className="font-bold text-lg mb-2 text-[#3B2A1A]">{t.emptyTitle}</p>
+                                    <p className="text-sm font-medium text-[#8B7355] max-w-[200px] leading-relaxed mx-auto">{t.emptySubtitle}</p>
                                 </div>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
                                     className="px-8 py-3.5 bg-[#FF6B35] text-white text-base font-black rounded-2xl flex items-center justify-center gap-2 mx-auto hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/20 hover:-translate-y-1 active:scale-95">
-                                    <ShoppingBag size={18} /> 去选餐
+                                    <ShoppingBag size={18} /> {t.goPickFood}
                                 </button>
 
                                 {/* Meal voucher CTA — empty cart push */}
                                 <div className="mt-8 mx-auto max-w-[280px]">
                                     <Link
-                                        href="/meal-vouchers"
+                                        href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
                                         onClick={onClose}
                                         className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl p-4 hover:shadow-lg transition-all relative overflow-hidden"
                                     >
@@ -709,9 +713,9 @@ export default function CartDrawer({
                                                 <Ticket size={20} />
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
-                                                <p className="text-xs font-black text-[#1A2D23]">先囤券更划算</p>
+                                                <p className="text-xs font-black text-[#1A2D23]">{t.voucherCtaTitle}</p>
                                                 <p className="text-[10px] text-[#1A2D23]/60 font-bold leading-snug">
-                                                    20 张装省 RM 20 · 30 / 60 天有效
+                                                    {t.voucherCtaSub}
                                                 </p>
                                             </div>
                                             <span className="text-xs font-black text-[#FF6B35] group-hover:translate-x-1 transition-transform">→</span>
@@ -723,12 +727,12 @@ export default function CartDrawer({
                             <>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
                                     className="flex items-center justify-end gap-1.5 w-full py-1.5 text-[#FF6B35] text-xs font-black hover:text-[#E95D31] transition-colors">
-                                    <Plus size={13} strokeWidth={2.5} /><span>继续添加别的菜</span>
+                                    <Plus size={13} strokeWidth={2.5} /><span>{t.addMore}</span>
                                 </button>
 
                                 {Object.entries(cart.reduce((acc: any, item: any) => {
-                                    const key = `${item.selectedDate || '未定'}|${item.selectedTime || 'Lunch'}`;
-                                    if (!acc[key]) acc[key] = { date: item.selectedDate || '未定', time: item.selectedTime || 'Lunch', items: [] };
+                                    const key = `${item.selectedDate || t.dateTbd}|${item.selectedTime || 'Lunch'}`;
+                                    if (!acc[key]) acc[key] = { date: item.selectedDate || t.dateTbd, time: item.selectedTime || 'Lunch', items: [] };
                                     acc[key].items.push(item);
                                     return acc;
                                 }, {})).sort().map(([key, group]: any) => {
@@ -739,9 +743,9 @@ export default function CartDrawer({
                                     
                                     let dateBadge = null;
                                     if (group.date === ymdToday) {
-                                        dateBadge = <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-green-500/20">今日配送</span>;
+                                        dateBadge = <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-green-500/20">{t.todayDelivery}</span>;
                                     } else if (group.date === ymdTom) {
-                                        dateBadge = <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-blue-500/20">明日配送</span>;
+                                        dateBadge = <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-md font-bold shrink-0 ring-1 ring-blue-500/20">{t.tomorrowDelivery}</span>;
                                     }
 
                                     return (
@@ -752,12 +756,12 @@ export default function CartDrawer({
                                                 </div>
                                                 <span className="text-sm font-black text-[#1A2D23] truncate">{group.date}</span>
                                                 <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold shrink-0">
-                                                    {group.time.includes('Lunch') ? '🌞 午餐' : '🌙 晚餐'}
+                                                    {group.time.includes('Lunch') ? t.lunchBadge : t.dinnerBadge}
                                                 </span>
                                                 {dateBadge && <div className="ml-auto flex items-center">{dateBadge}</div>}
                                             </div>
                                             {group.items.map((item: any, i: number) => (
-                                                <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} />
+                                                <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} locale={locale} />
                                             ))}
                                         </div>
                                     );
@@ -768,9 +772,9 @@ export default function CartDrawer({
                         {/* Order note */}
                         {cart.length > 0 && (
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">备注 Note (可选)</label>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.noteLabel}</label>
                                 <textarea value={orderNote} onChange={(e) => setOrderNote(e.target.value)}
-                                    placeholder="例：放 Lobby、Block A、Block B、交给 Security Guard…"
+                                    placeholder={t.notePlaceholder}
                                     rows={2} className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" />
                             </div>
                         )}
@@ -789,22 +793,22 @@ export default function CartDrawer({
                                         <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
                                         <input type="text" value={promoCode}
                                             onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
-                                            placeholder={promoLockedByVouchers ? '使用餐券中（不可叠加）' : '输入优惠码 / Promo Code'}
+                                            placeholder={promoLockedByVouchers ? t.promoPlaceholderLocked : t.promoPlaceholder}
                                             disabled={promoApplied || promoLockedByVouchers}
                                             className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : promoLockedByVouchers ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`} />
                                     </div>
                                     {promoApplied ? (
                                         <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
-                                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">取消</button>
+                                            className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">{t.cancel}</button>
                                     ) : (
                                         <button onClick={handleApplyPromo} disabled={isCheckingPromo || promoLockedByVouchers}
                                             className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo || promoLockedByVouchers ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
-                                            {isCheckingPromo ? '验证中…' : '使用'}
+                                            {isCheckingPromo ? t.checking : t.apply}
                                         </button>
                                     )}
                                 </div>
                                 {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
-                                {promoApplied && <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1"><CheckCircle size={12} /> 已减免 RM {promoDiscount.toFixed(2)}</p>}
+                                {promoApplied && <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1"><CheckCircle size={12} /> {t.promoSaved(promoDiscount.toFixed(2))}</p>}
                             </div>
 
                             {/* Meal Voucher (餐券) — only show if user has any in wallet */}
@@ -817,9 +821,9 @@ export default function CartDrawer({
                                                     <Ticket size={16} className="text-[#FF6B35]" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-black text-[#1A2D23] truncate">用餐券抵扣</p>
+                                                    <p className="text-xs font-black text-[#1A2D23] truncate">{t.voucherRedeemTitle}</p>
                                                     <p className="text-[10px] text-[#1A2D23]/50 font-bold truncate">
-                                                        共 {availableMealVouchers} 张可用 · 最多抵 {maxRedeemable} 份主餐
+                                                        {t.voucherRedeemSub(availableMealVouchers, maxRedeemable)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -847,12 +851,12 @@ export default function CartDrawer({
                                         </div>
                                         {cappedMealVouchersUsed > 0 && !vouchersLockedByPromo && (
                                             <p className="text-[10px] text-green-700 font-bold mt-2 flex items-center gap-1">
-                                                <CheckCircle size={11} /> 已抵 {cappedMealVouchersUsed} 份主餐 · 减 RM {mealVoucherDiscount.toFixed(2)}<span className="lg:hidden">（加购需现金）</span>
+                                                <CheckCircle size={11} /> {t.voucherRedeemed(cappedMealVouchersUsed, mealVoucherDiscount.toFixed(2))}<span className="lg:hidden">{t.voucherAddonCash}</span>
                                             </p>
                                         )}
                                         {vouchersLockedByPromo && (
                                             <p className="text-[10px] text-amber-600 font-bold mt-2">
-                                                ⚠️ 优惠码与餐券不可叠加；请先取消优惠码
+                                                {t.voucherPromoConflict}
                                             </p>
                                         )}
                                     </div>
@@ -864,12 +868,12 @@ export default function CartDrawer({
                                 takes over the exposure job). */}
                             {availableMealVouchers === 0 && (
                                 <Link
-                                    href="/meal-vouchers"
+                                    href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
                                     onClick={onClose}
                                     className="group flex items-center gap-1.5 px-1 text-[11px] font-bold text-[#1A2D23]/50 hover:text-[#FF6B35] transition-colors"
                                 >
                                     <Ticket size={12} className="text-[#FF6B35]/70 shrink-0" />
-                                    <span>常点的话，餐券包每餐更省 <span className="inline-block group-hover:translate-x-0.5 transition-transform">→</span></span>
+                                    <span>{t.voucherUpsell} <span className="inline-block group-hover:translate-x-0.5 transition-transform">→</span></span>
                                 </Link>
                             )}
 
@@ -877,26 +881,26 @@ export default function CartDrawer({
                             {currentUser && deliveryTier && (
                                 <div className="space-y-1.5 pb-1 border-b border-gray-100">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-gray-500">小计 {(promoApplied || cappedMealVouchersUsed > 0) && '（折后）'}</span>
+                                        <span className="text-gray-500">{t.subtotal} {(promoApplied || cappedMealVouchersUsed > 0) && t.discounted}</span>
                                         <span className="text-gray-700 font-bold">RM {subtotalAfterDiscount.toFixed(2)}</span>
                                     </div>
                                     {cappedMealVouchersUsed > 0 && (
                                         <div className="flex justify-between text-xs">
                                             <span className="text-gray-500 flex items-center gap-1">
                                                 <Ticket size={11} className="text-[#FF6B35]" />
-                                                餐券抵扣（{cappedMealVouchersUsed} 份主餐）
+                                                {t.voucherDeduct(cappedMealVouchersUsed)}
                                             </span>
                                             <span className="text-green-600 font-bold">- RM {mealVoucherDiscount.toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-xs">
                                         <span className="text-gray-500">
-                                            配送费 {deliveryTier === 'free' && <span className="text-green-600 font-bold">· 免运区</span>}
-                                            {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">· 中距离 5–7.5km</span>}
-                                            {isMultiDelivery && <span className="text-gray-400">· {deliveryGroups.length} 趟配送</span>}
+                                            {t.deliveryFee} {deliveryTier === 'free' && <span className="text-green-600 font-bold">{t.freeZone}</span>}
+                                            {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">{t.midZone}</span>}
+                                            {isMultiDelivery && <span className="text-gray-400">{t.trips(deliveryGroups.length)}</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
-                                            {deliveryFee === 0 ? '免费 🛵' : `+ RM ${deliveryFee.toFixed(2)}`}
+                                            {deliveryFee === 0 ? t.free : `+ RM ${deliveryFee.toFixed(2)}`}
                                         </span>
                                     </div>
                                     {/* Multi-day: each delivery is a separate trip charged on its own
@@ -906,17 +910,17 @@ export default function CartDrawer({
                                         <div className="px-2.5 py-1.5 bg-gray-50 border border-gray-100 rounded-md space-y-1">
                                             {deliveryBreakdown.map((d, i) => {
                                                 const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date.slice(5) : d.date;
-                                                const timeLabel = d.time === 'Dinner' ? '晚餐' : '午餐';
+                                                const timeLabel = t.mealWord(d.time);
                                                 return (
                                                     <div key={i} className="flex justify-between items-center text-[11px]">
                                                         <span className="text-gray-500">
                                                             🛵 {dateLabel} {timeLabel}
                                                             {d.shortfall > 0 && (
-                                                                <span className="text-amber-600"> · 差 RM {d.shortfall.toFixed(2)} 免运</span>
+                                                                <span className="text-amber-600">{t.shortfallInline(d.shortfall.toFixed(2))}</span>
                                                             )}
                                                         </span>
                                                         <span className={`font-bold ${d.fee === 0 ? 'text-green-600' : 'text-gray-600'}`}>
-                                                            {d.fee === 0 ? '免费' : `+ RM ${d.fee.toFixed(2)}`}
+                                                            {d.fee === 0 ? t.freeShort : `+ RM ${d.fee.toFixed(2)}`}
                                                         </span>
                                                     </div>
                                                 );
@@ -926,9 +930,9 @@ export default function CartDrawer({
                                     {!isMultiDelivery && shortfallToFreeDelivery > 0 && (
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
-                                                💡 还差 <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
-                                                {deliveryTier === 'near' && <> 即可免运 <span className="text-gray-400">（满 RM {distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM} 免运）</span></>}
-                                                {deliveryTier === 'mid' && <> 即可免运 <span className="text-gray-400">（满 RM {FREE_DELIVERY_THRESHOLD_MID_RM} 免运）</span></>}
+                                                💡 {t.stillNeed} <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
+                                                {deliveryTier === 'near' && <>{t.toFree} <span className="text-gray-400">{t.freeOver(distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM)}</span></>}
+                                                {deliveryTier === 'mid' && <>{t.toFree} <span className="text-gray-400">{t.freeOver(FREE_DELIVERY_THRESHOLD_MID_RM)}</span></>}
                                             </p>
                                         </div>
                                     )}
@@ -952,13 +956,13 @@ export default function CartDrawer({
                                     </div>
 
                                     {paymentMethod === 'qr' && (
-                                        <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} />
+                                        <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} locale={locale} />
                                     )}
 
                                     {paymentMethod === 'fpx' && (
                                         <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
-                                            <p className="text-xs text-[#FF6B35] font-bold">🔒 安全在线支付</p>
-                                            <p className="text-[11px] text-gray-500 mt-0.5">点击「确认下单」后将跳转至 Curlec 支付页面完成付款</p>
+                                            <p className="text-xs text-[#FF6B35] font-bold">{t.securePayment}</p>
+                                            <p className="text-[11px] text-gray-500 mt-0.5">{t.fpxRedirectNote}</p>
                                         </div>
                                     )}
                                 </>
@@ -968,10 +972,10 @@ export default function CartDrawer({
                                 <div className="bg-green-50 border-2 border-green-200 rounded-2xl px-4 py-3.5 animate-in fade-in duration-300">
                                     <p className="text-sm font-black text-green-800 flex items-center gap-2">
                                         <CheckCircle size={18} />
-                                        餐券已抵扣全部费用
+                                        {t.voucherCovered}
                                     </p>
                                     <p className="text-[11px] text-green-700 font-bold mt-1 leading-relaxed">
-                                        将使用 {cappedMealVouchersUsed} 张餐券，无需额外付款。点「确认下单」即可。
+                                        {t.voucherCoveredSub(cappedMealVouchersUsed)}
                                     </p>
                                 </div>
                             )}
@@ -991,21 +995,21 @@ export default function CartDrawer({
                                     弃单头号原因，手机+地址反正配送必须要。 */}
                                 <button onClick={handleGuestCheckout} disabled={guestLoading}
                                     className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#2A3D33] transition-colors disabled:opacity-60">
-                                    ⚡ {guestLoading ? '进入访客模式…' : '访客快速下单（免注册）'}
+                                    ⚡ {guestLoading ? t.guestEntering : t.guestCheckout}
                                 </button>
                                 <button onClick={onAuthOpen} className="w-full py-2 text-[#1A2D23]/60 hover:text-[#1A2D23] rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-colors">
-                                    已有账号？登录可查订单 / 用餐券 →
+                                    {t.haveAccount}
                                 </button>
                             </div>
                         )}
                         {currentUser && (!userProfile?.phone || !userProfile?.address) && (
                             <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
-                                <AlertCircle size={14} /> 请先补充手机号和地址
+                                <AlertCircle size={14} /> {t.fillPhoneAddress}
                             </button>
                         )}
                         {currentUser && userProfile?.address && !deliveryTier && (
                             <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
-                                <AlertCircle size={14} /> 请进入个人资料确认配送地址（验证配送范围）
+                                <AlertCircle size={14} /> {t.confirmAddress}
                             </button>
                         )}
                         <div className="flex justify-between items-baseline">
@@ -1023,10 +1027,10 @@ export default function CartDrawer({
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                 : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                             <CheckCircle size={20} />
-                            {submitting ? '提交中...'
-                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && !paymentMethod) ? '请先选择付款方式 👆'
-                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && paymentMethod === 'qr' && !receiptUploaded) ? '请先上传转账截图 👆'
-                                : '确认下单 →'}
+                            {submitting ? t.submitting
+                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && !paymentMethod) ? t.choosePayment
+                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && paymentMethod === 'qr' && !receiptUploaded) ? t.uploadFirst
+                                : t.confirmOrder}
                         </button>
                     </div>
                 )}

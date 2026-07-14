@@ -3,15 +3,20 @@
 import React from 'react';
 import Image from 'next/image';
 import { Trash2 } from 'lucide-react';
+import type { Locale } from '@/lib/locale';
+import { CART_DICT } from './dict';
 
 interface CartItemCardProps {
     item: any;
     onRemove: (id: string) => void;
     onEdit?: (item: any) => void;
     animationDelay?: number;
+    locale?: Locale;
 }
 
-export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 0 }: CartItemCardProps) {
+export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 0, locale = 'zh' }: CartItemCardProps) {
+    const t = CART_DICT[locale].itemCard;
+    const displayName = locale === 'en' ? (item.dish.nameEn || item.dish.name) : item.dish.name;
     return (
         <div
             className="bg-white rounded-[24px] p-4 border border-[#E3EADA]/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group"
@@ -32,7 +37,7 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                 <div className="flex-1 min-w-0 pr-8">
                     <div className="flex flex-col">
                         <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
-                            {item.dish.name}
+                            {displayName}
                             {item.dishQty > 1 && (
                                 <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-black inline-block relative -top-0.5">
                                     x{item.dishQty}
@@ -41,8 +46,8 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                         </h4>
                         {(item.addOns?.length > 0 || item.note) && (
                             <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex flex-wrap gap-x-2">
-                                {item.addOns?.length > 0 && <span>加购 {item.addOns.reduce((sum: number, a: any) => sum + a.quantity, 0)} 项</span>}
-                                {item.note && <span>📝 备注</span>}
+                                {item.addOns?.length > 0 && <span>{t.addOnsCount(item.addOns.reduce((sum: number, a: any) => sum + a.quantity, 0))}</span>}
+                                {item.note && <span>{t.noteBadge}</span>}
                             </p>
                         )}
                     </div>

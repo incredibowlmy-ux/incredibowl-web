@@ -372,6 +372,7 @@ export default function EnglishHome() {
                     onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
                     onClearCart={clearCart}
                     onEditItem={handleEditCartItem}
+                    locale="en"
                 />
             </ErrorBoundary>
             )}
