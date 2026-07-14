@@ -85,13 +85,13 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                     <div className="flex items-center gap-2 md:gap-3">
                         {currentUser ? (
                             <>
-                                <a href="/member" aria-label="Open member centre" className="md:hidden">
+                                <a href="/en/member" aria-label="Open member centre" className="md:hidden">
                                     <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
                                         {(currentUser.displayName || 'U')[0].toUpperCase()}
                                     </div>
                                 </a>
                                 <a
-                                    href="/member"
+                                    href="/en/member"
                                     title="Member centre · orders & vouchers"
                                     aria-label="Open member centre"
                                     className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"

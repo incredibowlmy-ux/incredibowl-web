@@ -11,9 +11,9 @@ interface LanguageSwitcherProps {
 
 // Pages that exist in BOTH /zh and /en variants. Toggle preserves the
 // current page for these; for any other path (admin, blog, terms, refund,
-// privacy, meal-vouchers) the switcher falls back to the locale homepage so
+// privacy) the switcher falls back to the locale homepage so
 // we don't ship users into a 404.
-const BILINGUAL_ROUTES = new Set(['', '/order', '/member', '/meal-vouchers']);
+const BILINGUAL_ROUTES = new Set(['', '/order', '/member', '/meal-vouchers', '/catering']);
 
 function computeTargets(pathname: string | null): { zhHref: string; enHref: string } {
     // Strip /en prefix to get the "shared" path; '' === root.
