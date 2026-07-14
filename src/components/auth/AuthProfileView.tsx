@@ -5,9 +5,11 @@ import { LogOut, User as UserIcon, Phone, MapPin, Save, ShoppingBag, CheckCircle
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
-import { tierFromDistance, tierFeeHintZh, tierLabelZh, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
+import { tierFromDistance, tierFeeHintZh, tierLabelZh, tierFeeHintEn, tierLabelEn, FREE_DELIVERY_RADIUS_KM, PRICING_V2_CUTOFF_MS, type DeliveryZone, type DeliveryTier } from '@/lib/deliveryUtils';
 import { type SavedAddress } from '@/lib/auth';
 import AddressBook from './AddressBook';
+import type { Locale } from '@/lib/locale';
+import { AUTH_DICT } from './dict';
 
 interface GeocodeResult {
     lat: number;
@@ -30,6 +32,7 @@ interface AuthProfileViewProps {
     onReloadProfile: () => Promise<void>;
     onLogout: () => void;
     onClose: () => void;
+    locale?: Locale;
 }
 
 export default function AuthProfileView({
@@ -37,7 +40,12 @@ export default function AuthProfileView({
     phone, setPhone, address, setAddress,
     editingProfile, setEditingProfile,
     loading, message, onUpdateProfile, onReloadProfile, onLogout, onClose,
+    locale = 'zh',
 }: AuthProfileViewProps) {
+    const t = AUTH_DICT[locale].profile;
+    const isEn = locale === 'en';
+    const tierLabel = isEn ? tierLabelEn : tierLabelZh;
+    const tierFeeHint = isEn ? tierFeeHintEn : tierFeeHintZh;
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
@@ -59,12 +67,12 @@ export default function AuthProfileView({
         try {
             const { linkGuestToGoogle } = await import('@/lib/auth');
             await linkGuestToGoogle();
-            alert('✅ 已绑定 Google！订单记录已保存，下次可一键回购');
+            alert(t.linkSuccess);
             await onReloadProfile();
         } catch (e: any) {
             alert(e?.code === 'auth/credential-already-in-use'
-                ? '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理'
-                : '绑定未完成，可稍后再试');
+                ? t.linkInUse
+                : t.linkFailed);
         }
         setLinkingGoogle(false);
     };
@@ -103,7 +111,7 @@ export default function AuthProfileView({
             return;
         }
         if (!address || address.trim().length < 10) {
-            setGeocodeError('请填写完整地址（至少 10 个字符）');
+            setGeocodeError(t.addressMin);
             return;
         }
         setGeocoding(true);
@@ -118,7 +126,7 @@ export default function AuthProfileView({
             });
             const data = await res.json();
             if (!res.ok) {
-                setGeocodeError(data.error || '地址验证失败');
+                setGeocodeError(data.error || t.geocodeFailed);
                 return;
             }
             setGeocodeResult(data);
@@ -127,7 +135,7 @@ export default function AuthProfileView({
             // 回到购物车还有完整费用明细）
             onUpdateProfile(data, addressLabel);
         } catch (e) {
-            setGeocodeError(e instanceof Error ? e.message : '网络错误，请重试');
+            setGeocodeError(e instanceof Error ? e.message : t.networkError);
         } finally {
             // finally 保证失败路径也复位（旧代码 early-return 会把按钮卡在「验证中」）
             setGeocoding(false);
@@ -145,23 +153,23 @@ export default function AuthProfileView({
                         <UserIcon size={28} className="text-[#1A2D23]" />
                     )}
                 </div>
-                <h3 className="font-bold text-[#1A2D23] text-lg">{currentUser.displayName || '会员'}</h3>
+                <h3 className="font-bold text-[#1A2D23] text-lg">{currentUser.displayName || t.memberFallback}</h3>
                 <p className="text-xs text-gray-500">{currentUser.email}</p>
             </div>
 
             {/* 访客账号提示 + 绑定 Google 升级入口（仅匿名账号可见） */}
             {currentUser.isAnonymous && (
                 <div className="bg-[#FFF7ED] border border-[#FF6B35]/30 rounded-2xl p-4 space-y-2">
-                    <p className="text-xs font-bold text-[#1A2D23]">👋 你正在使用访客账号</p>
+                    <p className="text-xs font-bold text-[#1A2D23]">{t.guestBanner}</p>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
-                        换手机或清浏览器数据后订单记录将无法找回；绑定 Google 后永久保留，还能购买餐券预付包。
+                        {t.guestBannerDesc}
                     </p>
                     <button
                         onClick={handleLinkGoogle}
                         disabled={linkingGoogle}
                         className="w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors disabled:opacity-50"
                     >
-                        {linkingGoogle ? '绑定中…' : '🔗 绑定 Google 保存订单记录'}
+                        {linkingGoogle ? t.linking : t.linkCta}
                     </button>
                 </div>
             )}
@@ -179,16 +187,16 @@ export default function AuthProfileView({
             ) : (
                 <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 text-white">
                     <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">订单概要</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{t.orderSummary}</span>
                     </div>
                     <div className="flex gap-4 mt-3 pt-3 border-t border-white/10">
                         <div>
                             <p className="text-lg font-black">{profileData?.totalOrders || 0}</p>
-                            <p className="text-[9px] opacity-50 uppercase">总订单</p>
+                            <p className="text-[9px] opacity-50 uppercase">{t.totalOrders}</p>
                         </div>
                         <div>
                             <p className="text-lg font-black">RM {(profileData?.totalSpent || 0).toFixed(0)}</p>
-                            <p className="text-[9px] opacity-50 uppercase">累计消费</p>
+                            <p className="text-[9px] opacity-50 uppercase">{t.totalSpent}</p>
                         </div>
                     </div>
                 </div>
@@ -198,29 +206,29 @@ export default function AuthProfileView({
             <div className="space-y-3">
                 <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                        <Phone size={10} /> 手机号码 *
+                        <Phone size={10} /> {t.phoneLabel}
                     </label>
                     {editingProfile ? (
-                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="例: 010-337 0197"
+                        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.phonePlaceholder}
                             className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors" required />
                     ) : (
                         <p className="mt-1 px-4 py-3 bg-white rounded-xl text-sm border border-gray-100">
-                            {profileData?.phone || <span className="text-red-400 font-bold">未填写（必填）</span>}
+                            {profileData?.phone || <span className="text-red-400 font-bold">{t.notFilled}</span>}
                         </p>
                     )}
                 </div>
                 <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                        <MapPin size={10} /> 配送地址 *
+                        <MapPin size={10} /> {t.addressLabel}
                     </label>
                     {editingProfile ? (
                         <>
                             <textarea value={address} onChange={(e) => setAddress(e.target.value)}
-                                placeholder="例: Pearl Point, Block B-12-3, Jalan 1/116B, OKR, 58000 KL"
+                                placeholder={t.addressPlaceholder}
                                 rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
                             {!currentUser.isAnonymous && (
                                 <input type="text" value={addressLabel} onChange={(e) => setAddressLabel(e.target.value)}
-                                    placeholder="备注（选填）如：家 / 公司" maxLength={12}
+                                    placeholder={t.labelPlaceholder} maxLength={12}
                                     className="w-full mt-2 px-4 py-2 bg-white border-2 border-[#E3EADA] rounded-xl text-xs outline-none focus:border-[#FF6B35] transition-colors" />
                             )}
 
@@ -249,26 +257,26 @@ export default function AuthProfileView({
                                     <div className={`mt-2 px-3 py-2.5 rounded-lg text-xs border ${tierStyles[tier]}`}>
                                         <p className="font-black flex items-center gap-1.5">
                                             <CheckCircle size={12} />
-                                            {tierLabelZh(tier)} · 距 Pearl Point {geocodeResult.distanceKm}km
+                                            {t.tierLine(tierLabel(tier), geocodeResult.distanceKm)}
                                         </p>
                                         <p className="text-[10px] mt-1 opacity-80 leading-snug">
-                                            {tier === 'free' ? '✅ 你的订单全部免运' : tierFeeHintZh(tier, geocodeResult.distanceKm)}
+                                            {tier === 'free' ? t.freeAllOrders : tierFeeHint(tier, geocodeResult.distanceKm)}
                                         </p>
                                         {geocodeResult.partialMatch && tier !== 'free' && (
                                             <p className="text-[10px] mt-1 opacity-70 italic">
-                                                ⚠️ Google 没找到完全匹配，按 {geocodeResult.distanceKm}km 计算运费。如有疑问 WhatsApp 联系碗妈
+                                                {t.partialMatchNote(geocodeResult.distanceKm)}
                                             </p>
                                         )}
                                     </div>
                                 );
                             })()}
                             {addressChangedSinceVerify && (
-                                <p className="mt-1 text-[10px] text-amber-600 font-bold">⚠️ 地址已修改，保存时会自动重新验证</p>
+                                <p className="mt-1 text-[10px] text-amber-600 font-bold">{t.addressChangedNote}</p>
                             )}
                         </>
                     ) : (
                         <p className="mt-1 px-4 py-3 bg-white rounded-xl text-sm border border-gray-100">
-                            {profileData?.address || <span className="text-red-400 font-bold">未填写（必填）</span>}
+                            {profileData?.address || <span className="text-red-400 font-bold">{t.notFilled}</span>}
                             {(() => {
                                 // Prefer addressDistanceKm (precise tier); fall back to legacy
                                 // binary deliveryZone for users who predate the geocoding upgrade.
@@ -297,7 +305,7 @@ export default function AuthProfileView({
                                 const distSuffix = typeof km === 'number' ? ` · ${km}km` : '';
                                 return (
                                     <span className={`ml-2 inline-block px-2 py-0.5 rounded text-[10px] font-black ${badgeStyles[tier]}`}>
-                                        {tierLabelZh(tier)}{distSuffix}
+                                        {tierLabel(tier)}{distSuffix}
                                     </span>
                                 );
                             })()}
@@ -312,6 +320,7 @@ export default function AuthProfileView({
                         profileData={profileData}
                         onReload={onReloadProfile}
                         onAddNew={handleAddNew}
+                        locale={locale}
                     />
                 )}
 
@@ -324,7 +333,7 @@ export default function AuthProfileView({
                         <button onClick={handleVerifyAndSave} disabled={loading || geocoding || !phone.trim() || !address.trim()}
                             className="w-full py-3 bg-[#FF6B35] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF6B35]/20">
                             {geocoding ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                            {geocoding ? '验证地址中…' : loading ? '保存中...' : needsReVerify ? '📍 验证地址并保存' : '保存资料'}
+                            {geocoding ? t.verifyingAddress : loading ? t.saving : needsReVerify ? t.verifyAndSave : t.saveProfile}
                         </button>
                         {/* 资料已完整才给取消（新账号缺手机/地址时必须先填完，不能退出编辑） */}
                         {profileData?.phone && profileData?.address && (
@@ -334,27 +343,27 @@ export default function AuthProfileView({
                                 setEditingProfile(false);
                             }} disabled={loading || geocoding}
                                 className="w-full py-2 text-gray-400 text-xs font-bold hover:text-gray-600 transition-colors disabled:opacity-50">
-                                取消，保持原资料
+                                {t.cancelKeep}
                             </button>
                         )}
                     </>
                 ) : (
                     <button onClick={() => setEditingProfile(true)}
                         className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#2A3D33] transition-all">
-                        ✏️ 编辑资料
+                        {t.editProfile}
                     </button>
                 )}
                 <button onClick={onLogout} disabled={loading}
                     className="w-full py-3 bg-gray-100 text-gray-500 rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-gray-200 transition-all disabled:opacity-50 text-sm">
-                    <LogOut size={14} /> 登出
+                    <LogOut size={14} /> {t.logout}
                 </button>
             </div>
 
             {message && <p className="text-center text-sm font-bold text-[#FF6B35]">{message}</p>}
 
-            <a href="/member" onClick={onClose}
+            <a href={isEn ? '/en/member' : '/member'} onClick={onClose}
                 className="w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:shadow-lg hover:shadow-[#FF6B35]/20 transition-all">
-                <ShoppingBag size={16} /> 查看订单 & 会员中心 →
+                <ShoppingBag size={16} /> {t.memberCentre}
             </a>
         </div>
     );

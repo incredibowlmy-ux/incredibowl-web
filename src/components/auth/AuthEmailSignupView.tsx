@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Eye, EyeOff, Phone, MapPin } from 'lucide-react';
+import type { Locale } from '@/lib/locale';
+import { AUTH_DICT } from './dict';
 
 interface AuthEmailSignupViewProps {
     name: string; setName: (v: string) => void;
@@ -15,6 +17,7 @@ interface AuthEmailSignupViewProps {
     onSubmit: (e: React.FormEvent) => void;
     onLogin: () => void;
     onBack: () => void;
+    locale?: Locale;
 }
 
 export default function AuthEmailSignupView({
@@ -22,35 +25,37 @@ export default function AuthEmailSignupView({
     phone, setPhone, address, setAddress,
     showPassword, setShowPassword,
     loading, message, onSubmit, onLogin, onBack,
+    locale = 'zh',
 }: AuthEmailSignupViewProps) {
+    const t = AUTH_DICT[locale].emailSignup;
     return (
         <div className="p-6 space-y-4">
-            <h3 className="font-bold text-[#1A2D23] text-lg text-center">注册新帐号</h3>
+            <h3 className="font-bold text-[#1A2D23] text-lg text-center">{t.title}</h3>
             <form onSubmit={onSubmit} className="space-y-3">
                 <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">名字 Name *</label>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="你的名字"
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.nameLabel}</label>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder}
                         className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35]" required />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><Phone size={10} /> 手机号码 Phone *</label>
-                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="例: 010-337 0197"
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><Phone size={10} /> {t.phoneLabel}</label>
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.phonePlaceholder}
                         className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35]" required />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><MapPin size={10} /> 配送地址 Address *</label>
-                    <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="例: Pearl Point, Block B-12-3"
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1"><MapPin size={10} /> {t.addressLabel}</label>
+                    <textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder={t.addressPlaceholder}
                         rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] resize-none" required />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">邮箱 Email *</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.emailLabel}</label>
                     <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com"
                         className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35]" required />
                 </div>
                 <div>
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">密码 Password *</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.passwordLabel}</label>
                     <div className="relative mt-1">
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="至少6位"
+                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.passwordPlaceholder}
                             className="w-full px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] pr-12" required minLength={6} />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1A2D23]">
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -59,13 +64,13 @@ export default function AuthEmailSignupView({
                 </div>
                 <button type="submit" disabled={loading}
                     className="w-full py-3 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] disabled:opacity-50 shadow-lg shadow-[#FF6B35]/20">
-                    {loading ? '注册中...' : '注册'}
+                    {loading ? t.signingUp : t.signup}
                 </button>
             </form>
             <div className="text-center space-y-1">
-                <button onClick={onLogin} className="text-xs font-bold text-[#FF6B35] hover:underline">已有帐号？直接登录</button>
+                <button onClick={onLogin} className="text-xs font-bold text-[#FF6B35] hover:underline">{t.haveAccount}</button>
                 <br />
-                <button onClick={onBack} className="text-xs font-bold text-gray-400 hover:text-[#1A2D23]">← 返回</button>
+                <button onClick={onBack} className="text-xs font-bold text-gray-400 hover:text-[#1A2D23]">{t.back}</button>
             </div>
             {message && <p className="text-center text-sm font-bold text-[#FF6B35]">{message}</p>}
         </div>

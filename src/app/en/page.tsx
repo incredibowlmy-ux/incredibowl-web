@@ -380,6 +380,7 @@ export default function EnglishHome() {
                 <AuthModal
                     isOpen={isAuthOpen}
                     onClose={() => setIsAuthOpen(false)}
+                    locale="en"
                     onProfileComplete={() => {
                         // Profile complete → close modal; send back to checkout if cart has items
                         setIsAuthOpen(false);
