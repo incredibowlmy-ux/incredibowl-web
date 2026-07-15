@@ -66,7 +66,7 @@ export default function CartDrawer({
             setGuestLoading(false);
         }
     };
-    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] } | null>(null);
+    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[]; voucherUsed?: boolean } | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -621,14 +621,16 @@ export default function CartDrawer({
      *  screen until the customer dismisses it — no more 4 s auto-close that
      *  cut off reading / the WhatsApp confirmation tap. */
     const showOrderSuccess = (id: string, trackInfo?: { token: string; date: string; time: string }[]) => {
-        setOrderSuccess({ id, items: [...cart], total: cartTotal, trackInfo });
+        // Capture voucher usage BEFORE the reset below zeroes mealVouchersUsed —
+        // CartSuccess uses it to show the balance recap even at a depleted wallet.
+        setOrderSuccess({ id, items: [...cart], total: cartTotal, trackInfo, voucherUsed: mealVouchersUsed > 0 });
         onClearCart(); setReceiptUploaded(false); setReceiptUrl('');
         setOrderNote(''); setPromoCode(''); setPromoApplied(false);
         setPromoDiscount(0); setMealVouchersUsed(0);
     };
 
     if (orderSuccess) {
-        return <CartSuccess orderSuccess={orderSuccess} userProfile={userProfile} locale={locale} onDone={() => { setOrderSuccess(null); onClose(); }} />;
+        return <CartSuccess orderSuccess={orderSuccess} userProfile={userProfile} locale={locale} currentUser={currentUser} voucherUsed={orderSuccess.voucherUsed} onDone={() => { setOrderSuccess(null); onClose(); }} />;
     }
 
     return (

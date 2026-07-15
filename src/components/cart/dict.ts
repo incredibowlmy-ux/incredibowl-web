@@ -113,6 +113,15 @@ interface CartSuccessDict {
     waButton: string;
     trackBtn: (multi: boolean, date: string, meal: string) => string;
     done: string;
+    // Meal-voucher balance recap (shown post-order for voucher customers)
+    voucherBalanceLabel: string;
+    voucherUnit: string;
+    voucherExpiryWarn: (days: number) => string;
+    voucherDepleted: string;
+    voucherRenewCta: string;
+    voucherRenewSub: string;
+    // "View my orders" entry (feedback 2A)
+    viewMyOrders: string;
 }
 
 interface QRDict {
@@ -231,7 +240,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waTrack: (multi, date, meal, url) => `📍 跟踪订单${multi ? `（${date} ${meal}）` : ''}：${url}`,
             dateTbdWa: '日期未定',
             mealWord: (time) => (time?.includes('Lunch') ? '午餐' : '晚餐'),
-            title: '订单已提交！🍛',
+            title: '订单已提交！',
             orderIdLabel: (isGroup) => (isGroup ? '订单群组编号：' : '订单编号：'),
             groupSplitNote: '你的订单已按送达日期自动拆分方便碗妈备餐',
             deliveryPlan: '📅 配送安排：',
@@ -246,6 +255,13 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waButton: '📲 WhatsApp 接收订单确认',
             trackBtn: (multi, date, meal) => `📍 跟踪订单${multi ? `（${date} ${meal}）` : ''}`,
             done: '完成，返回首页',
+            voucherBalanceLabel: '我的餐券余额',
+            voucherUnit: '张',
+            voucherExpiryWarn: (days) => `最近一张 ${days} 天后到期，记得用哦`,
+            voucherDepleted: '餐券已用完 · 续购每餐更省',
+            voucherRenewCta: '续购餐券 →',
+            voucherRenewSub: '囤券更划算 · 20 张装省 RM 20',
+            viewMyOrders: '📋 查看我的订单',
         },
         qr: {
             merchantLabel: '✅ 商户：',
@@ -354,7 +370,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waTrack: (multi, date, meal, url) => `📍 Track order${multi ? ` (${date} ${meal})` : ''}: ${url}`,
             dateTbdWa: 'date TBD',
             mealWord: (time) => (time?.includes('Lunch') ? 'Lunch' : 'Dinner'),
-            title: 'Order submitted! 🍛',
+            title: 'Order submitted!',
             orderIdLabel: (isGroup) => (isGroup ? 'Order group ID: ' : 'Order ID: '),
             groupSplitNote: 'Your order was auto-split by delivery date so BowlMama can prep each day',
             deliveryPlan: '📅 Delivery: ',
@@ -369,6 +385,13 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waButton: '📲 Get confirmation on WhatsApp',
             trackBtn: (multi, date, meal) => `📍 Track order${multi ? ` (${date} ${meal})` : ''}`,
             done: 'Done, back to home',
+            voucherBalanceLabel: 'My voucher balance',
+            voucherUnit: 'left',
+            voucherExpiryWarn: (days) => `Next one expires in ${days} day(s) — don't forget to use it`,
+            voucherDepleted: 'Vouchers used up · top up to save on every meal',
+            voucherRenewCta: 'Top up vouchers →',
+            voucherRenewSub: 'Stock up & save · 20-pack saves RM 20',
+            viewMyOrders: '📋 View my orders',
         },
         qr: {
             merchantLabel: '✅ Merchant: ',

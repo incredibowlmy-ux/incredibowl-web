@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { CheckCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CheckCircle, Ticket } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 import { CART_DICT } from './dict';
 
@@ -12,6 +12,18 @@ interface CartSuccessProps {
     userProfile: any;
     onDone: () => void;
     locale?: Locale;
+    // Firebase auth user (may be anonymous / null for guests). Used to
+    // re-fetch the *post-order* voucher balance — the drawer's cached count
+    // is stale once this order has consumed vouchers.
+    currentUser?: any;
+    // Whether this order redeemed any meal vouchers — lets us surface the
+    // balance card even when the customer just depleted their wallet to 0.
+    voucherUsed?: boolean;
+}
+
+interface VoucherBalance {
+    availableCount: number;
+    soonestDaysLeft: number | null;
 }
 
 const WHATSAPP_NUMBER = '60165119118';
@@ -20,9 +32,49 @@ const WHATSAPP_NUMBER = '60165119118';
 // CAPI event IDs returned by /api/submit-order and /api/confirm-order
 // — needed to deduplicate browser events against the server-side
 // Conversions API events fired from those routes.
-export default function CartSuccess({ orderSuccess, userProfile, onDone, locale = 'zh' }: CartSuccessProps) {
+export default function CartSuccess({ orderSuccess, userProfile, onDone, locale = 'zh', currentUser, voucherUsed }: CartSuccessProps) {
     const t = CART_DICT[locale].success;
     const { id, items, total, trackInfo } = orderSuccess;
+
+    // Logged-in, non-anonymous customer → they own an account with orders +
+    // (possibly) a voucher wallet. Guests (anonymous / null) get neither the
+    // balance recap nor the "my orders" link (member page needs a real login).
+    const isMember = !!currentUser && !currentUser.isAnonymous;
+    const memberHref = locale === 'en' ? '/en/member' : '/member';
+    const voucherHref = locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers';
+
+    // Post-order voucher balance — fetched fresh here (the drawer's cached
+    // count predates this order's redemption, so it would over-report).
+    const [balance, setBalance] = useState<VoucherBalance | null>(null);
+    useEffect(() => {
+        if (!isMember) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const token = await currentUser.getIdToken();
+                const res = await fetch('/api/my-meal-vouchers', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (cancelled) return;
+                setBalance({
+                    availableCount: data.availableCount || 0,
+                    soonestDaysLeft: data.soonestDaysLeft ?? null,
+                });
+            } catch {
+                /* best-effort: a failed balance fetch just hides the card */
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isMember, currentUser]);
+
+    // Show the wallet recap only to actual voucher customers: those who still
+    // hold vouchers, or who just spent their last ones on this order. A
+    // never-voucher customer sees nothing (no unsolicited upsell here).
+    const showVoucherCard = !!balance && (balance.availableCount > 0 || !!voucherUsed);
+    const lowBalance = !!balance && balance.availableCount <= 2; // renew nudge threshold
     const isGroup = id.startsWith('GRP');
     const displayId = isGroup ? id : id.slice(-6).toUpperCase();
     // 渲染层菜名：EN 显示 nameEn 兜底 name；订单 payload 早已提交，不受影响。
@@ -80,6 +132,39 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                         <p className="text-sm"><span className="font-bold">{t.addressLabel}</span>{userProfile?.address}</p>
                         <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
                     </div>
+
+                    {/* Voucher balance recap — the post-order moment is the prime
+                        "should I renew?" trigger for voucher customers. */}
+                    {showVoucherCard && balance && (
+                        <div className="bg-gradient-to-br from-[#FFF3E0] to-[#FFE9D5] rounded-2xl p-4 border border-[#FFD6B0]/70 text-left">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-bold text-[#1A2D23] flex items-center gap-1.5">
+                                    <Ticket size={16} className="text-[#FF6B35]" />
+                                    {t.voucherBalanceLabel}
+                                </span>
+                                <span className="text-2xl font-black text-[#FF6B35] leading-none">
+                                    {balance.availableCount}
+                                    <span className="text-xs font-bold text-[#1A2D23]/50 ml-1">{t.voucherUnit}</span>
+                                </span>
+                            </div>
+                            {balance.availableCount > 0 && balance.soonestDaysLeft !== null && balance.soonestDaysLeft <= 7 && (
+                                <p className="text-[11px] text-red-500 font-bold mt-2">{t.voucherExpiryWarn(balance.soonestDaysLeft)}</p>
+                            )}
+                            {balance.availableCount === 0 && (
+                                <p className="text-[11px] text-[#E65100] font-bold mt-2">{t.voucherDepleted}</p>
+                            )}
+                            {lowBalance && (
+                                <a
+                                    href={voucherHref}
+                                    className="mt-3 flex items-center justify-between w-full px-3 py-2 bg-white border border-[#FF6B35]/40 rounded-xl hover:bg-[#FF6B35]/5 transition-colors"
+                                >
+                                    <span className="text-[11px] text-[#1A2D23]/60 font-bold">{t.voucherRenewSub}</span>
+                                    <span className="text-xs text-[#FF6B35] font-black whitespace-nowrap ml-2">{t.voucherRenewCta}</span>
+                                </a>
+                            )}
+                        </div>
+                    )}
+
                     <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.verifying}</p>
                     <p className="text-xs text-gray-400">{t.verifiedNote}</p>
 
@@ -109,6 +194,16 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                                 </a>
                             ))}
                         </div>
+                    )}
+                    {/* Feedback 2A: point customers to the (already-existing)
+                        order history in the member centre. */}
+                    {isMember && (
+                        <a
+                            href={memberHref}
+                            className="block w-full py-3 bg-white border-2 border-[#E3EADA] text-[#1A2D23] rounded-2xl text-sm font-black hover:border-[#FF6B35]/40 hover:text-[#FF6B35] transition-colors"
+                        >
+                            {t.viewMyOrders}
+                        </a>
                     )}
                     <button
                         onClick={onDone}
