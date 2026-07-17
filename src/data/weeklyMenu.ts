@@ -225,8 +225,7 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Rich Japanese curry simmered until silky, served with pan-seared chicken breast over hot rice — warm and comforting in every bite."
     },
     {
-        // 新菜 2026-07-10 入系统，2026-07-13（周二）上线主打。暂别 2026-07-20。
-        // image 暂用 emoji 占位（实拍图未到），图好后换 /honey_lemon_chicken_chop.webp。
+        // 新菜 2026-07-10 入系统，2026-07-13（周二）上线主打。暂别 2026-07-20；2026-07-18 补主图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 26,
         unavailableNote: "蜜糖鸡扒暂别，敬请期待回归",
@@ -234,7 +233,7 @@ const DISH_CATALOG: DishData[] = [
         name: "柠檬蜜糖煎鸡扒",
         nameEn: "Honey Lemon Glazed Chicken Chop",
         price: 18.50,
-        image: "🍋",
+        image: "/honey_lemon_chicken_chop.webp",
         tags: ["柠檬蜜糖", "香煎鸡扒", "酸甜开胃", "外脆里嫩"],
         tagsEn: ["Honey-lemon glaze", "Pan-seared chicken chop", "Sweet & zesty", "Crisp outside, juicy inside"],
         desc: "香煎鸡扒煎到金黄焦香，淋上柠檬蜜糖酱——酸甜清新解腻，开胃又下饭。",
