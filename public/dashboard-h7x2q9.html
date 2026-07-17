@@ -2731,27 +2731,28 @@
             //   所以保持 ID 稳定，只同步 day/active/voucherTopUp）。改 day 时同步更新本注释。
             // ─── 常驻 Daily ──────────────────────────────────────────
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
-            { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Daily', active: true },  // 2026-07-13 webapp 常驻限周一~四（availableWeekdays，周五停供）
-            { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 2026-07-13 webapp 从 Mon 改常驻限周一/四（一周两天走 availableWeekdays）
+            { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 18.50, costPrice: 0, day: 'Daily', active: true },  // 2026-07-20 webapp 常驻限周二~四（availableWeekdays，周一/五停供）
+            { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 🆕 2026-07-20 新菜（webapp id 27）常驻限周二/五（availableWeekdays）；网站 emoji 占位图待实拍
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // webapp retired 2026-06-27；dashboard 留 active 给 WA 加单
             // ─── 周一 Mon ────────────────────────────────────────────
             { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 1 周一 Hero
+            { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-07-20 从 Wed 改周一第二道（webapp id 2）
             // ─── 周二 Tue ────────────────────────────────────────────
-            { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // 🆕 2026-07-13 周二 Hero（webapp id 26，网站 emoji 占位图待实拍）
-            { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // 周二第二道（webapp id 25，网站 emoji 占位图待实拍）
+            { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Tue', active: true },  // 2026-07-20 webapp 从常驻限周一/四改回周二特餐（webapp id 4）
             // ─── 周三 Wed ────────────────────────────────────────────
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Wed', active: true, voucherTopUp: 4 },  // 周三 Hero（webapp id 21）
-            { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Wed', active: true },  // webapp id 2
+            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-07-20 从 Fri 改周三 Hero（webapp id 23）
+            { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-07-20 回归周三第二道（webapp id 3，暂别一周后回归）
             // ─── 周四 Thu ────────────────────────────────────────────
-            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // 2026-07-13 webapp 从 Fri 改为 Thu Hero（webapp id 14）
+            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // 周四 Hero（webapp id 14）
+            { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // 2026-07-20 从 Fri 改周四第二道（webapp id 12）
             // ─── 周五 Fri ────────────────────────────────────────────
-            { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 2026-07-13 webapp 从 Thu 改为 Fri Hero（webapp id 12）
-            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp id 23
-            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // 2026-07-13 回归周五第三道（webapp id 20；⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
+            { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 2026-07-20 从 Tue 改周五（webapp id 25，网站 emoji 占位图待实拍）
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
-            { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Wed', active: true, voucherTopUp: 4 },  // webapp 暂停一周 2026-07-20（老板 07-17 指示）；dashboard 留 active 给 WA 加单
+            { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // webapp 暂别 2026-07-20；dashboard 留 active 给 WA 加单
+            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-07-20；dashboard 留 active 给 WA 加单（⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -2779,9 +2780,12 @@
             { id: 'greek-protein-bomb-combo',    name: '蛋白质核弹三件套',     price: 15.90, category: '套餐组合' },
             { id: 'pork-potato-duo-combo',       name: '薯肉双拼满足套',       price: 13.40, category: '套餐组合' },
             { id: 'scallion-soup-combo',         name: '爆量满足三件套',       price: 12.90, category: '套餐组合' },
+            { id: 'shaoxing-pork-combo',         name: '酒香干饭套',           price: 15.90, category: '套餐组合' },  // 新 2026-07-16（绍兴酒蒸花肉）
+            { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 15.90, category: '套餐组合' },  // 新 2026-07-16（豆酱焖花肉）
+            { id: 'curry-trio-combo',            name: '咖喱控三件套',         price: 7.90,  category: '套餐组合' },  // 新 2026-07-16（日式咖喱饭）
 
             // 加菜 / 配菜
-            { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 4.90,  category: '加菜' },
+            { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 7.90,  category: '加菜' },  // 2026-07-16 老板调价 4.90 → 7.90
             { id: 'nori',                        name: '海苔',                                  price: 2.00,  category: '加菜' },
             { id: 'soy-sauce',                   name: '秘制日本酱油',                          price: 1.50,  category: '加菜' },
             { id: 'extra-prawns',                name: '鲜甜大虾仁 (4只)',                      price: 7.00,  category: '加菜' },
@@ -2804,6 +2808,12 @@
             { id: 'extra-salmon-70g',            name: '加香煎三文鱼 (70g+)',                   price: 18.50, category: '加菜' },  // 新 add-on 2026-07-05（三文鱼饭）
             { id: 'extra-wagyu-patty',           name: '加澳洲和牛饼 (1块)',                    price: 17.50, category: '加菜' },  // 新 add-on 2026-07-05（和牛饼饭）
             { id: 'cherry-tomato-salad',         name: '小番茄洋葱沙拉 (40g)',                  price: 4.50,  category: '加菜' },  // 新 add-on 2026-07-05（和牛饼饭；小番茄+洋葱+初榨橄榄油+盐）
+            { id: 'extra-fish-120g',             name: '加姜葱鱼片 (120g)',                     price: 13.90, category: '加菜' },  // 新 add-on 2026-07-16（姜葱鱼片饭）
+            { id: 'extra-shaoxing-pork-100g',    name: '【酒香入魂】加绍兴花肉 (100g)',         price: 14.90, category: '加菜' },  // 新 add-on 2026-07-16（绍兴酒蒸花肉）
+            { id: 'extra-curry-chicken-50g',     name: '【滑嫩多汁】加咖喱鸡丁 (50g)',          price: 4.50,  category: '加菜' },  // 新 add-on 2026-07-16（日式咖喱饭）
+            { id: 'extra-taucu-pork-100g',       name: '【家乡浓香】加豆酱花肉 (100g)',         price: 14.90, category: '加菜' },  // 新 add-on 2026-07-16（豆酱焖花肉）
+            { id: 'extra-shaoxing-pork-50g',     name: '【小酌怡情】加绍兴花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
+            { id: 'extra-taucu-pork-50g',        name: '【小碗解馋】加豆酱花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
@@ -2918,7 +2928,7 @@
             { id: 'addon-shuixian-warm', name: '热水仙茶', price: 3.80, category: '茶饮' },
 
             { id: 'addon-chia-pudding', name: '奇亚籽布丁', price: 6.90, category: '其他' },
-            { id: 'addon-natto-side', name: '加纳豆', price: 4.90, category: '其他' },
+            { id: 'addon-natto-side', name: '加纳豆', price: 7.90, category: '其他' },  // 2026-07-16 老板调价 4.90 → 7.90
             { id: 'addon-nori', name: '加海苔', price: 2.00, category: '其他' },
         ];
 
@@ -3181,6 +3191,9 @@ incredibowl.my`,
             '蛋白质核弹三件套 (原价 RM 18.40)': 'greek-protein-bomb-combo',
             '薯肉双拼满足套 (原价 RM 15.40)': 'pork-potato-duo-combo',
             '爆量满足三件套 (原价 RM 15.40)': 'scallion-soup-combo',
+            '酒香干饭套 (原价 RM 19.40)': 'shaoxing-pork-combo',
+            '阿嫲下饭王套 (原价 RM 19.40)': 'taucu-pork-combo',
+            '咖喱控三件套 (原价 RM 9.50)': 'curry-trio-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -3220,6 +3233,14 @@ incredibowl.my`,
             '加香煎三文鱼 (70g+)': 'extra-salmon-70g',
             '加澳洲和牛饼 (1块)': 'extra-wagyu-patty',
             '小番茄洋葱沙拉 (40g)': 'cherry-tomato-salad',
+            // 姜葱鱼片饭 specials (2026-07-16)
+            '加姜葱鱼片 (120g)': 'extra-fish-120g',
+            // 绍兴 / 咖喱 / 豆酱 specials (2026-07-16)
+            '【酒香入魂】加绍兴花肉 (100g)': 'extra-shaoxing-pork-100g',
+            '【滑嫩多汁】加咖喱鸡丁 (50g)': 'extra-curry-chicken-50g',
+            '【家乡浓香】加豆酱花肉 (100g)': 'extra-taucu-pork-100g',
+            '【小酌怡情】加绍兴花肉 (50g)': 'extra-shaoxing-pork-50g',
+            '【小碗解馋】加豆酱花肉 (50g)': 'extra-taucu-pork-50g',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -4199,9 +4220,16 @@ incredibowl.my`,
             const q = recentSearch.trim().toLowerCase().replace(/^#/, '');
             if (q) {
                 const qDigits = q.replace(/\D/g, '');
+                // 归一化后备匹配：输入带 60 国码（"60163…"）时，原始数字子串
+                // 对不上存成 "0163…" 的单，两侧都剥掉国码/前导 0 再比一次
+                const qNorm = normalizePhone(qDigits);
                 filtered = filtered.filter(o => {
                     if ((o.userName || '').toLowerCase().includes(q)) return true;
-                    if (qDigits.length >= 3 && String(o.userPhone || '').replace(/\D/g, '').includes(qDigits)) return true;
+                    if (qDigits.length >= 3) {
+                        const oDigits = String(o.userPhone || '').replace(/\D/g, '');
+                        if (oDigits.includes(qDigits)) return true;
+                        if (qNorm.length >= 3 && normalizePhone(oDigits).includes(qNorm)) return true;
+                    }
                     return (o.id || '').toLowerCase().includes(q);
                 });
             }
@@ -6883,7 +6911,12 @@ incredibowl.my`,
             }
             if (customerSearchQuery) {
                 const q = customerSearchQuery.toLowerCase();
-                filtered = filtered.filter(c => (c.name + ' ' + c.phone).toLowerCase().includes(q));
+                // 电话补一条两侧归一化的数字匹配 —— 原样字符串 includes 会漏掉
+                // 「存的带0/输入带60」「存的带分隔符」这类格式差异
+                const qDigits = customerSearchQuery.replace(/\D/g, '');
+                filtered = filtered.filter(c =>
+                    (c.name + ' ' + c.phone).toLowerCase().includes(q)
+                    || (qDigits.length >= 3 && normalizePhone(c.phone).includes(normalizePhone(qDigits))));
             }
 
             const sorted = [...filtered].sort((a, b) => {
@@ -8996,7 +9029,7 @@ incredibowl.my`,
             { key: 'whiteLess',   label: '⚪ 白饭 · 少饭' },
         ];
         // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
-        const PACKING_COMBO_EXTRA_RICE = new Set(['chicken-chop-nostalgia-combo', 'scallion-soup-combo']);
+        const PACKING_COMBO_EXTRA_RICE = new Set(['chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo']);  // 2026-07-16 新增三套（均含加饭）
 
         // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
         function packingLabelToId() {
@@ -9411,7 +9444,7 @@ incredibowl.my`,
         const DISH_ADDON_MAP = {
             '11': [
                 { id: 'natto-super-combo',  label: '灵魂三件套', price: 5.00 },
-                { id: 'natto-side',         label: '健康发酵纳豆', price: 4.90 },
+                { id: 'natto-side',         label: '健康发酵纳豆', price: 7.90 },
                 { id: 'onsen-egg',          label: '温泉蛋', price: 3.00 },
                 { id: 'nori',               label: '海苔', price: 2.00 },
                 { id: 'soy-sauce',          label: '秘制日本酱油', price: 1.50 },
@@ -9561,7 +9594,10 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '2': [
-                // 绍兴酒蒸花肉（周四特餐）— webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                // 绍兴酒蒸花肉 — 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:4 同步）
+                { id: 'shaoxing-pork-combo', label: '酒香干饭套', price: 15.90 },
+                { id: 'extra-shaoxing-pork-50g', label: '【小酌怡情】加绍兴花肉 (50g)', price: 7.90 },
+                { id: 'extra-shaoxing-pork-100g', label: '【酒香入魂】加绍兴花肉 (100g)', price: 14.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -9576,7 +9612,8 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '20': [
-                // 古早味姜葱鱼片饭（周二主推）— webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                // 古早味姜葱鱼片饭 — 2026-07-16 起自带专属 side（与 webapp AddOnModal id:20 同步）：加姜葱鱼片
+                { id: 'extra-fish-120g', label: '加姜葱鱼片 (120g)', price: 13.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -9627,7 +9664,10 @@ incredibowl.my`,
             ],
             '23': [
                 // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
-                // webapp 无自定义 add-on section，沿用默认 alacarte + drinks
+                // 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:23 同步）
+                { id: 'taucu-pork-combo', label: '阿嫲下饭王套', price: 15.90 },
+                { id: 'extra-taucu-pork-50g', label: '【小碗解馋】加豆酱花肉 (50g)', price: 7.90 },
+                { id: 'extra-taucu-pork-100g', label: '【家乡浓香】加豆酱花肉 (100g)', price: 14.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -9662,8 +9702,11 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '25': [
-                // 家常日式咖喱饭（鸡胸）— RM 18.50，新菜 2026-06-29。沿用默认 alacarte + 米饭 + drinks。
+                // 家常日式咖喱饭（鸡胸）— RM 18.50，新菜 2026-06-29。
                 // 鲜虾西兰花滑蒸蛋经 UNIVERSAL_ADDONS 自动追加，无需在此重复列出。
+                // 2026-07-16 起自带专属套餐+加咖喱鸡丁（与 webapp AddOnModal id:25 同步）
+                { id: 'curry-trio-combo', label: '咖喱控三件套', price: 7.90 },
+                { id: 'extra-curry-chicken-50g', label: '【滑嫩多汁】加咖喱鸡丁 (50g)', price: 4.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -12344,10 +12387,15 @@ incredibowl.my`,
                 }
             }
             const qPhone = q.replace(/\D/g, '');
+            // 两侧都归一化：候选电话走 normalizePhone（剥 60 国码/前导 0），查询词
+            // 若原样比对（如带前导 0 的 "0163628625"）永远匹配不上归一化后的
+            // "163628625" —— 访客单只有电话可搜，这里断了就彻底找不到人。
+            const qPhoneNorm = normalizePhone(qPhone);
             return idx.filter(c => {
                 if (qPhone && qPhone.length >= 4) {
                     const cPhone = normalizePhone(c.phone);
                     if (cPhone.includes(qPhone)) return true;
+                    if (qPhoneNorm.length >= 3 && cPhone.includes(qPhoneNorm)) return true;
                 }
                 if (c.name && c.name.toLowerCase().includes(q)) return true;
                 return false;

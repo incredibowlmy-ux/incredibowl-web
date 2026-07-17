@@ -112,25 +112,27 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-07-13（Mon 13 Jul）
+//   生效周：2026-07-20（Mon 20 Jul）
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
-    1: [1],          // 周一：酱油鸡全腿(主打)；绍兴酒蒸花肉在常驻(限周一/四)
-    2: [26, 25],     // 周二：柠檬蜜糖煎鸡扒(新·主打)、家常日式咖喱饭
-    3: [21, 2],      // 周三：柠香三文鱼(主打)、当归蒸鸡全腿
-    4: [14],         // 周四：金黄鸡扒饭(主打)；绍兴+马铃薯在常驻
-    5: [12, 23, 20], // 周五：山药云耳(主打)、家乡豆酱焖花肉、姜葱鱼片(回归)
+    1: [1, 2],   // 周一：酱油鸡全腿(主打)、当归蒸鸡全腿
+    2: [4],      // 周二：绍兴酒蒸花肉(主打)；新菜甜酸洋葱猪扒在常驻(限周二/五)
+    3: [23, 3],  // 周三：家乡豆酱焖花肉(主打)、希腊柠香烤鸡胸(回归)
+    4: [14, 12], // 周四：金黄鸡扒饭(主打)、山药云耳
+    5: [25],     // 周五：家常日式咖喱饭(主打)；新菜甜酸洋葱猪扒在常驻(限周二/五)
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(限周一~四)、绍兴酒蒸花肉(限周一/四)
+// 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)、甜酸洋葱猪扒(新菜·限周二/五)
 // —— 后两道的供应日由各自 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
-const DAILY_DISHES: number[] = [11, 13, 4];
+const DAILY_DISHES: number[] = [11, 13, 27];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
     { id: 5, day: 'Fri / 周五' },     // 葱香煎鸡汤 退役 2026-06-08
     { id: 24, day: 'Tue / 周二' },    // 澳洲和牛饼 暂别 2026-07-13
-    { id: 3, day: 'Thu / 周四' },     // 希腊柠香鸡胸 暂别 2026-07-13
+    { id: 21, day: 'Wed / 周三' },    // 柠香三文鱼 暂停一周 2026-07-20（老板 07-17 指示）
+    { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
+    { id: 20, day: 'Fri / 周五' },    // 姜葱鱼片 暂别 2026-07-20
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -158,10 +160,10 @@ const DISH_CATALOG: DishData[] = [
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
-        // 2026-07-13 起周五停供（周五三道特餐，厨房产能让位）。
-        availableWeekdays: [1, 2, 3, 4],
-        unavailableNote: "周一至周四供应",
-        unavailableNoteEn: "Served Mon–Thu",
+        // 2026-07-20 起周一、周五停供（老板 07-17 菜单指示）。
+        availableWeekdays: [2, 3, 4],
+        unavailableNote: "周二至周四供应",
+        unavailableNoteEn: "Served Tue–Thu",
         image: "/pork_potato_stew.webp",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
@@ -184,13 +186,8 @@ const DISH_CATALOG: DishData[] = [
         name: "绍兴酒蒸花肉",
         nameEn: "Shaoxing Wine Steamed Pork Belly",
         price: 19.90,
-        // 2026-07-13 起一周两天（老板菜单：周一+周四）。同一道菜不能在
-        // WEEKLY_SCHEDULE 出现两次（推导层防重），多天供应走常驻+availableWeekdays。
-        availableWeekdays: [1, 4],
-        // 老板 2026-07-13：从常驻区挪进每日精选 —— 周一、周四两列都显示
-        featureOnAvailableDays: true,
-        unavailableNote: "仅周一、周四供应",
-        unavailableNoteEn: "Mon & Thu only",
+        // 2026-07-20 起只卖周二一天 → 从常驻+availableWeekdays 挪回普通周二特餐
+        //（WEEKLY_SCHEDULE[2]），供应日由推导层 weekday 控制。
         image: "/shaoxing_pork_belly.webp",
         tags: ["绍兴酒香", "姜丝提鲜", "蒸香软嫩", "偏肥·肥香控真爱"],
         tagsEn: ["Shaoxing wine aroma", "Ginger-infused", "Steamed & tender", "Rich & fatty"],
@@ -229,10 +226,12 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Rich Japanese curry simmered until silky, served with pan-seared chicken breast over hot rice — warm and comforting in every bite."
     },
     {
-        // 新菜 2026-07-10 入系统，2026-07-13（周二）上线主打。
+        // 新菜 2026-07-10 入系统，2026-07-13（周二）上线主打。暂别 2026-07-20。
         // image 暂用 emoji 占位（实拍图未到），图好后换 /honey_lemon_chicken_chop.webp。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 26,
+        unavailableNote: "蜜糖鸡扒暂别，敬请期待回归",
+        unavailableNoteEn: "Honey lemon chicken chop paused — back soon",
         name: "柠檬蜜糖煎鸡扒",
         nameEn: "Honey Lemon Glazed Chicken Chop",
         price: 18.50,
@@ -243,8 +242,32 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Chicken chop pan-seared golden, glazed with a honey-lemon sauce — bright, sweet-tangy and made for rice."
     },
     {
+        // 新菜 2026-07-17 入系统，2026-07-20 周上线（周二+周五供应）。
+        // 同一道菜不能在 WEEKLY_SCHEDULE 出现两次 —— 多天供应走常驻+
+        // availableWeekdays+featureOnAvailableDays（绍兴 07-13 周的同款机制）。
+        // image 暂用 emoji 占位（老板确认暂无实拍图 07-17），图好后换
+        // /sweet_sour_onion_pork_chop.webp。蛋白克数等营养标签待碗妈提供后再补
+        //（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        id: 27,
+        name: "家乡甜酸洋葱猪扒",
+        nameEn: "Hometown Sweet & Sour Onion Pork Chop",
+        price: 19.90,
+        availableWeekdays: [2, 5],
+        featureOnAvailableDays: true,
+        unavailableNote: "仅周二、周五供应",
+        unavailableNoteEn: "Tue & Fri only",
+        image: "🥩",
+        tags: ["甜酸开胃", "洋葱酱香", "家乡风味", "下饭神器"],
+        tagsEn: ["Sweet & tangy", "Onion sauce", "Hometown flavour", "Made for rice"],
+        desc: "甜酸洋葱酱裹着猪扒，酸甜咸香、开胃下饭——家乡熟悉的味道。",
+        descEn: "Pork chop coated in a hometown-style sweet & sour onion sauce — tangy, savoury and made for rice."
+    },
+    {
         // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。周五新上 2026-06-08。
+        // 暂停一周 2026-07-20（老板 07-17 指示，见 PAUSED_DISHES）。
         id: 21,
+        unavailableNote: "三文鱼暂停一周，下周回归",
+        unavailableNoteEn: "Salmon paused this week — back next week",
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 23.90,
@@ -268,10 +291,8 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Angelica root infuses every fibre of the chicken. One sip of the broth and your soul warms up."
     },
     {
-        // 暂别 2026-07-13（见 PAUSED_DISHES）。
+        // 暂别 2026-07-13 → 2026-07-20 回归（周三）。
         id: 3,
-        unavailableNote: "希腊柠香鸡胸暂别，敬请期待回归",
-        unavailableNoteEn: "Greek lemon chicken paused — back soon",
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",
         price: 19.90,
@@ -347,7 +368,10 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // 2026-07-13 回归周五。回归价 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
+        // 暂别 2026-07-20（见 PAUSED_DISHES）。
         id: 20,
+        unavailableNote: "姜葱鱼片暂别，敬请期待回归",
+        unavailableNoteEn: "Ginger-scallion fish paused — back soon",
         name: "古早味姜葱鱼片饭",
         nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
         price: 19.90,
