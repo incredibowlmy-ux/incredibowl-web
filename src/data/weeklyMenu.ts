@@ -212,14 +212,13 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Aussie wagyu beef patty seared crisp outside and juicy within, crowned with a soft onsen egg whose golden yolk runs into the rice — finished with a tangy cherry-tomato salsa that keeps it bright, not heavy."
     },
     {
-        // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 上线。
-        // image 暂用 emoji 占位（实拍图未到），图好后换 /japanese_curry_rice.webp。
+        // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 上线；2026-07-17 补主图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）。
         id: 25,
         name: "家常日式咖喱饭",
         nameEn: "Homestyle Japanese Curry Rice",
         price: 18.50,
-        image: "🍛",
+        image: "/japanese_curry_rice.webp",
         tags: ["日式咖喱", "嫩煎鸡胸", "暖心浓香", "下饭满足"],
         tagsEn: ["Japanese curry", "Pan-seared chicken breast", "Warm & rich", "Made for rice"],
         desc: "浓郁日式咖喱慢炖到顺滑，配嫩煎鸡胸肉，盖在热饭上，一口暖到心里。",
