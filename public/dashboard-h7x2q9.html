@@ -2326,6 +2326,30 @@
         </div>
     </div>
 
+    <!-- ═══════════════ ORDER DETAIL MODAL（查客户/最近订单点行进入）═══════════════ -->
+    <div id="orderDetailModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:560px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="odmTitle">📄 订单详情</div>
+                    <div class="modal-subtitle" id="odmSubtitle">—</div>
+                </div>
+                <button class="modal-close" id="odmCloseBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height:65vh;overflow-y:auto">
+                <div id="odmBody"></div>
+            </div>
+            <div class="modal-footer">
+                <div class="modal-footer-hint" id="odmHint"></div>
+                <div class="modal-footer-actions" id="odmActions">
+                    <button type="button" class="btn ghost" id="odmCopyIdBtn">📋 复制单号</button>
+                    <button type="button" class="btn ghost hidden" id="odmEditBtn">✏️ 编辑</button>
+                    <button type="button" class="btn" id="odmCloseBtn2">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ═══════════════ DELIVERY ZONE MINI-MODAL ═══════════════ -->
     <div id="deliveryFeeModal" class="modal-backdrop hidden">
         <div class="modal" style="max-width:420px">
@@ -4351,7 +4375,7 @@ incredibowl.my`,
                 const phoneNorm = normalizePhone(o.userPhone);
                 const voucherClass = mvUsed > 0 ? ' voucher-order' : '';
                 return `
-                    <div class="order-row${voucherClass}" data-id="${o.id}" data-phone="${escapeHtml(phoneNorm)}">
+                    <div class="order-row${voucherClass}" data-id="${o.id}" data-phone="${escapeHtml(phoneNorm)}" style="cursor:pointer" title="点击查看订单详情">
                         <div class="order-date-col">
                             <div class="order-date">${dateStr}</div>
                             ${deliveryHtml}
@@ -10665,6 +10689,167 @@ incredibowl.my`,
         if ($('#cmCloseBtn')) $('#cmCloseBtn').addEventListener('click', closeConfirmMsgModal);
         if ($('#confirmMsgModal')) $('#confirmMsgModal').addEventListener('click', (e) => { if (e.target.id === 'confirmMsgModal') closeConfirmMsgModal(); });
 
+        // ═══════════════════════════════════════════════════════════════
+        //   ORDER DETAIL MODAL — 点最近订单行 / 查客户档案的订单行进入
+        // ═══════════════════════════════════════════════════════════════
+        let odmOrderId = null;
+        function openOrderDetail(orderId) {
+            const o = state.orders.find(x => x.id === orderId);
+            if (!o) { toast('找不到该订单（可能已被删除）', 'error'); return; }
+            odmOrderId = orderId;
+            const shortId = '#' + (o.id || '').slice(-6).toUpperCase();
+            const d = tsToDate(o.createdAt);
+            const createdStr = d ? `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '—';
+            const mt = mealType(o);
+            const mealLabel = mt === 'lunch' ? '午餐' : mt === 'dinner' ? '晚餐' : '—';
+            const status = o.status || 'pending';
+            const statusLabel = { delivered: '已送达', confirmed: '已确认', preparing: '准备中', delivering: '配送中', cancelled: '已取消', pending: '待确认' }[status] || status;
+            const channel = o.isManual ? ({ whatsapp: 'WhatsApp', cash: '现金', walkin: 'Walk-in' }[o.channel] || '手动') : '网站';
+
+            // ─── 菜品明细（normalize 后 web ↳ 行并入 addOns）───
+            const items = normalizeOrderItems(o);
+            const itemsHtml = items
+                .filter(it => !(typeof it.name === 'string' && it.name.startsWith('↳')))
+                .map(it => {
+                    const unit = effectiveItemPrice(it);
+                    const q = Number(it.quantity) || 1;
+                    const addons = (it.addOns || []).map(a => {
+                        const aq = Number(a.quantity) || 1;
+                        const ap = Number(a.price) || 0;
+                        return `<div style="display:flex;justify-content:space-between;padding:2px 0 2px 16px;color:var(--text-muted);font-size:12px">
+                            <span>↳ ${escapeHtml(a.label || a.name || a.id || '加料')} ×${aq}</span>
+                            <span class="num">${ap > 0 ? 'RM ' + (ap * aq).toFixed(2) : '—'}</span>
+                        </div>`;
+                    }).join('');
+                    return `<div style="padding:6px 0;border-bottom:1px dashed var(--border)">
+                        <div style="display:flex;justify-content:space-between;gap:8px">
+                            <span style="font-weight:600">${escapeHtml(canonicalDishName(it.name))} ×${q}</span>
+                            <span class="num" style="font-weight:600">${unit > 0 ? 'RM ' + (unit * q).toFixed(2) : '—'}</span>
+                        </div>
+                        ${addons}
+                    </div>`;
+                }).join('') || '<div style="color:var(--text-muted);font-size:12px">（无菜品明细）</div>';
+
+            // 预付加料兑换（不在 items 里，已在卖券时付清）
+            const addonNameById = {};
+            (state.addons || []).forEach(a => { addonNameById[a.id] = a.name || a.id; });
+            const prepaidHtml = (o.addonCreditsUsed || []).map(u => `
+                <div style="display:flex;justify-content:space-between;padding:4px 0;color:#7C5A2F;font-size:12px">
+                    <span>🍳 预付${escapeHtml(addonNameById[u.addonId] || u.addonId)} ×${Number(u.count) || 0}（已付清）</span>
+                    <span class="num">RM 0.00</span>
+                </div>`).join('');
+
+            // ─── 金额 ───
+            const cash = Number(o.total) || 0;
+            const dFee = Number(o.deliveryFee) || 0;
+            const mvUsed = Number(o.mealVouchersUsed) || 0;
+            const mvDisc = Number(o.mealVoucherDiscount) || 0;
+            const promoDisc = Number(o.promoDiscount) || 0;
+            const acDisc = Number(o.addonCreditsDiscount) || 0;
+            const mvAlloc = Number(o.mealVoucherAllocatedRevenue) || 0;
+            const acAlloc = Number(o.addonCreditsAllocatedRevenue) || 0;
+            const refund = Number(o.refundAmount) || 0;
+            const accrual = orderAccrualRevenue(o) + dFee;
+            const moneyRow = (label, val, opts = {}) => `
+                <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px;${opts.style || ''}">
+                    <span style="color:${opts.color || 'var(--text-sec, var(--text))'}">${label}</span>
+                    <span class="num" style="font-weight:${opts.bold ? 700 : 500};color:${opts.color || 'inherit'}">${val}</span>
+                </div>`;
+            let moneyHtml = '';
+            moneyHtml += moneyRow('现金实收（餐食）', fmt.rm(cash));
+            if (dFee > 0) moneyHtml += moneyRow('客付运费', fmt.rm(dFee));
+            if (mvDisc > 0) moneyHtml += moneyRow(`餐券抵扣（${mvUsed} 张）`, '− ' + fmt.rm(mvDisc), { color: '#9A6E2F' });
+            if (promoDisc > 0) moneyHtml += moneyRow(`Promo 折扣${o.promoCode ? `（${escapeHtml(o.promoCode)}）` : ''}`, '− ' + fmt.rm(promoDisc), { color: 'var(--danger)' });
+            if (acDisc > 0) moneyHtml += moneyRow('预付加料抵扣（已付清）', '− ' + fmt.rm(acDisc), { color: '#7C5A2F' });
+            if (mvAlloc > 0) moneyHtml += moneyRow('餐券摊销收入 (MFRS 15)', '+ ' + fmt.rm(mvAlloc), { color: 'var(--success)' });
+            if (acAlloc > 0) moneyHtml += moneyRow('预付加料确认收入 (MFRS 15)', '+ ' + fmt.rm(acAlloc), { color: 'var(--success)' });
+            if (refund > 0) moneyHtml += moneyRow(`退款${o.refundReason ? `（${escapeHtml(o.refundReason)}）` : ''}`, '− ' + fmt.rm(refund), { color: 'var(--danger)' });
+            moneyHtml += `<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">`
+                + moneyRow('会计营收合计', fmt.rm(accrual - refund), { bold: true })
+                + `</div>`;
+
+            // ─── 配送 / 信息 ───
+            const zoneLabel = o.deliveryZone === null ? '自取'
+                : o.deliveryZone === 'outside2km' ? '>2km'
+                : o.deliveryZone === 'within2km' ? '≤2km'
+                : (o.deliveryZone || '—');
+            const distStr = typeof o.deliveryDistanceKm === 'number' ? ` · ${o.deliveryDistanceKm}km` : '';
+            const infoRow = (label, val) => val ? `
+                <div style="display:flex;gap:10px;padding:3px 0;font-size:12px">
+                    <span style="color:var(--text-muted);flex-shrink:0;width:64px">${label}</span>
+                    <span style="min-width:0;word-break:break-word">${val}</span>
+                </div>` : '';
+            let infoHtml = '';
+            infoHtml += infoRow('下单时间', escapeHtml(createdStr));
+            infoHtml += infoRow('送达', `${escapeHtml(o.deliveryDate || '—')} ${escapeHtml(o.deliveryTime || '')} · ${mealLabel}`);
+            infoHtml += infoRow('配送区', `${zoneLabel}${distStr}`);
+            infoHtml += infoRow('地址', escapeHtml(o.userAddress || ''));
+            infoHtml += infoRow('支付', escapeHtml(o.paymentMethod || (o.razorpayPaymentId ? 'Razorpay' : '—')));
+            if (o.razorpayPaymentId) infoHtml += infoRow('支付 ID', `<span class="mono" style="font-size:11px">${escapeHtml(o.razorpayPaymentId)}</span>`);
+            infoHtml += infoRow('备注', o.note ? `<span style="color:#4338CA">「${escapeHtml(o.note)}」</span>` : '');
+
+            const statusColor = status === 'cancelled' ? 'var(--danger)' : status === 'delivered' ? 'var(--success)' : 'var(--text)';
+            $('#odmTitle').textContent = `📄 订单 ${shortId}`;
+            $('#odmSubtitle').textContent = `${o.userName || '匿名'}${o.userPhone ? ' · ' + o.userPhone : ''}`;
+            $('#odmBody').innerHTML = `
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                    <span class="channel-badge" style="font-weight:600;color:${statusColor}">${statusLabel}</span>
+                    <span class="channel-badge">${channel}</span>
+                    ${mvUsed > 0 ? `<span class="channel-badge" style="background:rgba(201,152,92,0.15);color:#9A6E2F">🎫 ${mvUsed} 张餐券</span>` : ''}
+                    ${refund > 0 ? `<span class="channel-badge" style="background:var(--danger-soft, rgba(239,68,68,0.12));color:var(--danger)">已退款</span>` : ''}
+                </div>
+                <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">菜品</div>
+                    ${itemsHtml}
+                    ${prepaidHtml}
+                </div>
+                <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">金额</div>
+                    ${moneyHtml}
+                </div>
+                <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px">
+                    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">信息</div>
+                    ${infoHtml}
+                </div>
+            `;
+            // 编辑按钮：仅手动单（网站单/餐券单在 openOrderModal 里有各自的拦截规则）
+            $('#odmEditBtn').classList.toggle('hidden', !o.isManual);
+            $('#odmHint').textContent = `完整单号 ${o.id || '—'}`;
+            $('#orderDetailModal').classList.remove('hidden');
+        }
+        function closeOrderDetail() {
+            $('#orderDetailModal').classList.add('hidden');
+            odmOrderId = null;
+        }
+        $('#odmCloseBtn').addEventListener('click', closeOrderDetail);
+        $('#odmCloseBtn2').addEventListener('click', closeOrderDetail);
+        $('#orderDetailModal').addEventListener('click', (e) => { if (e.target.id === 'orderDetailModal') closeOrderDetail(); });
+        // capture 阶段 + stopImmediatePropagation：详情在查客户之上叠开时，
+        // Escape 只关最上层的详情，不连带关掉底下的查客户弹窗。
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !$('#orderDetailModal').classList.contains('hidden')) {
+                closeOrderDetail();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        $('#odmCopyIdBtn').addEventListener('click', () => {
+            if (!odmOrderId) return;
+            navigator.clipboard.writeText(odmOrderId)
+                .then(() => toast('已复制完整单号', 'success'))
+                .catch(() => toast('复制失败', 'error'));
+        });
+        $('#odmEditBtn').addEventListener('click', () => {
+            const order = state.orders.find(o => o.id === odmOrderId);
+            closeOrderDetail();
+            if (order) openOrderModal(order);
+        });
+        // 最近订单：点行主体（非操作按钮）打开详情
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('button')) return;
+            const row = e.target.closest('.order-row');
+            if (row && row.dataset.id) openOrderDetail(row.dataset.id);
+        });
+
         // Edit / Delete / Delivery / Refund buttons inside recent orders list (delegated)
         document.addEventListener('click', async (e) => {
             const cmBtn = e.target.closest('.confirm-msg-btn');
@@ -12650,7 +12835,7 @@ incredibowl.my`,
                             const dishNames = (o.items || []).map(it => canonicalDishName(it.name)).filter(n => n && !n.startsWith('↳')).join(' + ') || '—';
                             const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
                             const refund = Number(o.refundAmount) || 0;
-                            return `<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border)">
+                            return `<div class="cust-order-row" data-order-id="${o.id}" style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);cursor:pointer" title="点击查看订单详情">
                                 <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">${dStr} ${mealLabel}</span>
                                 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(dishNames)}">${escapeHtml(dishNames)}</span>
                                 <span style="font-weight:600;flex-shrink:0">${fmt.rm(rev)}${refund > 0 ? ` <span style="color:var(--danger);font-size:10px">退 ${fmt.rm(refund)}</span>` : ''}</span>
@@ -12756,6 +12941,12 @@ incredibowl.my`,
 
         // Action buttons inside profile (delegated)
         $('#customerProfileContainer').addEventListener('click', (e) => {
+            // 点「最近 N 单」某一行 → 弹订单详情（叠在查客户之上）
+            const orow = e.target.closest('.cust-order-row');
+            if (orow && orow.dataset.orderId) {
+                openOrderDetail(orow.dataset.orderId);
+                return;
+            }
             const btn = e.target.closest('[data-cust-action]');
             if (!btn) return;
             const action = btn.dataset.custAction;
