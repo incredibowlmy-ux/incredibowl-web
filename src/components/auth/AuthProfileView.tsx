@@ -28,7 +28,7 @@ interface AuthProfileViewProps {
     editingProfile: boolean; setEditingProfile: (v: boolean) => void;
     loading: boolean;
     message: string;
-    onUpdateProfile: (geocode?: GeocodeResult, addressLabel?: string) => void;
+    onUpdateProfile: (geocode?: GeocodeResult, addressLabel?: string, guestName?: string) => void;
     onReloadProfile: () => Promise<void>;
     onLogout: () => void;
     onClose: () => void;
@@ -59,6 +59,9 @@ export default function AuthProfileView({
         : [];
     const [addressLabel, setAddressLabel] = useState('');
     const [linkingGoogle, setLinkingGoogle] = useState(false);
+    // 访客「怎么称呼」（选填）：匿名账号 displayName 默认 "Guest"，订单/Dashboard
+    // 上全是 Guest 认不出人。填了就存进 users.displayName，下单时带进 userName。
+    const [guestName, setGuestName] = useState('');
 
     // 访客 → Google 原地升级（同 uid，订单保留）。付款成功弹窗只出现一次，
     // 这里是错过后的常驻自助入口（买餐券也必须真账号）。
@@ -94,6 +97,9 @@ export default function AuthProfileView({
             setVerifiedFor('');
             const match = savedAddresses.find(a => (a?.address || '').trim() === address.trim());
             setAddressLabel(match?.label || '');
+            // 预填已存的称呼（占位符 "Guest" 不算名字）
+            const dn = profileData?.displayName;
+            setGuestName(dn && dn !== 'Guest' ? dn : '');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingProfile]);
@@ -107,7 +113,7 @@ export default function AuthProfileView({
     const handleVerifyAndSave = async () => {
         // 已验证且地址没改 → 直接保存
         if (geocodeResult && !addressChangedSinceVerify) {
-            onUpdateProfile(geocodeResult, addressLabel);
+            onUpdateProfile(geocodeResult, addressLabel, guestName);
             return;
         }
         if (!address || address.trim().length < 10) {
@@ -133,7 +139,7 @@ export default function AuthProfileView({
             setVerifiedFor(address.trim());
             // 验证通过 → 直接续接保存（运费档位卡会闪现展示；保存成功后
             // 回到购物车还有完整费用明细）
-            onUpdateProfile(data, addressLabel);
+            onUpdateProfile(data, addressLabel, guestName);
         } catch (e) {
             setGeocodeError(e instanceof Error ? e.message : t.networkError);
         } finally {
@@ -153,7 +159,10 @@ export default function AuthProfileView({
                         <UserIcon size={28} className="text-[#1A2D23]" />
                     )}
                 </div>
-                <h3 className="font-bold text-[#1A2D23] text-lg">{currentUser.displayName || t.memberFallback}</h3>
+                <h3 className="font-bold text-[#1A2D23] text-lg">
+                    {currentUser.displayName
+                        || (profileData?.displayName && profileData.displayName !== 'Guest' ? profileData.displayName : t.memberFallback)}
+                </h3>
                 <p className="text-xs text-gray-500">{currentUser.email}</p>
             </div>
 
@@ -204,6 +213,17 @@ export default function AuthProfileView({
 
             {/* Profile Info / Edit */}
             <div className="space-y-3">
+                {/* 访客「怎么称呼」（选填）：只有匿名账号需要 —— 正式账号有真名 */}
+                {currentUser.isAnonymous && editingProfile && (
+                    <div>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                            <UserIcon size={10} /> {t.guestNameLabel}
+                        </label>
+                        <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
+                            placeholder={t.guestNamePlaceholder} maxLength={30}
+                            className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors" />
+                    </div>
+                )}
                 <div>
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
                         <Phone size={10} /> {t.phoneLabel}

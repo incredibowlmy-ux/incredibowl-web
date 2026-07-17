@@ -81,6 +81,8 @@ interface AuthProfileDict {
     orderSummary: string;
     totalOrders: string;
     totalSpent: string;
+    guestNameLabel: string;
+    guestNamePlaceholder: string;
     phoneLabel: string;
     phonePlaceholder: string;
     notFilled: string;
@@ -187,6 +189,8 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             orderSummary: '订单概要',
             totalOrders: '总订单',
             totalSpent: '累计消费',
+            guestNameLabel: '怎么称呼（选填）',
+            guestNamePlaceholder: '例: 陈小姐 / Ms. Tan',
             phoneLabel: '手机号码 *',
             phonePlaceholder: '例: 010-337 0197',
             notFilled: '未填写（必填）',
@@ -284,6 +288,8 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             orderSummary: 'Order summary',
             totalOrders: 'Total orders',
             totalSpent: 'Total spent',
+            guestNameLabel: 'What should we call you (optional)',
+            guestNamePlaceholder: 'e.g. Ms. Tan',
             phoneLabel: 'Phone *',
             phonePlaceholder: 'e.g. 010-337 0197',
             notFilled: 'Not filled in (required)',

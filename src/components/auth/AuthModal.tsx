@@ -155,7 +155,7 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
         setLoading(false);
     };
 
-    const handleUpdateProfile = async (geocode?: { lat: number; lng: number; distanceKm: number; zone: 'within2km' | 'outside2km'; formattedAddress: string }, addressLabel?: string) => {
+    const handleUpdateProfile = async (geocode?: { lat: number; lng: number; distanceKm: number; zone: 'within2km' | 'outside2km'; formattedAddress: string }, addressLabel?: string, guestName?: string) => {
         if (!currentUser) return;
         if (!phone || !address) { setMessage(t.phoneAddressRequired); return; }
         if (!isValidMyPhone(phone)) { setMessage(t.invalidPhone); return; }
@@ -175,6 +175,11 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
                 addressVerifiedAt: serverTimestamp(),
                 addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
             };
+            // 访客「怎么称呼」（选填）：填了才覆盖 displayName（默认 "Guest"），
+            // 下单时 CartDrawer 的 userName fallback 会带上，Dashboard 就认得出人
+            if (currentUser.isAnonymous && guestName?.trim()) {
+                updateData.displayName = guestName.trim();
+            }
             await updateUserProfile(currentUser.uid, updateData);
 
             // 已验证的地址顺手收编进地址簿（≤5 条自动收，满了不打断保存）。
