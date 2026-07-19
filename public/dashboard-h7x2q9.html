@@ -12596,11 +12596,13 @@ incredibowl.my`,
             // User doc (if exists) — match by phone or userId
             const phoneNorm = key.startsWith('p:') ? key.slice(2) : null;
             const userIdRaw = key.startsWith('u:') ? key.slice(2) : null;
-            const userDoc = (state.users || []).find(u => {
+            // 同电话可能匹配多个文档（账号合并后的旧匿名壳带 mergedInto）— 未合并的优先
+            const userDocCandidates = (state.users || []).filter(u => {
                 if (phoneNorm && normalizePhone(u.phone || '') === phoneNorm) return true;
                 if (userIdRaw && u.id === userIdRaw) return true;
                 return false;
-            }) || null;
+            });
+            const userDoc = userDocCandidates.find(u => !u.mergedInto) || userDocCandidates[0] || null;
 
             // Basic identity (prefer most-recent order, fall back to user doc)
             const lastOrder = orders[0] || null;
@@ -12643,7 +12645,12 @@ incredibowl.my`,
             }
 
             const tags = [];
-            if (userDoc) tags.push({ label: '🌐 网站账号', color: '#388E3C', bg: 'rgba(56,142,60,0.12)' });
+            if (userDoc) {
+                const isStub = String(userDoc.id || '').startsWith('manual_') || userDoc.stubFromManualVoucherPurchase;
+                if (isStub) tags.push({ label: '📱 WhatsApp 手动客', color: '#00796B', bg: 'rgba(0,121,107,0.12)' });
+                else if (userDoc.email) tags.push({ label: '🟢 Google 会员', color: '#388E3C', bg: 'rgba(56,142,60,0.12)' });
+                else tags.push({ label: '👻 匿名访客', color: '#616161', bg: 'rgba(97,97,97,0.15)' });
+            }
             if (totalOrders >= 10) tags.push({ label: '👑 VIP (≥10 单)', color: '#9A6E2F', bg: 'rgba(201,152,92,0.18)' });
             else if (totalOrders >= 5) tags.push({ label: '🤝 老客 (≥5 单)', color: '#1976D2', bg: 'rgba(25,118,210,0.12)' });
             else if (totalOrders === 1) tags.push({ label: '🌱 新客', color: '#2E7D32', bg: 'rgba(46,125,50,0.12)' });
@@ -12757,6 +12764,7 @@ incredibowl.my`,
                         <div style="flex:1;min-width:0">
                             <div style="font-size:18px;font-weight:700;color:var(--text)">${escapeHtml(p.name)}</div>
                             <div style="font-size:13px;color:var(--text-muted);margin-top:2px">📞 ${escapeHtml(p.phone || '—')}</div>
+                            ${p.userDoc?.email ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">✉️ ${escapeHtml(p.userDoc.email)}</div>` : ''}
                             ${addressHtml}
                         </div>
                         <div style="text-align:right;flex-shrink:0">
