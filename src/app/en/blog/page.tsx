@@ -34,13 +34,13 @@ const posts = [
     coverAlt: "No MSG home-cooked food delivery Old Klang Road - Incredibowl signature angelica steamed chicken",
   },
   {
-    slug: "home-cooked-lunch-delivery-millerz-square",
-    title: "Home-Cooked Lunch Delivery Near Millerz Square: A Better Option for Office Workers",
-    excerpt: "Fried food again, heavy on oil and salt? Right next to Millerz Square there's a home kitchen — wet-market fresh every day, no MSG. Orders close 6AM, delivery from 11AM, with a quick ordering guide.",
+    slug: "home-cooked-lunch-delivery-old-klang-road",
+    title: "Home-Cooked Lunch Delivery on Old Klang Road: A Better Option for Office Workers",
+    excerpt: "Fried food again, heavy on oil and salt? Right on Old Klang Road there's a home kitchen — wet-market fresh every day, no MSG. Orders close 6AM, delivery from 11AM, with a quick ordering guide.",
     date: "2026-06-24",
     readMin: 5,
     cover: "/potato_fried_egg.webp",
-    coverAlt: "Home-cooked lunch delivery near Millerz Square - Incredibowl potato fried egg home-style lunch",
+    coverAlt: "Home-cooked lunch delivery Old Klang Road - Incredibowl potato fried egg home-style lunch",
   },
   {
     slug: "dinner-delivery-the-scott-garden",

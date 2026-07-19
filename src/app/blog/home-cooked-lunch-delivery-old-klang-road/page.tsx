@@ -5,30 +5,30 @@ import { tierProseZh, TIER_INNER, TIER_OUTER, COVERAGE_AREAS } from "@/lib/deliv
 
 export const metadata: Metadata = {
   title:
-    "Home-Cooked Lunch Delivery Near Millerz Square | Millerz Square 家常午餐外送 — Incredibowl",
+    "Home-Cooked Lunch Delivery Old Klang Road | Old Klang Road 家常午餐外送 — Incredibowl",
   description:
-    "Home-cooked lunch delivery near Millerz Square, Old Klang Road. No MSG, freshly sourced every morning, real protein portions. Order by 6AM, delivered from 11AM. Millerz Square 附近家常午餐外送。",
+    "Home-cooked lunch delivery on Old Klang Road. No MSG, freshly sourced every morning, real protein portions. Order by 6AM, delivered from 11AM. Old Klang Road 家常午餐外送。",
   alternates: {
     canonical:
-      "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-millerz-square",
+      "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-old-klang-road",
     languages: {
-      "zh-MY": "/blog/home-cooked-lunch-delivery-millerz-square",
-      "en-MY": "/en/blog/home-cooked-lunch-delivery-millerz-square",
-      "x-default": "/blog/home-cooked-lunch-delivery-millerz-square",
+      "zh-MY": "/blog/home-cooked-lunch-delivery-old-klang-road",
+      "en-MY": "/en/blog/home-cooked-lunch-delivery-old-klang-road",
+      "x-default": "/blog/home-cooked-lunch-delivery-old-klang-road",
     },
   },
   openGraph: {
-    title: "Home-Cooked Lunch Delivery Near Millerz Square — Incredibowl",
+    title: "Home-Cooked Lunch Delivery on Old Klang Road — Incredibowl",
     description:
-      "MSG-free home-cooked lunch delivery near Millerz Square / Old Klang Road. Order by 6AM, delivered from 11AM. 无味精家常午餐，每天巴刹现采。",
-    url: "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-millerz-square",
+      "MSG-free home-cooked lunch delivery on Old Klang Road. Order by 6AM, delivered from 11AM. 无味精家常午餐，每天巴刹现采。",
+    url: "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-old-klang-road",
     siteName: "Incredibowl Malaysia",
     images: [
       {
         url: "https://www.incredibowl.my/potato_fried_egg.webp",
         width: 1200,
         height: 630,
-        alt: "Home-cooked lunch delivery near Millerz Square — Incredibowl",
+        alt: "Home-cooked lunch delivery Old Klang Road — Incredibowl",
       },
     ],
     locale: "zh_MY",
@@ -37,13 +37,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomeCookedLunchDeliveryMillerzSquare() {
+export default function HomeCookedLunchDeliveryOldKlangRoad() {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: "Home-Cooked Lunch Delivery Near Millerz Square: A Workday Lunch That Is Not Fried Again",
+    headline: "Home-Cooked Lunch Delivery on Old Klang Road: A Workday Lunch That Is Not Fried Again",
     description:
-      "Where to find home-cooked lunch delivery near Millerz Square and Old Klang Road — MSG-free, freshly sourced, with real protein portions and a 6AM order cutoff.",
+      "Where to find home-cooked lunch delivery on Old Klang Road — MSG-free, freshly sourced, with real protein portions and a 6AM order cutoff.",
     image: "https://www.incredibowl.my/potato_fried_egg.webp",
     datePublished: "2026-06-24T00:00:00+08:00",
     dateModified: "2026-06-24T00:00:00+08:00",
@@ -63,7 +63,7 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id":
-        "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-millerz-square",
+        "https://www.incredibowl.my/blog/home-cooked-lunch-delivery-old-klang-road",
     },
   };
 
@@ -73,10 +73,10 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "Is there home-cooked lunch delivery near Millerz Square?",
+        name: "Is there home-cooked lunch delivery on Old Klang Road?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Yes. Incredibowl is a home kitchen at Pearl Point, right beside Millerz Square on Old Klang Road, delivering MSG-free home-cooked lunches. Order by 6AM and lunch is delivered from 11AM. Millerz Square sits well within the delivery zone, so delivery is fast and the fee is in the lowest tiers. The delivery zone covers ${COVERAGE_AREAS.join(", ")}.`,
+          text: `Yes. Incredibowl is a home kitchen at Pearl Suria Residence, right next to Pearl Point on Old Klang Road, delivering MSG-free home-cooked lunches. Order by 6AM and lunch is delivered from 11AM. The delivery zone covers ${COVERAGE_AREAS.join(", ")}.`,
         },
       },
       {
@@ -89,10 +89,10 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
       },
       {
         "@type": "Question",
-        name: "Millerz Square 送餐运费多少？",
+        name: "Old Klang Road 一带送餐运费多少？",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Pearl Point 出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。Millerz Square 紧邻 Pearl Point，落在最近的运费区间。配送范围覆盖 ${COVERAGE_AREAS.join("、")}。注册账号填地址后系统会自动核对实际距离与运费。`,
+          text: `从 Pearl Suria（Pearl Point 隔壁）出发，${tierProseZh(TIER_INNER)}，${tierProseZh(TIER_OUTER)}。配送范围覆盖 ${COVERAGE_AREAS.join("、")}。注册账号填地址后系统会自动核对实际距离与运费。`,
         },
       },
     ],
@@ -122,17 +122,17 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
             <time dateTime="2026-06-24">2026 年 6 月 24 日</time> · 5 min read
           </p>
           <h1 className="text-3xl md:text-5xl font-black leading-tight mb-4">
-            Millerz Square 附近的家常午餐外送：上班族中午的另一种选择
+            Old Klang Road 的家常午餐外送：上班族中午的另一种选择
           </h1>
           <p className="text-lg text-[#1A2D23]/65 italic">
-            Home-Cooked Lunch Delivery Near Millerz Square
+            Home-Cooked Lunch Delivery on Old Klang Road
           </p>
         </header>
 
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-10 bg-[#E3EADA]">
           <Image
             src="/potato_fried_egg.webp"
-            alt="Home-cooked lunch delivery near Millerz Square - Incredibowl 马铃薯煎蛋家常午餐"
+            alt="Home-cooked lunch delivery Old Klang Road - Incredibowl 马铃薯煎蛋家常午餐"
             fill
             className="object-cover"
             priority
@@ -145,22 +145,22 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
             In short
           </p>
           <p className="text-[15px] md:text-[16px] leading-relaxed text-[#1A2D23]/85">
-            For home-cooked lunch delivery near Millerz Square, Incredibowl is a
-            home kitchen right beside it at Pearl Point — MSG-free, freshly
-            sourced every morning. Order by 6AM at{" "}
+            For home-cooked lunch delivery on Old Klang Road, Incredibowl is a
+            home kitchen at Pearl Suria Residence, right next to Pearl Point —
+            MSG-free, freshly sourced every morning. Order by 6AM at{" "}
             <Link href="/" className="text-[#FF6B35] font-bold hover:underline">
               www.incredibowl.my
             </Link>{" "}
-            and lunch arrives from 11AM. 无味精家常午餐 · 紧邻 Millerz Square · {tierProseZh(TIER_INNER)}。
+            and lunch arrives from 11AM. 无味精家常午餐 · Old Klang Road 私厨直送 · {tierProseZh(TIER_INNER)}。
           </p>
         </div>
 
         <div className="prose prose-lg max-w-none space-y-6 leading-relaxed text-[#1A2D23]/85 text-[16px] md:text-[17px]">
           <p>
-            <strong>Millerz Square</strong> 是 Old Klang Road 上人流密集的综合体，住户、上班族、商户都不少。中午想吃口热饭，常见的选择无非是楼下美食广场、GrabFood 上的连锁快餐——吃多了，总觉得不是太油就是太咸。
+            <strong>Old Klang Road（旧巴生路）</strong>一带住宅和办公楼密集——Pearl Point、Millerz Square、The Scott Garden、OUG……住户、上班族、商户都不少。中午想吃口热饭，常见的选择无非是楼下美食广场、GrabFood 上的连锁快餐——吃多了，总觉得不是太油就是太咸。
           </p>
           <p>
-            这篇讲讲 Millerz Square 一带，怎么点到一份<strong>每天现煮、不加味精的家常午餐</strong>。
+            这篇讲讲 Old Klang Road 一带，怎么点到一份<strong>每天现煮、不加味精的家常午餐</strong>。
           </p>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -176,13 +176,13 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
             二、家常午餐外送怎么解决
           </h2>
           <p>
-            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link>（碗妈私厨）就在 Millerz Square 隔壁的 Pearl Point 家庭厨房出餐：
+            <Link href="/" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link>（碗妈私厨）就在 Pearl Point 隔壁的 Pearl Suria Residence 家庭厨房出餐：
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li><strong>无味精、每天巴刹现采</strong>，当天煮当天送；</li>
             <li>主菜标<strong>真实蛋白克数</strong>（如招牌当归蒸鸡全腿 45g+ 蛋白），吃得饱也吃得明白；</li>
             <li>菜单<strong>每周轮换 + 常驻菜</strong>，不重复吃腻；</li>
-            <li>距离近，午餐送达快，运费落在最低区间。</li>
+            <li>就在 Old Klang Road 本地出餐，午餐送达快，运费按实际距离分档。</li>
           </ul>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
@@ -200,16 +200,16 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
           </h2>
           <div className="space-y-5">
             <div>
-              <h3 className="font-black text-lg mb-1">Q: Is there home-cooked lunch delivery near Millerz Square?</h3>
-              <p>Yes — Incredibowl is a home kitchen right beside Millerz Square at Pearl Point, delivering MSG-free home-cooked lunches. Order by 6AM, delivered from 11AM.</p>
+              <h3 className="font-black text-lg mb-1">Q: Is there home-cooked lunch delivery on Old Klang Road?</h3>
+              <p>Yes — Incredibowl is a home kitchen at Pearl Suria Residence, right next to Pearl Point on Old Klang Road, delivering MSG-free home-cooked lunches. Order by 6AM, delivered from 11AM.</p>
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: 午餐几点截单？几点送到？</h3>
               <p>每日早上 6AM 截单，午餐从 11AM 起送。想吃当天午餐，前一晚或清晨 6 点前下好单最稳。</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: Millerz Square 送餐运费多少？</h3>
-              <p>Pearl Point 出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。Millerz Square 紧邻 Pearl Point，落在最近区间。配送范围覆盖 {COVERAGE_AREAS.join("、")}。注册填地址后系统自动核对。</p>
+              <h3 className="font-black text-lg mb-1">Q: Old Klang Road 一带送餐运费多少？</h3>
+              <p>从 Pearl Suria（Pearl Point 隔壁）出发，{tierProseZh(TIER_INNER)}、{tierProseZh(TIER_OUTER)}。配送范围覆盖 {COVERAGE_AREAS.join("、")}。注册填地址后系统自动核对。</p>
             </div>
           </div>
 
@@ -218,7 +218,7 @@ export default function HomeCookedLunchDeliveryMillerzSquare() {
               明天中午想吃口热乎的家常饭？
             </h3>
             <p className="text-[#1A2D23]/70 mb-5 text-sm md:text-base">
-              紧邻 Millerz Square · 无味精 · 每天巴刹采购 · 6AM 截单 · 11AM 起送
+              Old Klang Road 私厨直送 · 无味精 · 每天巴刹采购 · 6AM 截单 · 11AM 起送
             </p>
             <Link
               href="/"

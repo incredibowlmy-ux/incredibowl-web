@@ -16,6 +16,21 @@ const nextConfig: NextConfig = {
     // standard-DPR devices can pick a tighter width. No quality change.
     deviceSizes: [256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },
+  async redirects() {
+    return [
+      // 2026-07-19 博客改定位：Millerz Square → Old Klang Road（老 URL 已被收录，301 保住权重）
+      {
+        source: '/blog/home-cooked-lunch-delivery-millerz-square',
+        destination: '/blog/home-cooked-lunch-delivery-old-klang-road',
+        permanent: true,
+      },
+      {
+        source: '/en/blog/home-cooked-lunch-delivery-millerz-square',
+        destination: '/en/blog/home-cooked-lunch-delivery-old-klang-road',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
