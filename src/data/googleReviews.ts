@@ -5,7 +5,7 @@
  * changes, update the two numbers HERE — every surface follows automatically.
  */
 export const GOOGLE_RATING_VALUE = "5.0";
-export const GOOGLE_REVIEW_COUNT = 38;
+export const GOOGLE_REVIEW_COUNT = 56;
 
 /**
  * Direct deep-link to the Incredibowl Google reviews list (credibility — lets
