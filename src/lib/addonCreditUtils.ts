@@ -104,6 +104,8 @@ export interface AvailableAddonCredit {
   addonName: string;
   remaining: number;
   unitAllocatedRM: number;
+  /** Earliest expiry (ms epoch) across this add-on's batches. */
+  soonestExpiryMs?: number;
 }
 
 /**
@@ -127,15 +129,20 @@ export async function getAvailableAddonCredits(
     const remaining = Number(v.quantityRemaining) || 0;
     if (!exp || exp.toMillis() <= now.toMillis() || remaining <= 0) continue;
     const id = String(v.addonId);
+    const expMs = exp.toMillis();
     const prev = byAddon.get(id);
     if (prev) {
       prev.remaining += remaining;
+      if (prev.soonestExpiryMs === undefined || expMs < prev.soonestExpiryMs) {
+        prev.soonestExpiryMs = expMs;
+      }
     } else {
       byAddon.set(id, {
         addonId: id,
         addonName: String(v.addonName || id),
         remaining,
         unitAllocatedRM: Number(v.unitAllocatedRM) || 0,
+        soonestExpiryMs: expMs,
       });
     }
   }

@@ -67,6 +67,9 @@ interface MemberDictShape {
     expiringSoon: string;
     redeemAtCheckoutHint: string;
     buyMore: string;
+    addonCreditsTitle: string;
+    addonCreditsAutoHint: string;
+    addonCreditsExpiry: (n: number) => string;
 
     // Edit profile modal
     updateProfile: string;
@@ -143,6 +146,9 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         expiringSoon: '即将过期',
         redeemAtCheckoutHint: '结账时勾选「用餐券抵扣」即可使用',
         buyMore: '再买一份',
+        addonCreditsTitle: '预付加料余额',
+        addonCreditsAutoHint: '下单加购对应加料时自动抵扣，无需操作',
+        addonCreditsExpiry: (n) => `最早 ${n} 天后到期`,
 
         updateProfile: '更新个人资料',
         updateMemberInfoSub: 'Update Member Info',
@@ -216,6 +222,9 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         expiringSoon: 'Expiring soon',
         redeemAtCheckoutHint: 'Tick "use meal voucher" at checkout',
         buyMore: 'Buy more',
+        addonCreditsTitle: 'Prepaid add-on credits',
+        addonCreditsAutoHint: 'Auto-applied at checkout when you add the matching add-on',
+        addonCreditsExpiry: (n) => `earliest expires in ${n} day(s)`,
 
         updateProfile: 'Update profile',
         updateMemberInfoSub: 'Update Member Info',

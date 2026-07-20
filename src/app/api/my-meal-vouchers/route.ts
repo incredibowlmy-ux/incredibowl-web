@@ -91,12 +91,24 @@ export async function POST(req: NextRequest) {
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // Prepaid add-on credits (煎蛋/升级 etc.) — auto-applied at checkout, so
+    // CartDrawer and the member wallet read the balance from this same call.
+    const { getAvailableAddonCredits } = await import('@/lib/addonCreditUtils');
+    const addonCredits = (await getAvailableAddonCredits(db, auth.uid))
+      .map(c => ({
+        addonId: c.addonId,
+        addonName: c.addonName,
+        remaining: c.remaining,
+        soonestExpiryMs: c.soonestExpiryMs ?? null,
+      }));
+
     return NextResponse.json({
       availableCount,
       soonestExpiryMs,
       soonestDaysLeft,
       expirySchedule,
       recentPurchases,
+      addonCredits,
     });
   } catch (err: any) {
     console.error('my-meal-vouchers error:', err);

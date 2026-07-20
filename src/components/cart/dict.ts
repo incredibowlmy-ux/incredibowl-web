@@ -39,6 +39,8 @@ interface CartDrawerDict {
     subtotal: string;
     discounted: string;
     voucherDeduct: (n: number) => string;
+    addonCreditDeduct: (n: number) => string;
+    addonCreditRemaining: (n: number) => string;
     deliveryFee: string;
     freeZone: string;
     midZone: string;
@@ -183,6 +185,8 @@ export const CART_DICT: Record<Locale, CartDict> = {
             subtotal: '小计',
             discounted: '（折后）',
             voucherDeduct: (n) => `餐券抵扣（${n} 份主餐）`,
+            addonCreditDeduct: (n) => `预付加料抵扣（${n} 份）`,
+            addonCreditRemaining: (n) => ` · 剩 ${n} 份`,
             deliveryFee: '配送费',
             freeZone: '· 免运区',
             midZone: '· 中距离 5–7.5km',
@@ -313,6 +317,8 @@ export const CART_DICT: Record<Locale, CartDict> = {
             subtotal: 'Subtotal',
             discounted: ' (after discount)',
             voucherDeduct: (n) => `Meal vouchers (${n} main dish(es))`,
+            addonCreditDeduct: (n) => `Prepaid add-on credits (${n})`,
+            addonCreditRemaining: (n) => ` · ${n} left`,
             deliveryFee: 'Delivery',
             freeZone: '· free-delivery zone',
             midZone: '· mid-range 5–7.5km',

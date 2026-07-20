@@ -63,10 +63,12 @@ async function run(req: NextRequest): Promise<NextResponse> {
     const { releaseDishStock } = await import('@/lib/stockUtils');
     const { releaseIngredientStock } = await import('@/lib/ingredientStock');
     const { releaseMealVouchers } = await import('@/lib/mealVoucherUtils');
+    const { releaseAddonCredits } = await import('@/lib/addonCreditUtils');
     const { FieldValue } = await import('firebase-admin/firestore');
 
     const cancelled: string[] = [];
     let vouchersReleased = 0;
+    let addonCreditsReleased = 0;
 
     for (const doc of snap.docs) {
       const o = doc.data();
@@ -103,6 +105,16 @@ async function run(req: NextRequest): Promise<NextResponse> {
           vouchersReleased += voucherIds.length;
         } catch (e) { console.error('[release-stale-fpx] voucher release failed:', doc.id, e); }
       }
+
+      // 4. Release prepaid add-on credits (attached to part 1 of a group).
+      const addonLines: Array<{ addonId: string; count: number }> =
+        Array.isArray(o.addonCreditsUsed) ? o.addonCreditsUsed : [];
+      if (addonLines.length && o.userId) {
+        try {
+          await releaseAddonCredits(db, o.userId, addonLines, doc.id);
+          addonCreditsReleased += addonLines.reduce((s, l) => s + (Number(l.count) || 0), 0);
+        } catch (e) { console.error('[release-stale-fpx] addon credit release failed:', doc.id, e); }
+      }
     }
 
     return NextResponse.json({
@@ -112,6 +124,7 @@ async function run(req: NextRequest): Promise<NextResponse> {
       cancelledCount: cancelled.length,
       cancelledOrderIds: cancelled,
       vouchersReleased,
+      addonCreditsReleased,
     });
   } catch (err) {
     console.error('[release-stale-fpx] failed:', err);

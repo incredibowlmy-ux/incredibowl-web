@@ -226,6 +226,25 @@ export async function POST(req: Request) {
         }
       }
 
+      // Release prepaid add-on credits when cancelling an order that claimed
+      // any (web checkout auto-applies them at submit). Same tolerance as
+      // meal vouchers: expired batches restore as 'expired' (customer loses
+      // them, mirroring an expired voucher).
+      if (
+        status === 'cancelled'
+        && orderData.status !== 'cancelled'
+        && Array.isArray(orderData.addonCreditsUsed)
+        && orderData.addonCreditsUsed.length > 0
+        && orderData.userId
+      ) {
+        try {
+          const { releaseAddonCredits } = await import('@/lib/addonCreditUtils');
+          await releaseAddonCredits(db, orderData.userId, orderData.addonCreditsUsed, orderId);
+        } catch (e) {
+          console.warn('Failed to release addon credits on cancel:', e);
+        }
+      }
+
       // Restore voucher when cancelling an order that used one.
       // Multi-use vouchers: decrement usedCount and clear isUsed flag if it was set.
       // Also remove from the user's vouchersUsed array so per-user dedup releases.

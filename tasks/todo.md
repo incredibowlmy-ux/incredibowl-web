@@ -1,3 +1,27 @@
+# 客户下单自动抵扣预付加料 credits — 2026-07-20
+
+## 需求（老板确认三决策）
+客户账户展示预付加料券（sides/addon voucher）余额，下单时抵扣加料费。
+1. 自动抵扣无开关；2. 与餐券/promo 都可叠加（餐券×promo 互斥不变）；3. 餐券点 wagyu/salmon 时 upgrade credit 自动抵差价（不用餐券不动 credit）。不做线上购买（仍走 admin）。
+
+## Checklist
+- [x] addonCreditUtils.getAvailableAddonCredits 加 soonestExpiryMs
+- [x] 新建 src/lib/addonCreditMath.ts：planAddonCreditDeduction 两端同源（客户端 CartDrawer 与 submit-order import 同一份，杜绝漂移）
+- [x] /api/my-meal-vouchers 响应追加 addonCredits（纯增量，三处消费者向后兼容）
+- [x] submit-order：服务端权威重算 + ±0.02 对账 + per-part addonCreditDiscount 精确落组 + claim 挂 part1（credit 先券后，失败删单+回补库存+互释）+ 写 addonCreditsUsed/addonCreditsAllocatedRevenue（对齐订阅引擎，MFRS15 账闭合）
+- [x] confirm-order 取消路径 releaseAddonCredits（镜像餐券块）
+- [x] release-stale-fpx 第 4 步补 credit 释放 + 响应 addonCreditsReleased
+- [x] CartDrawer：同一 fetch 拉余额、自动抵扣、明细行「预付加料抵扣（N 份）· 剩 X」、payload 传 clientAddonCreditDiscount；有抵扣时隐藏「加购需现金」
+- [x] MemberView 餐券钱包卡下加「预付加料余额」小节（独立于券数，含最早到期）
+- [x] cart/member dict zh+en 各补键（接口驱动漏一边 tsc 失败）
+- [x] 验证：tsc 全绿；dogfood-web-addon-credits.mjs 31/31（普通加料/篡改400/多天parts/和牛反向断言/差价抵扣/取消双回补，全量清理+dishStock回补）；multi-day 回归 + my-meal-vouchers 冒烟过
+- [x] commit 留本地不 push（等老板指示）
+
+## 备注
+- stale-fpx 用例本地无 N8N_API_KEY 跳过（释放逻辑与取消路径共用同一函数已覆盖）
+- 成功页/FPX 弹窗 v1 不加 credit 行（total 本就是净额）；credit 品名两语言均显示中文 addonName
+- 已知既有问题（本次不动）：submit-order serverTotal（CAPI 口径）连餐券都没减
+
 # 装碗打包页（Dashboard 新 page）— 2026-07-14
 
 ## 需求（老板确认）

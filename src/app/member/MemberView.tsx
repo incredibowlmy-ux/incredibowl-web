@@ -88,6 +88,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
         soonestDaysLeft: number | null;
         expirySchedule: { date: string; count: number }[];
         recentPurchases: { id: string; bundleId: string; voucherCount: number; amountPaid: number; status: string; createdAtMs: number }[];
+        addonCredits: { addonId: string; addonName: string; remaining: number; soonestExpiryMs: number | null }[];
     } | null>(null);
 
     useEffect(() => {
@@ -116,6 +117,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 soonestDaysLeft: data.soonestDaysLeft ?? null,
                 expirySchedule: data.expirySchedule || [],
                 recentPurchases: data.recentPurchases || [],
+                addonCredits: Array.isArray(data.addonCredits) ? data.addonCredits : [],
             });
         } catch (e) {
             console.warn('Failed to load meal vouchers:', e);
@@ -652,6 +654,34 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                 >
                                     <Plus size={14} strokeWidth={3} /> {t.buyMore}
                                 </Link>
+                            </div>
+                        )}
+
+                        {/* Prepaid add-on credit balance — independent of voucher count
+                            (standalone top-ups exist), auto-applied at checkout */}
+                        {mealVoucherInfo && mealVoucherInfo.addonCredits.length > 0 && (
+                            <div className="mt-3 bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-white shadow-sm">
+                                <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">{t.addonCreditsTitle}</p>
+                                <div className="mt-2 space-y-1.5">
+                                    {mealVoucherInfo.addonCredits.map(c => (
+                                        <div key={c.addonId} className="flex justify-between items-center text-xs">
+                                            <span className="text-[#1A2D23]/70 font-bold">{c.addonName}</span>
+                                            <span className="text-[#FF6B35] font-black">× {c.remaining}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-[#1A2D23]/40 mt-2 flex items-center gap-1.5">
+                                    <Sparkles size={10} className="shrink-0" /> {t.addonCreditsAutoHint}
+                                    {(() => {
+                                        let min: number | null = null;
+                                        for (const c of mealVoucherInfo.addonCredits) {
+                                            if (typeof c.soonestExpiryMs === 'number' && c.soonestExpiryMs > 0 && (min === null || c.soonestExpiryMs < min)) min = c.soonestExpiryMs;
+                                        }
+                                        if (min === null) return null;
+                                        const days = Math.max(0, Math.ceil((min - Date.now()) / 86_400_000));
+                                        return <span> · {t.addonCreditsExpiry(days)}</span>;
+                                    })()}
+                                </p>
                             </div>
                         )}
                     </div>

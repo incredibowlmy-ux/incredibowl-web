@@ -18,6 +18,7 @@ import {
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { dishVoucherValue } from '@/data/weeklyMenu';
+import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
@@ -76,6 +77,8 @@ export default function CartDrawer({
     // Meal voucher (餐券) redemption state
     const [availableMealVouchers, setAvailableMealVouchers] = useState(0);
     const [mealVouchersUsed, setMealVouchersUsed] = useState(0);
+    // Prepaid add-on credits (预付加料) — auto-applied, no toggle
+    const [addonCredits, setAddonCredits] = useState<Array<{ addonId: string; addonName: string; remaining: number }>>([]);
 
     // ── 地址簿快速切换 ──────────────────────────────────────
     // savedAddresses 来自 users/{uid}（AuthProvider 提供），每条自带 geocode
@@ -145,6 +148,30 @@ export default function CartDrawer({
     const promoLockedByVouchers = cappedMealVouchersUsed > 0;
     const vouchersLockedByPromo = promoApplied;
 
+    // ── Prepaid add-on credit auto-deduction ───────────────────
+    // Same planAddonCreditDeduction the server runs in /api/submit-order
+    // (shared module addonCreditMath.ts — one source, two ends); the server
+    // recomputes with its own balances and reconciles our number ±0.02.
+    // Credits stack with meal vouchers AND promo codes.
+    const addonCreditPlan = planAddonCreditDeduction(
+        cart.map((bundle: any) => ({
+            groupKey: `${bundle.selectedDate || '未定'}|${bundle.selectedTime || 'Lunch'}`,
+            voucherValue: dishVoucherValue(getDishPrice(bundle?.dish?.price ?? 0), bundle?.dish ?? {}),
+            topUpAddonId: bundle?.dish?.topUpAddonId,
+            topUpRM: bundle?.dish?.voucherTopUp ?? 0,
+            units: (bundle?.dishQty || 1) * (bundle?.quantity || 1),
+            addOns: (bundle?.addOns || []).map((a: any) => ({
+                id: a.item?.id || '',
+                totalQty: (a.quantity || 0) * (bundle?.quantity || 1),
+            })),
+        })),
+        cappedMealVouchersUsed,
+        new Map(addonCredits.map(c => [c.addonId, c.remaining])),
+    );
+    const addonCreditDiscount = addonCreditPlan.totalDiscount;
+    const addonCreditsRemainingAfter = Math.max(0,
+        addonCredits.reduce((s, c) => s + c.remaining, 0) - addonCreditPlan.unitsUsed);
+
     // Auto-cap the slider when cart shrinks
     useEffect(() => {
         if (mealVouchersUsed > maxRedeemable) {
@@ -152,7 +179,7 @@ export default function CartDrawer({
         }
     }, [maxRedeemable, mealVouchersUsed]);
 
-    const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount - mealVoucherDiscount);
+    const subtotalAfterDiscount = Math.max(0, cartTotal - promoDiscount - mealVoucherDiscount - addonCreditDiscount);
     const distanceKm: number | null = typeof userProfile?.addressDistanceKm === 'number'
         ? userProfile.addressDistanceKm
         : null;
@@ -306,6 +333,7 @@ export default function CartDrawer({
         const fetchMealVouchers = async () => {
             if (!isOpen || !currentUser) {
                 setAvailableMealVouchers(0);
+                setAddonCredits([]);
                 return;
             }
             try {
@@ -317,6 +345,7 @@ export default function CartDrawer({
                 if (!res.ok) return;
                 const data = await res.json();
                 setAvailableMealVouchers(data.availableCount || 0);
+                setAddonCredits(Array.isArray(data.addonCredits) ? data.addonCredits : []);
             } catch (e) {
                 console.warn('Failed to load meal vouchers:', e);
             }
@@ -408,6 +437,7 @@ export default function CartDrawer({
                 orderNote: orderNote || '',
                 mealVouchersUsed: cappedMealVouchersUsed,
                 clientMealVoucherDiscount: mealVoucherDiscount,
+                clientAddonCreditDiscount: addonCreditDiscount,
             }),
         });
 
@@ -853,7 +883,7 @@ export default function CartDrawer({
                                         </div>
                                         {cappedMealVouchersUsed > 0 && !vouchersLockedByPromo && (
                                             <p className="text-[10px] text-green-700 font-bold mt-2 flex items-center gap-1">
-                                                <CheckCircle size={11} /> {t.voucherRedeemed(cappedMealVouchersUsed, mealVoucherDiscount.toFixed(2))}<span className="lg:hidden">{t.voucherAddonCash}</span>
+                                                <CheckCircle size={11} /> {t.voucherRedeemed(cappedMealVouchersUsed, mealVoucherDiscount.toFixed(2))}{addonCreditDiscount === 0 && <span className="lg:hidden">{t.voucherAddonCash}</span>}
                                             </p>
                                         )}
                                         {vouchersLockedByPromo && (
@@ -883,7 +913,7 @@ export default function CartDrawer({
                             {currentUser && deliveryTier && (
                                 <div className="space-y-1.5 pb-1 border-b border-gray-100">
                                     <div className="flex justify-between text-xs">
-                                        <span className="text-gray-500">{t.subtotal} {(promoApplied || cappedMealVouchersUsed > 0) && t.discounted}</span>
+                                        <span className="text-gray-500">{t.subtotal} {(promoApplied || cappedMealVouchersUsed > 0 || addonCreditDiscount > 0) && t.discounted}</span>
                                         <span className="text-gray-700 font-bold">RM {subtotalAfterDiscount.toFixed(2)}</span>
                                     </div>
                                     {cappedMealVouchersUsed > 0 && (
@@ -893,6 +923,16 @@ export default function CartDrawer({
                                                 {t.voucherDeduct(cappedMealVouchersUsed)}
                                             </span>
                                             <span className="text-green-600 font-bold">- RM {mealVoucherDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    {addonCreditDiscount > 0 && (
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-gray-500 flex items-center gap-1">
+                                                <Ticket size={11} className="text-[#FF6B35]" />
+                                                {t.addonCreditDeduct(addonCreditPlan.unitsUsed)}
+                                                <span className="text-gray-400">{t.addonCreditRemaining(addonCreditsRemainingAfter)}</span>
+                                            </span>
+                                            <span className="text-green-600 font-bold">- RM {addonCreditDiscount.toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-xs">
@@ -1017,7 +1057,7 @@ export default function CartDrawer({
                         <div className="flex justify-between items-baseline">
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
                             <div className="text-right">
-                                {(promoApplied || cappedMealVouchersUsed > 0) && (
+                                {(promoApplied || cappedMealVouchersUsed > 0 || addonCreditDiscount > 0) && (
                                     <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
                                 )}
                                 <span className="text-2xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>

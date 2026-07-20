@@ -7,6 +7,8 @@ import { calcPerDeliveryFees, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
+import { claimAddonCredits, releaseAddonCredits, getAvailableAddonCredits } from '@/lib/addonCreditUtils';
+import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 
 import { generateTrackToken } from '@/lib/trackingUtils';
 
@@ -48,6 +50,7 @@ export async function POST(req: Request) {
       orderNote,
       mealVouchersUsed: rawMealVouchersUsed,
       clientMealVoucherDiscount,
+      clientAddonCreditDiscount,
     } = body;
     const userId = auth.uid; // authoritative — body userId ignored
     const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
@@ -193,6 +196,41 @@ export async function POST(req: Request) {
       }
     }
 
+    // ── Prepaid add-on credits: auto-apply (authoritative) ────
+    // Same planAddonCreditDeduction the client runs (shared module — the two
+    // sides literally execute the same code), fed with SERVER-read balances.
+    // Credits stack with meal vouchers AND promo codes. groupKey matches the
+    // delivery-group split key below so per-part discounts land exactly.
+    const availByAddon = new Map(
+      (await getAvailableAddonCredits(db, userId)).map(c => [c.addonId, c.remaining]),
+    );
+    const addonCreditPlan = planAddonCreditDeduction(
+      validatedBundles.map(vb => ({
+        groupKey: `${vb.selectedDate || '未定'}|${vb.selectedTime || 'Lunch'}`,
+        voucherValue: dishVoucherValue(vb.serverDishPrice, vb.dish),
+        topUpAddonId: vb.dish.topUpAddonId,
+        topUpRM: vb.dish.voucherTopUp ?? 0,
+        units: (vb.dishQty || 1) * (vb.quantity || 1),
+        addOns: (vb.addOns || []).map((a: any) => ({
+          id: a.id,
+          totalQty: (a.quantity || 0) * (vb.quantity || 1),
+        })),
+      })),
+      mealVouchersUsed,
+      availByAddon,
+    );
+    const serverAddonCreditDiscount = addonCreditPlan.totalDiscount;
+
+    const clientAC = Number(clientAddonCreditDiscount) || 0;
+    if (Math.abs(serverAddonCreditDiscount - clientAC) > 0.02) {
+      // Most common cause: balance consumed elsewhere (another device / the
+      // subscription engine) between opening the cart and paying. Reopening
+      // the cart refetches the balance and self-heals.
+      return NextResponse.json({
+        error: `预付加料抵扣金额不一致，服务器: RM${serverAddonCreditDiscount.toFixed(2)}，客户端: RM${clientAC.toFixed(2)}。请关闭购物车重新结账。`,
+      }, { status: 400 });
+    }
+
     // ── Validate delivery zone + fee server-side ──────────────
     const userSnap = await db.collection('users').doc(userId).get();
     const userData = userSnap.exists ? userSnap.data() || {} : {};
@@ -222,7 +260,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount);
+    const subtotalAfterDiscount = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount - serverAddonCreditDiscount);
     // Pricing-v2 grandfathering: existing customers (createdAt < 2026-05-16)
     // within 2 km keep their free delivery. Firebase Admin SDK serializes
     // Firestore Timestamp as { _seconds, _nanoseconds }.
@@ -283,7 +321,7 @@ export async function POST(req: Request) {
       if (mealVouchersUsed === 0) {
         return NextResponse.json({ error: '"餐券"支付需选择餐券抵扣' }, { status: 400 });
       }
-      const cashDue = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount) + serverDeliveryFee;
+      const cashDue = Math.max(0, serverCartTotal - serverPromoDiscount - serverMealVoucherDiscount - serverAddonCreditDiscount) + serverDeliveryFee;
       if (cashDue > 0.02) {
         return NextResponse.json({
           error: `还需付款 RM ${cashDue.toFixed(2)}，请选择 QR 或 FPX 支付方式`,
@@ -334,7 +372,10 @@ export async function POST(req: Request) {
           remainingMV -= currentMV;
         }
       }
-      const finalTotal = Math.max(0, group.subtotal - currentPromo - currentMV);
+      // Addon-credit discount is allocated per delivery group by the plan
+      // itself (exact, no proportional split — the algorithm walks bundles).
+      const currentAC = addonCreditPlan.perGroupDiscount[`${group.date}|${group.time}`] || 0;
+      const finalTotal = Math.max(0, group.subtotal - currentPromo - currentMV - currentAC);
 
       // Build items array (same format as before)
       const items: any[] = [];
@@ -402,6 +443,9 @@ export async function POST(req: Request) {
       }
       // Meal voucher accounting (per-part RM discount only — voucherIds attach to part 1 only, populated below)
       if (currentMV > 0) payload.mealVoucherDiscount = currentMV;
+      // Prepaid add-on credit accounting (per-part RM discount only — claim
+      // lines + recognized revenue attach to part 1, populated below)
+      if (currentAC > 0) payload.addonCreditDiscount = currentAC;
 
       const docRef = await db.collection('orders').add(payload);
       orderIds.push(docRef.id);
@@ -423,6 +467,29 @@ export async function POST(req: Request) {
     // for each source bundle). This lets the admin KPI compute true accrual
     // revenue = order.total + mealVoucherAllocatedRevenue, instead of the
     // face-value approximation that overstates revenue by the bulk discount.
+    // Prepaid add-on credits claim FIRST (mirrors the subscription engine's
+    // order), then meal vouchers — so the voucher catch can hand the credits
+    // back before rolling the orders back.
+    let addonClaimed = false;
+    if (addonCreditPlan.lines.length > 0) {
+      try {
+        const addonClaim = await claimAddonCredits(db, userId, addonCreditPlan.lines, orderIds[0]);
+        addonClaimed = true;
+        await db.collection('orders').doc(orderIds[0]).update({
+          addonCreditsUsed: addonClaim.lines.map(l => ({ addonId: l.addonId, count: l.count })),
+          addonCreditsAllocatedRevenue: addonClaim.recognizedRevenueRM,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      } catch (err: any) {
+        // Roll back the just-created orders + release the reserved dish stock
+        for (const oid of orderIds) {
+          try { await db.collection('orders').doc(oid).delete(); } catch {}
+        }
+        try { await releaseDishStock(db, stockItems); } catch {}
+        return NextResponse.json({ error: err?.message || '预付加料抵扣失败，请重试' }, { status: 400 });
+      }
+    }
+
     if (mealVouchersUsed > 0) {
       try {
         const claimed = await claimMealVouchers(db, userId, mealVouchersUsed, orderIds[0]);
@@ -433,7 +500,11 @@ export async function POST(req: Request) {
           updatedAt: FieldValue.serverTimestamp(),
         });
       } catch (err: any) {
-        // Roll back the just-created orders + release the reserved dish stock
+        // Give back the addon credits claimed above, then roll back the
+        // just-created orders + release the reserved dish stock
+        if (addonClaimed) {
+          try { await releaseAddonCredits(db, userId, addonCreditPlan.lines, orderIds[0]); } catch {}
+        }
         for (const oid of orderIds) {
           try { await db.collection('orders').doc(oid).delete(); } catch {}
         }
