@@ -4897,7 +4897,7 @@ incredibowl.my`,
                     const countColor = r.gapCount == null ? 'var(--text)' : r.gapCount > 0 ? 'var(--warning)' : r.gapCount < 0 ? 'var(--success)' : 'var(--text)';
                     const revColor = r.gapRev == null ? 'var(--text)' : r.gapRev > 0 ? 'var(--warning)' : r.gapRev < 0 ? 'var(--success)' : 'var(--text)';
                     return `
-                        <div style="display:grid;grid-template-columns:60px 60px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px">
+                        <div class="forecast-day-row" data-date="${r.targetKey}" title="点击查看当天全部订单" style="display:grid;grid-template-columns:60px 60px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer">
                             <div class="mono" style="font-weight:600">${fmtDate(r.target)}${todayLabel}</div>
                             <div style="font-size:12px;color:var(--text-muted)">${days[r.wd]}</div>
                             <div class="num r" style="text-align:right">
@@ -4911,7 +4911,7 @@ incredibowl.my`,
                     `;
                 }).join('')}
                 <div style="margin-top:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.6">
-                    <strong>读法</strong>：已确认 &lt; 预测 → 还需要补单（绿表示已超出预测）。营收差距大 + 单数差距小 → 客单价拉胯，可推套餐 / 加点。
+                    <strong>读法</strong>：已确认 &lt; 预测 → 还需要补单（绿表示已超出预测）。营收差距大 + 单数差距小 → 客单价拉胯，可推套餐 / 加点。点任一行可看当天全部订单。
                 </div>
             `;
         }
@@ -10843,11 +10843,75 @@ incredibowl.my`,
             closeOrderDetail();
             if (order) openOrderModal(order);
         });
-        // 最近订单：点行主体（非操作按钮）打开详情
+        // 最近订单 / 当日订单列表：点行主体（非操作按钮）打开详情
         document.addEventListener('click', (e) => {
             if (e.target.closest('button')) return;
-            const row = e.target.closest('.order-row');
+            const row = e.target.closest('.order-row, .day-order-row');
             if (row && row.dataset.id) openOrderDetail(row.dataset.id);
+        });
+
+        // ─── 当日订单列表（预测表点某一天进入，复用 breakdown modal 外壳）───
+        function openDayOrders(dateStr) {
+            const dayOrders = state.orders.filter(o => o.deliveryDate === dateStr);
+            const d = new Date(dateStr + 'T00:00:00');
+            const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const dateLabel = isNaN(d) ? dateStr : `${d.getMonth() + 1}/${d.getDate()} ${dayNames[d.getDay()]}`;
+            const paid = dayOrders.filter(o => PAID_STATUSES.has(o.status));
+            const paidRev = paid.reduce((s, o) => s + orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0), 0);
+            const activeCount = dayOrders.filter(o => o.status === 'pending' || o.status === 'preparing' || o.status === 'delivering').length;
+            const cancelledCount = dayOrders.filter(o => o.status === 'cancelled').length;
+
+            // 午餐在前、晚餐在后，各按送达时间排
+            const mealRank = { lunch: 0, dinner: 1 };
+            const sorted = dayOrders.slice().sort((a, b) => {
+                const ra = mealRank[mealType(a)] ?? 2, rb = mealRank[mealType(b)] ?? 2;
+                if (ra !== rb) return ra - rb;
+                return String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || ''));
+            });
+
+            const statusMeta = {
+                delivered:  { label: '已送达', style: 'background:rgba(16,185,129,0.12);color:#059669' },
+                confirmed:  { label: '已确认', style: 'background:rgba(59,130,246,0.12);color:#2563EB' },
+                preparing:  { label: '准备中', style: 'background:rgba(245,158,11,0.14);color:#B45309' },
+                delivering: { label: '配送中', style: 'background:rgba(139,92,246,0.14);color:#7C3AED' },
+                cancelled:  { label: '已取消', style: 'background:rgba(239,68,68,0.12);color:#DC2626' },
+                pending:    { label: '待确认', style: 'background:var(--bg-subtle);color:var(--text-muted)' },
+            };
+            $('#bdmTitle').textContent = `📅 ${dateLabel} · 当日订单`;
+            $('#bdmSubtitle').textContent =
+                `${paid.length} 单计营收 ${fmt.rm(paidRev)}`
+                + (activeCount ? ` · ${activeCount} 单进行中（不计营收）` : '')
+                + (cancelledCount ? ` · ${cancelledCount} 单已取消` : '');
+            $('#bdmBody').innerHTML = sorted.length === 0
+                ? `<div class="empty-state"><div class="empty-state-msg">这天还没有订单</div></div>`
+                : sorted.map(o => {
+                    const st = statusMeta[o.status || 'pending'] || statusMeta.pending;
+                    const mt = mealType(o);
+                    const mealChip = mt === 'lunch' ? '<span style="color:#B45309;font-weight:600">午</span>'
+                        : mt === 'dinner' ? '<span style="color:#4338CA;font-weight:600">晚</span>' : '';
+                    const itemsPreview = (o.items || []).map(it =>
+                        `${it.quantity}× ${canonicalDishName(it.name)}`).filter(s => !s.includes('↳')).join(', ') || '—';
+                    const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
+                    const dim = o.status === 'cancelled' ? 'opacity:0.5' : '';
+                    const mvUsed = Number(o.mealVouchersUsed) || 0;
+                    return `
+                        <div class="day-order-row" data-id="${o.id}" title="点击查看订单详情" style="display:grid;grid-template-columns:52px 1fr auto auto;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer;${dim}">
+                            <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(o.deliveryTime || '')}<div>${mealChip}</div></div>
+                            <div style="min-width:0">
+                                <div style="font-weight:600">${escapeHtml(o.userName || '匿名')}${mvUsed > 0 ? ` <span style="font-size:10px;color:#9A6E2F">🎫${mvUsed}</span>` : ''}</div>
+                                <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(itemsPreview)}">${escapeHtml(itemsPreview)}</div>
+                            </div>
+                            <div class="num" style="font-weight:700">${fmt.rm(rev)}</div>
+                            <div style="font-size:11px;padding:3px 8px;border-radius:999px;${st.style}">${st.label}</div>
+                        </div>`;
+                }).join('');
+            $('#bdmHint').textContent = '点任意一单看完整详情';
+            $('#breakdownDetailModal').classList.remove('hidden');
+        }
+        // 预测表：点某一天 → 当天全部订单
+        document.addEventListener('click', (e) => {
+            const dayRow = e.target.closest('.forecast-day-row');
+            if (dayRow && dayRow.dataset.date) openDayOrders(dayRow.dataset.date);
         });
 
         // Edit / Delete / Delivery / Refund buttons inside recent orders list (delegated)
