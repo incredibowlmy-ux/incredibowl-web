@@ -159,7 +159,7 @@ export default function AddOnModal({
                     return {
                         ...section,
                         items: [
-                            { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: p('natto-side', 4.90), category: 'sides' },
+                            { id: 'natto-side', name: '健康发酵纳豆', nameEn: 'Natto', price: p('natto-side', 7.90), category: 'sides' },
                             { id: 'onsen-egg-side', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg-side', 3), category: 'sides' },
                             { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: p('nori', 2), category: 'sides' },
                             { id: 'soy-sauce', name: '秘制日本酱油', nameEn: 'Secret Japanese Soy Sauce', price: p('soy-sauce', 1.50), category: 'sides' },
@@ -360,6 +360,115 @@ export default function AddOnModal({
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
                             { id: 'extra-soy-leg-1', name: '【犒劳自己】多加一只酱油全鸡腿', nameEn: 'Extra Soy Sauce Chicken Whole Leg (+1)', price: p('extra-soy-leg-1', 16.50), category: 'sides', maxQty: 1 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
+        // If it's Shaoxing Wine Steamed Pork Belly (id: 4), prepend combo + dual-tier pork add-ons
+        if (dish.id === 4) {
+            const shaoxingCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'shaoxing-combo',
+                title: '✨ 酒香干饭套',
+                titleEn: 'Shaoxing Rice King Set (+ RM 15.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：酒香绍兴花肉 100g + 古早味荷包蛋 + 加饭\n"绍兴酒香渗进双倍花肉，戳破流心荷包蛋拌饭——干饭魂彻底点燃！"',
+                extraDescEn: 'Includes: 100g Shaoxing pork belly + old-school sunny-side-up egg + extra rice\n"Double pork soaked in Shaoxing wine, a runny egg over extra rice — pure comfort."',
+                items: [
+                    { id: 'shaoxing-pork-combo', name: '酒香干饭套 (原价 RM 19.40)', nameEn: 'Shaoxing Rice King Set', price: p('shaoxing-pork-combo', 15.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-shaoxing-pork-50g', name: '【小酌怡情】加绍兴花肉 (50g)', nameEn: 'Extra Shaoxing Pork Belly (50g)', price: p('extra-shaoxing-pork-50g', 7.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-shaoxing-pork-100g', name: '【酒香入魂】加绍兴花肉 (100g)', nameEn: 'Extra Shaoxing Pork Belly (100g)', price: p('extra-shaoxing-pork-100g', 14.90), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [shaoxingCombo, ...customSections];
+        }
+
+        // If it's Homestyle Japanese Curry Rice (id: 25), prepend combo + extra-chicken add-ons
+        if (dish.id === 25) {
+            const curryCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'curry-combo',
+                title: '✨ 咖喱控三件套',
+                titleEn: 'Curry Lover Trio (+ RM 7.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：滑嫩咖喱鸡丁 50g + 浓厚温泉蛋 + 加饭\n"温泉蛋滑进浓郁咖喱酱，多一份鸡丁多一份满足——咖喱控没有抵抗力。"',
+                extraDescEn: 'Includes: 50g tender curry chicken + rich onsen egg + extra rice\n"An onsen egg melting into thick curry with extra chicken — irresistible for curry lovers."',
+                items: [
+                    { id: 'curry-trio-combo', name: '咖喱控三件套 (原价 RM 9.50)', nameEn: 'Curry Lover Trio', price: p('curry-trio-combo', 7.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-curry-chicken-50g', name: '【滑嫩多汁】加咖喱鸡丁 (50g)', nameEn: 'Extra Curry Chicken (50g)', price: p('extra-curry-chicken-50g', 4.50), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [curryCombo, ...customSections];
+        }
+
+        // If it's Hometown Taucu Braised Pork Belly (id: 23), prepend combo + dual-tier pork add-ons
+        if (dish.id === 23) {
+            const taucuCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'taucu-combo',
+                title: '✨ 阿嫲下饭王套',
+                titleEn: 'Grandma Rice King Set (+ RM 15.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：家乡豆酱花肉 100g + 古早味荷包蛋 + 加饭\n"豆酱花肉加量，配流心荷包蛋捞饭——阿嫲看了都说你会吃。"',
+                extraDescEn: 'Includes: 100g taucu pork belly + old-school sunny-side-up egg + extra rice\n"Double taucu pork with a runny egg over extra rice — grandma-approved indulgence."',
+                items: [
+                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 19.40)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 15.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-taucu-pork-50g', name: '【小碗解馋】加豆酱花肉 (50g)', nameEn: 'Extra Taucu Pork Belly (50g)', price: p('extra-taucu-pork-50g', 7.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-taucu-pork-100g', name: '【家乡浓香】加豆酱花肉 (100g)', nameEn: 'Extra Taucu Pork Belly (100g)', price: p('extra-taucu-pork-100g', 14.90), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [taucuCombo, ...customSections];
+        }
+
+        // If it's Grandma-Style Ginger-Scallion Fish Fillet (id: 20), add an extra-fish upsell to sides
+        if (dish.id === 20) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-fish-120g', name: '加姜葱鱼片 (120g)', nameEn: 'Extra Fish Fillet (120g)', price: p('extra-fish-120g', 13.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };

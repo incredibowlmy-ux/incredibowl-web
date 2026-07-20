@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-07-14
+ * Generated: 2026-07-16
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -18,7 +18,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     {
       "id": "natto-side",
       "label": "健康发酵纳豆",
-      "price": 4.9
+      "price": 7.9
     },
     {
       "id": "onsen-egg",
@@ -234,6 +234,21 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "绍兴酒蒸花肉": [
+    {
+      "id": "shaoxing-pork-combo",
+      "label": "酒香干饭套",
+      "price": 15.9
+    },
+    {
+      "id": "extra-shaoxing-pork-50g",
+      "label": "【小酌怡情】加绍兴花肉 (50g)",
+      "price": 7.9
+    },
+    {
+      "id": "extra-shaoxing-pork-100g",
+      "label": "【酒香入魂】加绍兴花肉 (100g)",
+      "price": 14.9
+    },
     {
       "id": "less-rice",
       "label": "少饭",
@@ -642,6 +657,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "家常日式咖喱饭": [
+    {
+      "id": "curry-trio-combo",
+      "label": "咖喱控三件套",
+      "price": 7.9
+    },
+    {
+      "id": "extra-curry-chicken-50g",
+      "label": "【滑嫩多汁】加咖喱鸡丁 (50g)",
+      "price": 4.5
+    },
     {
       "id": "less-rice",
       "label": "少饭",
@@ -1193,6 +1218,21 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "家乡豆酱焖花肉": [
     {
+      "id": "taucu-pork-combo",
+      "label": "阿嫲下饭王套",
+      "price": 15.9
+    },
+    {
+      "id": "extra-taucu-pork-50g",
+      "label": "【小碗解馋】加豆酱花肉 (50g)",
+      "price": 7.9
+    },
+    {
+      "id": "extra-taucu-pork-100g",
+      "label": "【家乡浓香】加豆酱花肉 (100g)",
+      "price": 14.9
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -1289,6 +1329,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "古早味姜葱鱼片饭": [
+    {
+      "id": "extra-fish-120g",
+      "label": "加姜葱鱼片 (120g)",
+      "price": 13.9
+    },
     {
       "id": "less-rice",
       "label": "少饭",

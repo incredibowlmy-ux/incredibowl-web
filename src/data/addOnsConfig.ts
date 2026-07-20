@@ -24,7 +24,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Natto Rice (id:6) specials ────────────
   'natto-super-combo': 5.00,
-  'natto-side': 4.90,
+  'natto-side': 7.90,  // 2026-07-16 老板调价 4.90 → 7.90
   'onsen-egg-side': 3.00,
   'nori': 2.00,
   'soy-sauce': 1.50,
@@ -83,6 +83,23 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-aus-potato-80g': 3.50,
   'extra-cauliflower-80g': 3.00,
   'extra-black-olive-12g': 1.50,
+
+  // ─── Ginger-Scallion Fish Fillet (id:20) specials ──
+  'extra-fish-120g': 13.90,
+
+  // ─── Shaoxing Wine Steamed Pork Belly (id:4) specials ──
+  'extra-shaoxing-pork-100g': 14.90,
+  'extra-shaoxing-pork-50g': 7.90,   // 2026-07-16 双档策略：低门槛档
+  'shaoxing-pork-combo': 15.90,      // 酒香干饭套：花肉100g+荷包蛋+加饭（原价 19.40）
+
+  // ─── Homestyle Japanese Curry Rice (id:25) specials ──
+  'extra-curry-chicken-50g': 4.50,
+  'curry-trio-combo': 7.90,          // 咖喱控三件套：鸡丁50g+温泉蛋+加饭（原价 9.50）
+
+  // ─── Hometown Taucu Braised Pork Belly (id:23) specials ──
+  'extra-taucu-pork-100g': 14.90,
+  'extra-taucu-pork-50g': 7.90,      // 2026-07-16 双档策略：低门槛档
+  'taucu-pork-combo': 15.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 19.40）
 
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.90,

@@ -270,6 +270,17 @@ export const dishRecipes: DishRecipe[] = [
       { name: '樱桃番茄', qty: 2, unit: '颗' },
     ],
   },
+  {
+    // 新菜 2026-07-17 入系统（限周二/五）。份量老板 2026-07-21 提供：猪扒按块计
+    //（独立采购 SKU，不与花肉/鸡扒合并）。甜酸洋葱酱与洋葱用量老板未提供 →
+    // 不编造不计入；TODO_CONFIRM: 拿到准数后补（洋葱参考 { name: '黄洋葱', qty: X, unit: 'g' }）。
+    name: '家乡甜酸洋葱猪扒',
+    shortName: '猪扒',
+    ingredients: [
+      { name: '猪扒', qty: 1, unit: '块' },
+      { name: '白饭', qty: 80, unit: 'g' },
+    ],
+  },
 ];
 
 /**
@@ -347,6 +358,30 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // 与主菜同一 TODO_CONFIRM — 碗妈确认实际每份采购克数后一起更新）。
   '加香煎三文鱼 (70g+)': [{ name: '三文鱼', qty: 120, unit: 'g' }],
 
+  // ─── Ginger-Scallion Fish add-on ───────────────────────────
+  // 老板 2026-07-16 拍板：120g = 熟重，材料与主菜的鱼部分一份完全一样
+  // （巴丁鱼片 250g 生重 + 姜葱同量；饭/蛋不在加料内）。
+  '加姜葱鱼片 (120g)': [
+    { name: '巴丁鱼片', qty: 250, unit: 'g' },
+    { name: '葱', qty: 32, unit: 'g' },
+    { name: '姜', qty: 12, unit: 'g' },
+  ],
+
+  // ─── Shaoxing / Taucu pork belly add-ons ───────────────────
+  // 100g 按熟重口径估算：主菜 140g 生重 → 熟重 ≥90g（缩水约 35%），
+  // 100g 熟 ≈ 156g 生 → 取整 160g（宁多勿少惯例）。
+  // TODO_CONFIRM: 碗妈确认加料实际采购克数后更新。
+  '【酒香入魂】加绍兴花肉 (100g)': [{ name: '顶级无皮五花肉', qty: 160, unit: 'g' }],
+  '【家乡浓香】加豆酱花肉 (100g)': [{ name: '顶级无皮五花肉', qty: 160, unit: 'g' }],
+  // 50g 熟 ≈ 78g 生 → 取整 80g（同上缩水比例，宁多勿少）。
+  '【小酌怡情】加绍兴花肉 (50g)': [{ name: '顶级无皮五花肉', qty: 80, unit: 'g' }],
+  '【小碗解馋】加豆酱花肉 (50g)': [{ name: '顶级无皮五花肉', qty: 80, unit: 'g' }],
+
+  // ─── Japanese Curry Rice add-on ────────────────────────────
+  // 沿用「嫩炒鸡丁 (50g) = 65g 鸡胸肉生重」同款换算。
+  // TODO_CONFIRM: 碗妈确认后更新。
+  '【滑嫩多汁】加咖喱鸡丁 (50g)': [{ name: '鸡胸肉', qty: 65, unit: 'g' }],
+
   // ─── Wagyu Patty Don add-ons ───────────────────────────────
   '加澳洲和牛饼 (1块)': [{ name: '澳洲和牛饼', qty: 1, unit: '块' }],
   // 小番茄洋葱沙拉（RM4.50）：小番茄 40g 按 3 颗计（同「爽脆多汁小番茄 (40g)」
@@ -416,6 +451,27 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   '薯肉双拼满足套 (原价 RM 15.40)': [
     { name: '马铃薯', qty: 100, unit: 'g' },
     { name: '五花肉', qty: 125, unit: 'g' },
+  ],
+
+  // shaoxing-pork-combo: 绍兴花肉 100g + 荷包蛋 + 加饭
+  '酒香干饭套 (原价 RM 19.40)': [
+    { name: '顶级无皮五花肉', qty: 160, unit: 'g' },
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // taucu-pork-combo: 豆酱花肉 100g + 荷包蛋 + 加饭
+  '阿嫲下饭王套 (原价 RM 19.40)': [
+    { name: '顶级无皮五花肉', qty: 160, unit: 'g' },
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // curry-trio-combo: 咖喱鸡丁 50g + 温泉蛋 + 加饭
+  '咖喱控三件套 (原价 RM 9.50)': [
+    { name: '鸡胸肉', qty: 65, unit: 'g' },
+    { name: '温泉蛋', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
   ],
 
   // ─── TODO_RECIPE (data not provided yet) ───────────────────
@@ -517,6 +573,14 @@ export const addOnShortNames: Record<string, string> = {
   '【绵密软糯】加马铃薯 (90g)': '马铃薯',
   '【浓香入味】加花肉片 (70g)': '花肉',
 
+  // 2026-07-16 new dish-special add-ons
+  '加姜葱鱼片 (120g)': '姜鱼片',
+  '【酒香入魂】加绍兴花肉 (100g)': '绍肉',
+  '【小酌怡情】加绍兴花肉 (50g)': '绍肉',
+  '【家乡浓香】加豆酱花肉 (100g)': '豆酱肉',
+  '【小碗解馋】加豆酱花肉 (50g)': '豆酱肉',
+  '【滑嫩多汁】加咖喱鸡丁 (50g)': '咖鸡丁',
+
   // Combos (composite — single token in matrix, ingredients still expand in 🛒)
   '灵魂三件套 (原价 RM 6.0)': '纳豆套',
   '海陆澎湃三件套 (原价 RM 14.0)': '海陆套',
@@ -524,6 +588,9 @@ export const addOnShortNames: Record<string, string> = {
   '蛋白质核弹三件套 (原价 RM 18.40)': '希胸套',
   '爆量满足三件套 (原价 RM 15.40)': '葱汤套',
   '薯肉双拼满足套 (原价 RM 15.40)': '薯肉套',
+  '酒香干饭套 (原价 RM 19.40)': '绍肉套',
+  '阿嫲下饭王套 (原价 RM 19.40)': '豆酱套',
+  '咖喱控三件套 (原价 RM 9.50)': '咖喱套',
 };
 
 export function getAddOnShortName(label: string): string {
@@ -572,6 +639,9 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '蛋白质核弹三件套': '蛋白质核弹三件套 (原价 RM 18.40)',
   '爆量满足三件套': '爆量满足三件套 (原价 RM 15.40)',
   '薯肉双拼满足套': '薯肉双拼满足套 (原价 RM 15.40)',
+  '酒香干饭套': '酒香干饭套 (原价 RM 19.40)',
+  '阿嫲下饭王套': '阿嫲下饭王套 (原价 RM 19.40)',
+  '咖喱控三件套': '咖喱控三件套 (原价 RM 9.50)',
   // Rice swap — manual short label has its OWN recipe entry above (loop skips
   // it), listed here purely so the prep sheet's source tag unifies to one line
   // (was "糙米 180g（换糙米）· 糙米 90g（白饭换糙米）"; boss 2026-07-02).
