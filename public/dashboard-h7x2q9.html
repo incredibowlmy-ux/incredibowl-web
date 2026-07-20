@@ -2593,7 +2593,7 @@
                     <div>
                         <label>电话 *</label>
                         <input type="tel" id="atmPhone" required placeholder="0123456789" pattern="[0-9+\-\s]*" />
-                        <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="atmNameHint">必须是已有可用餐券的客户</div>
+                        <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="atmNameHint">有券客户：有效期对齐最晚一张券；无券客户：充值日起 30 天</div>
                     </div>
                     <div>
                         <label>付款日期</label>
@@ -12188,7 +12188,7 @@ incredibowl.my`,
             $('#atmPhone').value = (prefill && prefill.phone) || '';
             $('#atmDate').value = ymdKey(new Date());  // 本地日，同 svm
             $('#atmNote').value = '';
-            $('#atmNameHint').textContent = (prefill && prefill.name) ? `客户：${prefill.name}` : '必须是已有可用餐券的客户';
+            $('#atmNameHint').textContent = (prefill && prefill.name) ? `客户：${prefill.name}` : '有券客户：有效期对齐最晚一张券；无券客户：充值日起 30 天';
             atmPaymentMethod = 'cash';
             $$('#atmPaymentPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.payment === atmPaymentMethod));
             renderAtmRows();
@@ -12857,11 +12857,11 @@ incredibowl.my`,
                 </div>
 
                 <!-- ─── 餐券 ─── -->
-                ${p.voucherPurchaseCount > 0 || p.availableCount > 0 ? `
+                ${p.voucherPurchaseCount > 0 || p.availableCount > 0 || Object.values(p.addonCredits || {}).some(c => c.remaining > 0) ? `
                 <div style="padding:14px 16px;background:rgba(201,152,92,0.08);border-radius:10px;margin-bottom:10px;border-left:3px solid #C9985C">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="font-size:13px;font-weight:600;color:#9A6E2F">🎫 餐券</div>
-                        ${p.availableCount > 0 && p.phone ? `<button type="button" data-cust-action="addon-topup" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" style="padding:4px 10px;border-radius:7px;background:rgba(201,152,92,0.18);color:#9A6E2F;font-size:11px;font-weight:600;cursor:pointer">🍳 ＋充值加料</button>` : ''}
+                        ${p.phone ? `<button type="button" data-cust-action="addon-topup" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" style="padding:4px 10px;border-radius:7px;background:rgba(201,152,92,0.18);color:#9A6E2F;font-size:11px;font-weight:600;cursor:pointer">🍳 ＋充值加料</button>` : ''}
                     </div>
                     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;font-size:12px">
                         <div><span style="color:var(--text-muted)">购买</span> <strong>${p.voucherPurchaseCount}</strong> 笔 / <strong>${p.voucherCountMinted}</strong> 张</div>
@@ -12871,7 +12871,12 @@ incredibowl.my`,
                         ${(() => { const e = Object.values(p.addonCredits || {}).filter(c => c.remaining > 0); return e.length ? `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px"><span style="color:var(--text-muted)">🍳 预付加料余额</span> <strong>${e.map(c => `${escapeHtml(c.name)} ${c.remaining}`).join(' · ')}</strong></div>` : ''; })()}
                     </div>
                 </div>
-                ` : ''}
+                ` : (p.phone ? `
+                <div style="padding:10px 16px;background:rgba(201,152,92,0.08);border-radius:10px;margin-bottom:10px;border-left:3px solid #C9985C;display:flex;justify-content:space-between;align-items:center">
+                    <div style="font-size:12px;color:#9A6E2F">🍳 预付加料 — 无餐券客户也可充值（30 天有效）</div>
+                    <button type="button" data-cust-action="addon-topup" data-name="${escapeHtml(p.name)}" data-phone="${escapeHtml(p.phone)}" style="padding:4px 10px;border-radius:7px;background:rgba(201,152,92,0.18);color:#9A6E2F;font-size:11px;font-weight:600;cursor:pointer">🍳 ＋充值加料</button>
+                </div>
+                ` : '')}
 
                 <!-- ─── 偏好 ─── -->
                 ${p.topDishes.length > 0 ? `

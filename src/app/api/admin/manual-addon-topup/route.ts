@@ -52,13 +52,14 @@ async function verifyAdmin(req: NextRequest): Promise<{ email: string } | null> 
  * POST /api/admin/manual-addon-topup
  * Auth: admin email
  *
- * Standalone prepaid add-on top-up — a voucher customer pays extra cash
- * mid-bundle (e.g. week 2: "upgrade my remaining meals + add eggs") WITHOUT
+ * Standalone prepaid add-on top-up — a customer pays extra cash for add-on
+ * credits (e.g. week 2: "upgrade my remaining meals + add eggs") WITHOUT
  * buying more vouchers. Mirrors the add-on half of manual-voucher-purchase:
- *   1. Find user by normalizedPhone — must already exist (top-ups are for
- *      existing voucher customers; no stub creation)
- *   2. Expiry = the customer's LATEST available voucher expiresAt, so the
- *      credits never outlive the vouchers they serve. No live vouchers → reject.
+ *   1. Find user by normalizedPhone — must already exist (no stub creation;
+ *      manual orders / voucher sales create the account first)
+ *   2. Expiry: customer HAS live vouchers → align to the LATEST voucher
+ *      expiresAt (credits never outlive the vouchers they serve). No live
+ *      vouchers → 30 days from top-up (老板 2026-07-21 拍板，与最小餐券包同口径).
  *   3. Create mealVoucherPurchases doc: type='addon-topup', voucherCount=0,
  *      amountPaid=0 (bundle cash), addOnAmountPaid=cash received. Add-on cash
  *      is a contract liability (MFRS 15) recognised at redemption — same as
@@ -127,14 +128,16 @@ export async function POST(req: NextRequest) {
       .get();
     if (userSnap.empty) {
       return corsify(NextResponse.json({
-        error: '找不到该电话的客户账号 — 加料充值只对已有餐券的客户开放，请先「卖餐券」',
+        error: '找不到该电话的客户账号 — 请确认电话；新客户先录一笔手动单或卖餐券建档',
       }, { status: 404 }));
     }
     const userDoc = userSnap.docs[0];
     const userId = userDoc.id;
     const userData = userDoc.data() || {};
 
-    // ── 2. Expiry = latest available voucher expiry (credits serve those vouchers) ──
+    // ── 2. Expiry: has live vouchers → align to latest voucher expiry;
+    //    no vouchers → 30 days from top-up (与最小餐券包同口径) ──
+    const NO_VOUCHER_VALIDITY_DAYS = 30;
     const nowMs = Date.now();
     const voucherSnap = await db.collection('mealVouchers')
       .where('userId', '==', userId)
@@ -147,17 +150,15 @@ export async function POST(req: NextRequest) {
         latestExpiryMs = exp.toMillis();
       }
     }
-    if (latestExpiryMs === 0) {
-      return corsify(NextResponse.json({
-        error: '该客户没有未过期的可用餐券 — 加料跟着券走，请先卖券再充加料',
-      }, { status: 400 }));
-    }
 
     // ── 3. Purchase record (paid manual record; bundle cash = 0) ──
     const purchasedAt = typeof paidAtMs === 'number' && paidAtMs > 0
       ? Timestamp.fromMillis(paidAtMs)
       : Timestamp.now();
-    const validityDays = Math.ceil((latestExpiryMs - purchasedAt.toMillis()) / 86_400_000);
+    const creditExpiryMs = latestExpiryMs > 0
+      ? latestExpiryMs
+      : purchasedAt.toMillis() + NO_VOUCHER_VALIDITY_DAYS * 86_400_000;
+    const validityDays = Math.ceil((creditExpiryMs - purchasedAt.toMillis()) / 86_400_000);
 
     const purchaseDoc: Record<string, any> = {
       userId,
@@ -187,14 +188,14 @@ export async function POST(req: NextRequest) {
 
     const purchaseRef = await db.collection('mealVoucherPurchases').add(purchaseDoc);
 
-    // ── 4. Mint credits, expiring exactly with the latest voucher ──
+    // ── 4. Mint credits at the exact expiry resolved above ──
     const addonCreditIds = await mintAddonCredits(db, {
       userId,
       purchaseId: purchaseRef.id,
       prepaidAddOns: resolvedAddOns,
       purchasedAtMs: purchasedAt.toMillis(),
       validityDays,
-      expiresAtMs: latestExpiryMs,
+      expiresAtMs: creditExpiryMs,
     });
     await purchaseRef.update({ addonCreditIds, updatedAt: FieldValue.serverTimestamp() });
 
@@ -212,7 +213,7 @@ export async function POST(req: NextRequest) {
       userName: userData.displayName || '',
       addOnAmountPaid,
       totalAmountPaid: addOnAmountPaid,
-      expiresAtMs: latestExpiryMs,
+      expiresAtMs: creditExpiryMs,
     }));
   } catch (err: any) {
     console.error('admin manual-addon-topup error:', err);
