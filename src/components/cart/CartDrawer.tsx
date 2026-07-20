@@ -171,6 +171,18 @@ export default function CartDrawer({
     const addonCreditDiscount = addonCreditPlan.totalDiscount;
     const addonCreditsRemainingAfter = Math.max(0,
         addonCredits.reduce((s, c) => s + c.remaining, 0) - addonCreditPlan.unitsUsed);
+    // 抵扣行点名：加饭 ×1、荷包蛋 ×2（EN 优先购物车加料自带的 nameEn；
+    // upgrade credit 不在购物车里，回退 credit 文档的中文 addonName）
+    const addonCreditLineNames = addonCreditPlan.lines.map(l => {
+        let name = addonCredits.find(c => c.addonId === l.addonId)?.addonName || l.addonId;
+        if (locale === 'en') {
+            for (const b of cart) {
+                const hit = (b.addOns || []).find((a: any) => a.item?.id === l.addonId && a.item?.nameEn);
+                if (hit) { name = hit.item.nameEn; break; }
+            }
+        }
+        return `${name} ×${l.count}`;
+    }).join(locale === 'en' ? ', ' : '、');
 
     // Auto-cap the slider when cart shrinks
     useEffect(() => {
@@ -929,7 +941,7 @@ export default function CartDrawer({
                                         <div className="flex justify-between text-xs">
                                             <span className="text-gray-500 flex items-center gap-1">
                                                 <Ticket size={11} className="text-[#FF6B35]" />
-                                                {t.addonCreditDeduct(addonCreditPlan.unitsUsed)}
+                                                {t.addonCreditDeduct(addonCreditLineNames)}
                                                 <span className="text-gray-400">{t.addonCreditRemaining(addonCreditsRemainingAfter)}</span>
                                             </span>
                                             <span className="text-green-600 font-bold">- RM {addonCreditDiscount.toFixed(2)}</span>

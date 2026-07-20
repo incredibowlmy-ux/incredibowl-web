@@ -46,7 +46,12 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                         </h4>
                         {(item.addOns?.length > 0 || item.note) && (
                             <p className="text-[11px] text-gray-400 font-medium mt-0.5 flex flex-wrap gap-x-2">
-                                {item.addOns?.length > 0 && <span>{t.addOnsCount(item.addOns.reduce((sum: number, a: any) => sum + a.quantity, 0))}</span>}
+                                {item.addOns?.length > 0 && <span>{t.addOnsList(
+                                    item.addOns
+                                        .filter((a: any) => a.quantity > 0)
+                                        .map((a: any) => `${locale === 'en' ? (a.item?.nameEn || a.item?.name) : a.item?.name} ×${a.quantity}`)
+                                        .join(locale === 'en' ? ', ' : '、')
+                                )}</span>}
                                 {item.note && <span>{t.noteBadge}</span>}
                             </p>
                         )}

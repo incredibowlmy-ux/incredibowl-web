@@ -39,7 +39,7 @@ interface CartDrawerDict {
     subtotal: string;
     discounted: string;
     voucherDeduct: (n: number) => string;
-    addonCreditDeduct: (n: number) => string;
+    addonCreditDeduct: (names: string) => string;
     addonCreditRemaining: (n: number) => string;
     deliveryFee: string;
     freeZone: string;
@@ -138,7 +138,7 @@ interface QRDict {
 }
 
 interface ItemCardDict {
-    addOnsCount: (n: number) => string;
+    addOnsList: (names: string) => string;
     noteBadge: string;
 }
 
@@ -185,7 +185,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             subtotal: '小计',
             discounted: '（折后）',
             voucherDeduct: (n) => `餐券抵扣（${n} 份主餐）`,
-            addonCreditDeduct: (n) => `预付加料抵扣（${n} 份）`,
+            addonCreditDeduct: (names) => `加料券已抵：${names}`,
             addonCreditRemaining: (n) => ` · 剩 ${n} 份`,
             deliveryFee: '配送费',
             freeZone: '· 免运区',
@@ -278,7 +278,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             uploadReceipt: '上传付款截图',
         },
         itemCard: {
-            addOnsCount: (n) => `加购 ${n} 项`,
+            addOnsList: (names) => `加购：${names}`,
             noteBadge: '📝 备注',
         },
     },
@@ -317,7 +317,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             subtotal: 'Subtotal',
             discounted: ' (after discount)',
             voucherDeduct: (n) => `Meal vouchers (${n} main dish(es))`,
-            addonCreditDeduct: (n) => `Prepaid add-on credits (${n})`,
+            addonCreditDeduct: (names) => `Add-on voucher: ${names}`,
             addonCreditRemaining: (n) => ` · ${n} left`,
             deliveryFee: 'Delivery',
             freeZone: '· free-delivery zone',
@@ -410,7 +410,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             uploadReceipt: 'Upload payment screenshot',
         },
         itemCard: {
-            addOnsCount: (n) => `${n} add-on(s)`,
+            addOnsList: (names) => `Add-ons: ${names}`,
             noteBadge: '📝 Note',
         },
     },
