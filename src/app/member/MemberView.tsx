@@ -49,6 +49,12 @@ const resolveDishImage = (item: { name?: string; image?: string } | undefined): 
     return null;
 };
 
+// EN 版历史订单菜名兜底：老订单没存 items[].nameEn，按中文名反查当前菜单表
+// （weeklyMenu 含 retired 菜，旧菜也能命中）；加料行（↳ 前缀）查不到就保留中文。
+const DISH_NAME_EN: Record<string, string> = Object.fromEntries(
+    weeklyMenu.map(d => [d.name, d.nameEn])
+);
+
 const ORDERS_PER_PAGE = 5;
 
 export default function MemberView({ locale }: { locale: Locale }) {
@@ -56,6 +62,15 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const tierLabel = locale === 'en' ? tierLabelEn : tierLabelZh;
     const tierFeeHint = locale === 'en' ? tierFeeHintEn : tierFeeHintZh;
     const homeHref = locale === 'en' ? '/en' : '/';
+
+    // 渲染层菜名：EN 优先订单自带 nameEn，缺失时按中文名反查菜单表；ZH 原样不动。
+    const itemName = (item: { name?: string; nameEn?: string } | undefined): string => {
+        if (!item?.name) return '';
+        if (locale !== 'en') return item.name;
+        const isAddOn = item.name.startsWith('↳');
+        if (item.nameEn) return isAddOn ? `↳ ${item.nameEn}` : item.nameEn;
+        return DISH_NAME_EN[item.name] || item.name;
+    };
 
     const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
         pending: { label: t.statusPending, color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -336,7 +351,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
         if (added.length === 0) {
             // Nothing reorderable this week — old WhatsApp flow as the fallback path.
-            const items = order.items?.map((item: any) => `${item.name} x${item.quantity}`).join('\n') || '';
+            const items = order.items?.map((item: any) => `${itemName(item)} x${item.quantity}`).join('\n') || '';
             const msg = `${t.reorderWaPrefix}\n\n${items}\n\n${t.reorderWaTotal((order.total || 0).toFixed(2))}\n${t.reorderWaAddress(order.userAddress || '')}\n\n${t.reorderWaThanks}`;
             window.open(`https://wa.me/60103370197?text=${encodeURIComponent(msg)}`, '_blank');
             return;
@@ -455,7 +470,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         )}
                         <div className="min-w-0">
                             <p className="text-[10px] font-bold text-[#E65100] uppercase tracking-wider">{t.favDishLabel}</p>
-                            <p className="font-black text-[#1A2D23] truncate">{favDish[0]}</p>
+                            <p className="font-black text-[#1A2D23] truncate">{itemName(favDishItem) || favDish[0]}</p>
                             <p className="text-xs text-[#E65100]/60">{t.favDishOrderCount(favDish[1])}</p>
                         </div>
                     </div>
@@ -501,7 +516,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                     const StIcon = st.icon;
                                     const isExpanded = expandedOrder === order.id;
                                     const mainItem = order.items?.[0];
-                                    const mainDish = mainItem?.name || '—';
+                                    const mainDish = itemName(mainItem) || '—';
                                     const mainDishImage = resolveDishImage(mainItem);
                                     const itemCount = order.items?.reduce((s: number, i: any) => s + i.quantity, 0) || 0;
 
@@ -546,7 +561,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                     <div className="bg-[#F5F3EF] rounded-xl p-3 space-y-1">
                                                         {order.items?.map((item: any, i: number) => (
                                                             <div key={i} className="flex justify-between text-xs">
-                                                                <span className="text-gray-600">{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
+                                                                <span className="text-gray-600">{itemName(item)} <span className="text-gray-400">x{item.quantity}</span></span>
                                                                 <span className="font-bold text-gray-700">RM {(item.price * item.quantity).toFixed(2)}</span>
                                                             </div>
                                                         ))}
