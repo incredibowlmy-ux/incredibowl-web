@@ -243,9 +243,8 @@ const DISH_CATALOG: DishData[] = [
         // 新菜 2026-07-17 入系统，2026-07-20 周上线（周二+周五供应）。
         // 同一道菜不能在 WEEKLY_SCHEDULE 出现两次 —— 多天供应走常驻+
         // availableWeekdays+featureOnAvailableDays（绍兴 07-13 周的同款机制）。
-        // image 暂用 emoji 占位（老板确认暂无实拍图 07-17），图好后换
-        // /sweet_sour_onion_pork_chop.webp。蛋白克数等营养标签待碗妈提供后再补
-        //（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        // 实拍图 2026-07-21 上架（porkchop1.jpeg → 1024²webp）。蛋白克数等
+        // 营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 27,
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
@@ -254,7 +253,7 @@ const DISH_CATALOG: DishData[] = [
         featureOnAvailableDays: true,
         unavailableNote: "仅周二、周五供应",
         unavailableNoteEn: "Tue & Fri only",
-        image: "🥩",
+        image: "/sweet_sour_onion_pork_chop.webp",
         tags: ["甜酸开胃", "洋葱酱香", "家乡风味", "下饭神器"],
         tagsEn: ["Sweet & tangy", "Onion sauce", "Hometown flavour", "Made for rice"],
         desc: "甜酸洋葱酱裹着猪扒，酸甜咸香、开胃下饭——家乡熟悉的味道。",
