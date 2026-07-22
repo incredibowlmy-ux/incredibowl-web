@@ -1,0 +1,5950 @@
+{
+  "ranAt": "2026-07-22T19:25:30.073Z",
+  "updates": [
+    {
+      "id": "iZ6mrGUVstrTxOMyJ0BZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "FjVEPTECyEkd6K5s6fvr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10,
+        "deliveryDistanceKm": 9.6
+      }
+    },
+    {
+      "id": "dsDJOv2IHJcLYMX7l6VK",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "J3nDViduBmGPSsnj5UpP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "mvumKftU1uqEA1SVZ8Lu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 12,
+        "deliveryDistanceKm": 3.12
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "LBW6c9Ptdk2GtqelB2rL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 8,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8,
+        "deliveryDistanceKm": 4.8
+      }
+    },
+    {
+      "id": "xlcnFKwgBXAl7RjqgbkM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 10,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10,
+        "deliveryDistanceKm": 6.7
+      }
+    },
+    {
+      "id": "JEsGcqMgCL2KJVNX482k",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "sVz9HQRKgXstLabvaVsX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 13,
+        "deliveryDistanceKm": 8.8
+      }
+    },
+    {
+      "id": "pu6MORwCQqfaXZDF5x5O",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 22,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12,
+        "deliveryDistanceKm": 8.9
+      }
+    },
+    {
+      "id": "FFvfMkX8fsJ1sTyndcx8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 60,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 18,
+        "deliveryDistanceKm": 8.9
+      }
+    },
+    {
+      "id": "vS1JpkfM2y3biDRtSdMB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": 10,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "fvitGQOfxHsQgVZqlRm2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.06
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "I8dWNoMwn6yKcTFRpecJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.43
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 21
+      }
+    },
+    {
+      "id": "9uSwYCKATnq9cD9KifYM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.13
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "oT5OtqwU16pAKvb6xr8x",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "ZY53YbVbjC5qKULCZhSQ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.96
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "ZwHpZ766rDF3bzzHNzMJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.64
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 7
+      }
+    },
+    {
+      "id": "9s1zLCtvPH4jJBjVY88W",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.06
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "VGBFAwOmDEN2HZLBOP1D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "D9BdmPARsgBHfDhSomCx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.96
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "XLDDo5ZuhLvZIzk3RNkm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.67
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "nx6eJZOewXvbEy3leI4n",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.12
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "s18yorKxPexwCHXiVo5q",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.87
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "JoVVUlIB3z4u8Evl9Gtz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "iXgx3xvHQd36Ka44El3V",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.54
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "NsRrjjJQ4GGaeCd7xrLo",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "jCzDESeCtbIzbyTwgW9S",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.13
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "VWMdVsrtFfRxFaY4HC1J",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "YlOuFyYdX9l2S22dw40n",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "GJ8gJ97YbTRG9VQJnW6o",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.73
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 7
+      }
+    },
+    {
+      "id": "8Q07Jl1uzNftwRoRj12f",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "vyPvg9nBmlCE9MvDdWgB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.56
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "TiSYlo7DYIUjRLwni8Ja",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "7hClRHLWNzfeB4YnxTPI",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "KSNj5HzCjdc5jeohbpbA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.73
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 7
+      }
+    },
+    {
+      "id": "5Ibl0lYxnAwJx2DkdT5T",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "7bMQnZvHNAakxDhrPq4a",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "LmSXamYFxdGYPPFZM1PE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "KlvCsz8gGXlfvJRpQplR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.06
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "rymMzAJtqs6ndVynXwaD",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "PZLuQhZbLW79tLysgO1k",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.64
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "n2p11TPFA7fZIJ3CAlTt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.96
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "kGfWeGvfC0IV4wET73Qd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "iQZXPLE7quLVtFWGyViZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "CnXJObwwAWBgQWZXgSk8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "3nr3pAFlV1sXLyBu9SWS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 1.3
+      }
+    },
+    {
+      "id": "b1jObzKSqM2BJFrGEhQt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "RqoCALb5BXCyPcxOMnkR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.96
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "He8D8hOxqdp4a6LI3HoV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6,
+        "deliveryDistanceKm": 5.4
+      }
+    },
+    {
+      "id": "JoCJz1fMaMWlAWP1QDy7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 4.6
+      }
+    },
+    {
+      "id": "xoEOLoyLKAAQ6X965Wnw",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.64
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "iJYmRdopFObF65QKCab4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "wikx9aboFDc7u6YNqSgZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "fFOflxFsTmsHseI8KMt8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.38
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "7LvjiZGxTzegdGAdVeLa",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "kAlEovYUfqNnJWsJvUEL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "Pr1coJrqITzcVWQGYNb6",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.23
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "NKtHDN5aaP3qq3sy6QOV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "1YvWM6QVAXdeco8bYfMM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "SsFIM66vj6GeSWRmsSJd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 2.1
+      }
+    },
+    {
+      "id": "GL5yZuTzEnj8MoEzZsa8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "76DAdnPuHCxDBY6HKsen",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "EI0vxud66okUVjusGN5C",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "fcE1NvmqsgqZ6JXGmh7x",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 1.3
+      }
+    },
+    {
+      "id": "IrF7duQO1j64omLu0Dyr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "Xncs2KOTWikKjtQCKjuF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "iTrin9tLXnlsGaZNIOzj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.18
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "0RAV4AqD03RUsS6baCZG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8,
+        "deliveryDistanceKm": 2.6
+      }
+    },
+    {
+      "id": "GyitB5V5FZnv8906mSm2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "Hhkv6enPvC9E5HfA9YDR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "Og8Tea96LQst4WJPDfOW",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "zNnqdN3900TLCkdJMerB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.81
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "9haZUj8TBa08Mpd8Pyov",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "1imD7ZOwbfbfIs22j4OE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.59
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "A23i7gpzq6frNEzr34XP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "mz01VaBehY2ZOWmFNtjz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 4.8
+      }
+    },
+    {
+      "id": "EIahzo3KkCg3k3sJ3DZi",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.67
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "7IOFiqWevPOrRtASoJwZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "BcA8lnveN5oVGWRz9rEi",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "G75V9JcqXkA8XTCYMRjT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "B45saVSpfIB5OGYpezKf",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9,
+        "deliveryDistanceKm": 1.3
+      }
+    },
+    {
+      "id": "mVIwF2vXZlZIATaO5mAE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.81
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "vl0yunvPHiYVslWJi9Au",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.59
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "XCqWdA5MWayQpHbjsrr5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "EXwXDUeotZuIUwgoInGJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.82
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "KaiF2zrMZVkXGSNzDi4D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "Rv86EzfeeejSXnq2e1I9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "3sdXp0gGvp5KRKJPYRkW",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "YbMmz6bXPFPBYMHgqJ7S",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "DSDQtttlp4LLBxVER8FH",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 16,
+        "deliveryDistanceKm": 13.5
+      }
+    },
+    {
+      "id": "PAZ7JAsag2fMe3v1vFTX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.33
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "3rwl7i5J5hyVnWJVEg7F",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "Gqs6BMPF41vaBgNyhqDk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "kmiIyD1TcHPr6M3uoQeh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "FaHDejUfcYjxyzwvlnL1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "AXKn6t4gae40FlvYHlnL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.96
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "q9PYxWeEPZzHUp5bgjdF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "QweSQKhglMGhpUUckacU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 1.5
+      }
+    },
+    {
+      "id": "qvyzIx7ctWhtSNUnFG3k",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "3ztlSLNKGUCudv9OeF3J",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "2qQ7hBlLNuuqNusXyEfk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "JqrEqktsPhFyr1lu5iEU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "1LUCHwzhmBxJDmdofOWu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8,
+        "deliveryDistanceKm": 4.9
+      }
+    },
+    {
+      "id": "bdd6Rm086MKfohS8wQbC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "BdHPIaAPds6kHONfq7Qj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "Uk4zV7srlKW1P2EJqEKF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 8
+      }
+    },
+    {
+      "id": "uzPlhS8SBC64U0ViMTim",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 16
+      }
+    },
+    {
+      "id": "thdgjStj5S3AlPfXVvoC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "hy8zSiTA7yaNFuurcwxx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "dxNiDdtHEMq9cMD6Ww86",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.64
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "eulAeebjLFeASCxzolQ2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "mFGwbwuQ5XmasJzqV0y6",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.56
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "G3SFFWAbj9NezlCiG4QX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.46
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "gSzJDoyTCrsB2YrGyQDF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "vzjXLp9ZazeoDhzG2ogr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.33
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "nhegomNLdK5MhnZXiA2c",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 11
+      }
+    },
+    {
+      "id": "UBMlFqvFYkGHNCtRf8PJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.62
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "Gqpj17Lk0rJ8C7C2F55h",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.34
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "Wz2KfkNrmWhB5lBm6U7D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "H777WU4VatJAILEKLAdQ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.33
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "JhUfliYuZLlQVFHrcGgJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "8B7DIAUXRr6UqfbuAkbE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "1cZUpUzOgGGHU2w8t8lE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.76
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 14
+      }
+    },
+    {
+      "id": "OsGGgz2G6dUQan0gWQ4x",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.2
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "bvkFKMZb1MyJtcr2nCTz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.35
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "d2So154Hx2Ihnj1G1T2g",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.57
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "Xi4UvZlUteHKUEmoBMvr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "aBq8ugKoY3JHzH0lukuT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "T0SlFo9vdyEozJcI8aK2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.33
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "s5bpS7TfSXPjJHbXPBd9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "aLQwUrZ9Rr0wASkRWMZN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "qB08X9wq61ol1J9UGbCt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "gVV0A12qr38zqewk0rtS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "KEfxTprcGjAh07QReqnY",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.35
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "8HvAPWuaUDfoD5J1bBFk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5,
+        "deliveryDistanceKm": 3.1
+      }
+    },
+    {
+      "id": "xWisaxln6uwbwuBVHmTG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.83
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "rPAo9Wq2vGH0YwsjqQAl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 5.15
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "I0PhB4ScGjEzMRH14Q3v",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.42
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "OGo0AHULrIhCgMxUYlz4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "zHwrrtmG5bOlBNmH5BrS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.64
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "ZknmxDcyiuKamk2ceJVh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 10
+      }
+    },
+    {
+      "id": "2mMwY6sOwUluuM4ukGvb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.2
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 7
+      }
+    },
+    {
+      "id": "vmBHS69erVThR6ocd9iG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 10.7
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 15
+      }
+    },
+    {
+      "id": "FxGH9NhWA3JlEG17luze",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.42
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 6
+      }
+    },
+    {
+      "id": "Vt0BVLGIf5foJpfDPOoR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "2bZQKzzCpLwjMcMYCGvI",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "kZifqiMBsJUUDMgjHClP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.75
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "uHDZrym9lrlKzVSCUfRF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 11
+      }
+    },
+    {
+      "id": "hXMnJWOG761razpk4fsm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.62
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "v67MEQT1ujrfZEPawo9X",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "f5iiMMFe2jpbA9Uhvh7v",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 5.15
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "Us8uwOJuRIUopU3dJ21M",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.66
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "jzpB0oOZsTZFz3xQmWw0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.62
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 9
+      }
+    },
+    {
+      "id": "rMKPIxhFxH88yTTLMWJg",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.92
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 5
+      }
+    },
+    {
+      "id": "dAbaZ8VcGCaAT27boJ5E",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.76
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 7
+      }
+    },
+    {
+      "id": "Avzj5YDxNtb6KEDCEB1t",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 5.15
+      },
+      "set": {
+        "deliveryMethod": "grab",
+        "deliveryCostActual": 12
+      }
+    },
+    {
+      "id": "MGTKTQazLZGqqzfAjT16",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "driver",
+        "deliveryCostActual": 25
+      }
+    },
+    {
+      "id": "00EXOattWAlmbn0ofZwc",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "01xregHRDJ2ZtouT0E56",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "02yhixG1IH7xKYvWzOxk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.64
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "03CU2jn9z6kUyxB5OZwW",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0ABIL0oWyvB2I96NGiuO",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0Ao7NmHMsZPoOQfQlNYD",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0D87pBPYvQwdIo6d91Cs",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "0DqNF7iDdSbuKzEgbskd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.2
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0EXgneUAWKrAqn2Vs8eF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.38
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0MF82CI4X6H9rCpTkjxT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0X22IjQzYJyUb0APfllk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0h1PeXOW63xadNg6FAU2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.91
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0kXh97m23t47Uo4E9ce4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0rBx5JhOoNc6cybn7Cgu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "0y5cU0zZBW8pPPtVU2NP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "10b6CxV2Akced92NWivR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "1Ldjn37Foxe8rA22Ggfs",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "1tB6MBce1CQZBvXnnCCe",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "1yjJkSCl30IKq5nupw7D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.28
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "2FztdOg3lBWGdkINc8bg",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "2I4M0A4Q3MfVFzRySDYH",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "2ym8Y9v0bKYqCWs8AZ0L",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "30p5rbU7WcdKPGJkGeBR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "32j6W79qjqUOnT4HLRlz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3CkLHJDkucwfFlLGW9BV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.91
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3DqliG6Av1RYxrE7ie6A",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.97
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3MrA2ZYPRosbkEQ3cv1X",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3PJTNKly74guYWpTFrHR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3X8mGvSdRWG9cI96Lsyl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.28
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3re2S4dDZ3nD1GhluCjS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3s4vvuGS0TudsUvFaQmU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "3s9dkc1Q4jdU20IIaamb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "4A9qdFHWboSy3OWEpOAh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "4Vdp6A3ZI1CawILoRxhS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.87
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "4X7qqXdfTzirA1KTdqAi",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "4jaEKIP1qAQuOZZWYdLr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "4yjXwKFg4OVagkTZXqn5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.76
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "51XwzVI1wcihVtxgE0dV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "5B7qYxh3Jk4nElvc0ifi",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "5KsFhZlsUDqj9egUirRv",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "5iwL512SoED89oTY3Zk9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "5wBAD8wpTxN3cQIwg4KJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.06
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "603Lki2LQOoVNcrRzDjX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.27
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "6JEc8OQdaFmpgDbTAecZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "6KEZr1mFpsS7GmxrdBz1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.95
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "6SN0h6kfBtp8I1hX1vRv",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "6VArUd4w68I9Z4HvoN2f",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "6dAOt7IuUzZrD8irEOp0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.81
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "6eSbOZH6xKsd2252grtw",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "789DGTyhnzYNqFg46Lh3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "7ARBQ8nRigJkt2M2Iitq",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.56
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "7EliOBfAGY3cIdwnHJxL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.37
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "7QIJBSCjkyuet3ZWX5Ys",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.57
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "7V2f9oYClbOFZ9rsym4s",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "8EEDj1yiQeTk7K2xWrAm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.73
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "8R5AVUlOPUXwNRG4p7U8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.83
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "8ZzwUEc7edoDoAN23hD9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.76
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "8pHjIIEMiJgbLiTCZENZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "987tkQexpyWH8sfmaD28",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "9N5alYwZDm2jLuVclJKU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.51
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "9iRF8ABPVwQTafRhrESJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "9jXnf9z6BVeYm87L39vn",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "9oqtTWvfSfZewTWZtXBl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "9zgFBXLjXUOJHAc3cLLR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "A0umieFPokmXVv9ECJPJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AM9aiL36AnVzFdzXsLn1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AReZS5bPEkoBQjgQs8U2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.38
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AeDX2rAyz4QmvWEHfL6I",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AnG0B7Mz8TuRiQVE7zSF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AneAqsPTQEFY3qnzxioM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.57
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AteoRvG9WkeIFoUUv6es",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "AvO6CynGeryFqgIFcRXU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "B9zxV3BDvHPczPjVt2vu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "BFIU9Ox95cCWbkpwjNn1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "BeVo0MDEdv4t2VVMSUiz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.6
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "BrZYgBMXgJdaYBZtp1fN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "CNi8uMTwj0NGecuG96vB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "COnOPKOUJnz23k8WGeKJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "CTwQ8OKHEtVRWlqpf9yd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.73
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "CnV48vWOJe2tft5wmyLY",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "CsZae7dBpfkwi9CnWw5E",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "D1L3xkhdbZCLPaMdUaKM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.46
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "D5ZQaZsOQ6U6uPsi9EiF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Dpk9wmQyV2F6oWXvSwQn",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "DwuK4eCPn30tsufLWKIj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "EBjEbmRKWIPDeJbaumII",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "EHrqKqGGpGPqdehVTfgn",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "EO7IX8gPkngVXuGaZTIa",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "EY1XjoBfxOhbD4H79MKR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "EcVZZkXbDFspPPfO5uJM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Ekq0ru0ik82BXwKyRQ1J",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 4.46
+      }
+    },
+    {
+      "id": "ElWggHcMrdqWCB9jgRnR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "ErGpkThOTd23PjXMn5rB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ErscWy7hCZdukOnU08A7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.64
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Eu0PIOUM1PzrBUf27OF9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ExWSNOAKcXtoTTOd9DKX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Exu7M3SPn0II9zHi8g2a",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.97
+      }
+    },
+    {
+      "id": "EzLtVpeyq55GLCZDe2RM",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "F19MMQ1fMuHBQy2KtTZ0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "FLg0U4TL7tM2Bwu5f48D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "FMoyt0qtVp051rSTHlcC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "FMstTqOuBFeiEPxJ45Xy",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "FhTCy7gxedrNzHgegbpw",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 2.93
+      }
+    },
+    {
+      "id": "FmNxPxkMQnSuKrQSq0DG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.12
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Fw3ZHLBEBg0RsuD6TMIt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "GFftp8Za7TwLNtLKEOdV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "GKIrPlngDU52wdgPnfl8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "GP7xQuQkb3XKDZ4AmXDB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.07
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "GRQsQp7VZ5rg0Cz41JvC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.44
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Gh34xbTe4IG6kf1IerdA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "GmGZxwIPfOSplCazcC9P",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "H5nyb4KHiCq34moEcr5b",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "HCYS4M2ALqWgLmsTubaD",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.87
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "IKizXDL6u7qss6TXvTaH",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.69
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "JDu90eTn7VwrL6uGsqcd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "JInHfA9BSKe8Tt9PuZuG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "JN8jwD68K62OIXhYBXWV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.77
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Jxv2EfUI72OYZ9MuysCh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "K5ypeF3RfzdGbWQmxjy1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 3.08
+      }
+    },
+    {
+      "id": "KMSJHFt7AjXaLa8cBewx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "KUmtAAZDDw4QFBAO9piR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "KUt9h2cbO0bvxKZIB3H3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "KaFm8hq01evMpZDEAmev",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Ksw5SWHAm0LFrU4DSt9j",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "KzuZkIf73G2hg6e9ZV2r",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "LAdGBfV5hWLBr5ZDxPV4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "LQivXkkdLqZpo7LPeh2p",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.66
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "LYH4jLn13sMsAyUEY60f",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "LfxbXkp9OJTzdBaEU7nh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "LgRYANEsjiLLTzqsFFMT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.57
+      }
+    },
+    {
+      "id": "LujBF0fTdKKNO0C36FlB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "MROkt9iE8QFIXGJQyyVL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "MhfrOQccWtmL9IkBbXFU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "MutDvfVtfmATUtKvNczm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "NLBNQBSYYbJsIaJy51L5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "NV9M98UG9jU2d0bisavj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "NdqG4VEgDvhDO0DsbpoP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.38
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "NvdfEmBXsfw4xRgpLQfk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "O53EeC2fvud4uCj7YBqc",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "OPw1AO6xFFI7fhAuu5JQ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.69
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "OeIEgU8B4sV3qdyLzLKZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Ow9IENF7Ym2nGqvAoc90",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "P2nTRgUg3N9hxwqtsUGw",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "PBedNtSMaqV0NVmv50Nj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.43
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "PF4DO3tHo0prayCMqEvh",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Pe1ndVqsrBARC0RWIVGC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Pn5s8v7fcJkUy2b76MF0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "QN8oyuXQ8vmGGXp8i7Rd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.17
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "QtBzx2laqbuGLXfl0iYu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.04
+      }
+    },
+    {
+      "id": "RJBlMTnlWXkrT2rP1W10",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "RMj2aDzRdgcmZbubKdhm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "RNvhfEJLtMR6bZAJmJox",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "RgKDmFKGxfx9F7BshIy3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.26
+      }
+    },
+    {
+      "id": "RhdGDT1RMqFarBgef6Hz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "SB0zr8fVjLb8lw9e8Asq",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "SFf1vbTITFVkd2b4NUkO",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.7
+      }
+    },
+    {
+      "id": "SIwTxY3K3G4d091rfZpT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "SNzQ4lh0vDovyUwZ1Dt8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "SOEfr1qkh0RhlA2LnsO5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Siej3wH0cSghr7h4r81e",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Sjv8AOZ0uunCP0TLQHFT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "SplPF4cZbeLU6fg2FZYT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "SptUXJqgI32LwMSsVWsK",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "T1s4WeLhKIEeNRsgiwOz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.76
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "TYGvkYjUFEAl8io74m3m",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "UihOZQGmwGESiw7pyVrs",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Upo5oC1yoQ86gqHpmHZ6",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.51
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "UvOlJQxo5dmTIN6AH6Zk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "V329ngRIIVQ9goilm9du",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "V8BR9WE7buiwtht7WMv5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "VMvZQSAVVPA7BMnTrFil",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Vfq887ocQ79kDNwuCXJe",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "VuLz16jyu0aCwO4Z1OeT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.82
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "VvR4OBXW7fIwCmUTEaF0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "VyJayipHXL0w1VFtbtke",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "W1qhAFVdy9KrFHUxDnk3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "WK5grfgSuD50IZdK3Zat",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "WvnUbz5Kg4vlxcnhjfih",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "X5fj0F3P8bj9uF67TFuA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "XCR5nwgFsF8LvbLUYVGt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "XIhiNWSv41UnNlUOwgnr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "XnrIp8hqdnBAKADqDI3m",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.91
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "XuVHW5vY0cmbGvkHf7IL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Y0SstA78gO6vxkNsTmi4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Y3MldtW6UmGDUtE0RMNI",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Y9RCyZgCduDYrqKZV45O",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "YDYI0nEdYfAVinGheyAf",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "YU9q6d1TSqZLbET2E7YG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Ybvju4CeF2VDQV4cAU64",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.92
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Yiw6mBlXrAFLUoyKKFMD",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "YwIb7V7hLy0FGBV5vLY3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Yy0VL9TPGnaueGKYzadR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "ZQaWykNMfS0jc1dsrQOU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "Zhd1y5W9vfbx60lmTN9Y",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ZuS5nHoeUQSxaLqi0WgA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ZypCjTFBN7nCSMRhLXk0",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "Zz0QBHQvbt9BrJk4TV6W",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "aCL5dD18qfN5KgPGlTAW",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "aNOnc1dHpylIZXzf4f8K",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "aaL0pWpAj1E48QVIoGDt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "arUUJyeJJyw93L9GU9R8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "bSegAnl2UPkO2lzlKFuT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "bqjyiQwwkAP38ma0soa4",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "cFRQcFr9O8yWHc6LupiX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.36
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "cLgMoSapEDD66itnRluP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "cOVk4dGZtPjO69nXK9IG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "caq5aAoAqYlvASJbfskj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.06
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "cff1NJJNXJjHx5e6xoVQ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ck2SP0mg5UuuBtQ62SCJ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "coDGcAvraOIYDneXi7if",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "czuTS8LA54EOyNvMMRla",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.2
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "dEFZ8fw90SzopKsqnvx6",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "dOo0V7EwQOHqBx26yAfU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "ddLiOhu4Wrx6DO9jkUkV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.37
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "dlG52ANUTb5sdXMBVgOq",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "du9mqRsdon8lndIOEOGN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "dvV2sNctd9JlZWF2tzuS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "eCWbmyA7v7UQJA7Xqpvl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "eGkE3oHSY3PsHRFfqfhx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "eX32vHP8grdnxCHYIHLE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ebRhySLnZCNI0rsMLNnz",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "f2LejSRLC1sW0Wrcl9ER",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "fKtfGiyQByqSzMCsWAan",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "fP1v1tJFOlXnaEv7m5Lu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "fa5PIBooSHynJArvodUF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.11
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "faDbkrks4FwATq2JEsFn",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "fanWfDYIguzeg71aQkWd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "fjr93UsCpjQUWtI8j9g5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "foV64zS0IojqeVDdwXA7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "frDgYWTlpRRGHom8GNm1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "gEBkVzxBJo72xYwxK0OA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "gq3Y5lC5Tf4Dw3bhonpK",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "grUlWDMmLZHdqPEox4IF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.41
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "gvHyxK5zp2MhLXY15iL7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "gvQqFuTdKISaGohkBHtj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "gyTLVoMF2eFokRuPtbEA",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "hCKUAWzOiNW4XrpQkyhl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "hDe2UuIY5nplrLrQJEMP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 25.01
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "hFe1vjSNnmJyjeOTEVJ2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "hJMHQcy9Wa5XzePsOL4d",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "hklDOKop9hMWxVTT5Y9G",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "idQB4gVoak12A2qiFW02",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.26
+      }
+    },
+    {
+      "id": "iiqY4Iu1QlVy9ZW4ri5K",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ixqR7j6xT3FwDowAfN8j",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "j1D6gAJjJjYk7KQTQfV3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.38
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "j3HeI3HvFyQUwJmPpo1I",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "jCFYv8EbQ1dq7Q21sjHs",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "jCpHoOszN6Vp97EqAY7g",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.88
+      }
+    },
+    {
+      "id": "jDnrk0NMCJClWAc8jZue",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 4.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "jGFkC9XR72j4QWqgjovL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "jQl3V05k06F9oniQ19pk",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.54
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "jeqw5iPOhNqKsOdf9mtO",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "kRGagmmLqabvuBBxpXT7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "kTecaDSRdJB0MeSJomHT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "kZMbQXwvQTDVi6NXC9px",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.82
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "kgU7LTxJHmWvmULA8LaV",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "kskCfDbldbbLn2CQVF6r",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "lA8HIN9O0abb2h4zRcFZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "lDPTis7oZmcl3Jzpc9rC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "lF5jbsK02EhjHSLTjrxN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "lb9N5xnXDWdYFsdjdAjB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ljsEG4tJrHL4KNQpXCgP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "m0hBlTwudoltKgvw77jP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "m2q5f5axMztzjDVzTqLN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mIbaKRktLN8umXk2pO7H",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.36
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mOWYuiAsarzuisaYaAXb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mVjl3QugsXE9POLKmX5m",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mahMaVcOQX23vNGLPClY",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mhAfJeywF6vD0oyI8gyb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mhV6ZqvZDykhZsWs7pa3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "mweGgCEbe4FuqbqkjUCm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "nAzfsVPV5YRRGwqCu8Wu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.2
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "nQZs55IdoZr8KnudG4cG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "nRjiUGKtNggtWEuQ91m8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "o1thGD7qppw4IaQl50ZU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "o22giORayD7HrTHsSm7V",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.44
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "o3F62PqfOjqV07Whi8mH",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "oEGOQ5VD3qyqTsLyiqq7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "oL2q8aywSr9AZcjTLmZC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "oq4WJKkFptEi7pSVAT2M",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "oqEs8b5uSIfIjyBvcuEn",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "oroYySnbqgseb93gz0G2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.73
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "otlRE9NYlkq7ZTNzHAUb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "ozsHi7s7qgG1fc2fc6sl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "pD2XusX53mewXijEiHa3",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "pD9nfpkCJc9ccnJfkERe",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.36
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "pQCRlytFhyBd15KjvAIu",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "pS7OB5OLle1qtpnCG8DI",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.57
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "pccJfWoNaVAF4qJk7YmG",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "peNCdyENP9tvkMdV1t6I",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.52
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qAoCkUhKT1m0PxA7lxTa",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.66
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qRQPTApaX02vR8bKrqZj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qW8X7M4eOoprxZ4ZCJuo",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qazD0uYSxcgMwb6CDnaE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.51
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qeJ3yweGm0EhHGS1k6wF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.13
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qhOaSjiUzYupj6PxKdmP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "qqpaWMeVzlQBNGP1Vg0b",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.26
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "rLxKz1xsf5Zcugc4wLLO",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "rM46ce6FV1yVpkLuogzC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "rT8ORZ2aJoMCgEjDsht5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "rfNrHFGgNSsXOJr0cM4V",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.26
+      }
+    },
+    {
+      "id": "rjsrXiERtGeCnKChyb81",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "rqUukK6kzgc1LzDEaWkx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.69
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "sGDc0202gZhY9huiHEuZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.06
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "sGNOtLwfin7L3XMhxZeO",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "sVai2B8fLfo6IS7mIlUZ",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.91
+      }
+    },
+    {
+      "id": "scJZEC3FZSgkwPMPZxPC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "seAEqCFrR9fYP8vs6H3L",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "sj7je31ZQaLgfQu5xGvx",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 25.01
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "soeVQ2xN43r33S13STYR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "su5ktSPd8My83C2boohK",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 6.36
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "t2LCZtpT8s3mpNTYkosT",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "t5VirxMQkFP1gvLEFCXd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0.59
+      }
+    },
+    {
+      "id": "tLvVYBrq8BciVilWBD2x",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "tYxRGQXz74Mzu6sa8Hbg",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "toeLcR3KgZqhjr0cz5lj",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "tp3v2VxEZ6GxHwczH7Qm",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "tpi6RZjd8qO284nn493t",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.84
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "u5A9JyFkBS7aSnhWDqhU",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.04
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "u8pElgSZXURigNAX07x2",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.2
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "u92ubnCsRu32QDbXv6Vl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "uZhXkKDexyHA5NoGGSWE",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "v6d4pJg7v1UvxYC2i4fK",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "vNJzAl23IxXJiybnwYLi",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 2.82
+      }
+    },
+    {
+      "id": "vPAmmf9ECALOXLdg2bwt",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.42
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "vVvyqAmsviaJ5rJQpyvF",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "vdQ7RTwncYLQQ4ytmfnb",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "vlMusRZ9hnUYBhKMHh6r",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.26
+      }
+    },
+    {
+      "id": "voBHineZYPbit0TbsyTr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.65
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "vxkluYVcym9QPcUWB6qy",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.99
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "w0zvPCnnlRLSCTCzvTd8",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.59
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "wW1dGdzb13TtvUVgWEJ1",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "wbsOa9gyNGChpuX3WkLB",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "wrvSjKcwFIqwqYZ4qEDR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "wxwycCFlmsls0WzwijuL",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "x1jr1EplHLJgqWRtXMAl",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.88
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "x8CNGhLVALYtnywx2V2A",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.7
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xC8UsOvM2TR8s2qXlV2e",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xI4nBxDfKE2f701yLDI7",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 0
+      }
+    },
+    {
+      "id": "xJzqV3sXhrXwDbuwoxuY",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xNrTWXGCPcJJHbWtii3I",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xOUuTQLioVd3EsmIFPJX",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 7.94
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xflZHvjn7LCjMtuWkV6d",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "xgqCm0oZcxUg14ZfCvnP",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.75
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "y20LfaYXEOUfqcy7G9r5",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "yLQca1Oxzk8hKEMweSse",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "yQUz1TtS7MD7CFlmPyiN",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.1
+      }
+    },
+    {
+      "id": "ygeI7On9RBS5otvt1hpC",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.67
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "yj8gm9Y9BrrWwbVIwAX9",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.51
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "yjqE32ZEo2GLm6rNIp9J",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.75
+      }
+    },
+    {
+      "id": "yqnFPT6WVtNako2XXoji",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self",
+        "deliveryDistanceKm": 1.26
+      }
+    },
+    {
+      "id": "ytD2PlZb7LUwULbMhl2F",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "z6fFBoCdrmlcEz5SwO8D",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zDQjDiVNq7oRP6aVVljR",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 3.51
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zEZRhrenvwj7IICcTesr",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 1.1
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zZDoqNzGtjXnxrsIzS4K",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.33
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zoH7ydhdajPUljUKZVpd",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zq7qWXeQ4vZT5jsMY05F",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 0.35
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "zqtXpAqpEKOoXZLqReoS",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": 2.93
+      },
+      "set": {
+        "deliveryMethod": "self"
+      }
+    },
+    {
+      "id": "IwQ7rDd9kuzBxgW4gPiW",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "pickup"
+      }
+    },
+    {
+      "id": "pXdYslgOkptpocHoJAkw",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "pickup"
+      }
+    },
+    {
+      "id": "rambfqvtdCnORDlDyXJg",
+      "before": {
+        "deliveryMethod": null,
+        "deliveryCostActual": null,
+        "deliveryDistanceKm": null
+      },
+      "set": {
+        "deliveryMethod": "pickup"
+      }
+    }
+  ]
+}

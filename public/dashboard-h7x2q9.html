@@ -1487,6 +1487,12 @@
                         </div>
                     </div>
 
+                    <!-- ─── 配送方式拆分：Grab 实付 vs 自送油钱车损 ─── -->
+                    <div class="card" id="cardDeliveryMethod">
+                        <div class="card-header"><div><div class="card-title">配送方式拆分</div><div class="card-sub">Grab 按收据实付 · 自送 = 每公里率 × 往返 · 私人司机单独列</div></div></div>
+                        <div id="deliveryMethodSplit"></div>
+                    </div>
+
                     <!-- ─── 餐券（预付包）专属指标 ─── -->
                     <div class="grid-2">
                         <div class="card breakdown-clickable" id="cardMealVoucherSales" data-key="voucher-sales" style="cursor:pointer">
@@ -1829,14 +1835,29 @@
                         </div>
                         <div class="card-content" id="deliveryCfgForm">
                             <div class="form-row">
-                                <label>≤ 2km 自送成本</label>
+                                <label>≤ 2km 估算成本（未分类单用）</label>
                                 <input type="number" id="cfgWithin2km" min="0" step="0.5" value="2" />
-                                <span style="font-size:12px;color:var(--text-muted)">RM / 单</span>
+                                <span style="font-size:12px;color:var(--text-muted)">RM / 单 · 仅缺方式/距离时兜底</span>
                             </div>
                             <div class="form-row">
-                                <label>&gt; 2km 自送成本</label>
+                                <label>&gt; 2km 估算成本（未分类单用）</label>
                                 <input type="number" id="cfgOutside2km" min="0" step="0.5" value="5" />
-                                <span style="font-size:12px;color:var(--text-muted)">RM / 单</span>
+                                <span style="font-size:12px;color:var(--text-muted)">RM / 单 · 仅缺方式/距离时兜底</span>
+                            </div>
+                            <div class="form-row">
+                                <label>油价（RON95）</label>
+                                <input type="number" id="cfgPetrolPrice" min="0" step="0.01" value="1.99" />
+                                <span style="font-size:12px;color:var(--text-muted)">RM / L · 账本加油记录 RM1.99</span>
+                            </div>
+                            <div class="form-row">
+                                <label>自送车油耗</label>
+                                <input type="number" id="cfgFuelL100" min="0" step="0.5" value="11" />
+                                <span style="font-size:12px;color:var(--text-muted)">L / 100km · Mazda CX-5 约 11</span>
+                            </div>
+                            <div class="form-row">
+                                <label>车损保养摊提</label>
+                                <input type="number" id="cfgMaintPerKm" min="0" step="0.01" value="0.13" />
+                                <span style="font-size:12px;color:var(--text-muted)">RM / km · 自送率 = 油价÷100×油耗 + 此项</span>
                             </div>
                             <div class="form-row">
                                 <label>纸袋单价</label>
@@ -2367,6 +2388,16 @@
                     <div><span style="color:var(--text-muted)">当前标记：</span><span class="mono" id="dfmCurrentZone">—</span></div>
                 </div>
                 <div class="modal-row">
+                    <label>配送方式 *</label>
+                    <select id="dfmMethod">
+                        <option value="self">🚗 自送（油钱 + 车损按公里算）</option>
+                        <option value="grab">🛵 Grab（填收据实付）</option>
+                        <option value="driver">🤝 私人司机（填实付）</option>
+                        <option value="pickup">🏠 自取 / 无配送</option>
+                        <option value="">❔ 未分类（旧 zone 估算）</option>
+                    </select>
+                </div>
+                <div class="modal-row">
                     <label>配送区 *</label>
                     <select id="dfmZone">
                         <option value="">自取 / 无配送</option>
@@ -2374,10 +2405,14 @@
                         <option value="outside2km">&gt; 2km</option>
                     </select>
                 </div>
-                <div class="modal-row">
-                    <label>实际配送成本（可选，覆盖默认）</label>
-                    <input type="number" id="dfmCostActual" step="0.50" min="0" placeholder="留空 = 用默认 (≤2km RM 2 / >2km RM 5)" />
-                    <div style="margin-top:4px;font-size:11px;color:var(--text-muted)">雨天 / Grab 抽佣涨价 / 第三方代送等 — 这单实际付了多少就填多少</div>
+                <div class="modal-row" id="dfmKmRow">
+                    <label>单程距离 km（自送算油钱用）</label>
+                    <input type="number" id="dfmKm" step="0.1" min="0" placeholder="客户地址到厨房的公里数" />
+                </div>
+                <div class="modal-row" id="dfmCostRow">
+                    <label>实付配送成本（Grab / 司机收据金额）</label>
+                    <input type="number" id="dfmCostActual" step="0.50" min="0" placeholder="Grab / 司机这趟实付多少填多少" />
+                    <div style="margin-top:4px;font-size:11px;color:var(--text-muted)">雨天 surge 也照实填 — 留空则退回 zone 默认估算</div>
                 </div>
                 <div style="margin-top:14px;padding:12px 14px;background:var(--bg-subtle);border-radius:10px;font-size:13px;line-height:1.6">
                     <div style="color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px">本单配送成本</div>
@@ -2387,7 +2422,7 @@
                 <div id="dfmError" class="login-error hidden" style="margin-top:10px"></div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-hint">只标记配送区 · Budget tab 自动算成本 · 不向客户收费</div>
+                <div class="modal-footer-hint">标记方式 + 区 · Budget tab 自动算成本 · 不向客户收费</div>
                 <div class="modal-footer-actions">
                     <button type="button" class="btn ghost" id="dfmCancelBtn">取消</button>
                     <button type="button" class="btn" id="dfmSaveBtn">保存</button>
@@ -2970,6 +3005,9 @@
             cfg: {
                 within2kmCost: 2,
                 outside2kmCost: 5,
+                petrolPriceRm: 1.99,    // RON95 账本加油记录
+                fuelL100km: 11,         // Mazda CX-5
+                maintPerKm: 0.13,       // 车损保养摊提（估算，可在设置改）
                 packagingUnitPrice: 0.60,
                 mainsPerBag: 2,
                 cardFeePct: 2.4,        // Razorpay 信用卡
@@ -3406,6 +3444,79 @@ incredibowl.my`,
             const d = tsToDate(o.createdAt);
             if (d) { const h = d.getHours(); return (h >= 5 && h < 15) ? 'lunch' : 'dinner'; }
             return 'unknown';
+        }
+
+        // ─── 配送方式成本模型（Grab / 自送 / 私人司机 / 自取）───
+        // 自送率 = 油价 ÷ 100 × 油耗(L/100km) + 保养摊提，三个参数在 设置 tab 可调。
+        function selfRatePerKm() {
+            const petrol = Number(state.cfg.petrolPriceRm) || 1.99;   // 账本加油记录 RM1.99/L
+            const l100 = Number(state.cfg.fuelL100km) || 11;          // Mazda CX-5
+            const maint = Number(state.cfg.maintPerKm) || 0.13;
+            return petrol * l100 / 100 + maint;
+        }
+        const DELIVERY_METHODS = ['grab', 'self', 'driver', 'pickup'];
+        function methodOf(o) {
+            if (DELIVERY_METHODS.includes(o.deliveryMethod)) return o.deliveryMethod;
+            if (o.deliveryZone === null) return 'pickup';   // 旧口径：zone=null 即自取
+            return null;                                     // 未分类 → 退回 zone 估算
+        }
+        const METHOD_LABEL = { grab: 'Grab', self: '自送', driver: '私人司机', pickup: '自取' };
+        // Legacy per-order estimate (pre-method era): override → zone default
+        function legacyZoneCost(o) {
+            if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) return o.deliveryCostActual;
+            if (o.deliveryZone === null) return 0;
+            return (o.deliveryZone || 'within2km') === 'outside2km'
+                ? (Number(state.cfg.outside2kmCost) || 0)
+                : (Number(state.cfg.within2kmCost) || 0);
+        }
+        // Method-aware per-order cost. Self orders: same customer + same date + same
+        // 午/晚 session = ONE round trip regardless of doc count (multi-doc splits);
+        // trip cost = rate × km × 2, split evenly across the trip's docs so summing
+        // per-order still equals the trip total. km falls back doc→trip→zone default.
+        function buildDeliveryCostMap(orders) {
+            const map = new Map();
+            const trips = new Map();
+            for (const o of orders) {
+                const m = methodOf(o);
+                if (m === 'pickup') { map.set(o.id, 0); continue; }
+                if (m === 'grab' || m === 'driver') {
+                    map.set(o.id, (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0)
+                        ? o.deliveryCostActual : legacyZoneCost(o));
+                    continue;
+                }
+                if (m === 'self') {
+                    const key = `${String(o.deliveryDate || '').slice(0, 10)}|${o.userPhone || o.userName || o.id}|${mealType(o)}`;
+                    if (!trips.has(key)) trips.set(key, []);
+                    trips.get(key).push(o);
+                    continue;
+                }
+                map.set(o.id, legacyZoneCost(o));   // 未分类
+            }
+            const rate = selfRatePerKm();
+            for (const docs of trips.values()) {
+                const km = docs.map(o => Number(o.deliveryDistanceKm)).find(v => Number.isFinite(v) && v > 0);
+                const tripCost = Number.isFinite(km) && km > 0
+                    ? rate * km * 2
+                    : Math.max(...docs.map(legacyZoneCost));   // 缺距离退回 zone 估算（整趟一次）
+                docs.forEach(o => map.set(o.id, tripCost / docs.length));
+            }
+            return map;
+        }
+        // Cached over state.orders (invalidated by renderAll / order edits)
+        let _deliveryCostCache = null;
+        function deliveryCostMap() {
+            if (!_deliveryCostCache) _deliveryCostCache = buildDeliveryCostMap(state.orders);
+            return _deliveryCostCache;
+        }
+        function invalidateDeliveryCostCache() { _deliveryCostCache = null; }
+        // 未挂单配送支出（收据挂不到订单：catering / 多单混送 / 未记名）— 按窗口过滤
+        function unlinkedSpendInWindow(orders) {
+            const list = Array.isArray(state.cfg.unlinkedDeliverySpend) ? state.cfg.unlinkedDeliverySpend : [];
+            if (!list.length || !orders.length) return { rm: 0, count: 0 };
+            const dates = orders.map(o => String(o.deliveryDate || '').slice(0, 10)).filter(Boolean).sort();
+            const lo = dates[0], hi = dates[dates.length - 1];
+            const inWin = list.filter(x => x.date >= lo && x.date <= hi);
+            return { rm: inWin.reduce((s, x) => s + (Number(x.rm) || 0), 0), count: inWin.length };
         }
 
         const tsToDate = (ts) => {
@@ -3856,6 +3967,9 @@ incredibowl.my`,
 
                 $('#cfgWithin2km').value = state.cfg.within2kmCost ?? 2;
                 $('#cfgOutside2km').value = state.cfg.outside2kmCost ?? 5;
+                $('#cfgPetrolPrice').value = state.cfg.petrolPriceRm ?? 1.99;
+                $('#cfgFuelL100').value = state.cfg.fuelL100km ?? 11;
+                $('#cfgMaintPerKm').value = state.cfg.maintPerKm ?? 0.13;
                 $('#cfgPackagingUnit').value = state.cfg.packagingUnitPrice ?? 0.60;
                 $('#cfgMainsPerBag').value = state.cfg.mainsPerBag ?? 2;
                 $('#cfgCardFee').value = state.cfg.cardFeePct ?? 2.4;
@@ -3882,6 +3996,7 @@ incredibowl.my`,
 
         let settingsRendered = false;
         function renderAll() {
+            invalidateDeliveryCostCache();   // orders / cfg 可能已变，成本图重建
             renderRevenue();
             renderCAC();
             renderFunnel();
@@ -4336,7 +4451,7 @@ incredibowl.my`,
                     ? `<span class="channel-badge">${o.channel === 'whatsapp' ? 'WA' : o.channel === 'cash' ? '现金' : o.channel === 'walkin' ? 'Walk-in' : '手动'}</span>`
                     : '';
                 // Delivery-fee mini-edit button available for ALL orders (manual + web)
-                const deliveryBtn = `<button type="button" class="order-action-btn delivery-edit-btn" data-id="${o.id}" title="标记配送区（我方成本统计）">
+                const deliveryBtn = `<button type="button" class="order-action-btn delivery-edit-btn" data-id="${o.id}" title="标记配送方式：Grab / 自送 / 私人司机 / 自取（我方成本统计）">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
                 </button>`;
                 // C8: refund button — available on ALL orders. If already refunded,
@@ -5728,27 +5843,41 @@ incredibowl.my`,
                 <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">${voucherROI == null ? '时间窗内无券' : voucherROI >= 8 ? '高效（券拉新效果好）' : voucherROI >= 4 ? '一般' : '低效（折扣偏高）'}</div>
             `;
 
-            // Delivery cost & subsidy
-            const w2 = state.cfg.within2kmCost ?? 2;
-            const o2 = state.cfg.outside2kmCost ?? 5;
+            // Delivery cost & subsidy — method-aware：grab/driver 用收据实付，
+            // self 用每公里率×往返（同客同日同午/晚 = 一趟均摊），未分类退回 zone 估算
+            const dcMap = deliveryCostMap();
             let totalDeliveryCost = 0, totalDeliveryRev = 0;
             let withinCount = 0, outsideCount = 0, freeShipCount = 0, freeShipCost = 0;
+            const mAgg = {
+                grab: { orders: 0, trips: 0, cost: 0, rev: 0 },
+                driver: { orders: 0, trips: 0, cost: 0, rev: 0 },
+                self: { orders: 0, trips: 0, cost: 0, rev: 0 },
+                unclassified: { orders: 0, trips: 0, cost: 0, rev: 0 },
+            };
+            const selfTripKeys = new Set();
             orders.forEach(o => {
-                // Skip orders explicitly marked self-pickup (deliveryZone === null)
-                if (o.deliveryZone === null) return;
-                const zone = o.deliveryZone || 'within2km';  // legacy fallback for undefined
+                const m = methodOf(o);
+                if (m === 'pickup') return;   // 自取无配送成本
                 const fee = o.deliveryFee || 0;
-                // Use user-supplied actual cost (rain / surge / 3rd-party) if present
-                const hasOverride = typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0;
-                const cost = hasOverride ? o.deliveryCostActual : (zone === 'outside2km' ? o2 : w2);
+                const cost = dcMap.get(o.id) || 0;
                 totalDeliveryCost += cost;
                 totalDeliveryRev += fee;
+                const zone = o.deliveryZone || 'within2km';
                 if (zone === 'within2km') withinCount++;
                 else {
                     outsideCount++;
                     if (fee === 0) { freeShipCount++; freeShipCost += cost; }
                 }
+                const bucket = mAgg[m] || mAgg.unclassified;
+                bucket.orders++; bucket.cost += cost; bucket.rev += fee;
+                if (m === 'self') {
+                    const key = `${String(o.deliveryDate || '').slice(0, 10)}|${o.userPhone || o.userName || o.id}|${mealType(o)}`;
+                    if (!selfTripKeys.has(key)) { selfTripKeys.add(key); bucket.trips++; }
+                } else bucket.trips++;
             });
+            // 收据挂不到订单的配送支出（catering / 多单混送 / 未记名）也计入总成本
+            const unlinkedSpend = unlinkedSpendInWindow(orders);
+            totalDeliveryCost += unlinkedSpend.rm;
             const deliveryNet = totalDeliveryRev - totalDeliveryCost;
             const subsidyPerOrder = orders.length ? -deliveryNet / orders.length : 0;
 
@@ -5766,6 +5895,45 @@ incredibowl.my`,
                     <div class="num" style="font-weight:700;font-size:18px;color:${subsidyPerOrder > 0 ? 'var(--danger)' : 'var(--success)'}">${subsidyPerOrder > 0 ? '−' : '+'} RM ${Math.abs(subsidyPerOrder).toFixed(2)}</div>
                 </div>
                 <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">${withinCount + outsideCount === 0 ? '' : `≤2km: ${withinCount} · >2km: ${outsideCount}`}</div>
+            `;
+
+            // ─── 配送方式拆分卡 ───
+            const rateNow = selfRatePerKm();
+            const methodRows = [
+                ['🛵 Grab', mAgg.grab, '按收据实付'],
+                ['🚗 自送', mAgg.self, `RM ${rateNow.toFixed(2)}/km × 往返`],
+                ['🤝 私人司机', mAgg.driver, '按实付'],
+                ['❔ 未分类', mAgg.unclassified, '旧 zone 估算'],
+            ].filter(([, b]) => b.orders > 0);
+            const outsourcedCost = mAgg.grab.cost + mAgg.driver.cost + unlinkedSpend.rm;
+            $('#deliveryMethodSplit').innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                    <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px">
+                        <div style="font-size:11px;color:var(--text-muted)">外包配送支出（Grab + 司机 + 未挂单）</div>
+                        <div class="num" style="font-weight:700;font-size:22px;color:var(--danger)">${fmt.rm(outsourcedCost)}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">${mAgg.grab.trips + mAgg.driver.trips} 趟${unlinkedSpend.count ? ` + ${unlinkedSpend.count} 笔未挂单 ${fmt.rm(unlinkedSpend.rm)}` : ''}</div>
+                    </div>
+                    <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px">
+                        <div style="font-size:11px;color:var(--text-muted)">自送成本（油钱 + 车损保养）</div>
+                        <div class="num" style="font-weight:700;font-size:22px">${fmt.rm(mAgg.self.cost)}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">${mAgg.self.trips} 趟自己跑</div>
+                    </div>
+                </div>
+                <table class="dt">
+                    <thead><tr><th>方式</th><th class="r">趟数</th><th class="r">单数</th><th class="r">成本 (RM)</th><th class="r">每趟均价</th><th class="r">收客户运费</th><th>口径</th></tr></thead>
+                    <tbody>${methodRows.map(([label, b, src]) => `
+                        <tr>
+                            <td><strong>${label}</strong></td>
+                            <td class="r num">${b.trips}</td>
+                            <td class="r num">${b.orders}</td>
+                            <td class="r num">${fmt.rm(b.cost)}</td>
+                            <td class="r num">${b.trips ? fmt.rm(b.cost / b.trips) : '—'}</td>
+                            <td class="r num">${fmt.rm(b.rev)}</td>
+                            <td style="font-size:11px;color:var(--text-muted)">${src}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+                ${mAgg.grab.trips && mAgg.self.trips ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted)">Grab 每趟均价 ${fmt.rm(mAgg.grab.cost / mAgg.grab.trips)} vs 自送 ${fmt.rm(mAgg.self.cost / mAgg.self.trips)} — 自己跑一趟省 ${fmt.rm(mAgg.grab.cost / mAgg.grab.trips - mAgg.self.cost / mAgg.self.trips)}</div>` : ''}
             `;
 
             renderMealVoucherKPIs(orders);
@@ -7503,6 +7671,9 @@ incredibowl.my`,
             const cfg = {
                 within2kmCost: parseFloat($('#cfgWithin2km').value) || 0,
                 outside2kmCost: parseFloat($('#cfgOutside2km').value) || 0,
+                petrolPriceRm: parseFloat($('#cfgPetrolPrice').value) || 1.99,
+                fuelL100km: parseFloat($('#cfgFuelL100').value) || 11,
+                maintPerKm: parseFloat($('#cfgMaintPerKm').value) || 0,
                 packagingUnitPrice: parseFloat($('#cfgPackagingUnit').value) || 0,
                 mainsPerBag: parseInt($('#cfgMainsPerBag').value, 10) || 2,
                 cardFeePct: parseFloat($('#cfgCardFee').value) || 0,
@@ -7518,6 +7689,7 @@ incredibowl.my`,
             try {
                 await setDoc(doc(db, 'dashboardConfig', 'delivery'), cfg, { merge: true });
                 state.cfg = { ...state.cfg, ...cfg };
+                invalidateDeliveryCostCache();   // 自送率变了，成本图重建
                 status.textContent = '已保存';
                 toast('配置已更新', 'success');
                 renderBudget();
@@ -8013,21 +8185,13 @@ incredibowl.my`,
             });
             const cogs = dishCOGS + addonCOGS;
 
-            // Delivery cost: override → cfg → within2km fallback for legacy orders
-            // missing the field. ONLY deliveryZone === null means self-pickup (0 cost)
-            // — mirrors the Budget page loop so the same order nets the same number.
-            // NOTE: each part of a multi-part order is a SEPARATE delivery day (own trip),
-            // so every part legitimately carries its own full delivery cost — do NOT divide.
-            let deliveryCost = 0;
-            if (o.deliveryZone !== null) {
-                if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) {
-                    deliveryCost = o.deliveryCostActual;
-                } else {
-                    deliveryCost = (o.deliveryZone || 'within2km') === 'outside2km'
-                        ? (Number(state.cfg.outside2kmCost) || 0)
-                        : (Number(state.cfg.within2kmCost) || 0);
-                }
-            }
+            // Delivery cost: method-aware, same map as the Budget page loop so the
+            // same order nets the same number（grab/driver=收据实付；self=率×往返，
+            // 同客同日同午/晚一趟均摊；未分类退回 zone 估算；pickup=0）。
+            // Multi-part orders are separate delivery DAYS → separate trips (键含日期)。
+            const deliveryCost = o.id && deliveryCostMap().has(o.id)
+                ? deliveryCostMap().get(o.id)
+                : (o.deliveryZone === null ? 0 : legacyZoneCost(o));
 
             // Packaging: ceil(mains / perBag) × unit  (skip `↳` addon-rows here too)
             const mainCount = items.reduce((s, it) => {
@@ -8399,17 +8563,14 @@ incredibowl.my`,
                 });
             });
 
-            // Delivery cost
-            const w2 = Number(state.cfg.within2kmCost) || 0;
-            const o2 = Number(state.cfg.outside2kmCost) || 0;
+            // Delivery cost — method-aware（与 Budget 页同口径）+ 该月未挂单收据支出
+            const dcMapExport = deliveryCostMap();
             let totalDeliveryCost = 0;
             paid.forEach(o => {
-                if (o.deliveryZone === null) return;
-                const hasOverride = typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0;
-                totalDeliveryCost += hasOverride
-                    ? o.deliveryCostActual
-                    : ((o.deliveryZone || 'within2km') === 'outside2km' ? o2 : w2);
+                if (methodOf(o) === 'pickup') return;
+                totalDeliveryCost += dcMapExport.get(o.id) || 0;
             });
+            totalDeliveryCost += unlinkedSpendInWindow(paid).rm;
 
             // Packaging + payment fee
             let totalPackaging = 0, totalPaymentFee = 0;
@@ -8550,6 +8711,10 @@ incredibowl.my`,
                     delivery: {
                         within2kmCost: state.cfg.within2kmCost,
                         outside2kmCost: state.cfg.outside2kmCost,
+                        petrolPriceRm: state.cfg.petrolPriceRm,
+                        fuelL100km: state.cfg.fuelL100km,
+                        maintPerKm: state.cfg.maintPerKm,
+                        selfRatePerKm: Number(selfRatePerKm().toFixed(4)),
                     },
                     packaging: {
                         unitPrice: state.cfg.packagingUnitPrice,
@@ -10166,28 +10331,30 @@ incredibowl.my`,
                 });
             } else if (key === 'delivery') {
                 title = '配送成本明细';
-                const w2 = state.cfg.within2kmCost ?? 2;
-                const o2 = state.cfg.outside2kmCost ?? 5;
+                const dcm = deliveryCostMap();
                 const entries = [];
                 orders.forEach(o => {
-                    if (o.deliveryZone === null) return;  // self-pickup
-                    const zone = o.deliveryZone || 'within2km';
-                    const hasOverride = typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0;
-                    const cost = hasOverride ? o.deliveryCostActual : (zone === 'outside2km' ? o2 : w2);
-                    entries.push({ o, cost, zone, hasOverride });
+                    const m = methodOf(o);
+                    if (m === 'pickup') return;
+                    entries.push({ o, cost: dcm.get(o.id) || 0, m });
                 });
                 entries.sort((a, b) => (tsToDate(b.o.createdAt) || 0) - (tsToDate(a.o.createdAt) || 0));
                 totalAmount = entries.reduce((s, e) => s + e.cost, 0);
-                subtitle = `共 ${entries.length} 单 · 合计配送成本 RM ${totalAmount.toFixed(2)}`;
-                rows = entries.map(({ o, cost, zone, hasOverride }) => {
+                const unl = unlinkedSpendInWindow(orders);
+                subtitle = `共 ${entries.length} 单 · 合计 RM ${totalAmount.toFixed(2)}${unl.count ? ` + ${unl.count} 笔未挂单收据 RM ${unl.rm.toFixed(2)}` : ''}`;
+                totalAmount += unl.rm;
+                rows = entries.map(({ o, cost, m }) => {
                     const d = tsToDate(o.createdAt);
                     const dateStr = d ? d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '—';
-                    const zoneStr = zone === 'outside2km' ? '> 2km' : '≤ 2km';
+                    const km = Number(o.deliveryDistanceKm);
+                    const badge = m
+                        ? METHOD_LABEL[m] + (m === 'self' && Number.isFinite(km) && km > 0 ? ` ${km}km×2` : '')
+                        : `未分类 ${o.deliveryZone === 'outside2km' ? '>2km' : '≤2km'}`;
                     return `
                         <tr>
                             <td class="muted">${dateStr}</td>
                             <td><strong>${escapeHtml(o.userName || '匿名')}</strong></td>
-                            <td><span class="channel-badge">${zoneStr}${hasOverride ? ' · 自填' : ''}</span></td>
+                            <td><span class="channel-badge">${badge}</span></td>
                             <td class="r num">${fmt.rm(o.deliveryFee || 0)}</td>
                             <td class="r num"><strong>${fmt.rm(cost)}</strong></td>
                             <td class="muted mono" style="font-size:11px">${o.id.slice(-8)}</td>
@@ -10405,17 +10572,33 @@ incredibowl.my`,
             return 0;
         }
         function refreshDfmCostPreview() {
+            const method = $('#dfmMethod').value;
             const z = $('#dfmZone').value;
+            const km = parseFloat($('#dfmKm').value);
             const actualRaw = $('#dfmCostActual').value;
             const actual = actualRaw === '' ? null : parseFloat(actualRaw);
             const useActual = actual !== null && !isNaN(actual) && actual >= 0;
-            const cost = useActual ? actual : zoneCost(z);
-            $('#dfmCostPreview').textContent = fmt.rm(cost);
-            $('#dfmCostSource').textContent = !z
-                ? '自取 — 无配送成本'
-                : useActual
-                    ? `自填实际 · ${zoneLabel(z)} 默认本为 ${fmt.rm(zoneCost(z))}`
+            // 按方式显隐输入行：自送要距离，grab/司机要实付
+            $('#dfmKmRow').style.display = method === 'self' ? '' : 'none';
+            $('#dfmCostRow').style.display = (method === 'grab' || method === 'driver' || method === '') ? '' : 'none';
+            let cost = 0, source = '';
+            if (method === 'pickup') { cost = 0; source = '自取 — 无配送成本'; }
+            else if (method === 'self') {
+                if (Number.isFinite(km) && km > 0) {
+                    cost = selfRatePerKm() * km * 2;
+                    source = `RM ${selfRatePerKm().toFixed(2)}/km × ${km}km × 2（往返）`;
+                } else { cost = zoneCost(z); source = `缺距离 — 退回 ${zoneLabel(z)} 估算（填公里数更准）`; }
+            } else if (method === 'grab' || method === 'driver') {
+                cost = useActual ? actual : zoneCost(z);
+                source = useActual ? `${METHOD_LABEL[method]} 收据实付` : `⚠️ 未填实付 — 暂用 ${zoneLabel(z)} 估算`;
+            } else {
+                cost = useActual ? actual : zoneCost(z);
+                source = !z ? '自取 — 无配送成本'
+                    : useActual ? `自填实际 · ${zoneLabel(z)} 默认本为 ${fmt.rm(zoneCost(z))}`
                     : `${zoneLabel(z)} 默认（来自 设置 → 变动成本与费率）`;
+            }
+            $('#dfmCostPreview').textContent = fmt.rm(cost);
+            $('#dfmCostSource').textContent = source;
         }
 
         // Show current cost of an existing order (uses override if present)
@@ -10429,10 +10612,14 @@ incredibowl.my`,
             $('#dfmCustomer').textContent = order.userName || '匿名';
             $('#dfmFoodTotal').textContent = fmt.rm(order.total || 0);
             const hasOverride = typeof order.deliveryCostActual === 'number' && order.deliveryCostActual >= 0;
-            $('#dfmCurrentZone').textContent = order.deliveryZone
-                ? zoneLabel(order.deliveryZone) + ' · 成本 ' + fmt.rm(orderDeliveryCost(order)) + (hasOverride ? ' (自填)' : '')
-                : '— (未标记)';
+            const curMethod = methodOf(order);
+            $('#dfmCurrentZone').textContent = (curMethod ? METHOD_LABEL[curMethod] + ' · ' : '')
+                + (order.deliveryZone
+                    ? zoneLabel(order.deliveryZone) + ' · 成本 ' + fmt.rm(deliveryCostMap().get(order.id) ?? orderDeliveryCost(order)) + (hasOverride ? ' (实付)' : '')
+                    : (curMethod === 'pickup' ? '自取' : '— (未标记)'));
+            $('#dfmMethod').value = DELIVERY_METHODS.includes(order.deliveryMethod) ? order.deliveryMethod : '';
             $('#dfmZone').value = order.deliveryZone || '';
+            $('#dfmKm').value = (typeof order.deliveryDistanceKm === 'number' && order.deliveryDistanceKm > 0) ? order.deliveryDistanceKm : '';
             $('#dfmCostActual').value = hasOverride ? Number(order.deliveryCostActual).toFixed(2) : '';
             refreshDfmCostPreview();
             $('#dfmError').classList.add('hidden');
@@ -10450,19 +10637,34 @@ incredibowl.my`,
             if (e.key === 'Escape' && !dfmModal.classList.contains('hidden')) closeDeliveryFeeModal();
         });
 
-        // Live cost preview when zone or override input changes
+        // Live cost preview when method / zone / km / override input changes
+        $('#dfmMethod').addEventListener('change', refreshDfmCostPreview);
         $('#dfmZone').addEventListener('change', refreshDfmCostPreview);
+        $('#dfmKm').addEventListener('input', refreshDfmCostPreview);
         $('#dfmCostActual').addEventListener('input', refreshDfmCostPreview);
 
         $('#dfmSaveBtn').addEventListener('click', async () => {
             if (!dfmEditingId) return;
             const errEl = $('#dfmError');
             errEl.classList.add('hidden');
-            const zone = $('#dfmZone').value;  // '' | 'within2km' | 'outside2km'
+            const method = $('#dfmMethod').value;  // '' | self | grab | driver | pickup
+            const zone = $('#dfmZone').value;      // '' | 'within2km' | 'outside2km'
+            const kmRaw = $('#dfmKm').value.trim();
+            const km = kmRaw === '' ? null : parseFloat(kmRaw);
             const actualRaw = $('#dfmCostActual').value.trim();
             const actual = actualRaw === '' ? null : parseFloat(actualRaw);
             if (actualRaw !== '' && (isNaN(actual) || actual < 0)) {
-                errEl.textContent = '实际成本要是 ≥ 0 的数字（或留空用默认）';
+                errEl.textContent = '实付成本要是 ≥ 0 的数字（或留空用默认）';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if (kmRaw !== '' && (isNaN(km) || km <= 0)) {
+                errEl.textContent = '距离要是 > 0 的公里数（或留空）';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            if ((method === 'self' || method === 'grab' || method === 'driver') && !zone) {
+                errEl.textContent = '配送出去的单要选配送区（≤2km / >2km）';
                 errEl.classList.remove('hidden');
                 return;
             }
@@ -10470,21 +10672,25 @@ incredibowl.my`,
             btn.disabled = true;
             btn.textContent = '保存中...';
             try {
-                // Persist zone + optional cost override; null/zero override means "use zone default"
+                const isPickup = method === 'pickup' || (!method && !zone);
                 const update = {
-                    deliveryZone: zone || null,  // null = self-pickup / no delivery
-                    deliveryCostActual: (zone && actual !== null) ? actual : null,  // null = no override
+                    deliveryMethod: method || null,             // null = 未分类（旧 zone 估算）
+                    deliveryZone: isPickup ? null : (zone || null),
+                    // 实付只对 grab/driver/未分类有意义；自送/自取的成本是算出来的不落库
+                    deliveryCostActual: (!isPickup && method !== 'self' && actual !== null) ? actual : null,
                     updatedAt: serverTimestamp(),
                 };
+                if (km !== null) update.deliveryDistanceKm = km;
                 await updateDoc(doc(db, 'orders', dfmEditingId), update);
                 const idx = state.orders.findIndex(o => o.id === dfmEditingId);
                 if (idx >= 0) {
-                    state.orders[idx] = { ...state.orders[idx], deliveryZone: update.deliveryZone, deliveryCostActual: update.deliveryCostActual };
+                    state.orders[idx] = { ...state.orders[idx], deliveryMethod: update.deliveryMethod, deliveryZone: update.deliveryZone, deliveryCostActual: update.deliveryCostActual, ...(km !== null ? { deliveryDistanceKm: km } : {}) };
                 }
-                const finalCost = (zone && actual !== null) ? actual : zoneCost(zone);
-                const msg = zone
-                    ? `已标记 ${zoneLabel(zone)} · 配送成本 RM ${finalCost.toFixed(2)}${actual !== null ? ' (自填)' : ''}`
-                    : '已标记为自取 / 无配送';
+                invalidateDeliveryCostCache();
+                const finalCost = deliveryCostMap().get(dfmEditingId) ?? 0;
+                const msg = isPickup
+                    ? '已标记为自取 / 无配送'
+                    : `已标记 ${method ? METHOD_LABEL[method] : zoneLabel(zone)} · 配送成本 RM ${finalCost.toFixed(2)}`;
                 toast(msg, 'success');
                 closeDeliveryFeeModal();
                 renderAll();
@@ -12060,10 +12266,22 @@ incredibowl.my`,
             btn.textContent = '建立批次中…';
             try {
                 await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
+                // 自己开批次跑 GPS = 自送：没标方式的单顺手标 self（已标 grab 的不动）
+                const toStampSelf = orderIds.filter(id => {
+                    const o = state.orders.find(x => x.id === id);
+                    return o && !DELIVERY_METHODS.includes(o.deliveryMethod);
+                });
+                await Promise.all(toStampSelf.map(id =>
+                    updateDoc(doc(db, 'orders', id), { deliveryMethod: 'self', updatedAt: serverTimestamp() }).catch(e => console.warn('[batch stamp self]', id, e))
+                ));
                 // Reflect locally so the pills flip without a full reload
                 orderIds.forEach(id => {
                     const idx = state.orders.findIndex(o => o.id === id);
-                    if (idx >= 0) state.orders[idx] = { ...state.orders[idx], status: 'delivering' };
+                    if (idx >= 0) state.orders[idx] = {
+                        ...state.orders[idx],
+                        status: 'delivering',
+                        ...(toStampSelf.includes(id) ? { deliveryMethod: 'self' } : {}),
+                    };
                 });
                 renderAll();
                 const s = $('#dbmSuccess');

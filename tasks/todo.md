@@ -1,3 +1,45 @@
+# 配送方式拆分（Grab vs 自送）+ 真实配送成本核算 — 2026-07-23
+
+> 目标：Dashboard 清楚看到「Grab 花了多少 / 自己送了多少趟 / 自送油钱车损多少」。
+> 老板已确认：Grab 费用以每周上传收据为准（Accounting deliveries.csv）；自送=每公里综合率×每单独立往返；私人司机单独一类；配不上收据的单先给老板过目。
+
+## Phase 0 — 配对报告（✅ 完成，只读未写数据）
+- [x] scripts/match-deliveries-to-orders.mjs：deliveries.csv 165 趟（去重）× Firestore 订单
+- [x] 结果：**154 配上 · 11 趟收据无单 · 363 文档（355 趟）无收据=候选自送**
+- [x] 报告：analytics/delivery-method-match-report.md
+- [x] 别名：Py→PY•玉、Elyn Wong→E Wong、Daryl koh→Darryl Koh、Chungee→ChungEe Tan、Karen Cham(BK 1/13)→Karen Home；2 单 Guest 靠地址/电话认定
+
+## Phase 1 — 自送成本率（等老板拍板）
+- 油费 RM1.99/L（账本 6 笔加油全 1.99）× 11L/100km（CX-5）= RM0.22/km
+- 保养摊提 RM0.10/km（市场典型估算，账本无保养记录，可用真实发票重算）
+- 默认综合率 **RM0.32/km**；Settings 做成油价/油耗/保养三个可调字段
+- 自送单成本 = 率 × deliveryDistanceKm × 2（往返）；旧单缺距离从 addressDistanceKm/geocode 补
+
+## Phase 2 — Firestore 回填（老板点头才写）
+- [ ] 订单加 deliveryMethod: grab | self | driver | pickup
+- [ ] 配上的 154 → grab/driver + deliveryCostActual=收据实付 + 补 deliveryDistanceKm
+- [ ] 老板确认的无收据配送单 → self + 补距离；zone=null 3 单 → pickup
+- [ ] 备份 + 回滚日志
+
+## Phase 3 — Dashboard（Desktop 源头改再 sync）
+- [ ] 「标记配送」弹窗加方式 4 选 1（grab/driver 填实付；self 自动率×往返）
+- [ ] 「开始配送」批次自动标 self
+- [ ] 成本统一：grab/driver=实付；self=率×2×km；pickup=0；未标沿用 zone 估算+标「未分类」
+- [ ] Budget 新卡「配送方式拆分」：各方式趟数/总支出/每趟均价
+- [ ] Settings：油价、油耗、保养摊提字段
+- [ ] 净利润/计算器/导出跟新口径
+
+## Phase 4 — 常态化
+- [ ] scripts/sync-grab-receipts.mjs：每周 deliveries.csv 更新后跑，按 booking_id 幂等写回
+- [ ] submit-order 把 addressDistanceKm 写进订单 deliveryDistanceKm（schema 已有字段）
+
+## 等老板答复
+1. 355 趟无收据配送清单过目：全标自送还是挑例外？
+2. 11 趟收据无单（Gwen×2、Racheel×2、5 张未记名、2 笔 manual RM33/37）怎么归？
+3. 保养 RM0.10/km 接受吗，还是给真实保养发票重算？
+
+---
+
 # 客户下单自动抵扣预付加料 credits — 2026-07-20
 
 ## 需求（老板确认三决策）
