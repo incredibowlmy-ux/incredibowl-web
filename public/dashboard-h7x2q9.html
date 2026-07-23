@@ -6230,7 +6230,7 @@ incredibowl.my`,
                     <div>
                         <div style="font-size:11px;color:var(--text-muted)">隐性补贴成本</div>
                         <div class="num display" style="font-size:28px;font-weight:800;color:var(--danger)">${fmt.rm(freeShipCost)}</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${freeShipCount} 单 × RM ${o2} / 单</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${freeShipCount} 单 · 平均 RM ${(freeShipCount ? freeShipCost / freeShipCount : 0).toFixed(2)} / 单</div>
                     </div>
                     <div>
                         <div style="font-size:11px;color:var(--text-muted)">占总营销开支比</div>
