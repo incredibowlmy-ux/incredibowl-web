@@ -112,14 +112,16 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-07-27（Mon 27 Jul）— 只换周一，周二~五保持不变
+//   生效周：2026-07-27（Mon 27 Jul）— 分两段上线：本 commit 只改周一~四，
+//   周五改动（新菜排骨+鱼片回归+咖喱挪周二+猪扒撤周五）在下一 commit，
+//   等本周五 06:00 截单后才 push，避免覆盖本周五在售菜单。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
     1: [2],      // 周一：当归蒸鸡全腿(主打)；甜酸洋葱猪扒在常驻(限周一/四·featured)
-    2: [4],      // 周二：绍兴酒蒸花肉(主打)
-    3: [23, 3],  // 周三：家乡豆酱焖花肉(主打)、希腊柠香烤鸡胸
-    4: [14, 12], // 周四：金黄鸡扒饭(主打)、山药云耳；猪扒常驻 featured 也在列
-    5: [25],     // 周五：家常日式咖喱饭(主打)
+    2: [21],     // 周二：柠香三文鱼(主打·回归)；咖喱饭周五截单后并入（见上）
+    3: [23, 12], // 周三：家乡豆酱焖花肉(主打)、山药云耳(从周四挪来)
+    4: [4],      // 周四：绍兴酒蒸花肉(主打·从周二挪来)；猪扒常驻 featured 也在列
+    5: [25],     // 周五：家常日式咖喱饭(主打) —— 本周五仍在售，下一 commit 换排骨+鱼片
 };
 
 // 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)、甜酸洋葱猪扒(限周一/四·featured)
@@ -130,8 +132,9 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
     { id: 5, day: 'Fri / 周五' },     // 葱香煎鸡汤 退役 2026-06-08
     { id: 24, day: 'Tue / 周二' },    // 澳洲和牛饼 暂别 2026-07-13
-    { id: 21, day: 'Wed / 周三' },    // 柠香三文鱼 暂停一周 2026-07-20（老板 07-17 指示）
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
+    { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别 2026-07-27
+    { id: 14, day: 'Thu / 周四' },    // 金黄鸡扒饭 暂别 2026-07-27
     { id: 20, day: 'Fri / 周五' },    // 姜葱鱼片 暂别 2026-07-20
     { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27（周一换猪扒+当归）
 ];
@@ -161,10 +164,11 @@ const DISH_CATALOG: DishData[] = [
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
-        // 2026-07-20 起周一、周五停供（老板 07-17 菜单指示）。
-        availableWeekdays: [2, 3, 4],
-        unavailableNote: "周二至周四供应",
-        unavailableNoteEn: "Served Tue–Thu",
+        // 2026-07-27 周起恢复全周常驻（老板 07-24 菜单）。过渡期先开周一~四，
+        // 周五在下一 commit（本周五截单后）才放开，避免本周五突然多一道菜。
+        availableWeekdays: [1, 2, 3, 4],
+        unavailableNote: "周一至周四供应",
+        unavailableNoteEn: "Served Mon–Thu",
         image: "/pork_potato_stew.webp",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
@@ -250,7 +254,8 @@ const DISH_CATALOG: DishData[] = [
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
         price: 19.90,
-        availableWeekdays: [1, 4],
+        // 过渡期含周五（本周五 07-25 线上仍在售）；下一 commit 收回成 [1,4]。
+        availableWeekdays: [1, 4, 5],
         featureOnAvailableDays: true,
         unavailableNote: "仅周一、周四供应",
         unavailableNoteEn: "Mon & Thu only",
@@ -262,10 +267,8 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。周五新上 2026-06-08。
-        // 暂停一周 2026-07-20（老板 07-17 指示，见 PAUSED_DISHES）。
+        // 暂停一周 2026-07-20；2026-07-27 回归周二主打。
         id: 21,
-        unavailableNote: "三文鱼暂停一周，下周回归",
-        unavailableNoteEn: "Salmon paused this week — back next week",
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 23.90,
