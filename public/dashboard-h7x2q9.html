@@ -9116,7 +9116,7 @@ incredibowl.my`,
 
             // 装碗分组：白饭/糙米 × 正常/少饭 逐碗核对 — 与「装碗打包」页共用 collectPackingData 同一套口径
             function riceGroupBlock(orders) {
-                const { groups, bowlTotal, extraRiceTotal } = collectPackingData(orders, packingLabelToId());
+                const { groups, bowlTotal, extraRiceTotal, extraRiceWhite, extraRiceBrown, extraRiceRows } = collectPackingData(orders, packingLabelToId());
                 if (bowlTotal === 0) return '';
                 const sum = rows => rows.reduce((s, r) => s + r.count, 0);
                 const whiteBowls = sum(groups.whiteNormal) + sum(groups.whiteLess);
@@ -9130,9 +9130,16 @@ incredibowl.my`,
                     ).join('');
                     return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${lines}`;
                 }).join('');
+                // 加饭明细独立小节（和少饭分组同级同样式）：逐份列饭型+菜+客户
+                const extraBlock = extraRiceTotal > 0
+                    ? `<div class="rice-g">🍚 加饭明细 — 共 ${extraRiceTotal} 份</div>` + extraRiceRows.map(r =>
+                        `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${r.riceType === 'brown' ? '🟤 糙米加饭' : '⚪ 白饭加饭'} — ${escP(r.dish)} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`
+                    ).join('')
+                    : '';
                 return `<div class="rice">
-                    <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗 = ⚪ 白饭 ${whiteBowls} + 🟤 糙米 ${brownBowls}${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份` : ''}）</div>
+                    <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗 = ⚪ 白饭 ${whiteBowls} + 🟤 糙米 ${brownBowls}${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份（${extraRiceSplitText(extraRiceWhite, extraRiceBrown)}）` : ''}）</div>
                     ${blocks}
+                    ${extraBlock}
                 </div>`;
             }
 
@@ -9242,6 +9249,7 @@ incredibowl.my`,
         function collectPackingData(orders, labelToId) {
             const groups = { whiteNormal: [], whiteLess: [], brownNormal: [], brownLess: [] };
             const sides = new Map();   // canonical id → { name, qty }
+            const extraRiceRows = [];  // 加饭明细行：{ dish, count, riceType: 'white'|'brown', who, code }
             let bowlTotal = 0, extraRiceTotal = 0;
 
             orders.forEach(o => {
@@ -9270,6 +9278,9 @@ incredibowl.my`,
                     });
                     brownQty = Math.min(brownQty, qty);
                     lessQty = Math.min(lessQty, qty);
+                    // 加饭饭型跟碗走：该行有糙米碗就算糙米加饭，否则白饭
+                    //（网页端加饭/糙米都挂同一行 item，qty=1 时天然准确）。
+                    if (extraQty > 0) extraRiceRows.push({ dish, count: extraQty, riceType: brownQty > 0 ? 'brown' : 'white', who, code });
                     const bl = Math.min(brownQty, lessQty);   // 糙米+少饭重叠碗数
                     const bn = brownQty - bl;
                     const wl = lessQty - bl;
@@ -9312,7 +9323,17 @@ incredibowl.my`,
                 });
                 groups[k] = merged;
             });
-            return { groups, sides, bowlTotal, extraRiceTotal };
+            const extraRiceWhite = extraRiceRows.filter(r => r.riceType === 'white').reduce((s, r) => s + r.count, 0);
+            const extraRiceBrown = extraRiceTotal - extraRiceWhite;
+            return { groups, sides, bowlTotal, extraRiceTotal, extraRiceWhite, extraRiceBrown, extraRiceRows };
+        }
+
+        // 加饭汇总的饭型拆分文案：「⚪ 白饭 1 + 🟤 糙米 2」（只列非零项）
+        function extraRiceSplitText(extraRiceWhite, extraRiceBrown) {
+            return [
+                extraRiceWhite > 0 ? `⚪ 白饭 ${extraRiceWhite}` : '',
+                extraRiceBrown > 0 ? `🟤 糙米 ${extraRiceBrown}` : '',
+            ].filter(Boolean).join(' + ');
         }
 
         function renderPacking() {
@@ -9343,12 +9364,12 @@ incredibowl.my`,
         }
 
         function packingMealHtml(title, orders, labelToId) {
-            const { groups, sides, bowlTotal, extraRiceTotal } = collectPackingData(orders, labelToId);
+            const { groups, sides, bowlTotal, extraRiceTotal, extraRiceWhite, extraRiceBrown } = collectPackingData(orders, labelToId);
 
             const kpiPills = PACKING_RICE_GROUPS.map(g => {
                 const n = groups[g.key].reduce((s, r) => s + r.count, 0);
                 return `<span class="pill ${n > 0 ? 'info' : 'muted'}" style="font-size:12px">${g.label} <b>${n}</b> 碗</span>`;
-            }).join(' ') + (extraRiceTotal > 0 ? ` <span class="pill warn" style="font-size:12px">🍚 加饭共 <b>${extraRiceTotal}</b> 份</span>` : '');
+            }).join(' ') + (extraRiceTotal > 0 ? ` <span class="pill warn" style="font-size:12px">🍚 加饭共 <b>${extraRiceTotal}</b> 份（${extraRiceSplitText(extraRiceWhite, extraRiceBrown)}）</span>` : '');
 
             const groupBlocks = PACKING_RICE_GROUPS.map(g => {
                 const rows = groups[g.key];
