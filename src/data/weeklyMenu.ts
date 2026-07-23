@@ -112,19 +112,19 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-07-20（Mon 20 Jul）
+//   生效周：2026-07-27（Mon 27 Jul）— 仅周一已定，周二~五沿用上周待老板补齐
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
-    1: [1, 2],   // 周一：酱油鸡全腿(主打)、当归蒸鸡全腿
-    2: [4],      // 周二：绍兴酒蒸花肉(主打)；新菜甜酸洋葱猪扒在常驻(限周二/五)
-    3: [23, 3],  // 周三：家乡豆酱焖花肉(主打)、希腊柠香烤鸡胸(回归)
-    4: [14, 12], // 周四：金黄鸡扒饭(主打)、山药云耳
-    5: [25],     // 周五：家常日式咖喱饭(主打)；新菜甜酸洋葱猪扒在常驻(限周二/五)
+    1: [27, 2],  // 周一：甜酸洋葱猪扒(主打·从常驻转周一)、当归蒸鸡全腿
+    2: [4],      // 周二：绍兴酒蒸花肉(主打) —— 待定
+    3: [23, 3],  // 周三：家乡豆酱焖花肉(主打)、希腊柠香烤鸡胸 —— 待定
+    4: [14, 12], // 周四：金黄鸡扒饭(主打)、山药云耳 —— 待定
+    5: [25],     // 周五：家常日式咖喱饭(主打) —— 待定
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)、甜酸洋葱猪扒(新菜·限周二/五)
-// —— 后两道的供应日由各自 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
-const DAILY_DISHES: number[] = [11, 13, 27];
+// 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)
+// —— 后者的供应日由 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
+const DAILY_DISHES: number[] = [11, 13];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
@@ -133,6 +133,7 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 21, day: 'Wed / 周三' },    // 柠香三文鱼 暂停一周 2026-07-20（老板 07-17 指示）
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
     { id: 20, day: 'Fri / 周五' },    // 姜葱鱼片 暂别 2026-07-20
+    { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别待定 2026-07-27（下周排期未出，等老板补齐）
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -249,10 +250,6 @@ const DISH_CATALOG: DishData[] = [
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
         price: 19.90,
-        availableWeekdays: [2, 5],
-        featureOnAvailableDays: true,
-        unavailableNote: "仅周二、周五供应",
-        unavailableNoteEn: "Tue & Fri only",
         image: "/sweet_sour_onion_pork_chop.webp",
         tags: ["甜酸开胃", "洋葱酱香", "家乡风味", "下饭神器"],
         tagsEn: ["Sweet & tangy", "Onion sauce", "Hometown flavour", "Made for rice"],
