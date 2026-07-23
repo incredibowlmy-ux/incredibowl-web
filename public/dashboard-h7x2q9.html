@@ -12300,6 +12300,16 @@ incredibowl.my`,
             btn.textContent = '建立批次中…';
             try {
                 await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
+            } catch (err) {
+                errEl.textContent = err.message || '建立批次失败';
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = '🛵 开始配送';
+                return;
+            }
+            // 批次已建立成功——下面全是 best-effort 收尾，任何一步出错都不能
+            // 显示「失败」再放开按钮（会诱导重按建出重复批次）。
+            try {
                 // 自己开批次跑 GPS = 自送：没标方式的单顺手标 self（已标 grab 的不动）
                 const toStampSelf = orderIds.filter(id => {
                     const o = state.orders.find(x => x.id === id);
@@ -12318,18 +12328,21 @@ incredibowl.my`,
                     };
                 });
                 renderAll();
-                const s = $('#dbmSuccess');
-                s.innerHTML = `✅ <strong>${orderIds.length} 单已转「配送中」</strong><br>`
-                    + `📱 在手机打开 <strong>www.incredibowl.my/driver</strong> 开始 GPS 上报 + 逐单点送达<br>`
-                    + `🗺️ 客户跟踪页现在会显示你的实时位置`;
-                s.classList.remove('hidden');
-                $('#dbmOrderList').innerHTML = '';
-                btn.textContent = '已开始';
             } catch (err) {
-                errEl.textContent = err.message || '建立批次失败';
-                errEl.classList.remove('hidden');
-                btn.disabled = false;
-                btn.textContent = '🛵 开始配送';
+                console.warn('[batch post-start]', err);
+            }
+            const driverUrl = `${ADMIN_API_BASE}/driver`;
+            const s = $('#dbmSuccess');
+            s.innerHTML = `✅ <strong>${orderIds.length} 单已转「配送中」</strong><br>`
+                + `🗺️ 客户跟踪页现在会显示你的实时位置<br>`
+                + `<a href="${driverUrl}" target="_blank" rel="noopener" style="display:block;margin-top:10px;padding:12px;background:#FF6B35;color:#fff;border-radius:10px;text-align:center;font-weight:800;text-decoration:none">🛵 打开司机页（GPS 上报 + 逐单点送达）</a>`;
+            s.classList.remove('hidden');
+            $('#dbmOrderList').innerHTML = '';
+            btn.textContent = '已开始';
+            // 手机（触屏设备）：反正下一步就是去司机页，直接跳过去，
+            // 避免「按了没反应」的错觉导致重复按
+            if (window.matchMedia('(pointer: coarse)').matches) {
+                setTimeout(() => { location.href = driverUrl; }, 800);
             }
         });
 
