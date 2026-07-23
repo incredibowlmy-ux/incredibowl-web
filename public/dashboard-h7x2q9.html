@@ -2104,26 +2104,6 @@
     <div id="toast" class="toast"></div>
 
     <!-- ═══════════════ MANUAL ORDER MODAL ═══════════════ -->
-    <div id="customerLookupModal" class="modal-backdrop hidden">
-        <div class="modal" style="max-width:760px">
-            <div class="modal-header">
-                <div>
-                    <div class="modal-title">🔍 查客户</div>
-                    <div class="modal-subtitle">按姓名 / 电话 / 订单号查档案 · 累计订单 · 偏好 · 餐券余额</div>
-                </div>
-                <button class="modal-close" id="closeCustomerLookupBtn" type="button">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-row">
-                    <label>搜索（姓名 / 电话 / 订单号）</label>
-                    <input type="text" id="customerLookupInput" placeholder="例：王小明 或 01234... 或 #ABC123" autocomplete="off" />
-                    <div id="customerLookupSuggestions" style="margin-top:6px;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);display:none"></div>
-                </div>
-                <div id="customerProfileContainer" style="margin-top:14px"></div>
-            </div>
-        </div>
-    </div>
-
     <div id="manualOrderModal" class="modal-backdrop hidden">
         <div class="modal">
             <div class="modal-header">
@@ -2343,6 +2323,30 @@
                 <div class="modal-footer-actions">
                     <button type="button" class="btn" id="bdmCloseBtn2">关闭</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════ CUSTOMER LOOKUP MODAL ═══════════════
+         DOM 位置刻意排在 breakdown modal 之后、order detail 之前：
+         同 z-index 时后出现的盖前面 → 负债持有人(bdm) < 客户档案 < 订单详情
+         三层可叠开，Escape 逐层关（capture handlers 按注册序保证）。 -->
+    <div id="customerLookupModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:760px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🔍 查客户</div>
+                    <div class="modal-subtitle">按姓名 / 电话 / 订单号查档案 · 累计订单 · 偏好 · 餐券余额</div>
+                </div>
+                <button class="modal-close" id="closeCustomerLookupBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-row">
+                    <label>搜索（姓名 / 电话 / 订单号）</label>
+                    <input type="text" id="customerLookupInput" placeholder="例：王小明 或 01234... 或 #ABC123" autocomplete="off" />
+                    <div id="customerLookupSuggestions" style="margin-top:6px;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);display:none"></div>
+                </div>
+                <div id="customerProfileContainer" style="margin-top:14px"></div>
             </div>
         </div>
     </div>
@@ -10475,12 +10479,17 @@ incredibowl.my`,
                         : '—';
                     const days = h.earliestExp ? Math.max(0, Math.floor((h.earliestExp - new Date()) / 86400000)) : null;
                     const urgency = days != null && days <= 14 ? 'color:var(--warning);font-weight:600' : 'color:var(--text-muted)';
+                    // customerKey 同口径：有 7 位以上电话走 p:（能捞到网页+WA 全部订单），
+                    // 没电话（stub）走 u:userId — buildCustomerProfile 两种都吃。
+                    const holderPhoneNorm = normalizePhone(h.phone === '—' ? '' : h.phone);
+                    const holderKey = (holderPhoneNorm && holderPhoneNorm.length >= 7)
+                        ? 'p:' + holderPhoneNorm : 'u:' + h.userId;
                     const customerCell = `
-                        <div style="font-weight:600">${escapeHtml(h.name)}${h.isStub ? ' <span style="font-size:10px;color:#9A6E2F;font-weight:400">(stub)</span>' : ''}</div>
+                        <div style="font-weight:600">${escapeHtml(h.name)}${h.isStub ? ' <span style="font-size:10px;color:#9A6E2F;font-weight:400">(stub)</span>' : ''} <span style="font-size:10px;color:var(--text-muted);font-weight:400">👤</span></div>
                         <div class="muted mono" style="font-size:11px;margin-top:2px">${escapeHtml(h.phone)}</div>
                     `;
                     return `
-                        <tr>
+                        <tr class="holder-row" data-cust-key="${escapeHtml(holderKey)}" style="cursor:pointer" title="点击查看客户档案（历史订单 / 偏好 / 餐券余额）">
                             <td><span style="${urgency}">${expStr}</span>${days != null ? `<div style="font-size:10px;color:var(--text-muted)">${days} 天</div>` : ''}</td>
                             <td>${customerCell}</td>
                             <td class="muted" style="font-size:11px">${h.isStub ? '🎫 stub 账号' : '正式账号'}</td>
@@ -10570,6 +10579,9 @@ incredibowl.my`,
                         </tfoot>
                     </table>
                 `;
+            $('#bdmHint').textContent = key === 'voucher-liability'
+                ? '点客户行可看完整档案（历史订单 / 偏好 / 餐券余额）'
+                : '点订单可直接跳到「最近订单」';
             bdmModal.classList.remove('hidden');
         }
 
@@ -13209,6 +13221,22 @@ incredibowl.my`,
             `).join('');
         }
 
+        // 直接按 customerKey 打开客户档案（跳过搜索步骤）——
+        // 餐券负债持有人列表点客户行进入；档案叠在列表之上（DOM 顺序保证）。
+        function openCustomerProfileByKey(key) {
+            const profile = buildCustomerProfile(key);
+            if (!profile) { toast('找不到该客户档案', 'error'); return; }
+            $('#customerLookupInput').value = '';
+            $('#customerLookupSuggestions').innerHTML = '';
+            $('#customerLookupSuggestions').style.display = 'none';
+            $('#customerProfileContainer').innerHTML = renderCustomerProfile(profile);
+            $('#customerLookupModal').classList.remove('hidden');
+        }
+        document.addEventListener('click', (e) => {
+            const hrow = e.target.closest('.holder-row');
+            if (hrow && hrow.dataset.custKey) openCustomerProfileByKey(hrow.dataset.custKey);
+        });
+
         // Wire events
         $('#lookupCustomerBtn').addEventListener('click', openCustomerLookup);
         $('#closeCustomerLookupBtn').addEventListener('click', closeCustomerLookup);
@@ -13216,8 +13244,14 @@ incredibowl.my`,
             if (e.target === $('#customerLookupModal')) closeCustomerLookup();
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !$('#customerLookupModal').classList.contains('hidden')) closeCustomerLookup();
-        });
+            // capture + stopImmediatePropagation：叠在负债持有人列表(bdm)上时，
+            // Escape 只关档案这一层，不连带关底下的列表。orderDetail 的 capture
+            // handler 注册更早 → 更上层的详情先关，层级顺序正确。
+            if (e.key === 'Escape' && !$('#customerLookupModal').classList.contains('hidden')) {
+                closeCustomerLookup();
+                e.stopImmediatePropagation();
+            }
+        }, true);
 
         let customerLookupDebounce = null;
         $('#customerLookupInput').addEventListener('input', (e) => {
