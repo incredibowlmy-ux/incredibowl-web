@@ -112,16 +112,15 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-07-27（Mon 27 Jul）— 分两段上线：本 commit 只改周一~四，
-//   周五改动（新菜排骨+鱼片回归+咖喱挪周二+猪扒撤周五）在下一 commit，
-//   等本周五 06:00 截单后才 push，避免覆盖本周五在售菜单。
+//   生效周：2026-07-27（Mon 27 Jul）— 第2段（周五改动），须等本周五
+//   07-25 06:00 截单后才 push（第1段周一~四 = 上一 commit，可先推）。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
     1: [2],      // 周一：当归蒸鸡全腿(主打)；甜酸洋葱猪扒在常驻(限周一/四·featured)
-    2: [21],     // 周二：柠香三文鱼(主打·回归)；咖喱饭周五截单后并入（见上）
+    2: [21, 25], // 周二：柠香三文鱼(主打·回归)、家常日式咖喱饭(从周五挪来)
     3: [23, 12], // 周三：家乡豆酱焖花肉(主打)、山药云耳(从周四挪来)
     4: [4],      // 周四：绍兴酒蒸花肉(主打·从周二挪来)；猪扒常驻 featured 也在列
-    5: [25],     // 周五：家常日式咖喱饭(主打) —— 本周五仍在售，下一 commit 换排骨+鱼片
+    5: [28, 20], // 周五：豆酱焖排骨(主打·新菜)、姜葱鱼片(回归)
 };
 
 // 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)、甜酸洋葱猪扒(限周一/四·featured)
@@ -135,7 +134,6 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
     { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别 2026-07-27
     { id: 14, day: 'Thu / 周四' },    // 金黄鸡扒饭 暂别 2026-07-27
-    { id: 20, day: 'Fri / 周五' },    // 姜葱鱼片 暂别 2026-07-20
     { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27（周一换猪扒+当归）
 ];
 
@@ -164,11 +162,7 @@ const DISH_CATALOG: DishData[] = [
         name: "马铃薯炖花肉片",
         nameEn: "Home-style Pork Belly Slices & Potato Stew",
         price: 19.90,
-        // 2026-07-27 周起恢复全周常驻（老板 07-24 菜单）。过渡期先开周一~四，
-        // 周五在下一 commit（本周五截单后）才放开，避免本周五突然多一道菜。
-        availableWeekdays: [1, 2, 3, 4],
-        unavailableNote: "周一至周四供应",
-        unavailableNoteEn: "Served Mon–Thu",
+        // 2026-07-27 周起恢复全周常驻（老板 07-24 菜单），不再限日。
         image: "/pork_potato_stew.webp",
         tags: ["能量补给", "软糯入味", "胶原满满", "汤汁拌饭三碗半"],
         tagsEn: ["Energy boost", "Tender & glazed", "Collagen-rich", "Three bowls of rice gone"],
@@ -254,8 +248,7 @@ const DISH_CATALOG: DishData[] = [
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
         price: 19.90,
-        // 过渡期含周五（本周五 07-25 线上仍在售）；下一 commit 收回成 [1,4]。
-        availableWeekdays: [1, 4, 5],
+        availableWeekdays: [1, 4],
         featureOnAvailableDays: true,
         unavailableNote: "仅周一、周四供应",
         unavailableNoteEn: "Mon & Thu only",
@@ -326,6 +319,20 @@ const DISH_CATALOG: DishData[] = [
         descEn: "The seared aroma I waited for as a kid — no fancy seasoning, just salt and pepper, done right."
     },
     {
+        // 全新菜 2026-07-24 入系统，2026-07-31（周五）上线主打。无实拍图，emoji
+        // 占位防 hero 404（有图后换 /xxx.webp）。蛋白克数等营养标签待碗妈提供
+        // 后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        id: 28,
+        name: "豆酱焖排骨",
+        nameEn: "Hometown Taucu Braised Pork Ribs",
+        price: 19.90,
+        image: "🍖",
+        tags: ["家乡豆酱", "焖煮入味", "骨边肉香", "下饭神器"],
+        tagsEn: ["Hometown taucu", "Slow-braised", "Fall-off-the-bone", "Made for rice"],
+        desc: "家乡豆酱慢火焖排骨，豆香咸鲜渗进骨边肉里，酱汁拌饭一流。",
+        descEn: "Pork ribs slow-braised in hometown fermented soybean paste (taucu) — savoury and deeply infused, with a sauce made for rice."
+    },
+    {
         // 全新菜 2026-06-15 上架。2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
         id: 23,
@@ -369,10 +376,8 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // 2026-07-13 回归周五。回归价 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
-        // 暂别 2026-07-20（见 PAUSED_DISHES）。
+        // 暂别 2026-07-20；2026-07-27 周回归周五第二道。
         id: 20,
-        unavailableNote: "姜葱鱼片暂别，敬请期待回归",
-        unavailableNoteEn: "Ginger-scallion fish paused — back soon",
         name: "古早味姜葱鱼片饭",
         nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
         price: 19.90,
