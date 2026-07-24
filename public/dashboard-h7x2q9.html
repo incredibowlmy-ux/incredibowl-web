@@ -12688,7 +12688,9 @@ incredibowl.my`,
                 deliveryTime: $('#moDeliveryTime').value || (selectedMeal === 'lunch' ? '12:30' : selectedMeal === 'dinner' ? '19:00' : '12:00'),
                 paymentMethod: selectedPayment,
                 receiptUploaded: true,
-                status: 'delivered',
+                // 配送日没过 = 未来/今天单，要走「开始配送」流程（confirmed）；
+                // 过去日 = 事后补账，保持一步到位（delivered）。编辑时同规则重算。
+                status: date >= ymdKey(new Date()) ? 'confirmed' : 'delivered',
                 isManual: true,
                 channel: selectedChannel,
                 mealType: selectedMeal === 'auto' ? null : selectedMeal,
