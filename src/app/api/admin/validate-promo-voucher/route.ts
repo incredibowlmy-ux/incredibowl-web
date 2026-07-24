@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { normalizePhone } from '@/lib/phoneUtils';
+import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -74,11 +75,8 @@ export async function POST(req: NextRequest) {
     if (phone && typeof phone === 'string') {
       const normalized = normalizePhone(phone);
       if (normalized) {
-        const snap = await db.collection('users')
-          .where('phoneNormalized', '==', normalized)
-          .limit(1)
-          .get();
-        if (!snap.empty) userId = snap.docs[0].id;
+        const userDoc = await findUserByNormalizedPhone(db, normalized);
+        if (userDoc) userId = userDoc.id;
       }
     }
 

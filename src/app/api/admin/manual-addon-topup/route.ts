@@ -3,6 +3,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { mintAddonCredits, type ResolvedPrepaidAddon } from '@/lib/addonCreditUtils';
 import { getAddOnPrice, getPrepaidAddonOption } from '@/data/addOnsConfig';
 import { normalizePhone } from '@/lib/phoneUtils';
+import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -122,16 +123,12 @@ export async function POST(req: NextRequest) {
     const { FieldValue } = await import('firebase-admin/firestore');
 
     // ── 1. Find user — must exist (no stub: top-up implies prior bundle sale) ──
-    const userSnap = await db.collection('users')
-      .where('phoneNormalized', '==', phoneNormalized)
-      .limit(1)
-      .get();
-    if (userSnap.empty) {
+    const userDoc = await findUserByNormalizedPhone(db, phoneNormalized);
+    if (!userDoc) {
       return corsify(NextResponse.json({
         error: '找不到该电话的客户账号 — 请确认电话；新客户先录一笔手动单或卖餐券建档',
       }, { status: 404 }));
     }
-    const userDoc = userSnap.docs[0];
     const userId = userDoc.id;
     const userData = userDoc.data() || {};
 

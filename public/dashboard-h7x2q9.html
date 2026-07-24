@@ -12786,6 +12786,8 @@ incredibowl.my`,
                     if (vouchersUsed > 0 || prepaidAddonsUsed.length > 0) {
                         try {
                             const claimResult = await callAdminAPI('/api/admin/manual-voucher-redemption', {
+                                // 前端已按 mergedInto 规则选对账号 — 传 userId，别让服务端再按电话猜
+                                userId: realUserMatch.userId,
                                 phone: phoneRaw,
                                 voucherCount: vouchersUsed,
                                 addonCreditsUsed: prepaidAddonsUsed.length > 0 ? prepaidAddonsUsed : undefined,

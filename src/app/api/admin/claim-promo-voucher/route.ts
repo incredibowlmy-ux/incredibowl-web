@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { claimPromoVoucher, validateVoucher } from '@/lib/voucherValidation';
 import { normalizePhone } from '@/lib/phoneUtils';
+import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -79,14 +80,11 @@ export async function POST(req: NextRequest) {
       }
       const normalized = normalizePhone(phone);
       if (!normalized) return corsify(NextResponse.json({ error: '电话格式无效' }, { status: 400 }));
-      const userSnap = await db.collection('users')
-        .where('phoneNormalized', '==', normalized)
-        .limit(1)
-        .get();
-      if (userSnap.empty) {
+      const userDoc = await findUserByNormalizedPhone(db, normalized);
+      if (!userDoc) {
         return corsify(NextResponse.json({ error: '找不到该电话对应的客户账号 — 优惠码需绑定到实名账号' }, { status: 404 }));
       }
-      userId = userSnap.docs[0].id;
+      userId = userDoc.id;
     }
 
     // Validate first for the friendly error path (validateVoucher returns

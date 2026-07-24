@@ -4,6 +4,7 @@ import { mintAddonCredits, type ResolvedPrepaidAddon } from '@/lib/addonCreditUt
 import { getBundle, getValidityDaysForBundle } from '@/data/mealVoucherConfig';
 import { getAddOnPrice, getPrepaidAddonOption } from '@/data/addOnsConfig';
 import { normalizePhone } from '@/lib/phoneUtils';
+import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -150,18 +151,14 @@ export async function POST(req: NextRequest) {
     const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
 
     // ── 1. Find or create user ────────────────────────────────────
-    const userSnap = await db.collection('users')
-      .where('phoneNormalized', '==', phoneNormalized)
-      .limit(1)
-      .get();
+    const existingUser = await findUserByNormalizedPhone(db, phoneNormalized);
 
     let userId: string;
     let wasStubCreated = false;
     let userDataSnapshot: Record<string, any> = {};
-    if (!userSnap.empty) {
-      const doc = userSnap.docs[0];
-      userId = doc.id;
-      userDataSnapshot = doc.data() || {};
+    if (existingUser) {
+      userId = existingUser.id;
+      userDataSnapshot = existingUser.data() || {};
     } else {
       // Create stub user. Marked with `stubFromManualVoucherPurchase: true`
       // so future real auth registration can detect + claim this stub.
