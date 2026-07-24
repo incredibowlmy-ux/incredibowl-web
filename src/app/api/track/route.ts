@@ -34,13 +34,18 @@ export async function GET(req: Request) {
     const orderDoc = snap.docs[0];
     const order = orderDoc.data();
 
-    // Driver live position — only exposed while this order is out for delivery
+    // Driver live position — only exposed while this order is out for delivery.
+    // A position older than STALE_MS is worse than none: the driver's phone has
+    // stopped reporting (page backgrounded/locked) and a frozen marker misleads
+    // the customer — hide it and let the page show "locating driver…" instead.
+    const STALE_MS = 10 * 60_000;
     let driver: { lat: number; lng: number; updatedAt: number | null } | null = null;
     if (order.status === 'delivering' && order.batchId) {
       const batchSnap = await db.collection('deliveryBatches').doc(order.batchId).get();
       const batch = batchSnap.exists ? batchSnap.data() || {} : {};
       const loc = batch.driverLoc;
-      if (batch.status === 'active' && loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+      if (batch.status === 'active' && loc && typeof loc.lat === 'number' && typeof loc.lng === 'number'
+          && typeof loc.ts === 'number' && Date.now() - loc.ts < STALE_MS) {
         driver = {
           lat: loc.lat,
           lng: loc.lng,

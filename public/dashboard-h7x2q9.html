@@ -12247,11 +12247,27 @@ incredibowl.my`,
                 && (dbmSlot === 'all' || _cmMeal(o).toLowerCase() === dbmSlot));
         }
 
+        // 今天同时段里被过滤掉的单（弹窗只列 confirmed/preparing）——按状态汇总
+        // 成一行说明，免得「怎么只有 13 张」要人肉对账
+        function dbmExcludedNote() {
+            const today = ymdKey(new Date());
+            const excluded = state.orders.filter(o =>
+                o.deliveryDate === today
+                && !(o.status === 'confirmed' || o.status === 'preparing')
+                && (dbmSlot === 'all' || _cmMeal(o).toLowerCase() === dbmSlot));
+            if (excluded.length === 0) return '';
+            const label = { pending: '待确认付款', delivering: '配送中', delivered: '已送达', cancelled: '已取消' };
+            const by = {};
+            excluded.forEach(o => { by[o.status] = (by[o.status] || 0) + 1; });
+            const parts = Object.entries(by).map(([s, n]) => `${label[s] || s} ${n} 单`).join(' · ');
+            return `<div style="padding:8px 12px;margin-top:6px;background:var(--bg-subtle);border-radius:10px;font-size:12px;color:var(--text-muted)">ℹ️ 今天另有 ${excluded.length} 单不在列表：${parts}（此列表只含「已确认/备餐中」）</div>`;
+        }
+
         function renderDbmList() {
             const orders = dbmEligibleOrders();
             $$('#dbmSlotPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.slot === dbmSlot));
             if (orders.length === 0) {
-                $('#dbmOrderList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">今天该时段没有已确认的订单</div>';
+                $('#dbmOrderList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">今天该时段没有已确认的订单</div>' + dbmExcludedNote();
                 return;
             }
             $('#dbmOrderList').innerHTML = orders.map(o => {
@@ -12267,7 +12283,7 @@ incredibowl.my`,
                             <div style="color:var(--text-muted);font-size:12px">📍 ${escapeHtml(o.userAddress || '无地址')}</div>
                         </div>
                     </label>`;
-            }).join('');
+            }).join('') + dbmExcludedNote();
         }
 
         function openDeliveryBatchModal() {

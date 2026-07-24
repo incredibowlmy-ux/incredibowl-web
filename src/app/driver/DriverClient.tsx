@@ -70,24 +70,49 @@ export default function DriverClient() {
     // GPS: watchPosition, throttled to one report / GPS_REPORT_MS
     useEffect(() => {
         if (!isAdmin || !batch?.id || !('geolocation' in navigator)) return;
-        const watchId = navigator.geolocation.watchPosition(
-            (pos) => {
-                setGpsState('ok');
-                const now = Date.now();
-                if (now - lastReportRef.current < GPS_REPORT_MS) return;
-                lastReportRef.current = now;
-                callApi({
-                    action: 'location',
-                    batchId: batchIdRef.current,
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                }).then(() => setLastSentAt(Date.now())).catch(() => {});
-            },
-            (err) => setGpsState(err.code === err.PERMISSION_DENIED ? 'denied' : 'error'),
-            { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 },
-        );
-        return () => navigator.geolocation.clearWatch(watchId);
+        const report = (pos: GeolocationPosition) => {
+            setGpsState('ok');
+            const now = Date.now();
+            if (now - lastReportRef.current < GPS_REPORT_MS) return;
+            lastReportRef.current = now;
+            callApi({
+                action: 'location',
+                batchId: batchIdRef.current,
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+            }).then(() => setLastSentAt(Date.now())).catch(() => {});
+        };
+        const fail = (err: GeolocationPositionError) =>
+            setGpsState(err.code === err.PERMISSION_DENIED ? 'denied' : 'error');
+        const watchId = navigator.geolocation.watchPosition(report, fail,
+            { enableHighAccuracy: true, maximumAge: 5_000, timeout: 20_000 });
+        // 后台期间浏览器会挂起 GPS（跳去 Google Maps 导航/WhatsApp 就会发生）——
+        // 一切回本页立刻强制补报一次，不等下一次 watch 回调
+        const onVisibility = () => {
+            if (document.hidden) return;
+            lastReportRef.current = 0;
+            navigator.geolocation.getCurrentPosition(report, fail,
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 20_000 });
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+            document.removeEventListener('visibilitychange', onVisibility);
+        };
     }, [isAdmin, batch?.id, callApi]);
+
+    // 心跳 re-render：让「多久没成功上报」的黄条能自己出现/消失
+    const [nowTs, setNowTs] = useState(() => Date.now());
+    const batchLoadedAtRef = useRef(0);
+    useEffect(() => {
+        if (!batch?.id) return;
+        batchLoadedAtRef.current = Date.now();
+        const t = setInterval(() => setNowTs(Date.now()), 5_000);
+        return () => clearInterval(t);
+    }, [batch?.id]);
+    // 「上报中断」不看 gpsState（上报 POST 失败时它仍是 ok）——只认上次成功时间
+    const gpsSilentMs = nowTs - (lastSentAt ?? batchLoadedAtRef.current);
+    const gpsStale = !!batch?.id && gpsState !== 'denied' && gpsSilentMs > 60_000;
 
     // Keep the screen awake while delivering (browsers stop GPS when locked or backgrounded).
     // Re-acquire when returning to the page — the lock is released on hide.
@@ -171,18 +196,20 @@ export default function DriverClient() {
                 </div>
             ) : (
                 <>
-                    {/* GPS status bar */}
+                    {/* GPS status bar — 黄条只认「上次成功上报」，POST 静默失败也会变黄 */}
                     <div className={`rounded-2xl px-4 py-3 text-sm font-bold flex items-center justify-between ${
-                        gpsState === 'ok' ? 'bg-green-50 text-green-700 border border-green-200'
-                        : gpsState === 'denied' ? 'bg-red-50 text-red-600 border border-red-200'
+                        gpsState === 'denied' ? 'bg-red-50 text-red-600 border border-red-200'
+                        : gpsStale ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                        : gpsState === 'ok' ? 'bg-green-50 text-green-700 border border-green-200'
                         : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
                     }`}>
                         <span>
-                            {gpsState === 'ok' && '📡 GPS 上报中'}
                             {gpsState === 'denied' && '⛔ 定位被拒绝 — 请在浏览器设置允许定位'}
-                            {(gpsState === 'off' || gpsState === 'error') && '⏳ 正在获取定位…'}
+                            {gpsState !== 'denied' && gpsStale && `⚠️ 位置已 ${Math.floor(gpsSilentMs / 60_000)} 分钟没上报 — 请留在本页`}
+                            {gpsState === 'ok' && !gpsStale && '📡 GPS 上报中'}
+                            {(gpsState === 'off' || gpsState === 'error') && !gpsStale && '⏳ 正在获取定位…'}
                         </span>
-                        {lastSentAt && gpsState === 'ok' && (
+                        {lastSentAt && (
                             <span className="text-[10px] font-normal opacity-70">
                                 {new Date(lastSentAt).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </span>
