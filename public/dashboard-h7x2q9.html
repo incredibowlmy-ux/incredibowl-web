@@ -11643,7 +11643,9 @@ incredibowl.my`,
         function findRealUserByPhone(phoneRaw) {
             const normalized = dashboardNormalizePhone(phoneRaw);
             if (!normalized) return null;
-            const u = (state.users || []).find(x => x.phoneNormalized === normalized);
+            // 同电话可能匹配多个文档（账号合并后的旧匿名壳带 mergedInto）— 未合并的优先
+            const candidates = (state.users || []).filter(x => x.phoneNormalized === normalized);
+            const u = candidates.find(x => !x.mergedInto) || candidates[0];
             if (!u) return null;
             const nowMs = Date.now();
             const availableVouchers = (state.mealVouchers || []).filter(v => {
@@ -11660,7 +11662,9 @@ incredibowl.my`,
         function findUserDocByPhone(phoneRaw) {
             const normalized = dashboardNormalizePhone(phoneRaw);
             if (!normalized) return null;
-            return (state.users || []).find(x => x.phoneNormalized === normalized) || null;
+            // 同电话可能匹配多个文档（账号合并后的旧匿名壳带 mergedInto）— 未合并的优先
+            const candidates = (state.users || []).filter(x => x.phoneNormalized === normalized);
+            return candidates.find(x => !x.mergedInto) || candidates[0] || null;
         }
 
         // Auto-fill the delivery address from the customer's registered webapp profile
