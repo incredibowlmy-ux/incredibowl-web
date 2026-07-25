@@ -7908,11 +7908,12 @@ incredibowl.my`,
         //   常驻先 → 周一→周日 → 其他。今天那一组 prefix「⭐ (今天)」。
         //   MENU_SEED 是 day 字段的 fallback（Firestore 文档可能缺）。
         // ═══════════════════════════════════════════════════════════════
-        const DISH_DAY_ORDER = ['Daily', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', '其他'];
+        const DISH_DAY_ORDER = ['Daily', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'PausedWeek', '其他'];
         const DISH_DAY_LABEL = {
             Daily: '常驻 · 每日供应',
             Mon: '周一', Tue: '周二', Wed: '周三', Thu: '周四',
             Fri: '周五', Sat: '周六', Sun: '周日',
+            PausedWeek: '本周暂别 · 仍可加单',
             '其他': '其他 / 未排期',
         };
         const DISH_SEED_DAY_BY_ID = Object.create(null);
@@ -7931,8 +7932,11 @@ incredibowl.my`,
                 !String(m.id).startsWith('addon-') && m.active !== false);
             const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
             dishes.forEach(m => {
-                // SEED wins (源码是排期权威)；Firestore 仅给非 SEED 的新菜 fallback。
-                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
+                // offMenuThisWeek（sync-menu 脚本写）胜出 → 本周暂别组（仍可选给 WA 加单）；
+                // 否则 SEED wins (源码是排期权威)，Firestore 仅给非 SEED 的新菜 fallback。
+                const day = m.offMenuThisWeek === true
+                    ? 'PausedWeek'
+                    : (DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他');
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
@@ -7965,8 +7969,11 @@ incredibowl.my`,
                 !String(m.id).startsWith('addon-') && m.active !== false);
             const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
             dishes.forEach(m => {
-                // SEED wins (源码是排期权威)；Firestore 仅给非 SEED 的新菜 fallback。
-                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
+                // offMenuThisWeek（sync-menu 脚本写）胜出 → 本周暂别组（仍可选给 WA 加单）；
+                // 否则 SEED wins (源码是排期权威)，Firestore 仅给非 SEED 的新菜 fallback。
+                const day = m.offMenuThisWeek === true
+                    ? 'PausedWeek'
+                    : (DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他');
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
