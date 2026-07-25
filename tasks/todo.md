@@ -8,8 +8,11 @@
 - [x] submit-order 订单创建后，仅 paymentMethod==='qr' 时调用（await，因 Vercel 冻结）
 - [x] .env.local 补 TELEGRAM_BOT_TOKEN / TELEGRAM_OWNER_CHAT_ID（本地测试）
 - [x] 验证：tsc 我的两个文件 0 报错 + 本地真实发一条 Telegram 已送达老板 chat（msg_id=683）
-- [ ] ⏳ 待老板：Vercel 加 TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_CHAT_ID（否则 Telegram 静默跳过）+ 确认 RESEND_API_KEY 已配（邮件才发）
-- [ ] ⏳ 待老板：批准 commit + push
+- [x] Vercel 已加 TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_CHAT_ID（Production, CLI 加）；RESEND_API_KEY 已确认早配（21天前）
+- [x] commit 75f6ffc + push；发现线上部署自 cd45eca(菜单提交)起一直 Error
+- [x] 修部署阻断：scripts/sync-menu-to-firestore.mts 的 `.ts` 后缀 import 被 next build 拒；tsconfig exclude 加 "scripts"（0ff45db）；npm run build 本地通过
+- [x] 部署验证：0ff45db Production ● Ready；功能连同之前卡住的菜单提交一起上线
+- [x] 多收件人（dc34d5f）：TELEGRAM_OWNER_CHAT_ID 逗号分隔，加碗妈 chatId 7992954700（n8n 取，显示名 Ebby）；老板+碗妈两号实测送达（683/685）；build 过、Ready
 
 ## Review 小结
 - 唯一改动入口：submit-order 是所有网页新单的唯一写库点，QR 单必经此处 → 挂在这里 100% 覆盖，零遗漏。
@@ -545,3 +548,60 @@ confirm 与 preview 共用 buildWeekPlan + allocateUpgradeCredits（同源），
 - [x] ④ commit f3565b1 留本地，待老板同意后 push
 - 注：服务端 submit-order 本来就按「所选日期周几 ∈ availableWeekdays」校验，提前订单能过，无需改
 - 注：副作用（合理）：常驻菜被 BLOCKED 当日不再灰显「当日暂停」，改为直接可订下一个供应日
+
+## 安全审计修复 P2-2 / P2-3 / P2-4（2026-07-26）
+背景：全站审计（tasks/security-audit-2026-07-26.md）查出 4 高危 5 中危 4 低危。老板先点这三条。
+
+### P2-2 菜品×日期 服务端校验（防「厨房收到没买料的菜」重演）
+根因：`submit-order` 只查了 `availableWeekdays`（且只有少数常驻菜有这字段），
+没查 retired / hidden / weekday / BLOCKED_DATES；而 CartDrawer 的购物车清理**只看日期不看菜**
+（`isOrderDateValid`），加上购物车存 localStorage → 上周加的暂别菜今天能一路走到厨房。
+- [x] ① `lib/cartDateUtils.ts` 新增 `isDishOrderableOn(dish, ymd)` + `weekdayOfYMD(ymd)`：
+      retired / hidden / isDishBlockedOn / weekday 四查合一，**客户端与服务端唯一判定来源**
+- [x] ② `api/submit-order` 换成调它（删掉原来那段内联 availableWeekdays 判断）
+- [x] ③ `CartDrawer` 购物车清理接入；⚠️ 用 id 回 `weeklyMenu` **现查**，
+      不能信 `item.dish`（那是加入购物车当天写进 localStorage 的快照，retired 是旧值）
+- [x] ④ 提示文案拆两条：`staleRemoved`（日期过期）/ 新增 `unavailableRemoved`（菜不供应），中英都加
+- [x] ⑤ 验证：dogfood 38/38（暂别6 + 特餐本日/串日各8 + 常驻限日2 + 全周常驻10 + BLOCKED 1 + 边界2）
+- 注：日期格式非法时 `isDishOrderableOn` 故意放行，交给 `isOrderDateValid` 报错，避免双重报错
+- 注：`WEEKLY_SCHEDULE` 头部注释还写着「马铃薯炖花肉片(限周二~四)」但数据已恢复全周常驻
+      （菜品自己的注释是对的）—— 属注释过期，**没动菜单文件**，留换菜时顺手清
+
+### P2-3 check-voucher 加认证 + 限流
+根因：零认证零限流，可暴力枚举优惠码（返回体直接带 discount/remainingUses），
+且 `userId` 从请求体读 → 可传任意 uid 探测「某人用没用过某码」。
+- [x] ① 加 `verifyBearerUser`，userId 只从 token 取，请求体的 userId 一律忽略
+- [x] ② 限流：突发 10/分钟 + 每人每天 30 次（admin 不占配额）
+- [x] ③ 两个调用方（CartDrawer / MealVouchersView）带上 Bearer；两处本来就要求先登录，零流程影响
+- [x] ④ 顺手把 CartDrawer 的 `authHeaders` 上移到 `handleApplyPromo` 之前（原来靠 TDZ 侥幸能跑）
+
+### P2-4 地图接口限流（防 Google Geocoding 账单被刷）
+根因：`/api/geocode` 只验「是个登录用户」，但匿名登录开着 → 无成本无限拿 uid 无限刷；
+`/api/check-delivery` **完全公开**、只有内存限流（每实例一份 Map，打散到多实例就绕过）。
+- [x] ① 新建 `lib/rateLimit.ts`：内存突发桶（第1层）+ Firestore 每日计数（第2层，跨实例硬上限）
+- [x] ② geocode：uid 与 IP 双维度，突发 6/分钟 + 每 uid 20/天 + 每 IP 60/天
+- [x] ③ check-delivery：复用共用模块，突发 8/分钟 + 每 IP 200/天
+      （日上限故意放宽——马来运营商 CGNAT，挡掉冷流量比多付地图费贵）
+- [x] ④ Firestore 那层**故意 fail-open**：DB 挂了照样放行，不能让顾客存不了地址
+- [x] ⑤ 验证：dogfood 7/7（放行/拒绝/Retry-After/key 隔离/窗口重置）
+- ⏳ 待老板做：Firebase Console 给 `rateLimits` 集合配 TTL 策略（字段 `expiresAt`）自动清理，
+      不配也无妨（每人每天一个几十字节 doc）
+
+### 工具
+- [x] `scripts/_alias-loader.mjs` + `_register-alias.mjs`：让 dogfood 脚本能直接 import
+      带 `@/` 别名的生产代码（裸 node 不认 tsconfig paths）。以后所有 dogfood 复用：
+      `node --import ./scripts/_register-alias.mjs scripts/xxx.mts`
+
+### 验证
+- [x] `npx tsc --noEmit` 0 错
+- [x] `npm run build` 通过（deploy-affecting 改动不能只跑 tsc —— 07-25 教训）
+- [x] `npx eslint` 改动文件 0 error（59 warning 全是 CartDrawer 既有的 any）
+- [x] dogfood 38/38 + 7/7
+- [ ] commit 留本地，**等老板同意再 push**
+
+### 仍未修（审计报告里的高危，等老板发话）
+- P0-1 QR 餐券可用旧签名白嫖（`meal-vouchers/confirm-purchase` 少了 paymentMethod + razorpayOrderId 硬校验）
+- P0-2 `submit-order` 的 `userAddress` 来自请求体，不受地址验证约束（远距离白嫖免运费）
+- P1-1 取消订单不回补 dishStock / ingredientStock（每天都在漏）
+- P1-2 `/api/admin/data` 这个 GET 会 10 分钟自动取消 FPX 单且什么都不回补（顾客餐券被吞）
+- P1-3 `razorpayOrderId` 被后一次 create-order 覆盖 → 付了钱确认不了且零告警
