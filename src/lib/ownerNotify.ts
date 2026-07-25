@@ -96,30 +96,34 @@ function orderBlockHtml(o: NotifyOrder): string {
 
 async function sendTelegram(orders: NotifyOrder[]): Promise<void> {
     const token = process.env.TELEGRAM_BOT_TOKEN;
-    const chatId = process.env.TELEGRAM_OWNER_CHAT_ID;
-    if (!token || !chatId) {
+    // TELEGRAM_OWNER_CHAT_ID may be a comma-separated list of chat ids so more
+    // than one person gets the alert (e.g. owner + BowlMama). Each recipient
+    // must have started a chat with the bot first (Telegram won't let a bot
+    // message a user who never initiated). One bad id can't block the others.
+    const chatIds = (process.env.TELEGRAM_OWNER_CHAT_ID || '')
+        .split(',').map(s => s.trim()).filter(Boolean);
+    if (!token || chatIds.length === 0) {
         console.log('[ownerNotify] TELEGRAM_BOT_TOKEN / TELEGRAM_OWNER_CHAT_ID not set — skipping Telegram');
         return;
     }
-    try {
-        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: buildTelegramText(orders),
-                disable_web_page_preview: true,
-            }),
-        });
-        if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            console.warn(`[ownerNotify] telegram send failed (${res.status}): ${body}`);
-        } else {
-            console.log(`[ownerNotify] telegram sent (${orders.length} order(s))`);
+    const text = buildTelegramText(orders);
+    await Promise.allSettled(chatIds.map(async (chatId) => {
+        try {
+            const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+            });
+            if (!res.ok) {
+                const body = await res.text().catch(() => '');
+                console.warn(`[ownerNotify] telegram send to ${chatId} failed (${res.status}): ${body}`);
+            } else {
+                console.log(`[ownerNotify] telegram sent to ${chatId} (${orders.length} order(s))`);
+            }
+        } catch (e) {
+            console.warn(`[ownerNotify] telegram error for ${chatId} (never blocks order):`, e);
         }
-    } catch (e) {
-        console.warn('[ownerNotify] telegram error (never blocks order):', e);
-    }
+    }));
 }
 
 async function sendEmail(orders: NotifyOrder[]): Promise<void> {
