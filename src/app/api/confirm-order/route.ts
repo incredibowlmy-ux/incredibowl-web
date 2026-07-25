@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
-import { releaseMealVouchers } from '@/lib/mealVoucherUtils';
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -127,6 +126,20 @@ export async function POST(req: Request) {
       if (!orderSnap.exists) continue;
 
       const orderData = orderSnap.data()!;
+
+      // ── 取消：整条回补链走共用实现 ─────────────────────────
+      // 以前这里只退餐券 / 预付 credit / promo 券，漏了 dishStock 和
+      // ingredientStock（2026-07-26 审计实测 14 笔漏账）。现在与
+      // release-stale-fpx、admin/data 共用 cancelOrderWithRollback：
+      // 事务幂等（双取消不会把库存加两遍）、状态写入也由它负责。
+      if (status === 'cancelled') {
+        const { cancelOrderWithRollback } = await import('@/lib/orderRollback');
+        await cancelOrderWithRollback(db, orderId, {
+          reason: isAdmin ? 'admin-cancel' : 'web-cancel',
+        });
+        continue;
+      }
+
       const isFirstConfirm = status === 'confirmed' && orderData.status !== 'confirmed';
       if (isFirstConfirm) receiptOrders.push({ id: orderId, data: orderData });
 
@@ -211,74 +224,8 @@ export async function POST(req: Request) {
         }
       }
 
-      // Release meal vouchers when cancelling an order that claimed any.
-      // Skips vouchers that have since expired.
-      if (
-        status === 'cancelled'
-        && orderData.status !== 'cancelled'
-        && Array.isArray(orderData.claimedMealVoucherIds)
-        && orderData.claimedMealVoucherIds.length > 0
-      ) {
-        try {
-          await releaseMealVouchers(db, orderData.claimedMealVoucherIds);
-        } catch (e) {
-          console.warn('Failed to release meal vouchers on cancel:', e);
-        }
-      }
-
-      // Release prepaid add-on credits when cancelling an order that claimed
-      // any (web checkout auto-applies them at submit). Same tolerance as
-      // meal vouchers: expired batches restore as 'expired' (customer loses
-      // them, mirroring an expired voucher).
-      if (
-        status === 'cancelled'
-        && orderData.status !== 'cancelled'
-        && Array.isArray(orderData.addonCreditsUsed)
-        && orderData.addonCreditsUsed.length > 0
-        && orderData.userId
-      ) {
-        try {
-          const { releaseAddonCredits } = await import('@/lib/addonCreditUtils');
-          await releaseAddonCredits(db, orderData.userId, orderData.addonCreditsUsed, orderId);
-        } catch (e) {
-          console.warn('Failed to release addon credits on cancel:', e);
-        }
-      }
-
-      // Restore voucher when cancelling an order that used one.
-      // Multi-use vouchers: decrement usedCount and clear isUsed flag if it was set.
-      // Also remove from the user's vouchersUsed array so per-user dedup releases.
-      if (status === 'cancelled' && orderData.promoCode && orderData.status !== 'cancelled') {
-        try {
-          const voucherRef = db.collection('vouchers').doc(orderData.promoCode);
-          await db.runTransaction(async (tx) => {
-            const vSnap = await tx.get(voucherRef);
-            if (!vSnap.exists) return;
-            const v = vSnap.data() || {};
-            const used = typeof v.usedCount === 'number' ? v.usedCount : (v.isUsed ? 1 : 0);
-            if (used <= 0) return;
-            const nextUsed = used - 1;
-            const max = typeof v.maxUses === 'number' && v.maxUses > 0 ? v.maxUses : 1;
-            tx.update(voucherRef, {
-              usedCount: nextUsed,
-              isUsed: nextUsed >= max,
-              ...(nextUsed === 0 ? { usedBy: '', usedAt: null } : {}),
-            });
-          });
-
-          if (orderData.userId) {
-            try {
-              await db.collection('users').doc(orderData.userId).update({
-                vouchersUsed: FieldValue.arrayRemove(orderData.promoCode),
-              });
-            } catch (e) {
-              console.warn('Failed to release user voucher dedup:', e);
-            }
-          }
-        } catch (e) {
-          console.warn('Failed to restore voucher:', e);
-        }
-      }
+      // 取消相关的回补（餐券 / 预付 credit / promo 券 / 两层库存）已全部
+      // 移进 cancelOrderWithRollback，见上面的 status === 'cancelled' 早返回。
 
       // Update order status + optional payment data
       const updateFields: Record<string, any> = {

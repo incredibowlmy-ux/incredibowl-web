@@ -45,26 +45,43 @@ export async function GET(req: NextRequest) {
       db.collection('mealVoucherAddonCredits').get(),
     ]);
 
-    // Auto-cancel FPX pending orders older than 10 minutes (QR orders unaffected)
-    const tenMinAgo = Date.now() - 10 * 60 * 1000;
-    const cancelPromises: Promise<any>[] = [];
+    // ── 清理超时未付的 FPX 单 ───────────────────────────────
+    // 2026-07-26 修复（审计 P1-1 + P1-2）。原来这里有两个问题：
+    //   ① 门槛 10 分钟，违背老板 07-02 拍板的 1 小时，且抢在 release-stale-fpx
+    //      前面把单挪走 —— 实测那个对账任务从上线到今天一次都没扫到过东西。
+    //   ② 裸 `doc.ref.update({status:'cancelled'})`，餐券 / 预付 credit /
+    //      promo 券 / dishStock / ingredientStock 一样都不退。实测 8 笔漏账
+    //      走的就是这条路（猪扒 07-19~23 漏 3 份，直到 07-25 手动重设才抹平）。
+    // 现在：门槛对齐 1 小时，并走与 confirm-order / release-stale-fpx 共用的
+    // cancelOrderWithRollback（事务幂等，重复刷新 Dashboard 不会重复回补）。
+    const staleCutoff = Date.now() - 60 * 60 * 1000;
+    const staleIds: string[] = [];
     for (const doc of ordersSnap.docs) {
       const d = doc.data();
-      if (d.status === 'pending' && d.paymentMethod === 'fpx' && d.createdAt) {
-        const orderTime = (d.createdAt._seconds ?? d.createdAt.seconds ?? 0) * 1000;
-        if (orderTime > 0 && orderTime < tenMinAgo) {
-          cancelPromises.push(doc.ref.update({ status: 'cancelled', updatedAt: new Date() }));
+      if (d.status !== 'pending' || d.paymentMethod !== 'fpx' || !d.createdAt) continue;
+      const orderTime = (d.createdAt._seconds ?? d.createdAt.seconds ?? 0) * 1000;
+      if (orderTime > 0 && orderTime < staleCutoff) staleIds.push(doc.id);
+    }
+    const autoCancelled = new Set<string>();
+    if (staleIds.length > 0) {
+      const { cancelOrderWithRollback } = await import('@/lib/orderRollback');
+      for (const id of staleIds) {
+        try {
+          const r = await cancelOrderWithRollback(db, id, { reason: 'fpx-timeout-dashboard(1h)' });
+          if (r.cancelled) autoCancelled.add(id);
+        } catch (e) {
+          // 单笔失败不能拖垮整个 dashboard 数据接口
+          console.error(`[admin/data] 自动取消 ${id} 失败:`, e);
         }
       }
     }
-    if (cancelPromises.length > 0) await Promise.all(cancelPromises);
 
-    const orders = ordersSnap.docs.map(doc => {
-      const data = doc.data();
-      // Reflect just-cancelled orders in the response
-      const cancelled = cancelPromises.length > 0 && data.status === 'pending' && data.paymentMethod === 'fpx';
-      return { id: doc.id, ...data, ...(cancelled && (data.createdAt?._seconds ?? data.createdAt?.seconds ?? 0) * 1000 < tenMinAgo ? { status: 'cancelled' } : {}) };
-    });
+    const orders = ordersSnap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      // 刚被取消的单在本次响应里就反映出来，不用等下次刷新
+      ...(autoCancelled.has(doc.id) ? { status: 'cancelled' } : {}),
+    }));
     const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     const feedbacks = feedbacksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     const mealVoucherPurchases = mealVoucherPurchasesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));

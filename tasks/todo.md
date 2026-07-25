@@ -605,3 +605,45 @@ confirm 与 preview 共用 buildWeekPlan + allocateUpgradeCredits（同源），
 - P1-1 取消订单不回补 dishStock / ingredientStock（每天都在漏）
 - P1-2 `/api/admin/data` 这个 GET 会 10 分钟自动取消 FPX 单且什么都不回补（顾客餐券被吞）
 - P1-3 `razorpayOrderId` 被后一次 create-order 覆盖 → 付了钱确认不了且零告警
+
+## 取消订单回补统一化 P1-1 + P1-2（2026-07-26）
+背景：审计发现取消订单有三条各写各的路径，回补的东西各不相同。实测 17 笔已取消
+FPX 单里 14 笔漏了两层库存（8 笔走 admin/data、6 笔走客户端取消）。猪扒(id 27)
+07-19~07-23 漏 3 份，直到 07-25 老板手动重设库存才被覆盖抹平。
+
+### 实测证据（跑 scripts/audit-*.mjs 得到，非推测）
+- 17 笔已取消 FPX 单，`fpx-timeout-auto` 标记**零笔** → release-stale-fpx 从上线到今天一次没跑过
+- 无 vercel.json（无 Vercel Cron）+ n8n/ 只有 daily-prep/recap 4 个 workflow → 确认没调度器
+- admin/data 的 10 分钟门槛结构性地让 1 小时对账任务永远没机会跑（超时取消全发生在 12~40 分钟）
+- 餐券卡死 0 笔 / webhook「付了钱单没了」0 笔 → 这两类损失**尚未发生**（老板质疑得对，此前我把 P1-2 影响说重了）
+
+### 改动
+- [x] ① 新建 `lib/orderRollback.ts` 的 `cancelOrderWithRollback(db, orderId, {reason})`：
+      翻状态 + 打 `rollbackAt` 幂等标记在**同一事务**，只有赢家继续回补；
+      五项回补各自 try/catch（库存失败绝不能让取消失败）；STOCK_ERA 闸门挪进来共享
+- [x] ② `confirm-order` cancel 分支改为早返回调它（删掉原来三段回补代码）
+- [x] ③ `release-stale-fpx` 改为调它（原逻辑是对的，只是别人抄不到）
+- [x] ④ `admin/data`：10 分钟 → **1 小时**（对齐老板 07-02 决定）+ 裸 update 改为调它
+- [x] ⑤ 强制写 `cancelReason`（原来 confirm-order 和 admin/data 都不写，导致 16 笔查不出谁取消的）
+
+### dogfood 抓到的真 bug（这次最有价值的产出）
+并发取消 3 个请求**全部获胜**，dishStock 被 +3 而不是 +1 = 超卖。
+根因：Firestore 事务写冲突会**重跑整个回调**，第一次跑赋值的 `orderData` 在重试
+分支 return 时没被清空，函数误以为自己是赢家。修法=回调开头 `orderData = null`。
+⚠️ 规则：任何在 runTransaction 回调里给外层变量赋值的写法，都必须在回调开头重置。
+
+### 验证
+- [x] tsc 0 错 / npm run build 通过 / eslint 0 error
+- [x] `scripts/dogfood-order-rollback.mts` **26/26**（真实 Firestore 往返：正常取消回补两层、
+      重复取消 no-op、3 并发只 1 赢家、库存纪元前老单不回补、订单不存在不抛错、
+      最终对账净影响精确为 0）；测试单建完即删，跑完确认零残留
+- [x] 菜品排期 dogfood 38/38 + 限流 dogfood 7/7 回归通过
+- [x] 猪扒 dishStock 确认回到 30，无漂移
+- [ ] commit 留本地，**未 push**
+
+### 已知遗留
+- ingredientStock「白饭」onHand = -10890g（约 -10.9kg）。是长期漏账+没进货记录的累积漂移，
+  不是本次改动造成的。建议下次盘点时校正
+- 已漏的 14 笔**不做补偿性回补**：猪扒 07-25 已手动重设覆盖过，再补会变成双倍
+- ⏳ 仍缺调度器：release-stale-fpx 没有任何东西定时调它。现在靠 admin/data（开 Dashboard 触发）
+      兜底，可用但脆。建议加 vercel.json cron（我能做，需确认 Vercel 套餐频率上限）
