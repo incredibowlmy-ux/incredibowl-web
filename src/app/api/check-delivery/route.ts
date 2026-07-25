@@ -6,6 +6,7 @@ import {
     thresholdForDistance,
     type DeliveryTier,
 } from '@/lib/deliveryUtils';
+import { checkBurst, checkDailyQuota, getClientIp } from '@/lib/rateLimit';
 
 // CORS so the standalone admin dashboard (served from file:// or a different
 // host) can call this for manual order entry. Same '*' pattern as the
@@ -39,46 +40,26 @@ export async function OPTIONS() {
  * Returns: { tier, distanceKm, fee, threshold, formattedAddress }
  *          or { error, status } / { tier: 'outside', distanceKm } when far
  *
- * Rate limit: 8 calls / minute / IP (in-memory; resets on server restart).
+ * Rate limit（2026-07-26 加固）：
+ *   突发 8 次/分钟/IP（内存桶）+ 每 IP 每天 200 次（Firestore，跨实例硬上限）。
+ *   内存桶单独用不够 —— 每个 serverless 实例各有一份，请求打散就绕过了，
+ *   而这个接口无需登录且直连 Google Geocoding（≈USD 5/1000 次）。
+ *   日上限故意放宽到 200：马来西亚移动运营商走 CGNAT，一个出口 IP 后面可能
+ *   有很多真顾客，宁可多放行也不能挡掉冷流量（挡掉 = 丢广告转化）。
  * Doesn't expose lat/lng — the customer doesn't need that for a tier preview.
  */
 
-// In-memory rate limiter. Survives a single Node process; that's fine for
-// the abuse we care about (someone trying to use this as a free geocoder).
-// Vercel's serverless gives us a per-instance bucket, which is close enough.
-type Bucket = { count: number; resetAt: number };
-const buckets = new Map<string, Bucket>();
-const RATE_LIMIT_MAX = 8;
-const RATE_LIMIT_WINDOW_MS = 60_000;
+const BURST = { max: 8, windowMs: 60_000 };
+const DAILY_LIMIT_PER_IP = 200;
 // Distance beyond which we tell the user we don't deliver. Tightened
 // 10 → 8 km on 2026-05-18 (removed empty 8 km+ tier), then 8 → 7.5 km on
 // 2026-05-19 (last 500 m never had customers; matches actual route reach).
 // Anything past 7.5 km gets the WhatsApp catering fallback in the widget.
 const MAX_DELIVERY_KM = 7.5;
 
-function getClientIp(req: NextRequest): string {
-    const xff = req.headers.get('x-forwarded-for');
-    if (xff) return xff.split(',')[0].trim();
-    return req.headers.get('x-real-ip') || 'anon';
-}
-
-function checkRateLimit(ip: string): { ok: boolean; retryAfterSec: number } {
-    const now = Date.now();
-    const b = buckets.get(ip);
-    if (!b || b.resetAt <= now) {
-        buckets.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-        return { ok: true, retryAfterSec: 0 };
-    }
-    if (b.count >= RATE_LIMIT_MAX) {
-        return { ok: false, retryAfterSec: Math.ceil((b.resetAt - now) / 1000) };
-    }
-    b.count += 1;
-    return { ok: true, retryAfterSec: 0 };
-}
-
 export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
-    const rl = checkRateLimit(ip);
+    const rl = checkBurst(`check-delivery:${ip}`, BURST);
     if (!rl.ok) {
         return corsify(NextResponse.json(
             { error: '查询次数过多，请稍后重试' },
@@ -102,6 +83,22 @@ export async function POST(req: NextRequest) {
 
     if (!address || address.length < 4) {
         return corsify(NextResponse.json({ error: '请输入完整地址（建议含 condo 名 + 路名 / 邮编）' }, { status: 400 }));
+    }
+
+    // 跨实例日上限。放在参数校验之后 —— 格式错误的请求不消耗配额。
+    // fail-open：Firestore 挂了照样放行（挡掉冷流量比多付几毛地图费贵）。
+    try {
+        const { getAdminDb } = await import('@/lib/firebase-admin');
+        const quota = await checkDailyQuota(getAdminDb(), 'check-delivery', ip, DAILY_LIMIT_PER_IP);
+        if (!quota.ok) {
+            console.warn(`[check-delivery] daily quota exhausted for ip=${ip} (${quota.used}/${quota.limit})`);
+            return corsify(NextResponse.json(
+                { error: '今日查询次数已达上限，请直接 WhatsApp 碗妈查询配送范围' },
+                { status: 429 },
+            ));
+        }
+    } catch (e) {
+        console.error('[check-delivery] quota check skipped:', e);
     }
 
     const params = new URLSearchParams({

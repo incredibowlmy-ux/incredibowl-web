@@ -11,6 +11,8 @@ interface CartDrawerDict {
     addressMissing: string;
     switching: string;
     staleRemoved: (n: number) => string;
+    /** 菜已暂别 / 改排期 / 当天停售 —— 与 staleRemoved（日期过期）分开提示。 */
+    unavailableRemoved: (n: number) => string;
     emptyTitle: string;
     emptySubtitle: string;
     goPickFood: string;
@@ -157,6 +159,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             addressMissing: '尚未填写 (请在下方补充)',
             switching: '切换中…',
             staleRemoved: (n) => `已自动移除 ${n} 个过期项目（截单已过），请重新加入今日菜单`,
+            unavailableRemoved: (n) => `已自动移除 ${n} 个当日不供应的菜品（暂别或换了供应日），请从菜单重新选`,
             emptyTitle: '碗妈的锅已经热好了 🍳',
             emptySubtitle: '快去选一道今天心仪的家常菜吧！',
             goPickFood: '去选餐',
@@ -289,6 +292,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             addressMissing: 'Not set yet (add it below)',
             switching: 'Switching…',
             staleRemoved: (n) => `Removed ${n} expired item(s) — the order cutoff has passed. Please re-add from today's menu`,
+            unavailableRemoved: (n) => `Removed ${n} item(s) not served on that date (paused or moved to another day). Please pick again from the menu`,
             emptyTitle: "BowlMama's wok is already hot 🍳",
             emptySubtitle: 'Go pick a home-cooked dish you fancy today!',
             goPickFood: 'Browse menu',

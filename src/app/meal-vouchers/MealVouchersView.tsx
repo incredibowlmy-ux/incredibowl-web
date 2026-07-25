@@ -74,10 +74,12 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
         setIsCheckingPromo(true);
         setPromoError('');
         try {
+            // userId 不再放请求体 —— 服务端只认 token 里的 uid
+            const token = await currentUser.getIdToken();
             const res = await fetch('/api/check-voucher', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ voucherCode: code, userId: currentUser.uid }),
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ voucherCode: code }),
             });
             const data = await res.json();
             if (!res.ok) {

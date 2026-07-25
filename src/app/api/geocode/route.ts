@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { distanceFromPearlPointKm, zoneFromDistance } from '@/lib/deliveryUtils';
+import { checkBurst, checkDailyQuota, getClientIp } from '@/lib/rateLimit';
 
 /**
  * POST /api/geocode
@@ -38,10 +39,32 @@ async function verifyUser(req: NextRequest): Promise<string | null> {
     }
 }
 
+// 限流参数。正常顾客一辈子调不到 10 次（注册填一次、偶尔改地址）；
+// 20/天 已经宽到离谱，纯粹是给刷账单的人封顶。
+const BURST = { max: 6, windowMs: 60_000 };
+const DAILY_LIMIT_PER_UID = 20;
+const DAILY_LIMIT_PER_IP = 60; // 同一 WiFi 下多个家人各自注册，留足余量
+
 export async function POST(req: NextRequest) {
     const uid = await verifyUser(req);
     if (!uid) {
         return NextResponse.json({ error: '请先登录' }, { status: 401 });
+    }
+
+    // ── 滥用限流 ──────────────────────────────────────────────
+    // 光有登录挡不住：匿名登录是开着的（访客下单），signInAnonymously 可以
+    // 无成本无限拿 uid，每个 uid 再无限调 Google Geocoding（≈USD 5/1000 次）
+    // = 账单可被刷爆。所以 uid 和 IP 两个维度都要卡。
+    const ip = getClientIp(req);
+    for (const [key, label] of [[`geocode:${uid}`, 'uid'], [`geocode-ip:${ip}`, 'ip']] as const) {
+        const burst = checkBurst(key, BURST);
+        if (!burst.ok) {
+            console.warn(`[geocode] burst limit hit (${label}) — ${key}`);
+            return NextResponse.json(
+                { error: '查询过于频繁，请稍后再试' },
+                { status: 429, headers: { 'Retry-After': String(burst.retryAfterSec) } },
+            );
+        }
     }
 
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -60,6 +83,24 @@ export async function POST(req: NextRequest) {
 
     if (!address || address.length < 5) {
         return NextResponse.json({ error: '请输入完整地址' }, { status: 400 });
+    }
+
+    // 跨实例硬上限（内存桶挡不住扇出到多个 serverless 实例的攻击）。
+    // 放在参数校验之后 —— 格式错误的请求不该消耗配额。
+    // fail-open：Firestore 挂了照样放行，不能让顾客存不了地址。
+    const db = await getDb();
+    for (const [scope, key, limit] of [
+        ['geocode', uid, DAILY_LIMIT_PER_UID],
+        ['geocode-ip', ip, DAILY_LIMIT_PER_IP],
+    ] as const) {
+        const quota = await checkDailyQuota(db, scope, key, limit);
+        if (!quota.ok) {
+            console.warn(`[geocode] daily quota exhausted: ${scope}=${key} (${quota.used}/${quota.limit})`);
+            return NextResponse.json(
+                { error: '今日地址查询次数已达上限，请联系碗妈协助' },
+                { status: 429 },
+            );
+        }
     }
 
     // Bias results toward Malaysia (region=my, components=country:MY) AND a

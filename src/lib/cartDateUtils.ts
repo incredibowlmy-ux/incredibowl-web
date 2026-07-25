@@ -15,7 +15,8 @@
  * Client-side check in CartDrawer auto-cleans stale items as a UX courtesy.
  */
 
-import { isDateClosed } from '@/data/blockedDates';
+import { isDateClosed, isDishBlockedOn } from '@/data/blockedDates';
+import type { MenuItem } from '@/data/weeklyMenu';
 
 const CUTOFF_HOUR_MY = 6;
 
@@ -78,5 +79,87 @@ export function isOrderDateValid(selectedDate: string | null | undefined): DateV
     if (isDateClosed(selectedDate)) {
         return { ok: false, reason: 'sold_out', message: `${selectedDate} 已售罄，当天暂停接单` };
     }
+    return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 菜品 × 日期 的可下单校验
+//
+// isOrderDateValid 只管「这个日期能不能收单」，管不了「这道菜那天卖不卖」。
+// 2026-07 事故：购物车存 localStorage，上周加的菜本周已 PAUSED（暂别），
+// 客户端只按日期清理、服务端也只查了 availableWeekdays —— 两边都放行，
+// 厨房收到一道当天根本没买料的菜。
+//
+// 这个函数是**唯一**的判定来源：CartDrawer 的购物车清理和 /api/submit-order
+// 都调它，两边不可能再漂移。
+//
+// ⚠️ 传进来的 dish 必须是从当前 weeklyMenu 现查的对象，不能用购物车里
+// localStorage 存的那份快照 —— 快照里的 retired/weekday 是加入购物车那天的值。
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DishInvalidReason = 'retired' | 'hidden' | 'dish_blocked' | 'wrong_weekday';
+
+export type DishValidity =
+    | { ok: true }
+    | { ok: false; reason: DishInvalidReason; message: string };
+
+const WD_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+/**
+ * "YYYY-MM-DD" → 0=周日…6=周六。与时区无关（用 UTC 构造+读取，服务器在
+ * UTC、浏览器在 UTC+8 得到同一个答案）。格式非法返回 null。
+ */
+export function weekdayOfYMD(ymd: string): number | null {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || '');
+    if (!m) return null;
+    return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).getUTCDay();
+}
+
+/**
+ * 这道菜在 selectedDate 能不能下单。
+ *
+ * 日期本身的合法性（过去 / 已截单 / 周末 / 整日停业）不在这里管，
+ * 调用方必须先过 isOrderDateValid —— 所以日期格式非法时这里直接放行，
+ * 避免同一个问题报两次互相矛盾的错。
+ */
+export function isDishOrderableOn(
+    dish: Pick<MenuItem, 'id' | 'name' | 'retired' | 'hidden' | 'weekday' | 'availableWeekdays'>,
+    selectedDate: string,
+): DishValidity {
+    if (dish.retired) {
+        return { ok: false, reason: 'retired', message: `${dish.name} 已暂别菜单，暂不接单` };
+    }
+    if (dish.hidden) {
+        return { ok: false, reason: 'hidden', message: `${dish.name} 尚未上架` };
+    }
+    if (isDishBlockedOn(dish.id, selectedDate)) {
+        return { ok: false, reason: 'dish_blocked', message: `${dish.name} 在 ${selectedDate} 暂停供应` };
+    }
+
+    const wd = weekdayOfYMD(selectedDate);
+    if (wd === null) return { ok: true }; // 格式问题交给 isOrderDateValid
+
+    const allow = dish.availableWeekdays;
+    if (allow && allow.length > 0) {
+        // 常驻限日菜（如 绍兴酒蒸花肉 = 周一/四）
+        if (!allow.includes(wd)) {
+            return {
+                ok: false,
+                reason: 'wrong_weekday',
+                message: `${dish.name} 仅在${allow.map(d => WD_CN[d]).join('、')}供应，无法下单 ${selectedDate}`,
+            };
+        }
+    } else if (typeof dish.weekday === 'number') {
+        // 周特餐：weekday 由 WEEKLY_SCHEDULE 推导，只在自己那天供应。
+        // （常驻菜没有 weekday 字段，走到这里 = 周一至五都能订。）
+        if (wd !== dish.weekday) {
+            return {
+                ok: false,
+                reason: 'wrong_weekday',
+                message: `${dish.name} 是${WD_CN[dish.weekday]}特餐，无法下单 ${selectedDate}`,
+            };
+        }
+    }
+
     return { ok: true };
 }

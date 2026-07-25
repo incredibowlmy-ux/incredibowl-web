@@ -4,7 +4,7 @@ import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, type DeliveryZone } from '@/lib/deliveryUtils';
-import { isOrderDateValid } from '@/lib/cartDateUtils';
+import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 import { claimAddonCredits, releaseAddonCredits, getAvailableAddonCredits } from '@/lib/addonCreditUtils';
@@ -91,17 +91,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `菜品不存在: ID ${bundle.dishId}` }, { status: 400 });
       }
 
-      // Per-dish weekday availability: a 常驻 dish limited to certain weekdays
-      // (e.g. 马铃薯炖花肉片 = 周四五供应) must not be ordered for other days —
-      // even via a direct API call that skips the greyed-out menu card.
-      if (dish.availableWeekdays && dish.availableWeekdays.length && bundle.selectedDate) {
-        const [yy, mm, dd] = String(bundle.selectedDate).split('-').map(Number);
-        const wd = new Date(yy, (mm || 1) - 1, dd || 1).getDay();
-        if (!dish.availableWeekdays.includes(wd)) {
-          const wdCn = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-          const allowedLabel = dish.availableWeekdays.map(d => wdCn[d]).join('、');
-          return NextResponse.json({ error: `${dish.name} 仅在${allowedLabel}供应，无法下单所选日期` }, { status: 400 });
-        }
+      // 菜品 × 日期 校验（暂别 / 未上架 / 当日停售 / 周几不对）。
+      // 共用 isDishOrderableOn —— CartDrawer 的购物车清理跑的是同一个函数，
+      // 所以「灰显的卡片」和「服务端拒收」永远一致。直接调 API 绕过菜单卡
+      // 的，或者拿上周的旧购物车来结账的，都在这里被挡住。
+      const dishCheck = isDishOrderableOn(dish, String(bundle.selectedDate || ''));
+      if (!dishCheck.ok) {
+        return NextResponse.json({ error: dishCheck.message }, { status: 400 });
       }
 
       const serverDishPrice = getDishPrice(dish.price);

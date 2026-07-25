@@ -15,9 +15,9 @@ import {
     type DeliveryTier,
     type DeliveryZone,
 } from '@/lib/deliveryUtils';
-import { isOrderDateValid } from '@/lib/cartDateUtils';
+import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
-import { dishVoucherValue } from '@/data/weeklyMenu';
+import { dishVoucherValue, weeklyMenu } from '@/data/weeklyMenu';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
@@ -100,18 +100,33 @@ export default function CartDrawer({
         }
     };
 
-    // Auto-clean cart items whose selectedDate has rotted (e.g. customer left
-    // the cart open overnight and the 6 AM cutoff passed). Also reset checkout
-    // state so the user re-validates voucher + re-picks payment for the new
-    // cart (the old voucher may have expired or already been redeemed).
+    // Auto-clean cart items that can no longer be ordered. Two independent
+    // causes, reported separately because the fix differs for the customer:
+    //   ① 日期烂了 —— 购物车开着过夜、6AM 截单已过。
+    //   ② 菜不卖了 —— 上周加的菜本周已暂别 / 改了排期 / 当天被停售。
+    //
+    // ② 是 2026-07 那次事故的根因：旧版只查 ①，一道 PAUSED 的菜能一路走到
+    // 厨房。判定走 isDishOrderableOn（与 /api/submit-order 同一个函数）。
+    //
+    // ⚠️ 必须用 id 回 weeklyMenu 现查：item.dish 是加入购物车那天写进
+    // localStorage 的快照，里面的 retired/weekday 是旧值，信它等于没查。
     useEffect(() => {
         if (!isOpen) return;
-        const stale = cart.filter((item: any) => !isOrderDateValid(item.selectedDate).ok);
-        if (stale.length === 0) {
+        const menuById = new Map(weeklyMenu.map(d => [d.id, d]));
+        const dateStale: any[] = [];
+        const unavailable: any[] = [];
+        for (const item of cart as any[]) {
+            if (!isOrderDateValid(item.selectedDate).ok) { dateStale.push(item); continue; }
+            const live = menuById.get(item.dish?.id);
+            // 菜已从目录整个删掉 → 同样清掉，否则结账时才报「菜品不存在」
+            if (!live || !isDishOrderableOn(live, item.selectedDate).ok) unavailable.push(item);
+        }
+        if (dateStale.length === 0 && unavailable.length === 0) {
             setStaleNotice('');
             return;
         }
-        stale.forEach((item: any) => removeFromCart(item.cartItemId));
+        [...dateStale, ...unavailable].forEach((item: any) => removeFromCart(item.cartItemId));
+        // 重置结账状态：优惠券可能已过期/被用掉，支付方式也要重选。
         setPromoCode('');
         setPromoApplied(false);
         setPromoDiscount(0);
@@ -120,7 +135,10 @@ export default function CartDrawer({
         setReceiptUploaded(false);
         setReceiptUrl('');
         setMealVouchersUsed(0);
-        setStaleNotice(t.staleRemoved(stale.length));
+        const notices: string[] = [];
+        if (dateStale.length) notices.push(t.staleRemoved(dateStale.length));
+        if (unavailable.length) notices.push(t.unavailableRemoved(unavailable.length));
+        setStaleNotice(notices.join('；'));
     }, [isOpen, cart, removeFromCart]);
 
     // ── Meal voucher math ──────────────────────────────────────
@@ -250,6 +268,12 @@ export default function CartDrawer({
     // order and immediately confirm it since there's nothing to charge.
     const isFullyCoveredByVouchers = !!currentUser && cappedMealVouchersUsed > 0 && finalTotal <= 0;
 
+    /** Auth header for the payment-chain APIs — they verify the token's uid. */
+    const authHeaders = async (): Promise<Record<string, string>> => {
+        const token = await currentUser!.getIdToken();
+        return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    };
+
     const handleApplyPromo = async () => {
         const code = promoCode.trim().toUpperCase();
         if (!code) return;
@@ -257,10 +281,11 @@ export default function CartDrawer({
         setIsCheckingPromo(true);
         setPromoError('');
         try {
+            // userId 不再放请求体 —— 服务端只认 token 里的 uid
             const res = await fetch('/api/check-voucher', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ voucherCode: code, userId: currentUser.uid }),
+                headers: await authHeaders(),
+                body: JSON.stringify({ voucherCode: code }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -285,12 +310,6 @@ export default function CartDrawer({
         document.body.appendChild(script);
         return () => { document.body.removeChild(script); };
     }, []);
-
-    /** Auth header for the payment-chain APIs — they verify the token's uid. */
-    const authHeaders = async (): Promise<Record<string, string>> => {
-        const token = await currentUser!.getIdToken();
-        return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    };
 
     // Server derives the authoritative amount from the pending order docs and
     // binds the Razorpay order id back onto them — the client no longer sends
