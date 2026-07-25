@@ -1,3 +1,24 @@
+# 半夜 QR 新单老板即时通知（Telegram + 邮件）— 2026-07-25
+
+> 问题：半夜有人用 QR 转账下单，老板没有任何提醒 → 漏单没备餐。
+> 根因：QR 单在 submit-order 写入 status=pending，只有老板 Dashboard 手动核对收款才确认；全链路只给顾客发收据邮件，从没给老板发过新单提醒。
+> 决定：只 QR 新单触发；Telegram + 邮件双通道；best-effort 永不阻塞下单。
+
+- [x] 新建 src/lib/ownerNotify.ts：notifyOwnerNewQrOrder(orders)，Telegram(Bot API sendMessage) + 邮件(Resend)，env 缺失即静默跳过，永不抛错
+- [x] submit-order 订单创建后，仅 paymentMethod==='qr' 时调用（await，因 Vercel 冻结）
+- [x] .env.local 补 TELEGRAM_BOT_TOKEN / TELEGRAM_OWNER_CHAT_ID（本地测试）
+- [x] 验证：tsc 我的两个文件 0 报错 + 本地真实发一条 Telegram 已送达老板 chat（msg_id=683）
+- [ ] ⏳ 待老板：Vercel 加 TELEGRAM_BOT_TOKEN + TELEGRAM_OWNER_CHAT_ID（否则 Telegram 静默跳过）+ 确认 RESEND_API_KEY 已配（邮件才发）
+- [ ] ⏳ 待老板：批准 commit + push
+
+## Review 小结
+- 唯一改动入口：submit-order 是所有网页新单的唯一写库点，QR 单必经此处 → 挂在这里 100% 覆盖，零遗漏。
+- 只对 paymentMethod==='qr' 触发：FPX 未付款不误报、已付款 FPX 会自动确认+进 06:30 备餐单不算漏。
+- best-effort：Telegram/邮件任何失败只记 log 不抛错，绝不影响顾客下单；env 缺失即静默跳过，没配 key 也能安全部署。
+- 多日 QR 单（一次付款多文档）合并成一条提醒，不刷屏。
+
+---
+
 # 配送方式拆分（Grab vs 自送）+ 真实配送成本核算 — 2026-07-23
 
 > 目标：Dashboard 清楚看到「Grab 花了多少 / 自己送了多少趟 / 自送油钱车损多少」。
@@ -15,28 +36,28 @@
 - 默认综合率 **RM0.32/km**；Settings 做成油价/油耗/保养三个可调字段
 - 自送单成本 = 率 × deliveryDistanceKm × 2（往返）；旧单缺距离从 addressDistanceKm/geocode 补
 
-## Phase 2 — Firestore 回填（老板点头才写）
-- [ ] 订单加 deliveryMethod: grab | self | driver | pickup
-- [ ] 配上的 154 → grab/driver + deliveryCostActual=收据实付 + 补 deliveryDistanceKm
-- [ ] 老板确认的无收据配送单 → self + 补距离；zone=null 3 单 → pickup
-- [ ] 备份 + 回滚日志
+## Phase 2 — Firestore 回填（✅ 07-23 执行完毕）
+- [x] 老板 07-23 拍板：无收据全自送 / Gwen=Zhi Yuen、Racheel=Midfields Guest / 保养估算+30%
+- [x] 回填 520 单：157 grab + 1 driver（收据实付+距离落库）+ 359 self + 3 pickup
+- [x] 幂等验证（重跑 0 写入）；回滚日志 analytics/backfill-delivery-method-rollback-20260722.json
+- [x] 7 笔未挂单收据 RM118（Chloe catering、未记名、多单混送）→ cfg.unlinkedDeliverySpend
 
-## Phase 3 — Dashboard（Desktop 源头改再 sync）
-- [ ] 「标记配送」弹窗加方式 4 选 1（grab/driver 填实付；self 自动率×往返）
-- [ ] 「开始配送」批次自动标 self
-- [ ] 成本统一：grab/driver=实付；self=率×2×km；pickup=0；未标沿用 zone 估算+标「未分类」
-- [ ] Budget 新卡「配送方式拆分」：各方式趟数/总支出/每趟均价
-- [ ] Settings：油价、油耗、保养摊提字段
-- [ ] 净利润/计算器/导出跟新口径
+## Phase 3 — Dashboard（✅ Desktop 源头改完已 sync）
+- [x] 「标记配送」弹窗方式 4 选 1（self 显距离行自动算；grab/driver 显实付行）
+- [x] 「开始配送」批次自动把未分类单标 self（已标 grab 的不动）
+- [x] 成本统一 buildDeliveryCostMap：grab/driver=实付；self=率×2×km 同客同日同午/晚一趟均摊；pickup=0；未分类退 zone 估算
+- [x] Budget 新卡「配送方式拆分」+ 补贴卡/净利润/单笔计算器/月度导出/drill-down 全走新口径 + 未挂单支出计入
+- [x] Settings 三字段：油价 1.99 / 油耗 11 / 保养 0.13（改了即重算）
+- [x] 验证：整段 616KB script node --check 过；sync:dashboard 回灌 public 副本 grep 标记 16 处命中
 
-## Phase 4 — 常态化
-- [ ] scripts/sync-grab-receipts.mjs：每周 deliveries.csv 更新后跑，按 booking_id 幂等写回
-- [ ] submit-order 把 addressDistanceKm 写进订单 deliveryDistanceKm（schema 已有字段）
+## Phase 4 — 常态化（✅）
+- [x] scripts/sync-grab-receipts.mjs：每周记账更新 deliveries.csv 后跑；幂等（dry 验证 0 写入）；晚到收据会把误标 self 升级成 grab 并提示；--rest-self YYYY-MM-DD 把剩余未分类批量标自送
+- [x] submit-order 本来就写 deliveryDistanceKm（route.ts:433）— 网站零改动
 
-## 等老板答复
-1. 355 趟无收据配送清单过目：全标自送还是挑例外？
-2. 11 趟收据无单（Gwen×2、Racheel×2、5 张未记名、2 笔 manual RM33/37）怎么归？
-3. 保养 RM0.10/km 接受吗，还是给真实保养发票重算？
+## 备注
+- 07-18 之后 99 单未分类属正常（本周收据未传）；每周流程 = 传收据→记账更新 csv→跑 sync→跑 --rest-self
+- 6/17 RM33、6/18 RM37 是多单混送，钱在未挂单支出里、当天订单标自送 → 油钱轻微重复计（老板知情）
+- faf6087 已 commit 留本地，等老板指示再 push（public/dashboard-h7x2q9.html 要随 main 部署才生效线上，本地 Desktop 版已可用）
 
 ---
 

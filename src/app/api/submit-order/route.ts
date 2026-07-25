@@ -535,6 +535,18 @@ export async function POST(req: Request) {
 
     const serverTotal = Math.max(0, serverCartTotal - serverPromoDiscount) + serverDeliveryFee;
 
+    // ── Owner alert: new QR order ─────────────────────────────
+    // QR orders sit at status:'pending' until the owner manually verifies the
+    // DuitNow receipt in the dashboard — nothing else nudges them. Without this
+    // ping a midnight QR order is invisible until morning (= missed, no prep).
+    // FPX auto-confirms via the payment callback, so it isn't the gap.
+    // Best-effort + AWAITED (Vercel freezes the instance post-response, which
+    // would kill an un-awaited fetch); the helper swallows all its own errors.
+    if (paymentMethod === 'qr') {
+      const { notifyOwnerNewQrOrder } = await import('@/lib/ownerNotify');
+      await notifyOwnerNewQrOrder(orderIds.map((id, i) => ({ id, data: payloads[i] })));
+    }
+
     // ── Meta CAPI: InitiateCheckout ───────────────────────────
     // Fire ONCE per checkout action (regardless of multi-day split into
     // multiple orders — the customer clicked "Checkout" once with intent
