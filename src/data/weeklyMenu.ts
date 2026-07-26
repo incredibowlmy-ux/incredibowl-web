@@ -321,13 +321,14 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // 全新菜 2026-07-24 入系统，2026-07-31（周五）上线主打。无实拍图，emoji
-        // 占位防 hero 404（有图后换 /xxx.webp）。蛋白克数等营养标签待碗妈提供
-        // 后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        // 2026-07-26 回填实拍主图（taucu_pork_ribs.webp，1024² webp）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
+        // 简介为初稿，待老板审定。
         id: 28,
         name: "豆酱焖排骨",
         nameEn: "Hometown Taucu Braised Pork Ribs",
         price: 19.90,
-        image: "🍖",
+        image: "/taucu_pork_ribs.webp",
         tags: ["家乡豆酱", "焖煮入味", "骨边肉香", "下饭神器"],
         tagsEn: ["Hometown taucu", "Slow-braised", "Fall-off-the-bone", "Made for rice"],
         desc: "家乡豆酱慢火焖排骨，豆香咸鲜渗进骨边肉里，酱汁拌饭一流。",
