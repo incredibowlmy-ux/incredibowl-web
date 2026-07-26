@@ -44,8 +44,12 @@ export interface SubscriptionDoc {
   deliveryFeePerDelivery: number; // RM per delivery applied to each generated order
   active: boolean;
   note?: string;
-  // 每周计划，key = weekday '1'..'5'（周一..周五）
-  plan: Record<string, SubscriptionDay>;
+  /**
+   * 每周计划，key = weekday '1'..'5'（周一..周五），value = 当天的餐次列表
+   * （一天可以午餐 + 晚餐各一单）。老文档存的是单个 SubscriptionDay 对象，
+   * 读的一侧（week 路由 / 前端）都按「对象即单元素数组」兼容，无需迁移。
+   */
+  plan: Record<string, SubscriptionDay[] | SubscriptionDay>;
 }
 
 export async function OPTIONS() { return corsPreflight(); }
@@ -157,14 +161,23 @@ export async function POST(req: NextRequest) {
   if (!body.address) errs.push('缺 address');
   if (!['near', 'mid', 'far'].includes(body.deliveryTier)) errs.push('deliveryTier 必须是 near/mid/far');
   const plan = body.plan && typeof body.plan === 'object' ? body.plan : {};
-  for (const [wd, day] of Object.entries<any>(plan)) {
+  for (const [wd, raw] of Object.entries<any>(plan)) {
     if (!['1', '2', '3', '4', '5'].includes(wd)) { errs.push(`plan 的 key 必须是 1-5，收到 ${wd}`); continue; }
-    if (day?.skip) continue;
-    if (!['lunch', 'dinner'].includes(day?.meal)) errs.push(`周${wd} meal 必须是 lunch/dinner`);
-    if (!Array.isArray(day?.items) || day.items.length === 0) errs.push(`周${wd} 至少要有一道主菜`);
-    for (const it of day?.items ?? []) {
-      if (!it?.dishName) errs.push(`周${wd} 有主菜缺 dishName`);
-      if (!(Number(it?.qty) >= 1)) errs.push(`周${wd} ${it?.dishName ?? ''} qty 必须 ≥1`);
+    // 一天多餐：value 可以是餐次数组，也可以是老格式的单个对象
+    const meals: any[] = Array.isArray(raw) ? raw : [raw];
+    const seenMeals = new Set<string>();
+    for (const day of meals) {
+      if (day?.skip) continue;
+      if (!['lunch', 'dinner'].includes(day?.meal)) { errs.push(`周${wd} meal 必须是 lunch/dinner`); continue; }
+      // 同一天同一餐段只能有一单 —— 两份午餐要合并成同一餐的两道主菜，
+      // 否则会生成两张同时段订单，备餐/装碗页会当成两次配送。
+      if (seenMeals.has(day.meal)) { errs.push(`周${wd} 有两个${day.meal === 'dinner' ? '晚餐' : '午餐'}，同一餐段只能排一单（多吃就加主菜份数）`); continue; }
+      seenMeals.add(day.meal);
+      if (!Array.isArray(day?.items) || day.items.length === 0) errs.push(`周${wd} 至少要有一道主菜`);
+      for (const it of day?.items ?? []) {
+        if (!it?.dishName) errs.push(`周${wd} 有主菜缺 dishName`);
+        if (!(Number(it?.qty) >= 1)) errs.push(`周${wd} ${it?.dishName ?? ''} qty 必须 ≥1`);
+      }
     }
   }
   if (errs.length) return adminJson({ error: errs.join('；') }, 400);

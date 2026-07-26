@@ -36,8 +36,29 @@ interface Sub {
     id?: string; userId: string; name: string; phone: string; address: string;
     deliveryTier: 'near' | 'mid' | 'far'; deliveryZone: 'within2km' | 'outside2km';
     deliveryDistanceKm: number; deliveryFeePerDelivery: number; active: boolean; note?: string;
-    plan: Record<string, PlanDay>;
+    /** key = weekday '1'..'5'，value = 当天的餐次列表（可午餐 + 晚餐两单） */
+    plan: Record<string, PlanDay[]>;
 }
+
+/**
+ * 后端 plan[wd] 兼容两种形状：老文档是单个餐次对象，新文档是餐次数组。
+ * 前端一律拉平成数组来用，保存时自然写回数组（老模板一编辑即升级）。
+ */
+function normalizePlan(raw: any): Record<string, PlanDay[]> {
+    const out: Record<string, PlanDay[]> = {};
+    for (const wd of ['1', '2', '3', '4', '5']) {
+        const v = raw?.[wd];
+        if (!v) continue;
+        const meals: PlanDay[] = (Array.isArray(v) ? v : [v]).filter((m: any) => m && !m.skip);
+        if (meals.length) out[wd] = meals;
+    }
+    return out;
+}
+
+const mealCN = (m: 'lunch' | 'dinner') => (m === 'dinner' ? '晚' : '午');
+const countMeals = (plan: Record<string, PlanDay[]>) => Object.values(plan).reduce((s, ms) => s + ms.length, 0);
+const emptyMeal = (meal: 'lunch' | 'dinner'): PlanDay =>
+    ({ meal, time: meal === 'dinner' ? '19:00' : '12:00', items: [{ dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] });
 
 const EMPTY_SUB: Sub = {
     userId: '', name: '', phone: '', address: '',
@@ -88,7 +109,7 @@ export default function SubscriptionsAdmin() {
         setLoading(true); setError('');
         try {
             const data = await api('/api/admin/subscriptions');
-            setSubs(data.subscriptions);
+            setSubs((data.subscriptions as any[]).map(s => ({ ...s, plan: normalizePlan(s.plan) })));
             setCustomers(data.customers || []);
         }
         catch (e: any) { setError(e.message); }
@@ -190,10 +211,21 @@ export default function SubscriptionsAdmin() {
     };
 
     // ── 编辑器的 plan 修改 helpers ──
-    const setDay = (wd: string, day: PlanDay | null) => setEditing(prev => {
+    /** 整天的餐次列表：传 null 或空数组 = 这天不吃 */
+    const setMeals = (wd: string, meals: PlanDay[] | null) => setEditing(prev => {
         if (!prev) return prev;
         const plan = { ...prev.plan };
-        if (day === null) delete plan[wd]; else plan[wd] = day;
+        if (!meals || meals.length === 0) delete plan[wd]; else plan[wd] = meals;
+        return { ...prev, plan };
+    });
+    /** 改某天第 mi 餐；patch 传 null = 删掉这一餐 */
+    const patchMeal = (wd: string, mi: number, patch: Partial<PlanDay> | null) => setEditing(prev => {
+        if (!prev) return prev;
+        const meals = [...(prev.plan[wd] ?? [])];
+        if (patch === null) meals.splice(mi, 1);
+        else meals[mi] = { ...meals[mi], ...patch };
+        const plan = { ...prev.plan };
+        if (meals.length === 0) delete plan[wd]; else plan[wd] = meals;
         return { ...prev, plan };
     });
 
@@ -266,8 +298,8 @@ export default function SubscriptionsAdmin() {
                         )}
                         <div className="grid gap-1.5">
                             {p.days.map((d: any) => (
-                                <div key={d.date} className={`text-xs font-bold flex flex-wrap gap-x-2 items-baseline px-3 py-2 rounded-lg ${d.blocked ? 'bg-red-50 text-red-500 line-through' : 'bg-[#F5F3EF]'}`}>
-                                    <span className="text-gray-400">{d.date} {WD_LABEL[String(d.weekday)]} {d.meal === 'dinner' ? '晚' : '午'} {d.time}</span>
+                                <div key={`${d.date}-${d.meal}`} className={`text-xs font-bold flex flex-wrap gap-x-2 items-baseline px-3 py-2 rounded-lg ${d.blocked ? 'bg-red-50 text-red-500 line-through' : 'bg-[#F5F3EF]'}`}>
+                                    <span className="text-gray-400">{d.date} {WD_LABEL[String(d.weekday)]} {mealCN(d.meal)} {d.time}</span>
                                     <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
                                     <span className="text-[#FF6B35]">{d.vCount}券抵{d.coverage.toFixed(2)}</span>
                                     {d.upgradeCoverage > 0 && <span className="text-emerald-600">预付储值抵{d.upgradeCoverage.toFixed(2)}</span>}
@@ -291,7 +323,9 @@ export default function SubscriptionsAdmin() {
                             <button onClick={() => setExpanded(prev => ({ ...prev, [s.id!]: !prev[s.id!] }))} className="flex items-center gap-2 font-black text-sm">
                                 {expanded[s.id!] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 {s.name} <span className={`text-[10px] px-2 py-0.5 rounded-full ${s.active ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>{s.active ? 'active' : '暂停'}</span>
-                                <span className="text-xs text-gray-400 font-bold">{Object.entries(s.plan).filter(([, d]) => !d.skip).length} 天/周</span>
+                                <span className="text-xs text-gray-400 font-bold">
+                                    {Object.keys(s.plan).length} 天/周{countMeals(s.plan) > Object.keys(s.plan).length ? ` · ${countMeals(s.plan)} 餐` : ''}
+                                </span>
                             </button>
                             <div className="flex gap-2">
                                 <button onClick={() => { setCustQuery(''); setCustPicked(null); setEditing(JSON.parse(JSON.stringify(s))); }} className="px-3 py-1.5 bg-[#1A2D23] text-white rounded-lg text-xs font-bold">编辑</button>
@@ -302,11 +336,9 @@ export default function SubscriptionsAdmin() {
                             <div className="mt-3 text-xs font-bold text-gray-500 space-y-1">
                                 <p>{s.phone} · {s.userId} · {s.deliveryTier} 运费 RM{s.deliveryFeePerDelivery}/次</p>
                                 <p className="text-gray-400">{s.address}</p>
-                                {(['1', '2', '3', '4', '5'] as const).map(wd => {
-                                    const d = s.plan[wd];
-                                    if (!d || d.skip) return null;
-                                    return <p key={wd}>{WD_LABEL[wd]} {d.meal === 'dinner' ? '晚' : '午'} {d.time}：{d.items.map(it => `${it.dishName}×${it.qty}${it.addOns.length ? `（+${it.addOns.map(a => a.label).join('+')}）` : ''}`).join('、')}</p>;
-                                })}
+                                {(['1', '2', '3', '4', '5'] as const).flatMap(wd => (s.plan[wd] ?? []).map((d, mi) => (
+                                    <p key={`${wd}-${mi}`}>{WD_LABEL[wd]} {mealCN(d.meal)} {d.time}：{d.items.map(it => `${it.dishName}×${it.qty}${it.addOns.length ? `（+${it.addOns.map(a => a.label).join('+')}）` : ''}`).join('、')}</p>
+                                )))}
                                 {s.note && <p className="text-amber-600">备注：{s.note}</p>}
                             </div>
                         )}
@@ -376,7 +408,7 @@ export default function SubscriptionsAdmin() {
                                         <option value="">选择要照抄的常客模板…</option>
                                         {subs.map(s => (
                                             <option key={s.id} value={s.id}>
-                                                {s.name} · {Object.entries(s.plan).filter(([, d]) => !d.skip).length} 天/周
+                                                {s.name} · {Object.keys(s.plan).length} 天/周 · {countMeals(s.plan)} 餐
                                             </option>
                                         ))}
                                     </select>
@@ -400,73 +432,93 @@ export default function SubscriptionsAdmin() {
                             {/* 每周计划 */}
                             <div className="space-y-3">
                                 {(['1', '2', '3', '4', '5'] as const).map(wd => {
-                                    const day = editing.plan[wd];
+                                    const meals = editing.plan[wd] ?? [];
+                                    const dayOn = meals.length > 0;
+                                    const hasLunch = meals.some(m => m.meal === 'lunch');
+                                    const hasDinner = meals.some(m => m.meal === 'dinner');
                                     return (
                                         <div key={wd} className="border border-gray-200 rounded-xl p-3">
                                             <div className="flex items-center gap-3 flex-wrap">
                                                 <label className="text-sm font-black flex items-center gap-1.5">
-                                                    <input type="checkbox" checked={!!day && !day.skip}
-                                                        onChange={e => setDay(wd, e.target.checked
-                                                            ? (day
-                                                                ? { ...day, skip: false }
-                                                                : { meal: 'lunch', time: '12:00', items: [{ dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }], skip: false })
-                                                            : null)} />
+                                                    <input type="checkbox" checked={dayOn}
+                                                        onChange={e => setMeals(wd, e.target.checked ? [emptyMeal('lunch')] : null)} />
                                                     {WD_LABEL[wd]}
                                                 </label>
-                                                {day && !day.skip && (<>
-                                                    <select value={day.meal} onChange={e => setDay(wd, { ...day, meal: e.target.value as any, time: e.target.value === 'dinner' ? '19:00' : '12:00' })} className="px-2 py-1 border rounded-lg text-xs font-bold">
-                                                        <option value="lunch">午餐</option><option value="dinner">晚餐</option>
-                                                    </select>
-                                                    <input value={day.time} onChange={e => setDay(wd, { ...day, time: e.target.value })} className="w-20 px-2 py-1 border rounded-lg text-xs font-bold" />
-                                                </>)}
+                                                {/* 一天最多午 + 晚两餐（各生成一张单、各扣自己的券） */}
+                                                {dayOn && !(hasLunch && hasDinner) && (
+                                                    <button onClick={() => setMeals(wd, [...meals, emptyMeal(hasLunch ? 'dinner' : 'lunch')])}
+                                                        className="px-2.5 py-1 rounded-lg text-[11px] font-black text-[#FF6B35] border border-[#FF6B35]/30 bg-[#FF6B35]/5 hover:bg-[#FF6B35]/10">
+                                                        ＋ 加{hasLunch ? '晚餐' : '午餐'}（这天再送一趟）
+                                                    </button>
+                                                )}
                                             </div>
-                                            {day && !day.skip && (
-                                                <div className="mt-2 space-y-2">
-                                                    {day.items.map((it, i) => {
-                                                        const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? DEFAULT_ADDON_OPTIONS;
-                                                        const setItem = (patch: Partial<PlanItem>) => { const items = [...day.items]; items[i] = { ...it, ...patch }; setDay(wd, { ...day, items }); };
-                                                        return (
-                                                            <div key={i} className="space-y-1.5">
-                                                                <div className="flex items-center gap-2 flex-wrap">
-                                                                    <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} />
-                                                                    <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
-                                                                    {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
-                                                                    <select value="" onChange={e => {
-                                                                        const opt = addonOptions.find(o => o.id === e.target.value);
-                                                                        if (!opt) return;
-                                                                        const exist = it.addOns.findIndex(a => a.label === opt.label);
-                                                                        const addOns = [...it.addOns];
-                                                                        if (exist >= 0) addOns[exist] = { ...addOns[exist], quantity: addOns[exist].quantity + 1 };
-                                                                        // 存 id：服务端靠它精确匹配加料储值抵扣（label 只是老模板的回溯路径）
-                                                                        else addOns.push({ id: opt.id, label: opt.label, price: opt.price, quantity: 1 });
-                                                                        setItem({ addOns });
-                                                                    }} className="px-2 py-1 border rounded-lg text-xs text-[#FF6B35] font-bold min-w-[120px]">
-                                                                        <option value="">＋ 加料…</option>
-                                                                        {addonOptions.map(o => <option key={o.id} value={o.id}>{o.label} · RM {o.price.toFixed(2)}</option>)}
-                                                                    </select>
-                                                                    <button onClick={() => { const items = day.items.filter((_, x) => x !== i); setDay(wd, { ...day, items }); }} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
-                                                                </div>
-                                                                {it.addOns.length > 0 && (
-                                                                    <div className="flex flex-wrap gap-1.5 pl-1">
-                                                                        {it.addOns.map((a, ai) => (
-                                                                            <span key={ai} className="inline-flex items-center gap-1 px-2 py-1 bg-[#FF6B35]/10 border border-[#FF6B35]/30 rounded-lg text-[11px] font-bold">
-                                                                                ＋{a.label} <span className="text-gray-400">RM {a.price.toFixed(2)}</span>
-                                                                                <input type="number" min={1} value={a.quantity} onChange={e => {
-                                                                                    const addOns = [...it.addOns];
-                                                                                    addOns[ai] = { ...a, quantity: Math.max(1, Number(e.target.value) || 1) };
-                                                                                    setItem({ addOns });
-                                                                                }} className="w-11 px-1 py-0.5 border rounded text-[11px] text-center" />
-                                                                                <button onClick={() => setItem({ addOns: it.addOns.filter((_, x) => x !== ai) })} className="text-gray-400 hover:text-red-500 font-black">×</button>
-                                                                            </span>
-                                                                        ))}
+                                            {meals.map((day, mi) => {
+                                                const setDayItems = (items: PlanItem[]) => patchMeal(wd, mi, { items });
+                                                return (
+                                                    <div key={mi} className="mt-2 rounded-xl border border-gray-100 bg-[#FDFBF7] p-2.5">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <select value={day.meal}
+                                                                onChange={e => patchMeal(wd, mi, { meal: e.target.value as any, time: e.target.value === 'dinner' ? '19:00' : '12:00' })}
+                                                                className="px-2 py-1 border rounded-lg text-xs font-bold">
+                                                                {/* 同一餐段只能排一单 —— 另一餐已占用就禁选 */}
+                                                                <option value="lunch" disabled={hasLunch && day.meal !== 'lunch'}>午餐</option>
+                                                                <option value="dinner" disabled={hasDinner && day.meal !== 'dinner'}>晚餐</option>
+                                                            </select>
+                                                            <input value={day.time} onChange={e => patchMeal(wd, mi, { time: e.target.value })} className="w-20 px-2 py-1 border rounded-lg text-xs font-bold" />
+                                                            {meals.length > 1 && (
+                                                                <button onClick={() => patchMeal(wd, mi, null)} className="ml-auto text-[11px] font-bold text-gray-400 hover:text-red-500 flex items-center gap-1">
+                                                                    <Trash2 size={12} /> 删这一餐
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-2 space-y-2">
+                                                            {day.items.map((it, i) => {
+                                                                const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? DEFAULT_ADDON_OPTIONS;
+                                                                const setItem = (patch: Partial<PlanItem>) => { const items = [...day.items]; items[i] = { ...it, ...patch }; setDayItems(items); };
+                                                                return (
+                                                                    <div key={i} className="space-y-1.5">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} />
+                                                                            <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
+                                                                            {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
+                                                                            <select value="" onChange={e => {
+                                                                                const opt = addonOptions.find(o => o.id === e.target.value);
+                                                                                if (!opt) return;
+                                                                                const exist = it.addOns.findIndex(a => a.label === opt.label);
+                                                                                const addOns = [...it.addOns];
+                                                                                if (exist >= 0) addOns[exist] = { ...addOns[exist], quantity: addOns[exist].quantity + 1 };
+                                                                                // 存 id：服务端靠它精确匹配加料储值抵扣（label 只是老模板的回溯路径）
+                                                                                else addOns.push({ id: opt.id, label: opt.label, price: opt.price, quantity: 1 });
+                                                                                setItem({ addOns });
+                                                                            }} className="px-2 py-1 border rounded-lg text-xs text-[#FF6B35] font-bold min-w-[120px]">
+                                                                                <option value="">＋ 加料…</option>
+                                                                                {addonOptions.map(o => <option key={o.id} value={o.id}>{o.label} · RM {o.price.toFixed(2)}</option>)}
+                                                                            </select>
+                                                                            <button onClick={() => setDayItems(day.items.filter((_, x) => x !== i))} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                                                                        </div>
+                                                                        {it.addOns.length > 0 && (
+                                                                            <div className="flex flex-wrap gap-1.5 pl-1">
+                                                                                {it.addOns.map((a, ai) => (
+                                                                                    <span key={ai} className="inline-flex items-center gap-1 px-2 py-1 bg-[#FF6B35]/10 border border-[#FF6B35]/30 rounded-lg text-[11px] font-bold">
+                                                                                        ＋{a.label} <span className="text-gray-400">RM {a.price.toFixed(2)}</span>
+                                                                                        <input type="number" min={1} value={a.quantity} onChange={e => {
+                                                                                            const addOns = [...it.addOns];
+                                                                                            addOns[ai] = { ...a, quantity: Math.max(1, Number(e.target.value) || 1) };
+                                                                                            setItem({ addOns });
+                                                                                        }} className="w-11 px-1 py-0.5 border rounded text-[11px] text-center" />
+                                                                                        <button onClick={() => setItem({ addOns: it.addOns.filter((_, x) => x !== ai) })} className="text-gray-400 hover:text-red-500 font-black">×</button>
+                                                                                    </span>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    <button onClick={() => setDay(wd, { ...day, items: [...day.items, { dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] })} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
-                                                </div>
-                                            )}
+                                                                );
+                                                            })}
+                                                            <button onClick={() => setDayItems([...day.items, { dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }])} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     );
                                 })}

@@ -46,6 +46,15 @@ for (const opts of [...Object.values(DISH_ADDONS_BY_NAME), DEFAULT_ADDON_OPTIONS
 }
 for (const o of PREPAID_ADDON_OPTIONS) PREPAID_LABEL_TO_ID.set(o.name, o.id);
 
+/**
+ * plan[wd] 兼容两种形状：老的「单餐对象」和新的「餐次数组」（一天可午+晚两单）。
+ * 老订阅文档不用迁移，前端保存时会自然写成数组。skip 的餐次直接剔除。
+ */
+function dayMeals(entry: unknown): any[] {
+  if (!entry) return [];
+  return (Array.isArray(entry) ? entry : [entry]).filter((m: any) => m && !m.skip);
+}
+
 function addDays(ymd: string, days: number): string {
   const d = new Date(`${ymd}T00:00:00`);
   d.setDate(d.getDate() + days);
@@ -89,86 +98,91 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
   const plan: Record<string, any> = sub.plan || {};
 
   for (let wd = 1; wd <= 5; wd++) {
-    const entry = plan[String(wd)];
-    if (!entry || entry.skip) continue;
     const date = addDays(weekStart, wd - 1);
-    const warnings: string[] = [];
-    let blocked = false;
+    // 一天可以有午餐 + 晚餐两餐 → 每餐各生成一单（餐次内的逻辑与从前一字不差）
+    for (const entry of dayMeals(plan[String(wd)])) {
+      const meal: 'lunch' | 'dinner' = entry.meal === 'dinner' ? 'dinner' : 'lunch';
+      const mealCN = meal === 'dinner' ? '晚餐' : '午餐';
+      const warnings: string[] = [];
+      let blocked = false;
 
-    if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
+      if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
 
-    const items: PlannedItem[] = [];
-    // key = addonId|unitRM|source：同一储值不同来源/单价分开记，抵扣金额才精确；
-    // allocateUpgradeCredits 的余额池按 addonId 共享，不受 key 拆分影响。
-    const upgradeNeeds = new Map<string, { addonId: string; count: number; unitRM: number; source: 'topup' | 'addon' }>();
-    let vCount = 0, coverage = 0, originalTotal = 0;
+      const items: PlannedItem[] = [];
+      // key = addonId|unitRM|source：同一储值不同来源/单价分开记，抵扣金额才精确；
+      // allocateUpgradeCredits 的余额池按 addonId 共享，不受 key 拆分影响。
+      const upgradeNeeds = new Map<string, { addonId: string; count: number; unitRM: number; source: 'topup' | 'addon' }>();
+      let vCount = 0, coverage = 0, originalTotal = 0;
 
-    for (const raw of entry.items ?? []) {
-      const qty = Math.max(1, Math.floor(Number(raw.qty) || 1));
-      const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw.dishName);
-      if (!dish) { warnings.push(`「${raw.dishName}」不在菜品目录`); blocked = true; continue; }
-      if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
-      if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);
-      if (isDishBlockedOn(dish.id, date)) { warnings.push(`「${dish.name}」在 ${date} 被停（BLOCKED_DATES）`); blocked = true; }
-      if (dish.day !== 'Daily / 常驻' && dish.weekday !== undefined && dish.weekday !== wd) {
-        warnings.push(`「${dish.name}」本轮排在周${WD_CN[dish.weekday]}，不是周${WD_CN[wd]}`);
+      for (const raw of entry.items ?? []) {
+        const qty = Math.max(1, Math.floor(Number(raw.qty) || 1));
+        const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw.dishName);
+        if (!dish) { warnings.push(`「${raw.dishName}」不在菜品目录`); blocked = true; continue; }
+        if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
+        if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);
+        if (isDishBlockedOn(dish.id, date)) { warnings.push(`「${dish.name}」在 ${date} 被停（BLOCKED_DATES）`); blocked = true; }
+        if (dish.day !== 'Daily / 常驻' && dish.weekday !== undefined && dish.weekday !== wd) {
+          warnings.push(`「${dish.name}」本轮排在周${WD_CN[dish.weekday]}，不是周${WD_CN[wd]}`);
+        }
+        if (dish.day === 'Daily / 常驻' && Array.isArray(dish.availableWeekdays)
+            && dish.availableWeekdays.length > 0 && !dish.availableWeekdays.includes(wd)) {
+          warnings.push(`「${dish.name}」只在周${dish.availableWeekdays.map(x => WD_CN[x]).join('、')}供应`);
+        }
+
+        const addOns = (raw.addOns ?? []).map((a: any) => ({
+          ...(a.id ? { id: String(a.id) } : {}),
+          label: String(a.label ?? ''),
+          price: Number(a.price) || 0,
+          quantity: Math.max(1, Math.floor(Number(a.quantity) || 1)),
+        }));
+        const addOnSum = addOns.reduce((s: number, a: any) => s + a.price * a.quantity, 0);
+
+        items.push({ name: dish.name, price: dish.price, quantity: qty, addOns });
+        vCount += qty;
+        coverage += dishVoucherValue(dish.price, dish) * qty;
+        originalTotal += dish.price * qty + addOnSum;
+
+        if (dish.topUpAddonId && (dish.voucherTopUp ?? 0) > 0) {
+          const key = `${dish.topUpAddonId}|${dish.voucherTopUp}|topup`;
+          const prev = upgradeNeeds.get(key);
+          if (prev) prev.count += qty;
+          else upgradeNeeds.set(key, { addonId: dish.topUpAddonId, count: qty, unitRM: dish.voucherTopUp!, source: 'topup' });
+        }
+
+        // 手选加料若在可预付白名单里（荷包蛋/温泉蛋/加饭…），也登记成储值需求：
+        // 客户有储值就自动抵、不收现金；没储值走缺口逻辑照旧收现金。
+        // 老模板没存 addon id → 按 label 回溯。price<=0 的不抵（白抵储值还不减钱）。
+        for (const a of addOns) {
+          if (a.price <= 0) continue;
+          const creditId = a.id && getPrepaidAddonOption(a.id) ? a.id : PREPAID_LABEL_TO_ID.get(a.label);
+          if (!creditId) continue;
+          const key = `${creditId}|${a.price}|addon`;
+          const prev = upgradeNeeds.get(key);
+          if (prev) prev.count += a.quantity;
+          else upgradeNeeds.set(key, { addonId: creditId, count: a.quantity, unitRM: a.price, source: 'addon' });
+        }
       }
-      if (dish.day === 'Daily / 常驻' && Array.isArray(dish.availableWeekdays)
-          && dish.availableWeekdays.length > 0 && !dish.availableWeekdays.includes(wd)) {
-        warnings.push(`「${dish.name}」只在周${dish.availableWeekdays.map(x => WD_CN[x]).join('、')}供应`);
-      }
 
-      const addOns = (raw.addOns ?? []).map((a: any) => ({
-        ...(a.id ? { id: String(a.id) } : {}),
-        label: String(a.label ?? ''),
-        price: Number(a.price) || 0,
-        quantity: Math.max(1, Math.floor(Number(a.quantity) || 1)),
-      }));
-      const addOnSum = addOns.reduce((s: number, a: any) => s + a.price * a.quantity, 0);
+      if (items.length === 0) { topWarnings.push(`周${WD_CN[wd]}${mealCN} 没有可用主菜，跳过这一餐`); continue; }
 
-      items.push({ name: dish.name, price: dish.price, quantity: qty, addOns });
-      vCount += qty;
-      coverage += dishVoucherValue(dish.price, dish) * qty;
-      originalTotal += dish.price * qty + addOnSum;
-
-      if (dish.topUpAddonId && (dish.voucherTopUp ?? 0) > 0) {
-        const key = `${dish.topUpAddonId}|${dish.voucherTopUp}|topup`;
-        const prev = upgradeNeeds.get(key);
-        if (prev) prev.count += qty;
-        else upgradeNeeds.set(key, { addonId: dish.topUpAddonId, count: qty, unitRM: dish.voucherTopUp!, source: 'topup' });
-      }
-
-      // 手选加料若在可预付白名单里（荷包蛋/温泉蛋/加饭…），也登记成储值需求：
-      // 客户有储值就自动抵、不收现金；没储值走缺口逻辑照旧收现金。
-      // 老模板没存 addon id → 按 label 回溯。price<=0 的不抵（白抵储值还不减钱）。
-      for (const a of addOns) {
-        if (a.price <= 0) continue;
-        const creditId = a.id && getPrepaidAddonOption(a.id) ? a.id : PREPAID_LABEL_TO_ID.get(a.label);
-        if (!creditId) continue;
-        const key = `${creditId}|${a.price}|addon`;
-        const prev = upgradeNeeds.get(key);
-        if (prev) prev.count += a.quantity;
-        else upgradeNeeds.set(key, { addonId: creditId, count: a.quantity, unitRM: a.price, source: 'addon' });
-      }
+      coverage = round2(coverage);
+      originalTotal = round2(originalTotal);
+      const deliveryFee = Number(sub.deliveryFeePerDelivery) || 0;
+      days.push({
+        date, weekday: wd,
+        meal,
+        time: String(entry.time || (meal === 'dinner' ? '19:00' : '12:00')),
+        items, vCount, coverage, originalTotal,
+        cashDue: round2(originalTotal - coverage + deliveryFee),
+        upgradeNeeds: [...upgradeNeeds.values()],
+        upgradeUsed: [],
+        upgradeCoverage: 0,
+        warnings, blocked,
+      });
     }
-
-    if (items.length === 0) { topWarnings.push(`周${WD_CN[wd]} 没有可用主菜，整天跳过`); continue; }
-
-    coverage = round2(coverage);
-    originalTotal = round2(originalTotal);
-    const deliveryFee = Number(sub.deliveryFeePerDelivery) || 0;
-    days.push({
-      date, weekday: wd,
-      meal: entry.meal === 'dinner' ? 'dinner' : 'lunch',
-      time: String(entry.time || (entry.meal === 'dinner' ? '19:00' : '12:00')),
-      items, vCount, coverage, originalTotal,
-      cashDue: round2(originalTotal - coverage + deliveryFee),
-      upgradeNeeds: [...upgradeNeeds.values()],
-      upgradeUsed: [],
-      upgradeCoverage: 0,
-      warnings, blocked,
-    });
   }
+  // 同一天两餐固定「午在前、晚在后」——预览、WhatsApp 文字、建单顺序都按时间走
+  days.sort((a, b) => a.date.localeCompare(b.date) || (a.meal === b.meal ? 0 : a.meal === 'lunch' ? -1 : 1));
   return { days, warnings: topWarnings };
 }
 

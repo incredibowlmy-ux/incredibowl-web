@@ -647,3 +647,32 @@ FPX 单里 14 笔漏了两层库存（8 笔走 admin/data、6 笔走客户端取
 - 已漏的 14 笔**不做补偿性回补**：猪扒 07-25 已手动重设覆盖过，再补会变成双倍
 - ⏳ 仍缺调度器：release-stale-fpx 没有任何东西定时调它。现在靠 admin/data（开 Dashboard 触发）
       兜底，可用但脆。建议加 vercel.json cron（我能做，需确认 Vercel 套餐频率上限）
+
+---
+
+## 2026-07-26 · 订阅一天两餐（午 + 晚各一单）
+
+**背景**：老板反映 Candise 一天既订午餐又订晚餐，但 `/admin/subscriptions` 的每天只能二选一。
+（顺带查明 Candise 不在订阅页 = 从没给她建过订阅模板；users 的 displayName 打错成
+`Csndise chang` 导致按「Candise」搜不到，已改回 `Candise Chang`。）
+
+### 改动
+- [x] `plan[wd]` 由「单餐对象」升级为「餐次数组」，一天可 lunch + dinner 各一单
+- [x] 服务端 **双形状兼容**（`dayMeals()` 把老对象当单元素数组）→ 现有 8 份订阅零迁移
+- [x] `buildWeekPlan` 内层按餐次循环，每餐独立算券/加料/储值抵扣/警告，各自落一张单
+- [x] 同一天固定排序「午在前晚在后」，preview / WhatsApp 文字 / 建单顺序一致
+- [x] POST 校验：同一天同一餐段只能排一单（多吃 → 加主菜份数，不是排两单）
+- [x] 前端：每天可「＋ 加晚餐（这天再送一趟）」，每餐独立餐段/时间/主菜/加料 + 删这一餐；
+      已占用的餐段在下拉里 disabled；列表显示「N 天/周 · M 餐」
+- [x] 前端 `normalizePlan` 拉平老格式 → 老模板一编辑保存即自动升级成新形状
+
+### 验证
+- [x] tsc 0 错 / `npm run build` 通过
+- [x] `scripts/dogfood-subscription-two-meals.mjs`（真实 Firestore + 本地 API dry-run）5/5：
+      周二两餐+周四一餐=3 单、午在前晚在后、老对象格式仍解析、券需求 1+2+1=4、
+      同天两个午餐被 400 拒；测试订阅跑完即删
+- [x] **回归 diff**：改动前/后对 8 个真实 active 订阅跑同一周 preview，输出**逐字节完全一致**
+- [ ] commit 留本地，**未 push**（等老板指示）
+
+### 遗留
+- Candise 的订阅模板还没建（周计划的菜/天数要老板定），她有 7 张券、到期 2026-08-22
