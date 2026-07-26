@@ -259,17 +259,18 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Pork chop coated in a hometown-style sweet & sour onion sauce — tangy, savoury and made for rice."
     },
     {
-        // a la carte RM23.90；餐券抵扣需补 RM4（voucherTopUp）。周五新上 2026-06-08。
+        // a la carte RM24.90（2026-07-26 起，原 23.90）；餐券抵扣需补 RM5（voucherTopUp，
+        // 餐券覆盖仍是 RM19.90）。周五新上 2026-06-08。
         // 暂停一周 2026-07-20；2026-07-27 回归周二主打。
         id: 21,
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
-        price: 23.90,
-        voucherTopUp: 4,
+        price: 24.90,
+        voucherTopUp: 5,
         topUpAddonId: "salmon-upgrade",
         image: "/lemon_salmon.webp",
-        tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM4"],
-        tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM4"],
+        tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM5"],
+        tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM5"],
         desc: "香煎三文鱼外焦里嫩，挤上柠檬清香，配西兰花、毛豆、玉米与樱桃番茄，清爽又满足。",
         descEn: "Pan-seared salmon, crisp outside and tender within, brightened with lemon and served with broccoli, edamame, corn and cherry tomato — light yet satisfying."
     },

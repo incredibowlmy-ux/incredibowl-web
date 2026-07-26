@@ -48,7 +48,9 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Prepaid-only upgrades (not shown on customer menu; used by
   //     prepaid add-on credits — see PREPAID_ADDON_OPTIONS below) ──
-  'salmon-upgrade': 4.00,
+  // 2026-07-26：三文鱼饭涨到 24.90 → voucherTopUp 5，升级券售价同步 4.00 → 5.00
+  // （1 张升级券 = 覆盖 1 份 top-up 全额，售价低于 top-up 就每份漏 RM1）。
+  'salmon-upgrade': 5.00,
   'wagyu-upgrade': 3.00,
 
   // ─── A la carte variants (natto menu) ──────

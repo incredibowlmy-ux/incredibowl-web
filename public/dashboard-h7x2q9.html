@@ -2801,7 +2801,7 @@
             { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 1 暂别 2026-07-27；dashboard 留 active 给 WA 加单
             { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-07-20 从 Wed 改周一第二道（webapp id 2）
             // ─── 周二 Tue ────────────────────────────────────────────
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 23.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 4 },  // 2026-07-27 回归周二 Hero（webapp id 21，暂别一周后回归）
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 5 },  // 2026-07-27 回归周二 Hero（webapp id 21）；2026-07-26 涨价 23.90→24.90，topUp 4→5
             { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // 2026-07-27 从 Fri 改周二第二道（webapp id 25）
             // ─── 周三 Wed ────────────────────────────────────────────
             { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 周三 Hero（webapp id 23）
@@ -9850,7 +9850,7 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '21': [
-                // 柠香香煎三文鱼饭（周五）— RM 23.90，餐券抵扣需补 RM 4（voucherTopUp）
+                // 柠香香煎三文鱼饭（周二）— RM 24.90，餐券抵扣需补 RM 5（voucherTopUp）
                 // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:21 同步）：
                 // 加三文鱼 + 本菜自带配料（毛豆/玉米/小番茄，下方 alacarte 已有毛豆/玉米）
                 { id: 'extra-salmon-70g', label: '加香煎三文鱼 (70g+)', price: 18.50 },
@@ -11816,7 +11816,7 @@ incredibowl.my`,
         // short-change customers when a dish costs more than RM 18.50.
         // Add-ons are NEVER covered by vouchers — only main dishes.
         // 收集主菜单价（已扣 voucherTopUp）— 餐券抵扣按「dish 实际可覆盖额」算。
-        // 例：柠香三文鱼 RM 23.90 但 voucherTopUp=4 → 餐券抵 19.90，客户补 RM 4 现金。
+        // 例：柠香三文鱼 RM 24.90 但 voucherTopUp=5 → 餐券抵 19.90，客户补 RM 5 现金。
         // mirror 自 webapp/src/data/weeklyMenu.ts dishVoucherValue()。
         function collectMainDishUnitPrices() {
             const prices = [];
@@ -12131,7 +12131,7 @@ incredibowl.my`,
             { id: 'sunny-egg', name: '荷包蛋', price: 2.50 },
             { id: 'onsen-egg', name: '温泉蛋', price: 3.00 },
             { id: 'potato-egg', name: '马铃薯煎蛋', price: 3.50 },
-            { id: 'salmon-upgrade', name: '三文鱼升级', price: 4.00 },
+            { id: 'salmon-upgrade', name: '三文鱼升级', price: 5.00 },  // 2026-07-26：三文鱼 24.90 → voucherTopUp=5
             { id: 'wagyu-upgrade', name: '和牛饭升级', price: 3.00 },  // 2026-06-21：周二和牛饼饭 voucherTopUp=3
             { id: 'broccoli-egg', name: '蒜蓉西兰花炒蛋', price: 10.90 },              // 2026-07-05 family size vege
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 2026-07-05 steam egg
