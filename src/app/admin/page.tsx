@@ -512,8 +512,8 @@ export default function AdminPage() {
 
     const pendingCount = orders.filter(o => o.status === 'pending').length;
     const tomorrowOrders = orders.filter(o => o.deliveryDate === tomorrowStr);
-    const todayRevenue = orders.filter(o => o.deliveryDate === todayStr && o.status !== 'cancelled').reduce((sum: number, o: any) => sum + (o.total || 0), 0);
-    const todayCustomersCount = new Set(orders.filter(o => o.deliveryDate === todayStr).map(o => o.userId)).size;
+    // （已删死代码 todayRevenue/todayCustomersCount — 从未渲染，且 todayRevenue 只算
+    //   o.total 不含运费/摊销，留着会误导后人接错口径。）
 
     // Aggregate stats for next 7 days
     const statsDaysList: { date: string; label: string }[] = [{ date: '7days', label: '未来 7 日' }];
@@ -540,6 +540,13 @@ export default function AdminPage() {
     const orderCashRevenue = (o: any) => Number(o.total ?? 0) + Number(o.deliveryFee ?? 0);
     const upcomingMfrs15Revenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + orderMfrs15Revenue(o), 0);
     const upcomingRevenue = orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').reduce((sum: number, o) => sum + orderCashRevenue(o), 0);
+    // 计营收口径 —— 与本地 dashboard 的 PAID_STATUSES 完全一致（confirmed/delivering/
+    // delivered）。上面的 upcomingMfrs15Revenue 是 ops 视角（含 pending/preparing =
+    // 「今天要做的单」），两个数在有进行中订单时天然不同 —— 卡片上把差额标出来，
+    // 老板对账时一眼看到差在哪，不用再猜。改这里的集合必同步 dashboard 那边。
+    const PAID_REVENUE_STATUSES = new Set(['confirmed', 'delivering', 'delivered']);
+    const upcomingPaidMfrs15 = orders.filter(o => targetDates.includes(o.deliveryDate) && PAID_REVENUE_STATUSES.has(o.status ?? '')).reduce((sum: number, o) => sum + orderMfrs15Revenue(o), 0);
+    const upcomingUnconfirmedMfrs15 = upcomingMfrs15Revenue - upcomingPaidMfrs15;
     const upcomingCustomersCount = new Set(orders.filter(o => targetDates.includes(o.deliveryDate) && o.status !== 'cancelled').map(o => o.userId)).size;
 
     // Build upcoming days (today + next 7 days). When a specific date chip
@@ -655,6 +662,9 @@ export default function AdminPage() {
                             <p className="text-[10px] text-gray-400 mt-1 font-bold">其中现金 <span className="text-green-700">RM {upcomingRevenue.toFixed(0)}</span> · 餐券/加料摊销 RM {(upcomingMfrs15Revenue - upcomingRevenue).toFixed(0)}</p>
                         ) : (
                             <p className="text-[10px] text-gray-300 mt-1">MFRS 15 应计</p>
+                        )}
+                        {upcomingUnconfirmedMfrs15 > 0.5 && (
+                            <p className="text-[10px] text-amber-500 mt-0.5 font-bold">含待确认/备餐中 RM {upcomingUnconfirmedMfrs15.toFixed(0)} · 计营收 RM {upcomingPaidMfrs15.toFixed(0)}（= 本地 dashboard 口径）</p>
                         )}
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm relative overflow-hidden group">
