@@ -13130,7 +13130,8 @@ incredibowl.my`,
                 availableCount: available.length, expiringSoonCount: expiringSoon.length,
                 addonCredits: myAddonCredits,
                 topDishes, topAddons, lunchCount, dinnerCount, pmCount,
-                recent: paid.slice(0, 10),
+                // 全部历史（含取消，desc 排好）— UI 端 10 单/页分页，不再截断
+                history: orders,
                 tags, notes,
             };
         }
@@ -13231,28 +13232,42 @@ incredibowl.my`,
                 </div>
                 ` : ''}
 
-                <!-- ─── 最近 10 单 ─── -->
-                ${p.recent.length > 0 ? `
+                <!-- ─── 历史订单（全部，10 单/页）─── -->
+                ${p.history.length > 0 ? (() => {
+                    const PAGE_SIZE = 10;
+                    const totalPages = Math.ceil(p.history.length / PAGE_SIZE);
+                    const rowsHtml = p.history.map((o, idx) => {
+                        const page = Math.floor(idx / PAGE_SIZE);
+                        const d = tsToDate(o.createdAt);
+                        const dStr = d ? `${String(d.getFullYear()).slice(2)}/${d.getMonth() + 1}/${d.getDate()}` : '—';
+                        const mt = mealType(o);
+                        const mealLabel = mt === 'lunch' ? '<span style="color:#B45309">午</span>' : mt === 'dinner' ? '<span style="color:#4338CA">晚</span>' : '';
+                        const dishNames = (o.items || []).map(it => canonicalDishName(it.name)).filter(n => n && !n.startsWith('↳')).join(' + ') || '—';
+                        const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
+                        const refund = Number(o.refundAmount) || 0;
+                        const isCancelled = o.status === 'cancelled';
+                        const amountHtml = isCancelled
+                            ? `<span style="color:var(--danger);font-size:10px;font-weight:600">已取消</span>`
+                            : `${fmt.rm(rev)}${refund > 0 ? ` <span style="color:var(--danger);font-size:10px">退 ${fmt.rm(refund)}</span>` : ''}`;
+                        return `<div class="cust-order-row" data-order-id="${o.id}" data-hist-page="${page}" style="display:${page === 0 ? 'flex' : 'none'};justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);cursor:pointer;${isCancelled ? 'opacity:0.5' : ''}" title="点击查看订单详情">
+                            <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">${dStr} ${mealLabel}</span>
+                            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(dishNames)}">${escapeHtml(dishNames)}</span>
+                            <span style="font-weight:600;flex-shrink:0">${amountHtml}</span>
+                        </div>`;
+                    }).join('');
+                    const pagerHtml = totalPages > 1 ? `
+                        <div class="cust-orders-pager" data-page="0" data-total="${totalPages}" style="display:flex;align-items:center;justify-content:center;gap:10px;padding-top:8px">
+                            <button type="button" class="btn sm cust-orders-page-btn" data-dir="-1" disabled style="opacity:0.45">← 上一页</button>
+                            <span class="cust-orders-page-label" style="font-size:11px;color:var(--text-muted)">第 1 / ${totalPages} 页</span>
+                            <button type="button" class="btn sm cust-orders-page-btn" data-dir="1">下一页 →</button>
+                        </div>` : '';
+                    return `
                 <div style="padding:14px 16px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
-                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">⏱️ 最近 ${p.recent.length} 单</div>
-                    <div style="font-size:12px">
-                        ${p.recent.map(o => {
-                            const d = tsToDate(o.createdAt);
-                            const dStr = d ? `${d.getMonth() + 1}/${d.getDate()}` : '—';
-                            const mt = mealType(o);
-                            const mealLabel = mt === 'lunch' ? '<span style="color:#B45309">午</span>' : mt === 'dinner' ? '<span style="color:#4338CA">晚</span>' : '';
-                            const dishNames = (o.items || []).map(it => canonicalDishName(it.name)).filter(n => n && !n.startsWith('↳')).join(' + ') || '—';
-                            const rev = orderAccrualRevenue(o) + (Number(o.deliveryFee) || 0);
-                            const refund = Number(o.refundAmount) || 0;
-                            return `<div class="cust-order-row" data-order-id="${o.id}" style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);cursor:pointer" title="点击查看订单详情">
-                                <span style="color:var(--text-muted);font-size:11px;flex-shrink:0">${dStr} ${mealLabel}</span>
-                                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(dishNames)}">${escapeHtml(dishNames)}</span>
-                                <span style="font-weight:600;flex-shrink:0">${fmt.rm(rev)}${refund > 0 ? ` <span style="color:var(--danger);font-size:10px">退 ${fmt.rm(refund)}</span>` : ''}</span>
-                            </div>`;
-                        }).join('')}
-                    </div>
-                </div>
-                ` : ''}
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">⏱️ 历史订单 <span style="font-weight:400;color:var(--text-muted);font-size:11px">共 ${p.history.length} 单${p.cancelledCount ? `（含取消 ${p.cancelledCount}）` : ''} · 10 单/页</span></div>
+                    <div style="font-size:12px">${rowsHtml}</div>
+                    ${pagerHtml}
+                </div>`;
+                })() : ''}
 
                 <!-- ─── 行动按钮 ─── -->
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -13372,7 +13387,27 @@ incredibowl.my`,
 
         // Action buttons inside profile (delegated)
         $('#customerProfileContainer').addEventListener('click', (e) => {
-            // 点「最近 N 单」某一行 → 弹订单详情（叠在查客户之上）
+            // 历史订单翻页（10 单/页；行都已渲染，翻页只切换 display）
+            const pageBtn = e.target.closest('.cust-orders-page-btn');
+            if (pageBtn) {
+                const pager = pageBtn.closest('.cust-orders-pager');
+                const total = Number(pager.dataset.total) || 1;
+                let page = Number(pager.dataset.page) || 0;
+                page = Math.max(0, Math.min(total - 1, page + Number(pageBtn.dataset.dir)));
+                pager.dataset.page = String(page);
+                $('#customerProfileContainer').querySelectorAll('[data-hist-page]').forEach(r => {
+                    r.style.display = Number(r.dataset.histPage) === page ? 'flex' : 'none';
+                });
+                pager.querySelector('.cust-orders-page-label').textContent = `第 ${page + 1} / ${total} 页`;
+                pager.querySelectorAll('.cust-orders-page-btn').forEach(b => {
+                    const atEdge = (Number(b.dataset.dir) === -1 && page === 0)
+                        || (Number(b.dataset.dir) === 1 && page === total - 1);
+                    b.disabled = atEdge;
+                    b.style.opacity = atEdge ? '0.45' : '';
+                });
+                return;
+            }
+            // 点历史订单某一行 → 弹订单详情（叠在查客户之上）
             const orow = e.target.closest('.cust-order-row');
             if (orow && orow.dataset.orderId) {
                 openOrderDetail(orow.dataset.orderId);
