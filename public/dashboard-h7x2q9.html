@@ -11762,6 +11762,7 @@ incredibowl.my`,
                 hint.style.color = 'var(--text-muted)';
                 $('#moVouchersUsed').max = 0;
                 renderMoPrepaidAddons(null);
+                applyEditModeRedeemLock();
                 refreshVoucherPreview();
                 return;
             }
@@ -11776,7 +11777,32 @@ incredibowl.my`,
                 $('#moVouchersUsed').max = match.availableVouchers;
             }
             renderMoPrepaidAddons(match);
+            applyEditModeRedeemLock();
             refreshVoucherPreview();
+        }
+
+        // 编辑模式：餐券 / 预付加料抵扣一律锁死。
+        // 保存时编辑分支只跑 updateDoc，不经过 manual-voucher-redemption API，
+        // 填了数字只会把折扣写进账面而券池不动 = 白送。要改抵扣就删单重建。
+        // 每次 refreshOrderVoucherHint 都重跑（渲染会重建这些 input）。
+        function applyEditModeRedeemLock() {
+            const locked = !!editingOrderId;
+            const vInput = $('#moVouchersUsed');
+            if (vInput) {
+                if (locked) vInput.value = '0';
+                vInput.disabled = locked;
+            }
+            $$('#moPrepaidAddonRows .mo-prepaid-qty').forEach(inp => {
+                if (locked) inp.value = '0';
+                inp.disabled = locked;
+            });
+            if (locked) {
+                const hint = $('#moVoucherAvailable');
+                if (hint) {
+                    hint.textContent = '编辑模式不能改餐券 / 预付加料抵扣 — 要改请删单重建';
+                    hint.style.color = 'var(--text-muted)';
+                }
+            }
         }
 
         // Populate the prepaid add-on redemption section from the resolved
@@ -12556,6 +12582,16 @@ incredibowl.my`,
             const note = $('#moNote').value.trim();
             const vouchersUsed = parseInt($('#moVouchersUsed').value, 10) || 0;
             const prepaidAddonsUsed = collectMoPrepaidAddonsUsed();
+
+            // ─── 编辑模式禁止改抵扣（最后一道闸）───
+            // 编辑分支只跑 updateDoc，不会调 /api/admin/manual-voucher-redemption，
+            // 所以这里放行 = 账面写了券折 / credit 折但券池一张没扣（白送）。
+            // 2026-06-29 · 07-08 Zowi3 + 07-09 HuannMean 三单即此洞。要改抵扣请删单重建。
+            if (editingOrderId && (vouchersUsed > 0 || prepaidAddonsUsed.length > 0)) {
+                errEl.textContent = '编辑订单不能改餐券 / 预付加料抵扣（券一旦扣出不可改）— 请删除此单后重新建单';
+                errEl.classList.remove('hidden');
+                return;
+            }
 
             // Collect items from picker rows
             const items = [];
