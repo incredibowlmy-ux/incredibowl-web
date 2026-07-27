@@ -19,6 +19,7 @@ import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { dishVoucherValue, weeklyMenu } from '@/data/weeklyMenu';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
+import { useCartStore } from '@/store/cartStore';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
 import QRPaymentSection from './QRPaymentSection';
@@ -74,6 +75,10 @@ export default function CartDrawer({
     const [promoDiscount, setPromoDiscount] = useState(0);
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
     const [staleNotice, setStaleNotice] = useState<string>('');
+    // 菜单调价后购物车被自动刷价（cartStore 的 merge 干的）。改的是客户要付的
+    // 钱，必须当面说一声，不能默默涨价。关掉购物车即清除，不跨会话唠叨。
+    const repriced = useCartStore(s => s.repriced);
+    const clearRepriced = useCartStore(s => s.clearRepriced);
     // Meal voucher (餐券) redemption state
     const [availableMealVouchers, setAvailableMealVouchers] = useState(0);
     const [mealVouchersUsed, setMealVouchersUsed] = useState(0);
@@ -99,6 +104,14 @@ export default function CartDrawer({
             setSwitchingAddress('');
         }
     };
+
+    // 调价提示只在「购物车被打开过一次之后关闭」时清除 —— 直接按 isOpen=false
+    // 清会在客户还没打开购物车前就清掉，等于没提示。
+    const repricedSeenRef = React.useRef(false);
+    useEffect(() => {
+        if (isOpen) { repricedSeenRef.current = true; return; }
+        if (repricedSeenRef.current && repriced.length > 0) clearRepriced();
+    }, [isOpen, repriced.length, clearRepriced]);
 
     // Auto-clean cart items that can no longer be ordered. Two independent
     // causes, reported separately because the fix differs for the customer:
@@ -709,6 +722,16 @@ export default function CartDrawer({
 
                 {/* Scrollable body */}
                 <div className="flex-1 overflow-y-auto flex flex-col">
+                    {repriced.length > 0 && (
+                        <div className="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                            <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold text-amber-800 leading-relaxed">
+                                {t.repricedNotice(repriced
+                                    .map((r: any) => `${locale === 'en' ? (r.nameEn || r.name) : r.name} RM ${r.from.toFixed(2)} → RM ${r.to.toFixed(2)}`)
+                                    .join(locale === 'en' ? ', ' : '、'))}
+                            </p>
+                        </div>
+                    )}
                     {staleNotice && (
                         <div className="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
                             <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />

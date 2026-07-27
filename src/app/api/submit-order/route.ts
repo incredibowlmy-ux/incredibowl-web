@@ -122,8 +122,13 @@ export async function POST(req: Request) {
       // Allow RM 0.02 rounding tolerance per bundle
       const clientBundleTotal = (bundle.price || 0) * (bundle.quantity || 1);
       if (Math.abs(serverBundleTotal - clientBundleTotal) > 0.02) {
+        // 绝大多数情况不是攻击，是「购物车放了几天、期间菜单调过价」：
+        // CartBundle 存 localStorage，dish 和 price 都是加入那天的快照。
+        // 客户端 cartStore 的 merge 会在页面加载时按现价刷新（cartRepricing.ts），
+        // 所以还能走到这里的只剩「标签页一直开着没刷新过」——文案要能指路，
+        // 不能再甩「价格验证失败」这种开发者黑话给客户。
         return NextResponse.json({
-          error: `价格验证失败: ${dish.name} 服务器计算 RM${serverBundleTotal.toFixed(2)}, 客户端提交 RM${clientBundleTotal.toFixed(2)}`,
+          error: `${dish.name} 的价格已更新（现价 RM${serverBundleTotal.toFixed(2)}，购物车里是 RM${clientBundleTotal.toFixed(2)}）。请刷新页面后重新下单，购物车会自动同步最新价格。`,
         }, { status: 400 });
       }
 
