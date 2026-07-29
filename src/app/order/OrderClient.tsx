@@ -80,12 +80,15 @@ const DISHES = [
     },
 ];
 
+// 'outside' retired 2026-07-29 — 7.5km+ is now the 'far' tier (RM 18 flat,
+// Grab-fulfilled), so /api/check-delivery quotes it instead of refusing.
 type DeliveryResult = {
-    tier: "near" | "mid" | "far" | "outside";
+    tier: "near" | "mid" | "far";
     distanceKm: number;
     fee?: number;
-    feeAtThreshold?: number;
-    threshold?: number;
+    /** null on the far tier — flat fee, no threshold to spend toward. */
+    feeAtThreshold?: number | null;
+    threshold?: number | null;
     formattedAddress?: string;
 };
 
@@ -94,8 +97,8 @@ const tierWaMsg = (r: DeliveryResult, addr: string) => {
     if (r.tier === "near") {
         return `Hi 碗妈！我从 FB 广告来的，地址：${a}（5km 内 · ${DELIVERY_PROSE_SHORT_ZH} ✓），想看今天 / 明天的菜单 🔥`;
     }
-    if (r.tier === "outside") {
-        return `Hi 碗妈！我地址是 ${a}（离你 ${r.distanceKm} km），看看你能不能想办法送 🙏`;
+    if (r.tier === "far") {
+        return `Hi 碗妈！我从 FB 广告来的，地址：${a}（离你 ${r.distanceKm} km · 远距离 Grab 配送 · 运费 RM ${r.fee} 固定），想看今天 / 明天的菜单 🔥`;
     }
     return `Hi 碗妈！我从 FB 广告来的，地址：${a}（离你 ${r.distanceKm} km · 配送费 RM ${r.fee}），想看今天 / 明天的菜单 🔥`;
 };
@@ -313,7 +316,7 @@ export default function OrderClient() {
                         </div>
                     )}
 
-                    {checkResult && (checkResult.tier === "mid" || checkResult.tier === "far") && (
+                    {checkResult && checkResult.tier === "mid" && (
                         <div className="mt-4 p-4 rounded-2xl bg-orange-50 border-2 border-orange-200">
                             <p className="text-base font-black text-orange-800 flex items-center gap-1.5">
                                 <Truck size={18} strokeWidth={2.5} />
@@ -329,7 +332,7 @@ export default function OrderClient() {
                                 href={wa(tierWaMsg(checkResult, address))}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_far")}
+                                onClick={() => fireLead("zone_result_mid")}
                                 className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
                             >
                                 WhatsApp 看菜单 →
@@ -337,19 +340,29 @@ export default function OrderClient() {
                         </div>
                     )}
 
-                    {checkResult && checkResult.tier === "outside" && (
-                        <div className="mt-4 p-4 rounded-2xl bg-gray-50 border-2 border-gray-200">
-                            <p className="text-sm font-black text-gray-700">
-                                抱歉，你的地址离碗妈 {checkResult.distanceKm} km，超出配送范围
+                    {/* Far (7.5km+): served via Grab at a flat fee. Ad traffic from
+                        this distance used to hit a dead-end "outside our range" card —
+                        now it converts like any other tier. */}
+                    {checkResult && checkResult.tier === "far" && (
+                        <div className="mt-4 p-4 rounded-2xl bg-orange-50 border-2 border-orange-200">
+                            <p className="text-base font-black text-orange-800 flex items-center gap-1.5">
+                                <Truck size={18} strokeWidth={2.5} />
+                                配送费 RM {checkResult.fee} · 离碗妈 {checkResult.distanceKm} km
                             </p>
+                            <p className="text-xs text-orange-800/80 mt-1.5 font-bold">
+                                远距离由 <span className="font-black">Grab</span> 配送，运费固定 <span className="font-black">RM {checkResult.fee}</span>，不设免运门槛
+                            </p>
+                            {checkResult.formattedAddress && (
+                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{checkResult.formattedAddress}</p>
+                            )}
                             <a
                                 href={wa(tierWaMsg(checkResult, address))}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_outside")}
-                                className="inline-flex items-center gap-1.5 mt-2 text-sm font-black text-green-700 hover:text-green-800"
+                                onClick={() => fireLead("zone_result_far")}
+                                className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
                             >
-                                WhatsApp 问问看 →
+                                WhatsApp 看菜单 →
                             </a>
                         </div>
                     )}

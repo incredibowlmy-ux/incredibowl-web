@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
-import { DELIVERY_TIER_COPY, COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, COVERAGE_AREAS, freeOverPhraseEn } from '@/lib/deliveryCopy';
 
 export default function FooterEN() {
     return (
@@ -83,10 +83,10 @@ export default function FooterEN() {
                                     {DELIVERY_TIER_COPY.map((t) => (
                                         <li key={t.rangeEn} className="flex justify-between gap-3">
                                             <span className="font-semibold text-[#1A2D23]/80">{t.rangeEn}</span>
-                                            <span><span className="font-bold">RM {t.fee}</span> · free over RM {t.freeOver}</span>
+                                            <span><span className="font-bold">RM {t.fee}</span> · {freeOverPhraseEn(t)}</span>
                                         </li>
                                     ))}
-                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">Beyond 7.5km — not delivered</li>
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">Beyond 7.5km — delivered by Grab</li>
                                 </ul>
                             </div>
                         </div>
@@ -143,10 +143,10 @@ export default function FooterEN() {
                             {DELIVERY_TIER_COPY.map((t) => (
                                 <li key={t.rangeEn} className="flex justify-between gap-3">
                                     <span className="font-semibold text-[#1A2D23]/80">{t.rangeEn}</span>
-                                    <span><span className="font-bold">RM {t.fee}</span> · free over RM {t.freeOver}</span>
+                                    <span><span className="font-bold">RM {t.fee}</span> · {freeOverPhraseEn(t)}</span>
                                 </li>
                             ))}
-                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">Beyond 7.5km — not delivered</li>
+                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">Beyond 7.5km — delivered by Grab</li>
                         </ul>
                     </div>
 

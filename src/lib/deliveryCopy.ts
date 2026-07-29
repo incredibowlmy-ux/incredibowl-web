@@ -17,6 +17,7 @@ import {
     DELIVERY_FEE_INNER_NEAR_RM,
     DELIVERY_FEE_OUTER_NEAR_RM,
     DELIVERY_FEE_MID_RM,
+    DELIVERY_FEE_FAR_RM,
     FREE_DELIVERY_THRESHOLD_NEAR_RM,
     FREE_DELIVERY_THRESHOLD_OUTER_NEAR_RM,
     FREE_DELIVERY_THRESHOLD_MID_RM,
@@ -29,8 +30,12 @@ export interface DeliveryTierCopy {
     rangeEn: string;
     /** base fee in RM */
     fee: number;
-    /** free-delivery threshold in RM */
-    freeOver: number;
+    /**
+     * Free-delivery threshold in RM, or null when the tier has none (far —
+     * RM 18 flat). Every surface that renders this MUST branch on null rather
+     * than printing "满 RM null 免运".
+     */
+    freeOver: number | null;
 }
 
 export const DELIVERY_TIER_COPY: DeliveryTierCopy[] = [
@@ -52,20 +57,35 @@ export const DELIVERY_TIER_COPY: DeliveryTierCopy[] = [
         fee: DELIVERY_FEE_MID_RM,
         freeOver: FREE_DELIVERY_THRESHOLD_MID_RM,
     },
+    {
+        rangeZh: `${MID_RADIUS_KM}km 以上`,
+        rangeEn: `Beyond ${MID_RADIUS_KM}km`,
+        fee: DELIVERY_FEE_FAR_RM,
+        freeOver: null, // flat — no basket size waives it
+    },
 ];
 
-/** "2.5km 内 RM 3 满 20 免运 · 2.5–5km RM 5 满 30 免运 · 5–7.5km RM 12 满 45 免运" */
+/** "满 RM 20 免运" or "不设免运" for the flat far tier. */
+export const freeOverPhraseZh = (t: DeliveryTierCopy) =>
+    t.freeOver === null ? "固定运费·不设免运" : `满 RM ${t.freeOver} 免运`;
+export const freeOverPhraseEn = (t: DeliveryTierCopy) =>
+    t.freeOver === null ? "flat rate, no free-delivery threshold" : `free over RM ${t.freeOver}`;
+
+/** "2.5km 内 RM 3 满 20 免运 · … · 7.5km 以上 RM 18 固定运费·不设免运" */
 export const DELIVERY_SUMMARY_ZH = DELIVERY_TIER_COPY
-    .map((t) => `${t.rangeZh} RM ${t.fee} 满 ${t.freeOver} 免运`)
+    .map((t) => `${t.rangeZh} RM ${t.fee} ${freeOverPhraseZh(t)}`)
     .join(" · ");
 
 /** "Within 2.5km RM 3 (free over RM 20) · ..." */
 export const DELIVERY_SUMMARY_EN = DELIVERY_TIER_COPY
-    .map((t) => `${t.rangeEn} RM ${t.fee} (free over RM ${t.freeOver})`)
+    .map((t) => `${t.rangeEn} RM ${t.fee} (${freeOverPhraseEn(t)})`)
     .join(" · ");
 
-export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}km 以外暂不配送`;
-export const BEYOND_DELIVERY_NOTE_EN = `Beyond ${MID_RADIUS_KM}km — not currently delivered`;
+// 2026-07-29: 7.5km+ is served again (RM 18 flat, Grab-fulfilled), so the old
+// "not delivered" note became a lie. Kept under the same export name so every
+// consuming surface (footer, FAQ, terms, blog JSON-LD) flips together.
+export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}km 以上 RM ${DELIVERY_FEE_FAR_RM} 固定运费（Grab 配送，不设免运）`;
+export const BEYOND_DELIVERY_NOTE_EN = `Beyond ${MID_RADIUS_KM}km — RM ${DELIVERY_FEE_FAR_RM} flat (delivered by Grab, no free-delivery threshold)`;
 
 /** Where the km radii are measured from — without this, "2.5km 内" is ambiguous. */
 export const DISTANCE_BASIS_ZH = "距离以 Pearl Point（碗妈厨房）为起点计算";
@@ -77,11 +97,11 @@ export const DISTANCE_BASIS_EN = "Distances measured from Pearl Point (BowlMama'
 
 /** "2.5km 内 RM 3（满 RM 20 免运）" — bracketed style used in prose/metadata */
 export const tierProseZh = (t: DeliveryTierCopy) =>
-    `${t.rangeZh} RM ${t.fee}（满 RM ${t.freeOver} 免运）`;
+    `${t.rangeZh} RM ${t.fee}（${freeOverPhraseZh(t)}）`;
 export const tierProseEn = (t: DeliveryTierCopy) =>
-    `${t.rangeEn} RM ${t.fee} (free over RM ${t.freeOver})`;
+    `${t.rangeEn} RM ${t.fee} (${freeOverPhraseEn(t)})`;
 
-/** All three tiers: "2.5km 内 RM 3（满 RM 20 免运）· 2.5–5km RM 5（满 RM 30 免运）· 5–7.5km RM 12（满 RM 45 免运）" */
+/** All four tiers, bracketed style. */
 export const DELIVERY_PROSE_ZH = DELIVERY_TIER_COPY.map(tierProseZh).join(" · ");
 export const DELIVERY_PROSE_EN = DELIVERY_TIER_COPY.map(tierProseEn).join(" · ");
 
@@ -93,6 +113,7 @@ export const DELIVERY_PROSE_SHORT_EN = DELIVERY_TIER_COPY.slice(0, 2).map(tierPr
 export const TIER_INNER = DELIVERY_TIER_COPY[0];
 export const TIER_OUTER = DELIVERY_TIER_COPY[1];
 export const TIER_MID = DELIVERY_TIER_COPY[2];
+export const TIER_FAR = DELIVERY_TIER_COPY[3];
 
 // ── Coverage areas ──────────────────────────────────────────────────────────
 // Single source for the neighbourhoods we serve — used by the trust strip,

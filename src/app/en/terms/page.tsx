@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
-import { TIER_INNER, TIER_OUTER, TIER_MID } from '@/lib/deliveryCopy';
+import { TIER_INNER, TIER_OUTER, TIER_MID, TIER_FAR } from '@/lib/deliveryCopy';
 import { MID_RADIUS_KM } from '@/lib/deliveryUtils';
 import SetHtmlLang from '@/components/home-en/SetHtmlLang';
 
@@ -46,7 +46,7 @@ export default function TermsAndConditionsEN() {
                             <li><b>{TIER_INNER.rangeEn}</b>: RM {TIER_INNER.fee} — waived when cart total ≥ RM {TIER_INNER.freeOver} (after promo-code discount; meal-voucher redemption does NOT affect this threshold)</li>
                             <li><b>{TIER_OUTER.rangeEn}</b>: RM {TIER_OUTER.fee} — waived when cart total ≥ RM {TIER_OUTER.freeOver} (same basis as above)</li>
                             <li><b>{TIER_MID.rangeEn}</b>: RM {TIER_MID.fee} — waived when cart total ≥ RM {TIER_MID.freeOver} (saves RM {TIER_MID.fee}; same basis)</li>
-                            <li><b>{MID_RADIUS_KM} km +</b>: not currently delivered — please WhatsApp us for catering orders</li>
+                            <li><b>{MID_RADIUS_KM} km +</b>: RM {TIER_FAR.fee} flat, fulfilled by Grab — <b>no free-delivery threshold applies at this distance, regardless of cart total</b></li>
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier.</p>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout.</p>

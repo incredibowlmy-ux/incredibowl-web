@@ -37,8 +37,9 @@ export async function OPTIONS() {
  * peek.
  *
  * Body:    { address: string }
- * Returns: { tier, distanceKm, fee, threshold, formattedAddress }
- *          or { error, status } / { tier: 'outside', distanceKm } when far
+ * Returns: { tier, distanceKm, fee, threshold, feeAtThreshold, formattedAddress }
+ *          or { error, status }. threshold + feeAtThreshold are null on the
+ *          far tier (7.5km+, flat RM 18) — there is nothing to spend toward.
  *
  * Rate limit（2026-07-26 加固）：
  *   突发 8 次/分钟/IP（内存桶）+ 每 IP 每天 200 次（Firestore，跨实例硬上限）。
@@ -51,11 +52,14 @@ export async function OPTIONS() {
 
 const BURST = { max: 8, windowMs: 60_000 };
 const DAILY_LIMIT_PER_IP = 200;
-// Distance beyond which we tell the user we don't deliver. Tightened
-// 10 → 8 km on 2026-05-18 (removed empty 8 km+ tier), then 8 → 7.5 km on
-// 2026-05-19 (last 500 m never had customers; matches actual route reach).
-// Anything past 7.5 km gets the WhatsApp catering fallback in the widget.
-const MAX_DELIVERY_KM = 7.5;
+// 2026-07-29: the hard "we don't deliver past 7.5 km" cutoff was removed —
+// 7.5 km+ is now the far tier (RM 18 flat, Grab-fulfilled). This endpoint no
+// longer returns tier:'outside'; it quotes the far fee like any other tier.
+//
+// It was ALSO the only place the 7.5 km ceiling was ever enforced — the real
+// order path (geocode → profile → submit-order) never checked it, so far
+// addresses were already being served, just mispriced as mid (RM 12). The
+// tier now matches reality on both paths.
 
 export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
@@ -147,24 +151,20 @@ export async function POST(req: NextRequest) {
     const { lat, lng } = top.geometry.location;
     const distanceKm = distanceFromPearlPointKm(lat, lng);
 
-    // Outside the 7.5km service ceiling: tell them honestly, offer WhatsApp.
-    if (distanceKm > MAX_DELIVERY_KM) {
-        return corsify(NextResponse.json({
-            tier: 'outside' as const,
-            distanceKm: Number(distanceKm.toFixed(2)),
-            formattedAddress: top.formatted_address,
-        }));
-    }
-
     const tier: DeliveryTier = tierFromDistance(distanceKm);
     // Preview fees at two cart sizes: an empty cart (full fee) and at the
     // distance-resolved threshold (discounted fee). The widget shows both —
     // "today RM 5" vs "spend RM 20 / 30 and it's free" is a strong nudge.
     // thresholdForDistance() resolves the split near tier (RM 20 inner /
-    // RM 30 outer); mid/far are tier-uniform.
+    // RM 30 outer); mid is tier-uniform.
+    //
+    // Far tier has threshold === null (RM 18 flat, never waived) — we send
+    // threshold: null and omit feeAtThreshold so the widget renders the flat
+    // fee with no "spend more" nudge. Sending a number here would promise
+    // free delivery we don't offer at that distance.
     const feeNow = calcDeliveryFee(distanceKm, 0);
     const threshold = thresholdForDistance(distanceKm);
-    const feeAtThreshold = calcDeliveryFee(distanceKm, threshold);
+    const feeAtThreshold = threshold === null ? null : calcDeliveryFee(distanceKm, threshold);
 
     return corsify(NextResponse.json({
         tier,

@@ -993,6 +993,7 @@ export default function CartDrawer({
                                         <span className="text-gray-500">
                                             {t.deliveryFee} {deliveryTier === 'free' && <span className="text-green-600 font-bold">{t.freeZone}</span>}
                                             {deliveryTier === 'mid' && <span className="text-amber-600 font-bold">{t.midZone}</span>}
+                                            {deliveryTier === 'far' && <span className="text-amber-600 font-bold">{t.farZone}</span>}
                                             {isMultiDelivery && <span className="text-gray-400">{t.trips(deliveryGroups.length)}</span>}
                                         </span>
                                         <span className={`font-bold ${deliveryFee === 0 ? 'text-green-600' : 'text-gray-700'}`}>
@@ -1027,7 +1028,11 @@ export default function CartDrawer({
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
                                                 💡 {t.stillNeed} <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
-                                                {deliveryTier === 'near' && <>{t.toFree} <span className="text-gray-400">{t.freeOver(distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM)}</span></>}
+                                                {/* thresholdForDistance() is null only past 7.5km (far tier, flat
+                                                    RM 18). That tier can't reach here — freeDeliveryShortfall()
+                                                    returns 0 for it, so this whole block is gated off. The ??
+                                                    is a type-level fallback, not a reachable branch. */}
+                                                {deliveryTier === 'near' && <>{t.toFree} <span className="text-gray-400">{t.freeOver((distanceKm !== null ? thresholdForDistance(distanceKm) : FREE_DELIVERY_THRESHOLD_NEAR_RM) ?? FREE_DELIVERY_THRESHOLD_NEAR_RM)}</span></>}
                                                 {deliveryTier === 'mid' && <>{t.toFree} <span className="text-gray-400">{t.freeOver(FREE_DELIVERY_THRESHOLD_MID_RM)}</span></>}
                                             </p>
                                         </div>

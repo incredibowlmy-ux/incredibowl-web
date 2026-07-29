@@ -11694,7 +11694,7 @@ incredibowl.my`,
                 addrEl.value = addr;
                 const km = typeof u.addressDistanceKm === 'number' ? u.addressDistanceKm : null;
                 if (km !== null) {
-                    const tier = km <= 5 ? 'near' : 'mid';   // mirrors deliveryUtils.tierFromDistance
+                    const tier = km <= 5 ? 'near' : km <= 7.5 ? 'mid' : 'far';   // mirrors deliveryUtils.tierFromDistance
                     state.moDistanceResolved = { distanceKm: km, tier, formattedAddress: addr, fromProfile: true };
                     state.moDeliveryAuto = true;             // fee follows free-above-threshold rule
                     $('#moZone').value = u.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
@@ -11734,7 +11734,7 @@ incredibowl.my`,
             const km = typeof lastOrder.deliveryDistanceKm === 'number' ? lastOrder.deliveryDistanceKm : null;
             if (km !== null) {
                 const tier = lastOrder.deliveryTier
-                    || (km <= 2 ? 'free' : km <= 5 ? 'near' : km <= 10 ? 'mid' : 'far');
+                    || (km <= 2 ? 'free' : km <= 5 ? 'near' : km <= 7.5 ? 'mid' : 'far');
                 state.moDistanceResolved = { distanceKm: km, tier, formattedAddress: addr, fromProfile: true };
                 state.moDeliveryAuto = true;
                 $('#moZone').value = lastOrder.deliveryZone || (km <= 2 ? 'within2km' : 'outside2km');
@@ -11912,11 +11912,16 @@ incredibowl.my`,
         // ─── Customer delivery-fee rule — MIRRORS src/lib/deliveryUtils.ts ───
         // Binary step by distance: basis ≥ threshold → free, else base fee.
         // basis = 食物总额 − 优惠码折扣 (meal voucher NOT subtracted).
-        // ≤2.5km RM3/免RM20 · ≤5km RM5/免RM30 · 5–7.5km RM12/免RM45.
+        // ≤2.5km RM3/免RM20 · ≤5km RM5/免RM30 · 5–7.5km RM12/免RM45 · >7.5km RM18 固定不免运.
         // Keep in sync with deliveryUtils — see memory project_free_delivery_threshold_rule.
-        function moThresholdForKm(km) { return km <= 2.5 ? 20 : km <= 5 ? 30 : 45; }
-        function moBaseFeeForKm(km)   { return km <= 2.5 ? 3  : km <= 5 ? 5  : 12; }
-        function moDeliveryFeeForKm(km, basis) { return basis >= moThresholdForKm(km) ? 0 : moBaseFeeForKm(km); }
+        // 远距离档 (2026-07-29)：threshold 返回 null = 没有免运门槛，多少钱都收 RM 18。
+        // 千万别把 null 写成一个大数字兜底 —— 那样 15km 的单凑够钱又变免运了。
+        function moThresholdForKm(km) { return km <= 2.5 ? 20 : km <= 5 ? 30 : km <= 7.5 ? 45 : null; }
+        function moBaseFeeForKm(km)   { return km <= 2.5 ? 3  : km <= 5 ? 5  : km <= 7.5 ? 12 : 18; }
+        function moDeliveryFeeForKm(km, basis) {
+            const thr = moThresholdForKm(km);
+            return (thr !== null && basis >= thr) ? 0 : moBaseFeeForKm(km);
+        }
 
         // Recompute the delivery fee from the resolved distance + current food basis,
         // matching the webapp's free-above-threshold rule. Only runs while the fee is
@@ -12106,21 +12111,21 @@ incredibowl.my`,
                 const km = Number(data.distanceKm);
                 const tierLabel = { free: '免运区', near: '近距离', mid: '中距离', far: '远距离' };
                 state.moDeliveryAuto = true;  // system now owns the delivery fee (free-above-threshold)
-                if (data.tier === 'outside') {
-                    // Beyond 7.5km service ceiling — still recordable (boss may have delivered anyway).
-                    state.moDistanceResolved = { distanceKm: km, tier: 'far', formattedAddress: data.formattedAddress || addr };
-                    $('#moZone').value = 'outside2km';
-                    preview.innerHTML = `⚠ <strong>${km}km</strong> · 超出 7.5km 常规配送范围 · 仍可保存（按远距离记）`;
-                    preview.style.color = 'var(--warning)';
-                } else {
-                    state.moDistanceResolved = { distanceKm: km, tier: data.tier, formattedAddress: data.formattedAddress || addr };
-                    $('#moZone').value = data.tier === 'free' ? 'within2km' : 'outside2km';
+                // 2026-07-29: /api/check-delivery 不再返回 'outside' —— 7.5km+ 现在是正式的
+                // far 档（RM 18 固定 · Grab 配送），跟其他档一样报价。
+                state.moDistanceResolved = { distanceKm: km, tier: data.tier, formattedAddress: data.formattedAddress || addr };
+                $('#moZone').value = data.tier === 'free' ? 'within2km' : 'outside2km';
+                {
                     const foodTotal = parseFloat($('#moTotal').value) || 0;
                     const promoD = state.moPromoValidated ? (Number(state.moPromoValidated.discount) || 0) : 0;
                     const feeNow = moDeliveryFeeForKm(km, foodTotal - promoD);
                     const thr = moThresholdForKm(km);
-                    preview.innerHTML = `✓ ${escapeHtml(data.formattedAddress || addr)} · <strong>${km}km</strong> · ${tierLabel[data.tier] || data.tier} · 运费 ${feeNow > 0 ? `RM ${feeNow.toFixed(2)}（满 RM${thr} 免）` : '免费 ✅'}`;
-                    preview.style.color = 'var(--success)';
+                    // thr === null = 远距离固定运费，别显示「满 RM null 免」
+                    const feeText = feeNow > 0
+                        ? `RM ${feeNow.toFixed(2)}${thr === null ? '（固定 · 不设免运 · Grab）' : `（满 RM${thr} 免）`}`
+                        : '免费 ✅';
+                    preview.innerHTML = `✓ ${escapeHtml(data.formattedAddress || addr)} · <strong>${km}km</strong> · ${tierLabel[data.tier] || data.tier} · 运费 ${feeText}`;
+                    preview.style.color = data.tier === 'far' ? 'var(--warning)' : 'var(--success)';
                 }
                 if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
             } catch (e) {

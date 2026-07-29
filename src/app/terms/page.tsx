@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { TIER_INNER, TIER_OUTER, TIER_MID } from '@/lib/deliveryCopy';
+import { TIER_INNER, TIER_OUTER, TIER_MID, TIER_FAR } from '@/lib/deliveryCopy';
 import { MID_RADIUS_KM } from '@/lib/deliveryUtils';
 
 export default function TermsAndConditions() {
@@ -34,7 +34,7 @@ export default function TermsAndConditions() {
                             <li><b>{TIER_INNER.rangeEn}</b>：RM {TIER_INNER.fee} — waived when cart total ≥ RM {TIER_INNER.freeOver} (after promo-code discount; meal-voucher redemption does NOT affect this threshold) / RM {TIER_INNER.fee}，使用 promo code 折后满 RM {TIER_INNER.freeOver} 即免运（餐券抵扣不影响门槛）</li>
                             <li><b>{TIER_OUTER.rangeEn}</b>：RM {TIER_OUTER.fee} — waived when cart total ≥ RM {TIER_OUTER.freeOver} (same basis as above) / RM {TIER_OUTER.fee}，使用 promo code 折后满 RM {TIER_OUTER.freeOver} 即免运（同一计算基础）</li>
                             <li><b>{TIER_MID.rangeEn}</b>：RM {TIER_MID.fee} — waived when cart total ≥ RM {TIER_MID.freeOver} (saves RM {TIER_MID.fee}; same basis) / RM {TIER_MID.fee}，使用 promo code 折后满 RM {TIER_MID.freeOver} 自动免运（同一计算基础）</li>
-                            <li><b>{MID_RADIUS_KM} km +</b>：not currently delivered — please WhatsApp us for catering orders / 暂不配送，公司订餐请 WhatsApp 询价</li>
+                            <li><b>{MID_RADIUS_KM} km +</b>：RM {TIER_FAR.fee} flat, fulfilled by Grab — <b>no free-delivery threshold applies at this distance, regardless of cart total</b> / RM {TIER_FAR.fee} 固定运费，由 Grab 配送 —— <b>此档不设免运门槛，订单金额多少都照收</b></li>
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier. / 2026-05-16 之前注册的老客户，2 km 内沿用旧的免运政策。</p>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout. / 距离由您保存的配送地址通过 Google Maps 自动测算。下单前请在个人资料中确认地址。</p>

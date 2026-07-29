@@ -48,6 +48,8 @@ interface CartDrawerDict {
     deliveryFee: string;
     freeZone: string;
     midZone: string;
+    /** Far tier (7.5km+) — flat fee, Grab-fulfilled, no free-delivery threshold. */
+    farZone: string;
     trips: (n: number) => string;
     free: string;
     freeShort: string;
@@ -196,6 +198,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             deliveryFee: '配送费',
             freeZone: '· 免运区',
             midZone: '· 中距离 5–7.5km',
+            farZone: '· 远距离 7.5km+ · Grab 配送 · 固定运费',
             trips: (n) => `· ${n} 趟配送`,
             free: '免费 🛵',
             freeShort: '免费',
@@ -330,6 +333,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             deliveryFee: 'Delivery',
             freeZone: '· free-delivery zone',
             midZone: '· mid-range 5–7.5km',
+            farZone: '· long-distance 7.5km+ · via Grab · flat rate',
             trips: (n) => `· ${n} deliveries`,
             free: 'Free 🛵',
             freeShort: 'Free',

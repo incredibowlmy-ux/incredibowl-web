@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown } from 'lucide-react';
-import { DELIVERY_TIER_COPY, BEYOND_DELIVERY_NOTE_EN, COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, COVERAGE_AREAS } from '@/lib/deliveryCopy';
 
 interface FaqItem {
     q: string;
@@ -35,9 +35,13 @@ const FAQS: FaqItem[] = [
                 Mainly <span className="font-semibold text-[#1A2D23]">{COVERAGE_AREAS.join(' / ')}</span>:
                 <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
                     {DELIVERY_TIER_COPY.map((t) => (
-                        <li key={t.rangeEn}>• {t.rangeEn} &mdash; <span className="font-semibold">RM {t.fee}</span> (<span className="text-green-600 font-bold">free over RM {t.freeOver}</span>)</li>
+                        <li key={t.rangeEn}>• {t.rangeEn} &mdash; <span className="font-semibold">RM {t.fee}</span> (
+                            {t.freeOver === null
+                                ? <span className="text-gray-500 font-bold">flat rate, no free-delivery threshold</span>
+                                : <span className="text-green-600 font-bold">free over RM {t.freeOver}</span>}
+                            )</li>
                     ))}
-                    <li>• {BEYOND_DELIVERY_NOTE_EN}. WhatsApp us for catering quotes.</li>
+                    <li>• Beyond 7.5km is delivered by <span className="font-semibold">Grab</span>. WhatsApp us for catering quotes.</li>
                 </ul>
                 <p className="mt-3">
                     Not sure if you&apos;re in range? <span className="font-bold text-[#1A2D23]">Register an account and add your address</span> &mdash;

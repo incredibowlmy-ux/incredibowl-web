@@ -80,12 +80,14 @@ const DISHES = [
     },
 ];
 
+// 'outside' retired 2026-07-29 — see the ZH twin at src/app/order/OrderClient.tsx.
 type DeliveryResult = {
-    tier: "near" | "mid" | "far" | "outside";
+    tier: "near" | "mid" | "far";
     distanceKm: number;
     fee?: number;
-    feeAtThreshold?: number;
-    threshold?: number;
+    /** null on the far tier — flat fee, no threshold to spend toward. */
+    feeAtThreshold?: number | null;
+    threshold?: number | null;
     formattedAddress?: string;
 };
 
@@ -94,8 +96,8 @@ const tierWaMsg = (r: DeliveryResult, addr: string) => {
     if (r.tier === "near") {
         return `Hi BowlMama! I came from your FB ad. My address: ${a} (within 5km · ${DELIVERY_PROSE_SHORT_EN} ✓). I'd like to see today's / tomorrow's menu 🔥`;
     }
-    if (r.tier === "outside") {
-        return `Hi BowlMama! My address is ${a} (${r.distanceKm} km away). Can you see if there's a way to deliver? 🙏`;
+    if (r.tier === "far") {
+        return `Hi BowlMama! I came from your FB ad. My address: ${a} (${r.distanceKm} km away · long-distance Grab delivery · flat RM ${r.fee} fee). I'd like to see today's / tomorrow's menu 🔥`;
     }
     return `Hi BowlMama! I came from your FB ad. My address: ${a} (${r.distanceKm} km away · delivery fee RM ${r.fee}). I'd like to see today's / tomorrow's menu 🔥`;
 };
@@ -313,7 +315,7 @@ export default function OrderClient() {
                         </div>
                     )}
 
-                    {checkResult && (checkResult.tier === "mid" || checkResult.tier === "far") && (
+                    {checkResult && checkResult.tier === "mid" && (
                         <div className="mt-4 p-4 rounded-2xl bg-orange-50 border-2 border-orange-200">
                             <p className="text-base font-black text-orange-800 flex items-center gap-1.5">
                                 <Truck size={18} strokeWidth={2.5} />
@@ -329,7 +331,7 @@ export default function OrderClient() {
                                 href={wa(tierWaMsg(checkResult, address))}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_far")}
+                                onClick={() => fireLead("zone_result_mid")}
                                 className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
                             >
                                 WhatsApp to see menu →
@@ -337,19 +339,27 @@ export default function OrderClient() {
                         </div>
                     )}
 
-                    {checkResult && checkResult.tier === "outside" && (
-                        <div className="mt-4 p-4 rounded-2xl bg-gray-50 border-2 border-gray-200">
-                            <p className="text-sm font-black text-gray-700">
-                                Sorry — your address is {checkResult.distanceKm} km away, out of our delivery range
+                    {/* Far (7.5km+): served via Grab at a flat fee — see ZH twin. */}
+                    {checkResult && checkResult.tier === "far" && (
+                        <div className="mt-4 p-4 rounded-2xl bg-orange-50 border-2 border-orange-200">
+                            <p className="text-base font-black text-orange-800 flex items-center gap-1.5">
+                                <Truck size={18} strokeWidth={2.5} />
+                                Delivery fee RM {checkResult.fee} · {checkResult.distanceKm} km away
                             </p>
+                            <p className="text-xs text-orange-800/80 mt-1.5 font-bold">
+                                Long-distance orders are delivered by <span className="font-black">Grab</span> at a flat <span className="font-black">RM {checkResult.fee}</span> — no free-delivery threshold
+                            </p>
+                            {checkResult.formattedAddress && (
+                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{checkResult.formattedAddress}</p>
+                            )}
                             <a
                                 href={wa(tierWaMsg(checkResult, address))}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                onClick={() => fireLead("zone_result_outside")}
-                                className="inline-flex items-center gap-1.5 mt-2 text-sm font-black text-green-700 hover:text-green-800"
+                                onClick={() => fireLead("zone_result_far")}
+                                className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
                             >
-                                WhatsApp to ask anyway →
+                                WhatsApp to see menu →
                             </a>
                         </div>
                     )}

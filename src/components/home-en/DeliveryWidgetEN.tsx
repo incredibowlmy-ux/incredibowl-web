@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
-import { DELIVERY_TIER_COPY, DISTANCE_BASIS_EN } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, DISTANCE_BASIS_EN, freeOverPhraseEn } from '@/lib/deliveryCopy';
 
-type Tier = 'near' | 'mid' | 'far' | 'outside';
+// 'outside' retired 2026-07-29 — see DeliveryWidget.tsx (ZH twin).
+type Tier = 'near' | 'mid' | 'far';
 
 interface Result {
     tier: Tier;
     distanceKm: number;
     fee?: number;
-    feeAtThreshold?: number;
-    threshold?: number;
+    /** null on the far tier — flat fee, no threshold to spend toward. */
+    feeAtThreshold?: number | null;
+    threshold?: number | null;
     formattedAddress?: string;
 }
-
-const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20BowlMama%2C%20my%20address%20is%3A%20";
 
 export default function DeliveryWidgetEN() {
     const [address, setAddress] = useState('');
@@ -132,7 +132,7 @@ export default function DeliveryWidgetEN() {
                         </div>
                     )}
 
-                    {result && (result.tier === 'mid' || result.tier === 'far') && (
+                    {result && result.tier === 'mid' && (
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
                             <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
@@ -147,19 +147,19 @@ export default function DeliveryWidgetEN() {
                         </div>
                     )}
 
-                    {result && result.tier === 'outside' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-gray-50 border border-gray-200">
-                            <p className="text-[14px] font-extrabold text-gray-700">
-                                Sorry, you&apos;re {result.distanceKm} km away &mdash; outside our delivery range
+                    {/* Far (7.5km+): flat fee, no threshold — see ZH twin. */}
+                    {result && result.tier === 'far' && (
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
+                            <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
+                                <Truck size={16} strokeWidth={2.5} />
+                                Delivery fee RM {result.fee} &middot; {result.distanceKm} km away
                             </p>
-                            <a
-                                href={WHATSAPP_URL + encodeURIComponent(address)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 mt-2 text-[12px] font-bold text-green-700 hover:text-green-800"
-                            >
-                                WhatsApp BowlMama anyway &rarr;
-                            </a>
+                            <p className="text-[12px] text-orange-800/80 mt-1">
+                                Long-distance orders are delivered by <span className="font-bold">Grab</span> at a flat <span className="font-bold">RM {result.fee}</span> &mdash; no free-delivery threshold
+                            </p>
+                            {result.formattedAddress && (
+                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{result.formattedAddress}</p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -175,7 +175,7 @@ export default function DeliveryWidgetEN() {
                             {DELIVERY_TIER_COPY.map((t, i) => (
                                 <li key={t.rangeEn} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeEn}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>RM {t.freeOver}+ → free</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-gray-500' : 'text-[#FF6B35]'}`}>{t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`}</span></span>
                                 </li>
                             ))}
                         </ul>

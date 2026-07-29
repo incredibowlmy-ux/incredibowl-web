@@ -2,20 +2,21 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
-import { DELIVERY_TIER_COPY, DISTANCE_BASIS_ZH } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, DISTANCE_BASIS_ZH, freeOverPhraseZh } from '@/lib/deliveryCopy';
 
-type Tier = 'near' | 'mid' | 'far' | 'outside';
+// 'outside' retired 2026-07-29 — 7.5km+ is now the 'far' tier (RM 18 flat,
+// Grab-fulfilled) instead of a refusal, so /api/check-delivery never returns it.
+type Tier = 'near' | 'mid' | 'far';
 
 interface Result {
     tier: Tier;
     distanceKm: number;
     fee?: number;
-    feeAtThreshold?: number;
-    threshold?: number;
+    /** null on the far tier — flat fee, no threshold to spend toward. */
+    feeAtThreshold?: number | null;
+    threshold?: number | null;
     formattedAddress?: string;
 }
-
-const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20%E7%A2%97%E5%A6%88%EF%BC%8C%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80%E5%9C%A8%20%EF%BC%9A";
 
 export default function DeliveryWidget() {
     const [address, setAddress] = useState('');
@@ -135,7 +136,7 @@ export default function DeliveryWidget() {
                         </div>
                     )}
 
-                    {result && (result.tier === 'mid' || result.tier === 'far') && (
+                    {result && result.tier === 'mid' && (
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
                             <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
@@ -150,19 +151,20 @@ export default function DeliveryWidget() {
                         </div>
                     )}
 
-                    {result && result.tier === 'outside' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-gray-50 border border-gray-200">
-                            <p className="text-[14px] font-extrabold text-gray-700">
-                                抱歉，你的地址离碗妈 {result.distanceKm} km，超出配送范围
+                    {/* Far (7.5km+): flat fee, no threshold — say so plainly rather
+                        than showing a "spend RM X" nudge that will never pay off. */}
+                    {result && result.tier === 'far' && (
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
+                            <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
+                                <Truck size={16} strokeWidth={2.5} />
+                                配送费 RM {result.fee} · 离碗妈 {result.distanceKm} km
                             </p>
-                            <a
-                                href={WHATSAPP_URL + encodeURIComponent(address)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 mt-2 text-[12px] font-bold text-green-700 hover:text-green-800"
-                            >
-                                WhatsApp 问问看 →
-                            </a>
+                            <p className="text-[12px] text-orange-800/80 mt-1">
+                                远距离由 <span className="font-bold">Grab</span> 配送，运费固定 <span className="font-bold">RM {result.fee}</span>，不设免运门槛
+                            </p>
+                            {result.formattedAddress && (
+                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{result.formattedAddress}</p>
+                            )}
                         </div>
                     )}
                 </div>
@@ -180,7 +182,7 @@ export default function DeliveryWidget() {
                             {DELIVERY_TIER_COPY.map((t, i) => (
                                 <li key={t.rangeZh} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeZh}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>满 RM {t.freeOver} 免运</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-gray-500' : 'text-[#FF6B35]'}`}>{freeOverPhraseZh(t)}</span></span>
                                 </li>
                             ))}
                         </ul>
