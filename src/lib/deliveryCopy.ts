@@ -17,7 +17,14 @@ import {
     DELIVERY_FEE_INNER_NEAR_RM,
     DELIVERY_FEE_OUTER_NEAR_RM,
     DELIVERY_FEE_MID_RM,
-    DELIVERY_FEE_FAR_RM,
+    DELIVERY_FEE_FAR_1_RM,
+    DELIVERY_FEE_FAR_2_RM,
+    DELIVERY_FEE_FAR_3_RM,
+    DELIVERY_FEE_FAR_4_RM,
+    FAR_BAND_1_KM,
+    FAR_BAND_2_KM,
+    FAR_BAND_3_KM,
+    MAX_DELIVERY_KM,
     FREE_DELIVERY_THRESHOLD_NEAR_RM,
     FREE_DELIVERY_THRESHOLD_OUTER_NEAR_RM,
     FREE_DELIVERY_THRESHOLD_MID_RM,
@@ -57,13 +64,46 @@ export const DELIVERY_TIER_COPY: DeliveryTierCopy[] = [
         fee: DELIVERY_FEE_MID_RM,
         freeOver: FREE_DELIVERY_THRESHOLD_MID_RM,
     },
+];
+
+/**
+ * Far bands (7.5–25 km) — all flat (freeOver: null), Grab-fulfilled.
+ *
+ * Deliberately NOT part of DELIVERY_TIER_COPY: that array is rendered as a
+ * row-per-tier table in the footer / widget / FAQ, and 7 rows overwhelms those
+ * surfaces. Compact surfaces show the 3 near/mid rows plus the one-line
+ * BEYOND_DELIVERY_NOTE summary; only Terms (a legal page, where precision beats
+ * brevity) enumerates these four bands individually.
+ */
+export const DELIVERY_TIER_COPY_FAR: DeliveryTierCopy[] = [
     {
-        rangeZh: `${MID_RADIUS_KM}km 以上`,
-        rangeEn: `Beyond ${MID_RADIUS_KM}km`,
-        fee: DELIVERY_FEE_FAR_RM,
-        freeOver: null, // flat — no basket size waives it
+        rangeZh: `${MID_RADIUS_KM}–${FAR_BAND_1_KM}km`,
+        rangeEn: `${MID_RADIUS_KM}–${FAR_BAND_1_KM}km`,
+        fee: DELIVERY_FEE_FAR_1_RM,
+        freeOver: null,
+    },
+    {
+        rangeZh: `${FAR_BAND_1_KM}–${FAR_BAND_2_KM}km`,
+        rangeEn: `${FAR_BAND_1_KM}–${FAR_BAND_2_KM}km`,
+        fee: DELIVERY_FEE_FAR_2_RM,
+        freeOver: null,
+    },
+    {
+        rangeZh: `${FAR_BAND_2_KM}–${FAR_BAND_3_KM}km`,
+        rangeEn: `${FAR_BAND_2_KM}–${FAR_BAND_3_KM}km`,
+        fee: DELIVERY_FEE_FAR_3_RM,
+        freeOver: null,
+    },
+    {
+        rangeZh: `${FAR_BAND_3_KM}–${MAX_DELIVERY_KM}km`,
+        rangeEn: `${FAR_BAND_3_KM}–${MAX_DELIVERY_KM}km`,
+        fee: DELIVERY_FEE_FAR_4_RM,
+        freeOver: null,
     },
 ];
+
+/** "RM 15 / 20 / 25 / 30" — the far ladder as one compact string. */
+const FAR_FEE_LADDER = DELIVERY_TIER_COPY_FAR.map((t) => t.fee).join(" / ");
 
 /** "满 RM 20 免运" or "不设免运" for the flat far tier. */
 export const freeOverPhraseZh = (t: DeliveryTierCopy) =>
@@ -81,11 +121,17 @@ export const DELIVERY_SUMMARY_EN = DELIVERY_TIER_COPY
     .map((t) => `${t.rangeEn} RM ${t.fee} (${freeOverPhraseEn(t)})`)
     .join(" · ");
 
-// 2026-07-29: 7.5km+ is served again (RM 18 flat, Grab-fulfilled), so the old
-// "not delivered" note became a lie. Kept under the same export name so every
-// consuming surface (footer, FAQ, terms, blog JSON-LD) flips together.
-export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}km 以上 RM ${DELIVERY_FEE_FAR_RM} 固定运费（Grab 配送，不设免运）`;
-export const BEYOND_DELIVERY_NOTE_EN = `Beyond ${MID_RADIUS_KM}km — RM ${DELIVERY_FEE_FAR_RM} flat (delivered by Grab, no free-delivery threshold)`;
+// 2026-07-29: 7.5–25km is served again (banded flat fees, Grab-fulfilled), so
+// the old "not delivered" note became a lie. Kept under the same export name so
+// every consuming surface (footer, FAQ, terms, blog JSON-LD) flips together.
+// This one line replaces what used to be a refusal, and stands in for the four
+// far rows on compact surfaces.
+export const BEYOND_DELIVERY_NOTE_ZH = `${MID_RADIUS_KM}–${MAX_DELIVERY_KM}km RM ${FAR_FEE_LADDER}（按距离分档 · Grab 配送 · 不设免运）· ${MAX_DELIVERY_KM}km 以外不配送`;
+export const BEYOND_DELIVERY_NOTE_EN = `${MID_RADIUS_KM}–${MAX_DELIVERY_KM}km RM ${FAR_FEE_LADDER} by distance (via Grab, no free-delivery threshold) · beyond ${MAX_DELIVERY_KM}km not delivered`;
+
+/** Short form for tight spots (footer columns). */
+export const BEYOND_DELIVERY_SHORT_ZH = `${MID_RADIUS_KM}km 以上 RM ${FAR_FEE_LADDER}（Grab · 按距离）`;
+export const BEYOND_DELIVERY_SHORT_EN = `Beyond ${MID_RADIUS_KM}km: RM ${FAR_FEE_LADDER} by distance (Grab)`;
 
 /** Where the km radii are measured from — without this, "2.5km 内" is ambiguous. */
 export const DISTANCE_BASIS_ZH = "距离以 Pearl Point（碗妈厨房）为起点计算";
@@ -113,7 +159,11 @@ export const DELIVERY_PROSE_SHORT_EN = DELIVERY_TIER_COPY.slice(0, 2).map(tierPr
 export const TIER_INNER = DELIVERY_TIER_COPY[0];
 export const TIER_OUTER = DELIVERY_TIER_COPY[1];
 export const TIER_MID = DELIVERY_TIER_COPY[2];
-export const TIER_FAR = DELIVERY_TIER_COPY[3];
+// No TIER_FAR singleton on purpose — the far tier is four bands, not one price.
+// Import DELIVERY_TIER_COPY_FAR and render them all, or use the
+// BEYOND_DELIVERY_NOTE / _SHORT summary lines on compact surfaces.
+// (A `DELIVERY_TIER_COPY[3]` alias would silently be undefined now that the
+// far bands live in their own array.)
 
 // ── Coverage areas ──────────────────────────────────────────────────────────
 // Single source for the neighbourhoods we serve — used by the trust strip,

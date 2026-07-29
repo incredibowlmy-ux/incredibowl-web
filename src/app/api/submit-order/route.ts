@@ -3,7 +3,7 @@ import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
-import { calcPerDeliveryFees, type DeliveryZone } from '@/lib/deliveryUtils';
+import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
@@ -240,6 +240,16 @@ export async function POST(req: Request) {
 
     if (userZone !== 'within2km' && userZone !== 'outside2km') {
       return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证配送范围）' }, { status: 400 });
+    }
+
+    // 25km 服务上限（老板 2026-07-29 定）。/api/geocode 已经拦了一道，这里再拦
+    // 一道是因为 geocode 那道只在「保存地址那一刻」生效 —— 上限调小之前存下来的
+    // 老地址、或任何绕过 geocode 写进去的距离，都只有这里能挡住。
+    // 只对有 distance 的用户生效；legacy zone-only 老用户没有距离可判，放行。
+    if (userDistance !== null && isBeyondServiceRange(userDistance)) {
+      return NextResponse.json({
+        error: `你的配送地址离厨房 ${userDistance.toFixed(1)}km，超出 ${MAX_DELIVERY_KM}km 配送范围，无法下单。公司团餐请 WhatsApp 碗妈询价。`,
+      }, { status: 400 });
     }
 
     // Anti-spoof: the saved address must match the address that was actually

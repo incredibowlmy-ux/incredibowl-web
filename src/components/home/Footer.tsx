@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
-import { DELIVERY_TIER_COPY, COVERAGE_AREAS, freeOverPhraseZh } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, COVERAGE_AREAS, freeOverPhraseZh, BEYOND_DELIVERY_SHORT_ZH } from '@/lib/deliveryCopy';
 
 export default function Footer() {
     return (
@@ -92,7 +92,7 @@ export default function Footer() {
                                     {/* 7.5km+ now appears as the last row of the tier list itself
                                         (RM 18 flat) — the old "not delivered" note was removed
                                         rather than reworded, to avoid saying it twice. */}
-                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">7.5km 以上由 Grab 配送</li>
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">{BEYOND_DELIVERY_SHORT_ZH}</li>
                                 </ul>
                             </div>
                         </div>
@@ -154,7 +154,7 @@ export default function Footer() {
                                     <span><span className="font-bold">RM {t.fee}</span> · {freeOverPhraseZh(t)}</span>
                                 </li>
                             ))}
-                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">7.5km 以上由 Grab 配送</li>
+                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">{BEYOND_DELIVERY_SHORT_ZH}</li>
                         </ul>
                     </div>
 

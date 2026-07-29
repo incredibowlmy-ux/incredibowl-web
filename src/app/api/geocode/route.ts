@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { distanceFromPearlPointKm, zoneFromDistance } from '@/lib/deliveryUtils';
+import {
+    distanceFromPearlPointKm,
+    zoneFromDistance,
+    isBeyondServiceRange,
+    MAX_DELIVERY_KM,
+} from '@/lib/deliveryUtils';
 import { checkBurst, checkDailyQuota, getClientIp } from '@/lib/rateLimit';
 
 /**
@@ -163,6 +168,19 @@ export async function POST(req: NextRequest) {
     const top = googleData.results[0];
     const { lat, lng } = top.geometry.location;
     const distanceKm = distanceFromPearlPointKm(lat, lng);
+
+    // 25km 服务上限（老板 2026-07-29 定）。这道校验是新加的 —— 在此之前
+    // 这个接口对任何距离都照存不误，全站文案却写着「7.5km 以外暂不配送」，
+    // 所以远距离地址一路存进个人资料再结账，只是被错算成 mid 档收 RM 12。
+    // 拒在这里 = 地址根本存不进档案，下单链路自然进不去。
+    if (isBeyondServiceRange(distanceKm)) {
+        return NextResponse.json({
+            error: `这个地址离厨房 ${distanceKm.toFixed(1)}km，超出 ${MAX_DELIVERY_KM}km 配送范围。公司团餐可 WhatsApp 碗妈单独询价。`,
+            distanceKm: Number(distanceKm.toFixed(2)),
+            beyondRange: true,
+        }, { status: 422 });
+    }
+
     const zone = zoneFromDistance(distanceKm);
 
     return NextResponse.json({

@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
-import { DELIVERY_TIER_COPY, DISTANCE_BASIS_EN, freeOverPhraseEn } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, DISTANCE_BASIS_EN, freeOverPhraseEn, BEYOND_DELIVERY_NOTE_EN } from '@/lib/deliveryCopy';
 
-// 'outside' retired 2026-07-29 — see DeliveryWidget.tsx (ZH twin).
-type Tier = 'near' | 'mid' | 'far';
+// 2026-07-29: 'outside' now means past the 25km ceiling — see ZH twin.
+type Tier = 'near' | 'mid' | 'far' | 'outside';
 
 interface Result {
     tier: Tier;
@@ -16,6 +16,8 @@ interface Result {
     threshold?: number | null;
     formattedAddress?: string;
 }
+
+const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20BowlMama%2C%20my%20address%20is%3A%20";
 
 export default function DeliveryWidgetEN() {
     const [address, setAddress] = useState('');
@@ -162,6 +164,23 @@ export default function DeliveryWidgetEN() {
                             )}
                         </div>
                     )}
+
+                    {/* Past the 25km ceiling — the only distance we still turn away. */}
+                    {result && result.tier === 'outside' && (
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-gray-50 border border-gray-200">
+                            <p className="text-[14px] font-extrabold text-gray-700">
+                                Sorry, you&apos;re {result.distanceKm} km away &mdash; beyond our 25km delivery range
+                            </p>
+                            <a
+                                href={WHATSAPP_URL + encodeURIComponent(address)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 mt-2 text-[12px] font-bold text-green-700 hover:text-green-800"
+                            >
+                                Catering order? WhatsApp us &rarr;
+                            </a>
+                        </div>
+                    )}
                 </div>
 
                 {/* WhatsApp fallback CTA removed — outside-zone result already
@@ -175,9 +194,13 @@ export default function DeliveryWidgetEN() {
                             {DELIVERY_TIER_COPY.map((t, i) => (
                                 <li key={t.rangeEn} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeEn}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-gray-500' : 'text-[#FF6B35]'}`}>{t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`}</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>{t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`}</span></span>
                                 </li>
                             ))}
+                            {/* Far bands as one compact row — see ZH twin. */}
+                            <li className="pt-1.5 text-[11px] lg:text-[12px] text-[#1A2D23]/55 leading-snug border-t border-[#E3EADA]/70 lg:border-0">
+                                {BEYOND_DELIVERY_NOTE_EN}
+                            </li>
                         </ul>
                     </div>
 

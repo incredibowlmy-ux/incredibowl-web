@@ -4,6 +4,7 @@ import {
     tierFromDistance,
     calcDeliveryFee,
     thresholdForDistance,
+    isBeyondServiceRange,
     type DeliveryTier,
 } from '@/lib/deliveryUtils';
 import { checkBurst, checkDailyQuota, getClientIp } from '@/lib/rateLimit';
@@ -52,14 +53,15 @@ export async function OPTIONS() {
 
 const BURST = { max: 8, windowMs: 60_000 };
 const DAILY_LIMIT_PER_IP = 200;
-// 2026-07-29: the hard "we don't deliver past 7.5 km" cutoff was removed —
-// 7.5 km+ is now the far tier (RM 18 flat, Grab-fulfilled). This endpoint no
-// longer returns tier:'outside'; it quotes the far fee like any other tier.
+// 2026-07-29: the ceiling moved 7.5 km → 25 km (MAX_DELIVERY_KM in
+// deliveryUtils). 7.5–25 km is now the banded far tier (RM 15/20/25/30 flat,
+// Grab-fulfilled) and gets quoted like any other tier; only past 25 km does
+// this still return tier:'outside'.
 //
-// It was ALSO the only place the 7.5 km ceiling was ever enforced — the real
-// order path (geocode → profile → submit-order) never checked it, so far
-// addresses were already being served, just mispriced as mid (RM 12). The
-// tier now matches reality on both paths.
+// Note this endpoint used to be the ONLY place any ceiling was enforced — the
+// real order path (geocode → profile → submit-order) never checked distance,
+// so far addresses were already being served, just mispriced as mid (RM 12).
+// Both of those now enforce MAX_DELIVERY_KM too.
 
 export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
@@ -150,6 +152,16 @@ export async function POST(req: NextRequest) {
     const top = googleData.results[0];
     const { lat, lng } = top.geometry.location;
     const distanceKm = distanceFromPearlPointKm(lat, lng);
+
+    // Beyond the 25 km ceiling: tell them honestly, offer the WhatsApp catering
+    // route. Kept as tier:'outside' — the widgets already render this shape.
+    if (isBeyondServiceRange(distanceKm)) {
+        return corsify(NextResponse.json({
+            tier: 'outside' as const,
+            distanceKm: Number(distanceKm.toFixed(2)),
+            formattedAddress: top.formatted_address,
+        }));
+    }
 
     const tier: DeliveryTier = tierFromDistance(distanceKm);
     // Preview fees at two cart sizes: an empty cart (full fee) and at the

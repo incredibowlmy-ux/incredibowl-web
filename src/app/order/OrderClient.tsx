@@ -80,10 +80,10 @@ const DISHES = [
     },
 ];
 
-// 'outside' retired 2026-07-29 — 7.5km+ is now the 'far' tier (RM 18 flat,
-// Grab-fulfilled), so /api/check-delivery quotes it instead of refusing.
+// 2026-07-29: 'outside' now means past the 25km ceiling (was 7.5km).
+// 7.5–25km gets the banded 'far' quote instead of a refusal.
 type DeliveryResult = {
-    tier: "near" | "mid" | "far";
+    tier: "near" | "mid" | "far" | "outside";
     distanceKm: number;
     fee?: number;
     /** null on the far tier — flat fee, no threshold to spend toward. */
@@ -99,6 +99,9 @@ const tierWaMsg = (r: DeliveryResult, addr: string) => {
     }
     if (r.tier === "far") {
         return `Hi 碗妈！我从 FB 广告来的，地址：${a}（离你 ${r.distanceKm} km · 远距离 Grab 配送 · 运费 RM ${r.fee} 固定），想看今天 / 明天的菜单 🔥`;
+    }
+    if (r.tier === "outside") {
+        return `Hi 碗妈！我地址是 ${a}（离你 ${r.distanceKm} km），超出配送范围，想问公司团餐能不能送 🙏`;
     }
     return `Hi 碗妈！我从 FB 广告来的，地址：${a}（离你 ${r.distanceKm} km · 配送费 RM ${r.fee}），想看今天 / 明天的菜单 🔥`;
 };
@@ -363,6 +366,24 @@ export default function OrderClient() {
                                 className="block mt-3 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm shadow-md transition-all active:scale-[0.98]"
                             >
                                 WhatsApp 看菜单 →
+                            </a>
+                        </div>
+                    )}
+
+                    {/* Past the 25km ceiling — the only distance we still turn away. */}
+                    {checkResult && checkResult.tier === "outside" && (
+                        <div className="mt-4 p-4 rounded-2xl bg-gray-50 border-2 border-gray-200">
+                            <p className="text-sm font-black text-gray-700">
+                                抱歉，你的地址离碗妈 {checkResult.distanceKm} km，超出 25km 配送范围
+                            </p>
+                            <a
+                                href={wa(tierWaMsg(checkResult, address))}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={() => fireLead("zone_result_outside")}
+                                className="inline-flex items-center gap-1.5 mt-2 text-sm font-black text-green-700 hover:text-green-800"
+                            >
+                                公司团餐？WhatsApp 问问看 →
                             </a>
                         </div>
                     )}

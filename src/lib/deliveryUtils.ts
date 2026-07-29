@@ -1,14 +1,18 @@
 /**
  * Delivery zone + fee calculation, shared between client and server.
  *
- * Tiers (2026-07-29 — far tier reopened, delivered by Grab):
+ * Tiers (2026-07-29 — far tiers reopened, banded, delivered by Grab):
  *   0   – 2.5 km → RM 3  (free when freeDeliveryBasis ≥ RM 20 — saves RM 3)
  *   2.5 – 5   km → RM 5  (free when freeDeliveryBasis ≥ RM 30 — saves RM 5)
  *   5   – 7.5 km → RM 12 (free when freeDeliveryBasis ≥ RM 45 — saves RM 12)
- *   7.5 km +     → RM 18 FLAT — no free-delivery threshold, ever. Fulfilled
- *                  by Grab rather than our own runs (a 7.5 km+ round trip eats
- *                  ~1 h of kitchen time that would otherwise serve 3–4 near
- *                  orders). Owner decision 2026-07-29.
+ *   7.5 – 10  km → RM 15 ┐
+ *   10  – 15  km → RM 20 │ ALL FLAT — no free-delivery threshold, ever.
+ *   15  – 20  km → RM 25 │ Fulfilled by Grab rather than our own runs (a
+ *   20  – 25  km → RM 30 ┘ 7.5 km+ round trip eats ~1 h of kitchen time that
+ *                          would otherwise serve 3–4 near orders).
+ *   25 km +      → NOT SERVED — rejected at /api/geocode + /api/submit-order.
+ *
+ * Owner decision 2026-07-29, priced against 189 real Grab receipts.
  *
  * Why the far tier has NO threshold (deliberate, not an oversight): a "spend
  * RM X → free" rule on a long route is self-harming — the customer pads the
@@ -111,9 +115,32 @@ export const FREE_DELIVERY_THRESHOLD_RM = FREE_DELIVERY_THRESHOLD_MID_RM;
 export const DELIVERY_FEE_INNER_NEAR_RM = 3;
 export const DELIVERY_FEE_OUTER_NEAR_RM = 5;
 export const DELIVERY_FEE_MID_RM = 12;
-// Far tier (7.5 km+). Flat — thresholdForDistance() returns null past
-// MID_RADIUS_KM so no basket size can ever waive it. Fulfilled by Grab.
-export const DELIVERY_FEE_FAR_RM = 18;
+// ── Far tiers (7.5 km+) — 2026-07-29, priced off 189 real Grab receipts ──────
+// All flat: thresholdForDistance() returns null past MID_RADIUS_KM, so no
+// basket size can ever waive these. Fulfilled by Grab, not our own runs.
+//
+// Owner-set prices vs the median Grab fare actually paid at that distance:
+//   7.5–10 km → RM 15  (Grab median RM 10, n=29)   margin ~RM 5
+//   10–15 km  → RM 20  (Grab median RM 13, n=23)   margin ~RM 7
+//   15–20 km  → RM 25  (⚠️ NO receipts in this band — RM ~17 is extrapolated
+//                       from fee ≈ 3.34 + 0.76×km, R²=0.66)
+//   20–25 km  → RM 30  (⚠️ single receipt: 21.4 km @ RM 21)
+//   25 km +   → not served (MAX_DELIVERY_KM, enforced at geocode + submit-order)
+//
+// If a 15–20 km order ever lands, check the real Grab receipt before trusting
+// the RM 25 — that band is a projection, not a measurement.
+export const FAR_BAND_1_KM = 10;
+export const FAR_BAND_2_KM = 15;
+export const FAR_BAND_3_KM = 20;
+export const MAX_DELIVERY_KM = 25;
+
+export const DELIVERY_FEE_FAR_1_RM = 15; // 7.5–10 km
+export const DELIVERY_FEE_FAR_2_RM = 20; // 10–15 km
+export const DELIVERY_FEE_FAR_3_RM = 25; // 15–20 km
+export const DELIVERY_FEE_FAR_4_RM = 30; // 20–25 km
+
+/** @deprecated Far pricing is banded — use feeForDistance(km). Kept as the entry band. */
+export const DELIVERY_FEE_FAR_RM = DELIVERY_FEE_FAR_1_RM;
 // Legacy alias for the outer-near fee. Existing call sites that import
 // DELIVERY_FEE_NEAR_RM (now ambiguous after the inner/outer split) get the
 // outer value, which is the historical RM 5. New code should call
@@ -156,12 +183,28 @@ export function thresholdForDistance(km: number): number | null {
     return null;
 }
 
-/** Per-distance base fee. RM 3 inner / RM 5 outer / RM 12 mid / RM 18 far. */
+/**
+ * Per-distance base fee.
+ * RM 3 inner / RM 5 outer / RM 12 mid / then the banded far ladder 15-20-25-30.
+ *
+ * Past MAX_DELIVERY_KM this keeps returning the top band rather than throwing —
+ * the refusal belongs at the API boundary (/api/geocode, /api/submit-order), so
+ * a stale saved address can still be priced for display instead of crashing a
+ * cart render. Nothing should reach checkout at that distance.
+ */
 export function feeForDistance(km: number): number {
     if (km <= INNER_NEAR_RADIUS_KM) return DELIVERY_FEE_INNER_NEAR_RM;
     if (km <= NEAR_RADIUS_KM) return DELIVERY_FEE_OUTER_NEAR_RM;
     if (km <= MID_RADIUS_KM) return DELIVERY_FEE_MID_RM;
-    return DELIVERY_FEE_FAR_RM;
+    if (km <= FAR_BAND_1_KM) return DELIVERY_FEE_FAR_1_RM;
+    if (km <= FAR_BAND_2_KM) return DELIVERY_FEE_FAR_2_RM;
+    if (km <= FAR_BAND_3_KM) return DELIVERY_FEE_FAR_3_RM;
+    return DELIVERY_FEE_FAR_4_RM;
+}
+
+/** True when the address is beyond the 25 km service ceiling — reject upstream. */
+export function isBeyondServiceRange(km: number): boolean {
+    return km > MAX_DELIVERY_KM;
 }
 
 /** Coarse zone label (binary), kept for UX labels and order docs. */
@@ -255,7 +298,7 @@ export function tierLabelZh(tier: DeliveryTier): string {
         case 'free': return '免运区（老客户）';
         case 'near': return '近距离（5km 内）';
         case 'mid': return '中距离（5–7.5km）';
-        case 'far': return `远距离（${MID_RADIUS_KM}km 以上）`;
+        case 'far': return `远距离（${MID_RADIUS_KM}km 以上 · Grab）`;
     }
 }
 
@@ -279,7 +322,12 @@ export function tierFeeHintZh(tier: DeliveryTier, distanceKm?: number): string {
             return `RM ${fee} · 满 RM ${threshold} → 免运`;
         }
         case 'mid': return `RM ${DELIVERY_FEE_MID_RM} · 满 RM ${FREE_DELIVERY_THRESHOLD_MID_RM} → 免运`;
-        case 'far': return `RM ${DELIVERY_FEE_FAR_RM} 固定 · 不设免运（Grab 配送）`;
+        case 'far': {
+            // Banded — quote the customer's actual band when we know the distance,
+            // otherwise the entry price (the friendliest true figure).
+            const fee = typeof distanceKm === 'number' ? feeForDistance(distanceKm) : DELIVERY_FEE_FAR_1_RM;
+            return `RM ${fee} 固定 · 不设免运（Grab 配送）`;
+        }
     }
 }
 
@@ -288,7 +336,7 @@ export function tierLabelEn(tier: DeliveryTier): string {
         case 'free': return 'Free zone (legacy customer)';
         case 'near': return 'Near (within 5km)';
         case 'mid': return 'Mid (5–7.5km)';
-        case 'far': return `Far (beyond ${MID_RADIUS_KM}km)`;
+        case 'far': return `Far (beyond ${MID_RADIUS_KM}km · Grab)`;
     }
 }
 
@@ -306,7 +354,10 @@ export function tierFeeHintEn(tier: DeliveryTier, distanceKm?: number): string {
             return `RM ${fee} · free over RM ${threshold}`;
         }
         case 'mid': return `RM ${DELIVERY_FEE_MID_RM} · free over RM ${FREE_DELIVERY_THRESHOLD_MID_RM}`;
-        case 'far': return `RM ${DELIVERY_FEE_FAR_RM} flat · no free-delivery threshold (Grab)`;
+        case 'far': {
+            const fee = typeof distanceKm === 'number' ? feeForDistance(distanceKm) : DELIVERY_FEE_FAR_1_RM;
+            return `RM ${fee} flat · no free-delivery threshold (Grab)`;
+        }
     }
 }
 

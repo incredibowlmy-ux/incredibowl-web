@@ -11912,12 +11912,23 @@ incredibowl.my`,
         // ─── Customer delivery-fee rule — MIRRORS src/lib/deliveryUtils.ts ───
         // Binary step by distance: basis ≥ threshold → free, else base fee.
         // basis = 食物总额 − 优惠码折扣 (meal voucher NOT subtracted).
-        // ≤2.5km RM3/免RM20 · ≤5km RM5/免RM30 · 5–7.5km RM12/免RM45 · >7.5km RM18 固定不免运.
+        // ≤2.5km RM3/免20 · ≤5km RM5/免30 · 5–7.5km RM12/免45
+        // 远距离固定档（2026-07-29，按真实 Grab 收据定价，全部不设免运）：
+        //   7.5–10km RM15 · 10–15km RM20 · 15–20km RM25 · 20–25km RM30 · >25km 不配送
         // Keep in sync with deliveryUtils — see memory project_free_delivery_threshold_rule.
-        // 远距离档 (2026-07-29)：threshold 返回 null = 没有免运门槛，多少钱都收 RM 18。
-        // 千万别把 null 写成一个大数字兜底 —— 那样 15km 的单凑够钱又变免运了。
+        // ⚠️ threshold 返回 null = 没有免运门槛。千万别写成一个大数字兜底 ——
+        //    那样 15km 的单凑够钱又变免运了。
+        const MO_MAX_DELIVERY_KM = 25;
         function moThresholdForKm(km) { return km <= 2.5 ? 20 : km <= 5 ? 30 : km <= 7.5 ? 45 : null; }
-        function moBaseFeeForKm(km)   { return km <= 2.5 ? 3  : km <= 5 ? 5  : km <= 7.5 ? 12 : 18; }
+        function moBaseFeeForKm(km)   {
+            if (km <= 2.5) return 3;
+            if (km <= 5)   return 5;
+            if (km <= 7.5) return 12;
+            if (km <= 10)  return 15;
+            if (km <= 15)  return 20;
+            if (km <= 20)  return 25;
+            return 30;
+        }
         function moDeliveryFeeForKm(km, basis) {
             const thr = moThresholdForKm(km);
             return (thr !== null && basis >= thr) ? 0 : moBaseFeeForKm(km);
@@ -12111,8 +12122,18 @@ incredibowl.my`,
                 const km = Number(data.distanceKm);
                 const tierLabel = { free: '免运区', near: '近距离', mid: '中距离', far: '远距离' };
                 state.moDeliveryAuto = true;  // system now owns the delivery fee (free-above-threshold)
-                // 2026-07-29: /api/check-delivery 不再返回 'outside' —— 7.5km+ 现在是正式的
-                // far 档（RM 18 固定 · Grab 配送），跟其他档一样报价。
+                // 2026-07-29: 7.5–25km 是正式的 far 档（RM 15/20/25/30 按距离固定 · Grab
+                // 配送），跟其他档一样报价；只有 >25km 才回 'outside'。
+                // 老板手动录单时仍放行（可能是特批的团餐），只是标红警告。
+                if (data.tier === 'outside') {
+                    state.moDistanceResolved = { distanceKm: km, tier: 'far', formattedAddress: data.formattedAddress || addr };
+                    $('#moZone').value = 'outside2km';
+                    $('#moDelivery').value = moBaseFeeForKm(km).toFixed(2);
+                    preview.innerHTML = `⚠ <strong>${km}km</strong> · 超出 ${MO_MAX_DELIVERY_KM}km 配送范围（网站已拒收）· 手动单仍可保存，运费请自行确认`;
+                    preview.style.color = 'var(--danger)';
+                    if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
+                    return;
+                }
                 state.moDistanceResolved = { distanceKm: km, tier: data.tier, formattedAddress: data.formattedAddress || addr };
                 $('#moZone').value = data.tier === 'free' ? 'within2km' : 'outside2km';
                 {

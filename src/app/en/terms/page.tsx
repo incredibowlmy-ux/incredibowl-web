@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
-import { TIER_INNER, TIER_OUTER, TIER_MID, TIER_FAR } from '@/lib/deliveryCopy';
-import { MID_RADIUS_KM } from '@/lib/deliveryUtils';
+import { TIER_INNER, TIER_OUTER, TIER_MID, DELIVERY_TIER_COPY_FAR } from '@/lib/deliveryCopy';
+import { MID_RADIUS_KM, MAX_DELIVERY_KM } from '@/lib/deliveryUtils';
 import SetHtmlLang from '@/components/home-en/SetHtmlLang';
 
 // 英文版服务条款：内容 = /terms 中英对照页的英文半，条款事实（截单时间、
@@ -46,7 +46,11 @@ export default function TermsAndConditionsEN() {
                             <li><b>{TIER_INNER.rangeEn}</b>: RM {TIER_INNER.fee} — waived when cart total ≥ RM {TIER_INNER.freeOver} (after promo-code discount; meal-voucher redemption does NOT affect this threshold)</li>
                             <li><b>{TIER_OUTER.rangeEn}</b>: RM {TIER_OUTER.fee} — waived when cart total ≥ RM {TIER_OUTER.freeOver} (same basis as above)</li>
                             <li><b>{TIER_MID.rangeEn}</b>: RM {TIER_MID.fee} — waived when cart total ≥ RM {TIER_MID.freeOver} (saves RM {TIER_MID.fee}; same basis)</li>
-                            <li><b>{MID_RADIUS_KM} km +</b>: RM {TIER_FAR.fee} flat, fulfilled by Grab — <b>no free-delivery threshold applies at this distance, regardless of cart total</b></li>
+                            {DELIVERY_TIER_COPY_FAR.map((t) => (
+                                <li key={t.rangeEn}><b>{t.rangeEn}</b>: RM {t.fee} flat, fulfilled by Grab</li>
+                            ))}
+                            <li className="font-bold">All {MID_RADIUS_KM} km+ bands are flat — <b>no free-delivery threshold applies at these distances, regardless of cart total</b></li>
+                            <li><b>{MAX_DELIVERY_KM} km +</b>: not delivered — please WhatsApp us for catering orders</li>
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier.</p>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout.</p>

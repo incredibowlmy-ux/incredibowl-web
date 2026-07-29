@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { HelpCircle, ChevronDown } from 'lucide-react';
-import { DELIVERY_TIER_COPY, COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, DELIVERY_TIER_COPY_FAR, COVERAGE_AREAS } from '@/lib/deliveryCopy';
 
 interface FaqItem {
     q: string;
@@ -41,8 +41,14 @@ const FAQS: FaqItem[] = [
                                 : <span className="text-green-600 font-bold">free over RM {t.freeOver}</span>}
                             )</li>
                     ))}
-                    <li>• Beyond 7.5km is delivered by <span className="font-semibold">Grab</span>. WhatsApp us for catering quotes.</li>
+                    {DELIVERY_TIER_COPY_FAR.map((t) => (
+                        <li key={t.rangeEn}>• {t.rangeEn} &mdash; <span className="font-semibold">RM {t.fee}</span> (<span className="text-gray-500 font-bold">flat · via Grab</span>)</li>
+                    ))}
+                    <li>• Beyond 25km &mdash; not delivered. WhatsApp us for catering quotes.</li>
                 </ul>
+                <p className="mt-2 text-[13px] text-[#1A2D23]/60">
+                    Beyond 7.5km we deliver via Grab at a flat fee by distance &mdash; <span className="font-semibold">no free-delivery threshold</span>, whatever your basket size.
+                </p>
                 <p className="mt-3">
                     Not sure if you&apos;re in range? <span className="font-bold text-[#1A2D23]">Register an account and add your address</span> &mdash;
                     the system will instantly check your location and tell you whether we deliver and the fee.
