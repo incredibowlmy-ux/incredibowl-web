@@ -17,6 +17,7 @@ import {
     planRoute,
     optimizeLocally,
     normalizeAddress,
+    __testables,
     type RouteOrderInput,
 } from '@/lib/routeOptimizer';
 import { PEARL_POINT_LAT, PEARL_POINT_LNG, haversineKm } from '@/lib/deliveryUtils';
@@ -214,6 +215,40 @@ async function main() {
         eq('队尾正好是 3 张无坐标单', plan.orderedIds.slice(-3).sort(), ['bad1', 'bad2', 'bad3']);
         ok('前 15 位全是有坐标的单', plan.orderedIds.slice(0, 15).every(id => id.startsWith('ok')));
         ok('unlocatedOrderIds 与队尾一致', JSON.stringify(plan.unlocatedOrderIds.sort()) === JSON.stringify(['bad1', 'bad2', 'bad3']));
+    }
+
+    console.log('\n【H】Routes API 响应解析 — optimizedIntermediateWaypointIndex');
+    {
+        const { applyWaypointOrder } = __testables;
+        const M = ['A', 'B', 'C', 'D'].map(id => ({ id, lat: 0, lng: 0 }));
+        const ids = (r: any[]) => r.map(x => x.id);
+
+        eq('正常重排 [3,2,0,1] → D,C,A,B', ids(applyWaypointOrder([3, 2, 0, 1], M)), ['D', 'C', 'A', 'B']);
+        eq('恒等 [0,1,2,3] 原样', ids(applyWaypointOrder([0, 1, 2, 3], M)), ['A', 'B', 'C', 'D']);
+
+        // 下面每一条，旧写法都会静默丢单 —— 现在必须整体退回原序，一个不少
+        eq('长度不足 [1,0] → 退回原序不丢单', ids(applyWaypointOrder([1, 0], M)), ['A', 'B', 'C', 'D']);
+        eq('下标越界 [0,1,2,9] → 退回原序', ids(applyWaypointOrder([0, 1, 2, 9], M)), ['A', 'B', 'C', 'D']);
+        eq('下标重复 [0,0,1,2] → 退回原序', ids(applyWaypointOrder([0, 0, 1, 2], M)), ['A', 'B', 'C', 'D']);
+        eq('非整数 [0,1,2,2.5] → 退回原序', ids(applyWaypointOrder([0, 1, 2, 2.5], M)), ['A', 'B', 'C', 'D']);
+        eq('字段缺失 undefined → 退回原序', ids(applyWaypointOrder(undefined, M)), ['A', 'B', 'C', 'D']);
+        eq('不是数组 → 退回原序', ids(applyWaypointOrder('乱七八糟', M)), ['A', 'B', 'C', 'D']);
+        ok('任何输入都不丢单', [[3, 2, 0, 1], [1, 0], [0, 1, 2, 9], [0, 0, 1, 2], undefined, null, {}, []]
+            .every(r => applyWaypointOrder(r, M).length === M.length));
+    }
+
+    console.log('\n【I】Routes API 响应解析 — duration 是字符串不是数字');
+    {
+        const { parseDurationSeconds } = __testables;
+        eq('"165s" → 165', parseDurationSeconds('165s'), 165);
+        eq('"3.5s" → 3.5（带小数）', parseDurationSeconds('3.5s'), 3.5);
+        eq('"0s" → 0', parseDurationSeconds('0s'), 0);
+        // legacy 的 duration.value 是纯 int，直接搬过来会炸
+        eq('数字 165（legacy 形态）→ null 而不是当成秒', parseDurationSeconds(165), null);
+        eq('undefined → null', parseDurationSeconds(undefined), null);
+        eq('乱码 "abc" → null 不是 NaN', parseDurationSeconds('abc'), null);
+        ok('绝不返回 NaN', ['165s', 'abc', '', 's', undefined, null, 165, {}]
+            .every(v => !Number.isNaN(parseDurationSeconds(v as any))));
     }
 
     console.log(`\n${'─'.repeat(50)}`);

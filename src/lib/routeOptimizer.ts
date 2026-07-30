@@ -5,15 +5,24 @@
  *
  * 三件事，按顺序：
  *   1. 坐标解析 —— 订单自带 → geocodeCache → Google Geocoding（三层，从免费到花钱）
- *   2. 排序 —— Google Directions `optimize:true`（真实路网 + 实时路况）
+ *   2. 排序 —— Google **Routes API** computeRoutes + optimizeWaypointOrder（真实路网 + 实时路况）
  *   3. 降级 —— Google 挂了就用本地 haversine 最近邻 + 2-opt，再挂就原样返回
+ *
+ * 为什么是 Routes API 而不是 Directions API：
+ *   2025-03-01 起 Google 把 Directions / Distance Matrix / Places 划为 legacy，新项目
+ *   一律**无法启用**。本项目 2026-07-31 线上实测就是这个报错：
+ *     REQUEST_DENIED "You're calling a legacy API, which is not enabled for your project."
+ *   没有豁免通道，只能走 Routes API。（Geocoding **不在** legacy 名单，可以继续用。）
  *
  * ⚠️ 铁律：planRoute() 永不抛错。
  * 批次建不了 = 当天送不了货。路线排不出来最多是绕远路，不能变成「开始配送」按钮报错。
  * 所以这里每一层都 try/catch 兜底，最坏情况原样返回勾选顺序。
  *
- * 成本：每天午/晚各一次 ≈ 60 次/月，Directions 免费额度 10,000 次/月 → 实质零成本。
- * Geocoding 只在遇到全新地址时才调，结果永久缓存。
+ * 成本：每天午/晚各一次 ≈ 60 次/月。开了 optimizeWaypointOrder + TRAFFIC_AWARE 会落在
+ * Compute Routes **Pro** SKU（$10/1000），免费额度 5,000 次/月 → 用量只占 1.2%，月费 $0。
+ * 一次请求只计最高那一档 SKU，所以在已开路点优化的前提下加实时路况是零边际成本。
+ * ⚠️ 别改 travelMode 成 TWO_WHEELER，也别开 TOLLS —— 会跳到 Enterprise（免费额度只剩 1,000）。
+ * Geocoding 走独立的 Essentials 额度（10,000/月），且只在遇到全新地址时才调，结果永久缓存。
  */
 
 import {
@@ -27,11 +36,11 @@ import {
 // 改成 true 就变成闭环（出去转一圈再回厨房），Google 会给不同的顺序。
 const ROUTE_END_AT_KITCHEN = false;
 
-// Directions API 的 waypoints 上限（不含 origin/destination）。
-// delivery-batch 本身已限 30 单 → 27 个中途点，超一点点，所以要有分段兜底。
+// Routes API 的 intermediates 上限（不含 origin/destination，所以单次最多 26 个配送点）。
+// delivery-batch 本身已限 30 单 → 27 个中途点，超一点点，所以要有兜底（超了走本地排序）。
 const MAX_WAYPOINTS = 25;
 
-const DIRECTIONS_TIMEOUT_MS = 8_000;
+const ROUTES_TIMEOUT_MS = 8_000;
 const GEOCODE_TIMEOUT_MS = 8_000;
 // 整个坐标解析阶段的时间预算。超了就把剩下的单丢进 unlocated（排队尾，
 // /driver 会标黄），绝不让批次卡到 Vercel 函数超时 —— 建不出批次 = 送不了货。
@@ -39,8 +48,8 @@ const GEOCODE_TIMEOUT_MS = 8_000;
 const GEOCODE_PHASE_BUDGET_MS = 20_000;
 
 export type RouteSource =
-    | 'google'            // 路网 + 实时路况，最优
-    | 'google-notraffic'  // 路网，但 API 不接受 departure_time，退了一次
+    | 'google'            // 路网 + 实时路况（TRAFFIC_AWARE），最优
+    | 'google-notraffic'  // 路网，但带路况那次失败了，退到 TRAFFIC_UNAWARE 重排
     | 'local'             // 本地直线距离最近邻 + 2-opt
     | 'none';             // 全挂了，原样返回勾选顺序
 
@@ -263,26 +272,121 @@ function isFiniteCoord(lat: unknown, lng: unknown): boolean {
 
 interface GoogleResult {
     order: Located[];
-    totalKm: number;
-    totalMinutes: number;
+    totalKm: number | null;
+    totalMinutes: number | null;
     source: 'google' | 'google-notraffic';
+}
+
+const ROUTES_ENDPOINT = 'https://routes.googleapis.com/directions/v2:computeRoutes';
+// 逗号分隔、camelCase、任何位置都不能有空格。FieldMask 是必填的 —— 不给直接报错，
+// 没有「默认返回字段」这回事。optimizedIntermediateWaypointIndex 漏写会让整个请求失败
+// （REST 与 RPC 参考文档原文都是 "the request fails"，不是静默返回空）。
+// 故意不请求 legs：路线级 distanceMeters/duration 已经是全程合计，逐段累加反而会被
+// proto3 的零值省略规则坑到。将来要显示逐点 ETA 再追加 routes.legs.*。
+const ROUTES_FIELD_MASK =
+    'routes.optimizedIntermediateWaypointIndex,routes.distanceMeters,routes.duration';
+
+/** Routes API 的路点形状：location.latLng.latitude/longitude（是全称，不是 lat/lng）。 */
+function wp(lat: number, lng: number) {
+    return { location: { latLng: { latitude: lat, longitude: lng } } };
+}
+
+/**
+ * "165s" / "3.5s" → 165 / 3.5。
+ * duration 是 protobuf Duration **字符串**，不是 legacy 那种纯数字 —— Number("165s") 是 NaN。
+ * 拿不到就返回 null，绝不让 NaN 流进 Firestore。
+ */
+function parseDurationSeconds(raw: unknown): number | null {
+    if (typeof raw !== 'string') return null;
+    const n = Number(raw.replace(/s$/, ''));
+    return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * 优化后的下标序列 → 重排后的点。
+ *
+ * 语义：数组元素是「原始下标」，按最优访问顺序排列（与 legacy waypoint_order 一致）。
+ * 例：intermediates=[A,B,C,D]，返回 [3,2,0,1] → 访问顺序 D→C→A→B。
+ *
+ * ⚠️ 长度不符 / 越界 / 重复 / 非整数，任何一点不对就整体退回原序。
+ * 早先的写法是 `forEach(i => { if (middle[i]) push(...) })` —— 下标非法时会**静默丢单**，
+ * 那是有客户收不到饭的 bug。绕路只是绕路，丢单是事故。
+ */
+function applyWaypointOrder(raw: unknown, middle: Located[]): Located[] {
+    if (!Array.isArray(raw) || raw.length !== middle.length) return [...middle];
+    const seen = new Set<number>();
+    for (const i of raw) {
+        if (!Number.isInteger(i) || i < 0 || i >= middle.length || seen.has(i)) return [...middle];
+        seen.add(i);
+    }
+    return (raw as number[]).map(i => middle[i]);
+}
+
+type CallResult =
+    | { route: any }
+    | { fatalConfigError: true }   // 400/403：配置问题，重试纯属白等 8 秒
+    | null;                        // 可重试（超时 / 5xx / 空结果）
+
+async function callComputeRoutes(body: unknown, apiKey: string): Promise<CallResult> {
+    try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), ROUTES_TIMEOUT_MS);
+        const res = await fetch(ROUTES_ENDPOINT, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                // key 走 header 而不是 URL —— 顺带让日志里的 URL 不再泄露密钥
+                'X-Goog-Api-Key': apiKey,
+                'X-Goog-FieldMask': ROUTES_FIELD_MASK,
+            },
+            body: JSON.stringify(body),
+        });
+        clearTimeout(timer);
+
+        // 新 API 是真实 HTTP 错误码 + {error:{code,message,status}}，
+        // 不再有 legacy 那种 HTTP 200 + 顶层 status:"REQUEST_DENIED"。
+        // 网关层出错时 body 可能根本不是 JSON，所以先取文本再试解析。
+        const text = await res.text();
+        let data: any = null;
+        try { data = JSON.parse(text); } catch { /* 非 JSON，下面按原文记日志 */ }
+
+        if (!res.ok) {
+            console.warn('[routeOptimizer] Routes API failed:', res.status,
+                data?.error?.status || '', String(data?.error?.message || text).slice(0, 200));
+            // 403 = Routes API 没启用 / key 的 API 限制没放行；400 = 请求体不合法。
+            // 这两种重试一万次也是同样结果。
+            if (res.status === 400 || res.status === 403) return { fatalConfigError: true };
+            return null;
+        }
+
+        // 算不出路线时 routes 是空数组，而 proto3 会把空数组整个省掉 → 响应可能就是 {}
+        const route = data?.routes?.[0];
+        if (!route) {
+            console.warn('[routeOptimizer] Routes API 返回空结果（算不出路线）');
+            return null;
+        }
+        return { route };
+    } catch (err) {
+        console.warn('[routeOptimizer] Routes API error', err);
+        return null;
+    }
 }
 
 /**
  * 「开放路径」的实现方式（重要）：
  *
- * Directions API 必须给一个明确的 destination —— 没有「让 Google 自己挑终点」这个选项。
- * 所以我们用 haversine 挑出离厨房最远的那一单当 destination，其余全丢进
- * waypoints=optimize:true。这是启发式不是全局最优（全局最优要每个候选终点各跑一次），
- * 但符合配送直觉「先近后远，送完人在外圈」，且只花一次调用。
+ * Routes API 和 legacy Directions 一样，必须给一个明确的 destination —— 没有
+ * 「让 Google 自己挑终点」这个选项，它只重排 intermediates。
+ * 所以我们用 haversine 挑出离厨房最远的那一单当 destination，其余全丢进 intermediates。
+ * 这是启发式不是全局最优（全局最优要每个候选终点各跑一次），但符合配送直觉
+ * 「先近后远，送完人在外圈」，且只花一次调用。
  */
 async function optimizeWithGoogle(
     points: Located[],
     apiKey: string,
 ): Promise<GoogleResult | null> {
     if (points.length === 0) return null;
-
-    const origin = `${PEARL_POINT_LAT},${PEARL_POINT_LNG}`;
 
     let destPoint: Located | null = null;
     let middle: Located[];
@@ -306,82 +410,51 @@ async function optimizeWithGoogle(
         return null;
     }
 
-    const destination = destPoint ? `${destPoint.lat},${destPoint.lng}` : origin;
+    const destLat = destPoint ? destPoint.lat : PEARL_POINT_LAT;
+    const destLng = destPoint ? destPoint.lng : PEARL_POINT_LNG;
+    // ≤1 个中途点本来就无序可排；而且「0/1 个中途点时优化字段的行为」官方文档没写，
+    // 索性不开优化绕过这个未知数。applyWaypointOrder 会兜住返回值。
+    const doOptimize = middle.length >= 2;
 
-    // departure_time=now 打开实时路况（老板 2026-07-31 定）。
-    // Google 对 optimize:true + departure_time 的组合有过限制历史，所以下面
-    // 带路况失败会自动去掉 departure_time 重试一次 —— 不带路况也远好过不排序。
-    const build = (withTraffic: boolean) => {
-        const p = new URLSearchParams({
-            origin,
-            destination,
-            mode: 'driving',
-            region: 'my',
-            key: apiKey,
-        });
-        if (middle.length > 0) {
-            p.set('waypoints', `optimize:true|${middle.map(m => `${m.lat},${m.lng}`).join('|')}`);
-        }
-        if (withTraffic) {
-            p.set('departure_time', 'now');
-            p.set('traffic_model', 'best_guess');
-        }
-        return p;
-    };
+    const buildBody = (withTraffic: boolean) => ({
+        origin: wp(PEARL_POINT_LAT, PEARL_POINT_LNG),
+        destination: wp(destLat, destLng),
+        ...(middle.length > 0 ? { intermediates: middle.map(m => wp(m.lat, m.lng)) } : {}),
+        travelMode: 'DRIVE',
+        // 不写的默认值是 TRAFFIC_UNAWARE（无路况）—— 这是从 legacy 迁过来最阴的坑：
+        // 静默降级、零报错、数字照常返回，只是完全没有路况。必须显式写。
+        // 另：TRAFFIC_AWARE_OPTIMAL 与 optimizeWaypointOrder 互斥，只能用 TRAFFIC_AWARE。
+        routingPreference: withTraffic ? 'TRAFFIC_AWARE' : 'TRAFFIC_UNAWARE',
+        ...(doOptimize ? { optimizeWaypointOrder: true } : {}),
+        computeAlternativeRoutes: false,
+        // 故意不传 departureTime（默认就是请求时刻，DRIVE 模式传过去的时间还会被拒）
+        // 也不传 trafficModel（只在 TRAFFIC_AWARE_OPTIMAL 下生效，而那个用不了）
+        // 也不传 regionCode（传坐标时它基本是 no-op，只对地址字符串做偏置）
+    });
 
+    // 先试带路况；失败就退到无路况再试一次 —— 没路况也远好过不排序。
     for (const withTraffic of [true, false]) {
-        const data = await callDirections(build(withTraffic));
-        if (!data) continue;
+        const result = await callComputeRoutes(buildBody(withTraffic), apiKey);
+        if (result && 'fatalConfigError' in result) return null;  // 配置错，第二次也白搭
+        if (!result) continue;
 
-        const route = data.routes?.[0];
-        if (!route) continue;
-
-        // waypoint_order 是「中途点在最优顺序里的下标序列」，对应我们传进去的 middle
-        const wpOrder: number[] = Array.isArray(route.waypoint_order) ? route.waypoint_order : [];
-        const ordered: Located[] = [];
-        if (wpOrder.length === middle.length) {
-            wpOrder.forEach(i => { if (middle[i]) ordered.push(middle[i]); });
-        } else {
-            // Google 没给顺序（比如只有 1 个点）——保持原样，起码 legs 里的里程还有用
-            ordered.push(...middle);
-        }
+        const { route } = result;
+        const ordered = applyWaypointOrder(route.optimizedIntermediateWaypointIndex, middle);
         if (destPoint) ordered.push(destPoint);
 
-        // legs 是每一段的距离/时长。开了路况时优先用 duration_in_traffic。
-        const legs: any[] = Array.isArray(route.legs) ? route.legs : [];
-        const meters = legs.reduce((s, l) => s + (l?.distance?.value || 0), 0);
-        const seconds = legs.reduce((s, l) => s + (l?.duration_in_traffic?.value ?? l?.duration?.value ?? 0), 0);
+        // distanceMeters 为 0 时会被 proto3 省略 → undefined，不能当 0 显示
+        const meters = typeof route.distanceMeters === 'number' ? route.distanceMeters : null;
+        const seconds = parseDurationSeconds(route.duration);
 
         return {
             order: ordered,
-            totalKm: Math.round((meters / 1000) * 10) / 10,
-            totalMinutes: Math.round(seconds / 60),
+            totalKm: meters === null ? null : Math.round((meters / 1000) * 10) / 10,
+            totalMinutes: seconds === null ? null : Math.round(seconds / 60),
             source: withTraffic ? 'google' : 'google-notraffic',
         };
     }
 
     return null;
-}
-
-async function callDirections(params: URLSearchParams): Promise<any | null> {
-    try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), DIRECTIONS_TIMEOUT_MS);
-        const res = await fetch(`https://maps.googleapis.com/maps/api/directions/json?${params}`, {
-            signal: controller.signal,
-        });
-        clearTimeout(timer);
-        const data = await res.json();
-        if (data.status !== 'OK') {
-            // REQUEST_DENIED 基本都是「Directions API 没启用」或 key 限制没放行
-            console.warn('[routeOptimizer] directions failed:', data.status, data.error_message || '');
-            return null;
-        }
-        return data;
-    } catch (err) {
-        console.warn('[routeOptimizer] directions error', err);
-        return null;
-    }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -435,6 +508,14 @@ export function optimizeLocally(points: Located[]): { order: Located[]; totalKm:
 
     return { order: tour, totalKm: Math.round(tourLength(tour) * 10) / 10 };
 }
+
+/**
+ * 仅供 dogfood 脚本使用 —— Routes API 响应解析的两个纯函数。
+ * 它们不该是公开 API（外部没有理由调），但必须能被单独测：
+ * applyWaypointOrder 一旦回归就是「有客户收不到饭」，parseDurationSeconds 一旦回归
+ * 就是 NaN 写进 Firestore。
+ */
+export const __testables = { applyWaypointOrder, parseDurationSeconds };
 
 /** 厨房 → 各点依次 的直线总长（ROUTE_END_AT_KITCHEN 时补回程）。 */
 function tourLength(tour: Located[]): number {
@@ -516,7 +597,7 @@ export async function planRoute(
                     totalMinutes: g.totalMinutes,
                     unlocatedOrderIds: unlocated,
                     coords,
-                    note: g.source === 'google-notraffic' ? 'Google 不接受实时路况参数，已退回无路况排序' : null,
+                    note: g.source === 'google-notraffic' ? '带实时路况那次失败了，已退回无路况路网排序' : null,
                 };
             }
         } catch (err) {
@@ -534,7 +615,9 @@ export async function planRoute(
             totalMinutes: null,
             unlocatedOrderIds: unlocated,
             coords,
-            note: apiKey ? 'Google Directions 不可用，已用本地直线距离排序' : '未配置地图 key，已用本地直线距离排序',
+            note: apiKey
+                ? 'Google Routes API 不可用（多半是没启用或 key 未放行），已用本地直线距离排序'
+                : '未配置地图 key，已用本地直线距离排序',
         };
     } catch (err) {
         console.error('[routeOptimizer] 本地排序也失败 — 原样返回', err);
