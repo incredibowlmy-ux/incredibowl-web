@@ -112,33 +112,38 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效：2026-07-31（Fri 31 Jul）— 本周（07-27 周）**过渡段**，只改周五那天：
-//   周五 07-31 首发新菜「古早味照烧鳗鱼饭」，替下原定的豆酱焖排骨；姜葱鱼片不动。
-//   周一~周四保持本周原样（都已过截单，仅供菜单周视图展示）。
-//   ⚠️ 下一步：明天（07-31）06:00 截单后立刻推「2026-08-03 周」那一段
-//   （下一个 commit），届时下一个配送日才会变成周一 08-03。老板 07-30 拍板此节奏。
+//   生效：2026-08-03 周（3 Aug – 7 Aug）— **第1段：只改周一~周四**。
+//
+//   为什么拆段：WEEKLY_SCHEDULE 按 weekday 索引，周五 07-31 与 08-07 共用
+//   weekday 5，一次部署没法让两个周五显示不同菜。本周（07-27 周）只剩周五
+//   还没过截单，所以 weekday 5 必须继续停在 07-31 的配置（姜葱鱼片 + 鳗鱼），
+//   周一~周四则可以立刻切下周 —— 那几天本周都已过截单，切过去反而让「提前
+//   订下周」的客人看到正确菜单。
+//   ⚠️ 第2段（只改周五：改 [3] 希腊鸡胸 + 三文鱼挪成周二/五两天 + 鱼片暂别）
+//   必须等 07-31 06:00 截单后才推。老板 07-30 拍板此节奏。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
-    1: [2],      // 周一：当归蒸鸡全腿(主打)；甜酸洋葱猪扒在常驻(限周一/四·featured)
-    2: [21, 25], // 周二：柠香三文鱼(主打)、家常日式咖喱饭
-    3: [23, 12], // 周三：家乡豆酱焖花肉(主打)、山药云耳
-    4: [4],      // 周四：绍兴酒蒸花肉(主打)；猪扒常驻 featured 也在列
-    5: [29, 20], // 周五：古早味照烧鳗鱼饭(主打·新菜首发 07-31)、姜葱鱼片
+    1: [14],     // 周一：金黄鸡扒(主打·回归)；鳗鱼饭 featured 也在列
+    2: [21, 23], // 周二：柠香三文鱼(主打)、家乡豆酱焖花肉(从周三挪来)
+    3: [2, 12],  // 周三：当归蒸鸡全腿(主打·从周一挪来)、山药云耳
+    4: [27],     // 周四：甜酸洋葱猪扒(主打·从常驻挪回特餐)；鳗鱼饭 featured 也在列
+    5: [20],     // 周五：姜葱鱼片(主打) ← 仅 07-31 过渡值；第2段改成 [3] 希腊鸡胸
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(全周)、甜酸洋葱猪扒(限周一/四·featured)
-// —— 猪扒的供应日由 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
-const DAILY_DISHES: number[] = [11, 13, 27];
+// 纳豆月见(全周)、马铃薯炖花肉片(全周)、照烧鳗鱼饭(限周一/四/五·featured)。
+// 鳗鱼的 5 是 07-31 首发那天的过渡值，第2段删掉只留 [1,4]。
+const DAILY_DISHES: number[] = [11, 13, 29];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
     { id: 5, day: 'Fri / 周五' },     // 葱香煎鸡汤 退役 2026-06-08
     { id: 24, day: 'Tue / 周二' },    // 澳洲和牛饼 暂别 2026-07-13
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
-    { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别 2026-07-27
-    { id: 14, day: 'Thu / 周四' },    // 金黄鸡扒饭 暂别 2026-07-27
     { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27
-    { id: 28, day: 'Fri / 周五' },    // 豆酱焖排骨 暂别 2026-07-31（周五让位鳗鱼首发）
+    { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别中 → 第2段回归周五
+    { id: 25, day: 'Tue / 周二' },    // 家常日式咖喱饭 暂别 2026-08-03
+    { id: 4, day: 'Thu / 周四' },     // 绍兴酒蒸花肉 暂别 2026-08-03
+    { id: 28, day: 'Fri / 周五' },    // 豆酱焖排骨 暂别 2026-07-31（周五让位鳗鱼首发；已售 8 单照常出餐）
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -248,14 +253,14 @@ const DISH_CATALOG: DishData[] = [
         // availableWeekdays+featureOnAvailableDays（绍兴 07-13 周的同款机制）。
         // 实拍图 2026-07-21 上架（porkchop1.jpeg → 1024²webp）。蛋白克数等
         // 营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        // 2026-08-03 周起只卖周四一天 → 从常驻+availableWeekdays 挪回普通周四特餐
+        //（WEEKLY_SCHEDULE[4]），供应日由推导层 weekday 控制；随之移除
+        // availableWeekdays / featureOnAvailableDays / unavailableNote（否则残留
+        //「仅周一、周四供应」文案会误导顾客）。
         id: 27,
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
         price: 19.90,
-        availableWeekdays: [1, 4],
-        featureOnAvailableDays: true,
-        unavailableNote: "仅周一、周四供应",
-        unavailableNoteEn: "Mon & Thu only",
         image: "/sweet_sour_onion_pork_chop.webp",
         tags: ["甜酸开胃", "洋葱酱香", "家乡风味", "下饭神器"],
         tagsEn: ["Sweet & tangy", "Onion sauce", "Hometown flavour", "Made for rice"],
@@ -340,8 +345,10 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // 全新菜 2026-07-30 入系统。首发 2026-07-31（周五·替下豆酱焖排骨），
-        // 下周 2026-08-03 起改周一+周四两天供应（届时挪到常驻 +
-        // availableWeekdays + featureOnAvailableDays，见下一个 commit）。
+        // 下周 2026-08-03 起改周一+周四供应。
+        // availableWeekdays 现为 [1,4,5]：5 = 07-31 首发那天的**过渡值**（周五
+        // 07-31 与 08-07 共用 weekday 5，拆段期间必须留着 5 才能继续卖首发那天），
+        // 第2段（07-31 06:00 后推）删掉 5 只留 [1,4]。
         // ⏳ 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在
         //    Google Sheet dishes 表加一行，否则 chatbot 发不出该菜图片）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
@@ -353,6 +360,10 @@ const DISH_CATALOG: DishData[] = [
         nameEn: "Hometown Glazed Unagi Rice",
         price: 24.90,
         voucherTopUp: 5,
+        availableWeekdays: [1, 4, 5],
+        featureOnAvailableDays: true,
+        unavailableNote: "仅周一、周四、周五供应",
+        unavailableNoteEn: "Mon, Thu & Fri only",
         image: "🍱",
         tags: ["古早味照烧", "焦糖酱香", "配马铃薯煎蛋", "餐券+RM5"],
         tagsEn: ["Hometown glaze", "Caramelised soy", "With potato fried egg", "Voucher +RM5"],
