@@ -237,6 +237,11 @@ export async function POST(req: Request) {
     const userData = userSnap.exists ? userSnap.data() || {} : {};
     const userZone = userData.deliveryZone as DeliveryZone | undefined;
     const userDistance = typeof userData.addressDistanceKm === 'number' ? userData.addressDistanceKm : null;
+    // 地址坐标快照进订单 —— 配送路线排序（routeOptimizer）要用。零 API 成本：
+    // 顾客存地址时 /api/geocode 已经查过一次了。快照而非日后回查 users，是因为
+    // 顾客改地址后回查会拿到新坐标，把历史单的配送位置带偏。
+    const userLat = typeof userData.addressLat === 'number' ? userData.addressLat : null;
+    const userLng = typeof userData.addressLng === 'number' ? userData.addressLng : null;
 
     if (userZone !== 'within2km' && userZone !== 'outside2km') {
       return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证配送范围）' }, { status: 400 });
@@ -442,6 +447,10 @@ export async function POST(req: Request) {
 
       // Only add optional fields if they have values (Firestore doesn't allow undefined)
       if (typeof userDistance === 'number') payload.deliveryDistanceKm = userDistance;
+      if (userLat !== null && userLng !== null) {
+        payload.deliveryLat = userLat;
+        payload.deliveryLng = userLng;
+      }
       if (receiptUrl) payload.receiptUrl = receiptUrl;
       if (promoCode) payload.promoCode = promoCode.trim().toUpperCase();
       if (currentPromo > 0) payload.promoDiscount = currentPromo;

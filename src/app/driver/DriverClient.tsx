@@ -21,11 +21,30 @@ interface BatchOrder {
     status: string;
     items: string;
     note: string;
+    /** 配送顺序（1 起）—— 服务端按 batch.orderIds 排好的 */
+    seq: number;
+    lat: number | null;
+    lng: number | null;
 }
+
+interface BatchMeta {
+    id: string;
+    deliveredOrderIds: string[];
+    routeSource?: string;
+    routeTotalKm?: number | null;
+    routeTotalMinutes?: number | null;
+}
+
+// 厨房坐标（与 deliveryUtils.PEARL_POINT_* 同源）。这里硬写是为了不把
+// 整个 deliveryUtils 拖进客户端 bundle —— 只要两个数字。
+const KITCHEN = '3.0853475861917716,101.67428154483449';
+// Google Maps 的 dir/?api=1 链接对 waypoints 有实际上限（约 9 个中途点），
+// 超了整条链接会被静默截断或打不开 —— 所以分段发。
+const MAX_WAYPOINTS_PER_LEG = 9;
 
 export default function DriverClient() {
     const { currentUser, authLoading } = useAuth();
-    const [batch, setBatch] = useState<{ id: string; deliveredOrderIds: string[] } | null>(null);
+    const [batch, setBatch] = useState<BatchMeta | null>(null);
     const [orders, setOrders] = useState<BatchOrder[]>([]);
     const [loadingBatch, setLoadingBatch] = useState(true);
     const [gpsState, setGpsState] = useState<'off' | 'ok' | 'denied' | 'error'>('off');
@@ -153,7 +172,11 @@ export default function DriverClient() {
     };
 
     const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`;
-    const mapsLink = (addr: string) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(addr)}`;
+    // 有坐标就用坐标（geocode 验证过，比自由文本准）；没有才退回地址文本
+    const mapsLink = (o: BatchOrder) =>
+        o.lat !== null && o.lng !== null
+            ? `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}`
+            : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.userAddress)}`;
 
     // ── Gates ──────────────────────────────────────────────────
     if (authLoading) {
@@ -183,6 +206,35 @@ export default function DriverClient() {
 
     const remaining = orders.filter(o => o.status !== 'delivered');
     const done = orders.filter(o => o.status === 'delivered');
+    const unlocatedCount = remaining.filter(o => o.lat === null).length;
+
+    // ── 一键全程导航 ──────────────────────────────────────────
+    // 把「还没送的、有坐标的」单按顺序串成 Google Maps 路线链接。
+    // 第一段不给 origin → Google Maps 自动用当前位置（中途打开也对）；
+    // 后续段的起点 = 上一段的终点。超过 9 个中途点就分段。
+    const navPoints = remaining.filter(o => o.lat !== null && o.lng !== null);
+    const navLegs: { url: string; from: number; to: number }[] = [];
+    for (let i = 0; i < navPoints.length; i += MAX_WAYPOINTS_PER_LEG + 1) {
+        const chunk = navPoints.slice(i, i + MAX_WAYPOINTS_PER_LEG + 1);
+        if (chunk.length === 0) break;
+        const coord = (o: BatchOrder) => `${o.lat},${o.lng}`;
+        const params = new URLSearchParams({ api: '1', travelmode: 'driving' });
+        // 第一段交给 Google 用当前位置；后面几段从上一段最后一站接上
+        if (i > 0) params.set('origin', coord(navPoints[i - 1]));
+        params.set('destination', coord(chunk[chunk.length - 1]));
+        const mid = chunk.slice(0, -1);
+        if (mid.length > 0) params.set('waypoints', mid.map(coord).join('|'));
+        navLegs.push({
+            url: `https://www.google.com/maps/dir/?${params.toString()}`,
+            from: chunk[0].seq,
+            to: chunk[chunk.length - 1].seq,
+        });
+    }
+
+    const routeLabel = batch?.routeSource === 'google' ? '🚦 已按实时路况排序'
+        : batch?.routeSource === 'google-notraffic' ? '🗺️ 已按路网排序'
+        : batch?.routeSource === 'local' ? '📐 已按直线距离排序'
+        : '⚠️ 未自动排序（按勾选顺序）';
 
     return (
         <Shell>
@@ -217,19 +269,62 @@ export default function DriverClient() {
                     </div>
                     <p className="text-[10px] text-gray-400 text-center">⚠️ 配送途中请保持本页亮屏（锁屏/切走会暂停位置上报）</p>
 
+                    {/* ── 路线摘要 + 一键全程导航 ────────────────── */}
+                    <div className="bg-white rounded-2xl border border-[#E3EADA] p-4 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-black text-[#1A2D23]">{routeLabel}</span>
+                            {(batch.routeTotalKm != null || batch.routeTotalMinutes != null) && (
+                                <span className="text-xs font-bold text-gray-400 whitespace-nowrap">
+                                    {batch.routeTotalKm != null && `${batch.routeTotalKm} km`}
+                                    {batch.routeTotalKm != null && batch.routeTotalMinutes != null && ' · '}
+                                    {batch.routeTotalMinutes != null && `约 ${batch.routeTotalMinutes} 分钟`}
+                                </span>
+                            )}
+                        </div>
+                        {navLegs.length === 0 ? (
+                            <p className="text-xs text-gray-400">没有可导航的坐标 — 请逐单点地址导航</p>
+                        ) : navLegs.map((leg, i) => (
+                            <a key={i} href={leg.url} target="_blank" rel="noopener noreferrer"
+                               className="block w-full py-3 text-center bg-[#1A2D23] text-white rounded-2xl font-black text-sm">
+                                🗺️ {navLegs.length === 1 ? '一键导航全程' : `导航第 ${i + 1} 段`}
+                                <span className="font-normal opacity-70"> · 第 {leg.from}–{leg.to} 站</span>
+                            </a>
+                        ))}
+                        {navLegs.length > 1 && (
+                            <p className="text-[10px] text-gray-400">
+                                Google Maps 单条路线最多 {MAX_WAYPOINTS_PER_LEG} 个中途点，已自动分段 — 送完一段再点下一段
+                            </p>
+                        )}
+                        {unlocatedCount > 0 && (
+                            <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1.5 text-yellow-800">
+                                ⚠️ 有 {unlocatedCount} 单定位不到（地址太模糊），已排到队尾没进自动路线 — 请自己判断什么时候顺路送
+                            </p>
+                        )}
+                    </div>
+
                     {/* Remaining stops */}
                     <p className="font-black text-[#1A2D23] pt-1">📦 待送 {remaining.length} 单</p>
                     {remaining.map(o => (
                         <div key={o.id} className="bg-white rounded-2xl border border-[#E3EADA] p-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="font-black text-[#FF6B35]">#{o.orderNo}</span>
-                                <span className="text-xs font-bold text-gray-400">{o.deliveryTime?.includes('Lunch') ? '🌞午餐' : '🌙晚餐'}</span>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="shrink-0 w-7 h-7 rounded-full bg-[#1A2D23] text-white text-sm font-black flex items-center justify-center">
+                                        {o.seq}
+                                    </span>
+                                    <span className="font-black text-[#FF6B35]">#{o.orderNo}</span>
+                                </div>
+                                <span className="text-xs font-bold text-gray-400 whitespace-nowrap">{o.deliveryTime?.includes('Lunch') ? '🌞午餐' : '🌙晚餐'}</span>
                             </div>
                             <p className="text-sm font-bold text-[#1A2D23]">{o.userName}</p>
                             <p className="text-sm text-gray-600">{o.items}</p>
                             {o.note && <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1 text-yellow-800">📝 {o.note}</p>}
-                            <a href={mapsLink(o.userAddress)} target="_blank" rel="noopener noreferrer"
+                            <a href={mapsLink(o)} target="_blank" rel="noopener noreferrer"
                                className="block text-sm text-blue-600 underline underline-offset-2">📍 {o.userAddress}</a>
+                            {o.lat === null && (
+                                <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1 text-yellow-800">
+                                    ⚠️ 这单定位不到，不在自动路线里 — 请自己安排顺序
+                                </p>
+                            )}
                             <div className="flex gap-2 pt-1">
                                 <a href={`tel:${o.userPhone}`} className="flex-1 py-2.5 text-center bg-gray-100 rounded-xl text-sm font-bold text-[#1A2D23]">📞 打电话</a>
                                 <a href={waLink(o.userPhone)} target="_blank" rel="noopener noreferrer"
@@ -251,7 +346,7 @@ export default function DriverClient() {
                             <p className="font-black text-gray-400 pt-2 text-sm">✅ 已送达 {done.length} 单</p>
                             {done.map(o => (
                                 <div key={o.id} className="bg-gray-50 rounded-2xl border border-gray-200 px-4 py-2.5 flex items-center justify-between opacity-60">
-                                    <span className="text-sm font-bold text-gray-500">#{o.orderNo} {o.userName}</span>
+                                    <span className="text-sm font-bold text-gray-500">{o.seq}. #{o.orderNo} {o.userName}</span>
                                     <span className="text-xs text-green-600 font-bold">已送达</span>
                                 </div>
                             ))}

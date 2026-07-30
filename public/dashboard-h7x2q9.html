@@ -2587,7 +2587,7 @@
             <div class="modal-header">
                 <div>
                     <div class="modal-title">🛵 开始配送</div>
-                    <div class="modal-subtitle">勾选本趟要送的订单 — 全部转「配送中」，客户跟踪页出现实时地图</div>
+                    <div class="modal-subtitle">勾选本趟要送的订单 — 系统自动排出最优顺序，全部转「配送中」，客户跟踪页出现实时地图</div>
                 </div>
                 <button class="modal-close" id="dbmCloseBtn" type="button">&times;</button>
             </div>
@@ -2608,7 +2608,7 @@
                 <div id="dbmError" class="login-error hidden" style="margin-top:10px"></div>
             </div>
             <div class="modal-footer">
-                <div class="modal-footer-hint">建批次后在手机打开 www.incredibowl.my/driver 上报 GPS + 逐单送达</div>
+                <div class="modal-footer-hint">建批次后在手机打开 www.incredibowl.my/driver — 按排好的顺序一键导航 + 上报 GPS + 逐单送达</div>
                 <div class="modal-footer-actions">
                     <button type="button" class="btn ghost" id="dbmCancelBtn">取消</button>
                     <button type="button" class="btn" id="dbmSubmitBtn">🛵 开始配送</button>
@@ -12381,8 +12381,9 @@ incredibowl.my`,
             const btn = $('#dbmSubmitBtn');
             btn.disabled = true;
             btn.textContent = '建立批次中…';
+            let startRes;
             try {
-                await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
+                startRes = await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
             } catch (err) {
                 errEl.textContent = err.message || '建立批次失败';
                 errEl.classList.remove('hidden');
@@ -12416,9 +12417,42 @@ incredibowl.my`,
             }
             const driverUrl = `${ADMIN_API_BASE}/driver`;
             const s = $('#dbmSuccess');
+
+            // ── 路线排序结果（服务端 planRoute 算的）──────────────
+            // routeSource 如实显示，绝不把降级排序说成「已按路况优化」。
+            const route = startRes?.route || {};
+            const SRC_LABEL = {
+                'google': '🚦 已按真实路网 + 实时路况排好顺序',
+                'google-notraffic': '🗺️ 已按真实路网排好顺序（无路况）',
+                'local': '📐 已按直线距离排好顺序（Google 路线服务不可用）',
+                'none': '⚠️ 未能自动排序，保持你勾选的顺序',
+            };
+            let routeHtml = `<div style="margin-top:8px">${SRC_LABEL[route.source] || SRC_LABEL.none}</div>`;
+            if (route.totalKm != null || route.totalMinutes != null) {
+                const bits = [];
+                if (route.totalKm != null) bits.push(`${route.totalKm} km`);
+                if (route.totalMinutes != null) bits.push(`约 ${route.totalMinutes} 分钟`);
+                routeHtml += `<div style="color:var(--text-muted);font-size:12px">全程 ${bits.join(' · ')}（不含每单停留）</div>`;
+            }
+            if (Array.isArray(route.orderIds) && route.orderIds.length > 1) {
+                const seqLine = route.orderIds.map((id, i) => {
+                    const o = state.orders.find(x => x.id === id);
+                    const who = o ? (o.userName || '匿名') : id.slice(-6).toUpperCase();
+                    return `${i + 1}. ${escapeHtml(who)}`;
+                }).join('　');
+                routeHtml += `<div style="margin-top:6px;padding:8px 10px;background:var(--bg-subtle);border-radius:10px;font-size:12px;line-height:1.7">${seqLine}</div>`;
+            }
+            if (route.unlocatedOrderIds?.length > 0) {
+                routeHtml += `<div style="margin-top:6px;padding:8px 10px;background:#FFF7E6;border:1px solid #FFE0A3;border-radius:10px;font-size:12px;color:#8A6100">⚠️ ${route.unlocatedOrderIds.length} 单定位不到（地址太模糊），已排到队尾不在自动路线内</div>`;
+            }
+            if (route.note) {
+                routeHtml += `<div style="margin-top:4px;color:var(--text-muted);font-size:11px">ℹ️ ${escapeHtml(route.note)}</div>`;
+            }
+
             s.innerHTML = `✅ <strong>${orderIds.length} 单已转「配送中」</strong><br>`
-                + `🗺️ 客户跟踪页现在会显示你的实时位置<br>`
-                + `<a href="${driverUrl}" target="_blank" rel="noopener" style="display:block;margin-top:10px;padding:12px;background:#FF6B35;color:#fff;border-radius:10px;text-align:center;font-weight:800;text-decoration:none">🛵 打开司机页（GPS 上报 + 逐单点送达）</a>`;
+                + `🗺️ 客户跟踪页现在会显示你的实时位置`
+                + routeHtml
+                + `<a href="${driverUrl}" target="_blank" rel="noopener" style="display:block;margin-top:10px;padding:12px;background:#FF6B35;color:#fff;border-radius:10px;text-align:center;font-weight:800;text-decoration:none">🛵 打开司机页（按顺序导航 + 逐单点送达）</a>`;
             s.classList.remove('hidden');
             $('#dbmOrderList').innerHTML = '';
             btn.textContent = '已开始';

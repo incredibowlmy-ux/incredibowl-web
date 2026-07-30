@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyAdminEmail, corsPreflight, adminJson } from '@/lib/adminApi';
 import { generateTrackToken } from '@/lib/trackingUtils';
+import { planRoute } from '@/lib/routeOptimizer';
 
 // Lazy-init Firebase Admin (same pattern as other API routes)
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -16,8 +17,9 @@ async function getDb() {
  * Called by the dashboard (cross-origin, Bearer admin token) and /driver.
  *
  * actions:
- *   start    {orderIds[]}          → create batch, orders → 'delivering' (+batchId,
- *                                    backfill trackToken for manual orders);
+ *   start    {orderIds[]}          → 自动排出最优配送顺序（planRoute），create batch,
+ *                                    orders → 'delivering' (+batchId, backfill
+ *                                    trackToken for manual orders);
  *                                    auto-completes any previous active batch
  *   current  {}                    → active batch + its orders (drives /driver)
  *   location {batchId, lat, lng}   → update live driver position
@@ -25,6 +27,10 @@ async function getDb() {
  *                                    when every order is delivered
  *   complete {batchId}             → force-close the batch (drops driverLoc)
  */
+// `start` 要跑路线排序（首次启用时可能要 geocode 一整批新地址 + 调 Directions），
+// 默认 10s 不够。routeOptimizer 内部已有 20s + 8s×2 的时间预算，60s 是安全上限。
+export const maxDuration = 60;
+
 export async function OPTIONS() { return corsPreflight(); }
 
 export async function POST(req: NextRequest) {
@@ -49,6 +55,20 @@ export async function POST(req: NextRequest) {
         return adminJson({ error: `订单不存在: ${missing.join(', ')}` }, 400);
       }
 
+      // ── 自动排最优顺序 ────────────────────────────────────
+      // planRoute 永不抛错：Google 挂了退本地直线距离排序，再挂就原样返回
+      // 勾选顺序。绝不能让排序失败挡住建批次（批次建不了 = 当天送不了货）。
+      const plan = await planRoute(db, snaps.map(s => {
+        const d = s.data() || {};
+        return {
+          id: s.id,
+          userAddress: d.userAddress,
+          deliveryLat: d.deliveryLat,
+          deliveryLng: d.deliveryLng,
+        };
+      }));
+      const routedIds = plan.orderedIds;
+
       // Only one batch on the road at a time — close any stale active batch
       const activeSnap = await db.collection('deliveryBatches').where('status', '==', 'active').get();
       for (const doc of activeSnap.docs) {
@@ -57,10 +77,15 @@ export async function POST(req: NextRequest) {
 
       const batchRef = await db.collection('deliveryBatches').add({
         status: 'active',
-        orderIds,
+        orderIds: routedIds,           // ← 已排序
         deliveredOrderIds: [],
         startedBy: adminEmail,
         startedAt: FieldValue.serverTimestamp(),
+        routeSource: plan.routeSource,
+        routeTotalKm: plan.totalKm,
+        routeTotalMinutes: plan.totalMinutes,
+        unlocatedOrderIds: plan.unlocatedOrderIds,
+        routeNote: plan.note,
       });
 
       // Flip orders to delivering; manual dashboard orders have no trackToken
@@ -75,7 +100,18 @@ export async function POST(req: NextRequest) {
         await snap.ref.update(update);
       }
 
-      return adminJson({ success: true, batchId: batchRef.id });
+      return adminJson({
+        success: true,
+        batchId: batchRef.id,
+        route: {
+          orderIds: routedIds,
+          source: plan.routeSource,
+          totalKm: plan.totalKm,
+          totalMinutes: plan.totalMinutes,
+          unlocatedOrderIds: plan.unlocatedOrderIds,
+          note: plan.note,
+        },
+      });
     }
 
     if (action === 'current') {
@@ -85,9 +121,11 @@ export async function POST(req: NextRequest) {
       const batchDoc = activeSnap.docs[0];
       const batch = batchDoc.data();
 
-      const orderSnaps = await db.getAll(...(batch.orderIds as string[]).map((id: string) => db.collection('orders').doc(id)));
+      const batchOrderIds = batch.orderIds as string[];
+      const orderSnaps = await db.getAll(...batchOrderIds.map((id: string) => db.collection('orders').doc(id)));
       const orders = orderSnaps.filter(s => s.exists).map(s => {
         const o = s.data()!;
+        const hasCoord = typeof o.deliveryLat === 'number' && typeof o.deliveryLng === 'number';
         return {
           id: s.id,
           orderNo: s.id.slice(-6).toUpperCase(),
@@ -100,12 +138,26 @@ export async function POST(req: NextRequest) {
             ? o.items.map((it: any) => `${it.name} ×${it.quantity}`).join('、')
             : '',
           note: o.note || '',
+          // 导航深链用坐标比文本地址准；没坐标的单 /driver 会标黄提醒人工确认顺序
+          lat: hasCoord ? o.deliveryLat : null,
+          lng: hasCoord ? o.deliveryLng : null,
         };
       });
 
+      // batch.orderIds 就是配送顺序 —— 显式按它的下标排，不赌 getAll() 的返回顺序。
+      orders.sort((a, b) => batchOrderIds.indexOf(a.id) - batchOrderIds.indexOf(b.id));
+      const withSeq = orders.map((o, i) => ({ ...o, seq: i + 1 }));
+
       return adminJson({
-        batch: { id: batchDoc.id, orderIds: batch.orderIds, deliveredOrderIds: batch.deliveredOrderIds || [] },
-        orders,
+        batch: {
+          id: batchDoc.id,
+          orderIds: batchOrderIds,
+          deliveredOrderIds: batch.deliveredOrderIds || [],
+          routeSource: batch.routeSource || 'none',
+          routeTotalKm: batch.routeTotalKm ?? null,
+          routeTotalMinutes: batch.routeTotalMinutes ?? null,
+        },
+        orders: withSeq,
       });
     }
 
