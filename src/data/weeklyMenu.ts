@@ -112,27 +112,32 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效：2026-08-03 周（3 Aug – 7 Aug）— **第1段：只改周一~周四**。
+//   生效周：2026-08-03（Mon 3 Aug）—— **第2段：只改周五**（收尾段）。
+//   第1段（周一~周四 + 鳗鱼首发）已于 07-30 推上线。本段把 weekday 5 从
+//   07-31 的过渡配置切到下周：[3] 希腊鸡胸回归 Hero、三文鱼挪成常驻限周二/周五、
+//   鳗鱼去掉过渡的 weekday 5、姜葱鱼片转暂别。
+//   ⚠️ 必须等 07-31 06:00 截单后才推 —— 提前推会让周五 07-31 的客人看到下周
+//   菜单（周五已有 12 单在手，含 8 单豆酱焖排骨），即 07-24 提前上线事故的同一个坑。
 //
-//   为什么拆段：WEEKLY_SCHEDULE 按 weekday 索引，周五 07-31 与 08-07 共用
-//   weekday 5，一次部署没法让两个周五显示不同菜。本周（07-27 周）只剩周五
-//   还没过截单，所以 weekday 5 必须继续停在 07-31 的配置（姜葱鱼片 + 鳗鱼），
-//   周一~周四则可以立刻切下周 —— 那几天本周都已过截单，切过去反而让「提前
-//   订下周」的客人看到正确菜单。
-//   ⚠️ 第2段（只改周五：改 [3] 希腊鸡胸 + 三文鱼挪成周二/五两天 + 鱼片暂别）
-//   必须等 07-31 06:00 截单后才推。老板 07-30 拍板此节奏。
+//   本周两道菜「一菜两天」——照烧鳗鱼饭 (周一/四) 与柠香三文鱼 (周二/五)：
+//   同一道菜不能在 WEEKLY_SCHEDULE 出现两次，故走 DAILY_DISHES +
+//   availableWeekdays + featureOnAvailableDays（绍兴/猪扒同款机制），
+//   显示在各供应日的每日精选列里，不占常驻区。
+//   ⚠️ 代价：featured 菜拿不到 isPrimary，故 Hero「明日主打」这四天显示的是当天
+//   另一道特餐（周一=金黄鸡扒、周二=豆酱焖花肉、周四=甜酸洋葱猪扒、周五=希腊鸡胸）。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
-    1: [14],     // 周一：金黄鸡扒(主打·回归)；鳗鱼饭 featured 也在列
-    2: [21, 23], // 周二：柠香三文鱼(主打)、家乡豆酱焖花肉(从周三挪来)
-    3: [2, 12],  // 周三：当归蒸鸡全腿(主打·从周一挪来)、山药云耳
-    4: [27],     // 周四：甜酸洋葱猪扒(主打·从常驻挪回特餐)；鳗鱼饭 featured 也在列
-    5: [20],     // 周五：姜葱鱼片(主打) ← 仅 07-31 过渡值；第2段改成 [3] 希腊鸡胸
+    1: [14],    // 周一：金黄鸡扒(主打·回归)；照烧鳗鱼饭在常驻(限周一/四·featured)
+    2: [23],    // 周二：家乡豆酱焖花肉(主打·从周三挪来)；三文鱼在常驻(限周二/五·featured)
+    3: [2, 12], // 周三：当归蒸鸡全腿(主打·从周一挪来)、山药云耳(从周三留任)
+    4: [27],    // 周四：甜酸洋葱猪扒(主打·从常驻挪回特餐)；鳗鱼饭 featured 也在列
+    5: [3],     // 周五：希腊柠香烤鸡胸(主打·回归)；三文鱼 featured 也在列
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(全周)、照烧鳗鱼饭(限周一/四/五·featured)。
-// 鳗鱼的 5 是 07-31 首发那天的过渡值，第2段删掉只留 [1,4]。
-const DAILY_DISHES: number[] = [11, 13, 29];
+// 纳豆月见(全周)、马铃薯炖花肉片(全周)、照烧鳗鱼饭(限周一/四·featured·新菜)、
+// 柠香三文鱼(限周二/五·featured) —— 后两道的供应日由各自 availableWeekdays
+// 限定（菜单灰显 + 服务端拒收），并在各供应日的每日精选列里展示。
+const DAILY_DISHES: number[] = [11, 13, 29, 21];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
@@ -140,10 +145,10 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 24, day: 'Tue / 周二' },    // 澳洲和牛饼 暂别 2026-07-13
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
     { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27
-    { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别中 → 第2段回归周五
     { id: 25, day: 'Tue / 周二' },    // 家常日式咖喱饭 暂别 2026-08-03
     { id: 4, day: 'Thu / 周四' },     // 绍兴酒蒸花肉 暂别 2026-08-03
     { id: 28, day: 'Fri / 周五' },    // 豆酱焖排骨 暂别 2026-07-31（周五让位鳗鱼首发；已售 8 单照常出餐）
+    { id: 20, day: 'Fri / 周五' },    // 古早味姜葱鱼片饭 暂别 2026-08-03
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -253,7 +258,7 @@ const DISH_CATALOG: DishData[] = [
         // availableWeekdays+featureOnAvailableDays（绍兴 07-13 周的同款机制）。
         // 实拍图 2026-07-21 上架（porkchop1.jpeg → 1024²webp）。蛋白克数等
         // 营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
-        // 2026-08-03 周起只卖周四一天 → 从常驻+availableWeekdays 挪回普通周四特餐
+        // 2026-08-03 起只卖周四一天 → 从常驻+availableWeekdays 挪回普通周四特餐
         //（WEEKLY_SCHEDULE[4]），供应日由推导层 weekday 控制；随之移除
         // availableWeekdays / featureOnAvailableDays / unavailableNote（否则残留
         //「仅周一、周四供应」文案会误导顾客）。
@@ -271,12 +276,18 @@ const DISH_CATALOG: DishData[] = [
         // a la carte RM24.90（2026-07-26 起，原 23.90）；餐券抵扣需补 RM5（voucherTopUp，
         // 餐券覆盖仍是 RM19.90）。周五新上 2026-06-08。
         // 暂停一周 2026-07-20；2026-07-27 回归周二主打。
+        // 2026-08-03 起改「周二+周五」两天供应 → 从 WEEKLY_SCHEDULE 挪到常驻 +
+        // availableWeekdays + featureOnAvailableDays（同一道菜不能排两个 weekday）。
         id: 21,
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 24.90,
         voucherTopUp: 5,
         topUpAddonId: "salmon-upgrade",
+        availableWeekdays: [2, 5],
+        featureOnAvailableDays: true,
+        unavailableNote: "仅周二、周五供应",
+        unavailableNoteEn: "Tue & Fri only",
         image: "/lemon_salmon.webp",
         tags: ["高蛋白 30g+", "香煎三文鱼", "柠香清爽", "Omega-3", "餐券+RM5"],
         tagsEn: ["30g+ protein", "Pan-seared salmon", "Zesty lemon", "Omega-3", "Voucher +RM5"],
@@ -344,15 +355,14 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Pork ribs slow-braised in hometown fermented soybean paste (taucu) — savoury and deeply infused, with a sauce made for rice."
     },
     {
-        // 全新菜 2026-07-30 入系统。首发 2026-07-31（周五·替下豆酱焖排骨），
-        // 下周 2026-08-03 起改周一+周四供应。
-        // availableWeekdays 现为 [1,4,5]：5 = 07-31 首发那天的**过渡值**（周五
-        // 07-31 与 08-07 共用 weekday 5，拆段期间必须留着 5 才能继续卖首发那天），
-        // 第2段（07-31 06:00 后推）删掉 5 只留 [1,4]。
+        // 全新菜 2026-07-30 入系统，07-31（周五）首发；2026-08-03 起改周一+周四
+        // 两天供应（走常驻 + availableWeekdays + featureOnAvailableDays）。
+        // 份量见 dishIngredients.ts（老板 07-30 提供：鳗鱼 0.5 片 + 马铃薯煎蛋B
+        // 1 份 + 西兰花 50g + 白饭 80g）。
         // ⏳ 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在
         //    Google Sheet dishes 表加一行，否则 chatbot 发不出该菜图片）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
-        // 简介为初稿，待老板审定。份量见 dishIngredients.ts（老板 07-30 提供）。
+        // 简介为初稿，待老板审定。
         // a la carte RM24.90；餐券抵扣需补 RM5（voucherTopUp，餐券覆盖 RM19.90，
         // 与同价的柠香三文鱼一致）。无预付升级池 → 不设 topUpAddonId。
         id: 29,
@@ -360,10 +370,10 @@ const DISH_CATALOG: DishData[] = [
         nameEn: "Hometown Glazed Unagi Rice",
         price: 24.90,
         voucherTopUp: 5,
-        availableWeekdays: [1, 4, 5],
+        availableWeekdays: [1, 4],
         featureOnAvailableDays: true,
-        unavailableNote: "仅周一、周四、周五供应",
-        unavailableNoteEn: "Mon, Thu & Fri only",
+        unavailableNote: "仅周一、周四供应",
+        unavailableNoteEn: "Mon & Thu only",
         image: "🍱",
         tags: ["古早味照烧", "焦糖酱香", "配马铃薯煎蛋", "餐券+RM5"],
         tagsEn: ["Hometown glaze", "Caramelised soy", "With potato fried egg", "Voucher +RM5"],

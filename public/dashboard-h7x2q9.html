@@ -2793,34 +2793,34 @@
             //   webapp ID 一一对应（webapp 1=酱油鸡，dash 1=鸡扒；ADDON_MAP/cost 都按 dash ID 维护，
             //   所以保持 ID 稳定，只同步 day/active/voucherTopUp）。改 day 时同步更新本注释。
             // ─── 常驻 Daily ──────────────────────────────────────────
-            //   ⚠️ 鳗鱼是「常驻+限日」：webapp 靠 availableWeekdays 只在指定日可下单，
-            //   dashboard 侧 day 记 'Daily'（与 sync:menu 写库口径一致，否则两副本互相覆盖）。
-            //   手动加单不受限日约束，供应日见行末括号。
+            //   ⚠️ 本周（2026-08-03）三文鱼与鳗鱼是「常驻+限日」：webapp 靠 availableWeekdays
+            //   只在指定两天可下单，dashboard 侧 day 一律记 'Daily'（与 sync:menu 写库口径一致，
+            //   否则两边互相覆盖）。手动加单不受限日约束，加错日子请自行留意括号里的供应日。
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 2026-07-27 webapp 恢复全周常驻；⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90（seed 价不覆盖）
-            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 🆕 07-31 首发（webapp id 29）；供应日=周一/周四 + 周五(仅 07-31 过渡)；网站 emoji 占位图待实拍；⚠️ costPrice 待老板在 Settings 补
+            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 🆕 2026-08-03 新菜（webapp id 29）；供应日=周一/周四（availableWeekdays）；网站 emoji 占位图待实拍
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 2026-08-03 从周二 Hero 改常驻限周二/周五（webapp id 21，availableWeekdays）
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // webapp retired 2026-06-27；dashboard 留 active 给 WA 加单
             // ─── 周一 Mon ────────────────────────────────────────────
-            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-03 回归周一 Hero（webapp id 14）；鳗鱼限周一/四也在周一
+            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-03 回归周一 Hero（webapp id 14）；鳗鱼饭常驻限周一/四也在周一
             // ─── 周二 Tue ────────────────────────────────────────────
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 5 },  // 周二 Hero（webapp id 21）；第2段起改常驻限周二/周五
-            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Tue', active: true },  // 2026-08-03 从 Wed 改周二第二道（webapp id 23）
+            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Tue', active: true },  // 2026-08-03 从 Wed 改周二 Hero（webapp id 23）；三文鱼常驻限周二/五也在周二
             // ─── 周三 Wed ────────────────────────────────────────────
             { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Wed', active: true },  // 2026-08-03 从 Mon 改周三 Hero（webapp id 2）
             { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Wed', active: true },  // 周三第二道（webapp id 12）
             // ─── 周四 Thu ────────────────────────────────────────────
-            { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-08-03 从常驻限周一/四改回普通周四 Hero（webapp id 27）；鳗鱼 featured 也在周四
+            { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-08-03 从常驻限周一/四改回普通周四 Hero（webapp id 27）；鳗鱼饭 featured 也在周四
             // ─── 周五 Fri ────────────────────────────────────────────
-            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // 周五 Hero — 仅 07-31 过渡值，第2段改希腊鸡胸、本菜转暂别（webapp id 20）（⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
+            { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // 2026-08-03 回归周五 Hero（webapp id 3）；三文鱼 featured 也在周五
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
             { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // webapp 暂别 2026-07-20；dashboard 留 active 给 WA 加单
             { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 1 暂别 2026-07-27；dashboard 留 active 给 WA 加单
-            { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别中 → 第2段回归周五 Hero（webapp id 3）；dashboard 留 active 给 WA 加单
             { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // webapp 暂别 2026-08-03；dashboard 留 active 给 WA 加单
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // webapp 暂别 2026-08-03；dashboard 留 active 给 WA 加单
-            { id: 28, name: '豆酱焖排骨', nameEn: 'Hometown Taucu Braised Pork Ribs', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-07-31（周五让位鳗鱼首发；已售 8 单照常出餐）；dashboard 留 active 给 WA 加单
+            { id: 28, name: '豆酱焖排骨', nameEn: 'Hometown Taucu Braised Pork Ribs', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-08-03（上线仅一周）；dashboard 留 active 给 WA 加单
+            { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-08-03；dashboard 留 active 给 WA 加单（⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
         ];
 
         // ═══════════════════════════════════════════════════════════════
