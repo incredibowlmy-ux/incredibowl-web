@@ -2809,7 +2809,7 @@
             // ─── 周四 Thu ────────────────────────────────────────────
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-07-27 从 Tue 改周四 Hero（webapp id 4）；猪扒常驻限周一/四也在周四
             // ─── 周五 Fri ────────────────────────────────────────────
-            { id: 28, name: '豆酱焖排骨', nameEn: 'Hometown Taucu Braised Pork Ribs', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // 🆕 2026-07-31 新菜周五 Hero（webapp id 28）；网站 emoji 占位图待实拍
+            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 5 },  // 🆕 2026-07-31 新菜周五首发 Hero（webapp id 29，替下豆酱焖排骨）；网站 emoji 占位图待实拍；⚠️ costPrice 待老板在 Settings 补
             { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // 2026-07-27 回归周五第二道（webapp id 20）（⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
@@ -2817,6 +2817,7 @@
             { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // webapp 暂别 2026-07-20；dashboard 留 active 给 WA 加单
             { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // webapp 暂别 2026-07-27；dashboard 留 active 给 WA 加单
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // webapp 暂别 2026-07-27；dashboard 留 active 给 WA 加单
+            { id: 28, name: '豆酱焖排骨', nameEn: 'Hometown Taucu Braised Pork Ribs', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-07-31（周五让位鳗鱼首发）；dashboard 留 active 给 WA 加单
         ];
 
         // ═══════════════════════════════════════════════════════════════

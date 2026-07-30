@@ -112,19 +112,22 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-07-27（Mon 27 Jul）— 第2段（周五改动），须等本周五
-//   07-25 06:00 截单后才 push（第1段周一~四 = 上一 commit，可先推）。
+//   生效：2026-07-31（Fri 31 Jul）— 本周（07-27 周）**过渡段**，只改周五那天：
+//   周五 07-31 首发新菜「古早味照烧鳗鱼饭」，替下原定的豆酱焖排骨；姜葱鱼片不动。
+//   周一~周四保持本周原样（都已过截单，仅供菜单周视图展示）。
+//   ⚠️ 下一步：明天（07-31）06:00 截单后立刻推「2026-08-03 周」那一段
+//   （下一个 commit），届时下一个配送日才会变成周一 08-03。老板 07-30 拍板此节奏。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
     1: [2],      // 周一：当归蒸鸡全腿(主打)；甜酸洋葱猪扒在常驻(限周一/四·featured)
-    2: [21, 25], // 周二：柠香三文鱼(主打·回归)、家常日式咖喱饭(从周五挪来)
-    3: [23, 12], // 周三：家乡豆酱焖花肉(主打)、山药云耳(从周四挪来)
-    4: [4],      // 周四：绍兴酒蒸花肉(主打·从周二挪来)；猪扒常驻 featured 也在列
-    5: [28, 20], // 周五：豆酱焖排骨(主打·新菜)、姜葱鱼片(回归)
+    2: [21, 25], // 周二：柠香三文鱼(主打)、家常日式咖喱饭
+    3: [23, 12], // 周三：家乡豆酱焖花肉(主打)、山药云耳
+    4: [4],      // 周四：绍兴酒蒸花肉(主打)；猪扒常驻 featured 也在列
+    5: [29, 20], // 周五：古早味照烧鳗鱼饭(主打·新菜首发 07-31)、姜葱鱼片
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(限周二~四)、甜酸洋葱猪扒(限周一/四·featured)
-// —— 后两道的供应日由各自 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
+// 纳豆月见(全周)、马铃薯炖花肉片(全周)、甜酸洋葱猪扒(限周一/四·featured)
+// —— 猪扒的供应日由 availableWeekdays 限定（菜单灰显 + 服务端拒收）。
 const DAILY_DISHES: number[] = [11, 13, 27];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
@@ -134,7 +137,8 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 26, day: 'Tue / 周二' },    // 柠檬蜜糖煎鸡扒 暂别 2026-07-20
     { id: 3, day: 'Wed / 周三' },     // 希腊柠香烤鸡胸 暂别 2026-07-27
     { id: 14, day: 'Thu / 周四' },    // 金黄鸡扒饭 暂别 2026-07-27
-    { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27（周一换猪扒+当归）
+    { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27
+    { id: 28, day: 'Fri / 周五' },    // 豆酱焖排骨 暂别 2026-07-31（周五让位鳗鱼首发）
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -333,6 +337,27 @@ const DISH_CATALOG: DishData[] = [
         tagsEn: ["Hometown taucu", "Slow-braised", "Fall-off-the-bone", "Made for rice"],
         desc: "家乡豆酱慢火焖排骨，豆香咸鲜渗进骨边肉里，酱汁拌饭一流。",
         descEn: "Pork ribs slow-braised in hometown fermented soybean paste (taucu) — savoury and deeply infused, with a sauce made for rice."
+    },
+    {
+        // 全新菜 2026-07-30 入系统。首发 2026-07-31（周五·替下豆酱焖排骨），
+        // 下周 2026-08-03 起改周一+周四两天供应（届时挪到常驻 +
+        // availableWeekdays + featureOnAvailableDays，见下一个 commit）。
+        // ⏳ 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在
+        //    Google Sheet dishes 表加一行，否则 chatbot 发不出该菜图片）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
+        // 简介为初稿，待老板审定。份量见 dishIngredients.ts（老板 07-30 提供）。
+        // a la carte RM24.90；餐券抵扣需补 RM5（voucherTopUp，餐券覆盖 RM19.90，
+        // 与同价的柠香三文鱼一致）。无预付升级池 → 不设 topUpAddonId。
+        id: 29,
+        name: "古早味照烧鳗鱼饭",
+        nameEn: "Hometown Glazed Unagi Rice",
+        price: 24.90,
+        voucherTopUp: 5,
+        image: "🍱",
+        tags: ["古早味照烧", "焦糖酱香", "配马铃薯煎蛋", "餐券+RM5"],
+        tagsEn: ["Hometown glaze", "Caramelised soy", "With potato fried egg", "Voucher +RM5"],
+        desc: "照烧酱慢火收到焦糖化，酱香一层层裹住鳗鱼，旁边配一份马铃薯煎蛋——古早味的踏实满足。",
+        descEn: "Unagi glazed in soy reduced down to a caramelised sheen, served with a potato fried egg on the side — honest, old-school comfort."
     },
     {
         // 全新菜 2026-06-15 上架。2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
