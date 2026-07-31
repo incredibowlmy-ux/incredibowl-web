@@ -699,6 +699,46 @@
         .modal-close:hover { background: var(--bg-subtle); color: var(--text); }
 
         .modal-body { padding: 22px 24px; overflow-y: auto; flex: 1; }
+        /* ── 开始配送弹窗：逐单派工行 ────────────────────────── */
+        .dbm-row {
+            padding: 10px 12px;
+            background: var(--bg-subtle);
+            border-radius: 10px;
+            border: 1px solid transparent;
+        }
+        .dbm-row.far { background: #FFF7E6; border-color: #FFE0A3; }
+        .dbm-head { font-size: 13px; font-weight: 700; line-height: 1.45; }
+        .dbm-items, .dbm-addr, .dbm-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            /* 地址和菜品都可能很长 —— 手机上必须换行，不能截断成一条省略号 */
+            overflow-wrap: anywhere;
+        }
+        .dbm-meta { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+        .dbm-meta b { color: var(--text-primary); }
+        .dbm-hint { font-size: 12px; color: #8A6100; margin-top: 3px; line-height: 1.5; }
+        .dbm-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .dbm-assign {
+            flex: 1;
+            padding: 8px 4px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .dbm-assign.on { border-color: #1A2D23; background: #1A2D23; color: #fff; }
+        #dbmOrderList { display: grid; gap: 8px; max-height: 340px; overflow-y: auto; }
+        #dbmTally {
+            margin-top: 8px; padding: 8px 12px; background: var(--bg-subtle);
+            border-radius: 10px; font-size: 12px; line-height: 1.7;
+            display: flex; flex-wrap: wrap; gap: 2px 14px;
+        }
+
         .modal-row { margin-bottom: 14px; }
         .modal-row label, .modal-row-2 label {
             display: block;
@@ -1009,6 +1049,15 @@
             /* Modal full-screen-ish on tablet */
             .modal { max-width: 100%; border-radius: 16px; }
             .modal-backdrop { padding: 12px; }
+
+            /* 开始配送弹窗：手机上一屏放不下 340px 的列表 + 底部统计 + 按钮，
+               列表让出高度给 dvh（避开 iOS Safari 地址栏伸缩把内容顶出屏幕）。
+               三个派工按钮改成竖排 —— 横排在窄屏上「⏸ 先不动」会被挤到换行。 */
+            #dbmOrderList { max-height: 46dvh; }
+            .dbm-row { padding: 12px; }
+            .dbm-actions { flex-direction: column; gap: 6px; }
+            .dbm-assign { padding: 11px 8px; font-size: 13px; }  /* 够大的点击区 */
+            #dbmTally { flex-direction: column; gap: 2px; }
             .modal-body { padding: 18px 18px; }
             .modal-header { padding: 16px 18px; }
             .modal-footer { padding: 12px 18px; flex-wrap: wrap; }
@@ -2602,8 +2651,8 @@
                 </div>
                 <div class="modal-row">
                     <label>今天的订单（已确认 / 准备中）— 逐单选谁送</label>
-                    <div id="dbmOrderList" style="display:grid;gap:8px;max-height:340px;overflow-y:auto"></div>
-                    <div id="dbmTally" style="margin-top:8px;padding:8px 12px;background:var(--bg-subtle);border-radius:10px;font-size:12px"></div>
+                    <div id="dbmOrderList"></div>
+                    <div id="dbmTally"></div>
                 </div>
                 <div id="dbmSuccess" class="hidden" style="padding:14px;background:var(--success-soft);border-radius:10px;font-size:13px;line-height:1.7"></div>
                 <div id="dbmError" class="login-error hidden" style="margin-top:10px"></div>
@@ -12334,15 +12383,11 @@ incredibowl.my`,
 
         const DBM_FAR_KM = 7.5;   // 与 deliveryUtils 的 MID_RADIUS_KM 同一个界：超过就是 far 档
 
+        // 老板 2026-07-31 明确要求：**永远不要默认 Grab，每次他自己选**。
+        // 所以这里一律回 'self'，远单只靠橙色底 + 距离数字提醒，不替他做决定。
+        // （自取的单例外 —— 那本来就不需要送。）
         function dbmDefaultAssign(o) {
-            // 已经标过 grab/driver 的单，尊重历史决定（这批客户基本每次都走 Grab）
-            const m = methodOf(o);
-            if (m === 'grab' || m === 'driver') return 'grab';
-            if (m === 'pickup') return 'skip';
-            const km = typeof o.deliveryDistanceKm === 'number' ? o.deliveryDistanceKm : null;
-            if (km !== null && km > DBM_FAR_KM) return 'grab';
-            if (o.deliveryTier === 'far') return 'grab';
-            return 'self';
+            return methodOf(o) === 'pickup' ? 'skip' : 'self';
         }
 
         /** 这个客户历史上主要怎么送的 —— 给决策一点依据，不下结论 */
@@ -12371,8 +12416,7 @@ incredibowl.my`,
             orders.forEach(o => { if (!dbmAssign[o.id]) dbmAssign[o.id] = dbmDefaultAssign(o); });
 
             const btn = (id, val, cur, label) =>
-                `<button type="button" class="dbm-assign" data-id="${id}" data-val="${val}"
-                    style="flex:1;padding:6px 4px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${cur === val ? '#1A2D23' : 'var(--border)'};background:${cur === val ? '#1A2D23' : 'transparent'};color:${cur === val ? '#fff' : 'var(--text-muted)'}">${label}</button>`;
+                `<button type="button" class="dbm-assign${cur === val ? ' on' : ''}" data-id="${id}" data-val="${val}">${label}</button>`;
 
             $('#dbmOrderList').innerHTML = orders.map(o => {
                 const meal = _cmMeal(o);
@@ -12386,19 +12430,17 @@ incredibowl.my`,
                 const fuel = km !== null ? (selfRatePerKm() * km * 2) : null;
                 const bits = [];
                 if (km !== null) bits.push(`<b>${km.toFixed(1)}km</b>`);
-                if (typeof o.deliveryFee === 'number') bits.push(`客付运费 RM${o.deliveryFee.toFixed(2)}`);
-                if (fuel !== null) bits.push(`自送油钱 RM${fuel.toFixed(2)}`);
+                if (typeof o.deliveryFee === 'number') bits.push(`运费 RM${o.deliveryFee.toFixed(2)}`);
+                if (fuel !== null) bits.push(`油钱 RM${fuel.toFixed(2)}`);
                 const hint = dbmHistoryHint(o);
                 return `
-                    <div style="padding:10px 12px;background:${far ? '#FFF7E6' : 'var(--bg-subtle)'};border-radius:10px;border:1px solid ${far ? '#FFE0A3' : 'transparent'}">
-                        <div style="font-size:13px;line-height:1.5;margin-bottom:6px">
-                            <div><strong>#${o.id.slice(-6).toUpperCase()}</strong> · ${escapeHtml(o.userName || '匿名')} ${mealLabel}</div>
-                            <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(itemsPreview)}</div>
-                            <div style="color:var(--text-muted);font-size:12px">📍 ${escapeHtml(o.userAddress || '无地址')}</div>
-                            <div style="color:var(--text-muted);font-size:12px;margin-top:2px">${bits.join(' · ') || '（无距离数据）'}</div>
-                            ${hint ? `<div style="color:#8A6100;font-size:12px;margin-top:2px">${hint}</div>` : ''}
-                        </div>
-                        <div style="display:flex;gap:6px">
+                    <div class="dbm-row${far ? ' far' : ''}">
+                        <div class="dbm-head">#${o.id.slice(-6).toUpperCase()} · ${escapeHtml(o.userName || '匿名')} ${mealLabel}</div>
+                        <div class="dbm-items">${escapeHtml(itemsPreview)}</div>
+                        <div class="dbm-addr">📍 ${escapeHtml(o.userAddress || '无地址')}</div>
+                        <div class="dbm-meta">${bits.length ? bits.map(b => `<span>${b}</span>`).join('') : '<span>（无距离数据）</span>'}</div>
+                        ${hint ? `<div class="dbm-hint">${hint}</div>` : ''}
+                        <div class="dbm-actions">
                             ${btn(o.id, 'self', cur, '🛵 我送')}
                             ${btn(o.id, 'grab', cur, '🚕 Grab')}
                             ${btn(o.id, 'skip', cur, '⏸ 先不动')}
@@ -12409,7 +12451,9 @@ incredibowl.my`,
             const ids = orders.map(o => o.id);
             const c = v => ids.filter(id => dbmAssign[id] === v).length;
             $('#dbmTally').innerHTML =
-                `🛵 我送 <b>${c('self')}</b> 单（进配送批次，自动排路线）　·　🚕 Grab <b>${c('grab')}</b> 单（不进批次，标记为已交骑手）　·　⏸ 先不动 <b>${c('skip')}</b> 单`;
+                `<span>🛵 我送 <b>${c('self')}</b> 单 → 进批次自动排路线</span>`
+                + `<span>🚕 Grab <b>${c('grab')}</b> 单 → 标记已交骑手</span>`
+                + `<span>⏸ 先不动 <b>${c('skip')}</b> 单</span>`;
         }
 
         /**
