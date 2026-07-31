@@ -241,7 +241,7 @@ export default function DriverClient() {
     // 这条只到路线预览，要手点 Start —— 但至少出得来路线。
     // 要一键起航请用每单卡片里的单点导航（那条才有官方背书）。
     const navPoints = remaining.filter(o => o.lat !== null && o.lng !== null);
-    const navLegs: { url: string; from: number; to: number }[] = [];
+    const navLegs: { url: string; from: number; to: number; stops: BatchOrder[] }[] = [];
     for (let i = 0; i < navPoints.length; i += MAX_WAYPOINTS_PER_LEG + 1) {
         const chunk = navPoints.slice(i, i + MAX_WAYPOINTS_PER_LEG + 1);
         if (chunk.length === 0) break;
@@ -256,6 +256,11 @@ export default function DriverClient() {
             url: `https://www.google.com/maps/dir/?${params.toString()}`,
             from: chunk[0].seq,
             to: chunk[chunk.length - 1].seq,
+            // Google Maps 官方保证「waypoints 按 URL 里的顺序显示」，所以
+            // 这一串名字就是地图上图钉的顺序 —— Maps 本身没有任何办法给图钉
+            // 打自定义标签（lat,lng(名字) 那种写法是 Android geo: intent 专有，
+            // iPhone 无效），所以对照表只能由我们这边给出。
+            stops: chunk,
         });
     }
 
@@ -313,14 +318,23 @@ export default function DriverClient() {
                             <p className="text-xs text-gray-400">没有可导航的坐标 — 请用每单的「🧭 导航去这一单」</p>
                         ) : navLegs.map((leg, i) => (
                             <a key={i} href={leg.url} target="_blank" rel="noopener noreferrer"
-                               className="block w-full py-2.5 text-center bg-white border-2 border-[#1A2D23] text-[#1A2D23] rounded-2xl font-bold text-sm">
-                                🗺️ {navLegs.length === 1 ? '整段路线预览' : `第 ${i + 1} 段路线预览`}
-                                <span className="font-normal opacity-60"> · 第 {leg.from}–{leg.to} 站</span>
+                               className="block w-full px-3 py-2.5 bg-white border-2 border-[#1A2D23] text-[#1A2D23] rounded-2xl">
+                                <span className="block text-sm font-bold text-center">
+                                    🗺️ {navLegs.length === 1 ? '整段路线预览' : `第 ${i + 1} 段路线预览`}
+                                    <span className="font-normal opacity-60"> · 第 {leg.from}–{leg.to} 站</span>
+                                </span>
+                                {/* 地图上的图钉没有名字（Google Maps 不支持自定义标签），
+                                    但官方保证图钉按 URL 顺序排 —— 所以这行就是对照表 */}
+                                <span className="block mt-1 text-[11px] leading-relaxed text-gray-500 text-left">
+                                    {leg.stops.map(s => `${s.seq}. ${s.userName || '匿名'}`).join('　→　')}
+                                </span>
                             </a>
                         ))}
                         {navLegs.length > 0 && (
                             <p className="text-[10px] text-gray-400 leading-relaxed">
-                                多点路线只到预览、还要手点 Start，且 Google 对停靠点数量有上限（已按 {MAX_WAYPOINTS_PER_LEG} 个一段拆开）。
+                                地图上的图钉<b>按上面的顺序排列</b>（Google 官方保证）—— 第 1 个图钉就是上面第 1 个人。
+                                Maps 不支持给图钉起名，所以对照看这里。
+                                <br />多点路线只到预览、还要手点 Start，且 Google 对停靠点数量有上限（已按 {MAX_WAYPOINTS_PER_LEG} 个一段拆开）。
                                 <br />送单请优先用每单的「🧭 导航去这一单」—— 点一下直接开始导航。
                             </p>
                         )}
