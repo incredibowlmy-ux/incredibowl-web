@@ -387,6 +387,10 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // 与主菜同一 TODO_CONFIRM — 碗妈确认实际每份采购克数后一起更新）。
   '加香煎三文鱼 (70g+)': [{ name: '三文鱼', qty: 120, unit: 'g' }],
 
+  // ─── Sweet & Sour Pork Chop add-on ────────────────────────
+  // 与主菜同口径：按「块」计，独立采购 SKU（不与鸡扒/花肉合并）。
+  '加甜酸猪扒 (1块)': [{ name: '猪扒', qty: 1, unit: '块' }],
+
   // ─── Glazed Unagi add-on ───────────────────────────────────
   // 与主菜同口径：主菜每份 0.5 片，加料就是再来 0.5 片（老板 2026-07-31
   // 给的进价 RM 5.225 就是「半片」的价，按片计不拆克数）。
@@ -506,6 +510,20 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
     { name: '鸡胸肉', qty: 65, unit: 'g' },
     { name: '温泉蛋', qty: 1, unit: '颗' },
     { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // sweetsour-chop-combo: 蒜蓉西兰花炒蛋 + 荷包蛋 + 加饭
+  '甜酸下饭套 (原价 RM 15.40)': [
+    { name: '西兰花', qty: 200, unit: 'g' },
+    { name: '鸡蛋(生)', qty: 4, unit: '颗' }, // 炒蛋 3 颗 + 荷包蛋 1 颗
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // sweetsour-rice-combo: 荷包蛋 + 加饭 + 毛豆 25g
+  '猪扒干饭套 (原价 RM 7.00)': [
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+    { name: '毛豆', qty: 25, unit: 'g' },
   ],
 
   // unagi-double-combo: 加鳗鱼 0.5片 + 温泉蛋 + 加饭
@@ -660,6 +678,9 @@ export const addOnShortNames: Record<string, string> = {
   '三色加倍套 (原价 RM 7.50)': '三色套',
   '双倍鳗鱼丼套 (原价 RM 23.50)': '双鳗套',
   '照烧干饭套 (原价 RM 7.50)': '照烧套',
+  '加甜酸猪扒 (1块)': '加猪扒',
+  '甜酸下饭套 (原价 RM 15.40)': '甜酸套',
+  '猪扒干饭套 (原价 RM 7.00)': '猪扒套',
 };
 
 export function getAddOnShortName(label: string): string {
@@ -715,6 +736,8 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '三色加倍套': '三色加倍套 (原价 RM 7.50)',
   '双倍鳗鱼丼套': '双倍鳗鱼丼套 (原价 RM 23.50)',
   '照烧干饭套': '照烧干饭套 (原价 RM 7.50)',
+  '甜酸下饭套': '甜酸下饭套 (原价 RM 15.40)',
+  '猪扒干饭套': '猪扒干饭套 (原价 RM 7.00)',
   // Unagi half-fillet (drop 【…】 prefix)
   '加照烧鳗鱼 (0.5片)': '【照烧加倍】加照烧鳗鱼 (0.5片)',
   // Rice swap — manual short label has its OWN recipe entry above (loop skips

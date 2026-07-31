@@ -362,6 +362,53 @@ export default function AddOnModal({
             });
         }
 
+        // If it's Hometown Sweet & Sour Onion Pork Chop (id: 27), prepend two combos
+        // + an extra-chop upsell. 选品依据 analytics/weekly：这道菜销量常年前三、
+        // 加料渗透 45~67%，但客单只有 RM1.78~1.85/份（当归鸡腿 4.56、姜葱鱼片 4.04）
+        // —— 不是客人不肯花，是这道菜此前既没有「加主菜」也没有套餐，能加的最贵
+        // 的只有西兰花炒蛋。两周稳定的前三加料是 荷包蛋 / 换糙米 / 马铃薯煎蛋，
+        // 所以套餐围着荷包蛋 + 加饭做，A 档再补上这碗完全缺席的蔬菜。
+        if (dish.id === 27) {
+            const sweetSourChopCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'sweetsour-chop-combo-section',
+                title: '✨ 甜酸下饭套',
+                titleEn: 'Sweet & Sour Rice King Set (+ RM 12.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：蒜蓉西兰花炒蛋 + 古早味荷包蛋 + 加饭\n"甜酸洋葱酱最缺一口青——蒜香西兰花炒蛋补上，再戳破荷包蛋捞饭，这碗才算完整。"',
+                extraDescEn: 'Includes: garlic broccoli with soft-scrambled egg + old-school sunny-side-up egg + extra rice\n"That sweet & sour sauce is begging for greens — garlicky broccoli-egg and a runny yolk over extra rice finish the bowl."',
+                items: [
+                    { id: 'sweetsour-chop-combo', name: '甜酸下饭套 (原价 RM 15.40)', nameEn: 'Sweet & Sour Rice King Set', price: p('sweetsour-chop-combo', 12.90), category: 'combo' }
+                ]
+            };
+            const sweetSourRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'sweetsour-rice-combo-section',
+                title: '✨ 猪扒干饭套',
+                titleEn: 'Pork Chop Rice Set (+ RM 5.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：古早味荷包蛋 + 加饭 + 清甜毛豆 25g\n"酱汁剩在碗底最可惜——多一碗饭、一颗流心蛋、一把毛豆，一滴都不留。"',
+                extraDescEn: 'Includes: old-school sunny-side-up egg + extra rice + 25g edamame\n"Never leave that sauce behind — extra rice, a runny egg and crisp edamame mop up every drop."',
+                items: [
+                    { id: 'sweetsour-rice-combo', name: '猪扒干饭套 (原价 RM 7.00)', nameEn: 'Pork Chop Rice Set', price: p('sweetsour-rice-combo', 5.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-pork-chop', name: '加甜酸猪扒 (1块)', nameEn: 'Extra Sweet & Sour Pork Chop (1 pc)', price: p('extra-pork-chop', 11.90), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [sweetSourChopCombo, sweetSourRiceCombo, ...customSections];
+        }
+
         // If it's Hometown Glazed Unagi Rice (id: 29), sides carry the half-fillet
         // upsell plus 温泉蛋 (丼 classic) instead of leaving the egg buried in a la carte.
         // 海苔 老板 2026-07-31 明确不要，别再加回来。

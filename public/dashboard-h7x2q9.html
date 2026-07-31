@@ -2907,6 +2907,8 @@
             { id: 'salmon-tricolor-combo',       name: '三色加倍套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）毛豆+玉米+小番茄，原价 7.50
             { id: 'unagi-double-combo',          name: '双倍鳗鱼丼套',         price: 19.90, category: '套餐组合' },  // 新 2026-07-31（照烧鳗鱼饭）加鳗鱼0.5片+温泉蛋+加饭，原价 23.50
             { id: 'unagi-rice-combo',            name: '照烧干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（照烧鳗鱼饭）温泉蛋+加饭+毛豆25g，原价 7.50
+            { id: 'sweetsour-chop-combo',        name: '甜酸下饭套',           price: 12.90, category: '套餐组合' },  // 新 2026-08-01（甜酸洋葱猪扒）西兰花炒蛋+荷包蛋+加饭，原价 15.40
+            { id: 'sweetsour-rice-combo',        name: '猪扒干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-08-01（甜酸洋葱猪扒）荷包蛋+加饭+毛豆25g，原价 7.00
 
             // 加菜 / 配菜
             { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 7.90,  category: '加菜' },  // 2026-07-16 老板调价 4.90 → 7.90
@@ -2922,6 +2924,7 @@
             { id: 'extra-soy-leg-1',             name: '【犒劳自己】多加一只酱油全鸡腿',        price: 16.50, category: '加菜' },
             { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 10.90, category: '加菜' },
             { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 18.50, category: '加菜' },  // 新 2026-07-31；半片进价 RM5.225，老板拍板 18.50（与加三文鱼同价位）
+            { id: 'extra-pork-chop',             name: '加甜酸猪扒 (1块)',                      price: 11.90, category: '加菜' },  // 新 2026-08-01；进价 RM4.00/块（同鸡扒），老板要求价位在鸡扒10.90与鱼片13.90之间
             { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
             { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (180g)',       price: 11.90, category: '加菜' },
             { id: 'extra-aus-potato-80g',        name: '【优质碳水】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
@@ -3326,6 +3329,8 @@ incredibowl.my`,
             '三色加倍套 (原价 RM 7.50)': 'salmon-tricolor-combo',
             '双倍鳗鱼丼套 (原价 RM 23.50)': 'unagi-double-combo',
             '照烧干饭套 (原价 RM 7.50)': 'unagi-rice-combo',
+            '甜酸下饭套 (原价 RM 15.40)': 'sweetsour-chop-combo',
+            '猪扒干饭套 (原价 RM 7.00)': 'sweetsour-rice-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -3375,6 +3380,8 @@ incredibowl.my`,
             '【小碗解馋】加豆酱花肉 (50g)': 'extra-taucu-pork-50g',
             // 照烧鳗鱼饭 specials (2026-07-31)
             '【照烧加倍】加照烧鳗鱼 (0.5片)': 'extra-unagi-half',
+            // 甜酸洋葱猪扒 specials (2026-08-01)
+            '加甜酸猪扒 (1块)': 'extra-pork-chop',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -10031,6 +10038,26 @@ incredibowl.my`,
                 { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
+                ...DRINKS_PILLS,
+            ],
+            '27': [
+                // 家乡甜酸洋葱猪扒（周四 Hero）— RM 19.90，无 voucherTopUp
+                // 2026-08-01 起自带专属套餐 + 加猪扒（与 webapp AddOnModal id:27 同步）。
+                // 登记后 DEFAULT_ADDONS 兜底失效，标准块照惯例抄全。
+                { id: 'sweetsour-chop-combo', label: '甜酸下饭套', price: 12.90 },
+                { id: 'sweetsour-rice-combo', label: '猪扒干饭套', price: 5.90 },
+                { id: 'extra-pork-chop',      label: '加甜酸猪扒 (1块)', price: 11.90 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 ...DRINKS_PILLS,
             ],
             '29': [

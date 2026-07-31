@@ -1019,6 +1019,21 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "家乡甜酸洋葱猪扒": [
     {
+      "id": "sweetsour-chop-combo",
+      "label": "甜酸下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "sweetsour-rice-combo",
+      "label": "猪扒干饭套",
+      "price": 5.9
+    },
+    {
+      "id": "extra-pork-chop",
+      "label": "加甜酸猪扒 (1块)",
+      "price": 11.9
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0

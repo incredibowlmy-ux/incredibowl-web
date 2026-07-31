@@ -119,6 +119,14 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'unagi-double-combo': 19.90,  // 双倍鳗鱼丼套：加鳗鱼0.5片+温泉蛋+加饭（原价 23.50，老板要破 RM20）
   'unagi-rice-combo': 5.90,     // 照烧干饭套：温泉蛋+加饭+毛豆25g（原价 7.50）
 
+  // ─── Hometown Sweet & Sour Onion Pork Chop (id:27) specials ──
+  // 猪扒进价 RM 4.00/块（老板 2026-08-01 给，与鸡扒同价）。老板定的区间：
+  // 要比加鸡扒(10.90)贵、比加姜葱鱼片(13.90)便宜 → 取 11.90，成整条阶梯
+  // 10.90 鸡扒 / 11.90 猪扒 / 13.90 鱼片。毛利 RM7.90 / 66.4%（2.98× 成本）。
+  'extra-pork-chop': 11.90,
+  'sweetsour-chop-combo': 12.90,  // 甜酸下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'sweetsour-rice-combo': 5.90,   // 猪扒干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
+
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.90,
   'extra-scallion-chop-side': 10.90,
