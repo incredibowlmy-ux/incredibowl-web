@@ -237,7 +237,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     {
       "id": "unagi-double-combo",
       "label": "双倍鳗鱼丼套",
-      "price": 20.9
+      "price": 19.9
     },
     {
       "id": "unagi-rice-combo",

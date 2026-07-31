@@ -116,7 +116,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // 与加三文鱼同价位；毛利 RM 13.28 / 71.8%）。
   'extra-unagi-half': 18.50,
   // 2026-07-31 两个专属套餐（老板拍板要「加鳗鱼 + 温泉蛋 + 加饭」那套）
-  'unagi-double-combo': 20.90,  // 双倍鳗鱼丼套：加鳗鱼0.5片+温泉蛋+加饭（原价 23.50）
+  'unagi-double-combo': 19.90,  // 双倍鳗鱼丼套：加鳗鱼0.5片+温泉蛋+加饭（原价 23.50，老板要破 RM20）
   'unagi-rice-combo': 5.90,     // 照烧干饭套：温泉蛋+加饭+毛豆25g（原价 7.50）
 
   // ─── Scallion Chicken Soup (id:5) specials ──

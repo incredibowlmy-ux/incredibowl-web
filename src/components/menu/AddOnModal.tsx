@@ -372,13 +372,13 @@ export default function AddOnModal({
             const unagiDoubleCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'unagi-double-combo-section',
                 title: '✨ 双倍鳗鱼丼套',
-                titleEn: 'Double Unagi Don Set (+ RM 20.90)',
+                titleEn: 'Double Unagi Don Set (+ RM 19.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：加照烧鳗鱼 0.5片 + 浓厚温泉蛋 + 加饭\n"碗里自带半片，再加半片——整整一片鳗鱼铺满碗面，戳破温泉蛋拌进照烧酱。"',
                 extraDescEn: 'Includes: extra ½ unagi fillet + rich onsen egg + extra rice\n"Half comes with the bowl, half more on top — a full fillet across the rice, with a runny onsen egg in the glaze."',
                 items: [
-                    { id: 'unagi-double-combo', name: '双倍鳗鱼丼套 (原价 RM 23.50)', nameEn: 'Double Unagi Don Set', price: p('unagi-double-combo', 20.90), category: 'combo' }
+                    { id: 'unagi-double-combo', name: '双倍鳗鱼丼套 (原价 RM 23.50)', nameEn: 'Double Unagi Don Set', price: p('unagi-double-combo', 19.90), category: 'combo' }
                 ]
             };
             const unagiRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
