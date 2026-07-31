@@ -38,9 +38,13 @@ interface BatchMeta {
 // 厨房坐标（与 deliveryUtils.PEARL_POINT_* 同源）。这里硬写是为了不把
 // 整个 deliveryUtils 拖进客户端 bundle —— 只要两个数字。
 const KITCHEN = '3.0853475861917716,101.67428154483449';
-// Google Maps 的 dir/?api=1 链接对 waypoints 有实际上限（约 9 个中途点），
-// 超了整条链接会被静默截断或打不开 —— 所以分段发。
-const MAX_WAYPOINTS_PER_LEG = 9;
+// 每段最多几个中途点。取 3 是因为 Google 两份官方文档口径打架：
+//   · 帮助中心（iOS/Android/桌面同文）：「最多 9 个停靠点，含终点」→ 中途点 ≤ 8
+//   · URLs API：「移动浏览器最多 3 个 waypoints，其余场景最多 9 个」
+// 而「Safari 点 universal link 交接给 App」算不算 mobile browser，官方从未定义。
+// 2026-07-31 老板实测 9 个中途点时 Maps 卡在路线编辑器点不动 —— 官方对超限后的
+// 行为零字说明，所以这里直接取最严的 3，同时躲开两种口径。
+const MAX_WAYPOINTS_PER_LEG = 3;
 
 export default function DriverClient() {
     const { currentUser, authLoading } = useAuth();
@@ -172,11 +176,30 @@ export default function DriverClient() {
     };
 
     const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`;
-    // 有坐标就用坐标（geocode 验证过，比自由文本准）；没有才退回地址文本
-    const mapsLink = (o: BatchOrder) =>
-        o.lat !== null && o.lng !== null
-            ? `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}`
-            : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.userAddress)}`;
+
+    /**
+     * 单点导航 —— 这是最可靠的一条路：没有 waypoints 就没有上限之争，
+     * 四个参数全在官方 Maps URLs 文档里。
+     *
+     * dir_action=navigate 官方原文：不指定 origin（起点默认取设备当前位置）时
+     * 「the map launches turn-by-turn navigation」→ 点一下直接开始导航，
+     * 比原来「点开 → 出预览 → 再点 Start」少一步。
+     * 所以这里**故意不传 origin**，传了反而会被官方降级成路线预览。
+     *
+     * 有坐标就用坐标（geocode 验证过，比自由文本准）；没有才退回地址文本。
+     */
+    const mapsLink = (o: BatchOrder) => {
+        const dest = o.lat !== null && o.lng !== null
+            ? `${o.lat},${o.lng}`
+            : o.userAddress;
+        return 'https://www.google.com/maps/dir/?'
+            + new URLSearchParams({
+                api: '1',
+                travelmode: 'driving',
+                dir_action: 'navigate',
+                destination: dest,
+            }).toString();
+    };
 
     // ── Gates ──────────────────────────────────────────────────
     if (authLoading) {
@@ -208,10 +231,15 @@ export default function DriverClient() {
     const done = orders.filter(o => o.status === 'delivered');
     const unlocatedCount = remaining.filter(o => o.lat === null).length;
 
-    // ── 一键全程导航 ──────────────────────────────────────────
+    // ── 一键全程导航（辅助路径）────────────────────────────────
     // 把「还没送的、有坐标的」单按顺序串成 Google Maps 路线链接。
-    // 第一段不给 origin → Google Maps 自动用当前位置（中途打开也对）；
-    // 后续段的起点 = 上一段的终点。超过 9 个中途点就分段。
+    // 第一段不给 origin → Google Maps 自动用当前位置（送到一半才点也对）；
+    // 后续段的起点 = 上一段的终点。
+    //
+    // ⚠️ 这里**故意不加 dir_action=navigate**：多 waypoints + navigate 的组合
+    // 官方零文档零示例，且社区有「Google maps can't open this link」的报告。
+    // 这条只到路线预览，要手点 Start —— 但至少出得来路线。
+    // 要一键起航请用每单卡片里的单点导航（那条才有官方背书）。
     const navPoints = remaining.filter(o => o.lat !== null && o.lng !== null);
     const navLegs: { url: string; from: number; to: number }[] = [];
     for (let i = 0; i < navPoints.length; i += MAX_WAYPOINTS_PER_LEG + 1) {
@@ -282,17 +310,18 @@ export default function DriverClient() {
                             )}
                         </div>
                         {navLegs.length === 0 ? (
-                            <p className="text-xs text-gray-400">没有可导航的坐标 — 请逐单点地址导航</p>
+                            <p className="text-xs text-gray-400">没有可导航的坐标 — 请用每单的「🧭 导航去这一单」</p>
                         ) : navLegs.map((leg, i) => (
                             <a key={i} href={leg.url} target="_blank" rel="noopener noreferrer"
-                               className="block w-full py-3 text-center bg-[#1A2D23] text-white rounded-2xl font-black text-sm">
-                                🗺️ {navLegs.length === 1 ? '一键导航全程' : `导航第 ${i + 1} 段`}
-                                <span className="font-normal opacity-70"> · 第 {leg.from}–{leg.to} 站</span>
+                               className="block w-full py-2.5 text-center bg-white border-2 border-[#1A2D23] text-[#1A2D23] rounded-2xl font-bold text-sm">
+                                🗺️ {navLegs.length === 1 ? '整段路线预览' : `第 ${i + 1} 段路线预览`}
+                                <span className="font-normal opacity-60"> · 第 {leg.from}–{leg.to} 站</span>
                             </a>
                         ))}
-                        {navLegs.length > 1 && (
-                            <p className="text-[10px] text-gray-400">
-                                Google Maps 单条路线最多 {MAX_WAYPOINTS_PER_LEG} 个中途点，已自动分段 — 送完一段再点下一段
+                        {navLegs.length > 0 && (
+                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                                多点路线只到预览、还要手点 Start，且 Google 对停靠点数量有上限（已按 {MAX_WAYPOINTS_PER_LEG} 个一段拆开）。
+                                <br />送单请优先用每单的「🧭 导航去这一单」—— 点一下直接开始导航。
                             </p>
                         )}
                         {unlocatedCount > 0 && (
@@ -318,14 +347,19 @@ export default function DriverClient() {
                             <p className="text-sm font-bold text-[#1A2D23]">{o.userName}</p>
                             <p className="text-sm text-gray-600">{o.items}</p>
                             {o.note && <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1 text-yellow-800">📝 {o.note}</p>}
-                            <a href={mapsLink(o)} target="_blank" rel="noopener noreferrer"
-                               className="block text-sm text-blue-600 underline underline-offset-2">📍 {o.userAddress}</a>
+                            <p className="text-sm text-gray-600">📍 {o.userAddress}</p>
                             {o.lat === null && (
                                 <p className="text-xs bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1 text-yellow-800">
                                     ⚠️ 这单定位不到，不在自动路线里 — 请自己安排顺序
                                 </p>
                             )}
-                            <div className="flex gap-2 pt-1">
+                            {/* 单点导航是最可靠的一条路（官方 dir_action=navigate，点一下直接起航），
+                                所以给它一个正经按钮，别再藏在地址的下划线里 */}
+                            <a href={mapsLink(o)} target="_blank" rel="noopener noreferrer"
+                               className="block w-full py-3 text-center bg-[#1A2D23] text-white rounded-2xl text-sm font-black">
+                                🧭 导航去这一单
+                            </a>
+                            <div className="flex gap-2">
                                 <a href={`tel:${o.userPhone}`} className="flex-1 py-2.5 text-center bg-gray-100 rounded-xl text-sm font-bold text-[#1A2D23]">📞 打电话</a>
                                 <a href={waLink(o.userPhone)} target="_blank" rel="noopener noreferrer"
                                    className="flex-1 py-2.5 text-center bg-[#25D366]/10 text-[#1EBE57] rounded-xl text-sm font-bold">💬 WhatsApp</a>
