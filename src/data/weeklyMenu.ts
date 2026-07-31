@@ -364,12 +364,14 @@ const DISH_CATALOG: DishData[] = [
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿，待老板审定。
         // a la carte RM24.90；餐券抵扣需补 RM5（voucherTopUp，餐券覆盖 RM19.90，
-        // 与同价的柠香三文鱼一致）。无预付升级池 → 不设 topUpAddonId。
+        // 与同价的柠香三文鱼一致）。2026-07-27 开通预付升级池 unagi-upgrade
+        // （老板要求，比照 salmon-upgrade）：餐券客可预充 RM5/张 抵 top-up。
         id: 29,
         name: "古早味照烧鳗鱼饭",
         nameEn: "Hometown Glazed Unagi Rice",
         price: 24.90,
         voucherTopUp: 5,
+        topUpAddonId: "unagi-upgrade",
         availableWeekdays: [1, 4],
         featureOnAvailableDays: true,
         unavailableNote: "仅周一、周四供应",

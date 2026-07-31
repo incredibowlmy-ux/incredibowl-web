@@ -52,6 +52,8 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // （1 张升级券 = 覆盖 1 份 top-up 全额，售价低于 top-up 就每份漏 RM1）。
   'salmon-upgrade': 5.00,
   'wagyu-upgrade': 3.00,
+  // 2026-07-27：照烧鳗鱼饭 (id 29) 开通预付升级池，voucherTopUp=5 → 售价 5.00
+  'unagi-upgrade': 5.00,
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
@@ -140,6 +142,7 @@ export const PREPAID_ADDON_OPTIONS: PrepaidAddonOption[] = [
   { id: 'potato-egg', name: '马铃薯煎蛋' },
   { id: 'salmon-upgrade', name: '三文鱼升级' },
   { id: 'wagyu-upgrade', name: '和牛饭升级' },
+  { id: 'unagi-upgrade', name: '鳗鱼饭升级' },
   { id: 'broccoli-egg', name: '蒜蓉西兰花炒蛋' },
   { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋' },
   { id: 'extra-rice', name: '加饭' },
