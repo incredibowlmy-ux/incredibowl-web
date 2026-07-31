@@ -369,13 +369,37 @@ export default function AddOnModal({
         // 改名就静默算 0 食材（见 dishIngredients.ts 别名注释）。
         // 西兰花仍缺独立加料价（三文鱼饭也一样缺），故不列。
         if (dish.id === 29) {
-            return addOnSections.map(section => {
+            const unagiDoubleCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'unagi-double-combo-section',
+                title: '✨ 双倍鳗鱼丼套',
+                titleEn: 'Double Unagi Don Set (+ RM 20.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：加照烧鳗鱼 0.5片 + 浓厚温泉蛋 + 加饭\n"碗里自带半片，再加半片——整整一片鳗鱼铺满碗面，戳破温泉蛋拌进照烧酱。"',
+                extraDescEn: 'Includes: extra ½ unagi fillet + rich onsen egg + extra rice\n"Half comes with the bowl, half more on top — a full fillet across the rice, with a runny onsen egg in the glaze."',
+                items: [
+                    { id: 'unagi-double-combo', name: '双倍鳗鱼丼套 (原价 RM 23.50)', nameEn: 'Double Unagi Don Set', price: p('unagi-double-combo', 20.90), category: 'combo' }
+                ]
+            };
+            const unagiRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'unagi-rice-combo-section',
+                title: '✨ 照烧干饭套',
+                titleEn: 'Unagi Rice Set (+ RM 5.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：浓厚温泉蛋 + 加饭 + 清甜毛豆 25g\n"照烧酱最怕饭不够——蛋滑、饭足、毛豆脆，一碗干到底。"',
+                extraDescEn: 'Includes: rich onsen egg + extra rice + 25g edamame\n"That glaze needs rice to soak it up — silky egg, extra rice, crisp edamame."',
+                items: [
+                    { id: 'unagi-rice-combo', name: '照烧干饭套 (原价 RM 7.50)', nameEn: 'Unagi Rice Set', price: p('unagi-rice-combo', 5.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-unagi-half', name: '【照烧加倍】加照烧鳗鱼 (0.5片)', nameEn: 'Extra Glazed Unagi (½ fillet)', price: p('extra-unagi-half', 15.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-unagi-half', name: '【照烧加倍】加照烧鳗鱼 (0.5片)', nameEn: 'Extra Glazed Unagi (½ fillet)', price: p('extra-unagi-half', 18.50), category: 'sides', maxQty: 3 },
                             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
@@ -390,6 +414,7 @@ export default function AddOnModal({
                 }
                 return section;
             });
+            return [unagiDoubleCombo, unagiRiceCombo, ...customSections];
         }
 
         // If it's Angelica Steamed Whole Chicken Leg (Tuesday special, id: 2), append specific add-ons to the sides

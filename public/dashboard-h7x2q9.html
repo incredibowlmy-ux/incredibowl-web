@@ -2905,6 +2905,8 @@
             { id: 'curry-trio-combo',            name: '咖喱控三件套',         price: 7.90,  category: '套餐组合' },  // 新 2026-07-16（日式咖喱饭）
             { id: 'salmon-protein-duo-combo',    name: '柠香双蛋白套',         price: 12.90, category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）西兰花炒蛋+温泉蛋，原价 13.90
             { id: 'salmon-tricolor-combo',       name: '三色加倍套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）毛豆+玉米+小番茄，原价 7.50
+            { id: 'unagi-double-combo',          name: '双倍鳗鱼丼套',         price: 20.90, category: '套餐组合' },  // 新 2026-07-31（照烧鳗鱼饭）加鳗鱼0.5片+温泉蛋+加饭，原价 23.50
+            { id: 'unagi-rice-combo',            name: '照烧干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（照烧鳗鱼饭）温泉蛋+加饭+毛豆25g，原价 7.50
 
             // 加菜 / 配菜
             { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 7.90,  category: '加菜' },  // 2026-07-16 老板调价 4.90 → 7.90
@@ -2919,7 +2921,7 @@
             { id: 'extra-herbal-leg-3',          name: '加 3 只暖胃鸡腿 (legacy)',              price: 41.40, category: '加菜' },
             { id: 'extra-soy-leg-1',             name: '【犒劳自己】多加一只酱油全鸡腿',        price: 16.50, category: '加菜' },
             { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 10.90, category: '加菜' },
-            { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 15.90, category: '加菜' },  // 新 2026-07-31；半片进价 RM5.225，÷33% ≈ 15.90
+            { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 18.50, category: '加菜' },  // 新 2026-07-31；半片进价 RM5.225，老板拍板 18.50（与加三文鱼同价位）
             { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
             { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (180g)',       price: 11.90, category: '加菜' },
             { id: 'extra-aus-potato-80g',        name: '【优质碳水】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
@@ -3322,6 +3324,8 @@ incredibowl.my`,
             '咖喱控三件套 (原价 RM 9.50)': 'curry-trio-combo',
             '柠香双蛋白套 (原价 RM 13.90)': 'salmon-protein-duo-combo',
             '三色加倍套 (原价 RM 7.50)': 'salmon-tricolor-combo',
+            '双倍鳗鱼丼套 (原价 RM 23.50)': 'unagi-double-combo',
+            '照烧干饭套 (原价 RM 7.50)': 'unagi-rice-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -10031,12 +10035,15 @@ incredibowl.my`,
             ],
             '29': [
                 // 古早味照烧鳗鱼饭（常驻·限周一/四，🆕 2026-07-30）— RM 24.90，
-                // 餐券抵扣需补 RM 5（voucherTopUp）。菜本身自带 马铃薯煎蛋B + 西兰花 50g，
+                // 餐券抵扣需补 RM 5（voucherTopUp）。菜本身自带 1/4 份马铃薯煎蛋 + 西兰花 50g，
                 // 下面列的都是 EXTRA。2026-07-31 起自带专属 sides（与 webapp AddOnModal id:29 同步）：
                 // 加鳗鱼提到前面，其余照标准块抄全
                 //（一旦在这里登记，DEFAULT_ADDONS 兜底就不再生效）。
-                // 老板 2026-07-31：鳗鱼饭不要海苔；半片进价 RM5.225 → 售 15.90。
-                { id: 'extra-unagi-half', label: '加照烧鳗鱼 (0.5片)', price: 15.90 },
+                // 老板 2026-07-31：鳗鱼饭不要海苔；半片进价 RM5.225 → 售 18.50（他拍板）。
+                // 同日加两个专属套餐（与 webapp AddOnModal id:29 同步）
+                { id: 'unagi-double-combo', label: '双倍鳗鱼丼套', price: 20.90 },
+                { id: 'unagi-rice-combo',   label: '照烧干饭套', price: 5.90 },
+                { id: 'extra-unagi-half', label: '加照烧鳗鱼 (0.5片)', price: 18.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },

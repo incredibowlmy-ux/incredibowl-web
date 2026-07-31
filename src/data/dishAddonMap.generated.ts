@@ -235,9 +235,19 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "古早味照烧鳗鱼饭": [
     {
+      "id": "unagi-double-combo",
+      "label": "双倍鳗鱼丼套",
+      "price": 20.9
+    },
+    {
+      "id": "unagi-rice-combo",
+      "label": "照烧干饭套",
+      "price": 5.9
+    },
+    {
       "id": "extra-unagi-half",
       "label": "加照烧鳗鱼 (0.5片)",
-      "price": 15.9
+      "price": 18.5
     },
     {
       "id": "less-rice",

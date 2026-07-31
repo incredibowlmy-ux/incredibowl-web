@@ -295,15 +295,17 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     // 新菜 2026-07-30 入系统。份量老板 2026-07-30 提供：鳗鱼 0.5 片、西兰花 50g。
-    // 「马铃薯煎蛋B」= 本道专用的特别份量煎蛋，与加料版「马铃薯煎蛋」
-    //（马铃薯 150g + 鸡蛋 2 颗）是不同规格 → 老板拍板另立一个 SKU，按「份」计，
-    // 不拆成马铃薯/鸡蛋（拆了就得编克数）。碗妈在备餐清单看到「马铃薯煎蛋B N 份」。
+    // 「马铃薯煎蛋B」原本按「份」另立 SKU，是因为老板当时没给份量（拆了就得编克数）。
+    // 2026-07-31 老板给了：**1 份 B = 加料版「马铃薯煎蛋」(马铃薯 150g + 鸡蛋 2 颗) 的 1/4**
+    // → 马铃薯 37.5g + 鸡蛋 0.5 颗。份量有了就拆成真采购 SKU（与加料版同口径），
+    // 否则采购汇总和 ingredientStock 都扣不到马铃薯/鸡蛋，只看到一个买不到的「份」。
     // 照烧酱按瓶装常备调味惯例不计入采购汇总。
     name: '古早味照烧鳗鱼饭',
     shortName: '鳗鱼',
     ingredients: [
       { name: '鳗鱼', qty: 0.5, unit: '片' },
-      { name: '马铃薯煎蛋B', qty: 1, unit: '份' },
+      { name: '马铃薯', qty: 37.5, unit: 'g' },
+      { name: '鸡蛋(生)', qty: 0.5, unit: '颗' },
       { name: '西兰花', qty: 50, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
     ],
@@ -506,6 +508,21 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
     { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
   ],
 
+  // unagi-double-combo: 加鳗鱼 0.5片 + 温泉蛋 + 加饭
+  // （主菜自带 0.5 片 + 这里再 0.5 片 = 客人碗里整整一片）
+  '双倍鳗鱼丼套 (原价 RM 23.50)': [
+    { name: '鳗鱼', qty: 0.5, unit: '片' },
+    { name: '温泉蛋', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // unagi-rice-combo: 温泉蛋 + 加饭 + 毛豆 25g
+  '照烧干饭套 (原价 RM 7.50)': [
+    { name: '温泉蛋', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+    { name: '毛豆', qty: 25, unit: 'g' },
+  ],
+
   // salmon-protein-duo-combo: 蒜蓉西兰花炒蛋 + 温泉蛋（与单点版同份量）
   '柠香双蛋白套 (原价 RM 13.90)': [
     { name: '西兰花', qty: 200, unit: 'g' },
@@ -641,6 +658,8 @@ export const addOnShortNames: Record<string, string> = {
   '【照烧加倍】加照烧鳗鱼 (0.5片)': '加鳗鱼',
   '柠香双蛋白套 (原价 RM 13.90)': '双蛋套',
   '三色加倍套 (原价 RM 7.50)': '三色套',
+  '双倍鳗鱼丼套 (原价 RM 23.50)': '双鳗套',
+  '照烧干饭套 (原价 RM 7.50)': '照烧套',
 };
 
 export function getAddOnShortName(label: string): string {
@@ -694,6 +713,8 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '咖喱控三件套': '咖喱控三件套 (原价 RM 9.50)',
   '柠香双蛋白套': '柠香双蛋白套 (原价 RM 13.90)',
   '三色加倍套': '三色加倍套 (原价 RM 7.50)',
+  '双倍鳗鱼丼套': '双倍鳗鱼丼套 (原价 RM 23.50)',
+  '照烧干饭套': '照烧干饭套 (原价 RM 7.50)',
   // Unagi half-fillet (drop 【…】 prefix)
   '加照烧鳗鱼 (0.5片)': '【照烧加倍】加照烧鳗鱼 (0.5片)',
   // Rice swap — manual short label has its OWN recipe entry above (loop skips

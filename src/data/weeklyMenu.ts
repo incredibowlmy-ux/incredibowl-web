@@ -357,8 +357,8 @@ const DISH_CATALOG: DishData[] = [
     {
         // 全新菜 2026-07-30 入系统，07-31（周五）首发；2026-08-03 起改周一+周四
         // 两天供应（走常驻 + availableWeekdays + featureOnAvailableDays）。
-        // 份量见 dishIngredients.ts（老板 07-30 提供：鳗鱼 0.5 片 + 马铃薯煎蛋B
-        // 1 份 + 西兰花 50g + 白饭 80g）。
+        // 份量见 dishIngredients.ts（鳗鱼 0.5 片 + 西兰花 50g + 白饭 80g，07-30 给；
+        // 自带的马铃薯煎蛋 = 加料版的 1/4 → 马铃薯 37.5g + 鸡蛋 0.5 颗，07-31 给）。
         // 2026-07-31 回填主图（unagi_rice.webp，1024² webp q82，源图老板给的
         //    Gpt/unagi.jpeg）；仍需老板在 Google Sheet dishes 表加一行，
         //    否则 chatbot 发不出该菜图片。
