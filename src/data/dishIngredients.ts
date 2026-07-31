@@ -387,7 +387,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
 
   // ─── Glazed Unagi add-on ───────────────────────────────────
   // 与主菜同口径：主菜每份 0.5 片，加料就是再来 0.5 片（老板 2026-07-31
-  // 给的进价 RM 5.225/片 也是按「片」计，不拆克数）。
+  // 给的进价 RM 5.225 就是「半片」的价，按片计不拆克数）。
   '【照烧加倍】加照烧鳗鱼 (0.5片)': [{ name: '鳗鱼', qty: 0.5, unit: '片' }],
 
   // ─── Ginger-Scallion Fish add-on ───────────────────────────
