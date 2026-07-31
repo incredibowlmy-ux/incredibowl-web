@@ -359,8 +359,9 @@ const DISH_CATALOG: DishData[] = [
         // 两天供应（走常驻 + availableWeekdays + featureOnAvailableDays）。
         // 份量见 dishIngredients.ts（老板 07-30 提供：鳗鱼 0.5 片 + 马铃薯煎蛋B
         // 1 份 + 西兰花 50g + 白饭 80g）。
-        // ⏳ 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在
-        //    Google Sheet dishes 表加一行，否则 chatbot 发不出该菜图片）。
+        // 2026-07-31 回填主图（unagi_rice.webp，1024² webp q82，源图老板给的
+        //    Gpt/unagi.jpeg）；仍需老板在 Google Sheet dishes 表加一行，
+        //    否则 chatbot 发不出该菜图片。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿，待老板审定。
         // a la carte RM24.90；餐券抵扣需补 RM5（voucherTopUp，餐券覆盖 RM19.90，
@@ -376,7 +377,7 @@ const DISH_CATALOG: DishData[] = [
         featureOnAvailableDays: true,
         unavailableNote: "仅周一、周四供应",
         unavailableNoteEn: "Mon & Thu only",
-        image: "🍱",
+        image: "/unagi_rice.webp",
         tags: ["古早味照烧", "焦糖酱香", "配马铃薯煎蛋", "餐券+RM5"],
         tagsEn: ["Hometown glaze", "Caramelised soy", "With potato fried egg", "Voucher +RM5"],
         desc: "照烧酱慢火收到焦糖化，酱香一层层裹住鳗鱼，旁边配一份马铃薯煎蛋——古早味的踏实满足。",
