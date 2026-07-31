@@ -1031,7 +1031,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     {
       "id": "extra-pork-chop",
       "label": "加甜酸猪扒 (1块)",
-      "price": 11.9
+      "price": 14.9
     },
     {
       "id": "less-rice",

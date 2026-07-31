@@ -399,7 +399,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-pork-chop', name: '加甜酸猪扒 (1块)', nameEn: 'Extra Sweet & Sour Pork Chop (1 pc)', price: p('extra-pork-chop', 11.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-pork-chop', name: '加甜酸猪扒 (1块)', nameEn: 'Extra Sweet & Sour Pork Chop (1 pc)', price: p('extra-pork-chop', 14.90), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
