@@ -1,0 +1,105 @@
+{
+  "name": "Bowlmama v2 — 下单草稿工具",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "phone" },
+            { "name": "customer_name" },
+            { "name": "address" },
+            { "name": "order_json" },
+            { "name": "note" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [-600, 0],
+      "id": "dt-trigger",
+      "name": "Tool Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 把 AI 给的 order_json 整理成 /api/n8n/wa-order draft 请求体。\n// AI 可能带 markdown 围栏或轻微格式偏差，这里做宽容解析；\n// 解析不了就带 _parseError 出去，绝不猜。\n// ============================\n\nconst inp = $input.first().json;\nlet days;\ntry {\n  let raw = String(inp.order_json || '').trim();\n  raw = raw.replace(/^```(json)?/i, '').replace(/```\\s*$/i, '').trim();\n  const parsed = JSON.parse(raw);\n  days = Array.isArray(parsed) ? parsed : [parsed];\n} catch (e) {\n  return [{ json: { _parseError: 'order_json 不是合法 JSON：' + e.message } }];\n}\n\nconst body = {\n  action: 'draft',\n  phone: String(inp.phone || ''),\n  customerName: String(inp.customer_name || ''),\n  days: days.map(d => ({\n    date: String(d.date || ''),\n    meal: d.meal === 'dinner' ? 'dinner' : 'lunch',\n    ...(d.time ? { time: String(d.time) } : {}),\n    items: (Array.isArray(d.items) ? d.items : []).map(it => ({\n      dish: it.dish ?? it.name ?? it.dishName ?? '',\n      qty: Number(it.qty ?? it.quantity) || 1,\n      addOns: (Array.isArray(it.addOns) ? it.addOns : []).map(a => ({\n        name: a.name ?? a.label ?? a.id ?? '',\n        qty: Number(a.qty ?? a.quantity) || 1\n      }))\n    }))\n  }))\n};\nconst addr = String(inp.address || '').trim();\nif (addr) body.address = addr;\nconst note = String(inp.note || '').trim();\nif (note) body.note = note;\n\nreturn [{ json: { body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-380, 0],
+      "id": "dt-build-request",
+      "name": "Build Draft Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "dt-perr-1", "leftValue": "={{ $json._parseError || '' }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-160, 0],
+      "id": "dt-has-parse-error",
+      "name": "Has Parse Error"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { result: `❌ order_json 解析失败：${$input.first().json._parseError}。请按系统提示词的格式重新生成 JSON 再调用一次。` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [60, -140],
+      "id": "dt-parse-error-response",
+      "name": "Parse Error Response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/n8n/wa-order",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [60, 120],
+      "id": "dt-call-api",
+      "name": "Call WA Order API",
+      "onError": "continueRegularOutput",
+      "credentials": { "httpBearerAuth": { "id": "ew3zAX6xWGWOdrGO", "name": "Incredibowl N8N API Key" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// API 结果 → 给 AI 的工具返回文本（AI 只能转述这里的数字）\n// ============================\n\nconst r = $input.first().json || {};\n\nif (r.ok) {\n  let text = `✅ 草稿已建立（系统权威计价）\\n${r.summaryText || ''}\\n应收合计：RM ${Number(r.cashDue).toFixed(2)}（菜品 RM ${Number(r.foodTotal).toFixed(2)} + 运费 RM ${Number(r.deliveryTotal).toFixed(2)}，距离约 ${r.distanceKm}km）`;\n  if (r.upsellHint) text += `\\n💡 可自然提一句：${r.upsellHint}`;\n  if (Array.isArray(r.warnings) && r.warnings.length) text += `\\n⚠️ 警告：${r.warnings.join('；')}`;\n  if (Array.isArray(r.skippedDays) && r.skippedDays.length) text += `\\n⛔ 以下日期无法安排（已剔除）：${r.skippedDays.join('、')}`;\n  text += '\\n下一步：把明细和合计发给客户确认；客户 OK 后按流程发收款话术 + [SEND_QR]。';\n  return [{ json: { result: text } }];\n}\n\nconst errMsg = (r.error && typeof r.error === 'object') ? (r.error.message || JSON.stringify(r.error)) : (r.error || r.message || '接口无响应');\nreturn [{ json: { result: `❌ 下单草稿失败：${errMsg}。请按原因处理（缺信息就问客户）；拿不准就在回复开头加 [求救老板]。` } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 120],
+      "id": "dt-format-response",
+      "name": "Format Tool Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Trigger": { "main": [ [ { "node": "Build Draft Request", "type": "main", "index": 0 } ] ] },
+    "Build Draft Request": { "main": [ [ { "node": "Has Parse Error", "type": "main", "index": 0 } ] ] },
+    "Has Parse Error": {
+      "main": [
+        [ { "node": "Parse Error Response", "type": "main", "index": 0 } ],
+        [ { "node": "Call WA Order API", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Call WA Order API": { "main": [ [ { "node": "Format Tool Response", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}

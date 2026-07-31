@@ -1,0 +1,1273 @@
+{
+  "name": "Bowlmama v2 — 客服+下单闭环",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚠️ 导入后必做（3 件事）\n1. 打开 create_order_draft 节点 → Workflow 下拉重选「Bowlmama v2 — 下单草稿工具」\n2. 右上 ⋯ → Settings → Error Workflow → 选「Bowlmama v2 — Error Handler」（不挂 = 挂了没人报警）\n3. Google Sheet 新建 wa_buffer tab（表头 phone | msg_id | text | ts）\n\n防抖窗口在「Wait 防抖」节点改（默认 10 秒）。\n上线前照 repo 里 n8n-workflows/SETUP.md 的 8 步真机 smoke 走一遍。",
+        "height": 340,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-4680, -1180],
+      "id": "v2-sticky-setup",
+      "name": "导入后必做"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-receive",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-4600, -400],
+      "id": "v2-webhook",
+      "name": "Webhook",
+      "webhookId": "b2f1e7a0-1111-4a00-9c00-bowlmamav200"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            {
+              "id": "guard-1",
+              "leftValue": "={{ $json.body.entry[0].changes[0].value.messages }}",
+              "rightValue": "",
+              "operator": { "type": "array", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-4380, -400],
+      "id": "v2-guard",
+      "name": "Guard - 过滤status"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 路由器：字段提取 + 路由分类 + 消息去重（5 分钟窗口，防 Cloud API 重试）\n// v2 变化：老板直发消息单独 boss_direct 路由（静默忽略，v1 会误回「只能处理文字」）；\n//          新增 location / audio 路由；lead 采集支线已按老板决定整条移除。\n// ============================\n\nconst entry = $input.first().json.body.entry[0].changes[0].value;\nconst msg = entry.messages[0];\nconst BOSS_PHONE = '60165014501';\n\nconst staticData = $getWorkflowStaticData('global');\nconst nowTs = Date.now();\nconst seen = staticData.seenMessages || {};\nfor (const k of Object.keys(seen)) {\n  if (nowTs - seen[k] > 5 * 60 * 1000) delete seen[k];\n}\nif (msg.id && seen[msg.id]) {\n  return [];\n}\nif (msg.id) {\n  seen[msg.id] = nowTs;\n  staticData.seenMessages = seen;\n}\n\nconst phone = msg.from;\nconst type = msg.type;\nconst text = msg.text?.body ?? '';\nconst imageId = msg.image?.id ?? '';\nconst caption = msg.image?.caption ?? '';\nconst contextId = msg.context?.id ?? '';\nconst isBoss = phone === BOSS_PHONE;\nconst hasContext = !!msg.context;\nconst lat = msg.location?.latitude ?? null;\nconst lng = msg.location?.longitude ?? null;\nconst locName = msg.location?.name ?? '';\nconst locAddress = msg.location?.address ?? '';\n\nlet route = 'fallback';\nif (isBoss && hasContext && type === 'text' && text) {\n  route = 'boss_reply'; // 只有「引用+文字」才算转达指令；引用图片/贴纸会被静默忽略\n} else if (isBoss) {\n  route = 'boss_direct'; // 老板随手消息：静默忽略\n} else if (type === 'image') {\n  route = 'image';\n} else if (type === 'location') {\n  route = 'location';\n} else if (type === 'audio') {\n  route = 'audio';\n} else if (type === 'text' && text) {\n  route = 'customer_text';\n}\n\nreturn [{\n  json: {\n    phone, type, text, imageId, caption, contextId,\n    isBoss, hasContext, route,\n    msgId: msg.id || '',\n    lat, lng, locName, locAddress\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4160, -400],
+      "id": "v2-router",
+      "name": "Router"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-1", "leftValue": "={{ $json.route }}", "rightValue": "customer_text", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "客户文字"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-2", "leftValue": "={{ $json.route }}", "rightValue": "boss_reply", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "老板回复"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-3", "leftValue": "={{ $json.route }}", "rightValue": "image", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "图片"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-4", "leftValue": "={{ $json.route }}", "rightValue": "location", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "位置pin"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-5", "leftValue": "={{ $json.route }}", "rightValue": "audio", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "语音"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "sw-6", "leftValue": "={{ $json.route }}", "rightValue": "boss_direct", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "老板直发"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [-3940, -400],
+      "id": "v2-main-switch",
+      "name": "Main Switch"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "wa_buffer", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "msg_id": "={{ $json.msgId }}",
+            "text": "={{ $json.text }}",
+            "ts": "={{ $now.toMillis() }}"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-3700, -1000],
+      "id": "v2-buffer-append",
+      "name": "Buffer Append",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "amount": 10,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [-3480, -1000],
+      "id": "v2-wait",
+      "name": "Wait 防抖",
+      "webhookId": "b2f1e7a0-2222-4a00-9c00-bowlmamav201"
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "wa_buffer", "mode": "name" },
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "phone", "lookupValue": "={{ $('Router').first().json.phone }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-3260, -1000],
+      "id": "v2-buffer-read",
+      "name": "Buffer Read",
+      "alwaysOutputData": true,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 防抖闸门：wa_buffer 里 msg_id='PROCESSED' 的行是水位线。\n// 只有「等待期后仍是该客户最新一条真实消息」的执行继续往下走，\n// 并把水位线以上的多条消息合并成一段交给 AI —— 客户连发三条只回一次。\n// 两个关键点（review 修过的坑）：\n// 1. 水位线 ts 用「本次吞掉的最大消息 ts」（maxTs 传给 Buffer Mark），\n//    不能用打水位线那一刻的 $now —— 否则 Read 和 Mark 之间落进来的新消息会被永久吞掉。\n// 2. SYS- 开头的系统注记行（定位报价等）只并入上下文，不参与「谁是最新」判定 ——\n//    否则客户先发文字再发定位，文字那条会被 SYS 行顶掉、永远没人回。\n// ============================\n\nconst me = $('Router').first().json;\nconst rows = $input.all().map(i => i.json).filter(r => r && String(r.phone) === String(me.phone));\n\nconst marks = rows.filter(r => String(r.msg_id) === 'PROCESSED').map(r => Number(r.ts) || 0);\nconst lastMark = marks.length ? Math.max(...marks) : 0;\nconst pending = rows\n  .filter(r => String(r.msg_id) !== 'PROCESSED' && (Number(r.ts) || 0) > lastMark)\n  .sort((a, b) => (Number(a.ts) || 0) - (Number(b.ts) || 0));\n\n// 我这条已在上一个水位线之下 = Cloud API 重试进来的旧消息 → 静默退出\nconst mine = rows.find(r => String(r.msg_id) === String(me.msgId));\nif (mine && (Number(mine.ts) || 0) <= lastMark) return [];\n\n// Sheet 抽风没读到我这条 → 绝不能吃掉客户消息，退化成单条处理\nconst realPending = pending.filter(r => !String(r.msg_id).startsWith('SYS-'));\nif (realPending.length === 0) {\n  return [{ json: { phone: me.phone, text: me.text, mergedCount: 1, maxTs: Date.now(), degraded: true } }];\n}\n\n// 「最新」只看真实客户消息（SYS- 注记不算数）；不是最新 → 更新的执行会连我一起处理\nconst latest = realPending[realPending.length - 1];\nif (String(latest.msg_id) !== String(me.msgId)) return [];\n\nconst text = pending.map(r => String(r.text || '')).filter(Boolean).join('\\n');\nconst maxTs = Math.max(...pending.map(r => Number(r.ts) || 0));\nreturn [{ json: { phone: me.phone, text, mergedCount: pending.length, maxTs } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3040, -1000],
+      "id": "v2-debounce-gate",
+      "name": "Debounce Gate"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "wa_buffer", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "msg_id": "PROCESSED",
+            "text": "",
+            "ts": "={{ $('Debounce Gate').first().json.maxTs }}"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-2820, -1000],
+      "id": "v2-buffer-mark",
+      "name": "Buffer Mark",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $json.phone }}",
+            "报警消息ID": "empty",
+            "发送者": "Customer",
+            "聊天内容": "={{ $json.text }}",
+            "老板的回复": "empty"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-2820, -790],
+      "id": "v2-log-customer-text",
+      "name": "Log Customer Text",
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "promo", "mode": "name" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-2600, -1000],
+      "id": "v2-get-promo",
+      "name": "Get Promo",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "dishes", "mode": "name" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-2380, -1000],
+      "id": "v2-get-dishes",
+      "name": "Get Dishes",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "url": "https://www.incredibowl.my/api/n8n/menu",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2160, -1000],
+      "id": "v2-get-live-menu",
+      "name": "Get Live Menu",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueRegularOutput",
+      "credentials": { "httpBearerAuth": { "id": "ew3zAX6xWGWOdrGO", "name": "Incredibowl N8N API Key" } }
+    },
+    {
+      "parameters": {
+        "url": "=https://www.incredibowl.my/api/n8n/customer?phone={{ $('Router').first().json.phone }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-1940, -1000],
+      "id": "v2-get-customer",
+      "name": "Get Customer",
+      "onError": "continueRegularOutput",
+      "credentials": { "httpBearerAuth": { "id": "ew3zAX6xWGWOdrGO", "name": "Incredibowl N8N API Key" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// Context Builder v2：菜单/配送/促销/发图清单（同 v1）+ 客户档案注入（新）。\n// 所有外部读取都 fail-safe —— 任何一路挂了给出安全兜底文案，绝不让 AI 编。\n// ============================\n\nconst menuApi = $('Get Live Menu').first()?.json || {};\nconst apiOk = typeof menuApi.today_menu === 'string' && menuApi.today_menu.length > 0;\nconst deliveryContext = apiOk ? menuApi.delivery_context : '';\nconst deliveryLabel = apiOk ? menuApi.delivery_label : '';\nconst todayMenu = apiOk\n  ? menuApi.today_menu\n  : '【系统提示】菜单服务暂时读取不到。不要凭记忆报任何菜名或价格，直接在回复开头加 [求救老板]，请客户稍等。';\n\nconst promoRow = $('Get Promo').first()?.json || {};\nconst promoActive = promoRow.active === true || String(promoRow.active).toLowerCase() === 'true';\nconst promoText = (promoActive && promoRow.text) ? String(promoRow.text) : '暂无促销活动。';\n\nconst dishRows = $('Get Dishes').all().map(i => i.json).filter(d => {\n  if (!d || !d.dish_id) return false;\n  const a = d.active;\n  return a === true || String(a ?? '').toLowerCase() === 'true';\n});\nconst dishIdList = dishRows.length\n  ? dishRows.map(d => {\n      const aliases = String(d.aliases ?? '').trim();\n      return `- ${d.dish_id}${aliases ? `（${aliases}）` : ''}：${d.name_zh} RM${d.price}`;\n    }).join('\\n')\n  : '（暂无可发图菜单）';\n\nconst cust = $('Get Customer').first()?.json || {};\nconst customerContext = typeof cust.contextBlock === 'string' && cust.contextBlock\n  ? cust.contextBlock\n  : '【客户档案】查询暂时失败 —— 不要假设客户身份，正常接待即可。';\n\nconst gate = $('Debounce Gate').first().json;\nreturn [{\n  json: {\n    phone: gate.phone,\n    text: gate.text,\n    delivery_context: deliveryContext,\n    delivery_label: deliveryLabel,\n    today_menu: todayMenu,\n    promo_text: promoText,\n    dish_id_list: dishIdList,\n    customer_context: customerContext\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1720, -1000],
+      "id": "v2-context-builder",
+      "name": "Context Builder"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=你是 Incredibowl 客服助理「碗妈/Bowlmama」。\n\n【人设与语气】\n热情爽朗、口语化，像邻居阿姨聊天，结尾常带 ❤️，可以用「哦」「啦」「咧」。\n禁语：「由于、基于、无法、不能、根据」等公文腔。\n回复简短自然：客户问一个答一个，不主动刷屏、不重复发菜单。\n卖点底线：自家孩子能吃才敢给客人吃；不放味精不放防腐剂；碗妈每天亲自去巴刹采购新鲜食材。\n\n【客户档案】（系统按来电号码自动查询，只能用于回答该客户本人）\n{{ $json.customer_context }}\n· 老客打招呼可以自然亲切；下单时先确认「还是送老地址吗」，客户点头就不用再要地址。\n· 客户问「我还有几张餐券 / 预付蛋还剩几个」→ 直接用档案数字回答。\n· 客户问「我的饭到哪了 / 几点到」→ 用档案里进行中订单的状态回答；有跟踪链接就发给客户。\n· 档案之外的信息（别人的订单、别的号码）一律 [求救老板]。\n\n【首次问候规则】\n客户第一条消息是打招呼式（hi / hello / 你好 / 想点餐 / 有什么菜）时，用以下格式回复：\n\n碗妈的厨房欢迎你 🍲\n{{ $json.delivery_label }}的订单：\n{{ $json.today_menu }}\n\n下单方式：告诉碗妈 ① 你要哪道 ② 午餐还是晚餐 ③ 你的地址\n\n之后的对话正常回复，不要每次都发这段。\n\n【当前配送信息】\n{{ $json.delivery_context }}\n\n【可点菜单】\n{{ $json.today_menu }}\n\n【当前促销】\n{{ $json.promo_text }}\n\n【配送时段与方式】\n午餐 11:00 AM – 1:00 PM；晚餐 5:30 PM – 8:00 PM。\n送到楼下 / 门口 / 办公室门口。只做周一到周五，周末碗妈陪孩子休息。\n\n【运费规则 —— 只准用工具报数】\n客户消息里出现任何地址、condo 名、Taman 名、路名，必须调用 check_delivery_fee 工具，把客户原话地址传进去。\n工具返回什么就转述什么：fee=运费、threshold=免运门槛（threshold 为 null 的远距离档 = 固定运费永不免运，别自己发明门槛）、tier 为 outside 或工具失败 → 回复开头加 [求救老板]。\n绝对禁止：凭记忆报运费、跳过工具直接回答、拿几个 condo 自己比较远近。免运规则以工具为准，没有「无条件包邮」这回事。\n\n【WhatsApp 下单流程（重要）】\n第1步 收集四样：菜+数量、午餐还是晚餐、日期（默认最近一个配送日）、地址（老客确认老地址即可）+ 客户称呼。\n第2步 信息齐了就调 create_order_draft 工具（order_json 格式见下）。工具会返回订单明细和总额 —— 那是系统按菜单现价+运费算出来的，你只能转述，绝不自己算总额。\n第3步 把工具返回的明细+总额发给客户确认；客户说 OK 后发收款话术，并在结尾加 [SEND_QR]：\n「您的订单总额是 RM [工具返回的合计]。请扫下方 DuitNow 二维码付款（TnG／Boost／GrabPay／FPX／银行转账都可以）。付款后把转账截图发到这里，碗妈马上为您核对安排出餐！」\n第4步 发完 QR 就停止追问，等客户传截图。截图会自动转给老板核款，核对后系统自动建单，客户会收到确认消息。\n· 工具返回 ok=false 或带警告 → 按内容处理；拿不准就 [求救老板]。\n· 客户要改单：还没付款就重新调一次 create_order_draft（新草稿自动顶掉旧的）；已付款/已确认的单要改 → [求救老板]。\n\ncreate_order_draft 的 order_json 格式（JSON 数组字符串，每天一项）：\n[{\"date\":\"2026-08-04\",\"meal\":\"lunch\",\"items\":[{\"dish\":\"菜名\",\"qty\":2,\"addOns\":[{\"name\":\"温泉蛋\",\"qty\":1}]}]}]\n· dish 用【可点菜单】里的完整菜名；meal 只能 lunch/dinner；date 用 YYYY-MM-DD（「明天/周一」要按【当前配送信息】换算成具体日期）。\n· addOns 的 name 写客户说的加料名，系统会自己对目录，对不上会在警告里说明。\n\n【推荐策略】\n只推荐【可点菜单】里当天有的菜。客户犹豫 → 优先推当天特餐。客户没主动问就不推销。\n\n【求救机制 —— 全流程只有一个标记：[求救老板]】\n以下情况在回复开头加 [求救老板]，并告诉客户「这个碗妈得跟老板确认一下，稍等哦 ❤️」：\n定制需求（换食材/忌口/特殊做法）、投诉或情绪不满、单次超 10 份的大单、地址工具判不了、长期包餐/企业合作、改已付款订单、任何拿不准的信息。\n零编造原则：不确定就求救，绝对不编。\n\n【常见问题速查】\n· 周末可以订吗 → 不好意思哦，周一到周五营业，周末碗妈休息陪孩子\n· 为什么比杂饭贵 → 每天巴刹新鲜食材、不放味精，有 Food Handler 证书和伤寒疫苗证明\n· 几点截单 → 每天早上 6 点\n· 可以长期订吗 → 可以！然后 [求救老板] 让老板亲自安排\n\n【发送菜品图片】\n客户要看菜的图（关键词：图 / 长什么样 / picture / 看看）→ 回复结尾加 [SEND_DISH:dish_id]。\n一次只发一道；dish_id 必须从下方清单选，绝不编造；回复不超过 2 句。\n可用 dish_id 清单：\n{{ $json.dish_id_list }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [-1440, -1000],
+      "id": "v2-ai-agent",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [-1520, -770],
+      "id": "v2-gemini-model",
+      "name": "Gemini Chat Model",
+      "credentials": { "googlePalmApi": { "id": "kPDcMzsEk1cRmG33", "name": "Google Gemini(PaLM) Api account 2" } }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Router').first().json.phone }}_{{ $now.minus({ hours: 6 }).toFormat('yyyyMMdd') }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [-1380, -770],
+      "id": "v2-memory",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "查客户地址的运费。客户消息里出现任何地址、condo 名、Taman 名、路名时必须调用。返回 JSON：fee=运费(RM)、threshold=免运门槛(null=该距离固定运费永不免运)、distanceKm=距离、tier=档位(outside=超出配送范围)。返回什么转述什么，绝不自己算。",
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/check-delivery",
+        "sendBody": true,
+        "specifyBody": "keypair",
+        "parametersBody": {
+          "values": [
+            { "name": "address", "valueProvider": "modelRequired" }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [-1240, -770],
+      "id": "v2-tool-delivery-fee",
+      "name": "check_delivery_fee"
+    },
+    {
+      "parameters": {
+        "description": "建立订单草稿（系统按菜单现价 + 距离运费权威计价）。收齐「菜+数量、午/晚餐、日期、地址、称呼」后调用。返回订单明细、应收合计和警告 —— 总额只能转述工具返回的数字。客户改单时重新调用即可（新草稿自动顶掉旧的）。",
+        "workflowId": {
+          "__rl": true,
+          "value": "REPLACE_AFTER_IMPORT",
+          "mode": "list",
+          "cachedResultName": "Bowlmama v2 — 下单草稿工具"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('Router').first().json.phone }}",
+            "customer_name": "={{ $fromAI('customer_name', '客户称呼/名字', 'string') }}",
+            "address": "={{ $fromAI('address', '配送地址；老客确认沿用档案老地址时传空字符串', 'string') }}",
+            "order_json": "={{ $fromAI('order_json', '订单 JSON 数组字符串，格式见系统提示词【WhatsApp 下单流程】', 'string') }}",
+            "note": "={{ $fromAI('note', '订单备注（忌口/放门口等），没有传空字符串', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "phone", "displayName": "phone", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "customer_name", "displayName": "customer_name", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "address", "displayName": "address", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "order_json", "displayName": "order_json", "required": true, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true },
+            { "id": "note", "displayName": "note", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [-1100, -770],
+      "id": "v2-tool-draft-order",
+      "name": "create_order_draft"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 后处理 v2：统一求救标记 —— 只有 [求救老板]，并用 /\\[求救[^\\]]*\\]/ 兜底，\n// 任何带「求救」的方括号标记都会被识别 + 剥除（修复 v1 双标记漏网 bug）。\n// ============================\n\nconst aiReply = $input.first().json.output || '';\nconst phone = $('Router').first().json.phone;\nconst customerMsg = $('Debounce Gate').first().json.text || $('Router').first().json.text || '';\n\nconst needEscalate = /\\[求救[^\\]]*\\]/.test(aiReply);\nconst needQR = /\\[SEND_QR\\]/i.test(aiReply);\nconst dishMatch = aiReply.match(/\\[SEND_DISH:([a-z0-9_\\-]+)\\]/i);\n\nlet cleanReply = aiReply\n  .replace(/\\[求救[^\\]]*\\]/g, '')\n  .replace(/\\[SEND_QR\\]/gi, '')\n  .replace(/\\[SEND_DISH:[a-z0-9_\\-]+\\]/gi, '')\n  .trim();\n\nlet action = 'normal';\nif (needEscalate) action = 'escalate';\nelse if (needQR) action = 'send_qr';\nelse if (dishMatch) action = 'send_dish';\n\nif (!cleanReply) {\n  action = 'escalate';\n  cleanReply = '不好意思亲！这个碗妈得跟老板确认一下，稍等哦 ❤️';\n}\n\nreturn [{\n  json: {\n    phone,\n    customerMsg,\n    reply: cleanReply,\n    action,\n    dishId: dishMatch ? dishMatch[1].toLowerCase() : ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1160, -1000],
+      "id": "v2-post-process",
+      "name": "Post-process"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "act-1", "leftValue": "={{ $json.action }}", "rightValue": "normal", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "普通回复"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "act-2", "leftValue": "={{ $json.action }}", "rightValue": "send_qr", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "发送QR"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "act-3", "leftValue": "={{ $json.action }}", "rightValue": "escalate", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "求救老板"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  { "id": "act-4", "leftValue": "={{ $json.action }}", "rightValue": "send_dish", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "发送菜品图"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [-940, -1000],
+      "id": "v2-action-switch",
+      "name": "Action Switch"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-700, -1240],
+      "id": "v2-send-reply",
+      "name": "Send Reply",
+      "webhookId": "b2f1e7a0-3333-4a00-9c00-bowlmamav202",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "messageType": "image",
+        "mediaLink": "https://incredibowl.my/duitnow_qr.png",
+        "additionalFields": {
+          "mediaCaption": "={{ $json.reply }}"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-700, -1080],
+      "id": "v2-send-qr",
+      "name": "Send QR",
+      "webhookId": "b2f1e7a0-4444-4a00-9c00-bowlmamav203",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "60165014501",
+        "textBody": "=🚨 [求救警报] 老板！有客户呼叫人工介入！\n📞 客户号码：{{ $json.phone }}\n💬 客户原话：{{ $json.customerMsg }}\n请直接长按这条消息「向右滑动」引用回复，你的回复会自动转达给该客户！",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-700, -920],
+      "id": "v2-boss-alert",
+      "name": "Boss Alert",
+      "webhookId": "b2f1e7a0-5555-4a00-9c00-bowlmamav204",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Post-process').first().json.phone }}",
+        "textBody": "={{ $('Post-process').first().json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-480, -920],
+      "id": "v2-send-soothe",
+      "name": "Send安抚",
+      "webhookId": "b2f1e7a0-6666-4a00-9c00-bowlmamav205",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $('Post-process').first().json.phone }}",
+            "报警消息ID": "={{ $('Boss Alert').first().json.messages?.[0]?.id || 'unknown' }}",
+            "发送者": "Customer",
+            "聊天内容": "={{ $('Post-process').first().json.customerMsg }}",
+            "老板的回复": "empty"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-260, -920],
+      "id": "v2-log-escalation",
+      "name": "Log Escalation",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "messageType": "image",
+        "mediaLink": "={{ $('Get Dishes').all().find(i => i.json.dish_id === $json.dishId)?.json.image_url || 'https://incredibowl.my/img/placeholder.jpg' }}",
+        "additionalFields": {
+          "mediaCaption": "={{ $json.reply }}"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-700, -760],
+      "id": "v2-send-dish-image",
+      "name": "Send Dish Image",
+      "webhookId": "b2f1e7a0-7777-4a00-9c00-bowlmamav206",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.reply || '不好意思咧！碗妈刚刚没听清楚～可以再说一次吗？❤️' }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-700, -600],
+      "id": "v2-default-fallback",
+      "name": "Default Fallback Reply",
+      "webhookId": "b2f1e7a0-8888-4a00-9c00-bowlmamav207",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $('Post-process').first().json.phone }}",
+            "报警消息ID": "empty",
+            "发送者": "AI",
+            "聊天内容": "={{ $('Post-process').first().json.reply }}",
+            "老板的回复": "empty"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-480, -1160],
+      "id": "v2-log-chat",
+      "name": "Log Chat",
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/n8n/wa-order",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'peek', phone: $('Router').first().json.phone }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-3700, -240],
+      "id": "v2-get-pending-draft",
+      "name": "Get Pending Draft",
+      "onError": "continueRegularOutput",
+      "credentials": { "httpBearerAuth": { "id": "ew3zAX6xWGWOdrGO", "name": "Incredibowl N8N API Key" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "60165014501",
+        "messageType": "image",
+        "mediaPath": "useMediaId",
+        "mediaId": "={{ $('Router').first().json.imageId }}",
+        "additionalFields": {
+          "mediaCaption": "=🚨 [图救警报] 老板！有客户发来图片！\n📞 客户号码：{{ $('Router').first().json.phone }}\n💬 客户留言：{{ $('Router').first().json.caption || '（无留言）' }}\n\n{{ $('Get Pending Draft').first().json.found ? ('💰 该客户有待付订单草稿 RM ' + $('Get Pending Draft').first().json.cashDue + '：\\n' + $('Get Pending Draft').first().json.summaryText + '\\n\\n👉 若这是付款截图且金额对：引用本条回复 1 ＝ 确认收款并自动建单进系统') : '（该客户没有待付下单草稿 —— 若是付款截图请人工核对后去 dashboard 录单）' }}\n\n其他情况请直接引用本条回复文字，会自动转达给客户！"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3480, -240],
+      "id": "v2-image-forward",
+      "name": "Image Forward",
+      "webhookId": "b2f1e7a0-9999-4a00-9c00-bowlmamav208",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Router').first().json.phone }}",
+        "textBody": "亲爱的，图片收到啦！碗妈已经在火速核对中！📸",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3480, -60],
+      "id": "v2-image-auto-reply",
+      "name": "Image Auto Reply",
+      "webhookId": "b2f1e7a0-aaaa-4a00-9c00-bowlmamav209",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $('Router').first().json.phone }}",
+            "报警消息ID": "={{ $('Image Forward').first().json.messages?.[0]?.id || 'unknown' }}",
+            "发送者": "Customer",
+            "聊天内容": "={{ $('Router').first().json.caption || '（图片，无留言）' }}",
+            "老板的回复": "empty"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-3260, -240],
+      "id": "v2-log-image-escalation",
+      "name": "Log Image Escalation",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/check-delivery",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lat: $('Router').first().json.lat, lng: $('Router').first().json.lng, address: $('Router').first().json.locName || $('Router').first().json.locAddress || '' }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-3700, 140],
+      "id": "v2-zone-by-pin",
+      "name": "Zone by Pin",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 位置 pin 报价：坐标直接算档位/运费（与网站同一套 deliveryUtils 口径），\n// 并往 wa_buffer 写一条系统注记 —— 客户下一条文字消息会连同定位信息一起进 AI。\n// ============================\n\nconst r = $('Zone by Pin').first()?.json || {};\nconst me = $('Router').first().json;\nconst place = me.locName || me.locAddress || '';\n\nlet reply, note, needEscalate;\nif (typeof r.fee === 'number') {\n  const th = r.threshold;\n  reply = `收到定位啦 📍 ${place ? place + ' ' : ''}距离碗妈厨房约 ${r.distanceKm}km，运费 RM ${r.fee}${th ? `，菜品满 RM ${th} 就免运费哦` : '（这个距离是固定运费）'}。想下单直接告诉碗妈要哪道菜 ❤️`;\n  note = `[系统注记：客户发来定位 ${place} ≈${r.distanceKm}km，运费 RM ${r.fee}${th ? `｜满 RM ${th} 免运` : '｜固定运费'}。下单可以直接用这个定位当地址。]`;\n  needEscalate = false;\n} else if (r.tier === 'outside') {\n  reply = `亲爱的，你的位置离碗妈厨房约 ${r.distanceKm}km，超出目前 25km 的配送范围了 😢 碗妈让老板看看有没有别的安排，稍等哦`;\n  note = `[系统注记：客户定位超出配送范围（≈${r.distanceKm}km）]`;\n  needEscalate = true;\n} else {\n  reply = '定位收到啦！碗妈让老板帮你确认一下配送范围，稍等哦 ❤️';\n  note = '[系统注记：客户发来定位但运费查询失败，需要人工确认]';\n  needEscalate = true;\n}\n\nreturn [{ json: { phone: me.phone, reply, note, needEscalate, msgId: me.msgId } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3480, 140],
+      "id": "v2-pin-reply-builder",
+      "name": "Pin Reply Builder"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.reply }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3260, 40],
+      "id": "v2-send-pin-reply",
+      "name": "Send Pin Reply",
+      "webhookId": "b2f1e7a0-bbbb-4a00-9c00-bowlmamav210",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "wa_buffer", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "msg_id": "=SYS-{{ $json.msgId }}",
+            "text": "={{ $json.note }}",
+            "ts": "={{ $now.toMillis() }}"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-3260, 200],
+      "id": "v2-pin-buffer-note",
+      "name": "Pin Buffer Note",
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "pin-esc-1", "leftValue": "={{ $json.needEscalate }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-3260, 360],
+      "id": "v2-need-pin-escalate",
+      "name": "Need Pin Escalate"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "60165014501",
+        "textBody": "=📍 [定位求救] 客户 {{ $json.phone }} 发来定位，但{{ $json.note }}。请人工跟进（直接联系客户）。",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3040, 360],
+      "id": "v2-pin-boss-alert",
+      "name": "Pin Boss Alert",
+      "webhookId": "b2f1e7a0-cccc-4a00-9c00-bowlmamav211",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Router').first().json.phone }}",
+        "textBody": "亲爱的，碗妈暂时听不了语音哦～麻烦打字告诉碗妈，马上回你 ❤️",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3700, 560],
+      "id": "v2-audio-reply",
+      "name": "Audio Reply",
+      "webhookId": "b2f1e7a0-dddd-4a00-9c00-bowlmamav212",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [-3700, 700],
+      "id": "v2-boss-direct-ignore",
+      "name": "Boss Direct Ignore"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Router').first().json.phone }}",
+        "textBody": "亲爱的，碗妈暂时只能处理文字、图片和定位消息哦～有什么需要的话，直接文字告诉碗妈就好 ❤️",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3700, 840],
+      "id": "v2-fallback-reply",
+      "name": "Fallback Reply",
+      "webhookId": "b2f1e7a0-eeee-4a00-9c00-bowlmamav213",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "报警消息ID", "lookupValue": "={{ $('Router').first().json.contextId }}" }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-3700, -540],
+      "id": "v2-boss-lookup",
+      "name": "Boss Lookup",
+      "alwaysOutputData": true,
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "boss-match-1", "leftValue": "={{ $json['报警消息ID'] || '' }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-3480, -540],
+      "id": "v2-has-boss-match",
+      "name": "Has Boss Match"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "60165014501",
+        "textBody": "=⚠️ 老板！找不到这条对话的上下文（消息可能太旧或表已清理），无法转达给客户。\n\n您引用的消息 ID：{{ $('Router').first().json.contextId }}\n您的回复内容：{{ $('Router').first().json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-3260, -440],
+      "id": "v2-boss-not-found",
+      "name": "Boss Not Found Reply",
+      "webhookId": "b2f1e7a0-ffff-4a00-9c00-bowlmamav214",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 解析老板引用回复的意图：\n// 「1 / 确认 / 已收款 / ok」→ 收款确认 → 自动建单（wa-order confirm）\n// [QR] 标记 → 转达 + 发收款码；其余 → Gemini 润色后转达客户\n// ============================\n\nconst rawBossText = $('Router').first().json.text || '';\nconst lookupRow = $('Boss Lookup').first().json || {};\nconst customerPhone = String(lookupRow['电话号码'] || '').replace(/[^0-9]/g, '');\nconst customerMsg = String(lookupRow['聊天内容'] || '');\n\nconst isConfirm = /^(1|确认|已收款|收到钱|ok|okay)$/i.test(rawBossText.trim());\n\nconst qrFlag = /\\[QR\\]|\\[发QR\\]|\\[SEND_QR\\]/i;\nconst needSendQR = qrFlag.test(rawBossText);\n\nlet cleanBossText = rawBossText\n  .replace(/\\[QR\\]/gi, '')\n  .replace(/\\[发QR\\]/gi, '')\n  .replace(/\\[SEND_QR\\]/gi, '')\n  .trim();\nif (!cleanBossText) {\n  cleanBossText = '请客户用以下二维码扫码付款';\n}\n\nreturn [{ json: { customerPhone, customerMsg, bossText: cleanBossText, needSendQR, isConfirm } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3260, -640],
+      "id": "v2-parse-boss-intent",
+      "name": "Parse Boss Intent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "is-confirm-1", "leftValue": "={{ $json.isConfirm }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-3040, -640],
+      "id": "v2-is-confirm",
+      "name": "Is Confirm"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/n8n/wa-order",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'confirm', phone: $('Parse Boss Intent').first().json.customerPhone }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2820, -720],
+      "id": "v2-wa-confirm-order",
+      "name": "WA Confirm Order",
+      "onError": "continueRegularOutput",
+      "credentials": { "httpBearerAuth": { "id": "ew3zAX6xWGWOdrGO", "name": "Incredibowl N8N API Key" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 建单结果 → 老板通知 + 客户确认话术\n// ============================\n\nconst r = $('WA Confirm Order').first()?.json || {};\nconst phone = $('Parse Boss Intent').first().json.customerPhone;\n\nlet bossText = '';\nlet custText = '';\n\nif (r.ok && r.alreadyConfirmed) {\n  bossText = '✅ 这单之前已经确认建过了，没有重复建单。';\n} else if (r.ok) {\n  const n = Array.isArray(r.created) ? r.created.length : 0;\n  bossText = `✅ 收款确认！已自动建 ${n} 张单进系统（dashboard／备餐单／库存都会自动跟上）。\\n${r.summaryText || ''}`;\n  custText = `付款核对好啦 ✅ 订单确认！\\n${r.summaryText || ''}\\n碗妈会准时为您出餐，谢谢支持 ❤️`;\n} else {\n  const errMsg = (r.error && typeof r.error === 'object') ? (r.error.message || JSON.stringify(r.error)) : (r.error || '接口无响应');\n  bossText = `⚠️ 自动建单失败：${errMsg}\\n请去 dashboard 手动录单，客户已付款别漏。`;\n}\n\nreturn [{ json: { phone, bossText, custText, ok: !!r.ok } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2600, -720],
+      "id": "v2-confirm-result",
+      "name": "Confirm Result"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "60165014501",
+        "textBody": "={{ $json.bossText }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-2380, -720],
+      "id": "v2-notify-boss-confirm",
+      "name": "Notify Boss Confirm",
+      "webhookId": "b2f1e7a0-1010-4a00-9c00-bowlmamav215",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "has-cust-1", "leftValue": "={{ $('Confirm Result').first().json.custText }}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-2160, -720],
+      "id": "v2-has-customer-notice",
+      "name": "Has Customer Notice"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Confirm Result').first().json.phone }}",
+        "textBody": "={{ $('Confirm Result').first().json.custText }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-1940, -800],
+      "id": "v2-notify-customer-confirmed",
+      "name": "Notify Customer Confirmed",
+      "webhookId": "b2f1e7a0-2020-4a00-9c00-bowlmamav216",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $('Confirm Result').first().json.phone }}",
+            "报警消息ID": "empty",
+            "发送者": "Boss",
+            "聊天内容": "=[收款确认] {{ $('Confirm Result').first().json.bossText }}",
+            "老板的回复": "1"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-1720, -720],
+      "id": "v2-log-confirm",
+      "name": "Log Confirm",
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    },
+    {
+      "parameters": {
+        "modelId": { "__rl": true, "value": "models/gemini-3.1-flash-lite", "mode": "list", "cachedResultName": "models/gemini-3.1-flash-lite" },
+        "messages": {
+          "values": [
+            {
+              "content": "=你是 Incredibowl 的碗妈/BowlMama（首席客服助理）。\n\n【你的唯一任务】\n把老板的处理方案，用亲切可爱的客服语气转达给顾客。\n\n【铁律】\n1. 只输出最终要发给顾客的那一段话，不超过3句。\n2. 禁止输出任何思考过程、草稿、分析、备注、解释。\n3. 禁止出现「老板」这个词，你就是代表店铺在说话。\n4. 不改变老板指令的原意。\n5. 语气：像邻居阿姨聊天一样亲切，带点俏皮。\n\n【顾客说】\n{{ $('Parse Boss Intent').first().json.customerMsg }}\n\n【老板的处理方案（内部信息，不可泄露来源）】\n{{ $('Parse Boss Intent').first().json.bossText }}\n\n请直接输出回复顾客的话："
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [-2820, -540],
+      "id": "v2-gemini-polish",
+      "name": "Gemini Polish",
+      "credentials": { "googlePalmApi": { "id": "kPDcMzsEk1cRmG33", "name": "Google Gemini(PaLM) Api account 2" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json;\n\n// 从 parts 里只取没有 thought:true 的那个\nconst parts = output.content?.parts || [];\nconst finalPart = parts.find(p => !p.thought);\n\nreturn [{\n  json: {\n    text: finalPart?.text || parts[parts.length - 1]?.text || ''\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2600, -540],
+      "id": "v2-extract-final-reply",
+      "name": "Extract Final Reply"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Boss Lookup').first().json['电话号码'].toString() }}",
+        "textBody": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-2380, -540],
+      "id": "v2-send-solution",
+      "name": "Send Solution",
+      "webhookId": "b2f1e7a0-3030-4a00-9c00-bowlmamav217",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 3 },
+          "conditions": [
+            { "id": "need-qr-1", "leftValue": "={{ $('Parse Boss Intent').first().json.needSendQR }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-2160, -540],
+      "id": "v2-need-send-qr",
+      "name": "Need Send QR"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $('Parse Boss Intent').first().json.customerPhone }}",
+        "messageType": "image",
+        "mediaLink": "https://incredibowl.my/duitnow_qr.png",
+        "additionalFields": {
+          "mediaCaption": "请保存上方 DuitNow 二维码图片进行扫码付款。也可以用 TnG、Boost、GrabPay、FPX 或银行转账付款哦！付款完成后请把「转账截图」发过来，碗妈会立刻为您核对并安排出餐！❤️"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [-1940, -460],
+      "id": "v2-boss-send-qr",
+      "name": "Boss Send QR",
+      "webhookId": "b2f1e7a0-4040-4a00-9c00-bowlmamav218",
+      "credentials": { "whatsAppApi": { "id": "r40sSPxInxCOtHWS", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "__rl": true, "value": "1xXKTcvty0lchqcurb0t9DaTvz3oFGh0aUv0bnnffobs", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "Sheet1", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "时间": "={{ $now }}",
+            "电话号码": "={{ $('Boss Lookup').first().json['电话号码'] }}",
+            "报警消息ID": "empty",
+            "发送者": "Boss",
+            "聊天内容": "={{ $('Extract Final Reply').first().json.text }}",
+            "老板的回复": "empty"
+          },
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-1720, -540],
+      "id": "v2-log-boss-reply",
+      "name": "Log Boss Reply",
+      "onError": "continueRegularOutput",
+      "credentials": { "googleSheetsOAuth2Api": { "id": "G1eKfCxWLU9x0zyF", "name": "Google Sheets account" } }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": { "main": [ [ { "node": "Guard - 过滤status", "type": "main", "index": 0 } ] ] },
+    "Guard - 过滤status": { "main": [ [ { "node": "Router", "type": "main", "index": 0 } ] ] },
+    "Router": { "main": [ [ { "node": "Main Switch", "type": "main", "index": 0 } ] ] },
+    "Main Switch": {
+      "main": [
+        [ { "node": "Buffer Append", "type": "main", "index": 0 } ],
+        [ { "node": "Boss Lookup", "type": "main", "index": 0 } ],
+        [ { "node": "Get Pending Draft", "type": "main", "index": 0 }, { "node": "Image Auto Reply", "type": "main", "index": 0 } ],
+        [ { "node": "Zone by Pin", "type": "main", "index": 0 } ],
+        [ { "node": "Audio Reply", "type": "main", "index": 0 } ],
+        [ { "node": "Boss Direct Ignore", "type": "main", "index": 0 } ],
+        [ { "node": "Fallback Reply", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Buffer Append": { "main": [ [ { "node": "Wait 防抖", "type": "main", "index": 0 } ] ] },
+    "Wait 防抖": { "main": [ [ { "node": "Buffer Read", "type": "main", "index": 0 } ] ] },
+    "Buffer Read": { "main": [ [ { "node": "Debounce Gate", "type": "main", "index": 0 } ] ] },
+    "Debounce Gate": { "main": [ [ { "node": "Buffer Mark", "type": "main", "index": 0 }, { "node": "Log Customer Text", "type": "main", "index": 0 } ] ] },
+    "Buffer Mark": { "main": [ [ { "node": "Get Promo", "type": "main", "index": 0 } ] ] },
+    "Get Promo": { "main": [ [ { "node": "Get Dishes", "type": "main", "index": 0 } ] ] },
+    "Get Dishes": { "main": [ [ { "node": "Get Live Menu", "type": "main", "index": 0 } ] ] },
+    "Get Live Menu": { "main": [ [ { "node": "Get Customer", "type": "main", "index": 0 } ] ] },
+    "Get Customer": { "main": [ [ { "node": "Context Builder", "type": "main", "index": 0 } ] ] },
+    "Context Builder": { "main": [ [ { "node": "AI Agent", "type": "main", "index": 0 } ] ] },
+    "Gemini Chat Model": { "ai_languageModel": [ [ { "node": "AI Agent", "type": "ai_languageModel", "index": 0 } ] ] },
+    "Window Buffer Memory": { "ai_memory": [ [ { "node": "AI Agent", "type": "ai_memory", "index": 0 } ] ] },
+    "check_delivery_fee": { "ai_tool": [ [ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ] ] },
+    "create_order_draft": { "ai_tool": [ [ { "node": "AI Agent", "type": "ai_tool", "index": 0 } ] ] },
+    "AI Agent": { "main": [ [ { "node": "Post-process", "type": "main", "index": 0 } ] ] },
+    "Post-process": { "main": [ [ { "node": "Action Switch", "type": "main", "index": 0 } ] ] },
+    "Action Switch": {
+      "main": [
+        [ { "node": "Send Reply", "type": "main", "index": 0 } ],
+        [ { "node": "Send QR", "type": "main", "index": 0 } ],
+        [ { "node": "Boss Alert", "type": "main", "index": 0 } ],
+        [ { "node": "Send Dish Image", "type": "main", "index": 0 } ],
+        [ { "node": "Default Fallback Reply", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Send Reply": { "main": [ [ { "node": "Log Chat", "type": "main", "index": 0 } ] ] },
+    "Send QR": { "main": [ [ { "node": "Log Chat", "type": "main", "index": 0 } ] ] },
+    "Send Dish Image": { "main": [ [ { "node": "Log Chat", "type": "main", "index": 0 } ] ] },
+    "Boss Alert": { "main": [ [ { "node": "Send安抚", "type": "main", "index": 0 } ] ] },
+    "Send安抚": { "main": [ [ { "node": "Log Escalation", "type": "main", "index": 0 } ] ] },
+    "Get Pending Draft": { "main": [ [ { "node": "Image Forward", "type": "main", "index": 0 } ] ] },
+    "Image Forward": { "main": [ [ { "node": "Log Image Escalation", "type": "main", "index": 0 } ] ] },
+    "Zone by Pin": { "main": [ [ { "node": "Pin Reply Builder", "type": "main", "index": 0 } ] ] },
+    "Pin Reply Builder": { "main": [ [ { "node": "Send Pin Reply", "type": "main", "index": 0 }, { "node": "Pin Buffer Note", "type": "main", "index": 0 }, { "node": "Need Pin Escalate", "type": "main", "index": 0 } ] ] },
+    "Need Pin Escalate": { "main": [ [ { "node": "Pin Boss Alert", "type": "main", "index": 0 } ], [] ] },
+    "Boss Lookup": { "main": [ [ { "node": "Has Boss Match", "type": "main", "index": 0 } ] ] },
+    "Has Boss Match": {
+      "main": [
+        [ { "node": "Parse Boss Intent", "type": "main", "index": 0 } ],
+        [ { "node": "Boss Not Found Reply", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Parse Boss Intent": { "main": [ [ { "node": "Is Confirm", "type": "main", "index": 0 } ] ] },
+    "Is Confirm": {
+      "main": [
+        [ { "node": "WA Confirm Order", "type": "main", "index": 0 } ],
+        [ { "node": "Gemini Polish", "type": "main", "index": 0 } ]
+      ]
+    },
+    "WA Confirm Order": { "main": [ [ { "node": "Confirm Result", "type": "main", "index": 0 } ] ] },
+    "Confirm Result": { "main": [ [ { "node": "Notify Boss Confirm", "type": "main", "index": 0 } ] ] },
+    "Notify Boss Confirm": { "main": [ [ { "node": "Has Customer Notice", "type": "main", "index": 0 } ] ] },
+    "Has Customer Notice": {
+      "main": [
+        [ { "node": "Notify Customer Confirmed", "type": "main", "index": 0 } ],
+        [ { "node": "Log Confirm", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Notify Customer Confirmed": { "main": [ [ { "node": "Log Confirm", "type": "main", "index": 0 } ] ] },
+    "Gemini Polish": { "main": [ [ { "node": "Extract Final Reply", "type": "main", "index": 0 } ] ] },
+    "Extract Final Reply": { "main": [ [ { "node": "Send Solution", "type": "main", "index": 0 } ] ] },
+    "Send Solution": { "main": [ [ { "node": "Need Send QR", "type": "main", "index": 0 } ] ] },
+    "Need Send QR": {
+      "main": [
+        [ { "node": "Boss Send QR", "type": "main", "index": 0 } ],
+        [ { "node": "Log Boss Reply", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Boss Send QR": { "main": [ [ { "node": "Log Boss Reply", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,35 @@
+{
+  "name": "Bowlmama v2 — Error Handler（挂了必报警）",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-400, 0],
+      "id": "eh-trigger",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "REPLACE_WITH_YOUR_CHAT_ID",
+        "text": "=🚨 碗妈 bot 执行失败！\n\n工作流：{{ $json.workflow?.name || '未知' }}\n出错节点：{{ $json.execution?.lastNodeExecuted || '未知' }}\n错误信息：{{ $json.execution?.error?.message || '未知' }}\n执行详情：{{ $json.execution?.url || '（去 n8n Executions 页查）' }}\n\n⚠️ 那位客户可能没收到任何回复 —— 打开执行详情看客户号码，人工去 WhatsApp 补一句。",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [-160, 0],
+      "id": "eh-telegram",
+      "name": "Telegram 报警",
+      "webhookId": "b2f1e7a0-5050-4a00-9c00-bowlmamaverr1",
+      "credentials": { "telegramApi": { "id": "REPLACE_AFTER_IMPORT", "name": "Telegram account（导入后重选）" } }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": { "main": [ [ { "node": "Telegram 报警", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": []
+}

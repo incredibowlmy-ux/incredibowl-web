@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { corsPreflight, adminJson, verifyAdminEmail } from '@/lib/adminApi';
-import { normalizePhone } from '@/lib/phoneUtils';
-import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
-import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
-import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import {
+  buildPlan, resolveManualUserId, writeManualOrderDays,
+  round2, WD_CN, PAYMENT_METHODS, type PlannedDay,
+} from '@/lib/manualOrderCore';
 
 /**
  * POST /api/admin/multi-day-orders — 多日手动单（不扣券，正常收钱）。
@@ -21,6 +21,9 @@ import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
  *
  * confirm 不信客户端价格 —— 菜价一律按 weeklyMenu 现价重算（与 preview 同源）。
  * 幂等：batchTag 由 preview 下发（multi-<时间戳>），confirm 查重拒绝双击重复建单。
+ *
+ * 2026-08-01：buildPlan / userId 归属 / 落库循环抽到 src/lib/manualOrderCore.ts，
+ * 与 /api/n8n/wa-order（碗妈 bot 下单）共享同一套口径；本 route 行为不变。
  */
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
@@ -29,105 +32,6 @@ async function getDb() {
   const { getAdminDb } = await import('@/lib/firebase-admin');
   adminDb = getAdminDb();
   return adminDb;
-}
-
-const round2 = (n: number) => Number(n.toFixed(2));
-const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
-
-// 与 dashboard 手动录单同一套值（moPaymentPills），报表按这些值分桶
-const PAYMENT_METHODS = ['cash', 'qr', 'fpx', 'card', 'ewallet'] as const;
-
-interface PlannedItem {
-  name: string;
-  price: number;
-  quantity: number;
-  addOns: { id?: string; label: string; price: number; quantity: number }[];
-}
-
-interface PlannedDay {
-  date: string;
-  weekday: number;       // 0-6（getDay）
-  meal: 'lunch' | 'dinner';
-  time: string;
-  items: PlannedItem[];
-  originalTotal: number; // 菜金小计（含加料）
-  cashDue: number;       // 现金应收 = originalTotal + deliveryFee
-  warnings: string[];
-  blocked: boolean;      // 有硬伤（菜不存在/当日停业等）→ confirm 时整天跳过
-}
-
-/** KL 今天的 YYYY-MM-DD（服务器可能在 UTC）。 */
-function todayKL(): string {
-  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
-}
-
-/** 按提交的天数 + 当前菜单目录推演。preview 与 confirm 共用。 */
-function buildPlan(rawDays: any[], deliveryFeePerDelivery: number): { days: PlannedDay[]; errors: string[] } {
-  const errors: string[] = [];
-  const days: PlannedDay[] = [];
-  const today = todayKL();
-  const seenSlot = new Set<string>();
-
-  for (const entry of rawDays) {
-    const date = String(entry?.date || '');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`日期格式不对：「${date || '（空）'}」需为 YYYY-MM-DD`); continue; }
-    const wd = new Date(`${date}T00:00:00`).getDay();
-    const warnings: string[] = [];
-    let blocked = false;
-
-    if (date < today) warnings.push(`${date} 已经过去了（今天 KL ${today}），确认是补录历史单再建`);
-    if (wd === 0 || wd === 6) warnings.push(`${date} 是周${WD_CN[wd]}，非常规配送日`);
-    if (isDateClosed(date)) { warnings.push(`${date} 整日停业（CLOSED_DATES）`); blocked = true; }
-
-    const meal: 'lunch' | 'dinner' = entry?.meal === 'dinner' ? 'dinner' : 'lunch';
-    const slot = `${date}|${meal}`;
-    if (seenSlot.has(slot)) warnings.push(`${date} ${meal === 'dinner' ? '晚餐' : '午餐'}出现了两次，会建两张单`);
-    seenSlot.add(slot);
-
-    const items: PlannedItem[] = [];
-    let originalTotal = 0;
-
-    for (const raw of entry?.items ?? []) {
-      const qty = Math.max(1, Math.floor(Number(raw?.qty) || 1));
-      const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw?.dishName);
-      if (!dish) { warnings.push(`「${raw?.dishName ?? ''}」不在菜品目录`); blocked = true; continue; }
-      if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
-      if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);
-      if (isDishBlockedOn(dish.id, date)) { warnings.push(`「${dish.name}」在 ${date} 被停（BLOCKED_DATES）`); blocked = true; }
-      if (dish.day !== 'Daily / 常驻' && dish.weekday !== undefined && dish.weekday !== wd) {
-        warnings.push(`「${dish.name}」本轮排在周${WD_CN[dish.weekday]}，不是周${WD_CN[wd]}`);
-      }
-      if (dish.day === 'Daily / 常驻' && Array.isArray(dish.availableWeekdays)
-          && dish.availableWeekdays.length > 0 && !dish.availableWeekdays.includes(wd)) {
-        warnings.push(`「${dish.name}」只在周${dish.availableWeekdays.map(x => WD_CN[x]).join('、')}供应`);
-      }
-
-      const addOns = (raw.addOns ?? []).map((a: any) => ({
-        ...(a.id ? { id: String(a.id) } : {}),
-        label: String(a.label ?? ''),
-        price: Number(a.price) || 0,
-        quantity: Math.max(1, Math.floor(Number(a.quantity) || 1)),
-      }));
-      const addOnSum = addOns.reduce((s: number, a: any) => s + a.price * a.quantity, 0);
-
-      items.push({ name: dish.name, price: dish.price, quantity: qty, addOns });
-      originalTotal += dish.price * qty + addOnSum;
-    }
-
-    if (items.length === 0 && !blocked) { errors.push(`${date} 没有任何主菜`); continue; }
-
-    originalTotal = round2(originalTotal);
-    days.push({
-      date, weekday: wd, meal,
-      time: String(entry?.time || (meal === 'dinner' ? '19:00' : '12:00')),
-      items, originalTotal,
-      cashDue: round2(originalTotal + deliveryFeePerDelivery),
-      warnings, blocked,
-    });
-  }
-
-  days.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-  return { days, errors };
 }
 
 /** 给老板复制转发的 WhatsApp 确认消息。 */
@@ -171,18 +75,8 @@ export async function POST(req: NextRequest) {
   const usable = days.filter(d => !d.blocked);
   const name = String(customer.name).trim();
   const phone = String(customer.phone).trim();
-  // userId 归属：显式传入 > 电话匹配的真实账号（跳过 mergedInto 匿名壳）> manual_<电话> 兜底。
-  // 不查真实账号会把同一客户劈成 manual_* + 真实 uid 两个档案（统计/会员历史全失真）。
-  let userId = String(customer.userId || '').trim();
-  if (!userId) {
-    const normalized = normalizePhone(phone);
-    if (normalized) {
-      const db = await getDb();
-      const match = await findUserByNormalizedPhone(db, normalized);
-      if (match) userId = match.id;
-    }
-    if (!userId) userId = `manual_${phone.replace(/\D/g, '')}`;
-  }
+  const db = await getDb();
+  const userId = await resolveManualUserId(db, String(customer.userId || ''), phone);
   const cashTotal = round2(usable.reduce((s, d) => s + d.cashDue, 0));
 
   // ── 预览 ─────────────────────────────────────────────
@@ -201,57 +95,22 @@ export async function POST(req: NextRequest) {
     if (!/^multi-\d{10,}$/.test(batchTag)) return adminJson({ error: 'batchTag 无效 —— 先生成预览' }, 400);
     if (usable.length === 0) return adminJson({ error: '所有天都被硬伤拦下，看预览的警告' }, 400);
 
-    const db = await getDb();
     const existing = await db.collection('orders').where('batchTag', '==', batchTag).limit(1).get();
     if (!existing.empty) return adminJson({ error: `batchTag=${batchTag} 已建过单，拒绝重复（重新生成预览可再建一批）` }, 409);
 
-    const { FieldValue, Timestamp } = await import('firebase-admin/firestore');
-    const custNote = String(customer.note || '').trim();
-    const created: { orderId: string; date: string }[] = [];
-
-    for (const d of usable) {
-      const orderRef = db.collection('orders').doc();
-      await orderRef.set({
-        userId, userName: name, userPhone: phone, userEmail: '',
-        userAddress: String(customer.address).trim(),
-        items: d.items,
-        total: d.originalTotal,
-        originalTotal: d.originalTotal,
-        deliveryFee,
-        deliveryZone: customer.deliveryZone === 'outside2km' ? 'outside2km' : 'within2km',
-        deliveryDistanceKm: Number(customer.deliveryDistanceKm) || 0,
-        deliveryTier: ['near', 'mid', 'far'].includes(customer.deliveryTier) ? customer.deliveryTier : 'near',
-        deliveryDate: d.date, deliveryTime: d.time,
-        paymentMethod, receiptUploaded: true, status: 'confirmed',
-        isManual: true, channel: 'whatsapp', mealType: d.meal,
-        note: `手动录入 · whatsapp · 多日批量${custNote ? ` · ${custNote}` : ''}`,
-        batchTag,
-        createdBy: adminEmail,
-        // createdAt 落在配送日中午（04:00Z = KL 12:00），与周订阅/手写脚本一致，
-        // 让按日营收报表把菜金记在出餐当天。
-        createdAt: Timestamp.fromDate(new Date(`${d.date}T04:00:00Z`)),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-      created.push({ orderId: orderRef.id, date: d.date });
-
-      // 与 dashboard 手动单同款扣库存（老板拍板 2026-07-05：提前单也建单即扣）：
-      // dishStock 宽松扣（可到 0 不阻挡）+ ingredientStock best-effort。
-      // 绝不能影响已建的单 —— 全部吞错误只留日志。
-      try {
-        const dishItems = d.items
-          .map(it => {
-            const dish = weeklyMenu.find(x => x.name === it.name);
-            return dish ? { dishId: dish.id, qty: it.quantity, name: it.name } : null;
-          })
-          .filter((x): x is { dishId: number; qty: number; name: string } => x !== null);
-        const { decrementDishStockLenient } = await import('@/lib/stockUtils');
-        await decrementDishStockLenient(db, dishItems);
-        const { consumeIngredientStock } = await import('@/lib/ingredientStock');
-        await consumeIngredientStock(db, d.items, { source: '多日手动单', orderId: orderRef.id });
-      } catch (err) {
-        console.error(`[multi-day-orders] 扣库存失败（订单 ${orderRef.id} 已建，不受影响）:`, err);
-      }
-    }
+    const created = await writeManualOrderDays({
+      db, usableDays: usable, userId,
+      customerName: name, customerPhone: phone,
+      customerAddress: String(customer.address).trim(),
+      deliveryZone: customer.deliveryZone === 'outside2km' ? 'outside2km' : 'within2km',
+      deliveryDistanceKm: Number(customer.deliveryDistanceKm) || 0,
+      deliveryTier: ['near', 'mid', 'far'].includes(customer.deliveryTier) ? customer.deliveryTier : 'near',
+      paymentMethod, batchTag, createdBy: adminEmail,
+      noteBase: '手动录入 · whatsapp · 多日批量',
+      custNote: String(customer.note || '').trim(),
+      feeForDay: () => deliveryFee,
+      stockSource: '多日手动单',
+    });
 
     console.log(`[multi-day-orders] ${adminEmail} 为 ${name} 建 ${created.length} 单（${batchTag}）`);
     return adminJson({ ok: true, batchTag, created, cashTotal, skippedDays: days.filter(d => d.blocked).map(d => d.date) });

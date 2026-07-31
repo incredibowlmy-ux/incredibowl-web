@@ -1,3 +1,36 @@
+# Bowlmama v2 — WhatsApp 客服 chatbot 重构（防抖 + 下单闭环）— 2026-08-01
+
+> 老板已拍板：删 Lead/CAPI 支线（Purchase 走每周 cron）；防抖聚合；打通 WhatsApp 下单到 Firestore；
+> 查客户/餐券档案注入；可靠性三件套（Error Workflow + 签名校验 + 求救标记统一）；位置 pin 报价。
+> 交付 = n8n 可导入 JSON ×3 + repo 新端点 ×2 + check-delivery 扩展；commit 留本地等批准 push。
+
+## Phase A — 侦察（只读）
+- [x] multi-day-orders confirm 的订单 doc 逐字段口径 + batchTag 幂等 + 用户绑定（3 个并行 agent + 自查补齐；track token 在订单 doc 上）
+- [x] 券/加料 credit/用户档案查询口径（mealVouchers available+读取时过滤过期；addonCreditUtils.getAvailableAddonCredits）
+- [x] 加料权威价=ADD_ON_PRICES；中文名映射=DISH_ADDONS_BY_NAME（dashboard 同源生成表）
+- [x] deliveryUtils 全签名 + n8n Bearer N8N_API_KEY 鉴权模式
+
+## Phase B — repo 端点
+- [x] src/lib/manualOrderCore.ts：buildPlan/resolveManualUserId/writeManualOrderDays 原样抽出，multi-day route 改薄壳（行为零变化）
+- [x] POST /api/n8n/wa-order：draft（服务端计价+冻结价存 waOrderDrafts+顶掉旧 pending）/ peek / confirm（batchTag 幂等+复用共享落库+trackToken）/ void
+- [x] GET /api/n8n/customer：档案+餐券+credit+进行中订单(track链接)+近单+ready-to-inject contextBlock；fail-open
+- [x] check-delivery 支持 {lat,lng} 直入（位置 pin，零 geocode 费用）
+- [x] 验证：tsc 0 错 + npm run build exit 0 + dogfood-wa-order.mts 25/25
+
+## Phase C — n8n JSON
+- [x] bowlmama-v2-main.json（60 节点：防抖 Sheet buffer+水位线、客户档案注入、check_delivery_fee/create_order_draft 双工具、位置pin报价、截图转发带草稿摘要、老板回1自动建单、求救标记统一）
+- [x] bowlmama-v2-draft-tool.json（宽容解析 order_json → wa-order draft → 工具文本）
+- [x] bowlmama-v2-error-handler.json（Telegram 报警，凭据/chatId 导入后填）
+- [x] scripts/validate-n8n-workflows.mjs 全过（连接/引用/==表达式/凭据白名单）
+- 签名校验：暂缓（需 App Secret + 实例上实测 raw-body），SETUP 里列为下一步加固项
+
+## Phase D — review + 收尾
+- [ ] 对抗性 review（3 agent：字段对照/端点安全/JSON 语义）→ 修 findings
+- [x] n8n-workflows/SETUP.md（导入步骤、切换顺序、8 步真机 smoke 清单、诚实边界）
+- [ ] commit 留本地 + 回报老板（不 push）
+
+---
+
 # 半夜 QR 新单老板即时通知（Telegram + 邮件）— 2026-07-25
 
 > 问题：半夜有人用 QR 转账下单，老板没有任何提醒 → 漏单没备餐。

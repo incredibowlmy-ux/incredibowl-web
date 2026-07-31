@@ -53,6 +53,43 @@ export async function OPTIONS() {
 
 const BURST = { max: 8, windowMs: 60_000 };
 const DAILY_LIMIT_PER_IP = 200;
+
+/**
+ * 距离 → 档位/运费/门槛 响应（地址路径与坐标路径共用，口径永远一致）。
+ * 2026-08-01：为 WhatsApp 位置 pin 加坐标直入 —— body 传 {lat,lng} 就跳过
+ * geocode（零 Google 费用，也不消耗每日配额），只走 burst 限流。
+ */
+function tierResponse(lat: number, lng: number, formattedAddress: string, partialMatch: boolean): NextResponse {
+    const distanceKm = distanceFromPearlPointKm(lat, lng);
+
+    // Beyond the 25 km ceiling: tell them honestly, offer the WhatsApp catering
+    // route. Kept as tier:'outside' — the widgets already render this shape.
+    if (isBeyondServiceRange(distanceKm)) {
+        return corsify(NextResponse.json({
+            tier: 'outside' as const,
+            distanceKm: Number(distanceKm.toFixed(2)),
+            formattedAddress,
+        }));
+    }
+
+    const tier: DeliveryTier = tierFromDistance(distanceKm);
+    // Preview fees at two cart sizes: an empty cart (full fee) and at the
+    // distance-resolved threshold (discounted fee). Far tier has
+    // threshold === null (flat, never waived) — omit feeAtThreshold.
+    const feeNow = calcDeliveryFee(distanceKm, 0);
+    const threshold = thresholdForDistance(distanceKm);
+    const feeAtThreshold = threshold === null ? null : calcDeliveryFee(distanceKm, threshold);
+
+    return corsify(NextResponse.json({
+        tier,
+        distanceKm: Number(distanceKm.toFixed(2)),
+        fee: feeNow,
+        feeAtThreshold,
+        threshold,
+        formattedAddress,
+        partialMatch,
+    }));
+}
 // 2026-07-29: the ceiling moved 7.5 km → 25 km (MAX_DELIVERY_KM in
 // deliveryUtils). 7.5–25 km is now the banded far tier (RM 15/20/25/30 flat,
 // Grab-fulfilled) and gets quoted like any other tier; only past 25 km does
@@ -73,18 +110,28 @@ export async function POST(req: NextRequest) {
         ));
     }
 
+    let address: string;
+    let bodyLat = NaN, bodyLng = NaN;
+    try {
+        const body = await req.json();
+        address = String(body.address || '').trim();
+        bodyLat = Number(body.lat);
+        bodyLng = Number(body.lng);
+    } catch {
+        return corsify(NextResponse.json({ error: '请求格式错误' }, { status: 400 }));
+    }
+
+    // 坐标直入（WhatsApp 位置 pin）：不 geocode、不耗每日配额，burst 限流已过
+    if (Number.isFinite(bodyLat) && Number.isFinite(bodyLng)
+        && Math.abs(bodyLat) <= 90 && Math.abs(bodyLng) <= 180
+        && !(bodyLat === 0 && bodyLng === 0)) {
+        return tierResponse(bodyLat, bodyLng, address || `坐标定位 ${bodyLat.toFixed(5)}, ${bodyLng.toFixed(5)}`, false);
+    }
+
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         console.error('GOOGLE_MAPS_API_KEY is not set');
         return corsify(NextResponse.json({ error: '地图服务暂未配置，请联系客服' }, { status: 500 }));
-    }
-
-    let address: string;
-    try {
-        const body = await req.json();
-        address = String(body.address || '').trim();
-    } catch {
-        return corsify(NextResponse.json({ error: '请求格式错误' }, { status: 400 }));
     }
 
     if (!address || address.length < 4) {
@@ -151,40 +198,5 @@ export async function POST(req: NextRequest) {
 
     const top = googleData.results[0];
     const { lat, lng } = top.geometry.location;
-    const distanceKm = distanceFromPearlPointKm(lat, lng);
-
-    // Beyond the 25 km ceiling: tell them honestly, offer the WhatsApp catering
-    // route. Kept as tier:'outside' — the widgets already render this shape.
-    if (isBeyondServiceRange(distanceKm)) {
-        return corsify(NextResponse.json({
-            tier: 'outside' as const,
-            distanceKm: Number(distanceKm.toFixed(2)),
-            formattedAddress: top.formatted_address,
-        }));
-    }
-
-    const tier: DeliveryTier = tierFromDistance(distanceKm);
-    // Preview fees at two cart sizes: an empty cart (full fee) and at the
-    // distance-resolved threshold (discounted fee). The widget shows both —
-    // "today RM 5" vs "spend RM 20 / 30 and it's free" is a strong nudge.
-    // thresholdForDistance() resolves the split near tier (RM 20 inner /
-    // RM 30 outer); mid is tier-uniform.
-    //
-    // Far tier has threshold === null (RM 18 flat, never waived) — we send
-    // threshold: null and omit feeAtThreshold so the widget renders the flat
-    // fee with no "spend more" nudge. Sending a number here would promise
-    // free delivery we don't offer at that distance.
-    const feeNow = calcDeliveryFee(distanceKm, 0);
-    const threshold = thresholdForDistance(distanceKm);
-    const feeAtThreshold = threshold === null ? null : calcDeliveryFee(distanceKm, threshold);
-
-    return corsify(NextResponse.json({
-        tier,
-        distanceKm: Number(distanceKm.toFixed(2)),
-        fee: feeNow,
-        feeAtThreshold,
-        threshold,
-        formattedAddress: top.formatted_address,
-        partialMatch: !!top.partial_match,
-    }));
+    return tierResponse(lat, lng, top.formatted_address, !!top.partial_match);
 }
