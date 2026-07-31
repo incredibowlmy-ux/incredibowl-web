@@ -103,7 +103,8 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Hometown Taucu Braised Pork Belly (id:23) specials ──
   'extra-taucu-pork-100g': 14.90,
   'extra-taucu-pork-50g': 7.90,      // 2026-07-16 双档策略：低门槛档
-  'taucu-pork-combo': 15.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 19.40）
+  // 2026-07-31 老板调价 15.90 → 16.90（原价 19.40 不变，折扣 3.50 → 2.50）
+  'taucu-pork-combo': 16.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 19.40）
 
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.90,

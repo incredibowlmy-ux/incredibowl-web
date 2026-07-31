@@ -2901,7 +2901,7 @@
             { id: 'pork-potato-duo-combo',       name: '薯肉双拼满足套',       price: 13.40, category: '套餐组合' },
             { id: 'scallion-soup-combo',         name: '爆量满足三件套',       price: 12.90, category: '套餐组合' },
             { id: 'shaoxing-pork-combo',         name: '酒香干饭套',           price: 15.90, category: '套餐组合' },  // 新 2026-07-16（绍兴酒蒸花肉）
-            { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 15.90, category: '套餐组合' },  // 新 2026-07-16（豆酱焖花肉）
+            { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 16.90, category: '套餐组合' },  // 新 2026-07-16（豆酱焖花肉）；2026-07-31 调价 15.90 → 16.90
             { id: 'curry-trio-combo',            name: '咖喱控三件套',         price: 7.90,  category: '套餐组合' },  // 新 2026-07-16（日式咖喱饭）
 
             // 加菜 / 配菜
@@ -9943,7 +9943,7 @@ incredibowl.my`,
             '23': [
                 // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
                 // 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:23 同步）
-                { id: 'taucu-pork-combo', label: '阿嫲下饭王套', price: 15.90 },
+                { id: 'taucu-pork-combo', label: '阿嫲下饭王套', price: 16.90 },  // 2026-07-31 调价 15.90 → 16.90
                 { id: 'extra-taucu-pork-50g', label: '【小碗解馋】加豆酱花肉 (50g)', price: 7.90 },
                 { id: 'extra-taucu-pork-100g', label: '【家乡浓香】加豆酱花肉 (100g)', price: 14.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
@@ -10017,6 +10017,27 @@ incredibowl.my`,
                 { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 // ─── Drinks ───
+                ...DRINKS_PILLS,
+            ],
+            '29': [
+                // 古早味照烧鳗鱼饭（常驻·限周一/四，🆕 2026-07-30）— RM 24.90，
+                // 餐券抵扣需补 RM 5（voucherTopUp）。菜本身自带 马铃薯煎蛋B + 西兰花 50g，
+                // 下面列的都是 EXTRA。2026-07-31 起自带专属 sides（与 webapp AddOnModal id:29 同步）：
+                // 海苔 提到前面（丼物经典搭配），其余照标准块抄全
+                //（一旦在这里登记，DEFAULT_ADDONS 兜底就不再生效）。
+                // ⏳ 还缺主升级「加照烧鳗鱼 (0.5 片)」——老板未给鳗鱼进价/售价，不编价格。
+                { id: 'nori',          label: '海苔', price: 2.00 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 3.50 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 ...DRINKS_PILLS,
             ],
         };

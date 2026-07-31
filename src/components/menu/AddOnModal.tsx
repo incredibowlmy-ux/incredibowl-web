@@ -334,6 +334,37 @@ export default function AddOnModal({
             });
         }
 
+        // If it's Hometown Glazed Unagi Rice (id: 29), sides carry the 丼 classics
+        // (温泉蛋 + 海苔) instead of leaving them buried in a la carte.
+        // 名字必须逐字是「温泉蛋」「海苔」—— prepIngredients 按 add-on label 查
+        // addOnRecipes，改名就静默算 0 食材（见 dishIngredients.ts 别名注释）。
+        // ⏳ 缺一个主升级「加照烧鳗鱼 (0.5 片)」：老板还没给鳗鱼进价/售价，
+        //    编价格会直接变成客户实付金额，所以留空等他拍板再补。
+        //    西兰花同理——全表至今没有独立的西兰花加料价（三文鱼饭也一样缺）。
+        if (dish.id === 29) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'sides', maxQty: 3 },
+                            { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: p('nori', 2), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                if (section.id === 'alacarte') {
+                    // 温泉蛋 已挪到 sides，这里滤掉避免同一个 id 出现两次
+                    return {
+                        ...section,
+                        items: section.items.filter(item => item.id !== 'onsen-egg')
+                    };
+                }
+                return section;
+            });
+        }
+
         // If it's Angelica Steamed Whole Chicken Leg (Tuesday special, id: 2), append specific add-ons to the sides
         if (dish.id === 2) {
             return addOnSections.map(section => {
@@ -434,13 +465,13 @@ export default function AddOnModal({
             const taucuCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'taucu-combo',
                 title: '✨ 阿嫲下饭王套',
-                titleEn: 'Grandma Rice King Set (+ RM 15.90)',
+                titleEn: 'Grandma Rice King Set (+ RM 16.90)',
                 minSelect: 0,
                 maxSelect: 3,
                 extraDesc: '包含：家乡豆酱花肉 100g + 古早味荷包蛋 + 加饭\n"豆酱花肉加量，配流心荷包蛋捞饭——阿嫲看了都说你会吃。"',
                 extraDescEn: 'Includes: 100g taucu pork belly + old-school sunny-side-up egg + extra rice\n"Double taucu pork with a runny egg over extra rice — grandma-approved indulgence."',
                 items: [
-                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 19.40)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 15.90), category: 'combo' }
+                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 19.40)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 16.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
