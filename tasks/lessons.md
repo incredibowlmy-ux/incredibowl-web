@@ -379,3 +379,37 @@ UI 注释已经写明「编辑不该改券」，**但输入框只重置成 0 没
    （第1段=只改那一天，先推；第2段=下周整周，到点再推），别用 revert 来回折腾。
 3. 拆段时 `git reset HEAD~1` 重排比「revert + replay」干净 —— 前提是那个
    commit 还没 push。push 前务必 `git log origin/main..main` 确认。
+
+## 新增/改价「加料·套餐」要走六个触点，漏一个就出事（2026-07-31）
+一次改动里同时上了 5 个新加料/套餐 + 2 次改价，逐个数下来触点是**六处**，
+散落在两个 repo 里（web repo + Desktop dashboard），漏任何一个的具体后果：
+
+| # | 位置 | 漏了会怎样 |
+|---|---|---|
+| 1 | `src/data/addOnsConfig.ts` `ADD_ON_PRICES` | 服务端权威价。漏＝submit-order 校验不过，客人看到「价格验证失败」付不了款 |
+| 2 | `src/components/menu/AddOnModal.tsx` | 网站显示。套餐的 `titleEn` 里**也嵌着价格**，改价要一起改 |
+| 3 | Desktop dashboard `ADDON_SEED` | canonical 价，登录时自动 merge 回写 Firestore `addons`。漏＝dashboard 显示旧价（**但老板不用去 Settings 手改，seed 会自动刷**） |
+| 4 | Desktop dashboard `DISH_ADDON_MAP['<dashboard 菜 id>']` | 手动录单选不到。⚠️ dashboard 菜 id ≠ webapp 菜 id（如 dashboard 14 = webapp 1），照菜名核对 |
+| 5 | Desktop dashboard `WEB_LABEL_TO_ADDON_ID` | 成本归因查不到 id → 该加料成本算 0 |
+| 6 | `src/data/dishIngredients.ts` 三处：`addOnRecipes` + `addOnShortNames` + `MANUAL_LABEL_ALIASES` | **静默算 0 食材**（2026-07-25 豆酱焖排骨那个坑）。网页长标签和 dashboard 短标签是两个 key，都要能查到 |
+
+收尾两条命令缺一不可：`node scripts/gen-dish-addon-map.mjs`（重生成
+`dishAddonMap.generated.ts`，喂 /admin/multi-day 与 /admin/subscriptions 的加料下拉）
+→ `npm run sync:dashboard`（Desktop → public 副本）。
+**不用管的：** `cartRepricing` 读 `ADD_ON_PRICES` 自动刷旧购物车（跑
+`dogfood-cart-repricing.mts` 验证）；`PREPAID_ADDON_OPTIONS` 只在这个加料要能预付时才动。
+**验证方式：** 一次跑完网页长标签 + dashboard 短标签两套写法的
+`aggregateIngredients`，`collectUnrecipedLabels` 必须返回 `[]`。
+
+## 老板给的单位口径要复述确认，"pcs" 不等于「整份」（2026-07-31）
+老板发「i bought unagi for RM5.225/pcs」，我按字面当成**整片**进价，半片算
+RM2.61，据此定加料价 RM7.90。他更正：**5.225 就是半片的价**（整片 10.45）——
+成本口径错一倍，售价直接少收一半。同一轮里「马铃薯煎蛋B 1 份」我也曾按
+加料版整份估成本 RM1.46，实际是 1/4 份 = RM0.36，高估 4 倍。
+**规则：**
+1. 拿到任何采购单价，先**用菜里的实际用量复述一遍**再定价：
+   「RM5.225/pcs → 主菜每份用 0.5 pcs，也就是每碗鳗鱼成本 RM2.61，对吗？」
+   —— 老板一眼就能看出口径错没错，比事后改价便宜得多。
+2. 中英混写的单位（pcs / 片 / 份 / 块）在「半份」场景一律有歧义，别自己选一个。
+3. 拆分/合成的自校验：拆完拿整数份量回算一遍。这次 4 碗鳗鱼饭聚合出
+   「马铃薯 150g + 鸡蛋 2 颗」＝正好一整份煎蛋切四块，口径自洽才敢提交。
