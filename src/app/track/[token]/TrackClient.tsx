@@ -22,6 +22,8 @@ interface TrackData {
     items: { name: string; nameEn: string; quantity: number }[];
     driver: { lat: number; lng: number; updatedAt: number | null } | null;
     dest: { lat: number; lng: number } | null;
+    /** 'grab' = 交给外送平台骑手，我们拿不到位置；'self' = 碗妈自己送，有实时地图 */
+    carrier?: 'grab' | 'self';
 }
 
 const POLL_MS = 10_000;
@@ -56,6 +58,9 @@ const TRACK_DICT = {
         driverOnWaySub: 'Driver on the way',
         gettingLocation: '📡 正在获取司机位置…（司机手机信号恢复后自动更新）',
         locationUpdatedAt: (time: string) => `位置更新于 ${time}`,
+        grabOnWay: '🚕 已交给外送骑手',
+        grabOnWaySub: 'Rider on the way',
+        grabNote: '这一单由外送平台骑手配送，我们这边看不到骑手的实时位置。骑手快到时通常会打电话给你，请留意来电。',
         deliveredTitle: '已送达，请享用！',
         deliveredSub: 'Delivered — enjoy your meal!',
         autoRefresh: '页面每 10 秒自动更新 · Auto-refreshes every 10s',
@@ -78,6 +83,9 @@ const TRACK_DICT = {
         driverOnWaySub: 'Live driver location',
         gettingLocation: "📡 Locating the driver… (updates automatically once the driver's phone signal returns)",
         locationUpdatedAt: (time: string) => `Location updated at ${time}`,
+        grabOnWay: '🚕 Handed to a delivery rider',
+        grabOnWaySub: 'Rider on the way',
+        grabNote: "This order is delivered by a third-party rider, so we can't show their live location here. The rider will usually call you when close by — please keep an eye on your phone.",
         deliveredTitle: 'Delivered — enjoy your meal!',
         deliveredSub: 'Thank you for ordering!',
         autoRefresh: 'Auto-refreshes every 10s',
@@ -262,8 +270,19 @@ export default function TrackClient({ token }: { token: string }) {
                             </div>
                         )}
 
-                        {/* Live driver map — only while out for delivery */}
-                        {data.status === 'delivering' && (
+                        {/* 外送平台骑手送的单 —— 我们没有骑手位置，绝不能显示
+                            「正在获取司机位置…」让客户干等一个永远不会出现的地图 */}
+                        {data.status === 'delivering' && data.carrier === 'grab' && (
+                            <div className="bg-white rounded-2xl border border-[#E3EADA] p-4 space-y-1.5">
+                                <p className="text-sm font-black text-[#1A2D23]">
+                                    {t.grabOnWay} <span className="text-[10px] font-bold text-gray-400">{t.grabOnWaySub}</span>
+                                </p>
+                                <p className="text-xs text-gray-500 leading-relaxed">{t.grabNote}</p>
+                            </div>
+                        )}
+
+                        {/* Live driver map — only while BowlMama is driving it herself */}
+                        {data.status === 'delivering' && data.carrier !== 'grab' && (
                             <div className="bg-white rounded-2xl border border-[#E3EADA] p-3 space-y-2">
                                 <p className="text-sm font-black text-[#1A2D23] px-2 pt-1">
                                     {t.driverOnWay} <span className="text-[10px] font-bold text-gray-400">{t.driverOnWaySub}</span>

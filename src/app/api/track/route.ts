@@ -84,6 +84,11 @@ export async function GET(req: Request) {
         items,
         driver,
         dest,
+        // 谁在送。'grab' = 老板在建批次时把这单派给了 Grab，我们没有骑手位置，
+        // 页面必须换一套文案 —— 否则会永远显示「正在获取司机位置…」，骗客户。
+        carrier: order.deliveryMethod === 'grab' || order.deliveryMethod === 'driver'
+          ? 'grab' as const
+          : 'self' as const,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );

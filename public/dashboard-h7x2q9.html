@@ -2601,8 +2601,9 @@
                     </div>
                 </div>
                 <div class="modal-row">
-                    <label>今天的订单（已确认 / 准备中）</label>
-                    <div id="dbmOrderList" style="display:grid;gap:8px;max-height:320px;overflow-y:auto"></div>
+                    <label>今天的订单（已确认 / 准备中）— 逐单选谁送</label>
+                    <div id="dbmOrderList" style="display:grid;gap:8px;max-height:340px;overflow-y:auto"></div>
+                    <div id="dbmTally" style="margin-top:8px;padding:8px 12px;background:var(--bg-subtle);border-radius:10px;font-size:12px"></div>
                 </div>
                 <div id="dbmSuccess" class="hidden" style="padding:14px;background:var(--success-soft);border-radius:10px;font-size:13px;line-height:1.7"></div>
                 <div id="dbmError" class="login-error hidden" style="margin-top:10px"></div>
@@ -12326,31 +12327,133 @@ incredibowl.my`,
             return `<div style="padding:8px 12px;margin-top:6px;background:var(--bg-subtle);border-radius:10px;font-size:12px;color:var(--text-muted)">ℹ️ 今天另有 ${excluded.length} 单不在列表：${parts}（此列表只含「已确认/备餐中」）</div>`;
         }
 
+        // ── 逐单派工：'self' 自己送（进批次）/ 'grab' 交给骑手（不进批次）/ 'skip' 先不动
+        //    默认值靠 dbmDefaultAssign()：远单默认 grab —— 让「主动选自己跑」而不是
+        //    「忘了取消勾选」成为默认路径。老板点一下就能改。
+        let dbmAssign = {};   // orderId -> 'self' | 'grab' | 'skip'
+
+        const DBM_FAR_KM = 7.5;   // 与 deliveryUtils 的 MID_RADIUS_KM 同一个界：超过就是 far 档
+
+        function dbmDefaultAssign(o) {
+            // 已经标过 grab/driver 的单，尊重历史决定（这批客户基本每次都走 Grab）
+            const m = methodOf(o);
+            if (m === 'grab' || m === 'driver') return 'grab';
+            if (m === 'pickup') return 'skip';
+            const km = typeof o.deliveryDistanceKm === 'number' ? o.deliveryDistanceKm : null;
+            if (km !== null && km > DBM_FAR_KM) return 'grab';
+            if (o.deliveryTier === 'far') return 'grab';
+            return 'self';
+        }
+
+        /** 这个客户历史上主要怎么送的 —— 给决策一点依据，不下结论 */
+        function dbmHistoryHint(o) {
+            const phone = (o.userPhone || '').replace(/[^0-9]/g, '');
+            if (!phone) return '';
+            const past = state.orders.filter(x => x.id !== o.id
+                && (x.userPhone || '').replace(/[^0-9]/g, '') === phone
+                && DELIVERY_METHODS.includes(x.deliveryMethod));
+            if (past.length < 3) return '';
+            const n = {};
+            past.forEach(x => { n[x.deliveryMethod] = (n[x.deliveryMethod] || 0) + 1; });
+            const [top, cnt] = Object.entries(n).sort((a, b) => b[1] - a[1])[0];
+            if (cnt / past.length < 0.6) return '';
+            return `🔖 这个客户过去 ${past.length} 单里 ${cnt} 单走${METHOD_LABEL[top] || top}`;
+        }
+
         function renderDbmList() {
             const orders = dbmEligibleOrders();
             $$('#dbmSlotPills .channel-pill').forEach(p => p.classList.toggle('active', p.dataset.slot === dbmSlot));
             if (orders.length === 0) {
                 $('#dbmOrderList').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">今天该时段没有已确认的订单</div>' + dbmExcludedNote();
+                $('#dbmTally').innerHTML = '';
                 return;
             }
+            orders.forEach(o => { if (!dbmAssign[o.id]) dbmAssign[o.id] = dbmDefaultAssign(o); });
+
+            const btn = (id, val, cur, label) =>
+                `<button type="button" class="dbm-assign" data-id="${id}" data-val="${val}"
+                    style="flex:1;padding:6px 4px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid ${cur === val ? '#1A2D23' : 'var(--border)'};background:${cur === val ? '#1A2D23' : 'transparent'};color:${cur === val ? '#fff' : 'var(--text-muted)'}">${label}</button>`;
+
             $('#dbmOrderList').innerHTML = orders.map(o => {
                 const meal = _cmMeal(o);
                 const mealLabel = meal === 'Lunch' ? '🌞午餐' : meal === 'Dinner' ? '🌙晚餐' : '';
                 const itemsPreview = (o.items || []).map(it => `${it.name} ×${it.quantity}`).join('、');
+                const cur = dbmAssign[o.id];
+                const km = typeof o.deliveryDistanceKm === 'number' ? o.deliveryDistanceKm : null;
+                const far = km !== null && km > DBM_FAR_KM;
+                // 只给客观数字，不给「建议外包」的结论 —— 光算油钱自送永远赢，
+                // 真正的变量是老板的时间，而系统里没有时间价值参数（老板 07-31 决定先不设）。
+                const fuel = km !== null ? (selfRatePerKm() * km * 2) : null;
+                const bits = [];
+                if (km !== null) bits.push(`<b>${km.toFixed(1)}km</b>`);
+                if (typeof o.deliveryFee === 'number') bits.push(`客付运费 RM${o.deliveryFee.toFixed(2)}`);
+                if (fuel !== null) bits.push(`自送油钱 RM${fuel.toFixed(2)}`);
+                const hint = dbmHistoryHint(o);
                 return `
-                    <label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg-subtle);border-radius:10px;cursor:pointer">
-                        <input type="checkbox" class="dbm-check" value="${o.id}" checked style="margin-top:3px;accent-color:#FF6B35" />
-                        <div style="min-width:0;font-size:13px;line-height:1.5">
+                    <div style="padding:10px 12px;background:${far ? '#FFF7E6' : 'var(--bg-subtle)'};border-radius:10px;border:1px solid ${far ? '#FFE0A3' : 'transparent'}">
+                        <div style="font-size:13px;line-height:1.5;margin-bottom:6px">
                             <div><strong>#${o.id.slice(-6).toUpperCase()}</strong> · ${escapeHtml(o.userName || '匿名')} ${mealLabel}</div>
                             <div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(itemsPreview)}</div>
                             <div style="color:var(--text-muted);font-size:12px">📍 ${escapeHtml(o.userAddress || '无地址')}</div>
+                            <div style="color:var(--text-muted);font-size:12px;margin-top:2px">${bits.join(' · ') || '（无距离数据）'}</div>
+                            ${hint ? `<div style="color:#8A6100;font-size:12px;margin-top:2px">${hint}</div>` : ''}
                         </div>
-                    </label>`;
+                        <div style="display:flex;gap:6px">
+                            ${btn(o.id, 'self', cur, '🛵 我送')}
+                            ${btn(o.id, 'grab', cur, '🚕 Grab')}
+                            ${btn(o.id, 'skip', cur, '⏸ 先不动')}
+                        </div>
+                    </div>`;
             }).join('') + dbmExcludedNote();
+
+            const ids = orders.map(o => o.id);
+            const c = v => ids.filter(id => dbmAssign[id] === v).length;
+            $('#dbmTally').innerHTML =
+                `🛵 我送 <b>${c('self')}</b> 单（进配送批次，自动排路线）　·　🚕 Grab <b>${c('grab')}</b> 单（不进批次，标记为已交骑手）　·　⏸ 先不动 <b>${c('skip')}</b> 单`;
         }
+
+        /**
+         * Grab 单不进批次，所以司机页那套「逐单点送达」够不着它们 —— 不给个收尾入口
+         * 就会永远卡在 delivering，客户跟踪页也一直显示配送中。
+         */
+        function dbmGrabDoneBtnHtml(ids) {
+            if (!ids.length) return '';
+            return `<button type="button" id="dbmGrabDoneBtn" data-ids="${ids.join(',')}"
+                style="margin-top:8px;width:100%;padding:10px;border-radius:10px;border:1.5px solid #8A6100;background:transparent;color:#8A6100;font-weight:800;font-size:13px;cursor:pointer">
+                ✅ Grab 这 ${ids.length} 单都送到了 → 标记已送达</button>`;
+        }
+
+        $('#dbmSuccess').addEventListener('click', async (e) => {
+            const b = e.target.closest('#dbmGrabDoneBtn');
+            if (!b) return;
+            const ids = b.dataset.ids.split(',').filter(Boolean);
+            b.disabled = true; b.textContent = '标记中…';
+            try {
+                await Promise.all(ids.map(id =>
+                    updateDoc(doc(db, 'orders', id), { status: 'delivered', updatedAt: serverTimestamp() })));
+                ids.forEach(id => {
+                    const i = state.orders.findIndex(o => o.id === id);
+                    if (i >= 0) state.orders[i] = { ...state.orders[i], status: 'delivered' };
+                });
+                renderAll();
+                b.textContent = `✅ 已标记 ${ids.length} 单送达`;
+            } catch (err) {
+                b.disabled = false;
+                b.textContent = '标记失败，点我重试';
+                console.warn('[grab done]', err);
+            }
+        });
+
+        $('#dbmOrderList').addEventListener('click', (e) => {
+            const b = e.target.closest('.dbm-assign');
+            if (!b) return;
+            dbmAssign[b.dataset.id] = b.dataset.val;
+            renderDbmList();
+        });
 
         function openDeliveryBatchModal() {
             dbmSlot = 'all';
+            dbmAssign = {};   // 每次打开重算默认值（订单/配送方式可能已经变了）
             $('#dbmSuccess').classList.add('hidden');
             $('#dbmError').classList.add('hidden');
             $('#dbmSubmitBtn').disabled = false;
@@ -12370,12 +12473,57 @@ incredibowl.my`,
         });
 
         $('#dbmSubmitBtn').addEventListener('click', async () => {
-            const orderIds = Array.from(document.querySelectorAll('.dbm-check:checked')).map(c => c.value);
+            const eligible = dbmEligibleOrders().map(o => o.id);
+            const orderIds = eligible.filter(id => dbmAssign[id] === 'self');
+            const grabIds  = eligible.filter(id => dbmAssign[id] === 'grab');
             const errEl = $('#dbmError');
             errEl.classList.add('hidden');
-            if (orderIds.length === 0) {
-                errEl.textContent = '请至少勾选 1 个订单';
+            if (orderIds.length === 0 && grabIds.length === 0) {
+                errEl.textContent = '至少要有 1 单选「我送」或「Grab」';
                 errEl.classList.remove('hidden');
+                return;
+            }
+
+            // ── 先处理 Grab 单 ──────────────────────────────────
+            // 放在建批次之前：批次那步会把「没标过方式」的单盖成 self，
+            // 先把 grab 写进去，后面那段就会因为 DELIVERY_METHODS.includes 而跳过它们。
+            if (grabIds.length > 0) {
+                const btn0 = $('#dbmSubmitBtn');
+                btn0.disabled = true;
+                btn0.textContent = '标记 Grab 单中…';
+                try {
+                    await Promise.all(grabIds.map(id =>
+                        updateDoc(doc(db, 'orders', id), {
+                            deliveryMethod: 'grab',
+                            status: 'delivering',
+                            grabAssignedAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        })));
+                    grabIds.forEach(id => {
+                        const i = state.orders.findIndex(o => o.id === id);
+                        if (i >= 0) state.orders[i] = { ...state.orders[i], deliveryMethod: 'grab', status: 'delivering' };
+                    });
+                } catch (err) {
+                    errEl.textContent = 'Grab 单标记失败：' + (err.message || err);
+                    errEl.classList.remove('hidden');
+                    btn0.disabled = false;
+                    btn0.textContent = '🛵 开始配送';
+                    return;
+                }
+            }
+
+            // 全给 Grab、自己一单都不送 —— 不需要建批次，直接收工
+            if (orderIds.length === 0) {
+                state.lastGrabIds = grabIds;
+                renderAll();
+                const s0 = $('#dbmSuccess');
+                s0.innerHTML = `🚕 <strong>${grabIds.length} 单已标记交给 Grab</strong><br>`
+                    + `<span style="color:var(--text-muted)">记得去 Grab App 逐单下单。客户跟踪页已显示「已交给外送骑手」。</span>`
+                    + dbmGrabDoneBtnHtml(grabIds);
+                s0.classList.remove('hidden');
+                $('#dbmOrderList').innerHTML = '';
+                $('#dbmTally').innerHTML = '';
+                $('#dbmSubmitBtn').textContent = '已完成';
                 return;
             }
             const btn = $('#dbmSubmitBtn');
@@ -12449,9 +12597,25 @@ incredibowl.my`,
                 routeHtml += `<div style="margin-top:4px;color:var(--text-muted);font-size:11px">ℹ️ ${escapeHtml(route.note)}</div>`;
             }
 
+            // Grab 那一组单独列出来 —— 不进批次、不在司机页出现，很容易忘
+            let grabHtml = '';
+            if (grabIds.length > 0) {
+                const names = grabIds.map(id => {
+                    const o = state.orders.find(x => x.id === id);
+                    return `#${id.slice(-6).toUpperCase()} ${escapeHtml(o?.userName || '匿名')}`;
+                }).join('　');
+                grabHtml = `<div style="margin-top:10px;padding:10px 12px;background:#FFF7E6;border:1px solid #FFE0A3;border-radius:10px">
+                        🚕 <strong>${grabIds.length} 单已标记交给 Grab</strong>（不在司机页里）<br>
+                        <span style="font-size:12px;color:#8A6100">${names}</span><br>
+                        <span style="font-size:12px;color:#8A6100">记得去 Grab App 逐单下单。客户跟踪页已显示「已交给外送骑手」。</span>
+                        ${dbmGrabDoneBtnHtml(grabIds)}
+                    </div>`;
+            }
+
             s.innerHTML = `✅ <strong>${orderIds.length} 单已转「配送中」</strong><br>`
                 + `🗺️ 客户跟踪页现在会显示你的实时位置`
                 + routeHtml
+                + grabHtml
                 + `<a href="${driverUrl}" target="_blank" rel="noopener" style="display:block;margin-top:10px;padding:12px;background:#FF6B35;color:#fff;border-radius:10px;text-align:center;font-weight:800;text-decoration:none">🛵 打开司机页（按顺序导航 + 逐单点送达）</a>`;
             s.classList.remove('hidden');
             $('#dbmOrderList').innerHTML = '';
