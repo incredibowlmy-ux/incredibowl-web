@@ -68,6 +68,10 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Lemon Salmon (id:21) specials ─────────
   'extra-salmon-70g': 18.50,
+  // 2026-07-31 老板拍板两个专属套餐（7 周快照显示三文鱼客最爱加西兰花炒蛋，
+  // 而 RM18.50 的加三文鱼 122 份里只卖出 1 次 → 套餐围着西兰花炒蛋做）。
+  'salmon-protein-duo-combo': 12.90,   // 柠香双蛋白套：西兰花炒蛋+温泉蛋（原价 13.90，老板定价）
+  'salmon-tricolor-combo': 5.90,       // 三色加倍套：毛豆+玉米+小番茄各一份（原价 7.50）
 
   // ─── Aussie Wagyu Patty Don (id:24) specials ───
   'extra-wagyu-patty': 17.50,
@@ -105,6 +109,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'extra-taucu-pork-50g': 7.90,      // 2026-07-16 双档策略：低门槛档
   // 2026-07-31 老板调价 15.90 → 16.90（原价 19.40 不变，折扣 3.50 → 2.50）
   'taucu-pork-combo': 16.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 19.40）
+
+  // ─── Hometown Glazed Unagi Rice (id:29) specials ──
+  // 老板 2026-07-31 给鳗鱼进价 RM 5.225/片 → 半片成本 RM 2.61。
+  // 按成本表 v5 自己的定价公式「建议售价 = 成本 ÷ 33%」= RM 7.92 → 取 7.90。
+  // 对照加三文鱼：18.50 ÷ 成本 6.00 = 3.08×，本项 7.90 ÷ 2.61 = 3.02×，同一档。
+  'extra-unagi-half': 7.90,
 
   // ─── Scallion Chicken Soup (id:5) specials ──
   'scallion-soup-combo': 12.90,

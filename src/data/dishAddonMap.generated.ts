@@ -235,9 +235,9 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "古早味照烧鳗鱼饭": [
     {
-      "id": "nori",
-      "label": "海苔",
-      "price": 2
+      "id": "extra-unagi-half",
+      "label": "加照烧鳗鱼 (0.5片)",
+      "price": 7.9
     },
     {
       "id": "less-rice",
@@ -336,6 +336,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "柠香香煎三文鱼饭": [
+    {
+      "id": "salmon-protein-duo-combo",
+      "label": "柠香双蛋白套",
+      "price": 12.9
+    },
+    {
+      "id": "salmon-tricolor-combo",
+      "label": "三色加倍套",
+      "price": 5.9
+    },
     {
       "id": "extra-salmon-70g",
       "label": "加香煎三文鱼 (70g+)",

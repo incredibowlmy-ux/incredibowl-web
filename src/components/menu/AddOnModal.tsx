@@ -288,8 +288,35 @@ export default function AddOnModal({
         // If it's Lemon Pan-Seared Salmon (id: 21), sides carry the dish's own
         // ingredients (edamame / corn / cherry tomato) plus an extra-salmon upsell.
         // 西兰花 (50g) intentionally absent — no standalone add-on price provided yet.
+        // 2026-07-31 加两个专属套餐（老板拍板）：数据说三文鱼客最常加的是
+        // 蒜蓉西兰花炒蛋（7 周里 6 周排前三），而 RM18.50 的加三文鱼在约 122 份
+        // 里只卖出过 1 次 —— 所以套餐围着「客人已经在买的东西」打包，不推双份鱼。
         if (dish.id === 21) {
-            return addOnSections.map(section => {
+            const salmonProteinCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'salmon-protein-combo',
+                title: '✨ 柠香双蛋白套',
+                titleEn: 'Lemon Salmon Protein Duo (+ RM 12.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：蒜蓉西兰花炒蛋 + 浓厚温泉蛋\n"香煎三文鱼配蒜香西兰花炒蛋，再戳破一颗流心温泉蛋——一碗吃满两份蛋白质。"',
+                extraDescEn: 'Includes: garlic broccoli with soft-scrambled egg + rich onsen egg\n"Pan-seared salmon with garlicky broccoli-egg and a silky onsen egg — two proteins in one bowl."',
+                items: [
+                    { id: 'salmon-protein-duo-combo', name: '柠香双蛋白套 (原价 RM 13.90)', nameEn: 'Protein Duo', price: p('salmon-protein-duo-combo', 12.90), category: 'combo' }
+                ]
+            };
+            const salmonTricolorCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'salmon-tricolor-combo-section',
+                title: '✨ 三色加倍套',
+                titleEn: 'Triple Veggie Boost (+ RM 5.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: '包含：清甜毛豆 25g + 金黄甜玉米 30g + 爽脆小番茄 20g\n"碗里本来就有的三样配色，全部加倍——每一口都咬得到。"',
+                extraDescEn: 'Includes: 25g edamame + 30g sweet corn + 20g cherry tomato\n"The three colours already in your bowl, doubled — something in every bite."',
+                items: [
+                    { id: 'salmon-tricolor-combo', name: '三色加倍套 (原价 RM 7.50)', nameEn: 'Triple Veggie Boost', price: p('salmon-tricolor-combo', 5.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {
                         ...section,
@@ -312,6 +339,7 @@ export default function AddOnModal({
                 }
                 return section;
             });
+            return [salmonProteinCombo, salmonTricolorCombo, ...customSections];
         }
 
         // If it's Aussie Wagyu Beef Patty Don (id: 24), sides carry the dish's own
@@ -334,13 +362,12 @@ export default function AddOnModal({
             });
         }
 
-        // If it's Hometown Glazed Unagi Rice (id: 29), sides carry the 丼 classics
-        // (温泉蛋 + 海苔) instead of leaving them buried in a la carte.
-        // 名字必须逐字是「温泉蛋」「海苔」—— prepIngredients 按 add-on label 查
-        // addOnRecipes，改名就静默算 0 食材（见 dishIngredients.ts 别名注释）。
-        // ⏳ 缺一个主升级「加照烧鳗鱼 (0.5 片)」：老板还没给鳗鱼进价/售价，
-        //    编价格会直接变成客户实付金额，所以留空等他拍板再补。
-        //    西兰花同理——全表至今没有独立的西兰花加料价（三文鱼饭也一样缺）。
+        // If it's Hometown Glazed Unagi Rice (id: 29), sides carry the half-fillet
+        // upsell plus 温泉蛋 (丼 classic) instead of leaving the egg buried in a la carte.
+        // 海苔 老板 2026-07-31 明确不要，别再加回来。
+        // 名字必须逐字是「温泉蛋」—— prepIngredients 按 add-on label 查 addOnRecipes，
+        // 改名就静默算 0 食材（见 dishIngredients.ts 别名注释）。
+        // 西兰花仍缺独立加料价（三文鱼饭也一样缺），故不列。
         if (dish.id === 29) {
             return addOnSections.map(section => {
                 if (section.id === 'sides') {
@@ -348,8 +375,8 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-unagi-half', name: '【照烧加倍】加照烧鳗鱼 (0.5片)', nameEn: 'Extra Glazed Unagi (½ fillet)', price: p('extra-unagi-half', 7.90), category: 'sides', maxQty: 3 },
                             { id: 'onsen-egg', name: '温泉蛋', nameEn: 'Onsen Egg', price: p('onsen-egg', 3), category: 'sides', maxQty: 3 },
-                            { id: 'nori', name: '海苔', nameEn: 'Nori (Seaweed)', price: p('nori', 2), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -785,7 +812,11 @@ export default function AddOnModal({
                         {activeAddOnSections.map(section => {
                             const selectedCount = getSectionSelectedCount(section);
                             const isExpanded = expandedSections[section.id] ?? false;
-                            const isSpecialCombo = section.id === 'natto-combo' || section.id === 'surf-turf-combo' || section.id === 'scallion-combo' || section.id === 'pork-potato-combo';
+                            // 套餐区一律高亮（橙框橙底橙字）。这里原本是四个 section id 的
+                            // 硬编码白名单，2026-07-16 新增的四个套餐（greek/shaoxing/
+                            // taucu/curry）没人往名单里补，结果长得跟普通配菜区一模一样。
+                            // 改成看内容：这一区放的是 combo 商品就高亮，以后加套餐不会再漏。
+                            const isSpecialCombo = section.items.some(item => item.category === 'combo');
 
                             return (
                                 <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>

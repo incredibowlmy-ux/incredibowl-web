@@ -2903,6 +2903,8 @@
             { id: 'shaoxing-pork-combo',         name: '酒香干饭套',           price: 15.90, category: '套餐组合' },  // 新 2026-07-16（绍兴酒蒸花肉）
             { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 16.90, category: '套餐组合' },  // 新 2026-07-16（豆酱焖花肉）；2026-07-31 调价 15.90 → 16.90
             { id: 'curry-trio-combo',            name: '咖喱控三件套',         price: 7.90,  category: '套餐组合' },  // 新 2026-07-16（日式咖喱饭）
+            { id: 'salmon-protein-duo-combo',    name: '柠香双蛋白套',         price: 12.90, category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）西兰花炒蛋+温泉蛋，原价 13.90
+            { id: 'salmon-tricolor-combo',       name: '三色加倍套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）毛豆+玉米+小番茄，原价 7.50
 
             // 加菜 / 配菜
             { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 7.90,  category: '加菜' },  // 2026-07-16 老板调价 4.90 → 7.90
@@ -2917,6 +2919,7 @@
             { id: 'extra-herbal-leg-3',          name: '加 3 只暖胃鸡腿 (legacy)',              price: 41.40, category: '加菜' },
             { id: 'extra-soy-leg-1',             name: '【犒劳自己】多加一只酱油全鸡腿',        price: 16.50, category: '加菜' },
             { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 10.90, category: '加菜' },
+            { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 7.90,  category: '加菜' },  // 新 2026-07-31；进价 RM5.225/片 → 半片成本 2.61，÷33% ≈ 7.90
             { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
             { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (180g)',       price: 11.90, category: '加菜' },
             { id: 'extra-aus-potato-80g',        name: '【优质碳水】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
@@ -3317,6 +3320,8 @@ incredibowl.my`,
             '酒香干饭套 (原价 RM 19.40)': 'shaoxing-pork-combo',
             '阿嫲下饭王套 (原价 RM 19.40)': 'taucu-pork-combo',
             '咖喱控三件套 (原价 RM 9.50)': 'curry-trio-combo',
+            '柠香双蛋白套 (原价 RM 13.90)': 'salmon-protein-duo-combo',
+            '三色加倍套 (原价 RM 7.50)': 'salmon-tricolor-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -3364,6 +3369,8 @@ incredibowl.my`,
             '【家乡浓香】加豆酱花肉 (100g)': 'extra-taucu-pork-100g',
             '【小酌怡情】加绍兴花肉 (50g)': 'extra-shaoxing-pork-50g',
             '【小碗解馋】加豆酱花肉 (50g)': 'extra-taucu-pork-50g',
+            // 照烧鳗鱼饭 specials (2026-07-31)
+            '【照烧加倍】加照烧鳗鱼 (0.5片)': 'extra-unagi-half',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -9909,6 +9916,9 @@ incredibowl.my`,
                 // 柠香香煎三文鱼饭（周二）— RM 24.90，餐券抵扣需补 RM 5（voucherTopUp）
                 // 2026-07-05 起自带专属 sides（与 webapp AddOnModal id:21 同步）：
                 // 加三文鱼 + 本菜自带配料（毛豆/玉米/小番茄，下方 alacarte 已有毛豆/玉米）
+                // 2026-07-31 加两个专属套餐（老板拍板）
+                { id: 'salmon-protein-duo-combo', label: '柠香双蛋白套', price: 12.90 },
+                { id: 'salmon-tricolor-combo',    label: '三色加倍套', price: 5.90 },
                 { id: 'extra-salmon-70g', label: '加香煎三文鱼 (70g+)', price: 18.50 },
                 { id: 'cherry-tomato',    label: '小番茄 (20g)', price: 2.50 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
@@ -10023,10 +10033,10 @@ incredibowl.my`,
                 // 古早味照烧鳗鱼饭（常驻·限周一/四，🆕 2026-07-30）— RM 24.90，
                 // 餐券抵扣需补 RM 5（voucherTopUp）。菜本身自带 马铃薯煎蛋B + 西兰花 50g，
                 // 下面列的都是 EXTRA。2026-07-31 起自带专属 sides（与 webapp AddOnModal id:29 同步）：
-                // 海苔 提到前面（丼物经典搭配），其余照标准块抄全
+                // 加鳗鱼提到前面，其余照标准块抄全
                 //（一旦在这里登记，DEFAULT_ADDONS 兜底就不再生效）。
-                // ⏳ 还缺主升级「加照烧鳗鱼 (0.5 片)」——老板未给鳗鱼进价/售价，不编价格。
-                { id: 'nori',          label: '海苔', price: 2.00 },
+                // 老板 2026-07-31：鳗鱼饭不要海苔；进价 RM5.225/片 → 半片 7.90。
+                { id: 'extra-unagi-half', label: '加照烧鳗鱼 (0.5片)', price: 7.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
