@@ -25,6 +25,10 @@ async function getDb() {
  *   location {batchId, lat, lng}   → update live driver position
  *   deliver  {batchId, orderId}    → order → 'delivered'; auto-complete batch
  *                                    when every order is delivered
+ *   resort   {batchId}             → 对「还没送的单」重新排一次路线，就地更新顺序。
+ *                                    不碰订单状态、不碰批次生死 —— 用于中途插单/跳单后
+ *                                    重排，也用于改完 Google API 配置后立刻验证效果
+ *                                    （排序只在建批次那一刻算一次，刷新页面不会重算）
  *   complete {batchId}             → force-close the batch (drops driverLoc)
  */
 // `start` 要跑路线排序（首次启用时可能要 geocode 一整批新地址 + 调 Directions），
@@ -201,6 +205,54 @@ export async function POST(req: NextRequest) {
         await batchRef.update({ status: 'completed', completedAt: FieldValue.serverTimestamp(), driverLoc: FieldValue.delete() });
       }
       return adminJson({ success: true, batchCompleted: done });
+    }
+
+    if (action === 'resort') {
+      const { batchId } = body;
+      if (typeof batchId !== 'string') return adminJson({ error: '参数无效' }, 400);
+      const batchRef = db.collection('deliveryBatches').doc(batchId);
+      const batchSnap = await batchRef.get();
+      if (!batchSnap.exists) return adminJson({ error: '批次不存在' }, 404);
+      const batch = batchSnap.data()!;
+
+      const allIds: string[] = batch.orderIds || [];
+      const deliveredIds: string[] = batch.deliveredOrderIds || [];
+      // 已送达的保持原有相对顺序钉在前面 —— 它们已经是既成事实，重排没有意义，
+      // 而且动了会让 /driver 上「已送达」区的序号跳来跳去。
+      const doneIds = allIds.filter(id => deliveredIds.includes(id));
+      const pendingIds = allIds.filter(id => !deliveredIds.includes(id));
+
+      if (pendingIds.length === 0) {
+        return adminJson({ error: '这个批次已经全部送完，没有可重排的单' }, 400);
+      }
+
+      const snaps = await db.getAll(...pendingIds.map(id => db.collection('orders').doc(id)));
+      const plan = await planRoute(db, snaps.filter(s => s.exists).map(s => {
+        const d = s.data() || {};
+        return { id: s.id, userAddress: d.userAddress, deliveryLat: d.deliveryLat, deliveryLng: d.deliveryLng };
+      }));
+
+      await batchRef.update({
+        orderIds: [...doneIds, ...plan.orderedIds],
+        routeSource: plan.routeSource,
+        routeTotalKm: plan.totalKm,
+        routeTotalMinutes: plan.totalMinutes,
+        unlocatedOrderIds: plan.unlocatedOrderIds,
+        routeNote: plan.note,
+        resortedAt: FieldValue.serverTimestamp(),
+      });
+
+      return adminJson({
+        success: true,
+        route: {
+          orderIds: plan.orderedIds,
+          source: plan.routeSource,
+          totalKm: plan.totalKm,
+          totalMinutes: plan.totalMinutes,
+          unlocatedOrderIds: plan.unlocatedOrderIds,
+          note: plan.note,
+        },
+      });
     }
 
     if (action === 'complete') {

@@ -167,6 +167,25 @@ export default function DriverClient() {
         setBusy(null);
     };
 
+    // 重新排一次剩余的单。排序只在建批次那一刻算一次并写死进库，所以改完
+    // Google API 配置后必须重排才看得到效果；中途插单/跳单后也用它。
+    const [resorting, setResorting] = useState(false);
+    const resortRoute = async () => {
+        if (!batch) return;
+        setResorting(true);
+        try {
+            const res = await callApi({ action: 'resort', batchId: batch.id });
+            await refreshBatch();
+            const s = res?.route?.source;
+            const label = s === 'google' ? '🚦 已按实时路况重排'
+                : s === 'google-notraffic' ? '🗺️ 已按路网重排（无路况）'
+                : s === 'local' ? '📐 已按直线距离重排（Google 路线服务仍不可用）'
+                : '⚠️ 未能自动排序';
+            alert(`${label}${res?.route?.totalKm != null ? `\n全程 ${res.route.totalKm} km` : ''}${res?.route?.totalMinutes != null ? ` · 约 ${res.route.totalMinutes} 分钟` : ''}${res?.route?.note ? `\n\n${res.route.note}` : ''}`);
+        } catch (e: any) { alert(e.message || '重排失败'); }
+        setResorting(false);
+    };
+
     const completeBatch = async () => {
         if (!batch || !confirm('确定结束本趟配送？未送达的订单会保持「配送中」状态。')) return;
         try {
@@ -314,6 +333,13 @@ export default function DriverClient() {
                                 </span>
                             )}
                         </div>
+                        <button
+                            onClick={resortRoute}
+                            disabled={resorting || remaining.length === 0}
+                            className="w-full py-2 text-xs font-bold text-gray-500 border border-dashed border-gray-300 rounded-xl disabled:opacity-40"
+                        >
+                            {resorting ? '重新计算中…' : `🔄 重新排一次剩下的 ${remaining.length} 单`}
+                        </button>
                         {navLegs.length === 0 ? (
                             <p className="text-xs text-gray-400">没有可导航的坐标 — 请用每单的「🧭 导航去这一单」</p>
                         ) : navLegs.map((leg, i) => (
