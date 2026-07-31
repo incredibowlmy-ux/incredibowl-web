@@ -2541,14 +2541,16 @@
             <form id="sellVoucherForm" class="modal-body">
                 <div class="modal-row">
                     <label>客户姓名 *</label>
-                    <input type="text" id="svmName" required maxlength="50" placeholder="例：王小明" />
-                    <div style="font-size:10px;color:var(--text-muted);margin-top:3px">如客户未在 webapp 注册 · 系统会自动建 stub 账号 · 该客户后续登录 webapp 时可继续用这批券</div>
+                    <input type="text" id="svmName" required maxlength="50" placeholder="例：王小明（输入姓名/电话自动搜现有客户）" autocomplete="off" />
+                    <div id="svmCustSuggest" style="margin-top:4px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);display:none"></div>
+                    <div id="svmMatchHint" class="hidden" style="margin-top:4px;padding:6px 10px;border-radius:8px;font-size:11px;background:rgba(46,125,50,0.1);color:#2E7D32"></div>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:3px">输入时自动匹配现有客户 · 点选即填（券发进该账号）· 全新客户直接填完 → 自动建 stub 账号，后续登录 webapp 可继续用券</div>
                 </div>
 
                 <div class="modal-row-2">
                     <div>
                         <label>电话 *</label>
-                        <input type="tel" id="svmPhone" required placeholder="0123456789" pattern="[0-9+\-\s]*" />
+                        <input type="tel" id="svmPhone" required placeholder="0123456789" pattern="[0-9+\-\s]*" autocomplete="off" />
                     </div>
                     <div>
                         <label>购买日期</label>
@@ -12317,6 +12319,8 @@ incredibowl.my`,
             renderSvmPrepaidRows();
             refreshSvmGrandTotal();
             $('#svmError').classList.add('hidden');
+            svmHideSuggest();
+            $('#svmMatchHint').classList.add('hidden');
             $('#sellVoucherModal').classList.remove('hidden');
             setTimeout(() => $('#svmName').focus(), 100);
         }
@@ -12692,6 +12696,80 @@ incredibowl.my`,
             p.addEventListener('click', () => { svmChannel = p.dataset.channel; updateSvmPills(); });
         });
         $('#svmAmountPaid').addEventListener('input', refreshSvmAllocated);
+
+        // ── 自动匹配现有客户（复用查客户的 searchCustomers）——
+        //    选中只是预填 + 确认身份；真正绑定在服务端按电话找 uid（找不到才建 stub）。
+        //    所以候选只列有电话档案的客户：无电话的没法靠电话绑定，列了反而误导。
+        function svmVoucherBalance(phone) {
+            const phoneNorm = normalizePhone(phone || '');
+            if (!phoneNorm) return 0;
+            const cands = (state.users || []).filter(u => normalizePhone(u.phone || '') === phoneNorm);
+            const uid = (cands.find(u => !u.mergedInto) || cands[0])?.id;
+            const nowMs = Date.now();
+            return (state.mealVouchers || []).filter(v =>
+                ((uid && v.userId === uid) || normalizePhone(v.userPhone || '') === phoneNorm)
+                && v.status === 'available' && (tsToDate(v.expiresAt)?.getTime() || 0) > nowMs).length;
+        }
+        function svmHideSuggest() { const el = $('#svmCustSuggest'); el.style.display = 'none'; el.innerHTML = ''; }
+        function svmShowMatchHint(c) {
+            const bal = svmVoucherBalance(c.phone);
+            $('#svmMatchHint').innerHTML = `✓ 已匹配现有客户：<strong>${escapeHtml(c.name || '匿名')}</strong> · ${c.orderCount} 单${bal > 0 ? ` · 现余 ${bal} 张券` : ''} — 新券会进这个账号，不建新 stub`;
+            $('#svmMatchHint').classList.remove('hidden');
+        }
+        function svmRenderSuggest(q) {
+            const sug = $('#svmCustSuggest');
+            const results = searchCustomers(q).filter(c => (c.phone || '').trim()).slice(0, 8);
+            if (!results.length) { svmHideSuggest(); return; }
+            sug.style.display = 'block';
+            sug.innerHTML = results.map(c => `
+                <div class="svm-cust-suggest" data-name="${escapeHtml(c.name || '')}" data-phone="${escapeHtml(c.phone)}" data-count="${c.orderCount}" style="padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:center">
+                    <div style="flex:1;min-width:0">
+                        <div style="font-weight:600;font-size:12px">${escapeHtml(c.name || '匿名')}</div>
+                        <div style="font-size:11px;color:var(--text-muted)">📞 ${escapeHtml(c.phone)}</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);flex-shrink:0">${c.orderCount} 单</div>
+                </div>`).join('');
+        }
+        function svmPickSuggest(el) {
+            $('#svmName').value = el.dataset.name || '';
+            $('#svmPhone').value = el.dataset.phone || '';
+            svmHideSuggest();
+            svmShowMatchHint({ name: el.dataset.name, phone: el.dataset.phone, orderCount: Number(el.dataset.count) || 0 });
+        }
+        let svmSuggestDebounce = null;
+        ['svmName', 'svmPhone'].forEach(id => {
+            $('#' + id).addEventListener('input', (e) => {
+                $('#svmMatchHint').classList.add('hidden');   // 手改内容 = 之前的匹配不再保证
+                if (svmSuggestDebounce) clearTimeout(svmSuggestDebounce);
+                const q = e.target.value.trim();
+                if (q.length < 2) { svmHideSuggest(); return; }
+                svmSuggestDebounce = setTimeout(() => {
+                    svmRenderSuggest(q);
+                    // 电话打满就直接亮匹配提示（不用点建议）—— 同人不同名不会建重复 stub
+                    const digits = q.replace(/\D/g, '');
+                    if (id === 'svmPhone' && digits.length >= 9) {
+                        const norm = normalizePhone(digits);
+                        const hit = norm ? searchCustomers(q).find(c => normalizePhone(c.phone || '') === norm) : null;
+                        if (hit) svmShowMatchHint(hit);
+                    }
+                }, 120);
+            });
+            // Enter = 选第一个建议（顺带挡掉表单隐式提交）
+            $('#' + id).addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                const first = $('#svmCustSuggest').querySelector('.svm-cust-suggest');
+                if (first) svmPickSuggest(first);
+            });
+        });
+        $('#svmCustSuggest').addEventListener('click', (e) => {
+            const item = e.target.closest('.svm-cust-suggest');
+            if (item) svmPickSuggest(item);
+        });
+        // 点弹窗其他地方收起建议列表
+        $('#sellVoucherModal').addEventListener('click', (e) => {
+            if (!e.target.closest('#svmCustSuggest') && e.target.id !== 'svmName' && e.target.id !== 'svmPhone') svmHideSuggest();
+        });
 
         $('#svmSubmitBtn').addEventListener('click', async () => {
             const errEl = $('#svmError');
