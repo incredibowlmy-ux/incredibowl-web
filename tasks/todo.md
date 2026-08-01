@@ -25,9 +25,15 @@
 - 签名校验：暂缓（需 App Secret + 实例上实测 raw-body），SETUP 里列为下一步加固项
 
 ## Phase D — review + 收尾
-- [ ] 对抗性 review（3 agent：字段对照/端点安全/JSON 语义）→ 修 findings
+- [x] 对抗性 review（3 agent）：字段对照=零漂移仅 3 个 P3 nit；安全+JSON 审计抓到 2 P1 + 6 P2 全部修复
 - [x] n8n-workflows/SETUP.md（导入步骤、切换顺序、8 步真机 smoke 清单、诚实边界）
-- [ ] commit 留本地 + 回报老板（不 push）
+- [x] commit 1b4261e 留本地（不 push，等老板批）
+
+## Review 小结
+- **review 修复清单**：防抖水位线 ts 改用「吞掉消息的 maxTs」（否则 Read→Mark 间隙的新消息被永久吞）；SYS- 定位注记不参与「最新消息」判定（否则文字+定位连发吞文字）；confirm 事务认领 pending→confirming（防老板连点/n8n 重试双建单）+ 卡死 3 分钟可重领；batchTag 加电话尾号+随机（同毫秒撞 tag 会吞掉第二个客户的已付款单）；跨号 draftId 拒绝；草稿坐标 deliveryLat/Lng 落单（路线规划第一层命中，定位单地址是占位串必须带坐标）；老板引用图片不再误发「扫码付款」话术；两个新端点 header-only + timingSafeEqual；加料价 clamp≥0；>12 项/天出警告不静默截断。
+- **接受的已知边界**（都有注释/文档）：confirm 沿用草稿冻结时的可下单性判定（24h 窗口内新增停业日不重拦）；customer 订单查询 limit 300 内存排序（当前量级安全）；wa_buffer 只增不删（SETUP 写了月度清理）；[SEND_DISH] 只认 ASCII id（本就是约定）。
+- **验证**：tsc 0 错 ×3 轮、npm run build 过 ×2 轮、dogfood 25/25、JSON 图校验全过（61+6+2 节点）。
+- **上线依赖链**：老板批 push（Vercel 部署 wa-order/customer 端点）→ 建 wa_buffer tab → 导入 3 JSON + 3 处手动挂接（子 workflow 下拉/Error Workflow 设置/Telegram 凭据）→ v1 停 v2 启（同 webhook path，Meta 零改动）→ SETUP.md 8 步真机 smoke。
 
 ---
 
@@ -709,3 +715,137 @@ FPX 单里 14 笔漏了两层库存（8 笔走 admin/data、6 笔走客户端取
 
 ### 遗留
 - Candise 的订阅模板还没建（周计划的菜/天数要老板定），她有 7 张券、到期 2026-08-22
+
+---
+
+# Dashboard 手动加单：老客户自动亮最近 3 条备注 — 2026-08-01
+
+> 老板要求：给已有客户加单时，备注（可选）框要自动显示该客户最近 3 条备注（客户网页单写的 + 我们手动单记的都算）。
+
+- [x] Desktop 源文件加 moNoteHistory 提示区 + refreshMoNoteHistory()（复用 normalizePhone/stripMachineNote/tsToDate 现成口径）
+- [x] 挂 moPhone input 监听 + openOrderModal（编辑模式电话直接赋值不触发 input）
+- [x] 内联 script 语法检查（vm 编译 650KB 模块 0 错）+ sync:dashboard 回灌 public 副本
+- [x] 真函数级 dogfood：从 public 副本抽出 refreshMoNoteHistory + stripMachineNote + normalizePhone 跑假订单 12/12 过（排序/去重/机器前缀/来源标记/编辑排除/清空）
+- [x] commit 留本地不 push（只含 public/dashboard-h7x2q9.html）
+
+
+---
+
+# Dashboard 加单菜品下拉：周一缺菜修复 + 按天分组理顺 — 2026-08-01
+
+> 老板反馈：加单菜单周一缺菜。根因 = 鳗鱼(限周一/四)、三文鱼(限周二/五)在 seed 里 day:'Daily'，
+> 全挤「常驻」组 → 周一组只剩鸡扒，且常驻组混着周一不供应的三文鱼。
+
+- [x] MENU_SEED 给 id 29/21 补 availableWeekdays（核实自 webapp weeklyMenu.ts [1,4]/[2,5]，绝不编）
+- [x] _dishGroupsByDay：限日常驻挂进各供应日组 + 「仅周X/X供应」灰字，当天主打排前限日殿后；offMenuThisWeek 仍胜出
+- [x] buildDishOptionsHtml 与可见下拉统一走 _dishGroupsByDay（消掉复制逻辑）
+- [x] 语法 vm 编译 0 错 + 真函数 dogfood 16/16（周一组=鸡扒→酱油鸡→鳗鱼、常驻无限日菜、暂别胜出、⭐送达日排首、搜索跨组）
+- [x] sync:dashboard 回灌 + commit 留本地不 push
+- ⚠️ 每周换菜：限日菜调供应日时 seed availableWeekdays 必须同步改（weekly-menu skill 要补这一步）
+
+
+---
+
+# sync:menu 写库 + push 放行 + 汤 add-on 餐券兑换 — 2026-08-01
+
+- [x] 鸡扒不在周一根因：Firestore menu/1 残留上周 offMenuThisWeek:true（08-03 换菜后没跑 sync:menu --commit）
+- [x] 老板批准 → sync:menu --commit 写入 6 处（鸡扒/希腊鸡胸摘旗；咖喱/绍兴/排骨/鱼片插旗）※ npm run 形式被分类器拦，改直跑 node scripts/sync-menu-to-firestore.mts --commit
+- [x] push 放行：npm run build 干净（76/76）→ push 1b4261e..5b905d6 共 5 commit（2 dashboard + 2 甜酸猪扒加料 + 汤券）
+- [x] 汤 add-on（side-soup RM18.50，off-menu dashboard 专用）可用餐券兑换：collectMainDishUnitPrices 把每份汤当 1 个可兑单位进同一 FIFO 价格池；后端扣券 API 只验券数不验品类，零改动；dogfood 7/7
+- [x] Vercel deploy Ready(54s) 后 smoke：dashboard 三改动全落线上(refreshMoNoteHistory/DISH_SEED_WEEKDAYS_BY_ID/side-soup券文案) + chunk 00d9c013 命中 extra-pork-chop
+
+---
+
+# 套餐明细价改版 + 三项调价/改量 — 2026-08-01（老板下午指示）
+
+- [x] 全部专属配套「包含」行改明细价：每个组件标 (RM x.xx) + 结尾（单点合计 RM y，立省 RM z），从 ADD_ON_PRICES 现算（rm()/comboWorth() 两个 helper，以后调价文案自动跟上）；加饭统一写「加饭 150g」
+- [x] 希腊鸡胸：核弹三件套文案 180g→150g；加料标签【增肌极客】(180g)→(150g)（id extra-greek-chicken-180g 是订单 key 不动）；PREPAID_ADDON_OPTIONS 同步
+- [x] 生重折算：150g 标签→鸡胸肉 170g（按旧 180g→200g 同比例，宁多勿少取整，TODO_CONFIRM 碗妈准数）；legacy 180g 键保留 200g
+- [x] 黑橄榄 (12g) 1.50→2.50；豆酱花肉 (100g) 14.90→15.50（六触点全走：config/Modal/dashboard seed+map+web-label/generated）
+- [x] 阿嫲下饭王套原价 19.40→20.00（新 label 键 + legacy 保留）；灵魂三件套原价 6.0→6.50 修正（组件和本来就是 6.50，明细上墙前必须对齐）
+- [x] 双倍鳗鱼丼套文案 0.5片→「加倍成整整 1 片」；备餐配方仍 0.5 片不动（老板明示 in preparation still 0.5）
+- [x] 补漏：PACKING_COMBO_EXTRA_RICE 少了 07-31/08-01 四个含加饭新套（unagi×2 + sweetsour×2），装碗页会漏标加饭 → 已补
+- [x] 验证：tsc 0 错 + next build 76 页过 + dogfood-cart-repricing 14/14 + 一次性 combo 一致性校验全绿（label原价=组件和、新旧标签配方可查、170g 折算）
+- [x] gen-dish-addon-map + sync:dashboard 回灌；commit 留本地不 push（菜单类改动等老板放行）
+- [x] 阿嫲下饭王套重设计：老板拍板方案 A →「家乡下饭王套」西兰花炒蛋+荷包蛋+加饭 RM12.90（原价 15.40，立省 2.50）；内容全换故换新 id taucu-rice-king-combo，旧 id/旧标签三端全留 legacy（在途订单结账+备餐聚合+历史 COGS 不失真）；加肉走 50g/100g 单点双档；老板同步确认豆酱花肉 (100g) 维持 15.50；tsc+build+一致性校验重跑全绿，commit 留本地待放行
+
+---
+
+# 网站体检整改 P0 + P1（2026-08-01）
+
+> 来源：全站 review（布局/转化/字体/图片/设计/定价/UX/结账/移动端）。
+> 老板拍板：一(移动端便利性) do all、二(转化) do it、三(定价) 先提案、四(图片) 老板自己做、五(字体) do it、六(结账) 1 待定/2 维持/3 详述/4 已确认 webhook 已上线。
+> 前置调研：5 路并行只读 agent（SSR 影响面 / 运费 40+ 触点 / webhook 现状 / alert 42 处 / 字重 765:101）。
+> 交付 = commit 留本地，**push 需老板明确同意**。
+
+## P0-1 菜单 SSR 化（ZH + EN）
+- [ ] MenuCarousel：`groups` 去掉 `ready` 门控（纯 weeklyMenu 推导，零日期依赖）；删骨架分支，真卡片直出
+- [ ] 安全反转：卡片点击从「有 dInfo 且 disabled 才拦」→「**没有 dInfo 就拦**」（补 SSR 引入的空 selectedDate 洞 + 暂别菜可点洞）
+- [ ] page.tsx / en/page.tsx 的 `openAddOnModal` 同步反转
+- [ ] 桌面日历列头日期 span 预留固定高度（防 CLS）
+- [ ] `tomorrowsId` 保持 ready 门控（日期相关，绝不进渲染期）
+- [ ] **不碰** dateUtils.ts / computeMenuDates 时区口径（会牵连 MemberView 一键回购）
+- [ ] EN 双胞胎同步（9 处 locale 差异，注意 dayDateSub 切割符 ZH `' '` / EN `' · '`）
+
+## P0-2 Hero 背景改单图
+- [ ] 去掉 8 秒轮播 setInterval，固定单张 priority 图（移动端省 ~2MB 装饰流量）
+
+## P0-3 首单 RM5 自助领取（不再强制走 WhatsApp）
+- [ ] validateVoucher 支持 `firstOrderOnly`（查 users.totalOrders）+ 沿用既有 per-user/phone 去重
+- [ ] SubscribeModal / WhatsAppStickyBar 增加「网站直接领」路径，WhatsApp 降为次选
+- [ ] 领取后写 localStorage → 购物车自动预填优惠码 + 登录后自动应用
+- [ ] seed 脚本（dry-run 默认，**不自动写生产 Firestore**，等老板批准执行）
+
+## P1-4 地址「用我的当前位置」
+- [ ] AuthProfileView 加 navigator.geolocation → /api/geocode 反查 → 回填地址（Geocoding API 可用；legacy Places 已封）
+- [ ] 失败优雅降级到手打
+
+## P1-5 SubscribeModal 移动端不再被 App 切换触发
+- [ ] `pointer: coarse` 时移除 `visibilitychange` 触发器（切 WhatsApp / 切相册传收据回来会糊脸）
+
+## P1-6 移动端底部条改滚动触发
+- [ ] 与桌面同口径（滚过菜单才出现），取消 1.5s 定时弹出
+
+## 五 字重收敛（修正版）
+- [ ] 事实修正：next/font 只加载 400/800 → 600/700/800/900 拉丁渲染**完全相同**，改类名等于白改
+- [ ] 正确做法：装饰性小字（徽章/eyebrow/序号/pill）压到 `font-medium`(=400)，900 只留给价格 / 主 CTA / H1-H2
+- [ ] 修两处层级倒挂：page.tsx:453 vs :443（主次反了）、CartItemCard.tsx:42 vs :39（徽章比菜名重）
+- [ ] ZH/EN 双胞胎同步
+
+## 待老板拍板（本轮不做）
+- [ ] 三-运费阶梯：5–7.5km RM12 → 单趟满 25 降 RM6 → 满 45 免（⚠️ 门槛是**按配送组**判不是整车；40+ 触点含法务页/dashboard 手写镜像/n8n bot/dogfood）
+- [ ] 三-餐券 5 张装：降价 RM89 or 只改话术（推荐后者）
+- [ ] 六.1 收货信息内嵌购物车（6 步 → 4 步）+ 记住上次时段
+- [ ] 六.3 alert 42 处分批替换（先 13 条 blocking-money + FPX 错误 modal）
+- [ ] webhook 缺口 A：create-order 覆盖 razorpayOrderId → 改 arrayUnion + array-contains + 查不到时告警（**唯一还能丢钱的路径**）
+- [ ] webhook 缺口 D：FPX 单不发 ownerNotify
+
+## Review 小结（P0/P1 已完成，2026-08-01）
+
+**验证**：`tsc` 0 错 · `npm run build` exit 0 · 真实无头 Chrome 载入 `/` 与 `/en` **零 console 错误（无 hydration mismatch）** ·
+dogfood-dish-orderable 38/0 · dogfood-cart-repricing 14/14 · dogfood-far-delivery-tier 55/55 · 6 条路由全 200。
+
+| # | 改动 | 实测结果 |
+|---|---|---|
+| P0-1 | 菜单 SSR 化（ZH+EN） | 预渲染 HTML 里菜卡从 **0 → 33 张**（`animate-pulse` 297→12）；`加入预订` ×33 / `Add to order` ×33 已进 HTML；index.html 36.4 KB gzip |
+| — | 点击守卫反转 | `!dInfo → 拒开` 三处（卡片 / 按钮 / openAddOnModal），补掉 SSR 新引入的空 `selectedDate` 洞与暂别菜可点洞 |
+| — | 列头 CLS | 日期 span 加 `min-h-[16px]` 预留 |
+| P0-2 | Hero 单图 | 轮播 setInterval 删除；预渲染只剩 **1 条 image preload**；42/44 `<img>` 为 lazy；`sizes` 100vw→60vw |
+| P0-3 | 首单 RM5 自助领取 | 实测：点「领取」→ `localStorage.incredibowl_pending_promo=FIRST5` → 加菜进购物车 → 优惠码框自动填入 `FIRST5` ✅ |
+| — | firstOrderOnly | `validateVoucher` 新判定：`users.totalOrders > 0` 拒；沿用既有 per-user + phoneNormalized 去重挡匿名重刷 |
+| P1-4 | 用我的当前位置 | AuthProfileView + MemberView 各一个按钮；`/api/geocode` 新增反查分支**只回 formattedAddress**（不回坐标/距离 → 不构成骗免运新口子） |
+| P1-5 | 弹窗触发 | `visibilitychange` 改为仅桌面；手机切 WhatsApp / 切相册传收据回来不再糊脸 |
+| P1-6 | 底部条触发 | 改 IntersectionObserver 盯 `#menu`，两端同口径。实测：落地 `sticky:false` → 滚到菜单 `sticky:true` ✅ |
+| 五 | 字重收敛 | 19 处装饰性小字 900/800 → `font-medium`(=400)；修 2 处层级倒挂 |
+
+**字重的关键事实（推翻了初版建议）**：`next/font` 只加载 400/800（`.next` 里 8 条 @font-face 实证），
+拉丁文字上 600/700/800/900 **渲染完全相同** → 只改类名等于白改。真实可用的只有 2 档，
+所以做法是把装饰性小字压到 400，而不是在 600–900 之间挑。未扩加载字重（这站 90% 是中文，
+Plus Jakarta 只管拉丁字符，为几个英文小标题多下 8 个 woff2 与既有性能路线相悖）。
+
+**⚠️ 上线前老板要做的一件事**：
+`node scripts/seed-first-order-promo.mjs` （dry-run 看一眼）→ 确认后 `--apply` 建 `vouchers/FIRST5`。
+**没建之前**：前端一切正常，只是套用时服务端回「优惠码无效」——不白屏、不卡单，但 RM5 拿不到。
+
+**记忆修正**：`project_fpx_pending_orphan_gap` 里「仍缺订单付款确认 webhook」是错的 ——
+`/api/payment/webhook` 已于 `5d7dcca`(2026-07-04) 上线并在生产真实投递（10 笔餐券 `finalizedBy='webhook:payment.captured'`）。
