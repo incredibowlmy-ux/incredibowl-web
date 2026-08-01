@@ -2292,6 +2292,7 @@
                 <div class="modal-row">
                     <label>备注（可选）</label>
                     <input type="text" id="moNote" maxlength="200" placeholder="例：朋友介绍 / 节日特别订单" />
+                    <div id="moNoteHistory" class="hidden" style="margin-top:6px;font-size:11px;color:var(--text-muted);line-height:1.9"></div>
                 </div>
 
                 <!-- ─── 总额汇总（实时：食物 − 餐券 − 优惠 + 运费）─── -->
@@ -10409,6 +10410,9 @@ incredibowl.my`,
             // are immutable once claimed; admin should delete+recreate the order to redo)
             $('#moVouchersUsed').value = '0';
             refreshOrderVoucherHint();
+            // 编辑模式电话是直接赋值（不触发 input 事件）→ 这里补一次备注历史刷新；
+            // 新增模式电话为空 → 顺手把上一单残留的提示区清掉。
+            refreshMoNoteHistory();
 
             // Reset promo code state
             state.moPromoValidated = null;
@@ -11874,6 +11878,49 @@ incredibowl.my`,
             if (typeof refreshOrderSummary === 'function') refreshOrderSummary();
         }
 
+        // 老客户最近备注：电话匹配到历史订单 → 备注框下自动亮出最近 3 条备注。
+        // 客户网页单自己写的 o.note 和我们手动单记的备注（剥掉「手动录入 · …」机器
+        // 前缀后的剩余部分）都算；同文案去重保最近一次，点一条直接填进备注框。
+        function refreshMoNoteHistory() {
+            const box = $('#moNoteHistory');
+            if (!box) return;
+            box.classList.add('hidden');
+            box.innerHTML = '';
+            const phoneNorm = normalizePhone($('#moPhone').value.trim());
+            if (!phoneNorm) return;
+            const entries = [];
+            (state.orders || []).forEach(o => {
+                if (normalizePhone(o.userPhone) !== phoneNorm) return;
+                if (editingOrderId && o.id === editingOrderId) return;   // 编辑中的本单不算历史
+                const raw = String(o.note || '').trim();
+                const text = stripMachineNote(raw);
+                if (!text) return;
+                const t = tsToDate(o.createdAt);
+                entries.push({ text, ms: t ? t.getTime() : 0, ours: raw.startsWith('手动录入') });
+            });
+            if (!entries.length) return;
+            entries.sort((a, b) => b.ms - a.ms);
+            const recent = [];
+            for (const e of entries) {
+                if (recent.some(r => r.text === e.text)) continue;
+                recent.push(e);
+                if (recent.length === 3) break;
+            }
+            const chip = (e) => {
+                const d = e.ms ? new Date(e.ms) : null;
+                const when = d ? `${d.getMonth() + 1}/${d.getDate()}` : '';
+                return `<button type="button" class="mo-note-chip" data-note="${escapeHtml(e.text)}" title="点击填入备注框" style="display:inline-block;margin:2px 6px 2px 0;padding:3px 9px;border-radius:999px;border:1px solid var(--border-strong);background:var(--bg-subtle);color:var(--text);font-size:11px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle">${e.ours ? '🏠' : '💬'} ${escapeHtml(e.text)}${when ? ` <span style="color:var(--text-muted)">${when}</span>` : ''}</button>`;
+            };
+            box.innerHTML = `📝 该客户最近备注（💬 客户写的 · 🏠 我们记的 · 点一条填入）：<br>${recent.map(chip).join('')}`;
+            box.classList.remove('hidden');
+        }
+        $('#moNoteHistory').addEventListener('click', (e) => {
+            const chipEl = e.target.closest('.mo-note-chip');
+            if (!chipEl) return;
+            $('#moNote').value = chipEl.dataset.note || '';
+            $('#moNote').focus();
+        });
+
         // Live update of "可用 X 张" hint as user types phone in order modal
         function refreshOrderVoucherHint() {
             const hint = $('#moVoucherAvailable');
@@ -12014,6 +12061,7 @@ incredibowl.my`,
 
         $('#moPhone').addEventListener('input', () => {
             refreshOrderVoucherHint();
+            refreshMoNoteHistory();        // surface this customer's last 3 remarks under the note box
             autofillAddressFromProfile();  // pull saved address when phone matches a registered customer
             // Phone changed → invalidate any prior promo validation (might no longer be eligible per-user)
             if (state.moPromoValidated) {
