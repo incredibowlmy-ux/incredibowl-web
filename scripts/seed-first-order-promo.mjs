@@ -29,7 +29,11 @@ const APPLY = process.argv.includes('--apply');
 // ⚠️ 必须与 src/lib/firstOrderPromo.ts 的 FIRST_ORDER_PROMO_CODE 完全一致。
 const CODE = 'FIRST5';
 const DISCOUNT_RM = 5;
-const MAX_USES = 2000;
+// 50 = 与既有全部公开码一致（BOWL5 / FBOOK5 / INSTA5 / OUG5… 都是 50）。
+// 最大敞口 RM 250。BOWL5 实际跑到 17/50、JUNBOWL5 到 16/50，说明 50 对
+// 现在的流量是够用的量级。用满了在 Console 调大即可，比一开始就开 2000
+// 安全 —— 首单码天然可以被换手机号重复领，上限是唯一的硬止损。
+const MAX_USES = 50;
 
 const payload = {
     discount: DISCOUNT_RM,
