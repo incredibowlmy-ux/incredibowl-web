@@ -2929,9 +2929,9 @@
             { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 18.50, category: '加菜' },  // 新 2026-07-31；半片进价 RM5.225，老板拍板 18.50（与加三文鱼同价位）
             { id: 'extra-pork-chop',             name: '加甜酸猪扒 (1块)',                      price: 14.90, category: '加菜' },  // 新 2026-08-01；进价 RM4.00/块（同鸡扒），老板拍板 14.90（先说 11.90，后自己改高）
             { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
-            { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (180g)',       price: 11.90, category: '加菜' },
+            { id: 'extra-greek-chicken-180g',    name: '【增肌极客】加柠香烤鸡胸 (150g)',       price: 11.90, category: '加菜' },  // 2026-08-01 份量 180g→150g（id 不动只换标签）
             { id: 'extra-aus-potato-80g',        name: '【优质碳水】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
-            { id: 'extra-black-olive-12g',       name: '【地中海风味】加提鲜黑橄榄 (12g)',      price: 1.50,  category: '加菜' },
+            { id: 'extra-black-olive-12g',       name: '【地中海风味】加提鲜黑橄榄 (12g)',      price: 2.50,  category: '加菜' },  // 2026-08-01 老板调价 1.50 → 2.50
             { id: 'extra-cauliflower-80g',       name: '【抗氧高纤】加脆甜椰菜花 (80g)',        price: 3.00,  category: '加菜' },
             { id: 'extra-potato',                name: '【绵密软糯】加马铃薯 (90g)',            price: 3.50,  category: '加菜' },
             { id: 'extra-pork-belly',            name: '【浓香入味】加花肉片 (70g)',            price: 11.90, category: '加菜' },
@@ -2942,7 +2942,7 @@
             { id: 'extra-fish-120g',             name: '加姜葱鱼片 (120g)',                     price: 13.90, category: '加菜' },  // 新 add-on 2026-07-16（姜葱鱼片饭）
             { id: 'extra-shaoxing-pork-100g',    name: '【酒香入魂】加绍兴花肉 (100g)',         price: 14.90, category: '加菜' },  // 新 add-on 2026-07-16（绍兴酒蒸花肉）
             { id: 'extra-curry-chicken-50g',     name: '【滑嫩多汁】加咖喱鸡丁 (50g)',          price: 4.50,  category: '加菜' },  // 新 add-on 2026-07-16（日式咖喱饭）
-            { id: 'extra-taucu-pork-100g',       name: '【家乡浓香】加豆酱花肉 (100g)',         price: 14.90, category: '加菜' },  // 新 add-on 2026-07-16（豆酱焖花肉）
+            { id: 'extra-taucu-pork-100g',       name: '【家乡浓香】加豆酱花肉 (100g)',         price: 15.50, category: '加菜' },  // 新 add-on 2026-07-16（豆酱焖花肉）；2026-08-01 老板调价 14.90 → 15.50
             { id: 'extra-shaoxing-pork-50g',     name: '【小酌怡情】加绍兴花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
             { id: 'extra-taucu-pork-50g',        name: '【小碗解馋】加豆酱花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
 
@@ -3040,9 +3040,9 @@
             { id: 'addon-edamame', name: '加毛豆', price: 2.00, category: '蔬菜配料' },
             { id: 'addon-cherry-tomato', name: '加樱桃番茄', price: 2.50, category: '蔬菜配料' },
             { id: 'addon-cauliflower', name: '加花椰菜', price: 3.00, category: '蔬菜配料' },
-            { id: 'addon-black-olive', name: '加黑橄榄', price: 1.50, category: '蔬菜配料' },
+            { id: 'addon-black-olive', name: '加黑橄榄', price: 2.50, category: '蔬菜配料' },
 
-            { id: 'addon-extra-chicken-breast', name: '加鸡胸 180g', price: 11.90, category: '加肉' },
+            { id: 'addon-extra-chicken-breast', name: '加鸡胸 150g', price: 11.90, category: '加肉' },
             { id: 'addon-extra-chicken-chop', name: '加鸡扒', price: 9.90, category: '加肉' },
             { id: 'addon-extra-pork-belly', name: '加花肉片', price: 9.90, category: '加肉' },
             { id: 'addon-extra-prawns', name: '加虾仁', price: 7.00, category: '加肉' },
@@ -3319,14 +3319,16 @@ incredibowl.my`,
             '水仙 (冰)': 'shuixian-ice',
             '水仙 (温)': 'shuixian-warm',
             // 套餐组合
-            '灵魂三件套 (原价 RM 6.0)': 'natto-super-combo',
+            '灵魂三件套 (原价 RM 6.50)': 'natto-super-combo',  // 2026-08-01 原价 6.0→6.50 修正
+            '灵魂三件套 (原价 RM 6.0)': 'natto-super-combo',   // legacy 标签
             '海陆澎湃三件套 (原价 RM 14.0)': 'surf-turf-super-combo',
             '古早味大满贯三件套 (原价 RM 15.40)': 'chicken-chop-nostalgia-combo',
             '蛋白质核弹三件套 (原价 RM 18.40)': 'greek-protein-bomb-combo',
             '薯肉双拼满足套 (原价 RM 15.40)': 'pork-potato-duo-combo',
             '爆量满足三件套 (原价 RM 15.40)': 'scallion-soup-combo',
             '酒香干饭套 (原价 RM 19.40)': 'shaoxing-pork-combo',
-            '阿嫲下饭王套 (原价 RM 19.40)': 'taucu-pork-combo',
+            '阿嫲下饭王套 (原价 RM 20.00)': 'taucu-pork-combo',  // 2026-08-01 100g 花肉调价 → 原价 19.40→20.00
+            '阿嫲下饭王套 (原价 RM 19.40)': 'taucu-pork-combo',  // legacy 标签
             '咖喱控三件套 (原价 RM 9.50)': 'curry-trio-combo',
             '柠香双蛋白套 (原价 RM 13.90)': 'salmon-protein-duo-combo',
             '三色加倍套 (原价 RM 7.50)': 'salmon-tricolor-combo',
@@ -3352,7 +3354,8 @@ incredibowl.my`,
             '爽脆多汁小番茄 (50g)': 'cherry-tomato',
             // 希腊鸡胸 specials
             '【增肌极客】加 180g 柠香烤鸡胸': 'extra-greek-chicken-180g',
-            '【增肌极客】加柠香烤鸡胸 (180g)': 'extra-greek-chicken-180g',  // newer webapp format
+            '【增肌极客】加柠香烤鸡胸 (180g)': 'extra-greek-chicken-180g',  // legacy 180g 标签
+            '【增肌极客】加柠香烤鸡胸 (150g)': 'extra-greek-chicken-180g',  // 2026-08-01 份量改 150g（id 不动）
             '【优质碳水】加 80g 澳洲烤薯块': 'extra-aus-potato-80g',
             '【优质碳水】加马铃薯 (90g)': 'extra-aus-potato-80g',         // updated webapp label
             '【抗氧高纤】加 80g 脆甜椰菜花': 'extra-cauliflower-80g',
@@ -9323,7 +9326,11 @@ incredibowl.my`,
             { key: 'whiteLess',   label: '⚪ 白饭 · 少饭' },
         ];
         // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
-        const PACKING_COMBO_EXTRA_RICE = new Set(['chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo']);  // 2026-07-16 新增三套（均含加饭）
+        const PACKING_COMBO_EXTRA_RICE = new Set([
+            'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）
+            'unagi-double-combo', 'unagi-rice-combo',      // 2026-08-01 补漏：07-31 新套含加饭但没进本集合，装碗页少标加饭
+            'sweetsour-chop-combo', 'sweetsour-rice-combo', // 2026-08-01 补漏：同上（甜酸猪扒两套）
+        ]);
 
         // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
         function packingLabelToId() {
@@ -9845,9 +9852,9 @@ incredibowl.my`,
             ],
             '3': [
                 { id: 'greek-protein-bomb-combo',  label: '蛋白质核弹三件套', price: 15.90 },
-                { id: 'extra-greek-chicken-180g',  label: '加柠香烤鸡胸 (180g)', price: 11.90 },
+                { id: 'extra-greek-chicken-180g',  label: '加柠香烤鸡胸 (150g)', price: 11.90 },  // 2026-08-01 份量 180g→150g
                 { id: 'extra-aus-potato-80g',      label: '加马铃薯 (90g)', price: 3.50 },
-                { id: 'extra-black-olive-12g',     label: '加提鲜黑橄榄 (12g)', price: 1.50 },
+                { id: 'extra-black-olive-12g',     label: '加提鲜黑橄榄 (12g)', price: 2.50 },  // 2026-08-01 调价 1.50→2.50
                 { id: 'extra-cauliflower-80g',     label: '加脆甜椰菜花 (80g)', price: 3.00 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
@@ -9978,7 +9985,7 @@ incredibowl.my`,
                 // 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:23 同步）
                 { id: 'taucu-pork-combo', label: '阿嫲下饭王套', price: 16.90 },  // 2026-07-31 调价 15.90 → 16.90
                 { id: 'extra-taucu-pork-50g', label: '【小碗解馋】加豆酱花肉 (50g)', price: 7.90 },
-                { id: 'extra-taucu-pork-100g', label: '【家乡浓香】加豆酱花肉 (100g)', price: 14.90 },
+                { id: 'extra-taucu-pork-100g', label: '【家乡浓香】加豆酱花肉 (100g)', price: 15.50 },  // 2026-08-01 调价 14.90→15.50
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },
@@ -12378,7 +12385,7 @@ incredibowl.my`,
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 2026-07-05 steam egg
             { id: 'extra-rice', name: '加饭', price: 2.00 },
             { id: 'brown-rice', name: '白饭换糙米', price: 2.00 },
-            { id: 'extra-greek-chicken-180g', name: '加柠香烤鸡胸 (180g)', price: 11.90 },
+            { id: 'extra-greek-chicken-180g', name: '加柠香烤鸡胸 (150g)', price: 11.90 },  // 2026-08-01 份量 180g→150g（id 不动）
             { id: 'extra-salmon-70g', name: '加香煎三文鱼 (70g+)', price: 18.50 },
             { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)', price: 17.50 },
         ];

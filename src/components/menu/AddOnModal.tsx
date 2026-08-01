@@ -13,6 +13,26 @@ function p(id: string, fallback: number): number {
     return ADD_ON_PRICES[id] ?? fallback;
 }
 
+/** "RM X.XX" of an add-on at its live price — for itemized combo 包含 lines. */
+function rm(id: string, fallback: number): string {
+    return `RM ${p(id, fallback).toFixed(2)}`;
+}
+
+/**
+ * 套餐「包含」行末尾的价值锚（中/英）：组件单点合计 + 立省额，全部从
+ * ADD_ON_PRICES 现算 —— 调组件价/套餐价时这段文案自动跟上，不用手改。
+ * ⚠️ 套餐 item.name 里的静态「(原价 RM …)」是订单/备餐 label key
+ * （dishIngredients 按它查配方），组件调价时才手动改它并保留 legacy key。
+ */
+function comboWorth(comboId: string, comboFallback: number, parts: [string, number][]): { zh: string; en: string } {
+    const total = parts.reduce((s, [id, fb]) => s + p(id, fb), 0);
+    const save = total - p(comboId, comboFallback);
+    return {
+        zh: `（单点合计 RM ${total.toFixed(2)}，立省 RM ${save.toFixed(2)}）`,
+        en: ` (worth RM ${total.toFixed(2)} — save RM ${save.toFixed(2)})`,
+    };
+}
+
 // ─── Add-on Data ────────────────────────────────────────────────────────────
 
 export interface AddOnItem {
@@ -141,6 +161,7 @@ export default function AddOnModal({
 
         // If it's Natto Rice Bowl (id: 11), prepend a special combo section
         if (dish.id === 11) {
+            const nattoWorth = comboWorth('natto-super-combo', 5, [['onsen-egg-side', 3], ['nori', 2], ['soy-sauce', 1.5]]);
             const nattoSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'natto-combo',
                 title: '✨ 升级你的 Incredibowl！',
@@ -148,10 +169,12 @@ export default function AddOnModal({
                 titleDisplayEn: '✨ Upgrade your Incredibowl! Soulful Trio (+ RM 5) · Max 3',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：浓厚温泉蛋 + 脆质海苔 + 特制日本酱油\n“当酱油遇见脆爽海苔，在流心月见的温柔包裹下，瞬间唤醒纳豆沉睡的‘极鲜’灵魂。”',
-                extraDescEn: 'Includes: rich onsen egg + crispy nori + special Japanese soy sauce\n"When soy sauce meets crisp nori, wrapped in a silky moon-gazing egg, natto\'s sleeping umami soul awakens."',
+                extraDesc: `包含：浓厚温泉蛋 (${rm('onsen-egg-side', 3)}) + 脆质海苔 (${rm('nori', 2)}) + 特制日本酱油 (${rm('soy-sauce', 1.5)})${nattoWorth.zh}\n“当酱油遇见脆爽海苔，在流心月见的温柔包裹下，瞬间唤醒纳豆沉睡的‘极鲜’灵魂。”`,
+                extraDescEn: `Includes: rich onsen egg (${rm('onsen-egg-side', 3)}) + crispy nori (${rm('nori', 2)}) + special Japanese soy sauce (${rm('soy-sauce', 1.5)})${nattoWorth.en}\n"When soy sauce meets crisp nori, wrapped in a silky moon-gazing egg, natto's sleeping umami soul awakens."`,
                 items: [
-                    { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.0)', nameEn: 'Soulful Trio', price: p('natto-super-combo', 5), category: 'combo' }
+                    // 2026-08-01 原价 6.0 → 6.50 修正：组件单点价 3.00+2.00+1.50 = 6.50，
+                    // 旧标签的 6.0 与明细对不上（明细价上墙后客人会看出来）。
+                    { id: 'natto-super-combo', name: '灵魂三件套 (原价 RM 6.50)', nameEn: 'Soulful Trio', price: p('natto-super-combo', 5), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -181,14 +204,15 @@ export default function AddOnModal({
 
         // If it's Chinese Yam & Black Fungus Surf & Turf (id: 12), prepend a special combo section
         if (dish.id === 12) {
+            const surfTurfWorth = comboWorth('surf-turf-super-combo', 11.40, [['extra-prawns', 7], ['extra-chicken-breast', 4.5], ['extra-fungus', 2.5]]);
             const surfTurfSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'surf-turf-combo',
                 title: '✨ 鲜上加鲜！海陆澎湃大翻倍',
                 titleEn: 'Ultimate Surf & Turf Trio (+ RM 11.40)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：鲜甜大虾仁 4只 + 嫩炒鸡丁 50g + 脆爽云耳 20g\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”',
-                extraDescEn: 'Includes: 4 sweet prawns + 50g tender stir-fried chicken + 20g crisp black fungus\n"Craving big bites of protein? The ultimate protein-and-fibre power-up."',
+                extraDesc: `包含：鲜甜大虾仁 4只 (${rm('extra-prawns', 7)}) + 嫩炒鸡丁 50g (${rm('extra-chicken-breast', 4.5)}) + 脆爽云耳 20g (${rm('extra-fungus', 2.5)})${surfTurfWorth.zh}\n“想要大口吃肉的满足感？这是蛋白质与膳食纤维的终极爆发。”`,
+                extraDescEn: `Includes: 4 sweet prawns (${rm('extra-prawns', 7)}) + 50g tender stir-fried chicken (${rm('extra-chicken-breast', 4.5)}) + 20g crisp black fungus (${rm('extra-fungus', 2.5)})${surfTurfWorth.en}\n"Craving big bites of protein? The ultimate protein-and-fibre power-up."`,
                 items: [
                     { id: 'surf-turf-super-combo', name: '海陆澎湃三件套 (原价 RM 14.0)', nameEn: 'Ultimate Trio', price: p('surf-turf-super-combo', 11.40), category: 'combo' }
                 ]
@@ -215,14 +239,15 @@ export default function AddOnModal({
         // Glazed Chicken Chop (id: 26), append the chop-series add-ons to the
         // sides. 柠扒与鸡扒同系列，配菜+三件套整套看齐（老板 2026-07-14 拍板）。
         if (dish.id === 14 || dish.id === 26) {
+            const chopWorth = comboWorth('chicken-chop-nostalgia-combo', 12.90, [['extra-chicken-chop', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const chickenChopSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'chicken-chop-combo',
                 title: '✨ 古早味澎湃大满贯三件套',
                 titleEn: 'Ultimate Nostalgia Combo (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：多加一块香煎金鸡扒 + 荷包蛋 + 加饭\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”',
-                extraDescEn: 'Includes: one extra pan-fried golden chicken chop + sunny-side-up egg + extra rice\n"A double-chop feast with a runny-yolk egg stirred into rice — the ultimate treat for big eaters!"',
+                extraDesc: `包含：多加一块香煎金鸡扒 (${rm('extra-chicken-chop', 10.9)}) + 荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${chopWorth.zh}\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”`,
+                extraDescEn: `Includes: one extra pan-fried golden chicken chop (${rm('extra-chicken-chop', 10.9)}) + sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${chopWorth.en}\n"A double-chop feast with a runny-yolk egg stirred into rice — the ultimate treat for big eaters!"`,
                 items: [
                     { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 15.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.90), category: 'combo' }
                 ]
@@ -255,14 +280,17 @@ export default function AddOnModal({
 
         // If it's Greek Mediterranean Lemon Chicken (id: 3), prepend a special combo section
         if (dish.id === 3) {
+            // 2026-08-01 老板拍板：加购鸡胸份量 180g → 150g（价不变，id 仍是
+            // extra-greek-chicken-180g 订单 key 不动，只换显示标签）。
+            const greekWorth = comboWorth('greek-protein-bomb-combo', 15.90, [['extra-greek-chicken-180g', 11.9], ['extra-aus-potato-80g', 3.5], ['extra-cauliflower-80g', 3]]);
             const proteinBombSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'greek-combo',
                 title: '✨ 终极爆肌！蛋白质核弹三件套',
                 titleEn: 'Ultimate Protein Bomb Trio (+ RM 15.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：180g 柠香烤鸡胸 + 90g 马铃薯 + 80g 脆甜椰菜花\n“突破百克优质蛋白的终极归宿，练后快速回血、饱腹无负担。”',
-                extraDescEn: 'Includes: 180g lemon roast chicken breast + 90g potato + 80g sweet cauliflower\n"Over 100g of quality protein — fast post-workout recovery, filling without the guilt."',
+                extraDesc: `包含：150g 柠香烤鸡胸 (${rm('extra-greek-chicken-180g', 11.9)}) + 90g 马铃薯 (${rm('extra-aus-potato-80g', 3.5)}) + 80g 脆甜椰菜花 (${rm('extra-cauliflower-80g', 3)})${greekWorth.zh}\n“突破百克优质蛋白的终极归宿，练后快速回血、饱腹无负担。”`,
+                extraDescEn: `Includes: 150g lemon roast chicken breast (${rm('extra-greek-chicken-180g', 11.9)}) + 90g potato (${rm('extra-aus-potato-80g', 3.5)}) + 80g sweet cauliflower (${rm('extra-cauliflower-80g', 3)})${greekWorth.en}\n"Over 100g of quality protein — fast post-workout recovery, filling without the guilt."`,
                 items: [
                     { id: 'greek-protein-bomb-combo', name: '蛋白质核弹三件套 (原价 RM 18.40)', nameEn: 'Protein Bomb Trio', price: p('greek-protein-bomb-combo', 15.90), category: 'combo' }
                 ]
@@ -272,10 +300,10 @@ export default function AddOnModal({
                     return {
                         ...section,
                         items: [
-                            { id: 'extra-greek-chicken-180g', name: '【增肌极客】加柠香烤鸡胸 (180g)', nameEn: 'Extra Lemon Chicken Breast (180g)', price: p('extra-greek-chicken-180g', 11.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-greek-chicken-180g', name: '【增肌极客】加柠香烤鸡胸 (150g)', nameEn: 'Extra Lemon Chicken Breast (150g)', price: p('extra-greek-chicken-180g', 11.90), category: 'sides', maxQty: 3 },
                             { id: 'extra-aus-potato-80g', name: '【优质碳水】加马铃薯 (90g)', nameEn: 'Extra Potato (90g)', price: p('extra-aus-potato-80g', 3.50), category: 'sides', maxQty: 3 },
                             { id: 'extra-cauliflower-80g', name: '【抗氧高纤】加脆甜椰菜花 (80g)', nameEn: 'Extra Cauliflower (80g)', price: p('extra-cauliflower-80g', 3), category: 'sides', maxQty: 3 },
-                            { id: 'extra-black-olive-12g', name: '【地中海风味】加提鲜黑橄榄 (12g)', nameEn: 'Extra Black Olive Slice (12g)', price: p('extra-black-olive-12g', 1.50), category: 'sides', maxQty: 3 },
+                            { id: 'extra-black-olive-12g', name: '【地中海风味】加提鲜黑橄榄 (12g)', nameEn: 'Extra Black Olive Slice (12g)', price: p('extra-black-olive-12g', 2.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id !== 'sunny-egg' && item.id !== 'potato-egg')
                         ]
                     };
@@ -292,26 +320,28 @@ export default function AddOnModal({
         // 蒜蓉西兰花炒蛋（7 周里 6 周排前三），而 RM18.50 的加三文鱼在约 122 份
         // 里只卖出过 1 次 —— 所以套餐围着「客人已经在买的东西」打包，不推双份鱼。
         if (dish.id === 21) {
+            const salmonDuoWorth = comboWorth('salmon-protein-duo-combo', 12.90, [['broccoli-egg', 10.9], ['onsen-egg', 3]]);
             const salmonProteinCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'salmon-protein-combo',
                 title: '✨ 柠香双蛋白套',
                 titleEn: 'Lemon Salmon Protein Duo (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：蒜蓉西兰花炒蛋 + 浓厚温泉蛋\n"香煎三文鱼配蒜香西兰花炒蛋，再戳破一颗流心温泉蛋——一碗吃满两份蛋白质。"',
-                extraDescEn: 'Includes: garlic broccoli with soft-scrambled egg + rich onsen egg\n"Pan-seared salmon with garlicky broccoli-egg and a silky onsen egg — two proteins in one bowl."',
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 浓厚温泉蛋 (${rm('onsen-egg', 3)})${salmonDuoWorth.zh}\n"香煎三文鱼配蒜香西兰花炒蛋，再戳破一颗流心温泉蛋——一碗吃满两份蛋白质。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + rich onsen egg (${rm('onsen-egg', 3)})${salmonDuoWorth.en}\n"Pan-seared salmon with garlicky broccoli-egg and a silky onsen egg — two proteins in one bowl."`,
                 items: [
                     { id: 'salmon-protein-duo-combo', name: '柠香双蛋白套 (原价 RM 13.90)', nameEn: 'Protein Duo', price: p('salmon-protein-duo-combo', 12.90), category: 'combo' }
                 ]
             };
+            const tricolorWorth = comboWorth('salmon-tricolor-combo', 5.90, [['extra-edamame', 2.5], ['extra-corn', 2.5], ['cherry-tomato', 2.5]]);
             const salmonTricolorCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'salmon-tricolor-combo-section',
                 title: '✨ 三色加倍套',
                 titleEn: 'Triple Veggie Boost (+ RM 5.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：清甜毛豆 25g + 金黄甜玉米 30g + 爽脆小番茄 20g\n"碗里本来就有的三样配色，全部加倍——每一口都咬得到。"',
-                extraDescEn: 'Includes: 25g edamame + 30g sweet corn + 20g cherry tomato\n"The three colours already in your bowl, doubled — something in every bite."',
+                extraDesc: `包含：清甜毛豆 25g (${rm('extra-edamame', 2.5)}) + 金黄甜玉米 30g (${rm('extra-corn', 2.5)}) + 爽脆小番茄 20g (${rm('cherry-tomato', 2.5)})${tricolorWorth.zh}\n"碗里本来就有的三样配色，全部加倍——每一口都咬得到。"`,
+                extraDescEn: `Includes: 25g edamame (${rm('extra-edamame', 2.5)}) + 30g sweet corn (${rm('extra-corn', 2.5)}) + 20g cherry tomato (${rm('cherry-tomato', 2.5)})${tricolorWorth.en}\n"The three colours already in your bowl, doubled — something in every bite."`,
                 items: [
                     { id: 'salmon-tricolor-combo', name: '三色加倍套 (原价 RM 7.50)', nameEn: 'Triple Veggie Boost', price: p('salmon-tricolor-combo', 5.90), category: 'combo' }
                 ]
@@ -369,26 +399,28 @@ export default function AddOnModal({
         // 的只有西兰花炒蛋。两周稳定的前三加料是 荷包蛋 / 换糙米 / 马铃薯煎蛋，
         // 所以套餐围着荷包蛋 + 加饭做，A 档再补上这碗完全缺席的蔬菜。
         if (dish.id === 27) {
+            const ssChopWorth = comboWorth('sweetsour-chop-combo', 12.90, [['broccoli-egg', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const sweetSourChopCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'sweetsour-chop-combo-section',
                 title: '✨ 甜酸下饭套',
                 titleEn: 'Sweet & Sour Rice King Set (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：蒜蓉西兰花炒蛋 + 古早味荷包蛋 + 加饭\n"甜酸洋葱酱最缺一口青——蒜香西兰花炒蛋补上，再戳破荷包蛋捞饭，这碗才算完整。"',
-                extraDescEn: 'Includes: garlic broccoli with soft-scrambled egg + old-school sunny-side-up egg + extra rice\n"That sweet & sour sauce is begging for greens — garlicky broccoli-egg and a runny yolk over extra rice finish the bowl."',
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${ssChopWorth.zh}\n"甜酸洋葱酱最缺一口青——蒜香西兰花炒蛋补上，再戳破荷包蛋捞饭，这碗才算完整。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${ssChopWorth.en}\n"That sweet & sour sauce is begging for greens — garlicky broccoli-egg and a runny yolk over extra rice finish the bowl."`,
                 items: [
                     { id: 'sweetsour-chop-combo', name: '甜酸下饭套 (原价 RM 15.40)', nameEn: 'Sweet & Sour Rice King Set', price: p('sweetsour-chop-combo', 12.90), category: 'combo' }
                 ]
             };
+            const ssRiceWorth = comboWorth('sweetsour-rice-combo', 5.90, [['sunny-egg', 2.5], ['extra-rice', 2], ['extra-edamame', 2.5]]);
             const sweetSourRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'sweetsour-rice-combo-section',
                 title: '✨ 猪扒干饭套',
                 titleEn: 'Pork Chop Rice Set (+ RM 5.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：古早味荷包蛋 + 加饭 + 清甜毛豆 25g\n"酱汁剩在碗底最可惜——多一碗饭、一颗流心蛋、一把毛豆，一滴都不留。"',
-                extraDescEn: 'Includes: old-school sunny-side-up egg + extra rice + 25g edamame\n"Never leave that sauce behind — extra rice, a runny egg and crisp edamame mop up every drop."',
+                extraDesc: `包含：古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)}) + 清甜毛豆 25g (${rm('extra-edamame', 2.5)})${ssRiceWorth.zh}\n"酱汁剩在碗底最可惜——多一碗饭、一颗流心蛋、一把毛豆，一滴都不留。"`,
+                extraDescEn: `Includes: old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)}) + 25g edamame (${rm('extra-edamame', 2.5)})${ssRiceWorth.en}\n"Never leave that sauce behind — extra rice, a runny egg and crisp edamame mop up every drop."`,
                 items: [
                     { id: 'sweetsour-rice-combo', name: '猪扒干饭套 (原价 RM 7.00)', nameEn: 'Pork Chop Rice Set', price: p('sweetsour-rice-combo', 5.90), category: 'combo' }
                 ]
@@ -416,26 +448,31 @@ export default function AddOnModal({
         // 改名就静默算 0 食材（见 dishIngredients.ts 别名注释）。
         // 西兰花仍缺独立加料价（三文鱼饭也一样缺），故不列。
         if (dish.id === 29) {
+            // 2026-08-01 老板要求：文案不写「0.5片」，改写「加倍成整整 1 片」
+            //（碗里自带半片 + 套餐再加半片 = 1 片）。⚠️ 备餐/采购配方不变，
+            // dishIngredients 里本套餐仍按 鳗鱼 0.5 片 扣——只是话术升级。
+            const unagiDoubleWorth = comboWorth('unagi-double-combo', 19.90, [['extra-unagi-half', 18.5], ['onsen-egg', 3], ['extra-rice', 2]]);
             const unagiDoubleCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'unagi-double-combo-section',
                 title: '✨ 双倍鳗鱼丼套',
                 titleEn: 'Double Unagi Don Set (+ RM 19.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：加照烧鳗鱼 0.5片 + 浓厚温泉蛋 + 加饭\n"碗里自带半片，再加半片——整整一片鳗鱼铺满碗面，戳破温泉蛋拌进照烧酱。"',
-                extraDescEn: 'Includes: extra ½ unagi fillet + rich onsen egg + extra rice\n"Half comes with the bowl, half more on top — a full fillet across the rice, with a runny onsen egg in the glaze."',
+                extraDesc: `包含：照烧鳗鱼加倍成整整 1 片 (${rm('extra-unagi-half', 18.5)}) + 浓厚温泉蛋 (${rm('onsen-egg', 3)}) + 加饭 150g (${rm('extra-rice', 2)})${unagiDoubleWorth.zh}\n"碗里自带半片，再加半片——整整一片鳗鱼铺满碗面，戳破温泉蛋拌进照烧酱。"`,
+                extraDescEn: `Includes: unagi doubled to a full fillet (${rm('extra-unagi-half', 18.5)}) + rich onsen egg (${rm('onsen-egg', 3)}) + extra rice 150g (${rm('extra-rice', 2)})${unagiDoubleWorth.en}\n"Half comes with the bowl, half more on top — a full fillet across the rice, with a runny onsen egg in the glaze."`,
                 items: [
                     { id: 'unagi-double-combo', name: '双倍鳗鱼丼套 (原价 RM 23.50)', nameEn: 'Double Unagi Don Set', price: p('unagi-double-combo', 19.90), category: 'combo' }
                 ]
             };
+            const unagiRiceWorth = comboWorth('unagi-rice-combo', 5.90, [['onsen-egg', 3], ['extra-rice', 2], ['extra-edamame', 2.5]]);
             const unagiRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'unagi-rice-combo-section',
                 title: '✨ 照烧干饭套',
                 titleEn: 'Unagi Rice Set (+ RM 5.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：浓厚温泉蛋 + 加饭 + 清甜毛豆 25g\n"照烧酱最怕饭不够——蛋滑、饭足、毛豆脆，一碗干到底。"',
-                extraDescEn: 'Includes: rich onsen egg + extra rice + 25g edamame\n"That glaze needs rice to soak it up — silky egg, extra rice, crisp edamame."',
+                extraDesc: `包含：浓厚温泉蛋 (${rm('onsen-egg', 3)}) + 加饭 150g (${rm('extra-rice', 2)}) + 清甜毛豆 25g (${rm('extra-edamame', 2.5)})${unagiRiceWorth.zh}\n"照烧酱最怕饭不够——蛋滑、饭足、毛豆脆，一碗干到底。"`,
+                extraDescEn: `Includes: rich onsen egg (${rm('onsen-egg', 3)}) + extra rice 150g (${rm('extra-rice', 2)}) + 25g edamame (${rm('extra-edamame', 2.5)})${unagiRiceWorth.en}\n"That glaze needs rice to soak it up — silky egg, extra rice, crisp edamame."`,
                 items: [
                     { id: 'unagi-rice-combo', name: '照烧干饭套 (原价 RM 7.50)', nameEn: 'Unagi Rice Set', price: p('unagi-rice-combo', 5.90), category: 'combo' }
                 ]
@@ -500,14 +537,15 @@ export default function AddOnModal({
 
         // If it's Shaoxing Wine Steamed Pork Belly (id: 4), prepend combo + dual-tier pork add-ons
         if (dish.id === 4) {
+            const shaoxingWorth = comboWorth('shaoxing-pork-combo', 15.90, [['extra-shaoxing-pork-100g', 14.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const shaoxingCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'shaoxing-combo',
                 title: '✨ 酒香干饭套',
                 titleEn: 'Shaoxing Rice King Set (+ RM 15.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：酒香绍兴花肉 100g + 古早味荷包蛋 + 加饭\n"绍兴酒香渗进双倍花肉，戳破流心荷包蛋拌饭——干饭魂彻底点燃！"',
-                extraDescEn: 'Includes: 100g Shaoxing pork belly + old-school sunny-side-up egg + extra rice\n"Double pork soaked in Shaoxing wine, a runny egg over extra rice — pure comfort."',
+                extraDesc: `包含：酒香绍兴花肉 100g (${rm('extra-shaoxing-pork-100g', 14.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${shaoxingWorth.zh}\n"绍兴酒香渗进双倍花肉，戳破流心荷包蛋拌饭——干饭魂彻底点燃！"`,
+                extraDescEn: `Includes: 100g Shaoxing pork belly (${rm('extra-shaoxing-pork-100g', 14.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${shaoxingWorth.en}\n"Double pork soaked in Shaoxing wine, a runny egg over extra rice — pure comfort."`,
                 items: [
                     { id: 'shaoxing-pork-combo', name: '酒香干饭套 (原价 RM 19.40)', nameEn: 'Shaoxing Rice King Set', price: p('shaoxing-pork-combo', 15.90), category: 'combo' }
                 ]
@@ -531,14 +569,15 @@ export default function AddOnModal({
 
         // If it's Homestyle Japanese Curry Rice (id: 25), prepend combo + extra-chicken add-ons
         if (dish.id === 25) {
+            const curryWorth = comboWorth('curry-trio-combo', 7.90, [['extra-curry-chicken-50g', 4.5], ['onsen-egg', 3], ['extra-rice', 2]]);
             const curryCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'curry-combo',
                 title: '✨ 咖喱控三件套',
                 titleEn: 'Curry Lover Trio (+ RM 7.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：滑嫩咖喱鸡丁 50g + 浓厚温泉蛋 + 加饭\n"温泉蛋滑进浓郁咖喱酱，多一份鸡丁多一份满足——咖喱控没有抵抗力。"',
-                extraDescEn: 'Includes: 50g tender curry chicken + rich onsen egg + extra rice\n"An onsen egg melting into thick curry with extra chicken — irresistible for curry lovers."',
+                extraDesc: `包含：滑嫩咖喱鸡丁 50g (${rm('extra-curry-chicken-50g', 4.5)}) + 浓厚温泉蛋 (${rm('onsen-egg', 3)}) + 加饭 150g (${rm('extra-rice', 2)})${curryWorth.zh}\n"温泉蛋滑进浓郁咖喱酱，多一份鸡丁多一份满足——咖喱控没有抵抗力。"`,
+                extraDescEn: `Includes: 50g tender curry chicken (${rm('extra-curry-chicken-50g', 4.5)}) + rich onsen egg (${rm('onsen-egg', 3)}) + extra rice 150g (${rm('extra-rice', 2)})${curryWorth.en}\n"An onsen egg melting into thick curry with extra chicken — irresistible for curry lovers."`,
                 items: [
                     { id: 'curry-trio-combo', name: '咖喱控三件套 (原价 RM 9.50)', nameEn: 'Curry Lover Trio', price: p('curry-trio-combo', 7.90), category: 'combo' }
                 ]
@@ -561,16 +600,19 @@ export default function AddOnModal({
 
         // If it's Hometown Taucu Braised Pork Belly (id: 23), prepend combo + dual-tier pork add-ons
         if (dish.id === 23) {
+            // 2026-08-01 组件调价：加豆酱花肉 100g 14.90 → 15.50，原价 19.40 → 20.00
+            //（label 是订单/备餐 key，dishIngredients 已同步新键并保留 19.40 legacy）。
+            const taucuWorth = comboWorth('taucu-pork-combo', 16.90, [['extra-taucu-pork-100g', 15.5], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const taucuCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'taucu-combo',
                 title: '✨ 阿嫲下饭王套',
                 titleEn: 'Grandma Rice King Set (+ RM 16.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：家乡豆酱花肉 100g + 古早味荷包蛋 + 加饭\n"豆酱花肉加量，配流心荷包蛋捞饭——阿嫲看了都说你会吃。"',
-                extraDescEn: 'Includes: 100g taucu pork belly + old-school sunny-side-up egg + extra rice\n"Double taucu pork with a runny egg over extra rice — grandma-approved indulgence."',
+                extraDesc: `包含：家乡豆酱花肉 100g (${rm('extra-taucu-pork-100g', 15.5)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${taucuWorth.zh}\n"豆酱花肉加量，配流心荷包蛋捞饭——阿嫲看了都说你会吃。"`,
+                extraDescEn: `Includes: 100g taucu pork belly (${rm('extra-taucu-pork-100g', 15.5)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${taucuWorth.en}\n"Double taucu pork with a runny egg over extra rice — grandma-approved indulgence."`,
                 items: [
-                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 19.40)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 16.90), category: 'combo' }
+                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 20.00)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 16.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -580,7 +622,7 @@ export default function AddOnModal({
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
                             { id: 'extra-taucu-pork-50g', name: '【小碗解馋】加豆酱花肉 (50g)', nameEn: 'Extra Taucu Pork Belly (50g)', price: p('extra-taucu-pork-50g', 7.90), category: 'sides', maxQty: 3 },
-                            { id: 'extra-taucu-pork-100g', name: '【家乡浓香】加豆酱花肉 (100g)', nameEn: 'Extra Taucu Pork Belly (100g)', price: p('extra-taucu-pork-100g', 14.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-taucu-pork-100g', name: '【家乡浓香】加豆酱花肉 (100g)', nameEn: 'Extra Taucu Pork Belly (100g)', price: p('extra-taucu-pork-100g', 15.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };
@@ -609,14 +651,15 @@ export default function AddOnModal({
 
         // If it's Golden Scallion Pan-Fried Chicken Soup (id: 5), prepend combo + chicken leg add-ons
         if (dish.id === 5) {
+            const scallionWorth = comboWorth('scallion-soup-combo', 12.90, [['extra-scallion-chop-side', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const scallionCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'scallion-combo',
                 title: '✨ 葱汤干饭王！爆量满足三件套',
                 titleEn: 'Scallion Soup Rice King Trio (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：香煎金鸡扒 150g + 古早味荷包蛋 + 加饭\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"',
-                extraDescEn: 'Includes: 150g pan-fried golden chicken chop + old-school sunny-side-up egg + extra rice\n"Steaming scallion soup with a crispy chop and a runny egg over rice — Fridays done right!"',
+                extraDesc: `包含：香煎金鸡扒 150g (${rm('extra-scallion-chop-side', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${scallionWorth.zh}\n"一碗热腾腾的葱汤配上焦香鸡扒，戳破流心荷包蛋拌进白饭——周五就该这样犒劳自己！"`,
+                extraDescEn: `Includes: 150g pan-fried golden chicken chop (${rm('extra-scallion-chop-side', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${scallionWorth.en}\n"Steaming scallion soup with a crispy chop and a runny egg over rice — Fridays done right!"`,
                 items: [
                     { id: 'scallion-soup-combo', name: '爆量满足三件套 (原价 RM 15.40)', nameEn: 'Rice King Trio', price: p('scallion-soup-combo', 12.90), category: 'combo' }
                 ]
@@ -639,14 +682,15 @@ export default function AddOnModal({
 
         // If it's Potato Pork Belly Stew (now daily, id: 13), prepend a special combo section
         if (dish.id === 13) {
+            const porkPotatoWorth = comboWorth('pork-potato-duo-combo', 13.40, [['extra-potato', 3.5], ['extra-pork-belly', 11.9]]);
             const porkPotatoCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'pork-potato-combo',
                 title: '✨ 薯肉双拼满足套',
                 titleEn: 'Potato & Pork Belly Duo (+ RM 13.40)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: '包含：绵密马铃薯 90g + 香滑花肉片 70g\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"',
-                extraDescEn: 'Includes: 90g creamy potato + 70g silky pork belly slices\n"Soft potato coated in rich gravy with melt-in-your-mouth pork belly — the taste of home."',
+                extraDesc: `包含：绵密马铃薯 90g (${rm('extra-potato', 3.5)}) + 香滑花肉片 70g (${rm('extra-pork-belly', 11.9)})${porkPotatoWorth.zh}\n"一口软糯薯块裹着浓郁肉汁，再来几片入味花肉，这就是家的味道。"`,
+                extraDescEn: `Includes: 90g creamy potato (${rm('extra-potato', 3.5)}) + 70g silky pork belly slices (${rm('extra-pork-belly', 11.9)})${porkPotatoWorth.en}\n"Soft potato coated in rich gravy with melt-in-your-mouth pork belly — the taste of home."`,
                 items: [
                     { id: 'pork-potato-duo-combo', name: '薯肉双拼满足套 (原价 RM 15.40)', nameEn: 'Potato & Pork Belly Duo', price: p('pork-potato-duo-combo', 13.40), category: 'combo' }
                 ]

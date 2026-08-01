@@ -87,10 +87,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Greek Lemon Chicken (id:3) specials ───
   'greek-protein-bomb-combo': 15.90,
+  // 2026-08-01 老板拍板份量 180g → 150g（价不变）。id 是订单 key 保持不动，
+  // 只有各处显示标签换成 (150g)。
   'extra-greek-chicken-180g': 11.90,
   'extra-aus-potato-80g': 3.50,
   'extra-cauliflower-80g': 3.00,
-  'extra-black-olive-12g': 1.50,
+  'extra-black-olive-12g': 2.50,   // 2026-08-01 老板调价 1.50 → 2.50
 
   // ─── Ginger-Scallion Fish Fillet (id:20) specials ──
   'extra-fish-120g': 13.90,
@@ -105,10 +107,12 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'curry-trio-combo': 7.90,          // 咖喱控三件套：鸡丁50g+温泉蛋+加饭（原价 9.50）
 
   // ─── Hometown Taucu Braised Pork Belly (id:23) specials ──
-  'extra-taucu-pork-100g': 14.90,
+  'extra-taucu-pork-100g': 15.50,    // 2026-08-01 老板调价 14.90 → 15.50
   'extra-taucu-pork-50g': 7.90,      // 2026-07-16 双档策略：低门槛档
-  // 2026-07-31 老板调价 15.90 → 16.90（原价 19.40 不变，折扣 3.50 → 2.50）
-  'taucu-pork-combo': 16.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 19.40）
+  // 2026-07-31 老板调价 15.90 → 16.90；2026-08-01 随 100g 加料调价，
+  // 组件原价 19.40 → 20.00（折扣 2.50 → 3.10）。⚠️ 原价 20.00 已高过整碗
+  // 主菜 19.90 —— 套餐结构冲突已报老板，重设计方案待拍板。
+  'taucu-pork-combo': 16.90,         // 阿嫲下饭王套：花肉100g+荷包蛋+加饭（原价 20.00）
 
   // ─── Hometown Glazed Unagi Rice (id:29) specials ──
   // 半片进价 RM 5.225（老板 2026-07-31 给；整片 RM 10.45，主菜每份自带半片）。
@@ -170,7 +174,7 @@ export const PREPAID_ADDON_OPTIONS: PrepaidAddonOption[] = [
   { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋' },
   { id: 'extra-rice', name: '加饭' },
   { id: 'brown-rice', name: '白饭换糙米' },
-  { id: 'extra-greek-chicken-180g', name: '加柠香烤鸡胸 (180g)' },
+  { id: 'extra-greek-chicken-180g', name: '加柠香烤鸡胸 (150g)' },  // 2026-08-01 份量 180g→150g（id 不动）
   { id: 'extra-salmon-70g', name: '加香煎三文鱼 (70g+)' },
   { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)' },
 ];

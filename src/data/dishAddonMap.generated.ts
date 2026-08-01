@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-07-31
+ * Generated: 2026-08-01
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -685,7 +685,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     {
       "id": "extra-taucu-pork-100g",
       "label": "【家乡浓香】加豆酱花肉 (100g)",
-      "price": 14.9
+      "price": 15.5
     },
     {
       "id": "less-rice",
@@ -1137,7 +1137,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     },
     {
       "id": "extra-greek-chicken-180g",
-      "label": "加柠香烤鸡胸 (180g)",
+      "label": "加柠香烤鸡胸 (150g)",
       "price": 11.9
     },
     {
@@ -1148,7 +1148,7 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     {
       "id": "extra-black-olive-12g",
       "label": "加提鲜黑橄榄 (12g)",
-      "price": 1.5
+      "price": 2.5
     },
     {
       "id": "extra-cauliflower-80g",
