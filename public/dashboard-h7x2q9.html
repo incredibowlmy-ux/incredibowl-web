@@ -2261,7 +2261,7 @@
                         <input type="number" id="moVouchersUsed" step="1" min="0" value="0" placeholder="抵扣几张" />
                         <div id="moVoucherPreview" style="font-size:11px;color:var(--text-muted);line-height:1.5">用 0 张 · 客户全额支付</div>
                     </div>
-                    <div style="margin-top:6px;font-size:10px;color:var(--text-muted)">FIFO 从客户现有可用券扣 · 1 张 = 1 道主菜全额覆盖 · 不抵 add-on / 配送费</div>
+                    <div style="margin-top:6px;font-size:10px;color:var(--text-muted)">FIFO 从客户现有可用券扣 · 1 张 = 1 道主菜或 1 份汤 add-on 全额覆盖 · 其他 add-on / 配送费不抵</div>
                 </div>
 
                 <!-- ─── 预付加料抵扣（可选，仅当客户有预付余额时显示）─── -->
@@ -2953,7 +2953,7 @@
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
             { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋',                      price: 6.80,  category: '单点' },  // 新 add-on 2026-06-29，通用配菜（所有菜可加）
-            { id: 'side-soup',                   name: '汤 (Soup)',                             price: 18.50, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；具体汤名待老板提供后更新
+            { id: 'side-soup',                   name: '汤 (Soup)',                             price: 18.50, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；2026-08-01 起唯一可用餐券兑换的 add-on（collectMainDishUnitPrices 认 id）；具体汤名待老板提供后更新
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (25g)',                  price: 2.50,  category: '单点' },
             { id: 'extra-corn',                  name: '金黄甜玉米 (30g)',                      price: 2.50,  category: '单点' },
             { id: 'chia-pudding',                name: '奇亚籽布丁',                            price: 6.90,  category: '单点' },
@@ -10102,7 +10102,7 @@ incredibowl.my`,
         // 避免逐道菜往 DISH_ADDON_MAP 复制。如该菜已自列同 id 则去重。
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
-            { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard
+            { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）
         ];
         // 新菜兜底加料：DISH_ADDON_MAP 还没登记的菜（刚上架的新菜）自动拿这套
         // 标准 à la carte + 饭量 + 饮品，不用先来这里抄一份才有加料可选。
@@ -12037,6 +12037,14 @@ incredibowl.my`,
                 const topUp = dish && typeof dish.voucherTopUp === 'number' ? dish.voucherTopUp : 0;
                 const voucherValue = Math.max(0, fullPrice - topUp);
                 for (let i = 0; i < q; i++) prices.push(voucherValue);
+                // Off-menu 汤（side-soup add-on，RM18.50 = 标准主菜价）是唯一可用餐券
+                // 兑换的 add-on（老板 2026-08-01 拍板）：每份汤 = 1 个可覆盖单位，
+                // 进同一个价格池按 FIFO 扣。其他 add-on 仍然不抵。
+                row.querySelectorAll('.mo-addon-pill[data-id="side-soup"]').forEach(p => {
+                    const soupQty = Number(p.dataset.qty) || 0;
+                    const soupPrice = Number(p.dataset.price) || 0;
+                    for (let i = 0; i < soupQty; i++) prices.push(soupPrice);
+                });
             });
             prices.sort((a, b) => b - a);
             return prices;
@@ -12058,7 +12066,7 @@ incredibowl.my`,
             }
             const prices = collectMainDishUnitPrices();
             if (used > prices.length) {
-                preview.innerHTML = `⚠ 主餐只有 <strong>${prices.length}</strong> 道 · 用不了 ${used} 张券（1 张 = 1 道主菜）`;
+                preview.innerHTML = `⚠ 主餐+汤只有 <strong>${prices.length}</strong> 份 · 用不了 ${used} 张券（1 张 = 1 道主菜或 1 份汤）`;
                 preview.style.color = 'var(--danger)';
                 return;
             }
@@ -13149,10 +13157,11 @@ incredibowl.my`,
                     errEl.classList.remove('hidden');
                     return;
                 }
-                // 1 voucher = 1 main dish. Cap voucher use at main dish count.
+                // 1 voucher = 1 main dish OR 1 份汤 add-on (side-soup, 唯一可兑 add-on)。
+                // Cap voucher use at the combined redeemable-unit count.
                 const mainDishUnitPrices = collectMainDishUnitPrices();
                 if (vouchersUsed > mainDishUnitPrices.length) {
-                    errEl.textContent = `本单只有 ${mainDishUnitPrices.length} 道主餐 · 不能用 ${vouchersUsed} 张券（1 张 = 1 道主餐）`;
+                    errEl.textContent = `本单只有 ${mainDishUnitPrices.length} 份可兑餐点（主餐+汤）· 不能用 ${vouchersUsed} 张券`;
                     errEl.classList.remove('hidden');
                     return;
                 }
