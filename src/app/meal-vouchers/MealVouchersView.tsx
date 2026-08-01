@@ -9,11 +9,21 @@ import {
     ArrowLeft, Ticket, CheckCircle, Sparkles, AlertCircle, Loader2,
     CreditCard, Phone, Plus, Calendar, ShieldCheck, Clock, Tag,
 } from 'lucide-react';
-import { MEAL_VOUCHER_BUNDLES } from '@/data/mealVoucherConfig';
+import { MEAL_VOUCHER_BUNDLES, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
+import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import type { MealVoucherBundle } from '@/data/mealVoucherConfig';
 import type { Locale } from '../member/dict';
 import { MEAL_VOUCHERS_DICT } from './dict';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
+
+// 一张券最多能直接兑掉多少钱的菜（不补差价的前提下）。本周菜单现算 ——
+// 换菜自动跟上，不会像写死的数字一样某天变成谎话。
+const bestVoucherValue = Math.max(
+    FACE_VALUE_RM,
+    ...weeklyMenu
+        .filter(d => !d.hidden && !d.retired)
+        .map(d => dishVoucherValue(d.price, d)),
+);
 
 export default function MealVouchersView({ locale }: { locale: Locale }) {
     const t = MEAL_VOUCHERS_DICT[locale];
@@ -45,6 +55,9 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     const [voucherCount, setVoucherCount] = useState(0);
     const [purchasedValidityDays, setPurchasedValidityDays] = useState(0);
     const [error, setError] = useState('');
+    // 访客绑定 Google 的结果提示。闸门页是独立的早返回视图，渲染不到下面那条
+    // 红色 error 块，所以单开一个 state；成功/失败共用它，靠 type 决定绿/红。
+    const [guestMsg, setGuestMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
@@ -128,17 +141,21 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
         const file = e.target.files[0];
+        // 上传相关提示全部改走页面内已有的红色 error 条（就在付款区正下方，
+        // 紧挨着上传按钮）：alert 在手机上会顶「域名显示：」前缀、冻结整页、
+        // 文字还没法复制，观感像诈骗弹窗。选了新文件先清掉上一次的旧提示。
+        setError('');
         if (!file.type.startsWith('image/')) {
-            alert(t.uploadInvalidType);
+            setError(t.uploadInvalidType);
             return;
         }
         const MAX_BYTES = 5 * 1024 * 1024;
         if (file.size > MAX_BYTES) {
-            alert(t.uploadTooLarge((file.size / 1024 / 1024).toFixed(1)));
+            setError(t.uploadTooLarge((file.size / 1024 / 1024).toFixed(1)));
             return;
         }
         if (!currentUser) {
-            alert(t.uploadRequiresLogin);
+            setError(t.uploadRequiresLogin);
             return;
         }
         setUploading(true);
@@ -159,7 +176,8 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
             else if (code === 'storage/retry-limit-exceeded') msg = t.uploadRetryLimit;
             else if (code === 'storage/quota-exceeded') msg = t.uploadQuotaExceeded;
             else if (err?.message) msg = t.uploadErrorWithMessage(err.message);
-            alert(msg);
+            // 六选一的失败文案照旧，只是改成页内红条常驻（含客服电话，要能选中复制）
+            setError(msg);
         }
         setUploading(false);
     };
@@ -167,7 +185,8 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     const handleBuy = async () => {
         // 餐券必须绑「找得回来」的真账号 —— 匿名访客换设备/清缓存券就丢了，
         // 所以买券前必须先 Google 登录（下单可以访客，买券不行）。
-        if (!currentUser || currentUser.isAnonymous) { alert(t.loginToBuyVouchers); return; }
+        // 提示与下面 errorSelectMethod 共用同一条红条（就在「立即购买」按钮上方）
+        if (!currentUser || currentUser.isAnonymous) { setError(t.loginToBuyVouchers); return; }
         if (!paymentMethod) { setError(t.errorSelectMethod); return; }
         if (paymentMethod === 'qr' && !receiptUploaded) {
             setError(t.errorUploadReceipt);
@@ -297,12 +316,19 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     if (authChecked && (!currentUser || currentUser.isAnonymous)) {
         const isGuest = !!currentUser?.isAnonymous;
         const handleGuestUpgrade = async () => {
+            setGuestMsg(null);
             try {
                 const { linkGuestToGoogle } = await import('@/lib/auth');
                 await linkGuestToGoogle();
-                window.location.reload();
+                // 整页刷新照旧，只是先让绿条露 2.5 秒——否则画面瞬间跳走，
+                // 顾客不知道刚才那下到底成没成。
+                setGuestMsg({ type: 'success', text: t.guestUpgradeSuccess });
+                setTimeout(() => window.location.reload(), 2500);
             } catch (e: any) {
-                alert(e?.code === 'auth/credential-already-in-use' ? t.guestUpgradeConflict : t.guestUpgradeFailed);
+                setGuestMsg({
+                    type: 'error',
+                    text: e?.code === 'auth/credential-already-in-use' ? t.guestUpgradeConflict : t.guestUpgradeFailed,
+                });
             }
         };
         return (
@@ -319,6 +345,23 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                             <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
                                 <ArrowLeft size={16} /> {t.loginReturnHome}
                             </Link>
+                        )}
+                        {/* 绑定结果就贴在按钮下方，不自动消失（失败文案要能看完/复制） */}
+                        {guestMsg && (
+                            <div className={`rounded-xl p-3 flex items-start gap-2 text-left ${
+                                guestMsg.type === 'success'
+                                    ? 'bg-green-50 border border-green-200'
+                                    : 'bg-red-50 border border-red-200'
+                            }`}>
+                                {guestMsg.type === 'success' ? (
+                                    <CheckCircle size={16} className="text-green-600 shrink-0 mt-0.5" />
+                                ) : (
+                                    <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                                )}
+                                <p className={`text-xs font-bold ${guestMsg.type === 'success' ? 'text-green-800' : 'text-red-700'}`}>
+                                    {guestMsg.text}
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -481,6 +524,27 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                             </button>
                         );
                     })}
+
+                    {/* 券到底值多少 —— 5 张装是面值平价（savings 为 0，卡片上那个
+                        绿色「省 RM x」标签根本不渲染），看起来像「买少了被罚」。
+                        真正的价值是「任意主菜都能兑」，包括比面值贵的菜：本周有
+                        RM 19.90 且零补差的菜，用一张 RM 18.50 的券兑它，每份多省
+                        RM 1.40。这句话以前没人说，客户自己看不出来。
+                        数字全部从 weeklyMenu 现算，换菜自动跟上，不会写死过期。 */}
+                    {bestVoucherValue > FACE_VALUE_RM && (
+                        <div className="bg-[#FFF3E0]/70 border border-[#FFD6B0]/70 rounded-2xl px-4 py-3.5">
+                            <p className="text-[13px] font-black text-[#1A2D23] flex items-center gap-1.5">
+                                <Ticket size={14} className="text-[#FF6B35] shrink-0" />
+                                {t.voucherValueNoteTitle}
+                            </p>
+                            <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
+                                {t.voucherValueNote(bestVoucherValue.toFixed(2), (bestVoucherValue - FACE_VALUE_RM).toFixed(2))}
+                            </p>
+                            <p className="text-[11px] text-[#1A2D23]/50 font-medium leading-relaxed mt-1">
+                                {t.voucherValueNoteTopUp}
+                            </p>
+                        </div>
+                    )}
                 </section>
 
                 {/* Promo code */}

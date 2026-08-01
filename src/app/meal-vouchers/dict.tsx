@@ -22,6 +22,9 @@ interface MealVouchersDictShape {
     // Anonymous guest → in-place Google upgrade (same uid, keeps orders)
     guestUpgradeHint: string;
     guestUpgradeButton: string;
+    // 绑定成功的页内绿条文案：原本 alert 只在失败时弹，成功是直接整页刷新；
+    // 现在提示改成内联，成功也要有一句话，否则页面看起来「点了没反应」。
+    guestUpgradeSuccess: string;
     guestUpgradeConflict: string;
     guestUpgradeFailed: string;
 
@@ -49,6 +52,12 @@ interface MealVouchersDictShape {
     bundleHighlightBestValue: string;
     perVoucher: (rm: string) => string;
     savings: (rm: string, percent: number) => string;
+    /** 1 张券能兑什么 —— 5 张装是面值平价（省 RM 0），卡片上没有 savings 标签，
+        看起来像「买少了被罚」。真正的价值是「任意主菜都能兑」，包括比面值贵的菜。
+        数字由 weeklyMenu 现算，不写死。 */
+    voucherValueNoteTitle: string;
+    voucherValueNote: (best: string, extra: string) => string;
+    voucherValueNoteTopUp: string;
     validityDays: (n: number) => string;
 
     // Promo section
@@ -130,6 +139,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         loginReturnHome: '返回首页登录',
         guestUpgradeHint: '你正在使用访客账号。餐券绑定账号保存，绑定 Google 后即可购买，订单记录也会永久保留。',
         guestUpgradeButton: '🔗 绑定 Google，继续购买',
+        guestUpgradeSuccess: '绑定成功，正在刷新页面…',
         guestUpgradeConflict: '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理',
         guestUpgradeFailed: '绑定未完成，可稍后再试',
 
@@ -159,6 +169,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         bundleHighlightBestValue: '最划算',
         perVoucher: (rm) => `单券 RM ${rm}`,
         savings: (rm, percent) => `省 RM ${rm}（${percent}%）`,
+        voucherValueNoteTitle: '1 张券 = 1 道主菜，任意价位都能兑',
+        voucherValueNote: (best, extra) => `本周最贵可直接兑的是 RM ${best} 的菜 —— 用券兑它，每份多省 RM ${extra}。`,
+        voucherValueNoteTopUp: '三文鱼 / 鳗鱼这类升级菜也能用券，只补差价。',
         validityDays: (n) => `有效期 ${n} 天`,
 
         promoTitle: '优惠码 / Promo Code',
@@ -233,6 +246,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         loginRequired: 'Please sign in from the homepage first to buy vouchers.',
         guestUpgradeHint: 'You are browsing as a guest. Vouchers are saved to your account — link Google to buy, and your order history will be kept permanently too.',
         guestUpgradeButton: '🔗 Link Google to continue',
+        guestUpgradeSuccess: 'Linked successfully — refreshing the page…',
         guestUpgradeConflict: 'This Google account already has a member record. WhatsApp us to merge the two.',
         guestUpgradeFailed: 'Linking didn\'t complete — please try again later.',
         seoHeading: 'Incredibowl Meal Voucher Bundles: Buy Once, Eat Anytime',
@@ -262,6 +276,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         bundleHighlightBestValue: 'Best value',
         perVoucher: (rm) => `RM ${rm} per voucher`,
         savings: (rm, percent) => `Save RM ${rm} (${percent}%)`,
+        voucherValueNoteTitle: '1 voucher = 1 main dish, at any price',
+        voucherValueNote: (best, extra) => `The priciest dish a voucher covers outright this week is RM ${best} — redeem it and you save an extra RM ${extra} per meal.`,
+        voucherValueNoteTopUp: 'Premium dishes (salmon / unagi) work too — you just pay the top-up.',
         validityDays: (n) => `Valid for ${n} days`,
 
         promoTitle: 'Promo Code',
