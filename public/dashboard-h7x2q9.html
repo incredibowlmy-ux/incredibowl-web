@@ -2846,13 +2846,15 @@
             //   webapp ID 一一对应（webapp 1=酱油鸡，dash 1=鸡扒；ADDON_MAP/cost 都按 dash ID 维护，
             //   所以保持 ID 稳定，只同步 day/active/voucherTopUp）。改 day 时同步更新本注释。
             // ─── 常驻 Daily ──────────────────────────────────────────
-            //   ⚠️ 本周（2026-08-03）三文鱼与鳗鱼是「常驻+限日」：webapp 靠 availableWeekdays
-            //   只在指定两天可下单，dashboard 侧 day 一律记 'Daily'（与 sync:menu 写库口径一致，
-            //   否则两边互相覆盖）。手动加单不受限日约束，加错日子请自行留意括号里的供应日。
+            //   ⚠️ 「常驻+限日」菜（本周 = 鳗鱼周一/四、三文鱼周二/五）：day 一律记 'Daily'
+            //   （与 sync:menu 写库口径一致，否则两边互相覆盖），另加 availableWeekdays
+            //   （镜像 webapp weeklyMenu.ts 同名字段，数字转 Mon/Tue…键）。加单下拉据此把
+            //   它们挂进各供应日的组并标「仅周X/X供应」，不再挤在常驻组。
+            //   每周换菜若调整限日菜的供应日，此字段必须同步改。手动加单本身不受限日约束。
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 2026-07-27 webapp 恢复全周常驻；⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90（seed 价不覆盖）
-            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 🆕 2026-08-03 新菜（webapp id 29）；供应日=周一/周四（availableWeekdays）；网站 emoji 占位图待实拍
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 2026-08-03 从周二 Hero 改常驻限周二/周五（webapp id 21，availableWeekdays）
+            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Daily', availableWeekdays: ['Mon', 'Thu'], active: true, voucherTopUp: 5 },  // 🆕 2026-08-03 新菜（webapp id 29，availableWeekdays:[1,4]）；网站 emoji 占位图待实拍
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Daily', availableWeekdays: ['Tue', 'Fri'], active: true, voucherTopUp: 5 },  // 2026-08-03 从周二 Hero 改常驻限周二/周五（webapp id 21，availableWeekdays:[2,5]）
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // webapp retired 2026-06-27；dashboard 留 active 给 WA 加单
             // ─── 周一 Mon ────────────────────────────────────────────
             { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-03 回归周一 Hero（webapp id 14）；鳗鱼饭常驻限周一/四也在周一
@@ -7980,8 +7982,9 @@ incredibowl.my`,
 
         // ═══════════════════════════════════════════════════════════════
         //   DISH DROPDOWN — grouped by weekday for easier visual scanning.
-        //   常驻先 → 周一→周日 → 其他。今天那一组 prefix「⭐ (今天)」。
-        //   MENU_SEED 是 day 字段的 fallback（Firestore 文档可能缺）。
+        //   可见搜索下拉：送达日那组排第一并 ⭐ → 常驻 → 周一→周日 → 暂别 → 其他。
+        //   限日常驻菜（seed availableWeekdays）挂进各供应日组 + 标「仅周X/X供应」，
+        //   不占常驻组。MENU_SEED 是 day 字段的 fallback（Firestore 文档可能缺）。
         // ═══════════════════════════════════════════════════════════════
         const DISH_DAY_ORDER = ['Daily', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'PausedWeek', '其他'];
         const DISH_DAY_LABEL = {
@@ -7993,6 +7996,15 @@ incredibowl.my`,
         };
         const DISH_SEED_DAY_BY_ID = Object.create(null);
         MENU_SEED.forEach(m => { DISH_SEED_DAY_BY_ID[String(m.id)] = m.day; });
+        // 限日常驻菜（seed availableWeekdays，镜像 webapp）：下拉不进「常驻」组，
+        // 挂到每个供应日的组里 + 标「仅周X/X供应」。每周换菜调供应日要同步改 seed。
+        const DISH_SEED_WEEKDAYS_BY_ID = Object.create(null);
+        MENU_SEED.forEach(m => {
+            if (Array.isArray(m.availableWeekdays) && m.availableWeekdays.length) {
+                DISH_SEED_WEEKDAYS_BY_ID[String(m.id)] = m.availableWeekdays;
+            }
+        });
+        const DAY_SHORT_CN = { Mon: '一', Tue: '二', Wed: '三', Thu: '四', Fri: '五', Sat: '六', Sun: '日' };
         // 组内排序跟 MENU_SEED 数组顺序走（seed 每天主打菜排第一，与 webapp
         // WEEKLY_SCHEDULE 一致）。非 seed 的新菜排最后（Infinity → 退回 id 序）。
         const DISH_SEED_ORDER_BY_ID = Object.create(null);
@@ -8003,20 +8015,9 @@ incredibowl.my`,
             return ia !== ib ? ia - ib : Number(a.id) - Number(b.id);
         }
         function buildDishOptionsHtml(menu) {
-            const dishes = (menu || []).filter(m =>
-                !String(m.id).startsWith('addon-') && m.active !== false);
-            const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
-            dishes.forEach(m => {
-                // offMenuThisWeek（sync-menu 脚本写）胜出 → 本周暂别组（仍可选给 WA 加单）；
-                // 否则 SEED wins (源码是排期权威)，Firestore 仅给非 SEED 的新菜 fallback。
-                const day = m.offMenuThisWeek === true
-                    ? 'PausedWeek'
-                    : (DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他');
-                (groups[day] || groups['其他']).push(m);
-            });
-            DISH_DAY_ORDER.forEach(d => {
-                groups[d].sort(seedOrderCompare);
-            });
+            // 与可见搜索下拉共用 _dishGroupsByDay 一套分组口径（这个 <select> 是隐藏的
+            // 取值容器；限日常驻菜会在多个天组重复出现，取值按第一个匹配，无副作用）。
+            const groups = _dishGroupsByDay(menu);
             const todayWeekday = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date().getDay()];
             return DISH_DAY_ORDER.filter(d => groups[d].length).map(d => {
                 const todayBadge = d === todayWeekday ? ' ⭐ (今天)' : '';
@@ -8046,13 +8047,22 @@ incredibowl.my`,
             dishes.forEach(m => {
                 // offMenuThisWeek（sync-menu 脚本写）胜出 → 本周暂别组（仍可选给 WA 加单）；
                 // 否则 SEED wins (源码是排期权威)，Firestore 仅给非 SEED 的新菜 fallback。
-                const day = m.offMenuThisWeek === true
-                    ? 'PausedWeek'
-                    : (DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他');
+                if (m.offMenuThisWeek === true) { groups['PausedWeek'].push(m); return; }
+                // 限日常驻菜（鳗鱼周一/四、三文鱼周二/五）不塞「常驻」组 ——
+                // 挂到每个供应日的组里并标「仅周X/X供应」，看周一就知道周一真正卖什么。
+                const wds = DISH_SEED_WEEKDAYS_BY_ID[String(m.id)];
+                if (wds) {
+                    const note = `仅周${wds.map(d => DAY_SHORT_CN[d] || d).join('/')}供应`;
+                    wds.forEach(d => (groups[d] || groups['其他']).push({ ...m, _dayNote: note, _limited: true }));
+                    return;
+                }
+                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
-                groups[d].sort(seedOrderCompare);
+                // 当天主打排前、挂进来的限日常驻排后，各按 seed 顺序
+                groups[d].sort((a, b) =>
+                    ((a._limited ? 1 : 0) - (b._limited ? 1 : 0)) || seedOrderCompare(a, b));
             });
             return groups;
         }
@@ -8078,6 +8088,7 @@ incredibowl.my`,
                         `<div class="dish-combo-row" data-name="${escapeHtml(m.name)}" data-price="${m.price}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-top:1px solid var(--border)">
                             <span style="color:var(--text)">${escapeHtml(m.name)}</span>
                             <span style="color:var(--text-muted);margin-left:6px;font-size:12px">· RM ${Number(m.price).toFixed(2)}</span>
+                            ${m._dayNote ? `<span style="color:var(--warning);margin-left:6px;font-size:11px">${escapeHtml(m._dayNote)}</span>` : ''}
                         </div>`).join('')}
                 `;
             }).join('');
