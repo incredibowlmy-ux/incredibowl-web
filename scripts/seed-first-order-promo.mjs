@@ -47,7 +47,7 @@ if (!fs.existsSync(KEY)) {
     process.exit(1);
 }
 
-admin.initializeApp({ credential: admin.cert(JSON.parse(fs.readFileSync(KEY, 'utf8'))) });
+admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY, 'utf8'))) });
 const db = admin.firestore();
 
 const run = async () => {
@@ -59,11 +59,54 @@ const run = async () => {
 
     if (snap.exists) {
         const cur = snap.data() || {};
-        console.log('\n⚠️  这个码已经存在，脚本不会覆盖它（避免把 usedCount 清零、把已发出去的码改掉）：');
-        console.log(`   discount=${cur.discount}  maxUses=${cur.maxUses}  usedCount=${cur.usedCount ?? 0}  firstOrderOnly=${cur.firstOrderOnly ?? false}`);
+        console.log('\n⚠️  这个码已经存在，脚本不会覆盖它（避免把 usedCount 清零、把已发出去的码改掉）。');
+        console.log('\n体检 —— 服务端 validateVoucher 实际会怎么读这个文档：\n');
+
+        // ⚠️ 每一条都对应 src/lib/voucherValidation.ts 里的一个 typeof 判断。
+        // 手动在 Console 建文档时把 number 填成 string 不会报错，只会静默
+        // 走进 fallback —— discount 变 RM1、maxUses 变 1 次。所以查类型比查值重要。
+        const problems = [];
+        const show = (k) => `${JSON.stringify(cur[k])} (${cur[k] === undefined ? 'missing' : typeof cur[k]})`;
+
+        console.log(`   discount        = ${show('discount')}`);
+        if (typeof cur.discount !== 'number') {
+            problems.push(`discount 不是 number → 服务端 fallback 到 RM 1，客户只会减 1 块（客户端仍显示 RM 5，套用时报「优惠金额不一致」直接拒单）`);
+        } else if (cur.discount !== DISCOUNT_RM) {
+            problems.push(`discount = ${cur.discount}，但网站文案写的是 RM ${DISCOUNT_RM} → 金额对不上会被 submit-order 拒收`);
+        }
+
+        console.log(`   maxUses         = ${show('maxUses')}`);
+        if (typeof cur.maxUses !== 'number' || cur.maxUses <= 0) {
+            problems.push(`maxUses 不是正 number → 服务端 fallback 到 1，全站只有第一个客户能用，之后一律「此优惠码已被使用」`);
+        }
+
+        console.log(`   usedCount       = ${show('usedCount')}`);
+        if (cur.usedCount !== undefined && typeof cur.usedCount !== 'number') {
+            problems.push(`usedCount 不是 number → 按 isUsed 兜底计数，用量统计会失真`);
+        }
+
+        console.log(`   firstOrderOnly  = ${show('firstOrderOnly')}`);
         if (cur.firstOrderOnly !== true) {
-            console.log('\n   ❗ 现有文档没有 firstOrderOnly:true —— 老客户也能领。');
-            console.log('      要补上请在 Firestore Console 手动加这个字段，或先删掉此码再跑本脚本。');
+            problems.push(`firstOrderOnly 不是布尔 true（字符串 "true" 也不算）→ 老客户照样能领首单码`);
+        }
+
+        console.log(`   expiresAt       = ${show('expiresAt')}`);
+        if (cur.expiresAt !== undefined && typeof cur.expiresAt?.toDate !== 'function') {
+            problems.push(`expiresAt 存在但不是 Firestore Timestamp → 过期检查被跳过，这个码永不过期`);
+        }
+
+        const used = typeof cur.usedCount === 'number' ? cur.usedCount : (cur.isUsed ? 1 : 0);
+        const max = typeof cur.maxUses === 'number' && cur.maxUses > 0 ? cur.maxUses : 1;
+        const disc = typeof cur.discount === 'number' ? cur.discount : 1;
+        console.log(`\n   → 实际生效：每单减 RM ${disc}，已用 ${used}/${max} 次，最大敞口 RM ${(disc * max).toFixed(2)}`);
+
+        if (problems.length) {
+            console.log(`\n   ❗ 发现 ${problems.length} 个问题：`);
+            problems.forEach((p, i) => console.log(`      ${i + 1}. ${p}`));
+            console.log('\n   修法：在 Firestore Console 点开 vouchers/' + CODE + ' 逐个字段改类型；');
+            console.log('        或（还没人用过时）直接删掉整个文档再跑 --apply 重建。');
+        } else {
+            console.log('\n   ✅ 全部字段类型正确，服务端会按预期执行。');
         }
         console.log('');
         return;
