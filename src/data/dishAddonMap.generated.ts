@@ -673,9 +673,9 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "家乡豆酱焖花肉": [
     {
-      "id": "taucu-pork-combo",
-      "label": "阿嫲下饭王套",
-      "price": 16.9
+      "id": "taucu-rice-king-combo",
+      "label": "家乡下饭王套",
+      "price": 12.9
     },
     {
       "id": "extra-taucu-pork-50g",

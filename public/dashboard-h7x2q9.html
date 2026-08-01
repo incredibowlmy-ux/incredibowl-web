@@ -2904,7 +2904,8 @@
             { id: 'pork-potato-duo-combo',       name: '薯肉双拼满足套',       price: 13.40, category: '套餐组合' },
             { id: 'scallion-soup-combo',         name: '爆量满足三件套',       price: 12.90, category: '套餐组合' },
             { id: 'shaoxing-pork-combo',         name: '酒香干饭套',           price: 15.90, category: '套餐组合' },  // 新 2026-07-16（绍兴酒蒸花肉）
-            { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 16.90, category: '套餐组合' },  // 新 2026-07-16（豆酱焖花肉）；2026-07-31 调价 15.90 → 16.90
+            { id: 'taucu-rice-king-combo',       name: '家乡下饭王套',         price: 12.90, category: '套餐组合' },  // 新 2026-08-01 方案A（豆酱焖花肉）西兰花炒蛋+荷包蛋+加饭，原价 15.40
+            { id: 'taucu-pork-combo',            name: '阿嫲下饭王套',         price: 16.90, category: '套餐组合' },  // 退役 2026-08-01（方案A 换互补型）；留着给历史订单 COGS 归因，勿删勿复用
             { id: 'curry-trio-combo',            name: '咖喱控三件套',         price: 7.90,  category: '套餐组合' },  // 新 2026-07-16（日式咖喱饭）
             { id: 'salmon-protein-duo-combo',    name: '柠香双蛋白套',         price: 12.90, category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）西兰花炒蛋+温泉蛋，原价 13.90
             { id: 'salmon-tricolor-combo',       name: '三色加倍套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（柠香三文鱼）毛豆+玉米+小番茄，原价 7.50
@@ -3327,7 +3328,8 @@ incredibowl.my`,
             '薯肉双拼满足套 (原价 RM 15.40)': 'pork-potato-duo-combo',
             '爆量满足三件套 (原价 RM 15.40)': 'scallion-soup-combo',
             '酒香干饭套 (原价 RM 19.40)': 'shaoxing-pork-combo',
-            '阿嫲下饭王套 (原价 RM 20.00)': 'taucu-pork-combo',  // 2026-08-01 100g 花肉调价 → 原价 19.40→20.00
+            '家乡下饭王套 (原价 RM 15.40)': 'taucu-rice-king-combo',  // 2026-08-01 方案A 新套
+            '阿嫲下饭王套 (原价 RM 20.00)': 'taucu-pork-combo',  // legacy（花肉版退役）
             '阿嫲下饭王套 (原价 RM 19.40)': 'taucu-pork-combo',  // legacy 标签
             '咖喱控三件套 (原价 RM 9.50)': 'curry-trio-combo',
             '柠香双蛋白套 (原价 RM 13.90)': 'salmon-protein-duo-combo',
@@ -9327,9 +9329,10 @@ incredibowl.my`,
         ];
         // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
         const PACKING_COMBO_EXTRA_RICE = new Set([
-            'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）
+            'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）；taucu-pork-combo 已退役留给在途订单
             'unagi-double-combo', 'unagi-rice-combo',      // 2026-08-01 补漏：07-31 新套含加饭但没进本集合，装碗页少标加饭
             'sweetsour-chop-combo', 'sweetsour-rice-combo', // 2026-08-01 补漏：同上（甜酸猪扒两套）
+            'taucu-rice-king-combo',                        // 2026-08-01 方案A 新套（含加饭）
         ]);
 
         // label → addon id 查找表（手动单嵌套 addOns 可能只有 label 没有 id）
@@ -9983,7 +9986,7 @@ incredibowl.my`,
             '23': [
                 // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
                 // 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:23 同步）
-                { id: 'taucu-pork-combo', label: '阿嫲下饭王套', price: 16.90 },  // 2026-07-31 调价 15.90 → 16.90
+                { id: 'taucu-rice-king-combo', label: '家乡下饭王套', price: 12.90 },  // 2026-08-01 方案A（旧阿嫲花肉版退役）
                 { id: 'extra-taucu-pork-50g', label: '【小碗解馋】加豆酱花肉 (50g)', price: 7.90 },
                 { id: 'extra-taucu-pork-100g', label: '【家乡浓香】加豆酱花肉 (100g)', price: 15.50 },  // 2026-08-01 调价 14.90→15.50
                 { id: 'less-rice',     label: '少饭', price: 0.00 },

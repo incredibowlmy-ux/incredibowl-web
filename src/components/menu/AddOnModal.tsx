@@ -600,19 +600,21 @@ export default function AddOnModal({
 
         // If it's Hometown Taucu Braised Pork Belly (id: 23), prepend combo + dual-tier pork add-ons
         if (dish.id === 23) {
-            // 2026-08-01 组件调价：加豆酱花肉 100g 14.90 → 15.50，原价 19.40 → 20.00
-            //（label 是订单/备餐 key，dishIngredients 已同步新键并保留 19.40 legacy）。
-            const taucuWorth = comboWorth('taucu-pork-combo', 16.90, [['extra-taucu-pork-100g', 15.5], ['sunny-egg', 2.5], ['extra-rice', 2]]);
+            // 2026-08-01 老板拍板方案 A：旧「阿嫲下饭王套」(花肉100g+蛋+饭 16.90，
+            // 原价 20.00 > 整碗 19.90) 退役，换互补型「家乡下饭王套」——结构照抄
+            // 已验证的甜酸下饭套（西兰花炒蛋是 7 周加料王），加肉走 50g/100g 单点。
+            // 名字从「阿嫲」改「家乡」对齐主菜家族（阿嫲是酱油鸡腿的词）。
+            const taucuWorth = comboWorth('taucu-rice-king-combo', 12.90, [['broccoli-egg', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const taucuCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'taucu-combo',
-                title: '✨ 阿嫲下饭王套',
-                titleEn: 'Grandma Rice King Set (+ RM 16.90)',
+                title: '✨ 家乡下饭王套',
+                titleEn: 'Hometown Rice King Set (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: `包含：家乡豆酱花肉 100g (${rm('extra-taucu-pork-100g', 15.5)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${taucuWorth.zh}\n"豆酱花肉加量，配流心荷包蛋捞饭——阿嫲看了都说你会吃。"`,
-                extraDescEn: `Includes: 100g taucu pork belly (${rm('extra-taucu-pork-100g', 15.5)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${taucuWorth.en}\n"Double taucu pork with a runny egg over extra rice — grandma-approved indulgence."`,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${taucuWorth.zh}\n"豆酱花肉肥香入魂，就缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，阿嫲看了都说你会吃。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${taucuWorth.en}\n"Rich taucu pork begs for greens — garlicky broccoli-egg and a runny yolk over extra rice. Grandma-approved."`,
                 items: [
-                    { id: 'taucu-pork-combo', name: '阿嫲下饭王套 (原价 RM 20.00)', nameEn: 'Grandma Rice King Set', price: p('taucu-pork-combo', 16.90), category: 'combo' }
+                    { id: 'taucu-rice-king-combo', name: '家乡下饭王套 (原价 RM 15.40)', nameEn: 'Hometown Rice King Set', price: p('taucu-rice-king-combo', 12.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
