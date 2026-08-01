@@ -134,10 +134,50 @@ async function collectNewEvents(seen) {
     rows.push({ order_id: m.order_id, time_ms: new Date(m.event_time).getTime(), phone: m.phone, email: phoneToEmail.get(norm(m.phone)) || '', value: Number(m.value), name: m.name });
   }
 
+  // 4) 网页单快照（近 7 天）——网页单不走本管道：confirm-order 转 confirmed 时就
+  // 实时发 CAPI，浏览器 fbq 同时发一份，靠共享 eventID 去重。这里只做对照，
+  // 也是目前唯一能看出 confirm-order 那条 CAPI 挂掉的地方（笔数正常但 Meta 侧归零）。
+  const WEB_PAID = new Set(['confirmed', 'delivering', 'delivered']);
+  const since = nowMs - 7 * 86400_000;
+  const web = { count: 0, total: 0 };
+  for (const d of oSnap.docs) {
+    const o = d.data();
+    if (o.isManual === true || !WEB_PAID.has(o.status)) continue;
+    const t = tsToMs(o.createdAt);
+    if (!t || t < since) continue;
+    const amt = Math.round((Number(o.total) || 0) * 100) / 100;
+    if (amt > 0) { web.count++; web.total += amt; }
+  }
+
   const zero = rows.filter((r) => r.value <= 0).length;
   const kept = rows.filter((r) => r.value > 0).sort((a, b) => a.time_ms - b.time_ms);
   if (zero) flagged.push(`RM0 事件已丢弃 ${zero} 笔`);
-  return { rows: kept, flagged };
+  return { rows: kept, flagged, web };
+}
+
+// 近 7 天网页单对照块；0 笔就整块不显示
+const webBlock = (web) => (web.count
+  ? `\n\n📈 <b>近 7 天网页单</b>（实时 Pixel+CAPI，不走本脚本）\n${web.count} 笔 · RM ${web.total.toFixed(2)}`
+  : '');
+
+// Telegram 周报模板（--dry 预览与 --cron 实发共用同一份，改了就能立刻看到效果）。
+// 只报重点：逐笔明细看 tasks/logs/meta-cron.log —— 上百行会撞 Telegram 4096 字上限。
+function buildReport({ received, rows, flagged, web, stateCount }) {
+  const rm = (a) => a.reduce((s, r) => s + r.value, 0).toFixed(2);
+  const days = rows.map((r) => new Date(r.time_ms).toISOString().slice(5, 10)).sort();
+  const bucket = (label, prefix) => {
+    const hit = rows.filter((r) => r.order_id.startsWith(prefix));
+    return hit.length ? [`• ${label} ${hit.length} 笔 · RM ${rm(hit)}`] : []; // 0 笔整行不显示
+  };
+  const flagText = flagged.length ? `\n\n⚠ 待确认:\n${flagged.map((f) => `• ${f}`).join('\n')}` : '';
+  return [
+    '📊 <b>Meta 周报（CAPI 直推）</b>',
+    `本次上传 ${received} 笔 · RM ${rm(rows)}`,
+    ...bucket('手动单', 'ORDER_'),
+    ...bucket('餐券', 'VOUCHER_'),
+    `事件日期 ${days[0]} ~ ${days[days.length - 1]}`,
+    `状态文件累计 ${stateCount} 个 ID`,
+  ].join('\n') + webBlock(web) + flagText;
 }
 
 function toCapiEvent(r) {
@@ -192,16 +232,23 @@ async function cmdSend({ dry, test, cron }) {
   const state = loadState();
   if (!state.uploadedOrderIds.length) throw new Error('状态文件为空 — 先跑旧脚本 --seed，防止历史重复上报。');
   const seen = new Set(state.uploadedOrderIds);
-  const { rows, flagged } = await collectNewEvents(seen);
+  const { rows, flagged, web } = await collectNewEvents(seen);
 
   console.log(`=== 待传新事件: ${rows.length} 笔 · RM ${rows.reduce((s, r) => s + r.value, 0).toFixed(2)} ===`);
   for (const r of rows) console.log(`  ${new Date(r.time_ms).toISOString().slice(0, 10)}  RM ${r.value.toFixed(2).padStart(7)}  ${r.name.padEnd(16)} ${r.order_id}`);
   for (const f of flagged) console.log(`  ⚠ ${f}`);
 
-  if (dry) { console.log('\n--dry：未发送。'); return; }
+  if (dry) {
+    console.log('\n--dry：未发送。');
+    if (rows.length) {
+      const preview = buildReport({ received: rows.length, rows, flagged, web, stateCount: state.uploadedOrderIds.length });
+      console.log(`\n--- Telegram 周报预览（${preview.length} 字 / 上限 4096）---\n${preview}\n---`);
+    }
+    return;
+  }
   if (!rows.length) {
     console.log('\n✓ 无新事件。');
-    if (cron) await sendTelegram(`📊 <b>Meta 周报</b>\n本周无新 offline 事件，状态未变。`);
+    if (cron) await sendTelegram(`📊 <b>Meta 周报</b>\n本周无新 offline 事件，状态未变。${webBlock(web)}`);
     return;
   }
 
@@ -225,17 +272,7 @@ async function cmdSend({ dry, test, cron }) {
   console.log(`\n✓ 生产发送完成: ${received} 笔已入 Meta · 状态文件更新至 ${state.uploadedOrderIds.length} 个 ID`);
 
   if (cron) {
-    // 只报重点：明细看 tasks/logs/meta-cron.log（逐笔上百行会撞 Telegram 4096 字上限）
-    const orderN = rows.filter((r) => r.order_id.startsWith('ORDER_')).length;
-    const days = rows.map((r) => new Date(r.time_ms).toISOString().slice(5, 10)).sort();
-    const flagText = flagged.length ? `\n\n⚠ 待确认:\n${flagged.map((f) => `• ${f}`).join('\n')}` : '';
-    await sendTelegram(
-      `📊 <b>Meta 周报（CAPI 直推）</b>\n`
-      + `已上传 ${received} 笔 · RM ${rows.reduce((s, r) => s + r.value, 0).toFixed(2)}\n`
-      + `手动单 ${orderN} · 餐券 ${rows.length - orderN}\n`
-      + `事件日期 ${days[0]} ~ ${days[days.length - 1]}\n`
-      + `状态文件累计 ${state.uploadedOrderIds.length} 个 ID${flagText}`,
-    );
+    await sendTelegram(buildReport({ received, rows, flagged, web, stateCount: state.uploadedOrderIds.length }));
   }
 }
 
