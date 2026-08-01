@@ -31,7 +31,7 @@ import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function EnglishHome() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -51,6 +51,13 @@ export default function EnglishHome() {
         trackInfo?: { token: string; date: string; time: string }[];
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
+    // FPX failure modal replacing three alert() calls — mirrors src/app/page.tsx.
+    // The customer has just come back from their bank app; a system dialog
+    // stamped with the domain, whose payment ID they cannot even select to copy,
+    // is the worst possible thing to show them at that moment.
+    const [fpxError, setFpxError] = useState<{ msg: string; paymentId?: string } | null>(null);
+    const [copiedPid, setCopiedPid] = useState(false);
+    const [linkNotice, setLinkNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
     // Live per-dish stock for limited dishes (e.g. petai) → menu "X left / Sold out".
     useEffect(() => {
@@ -108,7 +115,7 @@ export default function EnglishHome() {
             url.searchParams.delete('fpx_error');
             window.history.replaceState({}, '', url.toString());
             cancelPending();
-            alert('FPX payment did not complete. Please retry or use another method.');
+            setFpxError({ msg: 'FPX payment did not complete. Please retry or use another method.' });
             return;
         }
 
@@ -154,7 +161,7 @@ export default function EnglishHome() {
                     .then(r => r.json())
                     .then(async (verifyData) => {
                         if (!verifyData.verified) {
-                            alert('Payment verification failed. Please contact us with payment ID: ' + pid);
+                            setFpxError({ msg: 'Payment verification failed — please contact BowlMama.', paymentId: pid });
                             return;
                         }
                         const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
@@ -195,7 +202,7 @@ export default function EnglishHome() {
                     })
                     .catch((err) => {
                         console.error('FPX order confirmation failed:', err);
-                        alert('Order confirmation failed. Please contact us with payment ID: ' + pid);
+                        setFpxError({ msg: 'Order confirmation failed — please contact BowlMama.', paymentId: pid });
                     });
             } catch (e) {
                 console.error('FPX pending order parse error:', e);
@@ -455,17 +462,24 @@ export default function EnglishHome() {
                                     try {
                                         const { linkGuestToGoogle } = await import('@/lib/auth');
                                         await linkGuestToGoogle();
-                                        alert('✅ Google account linked! Your order history is saved for one-tap reorders.');
+                                        setLinkNotice({ kind: 'ok', text: '✅ Google account linked! Your order history is saved for one-tap reorders.' });
                                     } catch (e: any) {
-                                        alert(e?.code === 'auth/credential-already-in-use'
+                                        setLinkNotice({ kind: 'err', text: e?.code === 'auth/credential-already-in-use'
                                             ? 'This Google account already has a member record — WhatsApp BowlMama to merge the two.'
-                                            : 'Linking did not complete — you can retry later (your order is unaffected).');
+                                            : 'Linking did not complete — you can retry later (your order is unaffected).' });
                                     }
                                 }}
                                 className="mt-3 w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors"
                             >
                                 🔗 Link Google to save your order history
                             </button>
+                        )}
+                        {linkNotice && (
+                            <p className={`mt-2 px-3 py-2 rounded-lg text-[11px] font-bold leading-relaxed text-left ${linkNotice.kind === 'ok'
+                                ? 'bg-green-50 border border-green-200 text-green-800'
+                                : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                                {linkNotice.text}
+                            </p>
                         )}
                         {/* Meal voucher upsell — subtle, below the confirmation info */}
                         <Link
@@ -475,6 +489,48 @@ export default function EnglishHome() {
                             Love BowlMama&apos;s food? <span className="text-[#FF6B35]">Voucher bundles save you more →</span>
                         </Link>
                         <button onClick={() => setFpxSuccess(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">OK</button>
+                    </div>
+                </div>
+            )}
+
+            {/* FPX failure modal — symmetric to the success one above. Mirrors
+                src/app/page.tsx; the payment ID is copyable and one tap sends it
+                to BowlMama, which a system alert() could never do. */}
+            {fpxError && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxError(null)}>
+                    <div className="bg-white rounded-3xl p-7 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle size={36} className="text-red-500" />
+                        </div>
+                        <h3 className="text-xl font-black text-[#1A2D23] mb-2">{fpxError.msg}</h3>
+                        {fpxError.paymentId ? (
+                            <>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                                    You may already have been charged. Send the payment ID below to BowlMama and we&apos;ll check right away.
+                                </p>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
+                                    <span className="text-[10px] font-medium text-gray-400 shrink-0">Payment ID</span>
+                                    <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23] text-left">{fpxError.paymentId}</code>
+                                    <button
+                                        type="button"
+                                        onClick={() => { navigator.clipboard?.writeText(fpxError.paymentId!).then(() => { setCopiedPid(true); setTimeout(() => setCopiedPid(false), 2000); }).catch(() => {}); }}
+                                        className="shrink-0 px-2.5 py-1 rounded-lg bg-[#1A2D23] text-white text-[10px] font-bold"
+                                    >
+                                        {copiedPid ? 'Copied' : 'Copy'}
+                                    </button>
+                                </div>
+                                <a
+                                    href={`https://wa.me/60103370197?text=${encodeURIComponent(`Hi BowlMama 🙏 I hit a problem paying for my order:\n${fpxError.msg}\nPayment ID: ${fpxError.paymentId}`)}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
+                                >
+                                    📲 Send this to BowlMama
+                                </a>
+                            </>
+                        ) : (
+                            <p className="text-xs text-gray-500 leading-relaxed">You were not charged. Feel free to order again, or pay with DuitNow QR instead.</p>
+                        )}
+                        <button onClick={() => setFpxError(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">Got it</button>
                     </div>
                 </div>
             )}

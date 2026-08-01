@@ -23,6 +23,7 @@ import { readPendingPromo, clearPendingPromo } from '@/lib/firstOrderPromo';
 import { useCartStore } from '@/store/cartStore';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
+import CartDeliveryInfo from './CartDeliveryInfo';
 import QRPaymentSection from './QRPaymentSection';
 import { CART_DICT } from './dict';
 
@@ -51,19 +52,29 @@ export default function CartDrawer({
     const [orderNote, setOrderNote] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [guestLoading, setGuestLoading] = useState(false);
+    // 资料齐全的客户点「改地址 / 手机」时手动展开内嵌表单。资料不齐时表单
+    // 本来就常驻显示（见下面的 showDeliveryForm 推导），不需要这个开关。
+    const [editingDelivery, setEditingDelivery] = useState(false);
+    const deliveryFormRef = React.useRef<HTMLDivElement | null>(null);
+    // 结账链路的错误统一走这里，取代 alert()。alert 是同步系统弹窗：手机上
+    // 顶着域名前缀、冻结整个页面、里面的支付编号还选不中复制不了 —— 客户
+    // 刚从银行页回来最慌的那一秒吃这个，观感等同诈骗弹窗。
+    const [checkoutError, setCheckoutError] = useState<{ msg: string; paymentId?: string } | null>(null);
+    const [copiedId, setCopiedId] = useState(false);
 
-    // 访客快速下单：静默建匿名账号（零注册），随即打开资料表单补手机+地址
-    // （AuthModal 对已登录用户直接进 profile 视图）。Anonymous provider 未启用
-    // 时优雅回退到 Google 登录。
+    // 访客快速下单：静默建匿名账号（零注册）。建完**不再跳 AuthModal** ——
+    // 收货信息表单就长在购物车里（CartDeliveryInfo），客户全程不离开结账页。
+    // Anonymous provider 未启用时优雅回退到 AuthModal 走 Google 登录。
     const handleGuestCheckout = async () => {
         setGuestLoading(true);
+        setCheckoutError(null);
         try {
             const { signInAsGuest } = await import('@/lib/auth');
             await signInAsGuest();
-            onAuthOpen();
+            // 资料为空 → 下面的 showDeliveryForm 自动为 true，表单就地展开
         } catch (e) {
             console.error('[guest] anonymous sign-in failed:', e);
-            alert(t.guestUnavailable);
+            setCheckoutError({ msg: t.guestUnavailable });
             onAuthOpen();
         } finally {
             setGuestLoading(false);
@@ -105,6 +116,25 @@ export default function CartDrawer({
             setSwitchingAddress('');
         }
     };
+
+    // ── 会员页一键回购的「没加进来的菜」提示 ────────────────────
+    // MemberView 回购时把本周不供应的菜名写进 sessionStorage 再跳首页
+    // (?cart=open)。原来那里是 alert：客户点掉的同一瞬间页面就跳走，根本
+    // 来不及读是哪几道菜。现在挪到购物车里用琥珀条显示，读完即清（不清的话
+    // 刷新一次会重复弹）。
+    const [reorderNotice, setReorderNotice] = useState('');
+    useEffect(() => {
+        if (!isOpen) return;
+        try {
+            const raw = sessionStorage.getItem('incredibowl_reorder_skipped');
+            if (!raw) return;
+            sessionStorage.removeItem('incredibowl_reorder_skipped');
+            const names = JSON.parse(raw);
+            if (Array.isArray(names) && names.length) {
+                setReorderNotice(t.reorderSkipped(names.join(locale === 'en' ? ', ' : '、')));
+            }
+        } catch { /* 无痕模式 / 坏数据 —— 提示丢了也不该影响下单 */ }
+    }, [isOpen]);
 
     // 调价提示只在「购物车被打开过一次之后关闭」时清除 —— 直接按 isOpen=false
     // 清会在客户还没打开购物车前就清掉，等于没提示。
@@ -272,6 +302,15 @@ export default function CartDrawer({
         shortfall: resolveShortfallToFree(distanceKm, userZone, perDelivery.bases[i] ?? 0, customerCreatedAtMs),
     }));
     const isMultiDelivery = deliveryGroups.length > 1;
+    // 缺手机 / 缺地址 / 地址没验过（拿不到档位）→ 表单常驻展开；否则只有点
+    // 「改地址 / 手机」才展开。保存成功后 refreshProfile 会让这里自动收起。
+    const profileIncomplete = !!currentUser && (!userProfile?.phone || !userProfile?.address || !deliveryTier);
+    const showDeliveryForm = !!currentUser && (profileIncomplete || editingDelivery);
+    const scrollToDeliveryForm = () => {
+        setEditingDelivery(true);
+        // 表单可能这一帧才挂上（点「改地址」时），等一帧再滚
+        requestAnimationFrame(() => deliveryFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    };
     // Single-delivery shortfall (existing UX). For multi-delivery we render the
     // per-group breakdown instead.
     const shortfallToFreeDelivery = deliveryBreakdown.length === 1 ? deliveryBreakdown[0].shortfall : 0;
@@ -444,18 +483,18 @@ export default function CartDrawer({
 
         // Guard 1: must be image
         if (!file.type.startsWith('image/')) {
-            alert(t.uploadImageOnly);
+            setCheckoutError({ msg: t.uploadImageOnly });
             return;
         }
         // Guard 2: max 5MB (must match Storage Rules size limit)
         const MAX_BYTES = 5 * 1024 * 1024;
         if (file.size > MAX_BYTES) {
-            alert(t.uploadTooLarge((file.size / 1024 / 1024).toFixed(1)));
+            setCheckoutError({ msg: t.uploadTooLarge((file.size / 1024 / 1024).toFixed(1)) });
             return;
         }
         // Guard 3: must be authenticated (Storage Rules 通常要求 request.auth != null)
         if (!currentUser) {
-            alert(t.loginBeforeUpload);
+            setCheckoutError({ msg: t.loginBeforeUpload });
             return;
         }
 
@@ -477,7 +516,7 @@ export default function CartDrawer({
             else if (code === 'storage/retry-limit-exceeded') msg = t.uploadSlowNetwork;
             else if (code === 'storage/quota-exceeded') msg = t.uploadQuota;
             else if (err?.message) msg = t.uploadFailedWithMsg(err.message);
-            alert(msg);
+            setCheckoutError({ msg });
         }
         setUploading(false);
     };
@@ -557,13 +596,15 @@ export default function CartDrawer({
     };
 
     const handleCheckout = async () => {
+        setCheckoutError(null);
         if (!currentUser) { onAuthOpen(); return; }
-        if (!userProfile?.phone || !userProfile?.address) { onAuthOpen(); return; }
+        // 资料不齐 → 就地展开内嵌表单并滚过去，不再把人送去第二个全屏 modal
+        if (!userProfile?.phone || !userProfile?.address) { scrollToDeliveryForm(); return; }
         if (!isValidMyPhone(userProfile.phone)) {
-            alert(t.invalidPhone); onAuthOpen(); return;
+            setCheckoutError({ msg: t.invalidPhone }); scrollToDeliveryForm(); return;
         }
         if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
-            alert(t.missingDate); return;
+            setCheckoutError({ msg: t.missingDate }); return;
         }
 
         // Voucher-only flow: meal vouchers covered the entire bill (no cash).
@@ -597,13 +638,13 @@ export default function CartDrawer({
                         body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled' }),
                     }).catch(() => {});
                 }
-                alert(err.message || t.placeOrderFailed);
+                setCheckoutError({ msg: err.message || t.placeOrderFailed });
             }
             setSubmitting(false);
             return;
         }
 
-        if (paymentMethod === 'qr' && !receiptUploaded) { alert(t.uploadReceiptFirstAlert); return; }
+        if (paymentMethod === 'qr' && !receiptUploaded) { setCheckoutError({ msg: t.uploadReceiptFirstAlert }); return; }
 
         if (paymentMethod === 'fpx') {
             // Step 1: Submit orders via server-side validated API as 'pending' BEFORE opening payment.
@@ -623,7 +664,7 @@ export default function CartDrawer({
                 // Fire browser-side InitiateCheckout (deduped against CAPI by eventID)
                 trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, checkoutEventId);
             } catch (err: any) {
-                alert(err.message || t.createOrderFailed);
+                setCheckoutError({ msg: err.message || t.createOrderFailed });
                 setSubmitting(false);
                 return;
             }
@@ -667,7 +708,7 @@ export default function CartDrawer({
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { alert(t.verifyFailed); return; }
+                if (!verifyData.verified) { setCheckoutError({ msg: t.verifyFailed, paymentId: paymentResult.razorpay_payment_id }); return; }
                 setSubmitting(true);
                 const payData = {
                     razorpayPaymentId: paymentResult.razorpay_payment_id,
@@ -708,7 +749,7 @@ export default function CartDrawer({
                 }).catch(() => {});
                 localStorage.removeItem('fpx_pending_order');
                 if (err.message !== t.paymentCancelled) {
-                    alert(err.message || t.payFailed);
+                    setCheckoutError({ msg: err.message || t.payFailed });
                 }
             }
             setSubmitting(false);
@@ -724,7 +765,7 @@ export default function CartDrawer({
             const result = await submitOrderViaAPI();
             trackPixel('InitiateCheckout', { value: finalTotal, currency: 'MYR' }, result.checkoutEventId);
             showOrderSuccess(result.isMultiPart ? result.groupId! : result.orderIds[0], result.trackInfo);
-        } catch (error: any) { alert(t.qrSubmitFailed(error.message)); }
+        } catch (error: any) { setCheckoutError({ msg: t.qrSubmitFailed(error.message) }); }
         setSubmitting(false);
     };
 
@@ -777,8 +818,14 @@ export default function CartDrawer({
                             <p className="text-xs font-bold text-amber-800 leading-relaxed">{staleNotice}</p>
                         </div>
                     )}
+                    {reorderNotice && (
+                        <div className="mx-6 mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                            <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                            <p className="text-xs font-bold text-amber-800 leading-relaxed">{reorderNotice}</p>
+                        </div>
+                    )}
                     {/* Delivery address */}
-                    {cart.length > 0 && (
+                    {cart.length > 0 && !showDeliveryForm && (
                         <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] shrink-0">
                             <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50 text-xs font-bold text-[#1A2D23]">
                                 <span className="text-gray-500 font-medium shrink-0">{t.deliveryAddress}</span>
@@ -786,6 +833,12 @@ export default function CartDrawer({
                                     {userProfile?.address || <span className="text-red-500">{t.addressMissing}</span>}
                                 </span>
                             </p>
+                            {currentUser && (
+                                <button type="button" onClick={() => setEditingDelivery(true)}
+                                    className="mt-1.5 text-[11px] font-bold text-[#FF6B35] hover:text-[#E95D31] transition-colors">
+                                    {t.editDeliveryInfo} →
+                                </button>
+                            )}
                             {/* 地址簿快速切换：注册会员存了 ≥2 个地址才显示。切换 =
                                 整包复制到顶层字段（含 verifiedText，防换址检查照过），
                                 refreshProfile 后运费/免运门槛自动按新距离重算。 */}
@@ -806,6 +859,21 @@ export default function CartDrawer({
                                     })}
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* 收货信息内嵌表单 —— 取代「关掉购物车 → 开 AuthModal → 填 →
+                        关掉 → 回购物车」的往返（6 步 → 4 步）。资料不齐时常驻展开，
+                        齐了则收成上面那行摘要 +「改地址 / 手机」。 */}
+                    {cart.length > 0 && showDeliveryForm && currentUser && (
+                        <div ref={deliveryFormRef}>
+                            <CartDeliveryInfo
+                                currentUser={currentUser}
+                                userProfile={userProfile}
+                                locale={locale}
+                                onSaved={async () => { await refreshProfile(); setEditingDelivery(false); }}
+                                onCancel={profileIncomplete ? undefined : () => setEditingDelivery(false)}
+                            />
                         </div>
                     )}
 
@@ -1142,15 +1210,39 @@ export default function CartDrawer({
                                 </button>
                             </div>
                         )}
-                        {currentUser && (!userProfile?.phone || !userProfile?.address) && (
-                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
-                                <AlertCircle size={14} /> {t.fillPhoneAddress}
+                        {/* 资料不齐 → 表单已经在上面展开了，这里只提示往上看，
+                            不再把人送去第二个全屏 modal。 */}
+                        {profileIncomplete && (
+                            <button onClick={scrollToDeliveryForm} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
+                                <AlertCircle size={14} /> {(!userProfile?.phone || !userProfile?.address) ? t.fillPhoneAddress : t.confirmAddress} ↑
                             </button>
                         )}
-                        {currentUser && userProfile?.address && !deliveryTier && (
-                            <button onClick={onAuthOpen} className="w-full py-2.5 bg-[#FFF3E0] text-[#E65100] rounded-xl flex items-center justify-center gap-2 font-bold text-xs border border-[#FFE0B2]">
-                                <AlertCircle size={14} /> {t.confirmAddress}
-                            </button>
+                        {/* 结账错误内联提示（取代 alert）。支付编号可一键复制 +
+                            一键发给碗妈 —— alert 里的编号客户根本选不中。 */}
+                        {checkoutError && (
+                            <div className="px-3.5 py-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
+                                <p className="text-xs font-bold text-red-700 flex items-start gap-1.5">
+                                    <AlertCircle size={13} className="mt-0.5 shrink-0" /> {checkoutError.msg}
+                                </p>
+                                {checkoutError.paymentId && (
+                                    <>
+                                        <div className="flex items-center gap-2 bg-white border border-red-200 rounded-lg px-2.5 py-1.5">
+                                            <span className="text-[10px] font-medium text-gray-400 shrink-0">{t.paymentIdLabel}</span>
+                                            <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23]">{checkoutError.paymentId}</code>
+                                            <button type="button"
+                                                onClick={() => { navigator.clipboard?.writeText(checkoutError.paymentId!).then(() => { setCopiedId(true); setTimeout(() => setCopiedId(false), 2000); }).catch(() => {}); }}
+                                                className="shrink-0 px-2 py-0.5 rounded-md bg-[#1A2D23] text-white text-[10px] font-bold">
+                                                {copiedId ? t.copied : t.copyId}
+                                            </button>
+                                        </div>
+                                        <a href={`https://wa.me/60103370197?text=${encodeURIComponent(`${checkoutError.msg}\n${t.paymentIdLabel}: ${checkoutError.paymentId}`)}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="block w-full py-2 bg-[#25D366] text-white rounded-lg text-center text-[11px] font-bold">
+                                            {t.waAskBowlMama}
+                                        </a>
+                                    </>
+                                )}
+                            </div>
                         )}
                         <div className="flex justify-between items-baseline">
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</span>

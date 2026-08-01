@@ -62,6 +62,9 @@ export default function AuthProfileView({
         : [];
     const [addressLabel, setAddressLabel] = useState('');
     const [linkingGoogle, setLinkingGoogle] = useState(false);
+    // 绑定 Google 的结果提示（替代 alert：手机上 alert 顶着域名前缀、冻结页面、
+    // 文字选不中）。本地 state，不动 props 里的 message 契约（那是 AuthModal 的）。
+    const [linkNotice, setLinkNotice] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
     // 访客「怎么称呼」（选填）：匿名账号 displayName 默认 "Guest"，订单/Dashboard
     // 上全是 Guest 认不出人。填了就存进 users.displayName，下单时带进 userName。
     const [guestName, setGuestName] = useState('');
@@ -70,18 +73,28 @@ export default function AuthProfileView({
     // 这里是错过后的常驻自助入口（买餐券也必须真账号）。
     const handleLinkGoogle = async () => {
         setLinkingGoogle(true);
+        setLinkNotice(null);
         try {
             const { linkGuestToGoogle } = await import('@/lib/auth');
             await linkGuestToGoogle();
-            alert(t.linkSuccess);
+            setLinkNotice({ kind: 'success', text: t.linkSuccess });
             await onReloadProfile();
         } catch (e: any) {
-            alert(e?.code === 'auth/credential-already-in-use'
-                ? t.linkInUse
-                : t.linkFailed);
+            setLinkNotice({
+                kind: 'error',
+                text: e?.code === 'auth/credential-already-in-use' ? t.linkInUse : t.linkFailed,
+            });
         }
         setLinkingGoogle(false);
     };
+
+    // 成功提示 4 秒后自撤；失败提示常驻不自动消失（客户要时间读，
+    // linkInUse 那条还要他去 WhatsApp 碗妈）。
+    useEffect(() => {
+        if (linkNotice?.kind !== 'success') return;
+        const timer = setTimeout(() => setLinkNotice(null), 4000);
+        return () => clearTimeout(timer);
+    }, [linkNotice]);
 
     // 「+ 新增地址」：清空地址进编辑模式，走既有的 geocode 验证 + 保存流程，
     // 保存成功即成为当前地址并自动收编进地址簿（AuthModal.handleUpdateProfile）。
@@ -235,6 +248,18 @@ export default function AuthProfileView({
                     </button>
                 </div>
             )}
+
+            {/* 绑定结果提示：故意放在访客卡「外面」—— 绑定成功后 isAnonymous 变 false，
+                整张访客卡会消失，提示挂在卡内就跟着一起没了，客户看不到结果。 */}
+            {linkNotice && (linkNotice.kind === 'success' ? (
+                <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-xs font-bold text-green-800 flex items-start gap-1.5">
+                    <CheckCircle size={12} className="mt-0.5 shrink-0" /> {linkNotice.text}
+                </div>
+            ) : (
+                <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5">
+                    <AlertCircle size={12} className="mt-0.5 shrink-0" /> {linkNotice.text}
+                </div>
+            ))}
 
             {/* Order summary (replaces the legacy points dashboard) */}
             {profileData === null ? (

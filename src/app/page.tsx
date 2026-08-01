@@ -29,7 +29,7 @@ import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { useAuth } from '@/context/AuthContext';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -48,6 +48,16 @@ export default function V4BentoLayout() {
         trackInfo?: { token: string; date: string; time: string }[];
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
+    // FPX 回跳失败的页内弹窗，取代 alert()。
+    //
+    // 这三条是全站最伤的 alert：客户刚从银行 App 转完钱、心里最紧张的那一秒，
+    // 吃到一个顶着「www.incredibowl.my 显示：」的系统灰框，还要他**手抄**里面
+    // 那串支付编号 —— 系统弹窗里的文字选不中、复制不了。现在给可一键复制的
+    // 编号 + 一键把编号发给碗妈的按钮。
+    const [fpxError, setFpxError] = useState<{ msg: string; paymentId?: string } | null>(null);
+    const [copiedPid, setCopiedPid] = useState(false);
+    // 访客绑定 Google 的结果提示（原来也是 alert）
+    const [linkNotice, setLinkNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
     // Live per-dish stock for limited dishes (e.g. petai) → menu「仅剩 X / 售罄」.
     useEffect(() => {
@@ -105,7 +115,7 @@ export default function V4BentoLayout() {
             url.searchParams.delete('fpx_error');
             window.history.replaceState({}, '', url.toString());
             cancelPending();
-            alert('FPX 支付未能完成，请重试或选择其他方式。');
+            setFpxError({ msg: 'FPX 支付未能完成，请重试或选择其他方式。' });
             return;
         }
 
@@ -154,7 +164,7 @@ export default function V4BentoLayout() {
                     .then(r => r.json())
                     .then(async (verifyData) => {
                         if (!verifyData.verified) {
-                            alert('支付验证失败，请联系客服并提供支付编号：' + pid);
+                            setFpxError({ msg: '支付验证失败，请联系碗妈处理。', paymentId: pid });
                             return;
                         }
                         const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
@@ -195,7 +205,7 @@ export default function V4BentoLayout() {
                     })
                     .catch((err) => {
                         console.error('FPX order confirmation failed:', err);
-                        alert('订单确认失败，请联系客服并提供支付编号：' + pid);
+                        setFpxError({ msg: '订单确认失败，请联系碗妈处理。', paymentId: pid });
                     });
             } catch (e) {
                 console.error('FPX pending order parse error:', e);
@@ -470,17 +480,24 @@ export default function V4BentoLayout() {
                                     try {
                                         const { linkGuestToGoogle } = await import('@/lib/auth');
                                         await linkGuestToGoogle();
-                                        alert('✅ 已绑定 Google！订单记录已保存，下次可一键回购');
+                                        setLinkNotice({ kind: 'ok', text: '✅ 已绑定 Google！订单记录已保存，下次可一键回购' });
                                     } catch (e: any) {
-                                        alert(e?.code === 'auth/credential-already-in-use'
+                                        setLinkNotice({ kind: 'err', text: e?.code === 'auth/credential-already-in-use'
                                             ? '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理'
-                                            : '绑定未完成，可稍后再试（订单不受影响）');
+                                            : '绑定未完成，可稍后再试（订单不受影响）' });
                                     }
                                 }}
                                 className="mt-3 w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors"
                             >
                                 🔗 绑定 Google 保存订单记录（下次一键回购）
                             </button>
+                        )}
+                        {linkNotice && (
+                            <p className={`mt-2 px-3 py-2 rounded-lg text-[11px] font-bold leading-relaxed text-left ${linkNotice.kind === 'ok'
+                                ? 'bg-green-50 border border-green-200 text-green-800'
+                                : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                                {linkNotice.text}
+                            </p>
                         )}
                         {/* Meal voucher upsell — subtle, below the confirmation info */}
                         <Link
@@ -490,6 +507,48 @@ export default function V4BentoLayout() {
                             喜欢碗妈的菜？<span className="text-[#FF6B35]">餐券包更划算 →</span>
                         </Link>
                         <button onClick={() => setFpxSuccess(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
+                    </div>
+                </div>
+            )}
+
+            {/* FPX 失败弹窗 —— 与上面的成功弹窗对称。取代三条 alert：
+                客户刚从银行页回来最慌的那一秒，不该吃一个顶着域名前缀、
+                文字还选不中的系统灰框。支付编号可一键复制 + 一键发给碗妈。 */}
+            {fpxError && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxError(null)}>
+                    <div className="bg-white rounded-3xl p-7 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle size={36} className="text-red-500" />
+                        </div>
+                        <h3 className="text-xl font-black text-[#1A2D23] mb-2">{fpxError.msg}</h3>
+                        {fpxError.paymentId ? (
+                            <>
+                                <p className="text-xs text-gray-500 leading-relaxed mb-3">
+                                    钱可能已经扣了。把下面的支付编号发给碗妈，我们马上帮你查。
+                                </p>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
+                                    <span className="text-[10px] font-medium text-gray-400 shrink-0">支付编号</span>
+                                    <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23] text-left">{fpxError.paymentId}</code>
+                                    <button
+                                        type="button"
+                                        onClick={() => { navigator.clipboard?.writeText(fpxError.paymentId!).then(() => { setCopiedPid(true); setTimeout(() => setCopiedPid(false), 2000); }).catch(() => {}); }}
+                                        className="shrink-0 px-2.5 py-1 rounded-lg bg-[#1A2D23] text-white text-[10px] font-bold"
+                                    >
+                                        {copiedPid ? '已复制' : '复制'}
+                                    </button>
+                                </div>
+                                <a
+                                    href={`https://wa.me/60103370197?text=${encodeURIComponent(`你好碗妈 🙏 我刚下单付款出了问题：\n${fpxError.msg}\n支付编号：${fpxError.paymentId}`)}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
+                                >
+                                    📲 把这条发给碗妈处理
+                                </a>
+                            </>
+                        ) : (
+                            <p className="text-xs text-gray-500 leading-relaxed">没有扣款。可以重新下单，或换 DuitNow QR 付款。</p>
+                        )}
+                        <button onClick={() => setFpxError(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">知道了</button>
                     </div>
                 </div>
             )}

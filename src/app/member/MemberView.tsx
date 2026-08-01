@@ -94,6 +94,9 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [editPhone, setEditPhone] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [saving, setSaving] = useState(false);
+    // 表单级提示（资料不全 / 保存失败）：单 state 承接所有分支，贴「确认保存」按钮内联显示。
+    // 取代原来的 alert —— 手机上 alert 顶着域名前缀、冻结整页、文字还选不中。
+    const [formError, setFormError] = useState('');
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeResult, setGeocodeResult] = useState<{ lat: number; lng: number; distanceKm: number; zone: DeliveryZone; formattedAddress: string; partialMatch: boolean } | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
@@ -165,6 +168,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
             setGeocodeResult(null);
             setGeocodeError('');
             setVerifiedFor('');
+            setFormError('');
         }
     }, [isEditing]);
 
@@ -259,7 +263,11 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
     const handleUpdateProfile = async () => {
         if (!currentUser) return;
-        if (!editName || !editPhone || !editAddress) return alert(t.fillAllFields);
+        setFormError(''); // 每次点保存先清掉上一轮的提示
+        if (!editName || !editPhone || !editAddress) {
+            setFormError(t.fillAllFields);
+            return;
+        }
         if (needsGeocode) {
             setGeocodeError(t.confirmAddressFirst);
             return;
@@ -316,7 +324,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
             setIsEditing(false);
         } catch (error) {
             console.error('[member] profile save failed:', error);
-            alert(t.saveFailed);
+            setFormError(t.saveFailed);
         }
         setSaving(false);
     };
@@ -406,7 +414,14 @@ export default function MemberView({ locale }: { locale: Locale }) {
             return;
         }
         if (skipped.length > 0) {
-            alert(t.reorderSkipped(skipped.join(locale === 'en' ? ', ' : '、')));
+            // 原来这里弹 alert 列出没加进购物车的菜，客户点掉后立刻跳首页 —— 根本来不及读。
+            // 改成把名单交接给下一页：写 sessionStorage，由首页购物车抽屉内联展示。
+            // sessionStorage 在无痕/被禁用时会抛错，绝不能挡住跳转。
+            try {
+                sessionStorage.setItem('incredibowl_reorder_skipped', JSON.stringify(skipped));
+            } catch {
+                // 存不进就只跳转，退化成「静默不提示」，不影响下单
+            }
         }
         window.location.href = `${homeHref}?cart=open`;
     };
@@ -874,6 +889,13 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                         )}
                                     </div>
                                 </div>
+                                {/* 贴着「确认保存」按钮 —— 客户点完按钮视线就在这里；
+                                    不自动消失，留时间读完（尤其保存失败要能重试） */}
+                                {formError && (
+                                    <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5">
+                                        <AlertCircle size={12} className="mt-0.5 shrink-0" /> {formError}
+                                    </div>
+                                )}
                                 <button
                                     onClick={handleUpdateProfile}
                                     disabled={saving || needsGeocode}

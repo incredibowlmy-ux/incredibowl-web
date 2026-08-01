@@ -13,6 +13,10 @@ interface CartDrawerDict {
     staleRemoved: (n: number) => string;
     /** 菜已暂别 / 改排期 / 当天停售 —— 与 staleRemoved（日期过期）分开提示。 */
     unavailableRemoved: (n: number) => string;
+    /** 会员页一键回购时本周不供应的菜 —— 原来是 alert，客户点掉后立刻跳页，
+        根本来不及读是哪几道。现在 MemberView 写进 sessionStorage，购物车打开时
+        用琥珀条显示。文案与 src/app/member/dict.ts 的 reorderSkipped 逐字一致。 */
+    reorderSkipped: (names: string) => string;
     /** 购物车里的旧价已按最新菜单刷新（不是移除，只是改价，必须让客户看见）。 */
     repricedNotice: (lines: string) => string;
     emptyTitle: string;
@@ -66,6 +70,38 @@ interface CartDrawerDict {
     guestEntering: string;
     haveAccount: string;
     fillPhoneAddress: string;
+    /** ── 收货信息内嵌表单（6 步 → 4 步，不再跳第二个全屏 modal）── */
+    deliveryInfoTitle: string;
+    deliveryInfoSub: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    phoneLabel: string;
+    phonePlaceholder: string;
+    addressLabel: string;
+    addressPlaceholder: string;
+    addressLabelPlaceholder: string;
+    useMyLocation: string;
+    locating: string;
+    locateUnsupported: string;
+    locateDenied: string;
+    locateFailed: string;
+    locateFilled: string;
+    verifyAndSave: string;
+    verifyingAddress: string;
+    savingProfile: string;
+    profileSaved: string;
+    addressMin: string;
+    phoneInvalidInline: string;
+    geocodeFailed: string;
+    networkError: string;
+    editDeliveryInfo: string;
+    tierLine: (label: string, km: number) => string;
+    /** ── 结账错误内联提示（取代 alert）── */
+    checkoutErrorTitle: string;
+    paymentIdLabel: string;
+    copyId: string;
+    copied: string;
+    waAskBowlMama: string;
     confirmAddress: string;
     submitting: string;
     choosePayment: string;
@@ -164,6 +200,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             switching: '切换中…',
             staleRemoved: (n) => `已自动移除 ${n} 个过期项目（截单已过），请重新加入今日菜单`,
             unavailableRemoved: (n) => `已自动移除 ${n} 个当日不供应的菜品（暂别或换了供应日），请从菜单重新选`,
+            reorderSkipped: (names) => `已把还在本周菜单上的菜加进购物车；以下菜品本周暂不供应，未能加入：${names}`,
             repricedNotice: (lines) => `菜单价格有更新，购物车已按最新价格同步：${lines}`,
             emptyTitle: '碗妈的锅已经热好了 🍳',
             emptySubtitle: '快去选一道今天心仪的家常菜吧！',
@@ -215,6 +252,36 @@ export const CART_DICT: Record<Locale, CartDict> = {
             guestEntering: '进入访客模式…',
             haveAccount: '已有账号？登录可查订单 / 用餐券 →',
             fillPhoneAddress: '请先补充手机号和地址',
+            deliveryInfoTitle: '收货信息',
+            deliveryInfoSub: '填一次，之后下单都不用再填',
+            nameLabel: '怎么称呼（选填）',
+            namePlaceholder: '例：陈小姐',
+            phoneLabel: '手机号码 *',
+            phonePlaceholder: '例: 012-345 6789',
+            addressLabel: '配送地址 *',
+            addressPlaceholder: '例: Pearl Suria, Block B-12-3, Jalan 1/116B, 58200 KL',
+            addressLabelPlaceholder: '备注（选填）如：家 / 公司',
+            useMyLocation: '📍 用我的当前位置',
+            locating: '定位中…',
+            locateUnsupported: '这个浏览器不支持定位，请手动输入地址',
+            locateDenied: '定位被拒绝。请在浏览器允许位置权限，或手动输入地址',
+            locateFailed: '定位失败，请手动输入地址',
+            locateFilled: '已填入定位地址，请补上单位/门牌号再保存',
+            verifyAndSave: '📍 验证地址并保存',
+            verifyingAddress: '验证地址中…',
+            savingProfile: '保存中…',
+            profileSaved: '✅ 收货信息已保存',
+            addressMin: '请填写完整地址（至少 10 个字符）',
+            phoneInvalidInline: '手机号码格式不正确，例: 012-345 6789',
+            geocodeFailed: '地址验证失败',
+            networkError: '网络错误，请重试',
+            editDeliveryInfo: '改地址 / 手机',
+            tierLine: (label, km) => `${label} · 距 Pearl Point ${km}km`,
+            checkoutErrorTitle: '下单没成功',
+            paymentIdLabel: '支付编号',
+            copyId: '复制',
+            copied: '已复制',
+            waAskBowlMama: '📲 把这条发给碗妈处理',
             confirmAddress: '请进入个人资料确认配送地址（验证配送范围）',
             submitting: '提交中...',
             choosePayment: '请先选择付款方式 👆',
@@ -299,6 +366,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             switching: 'Switching…',
             staleRemoved: (n) => `Removed ${n} expired item(s) — the order cutoff has passed. Please re-add from today's menu`,
             unavailableRemoved: (n) => `Removed ${n} item(s) not served on that date (paused or moved to another day). Please pick again from the menu`,
+            reorderSkipped: (names) => `Added the dishes still on this week's menu to your cart. Not available this week (skipped): ${names}`,
             repricedNotice: (lines) => `Menu prices have changed — your cart has been updated to the current price: ${lines}`,
             emptyTitle: "BowlMama's wok is already hot 🍳",
             emptySubtitle: 'Go pick a home-cooked dish you fancy today!',
@@ -350,6 +418,36 @@ export const CART_DICT: Record<Locale, CartDict> = {
             guestEntering: 'Entering guest mode…',
             haveAccount: 'Have an account? Sign in for orders / vouchers →',
             fillPhoneAddress: 'Please add your phone number and address first',
+            deliveryInfoTitle: 'Delivery details',
+            deliveryInfoSub: 'Fill this in once — future orders skip it',
+            nameLabel: 'Your name (optional)',
+            namePlaceholder: 'e.g. Ms Tan',
+            phoneLabel: 'Mobile number *',
+            phonePlaceholder: 'e.g. 012-345 6789',
+            addressLabel: 'Delivery address *',
+            addressPlaceholder: 'e.g. Pearl Suria, Block B-12-3, Jalan 1/116B, 58200 KL',
+            addressLabelPlaceholder: 'Label (optional), e.g. Home / Office',
+            useMyLocation: '📍 Use my current location',
+            locating: 'Locating…',
+            locateUnsupported: 'This browser does not support location — please type your address',
+            locateDenied: 'Location permission denied. Allow it in your browser, or type your address',
+            locateFailed: 'Could not get your location — please type your address',
+            locateFilled: 'Filled in from your location — add your unit/floor number before saving',
+            verifyAndSave: '📍 Verify address & save',
+            verifyingAddress: 'Verifying address…',
+            savingProfile: 'Saving…',
+            profileSaved: '✅ Delivery details saved',
+            addressMin: 'Please enter your full address (at least 10 characters)',
+            phoneInvalidInline: 'Invalid mobile number, e.g. 012-345 6789',
+            geocodeFailed: 'Address verification failed',
+            networkError: 'Network error, please try again',
+            editDeliveryInfo: 'Edit address / phone',
+            tierLine: (label, km) => `${label} · ${km}km from Pearl Point`,
+            checkoutErrorTitle: "Order didn't go through",
+            paymentIdLabel: 'Payment ID',
+            copyId: 'Copy',
+            copied: 'Copied',
+            waAskBowlMama: '📲 Send this to BowlMama',
             confirmAddress: 'Please open your profile to confirm the delivery address (coverage check)',
             submitting: 'Submitting...',
             choosePayment: 'Choose a payment method first 👆',

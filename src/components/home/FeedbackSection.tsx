@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { MessageCircle, Plus, X, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MessageCircle, Plus, X, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
@@ -75,9 +75,25 @@ export default function FeedbackSection() {
     const [feedbackName, setFeedbackName] = useState('');
     const [feedbackText, setFeedbackText] = useState('');
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    // 用单个 state 承接成功/失败两种内联提示，取代 alert（alert 会冻结页面、
+    // 手机上顶着域名前缀像诈骗弹窗、文字还选不中）
+    const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    // 成功后延迟关窗的定时器；手动关窗或组件卸载时必须清掉，否则会在关掉的弹窗上继续 setState
+    const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => () => { if (successTimerRef.current) clearTimeout(successTimerRef.current); }, []);
     // Defer relative-time computation to client-side to avoid SSR/CSR mismatch
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
+
+    // 关窗统一入口：顺带清提示 + 清定时器，避免下次打开还留着上次的提示
+    const closeFeedbackModal = () => {
+        if (successTimerRef.current) {
+            clearTimeout(successTimerRef.current);
+            successTimerRef.current = null;
+        }
+        setFeedbackMessage(null);
+        setIsFeedbackModalOpen(false);
+    };
 
     useEffect(() => {
         getApprovedFeedbacks()
@@ -96,15 +112,23 @@ export default function FeedbackSection() {
         e.preventDefault();
         if (!feedbackName.trim() || !feedbackText.trim()) return;
         setFeedbackSubmitting(true);
+        setFeedbackMessage(null);
         try {
             await submitFeedback(feedbackName, feedbackText);
-            alert("留言提交成功！感谢您的真实反馈。");
-            setFeedbackName('');
-            setFeedbackText('');
-            setIsFeedbackModalOpen(false);
+            // 成功提示先留在弹窗里让客户看到，2.5 秒后再清表单关窗
+            // （alert 时代是先弹窗后关窗；现在关窗必须放到提示读完之后，否则提示看不见）
+            setFeedbackMessage({ type: 'success', text: '留言提交成功！感谢您的真实反馈。' });
+            successTimerRef.current = setTimeout(() => {
+                successTimerRef.current = null;
+                setFeedbackName('');
+                setFeedbackText('');
+                setFeedbackMessage(null);
+                setIsFeedbackModalOpen(false);
+            }, 2500);
         } catch (error) {
             console.error("Feedback submit error", error);
-            alert("提交失败，请重试。");
+            // 失败提示常驻不自动消失，也不关窗，客户读完可直接重试
+            setFeedbackMessage({ type: 'error', text: '提交失败，请重试。' });
         } finally {
             setFeedbackSubmitting(false);
         }
@@ -247,7 +271,7 @@ export default function FeedbackSection() {
                                     <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
                                 </a>
                                 <button
-                                    onClick={() => setIsFeedbackModalOpen(true)}
+                                    onClick={() => { setFeedbackMessage(null); setIsFeedbackModalOpen(true); }}
                                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
                                 >
                                     <Plus size={16} /> 写下您的留言
@@ -287,10 +311,10 @@ export default function FeedbackSection() {
             {/* Feedback Modal */}
             {isFeedbackModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={() => setIsFeedbackModalOpen(false)}></div>
+                    <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={closeFeedbackModal}></div>
                     <div className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-6 md:p-8 border-b border-[#E3EADA]">
-                            <button onClick={() => setIsFeedbackModalOpen(false)} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={closeFeedbackModal} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <X size={20} />
                             </button>
                             <h3 className="text-2xl font-black text-[#1A2D23] pr-12">留下真实评价</h3>
@@ -320,7 +344,23 @@ export default function FeedbackSection() {
                                         required
                                     ></textarea>
                                 </div>
-                                <button disabled={feedbackSubmitting} type="submit" className="w-full py-4 mt-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
+                                {/* 内联提示紧贴提交按钮上方，客户点完按钮视线就在这 */}
+                                {feedbackMessage && (
+                                    <div
+                                        role="status"
+                                        aria-live="polite"
+                                        className={feedbackMessage.type === 'success'
+                                            ? 'px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-xs font-bold text-green-800 flex items-start gap-1.5'
+                                            : 'px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-xs font-bold text-red-700 flex items-start gap-1.5'}
+                                    >
+                                        {feedbackMessage.type === 'success'
+                                            ? <CheckCircle size={12} className="mt-0.5 shrink-0" />
+                                            : <AlertCircle size={12} className="mt-0.5 shrink-0" />}
+                                        {feedbackMessage.text}
+                                    </div>
+                                )}
+                                {/* 成功后弹窗还会停 2.5 秒，此时禁用按钮防止重复提交（alert 时代靠阻塞天然挡住） */}
+                                <button disabled={feedbackSubmitting || feedbackMessage?.type === 'success'} type="submit" className="w-full py-4 mt-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
                                     {feedbackSubmitting ? '提交中...' : '提交留言'}
                                 </button>
                             </form>
