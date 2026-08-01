@@ -59,10 +59,12 @@ function loadState() {
 async function sendTelegram(text) {
   if (!fs.existsSync(TELEGRAM_CONFIG)) { console.log('（无 telegram-config.json，跳过通知）'); return; }
   const { botToken, chatId } = JSON.parse(fs.readFileSync(TELEGRAM_CONFIG, 'utf-8'));
+  // Telegram 硬上限 4096 字，超了整条发不出去 → 宁可截断也要送达
+  const body = text.length > 4000 ? `${text.slice(0, 4000)}\n…（已截断，明细见 tasks/logs/meta-cron.log）` : text;
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+    body: JSON.stringify({ chat_id: chatId, text: body, parse_mode: 'HTML' }),
   });
   if (!res.ok) console.error('✗ Telegram 通知失败:', await res.text());
 }
@@ -223,9 +225,17 @@ async function cmdSend({ dry, test, cron }) {
   console.log(`\n✓ 生产发送完成: ${received} 笔已入 Meta · 状态文件更新至 ${state.uploadedOrderIds.length} 个 ID`);
 
   if (cron) {
-    const lines = rows.map((r) => `• ${new Date(r.time_ms).toISOString().slice(5, 10)} RM ${r.value.toFixed(2)} ${r.name}`).join('\n');
+    // 只报重点：明细看 tasks/logs/meta-cron.log（逐笔上百行会撞 Telegram 4096 字上限）
+    const orderN = rows.filter((r) => r.order_id.startsWith('ORDER_')).length;
+    const days = rows.map((r) => new Date(r.time_ms).toISOString().slice(5, 10)).sort();
     const flagText = flagged.length ? `\n\n⚠ 待确认:\n${flagged.map((f) => `• ${f}`).join('\n')}` : '';
-    await sendTelegram(`📊 <b>Meta 周报（CAPI 直推）</b>\n已上传 ${received} 笔 · RM ${rows.reduce((s, r) => s + r.value, 0).toFixed(2)}\n\n${lines}${flagText}`);
+    await sendTelegram(
+      `📊 <b>Meta 周报（CAPI 直推）</b>\n`
+      + `已上传 ${received} 笔 · RM ${rows.reduce((s, r) => s + r.value, 0).toFixed(2)}\n`
+      + `手动单 ${orderN} · 餐券 ${rows.length - orderN}\n`
+      + `事件日期 ${days[0]} ~ ${days[days.length - 1]}\n`
+      + `状态文件累计 ${state.uploadedOrderIds.length} 个 ID${flagText}`,
+    );
   }
 }
 

@@ -43,6 +43,12 @@ next-env.d.ts
 # cron logs (Task Scheduler jobs)
 /tasks/logs/
 
+# Meta CAPI 上传状态（运行时可变状态，不是源码）
+# 曾被 git 跟踪：每周 cron 改它但没人 commit，一次 git checkout 就打回旧基线
+# → 增量脚本重扫整批重发（2026-07-31 实测重发 93 笔，靠 event_id 去重才没重复计数）
+/tasks/meta-uploaded-events.json
+/tasks/meta-uploaded-events.backup-*.json
+
 # build artifact: WebP→JPEG renditions for the Meta catalogue feed
 # (regenerated every build by scripts/generate-meta-jpgs.mjs via prebuild)
 /public/meta-jpg/
