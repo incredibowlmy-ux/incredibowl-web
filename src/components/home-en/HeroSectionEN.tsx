@@ -41,7 +41,9 @@ export default function HeroSectionEN() {
                 <div className="absolute inset-0 pointer-events-none">
                     {HERO_BG && (
                         <div className="absolute inset-0">
-                            <Image src={HERO_BG} alt="" fill sizes="60vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority />
+                            {/* sizes 必须如实描述渲染宽度 —— 详见 home/HeroSection.tsx 的注释。
+                                lg 以下容器满宽，钉死 60vw 会让 preload 抓错档位白下载一张。 */}
+                            <Image src={HERO_BG} alt="" fill sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority />
                         </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] from-30% via-[#E3EADA]/85 via-60% to-[#E3EADA]/40 z-10" />

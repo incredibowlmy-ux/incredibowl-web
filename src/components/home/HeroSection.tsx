@@ -46,10 +46,13 @@ export default function HeroSection() {
                 <div className="absolute inset-0 pointer-events-none">
                     {HERO_BG && (
                         <div className="absolute inset-0">
-                            {/* sizes caps mobile at 60vw too: the image is right-anchored
-                                and 70% of it sits under the scrim, so a full-width fetch
-                                was buying resolution nobody can see. */}
-                            <Image src={HERO_BG} alt="" fill sizes="60vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority />
+                            {/* ⚠️ sizes 必须如实描述元素的渲染宽度，不是「这张图我多想省」。
+                                这个容器在 lg 以下是满宽的（lg:col-span-7 只在 lg+ 生效），
+                                手机上实测渲染 358px ≈ 92vw。之前钉死 60vw 等于谎报：
+                                priority 生成的 preload 按 60vw 抓了 w=256，元素实际用
+                                w=828 → 那张 256w 白下载，console 报 "preloaded but not
+                                used"。想省字节要用 quality / 换图，别拿 sizes 撒谎。 */}
+                            <Image src={HERO_BG} alt="" fill sizes="(min-width: 1024px) 60vw, 100vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority />
                         </div>
                     )}
                     {/* Strong left-side scrim so text area is always readable */}
