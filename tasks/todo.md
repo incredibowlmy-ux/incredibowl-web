@@ -892,3 +892,26 @@ catering×2 / 6 个博客页会继续宣称「满 45 免运」；`/api/check-del
 **顺带发现的既有 bug**：`src/app/admin/subscriptions/page.tsx:188-196` 档位猜测写的是
 `km≤2.5→near / ≤5→mid / else→far`，真实规则是 `≤5→near / ≤7.5→mid / >7.5→far` ——
 2.5–5km 被误标 mid、5–7.5km 被误标 far。只污染订阅模板存的 `deliveryTier` 标签（运费本身手填不受影响）。
+
+---
+
+## 第二批完成：六.1 结账路径 + 六.3 alert + 餐券话术（2026-08-01）
+
+**验证**：`tsc` 0 错 · `npm run build` exit 0 · dogfood 38/0 + 14/14 + 55/55 ·
+无头 Chrome 实测 `/` 与 `/en` 零 console 错误 · 顾客侧 `grep alert(` **0 命中**。
+
+| 项 | 结果 |
+|---|---|
+| **六.1 收货信息内嵌购物车** | 实测点「访客快速下单」→ **AuthModal 完全不弹**，表单原地展开（姓名/手机/地址 + 定位按钮 + 验证并保存）。6 步 → 4 步 |
+| — 写库单一来源 | 抽 `lib/deliveryProfile.saveDeliveryProfile`，AuthModal 与购物车共用；少一个 `addressVerifiedText` 就是防换址校验不过 |
+| — 老客户零影响 | 资料齐全时仍是那行地址摘要 + 地址簿 chips，只多一个「改地址 / 手机」入口 |
+| **记住上次午/晚餐** | 实测：首开不预选 → 点晚餐写 localStorage → 开下一道菜**晚餐已默认选中** ✅ |
+| **六.3 alert → 页内提示** | 42 处全换。blocking-money 13 条最优先（含 FPX 错误 modal，支付编号可复制 + 一键发碗妈）；未引第三方 toast 库 |
+| — 特例 | 会员页一键回购的 skipped 名单改走 sessionStorage，购物车打开时琥珀条显示（原来 alert 点掉即跳页，来不及读） |
+| **餐券话术** | 老板选「只改话术」。新增「1 张券 = 1 道主菜，任意价位都能兑」块，`bestVoucherValue` 从 weeklyMenu 现算（本周 RM 19.90，每份多省 RM 1.40），换菜自动跟上不写死 |
+
+### ⚠️ 踩到的坑（已记进 lessons）
+`pkill -f "next start"` 在 Git Bash / Windows 上**杀不掉** node 进程 —— 旧服务器一直占着
+3131 端口（`EADDRINUSE` 只写进日志没人看），导致「记住时段」验证连续两次假阴性，
+我差点去改没坏的代码。正确姿势：`netstat -ano | grep :PORT | grep LISTENING` 取 PID
+再 `taskkill //PID x //F`，并且**每次重启后 curl 一个本次新增的 chunk 确认 200**。
