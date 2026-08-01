@@ -849,3 +849,46 @@ Plus Jakarta 只管拉丁字符，为几个英文小标题多下 8 个 woff2 与
 
 **记忆修正**：`project_fpx_pending_orphan_gap` 里「仍缺订单付款确认 webhook」是错的 ——
 `/api/payment/webhook` 已于 `5d7dcca`(2026-07-04) 上线并在生产真实投递（10 笔餐券 `finalizedBy='webhook:payment.captured'`）。
+
+---
+
+## 📌 入册待办：运费中间台阶（老板 2026-08-01 拍板「记下来，暂不做」）
+
+**决定**：5–7.5km 加中间台阶这件事**先不做**。真要做时门槛定 **RM 30**，不是提案里的 RM 25。
+
+**老板的理由（成本侧，覆盖我的提案）**：
+> 高峰期配送费会 hike 到 **RM 20**，COGS 约 **RM 10**。篮子 RM 25 的时候等于「没赚到，有时候还亏」。
+> RM 30 把运费砍一半（RM12 → RM6）对我们更安全。
+
+我提 RM 25 的算法是「一碗 18.50 + RM6.5 加料 = 25，客户几乎同价多拿菜」——那是**转化侧**的算法，
+没有把高峰期配送成本波动算进去。老板有真实成本数据，以老板的为准。
+
+**真要做时的完整规格**（调研已挖干净，直接照做即可）：
+
+| 距离 | 现行 | 目标 |
+|---|---|---|
+| 0–2.5 km | RM 3，满 20 免 | 不变 |
+| 2.5–5 km | RM 5，满 30 免 | 不变 |
+| **5–7.5 km** | **RM 12，满 45 免** | **RM 12 → 单趟满 30 降到 RM 6 → 单趟满 45 免运** |
+| 7.5 km+ 四档 | RM 15/20/25/30 固定 | 不变（不给门槛是防凑单骗免运，对） |
+
+⚠️ **门槛是「按配送组」判的，不是按整车**（`calcPerDeliveryFees` 按 `日期+午/晚` 拆组，每组各自判）。
+一个 RM 35 的两天订单 = 两组各 RM 17.50，**两组都够不到 30**，两趟各收 RM 12。老板设门槛时按「单趟」想。
+
+**实现要点**：`thresholdForDistance` 升级成阶梯表 `feeStepsForDistance(km) → [{minBasis,fee}]`；
+`thresholdForDistance` 语义**钉死为「到全免的门槛」并保持 `number|null`**（far 档返回 null 的契约不能被破坏，
+否则 15km 的单凑够钱就白嫖免运）；新增 `nextDeliveryStep(km, basis)` 给 UI。
+
+**40+ 触点**（漏一个就对外报错价）：`deliveryCopy.ts` 的 `DeliveryTierCopy` 接口只有 `fee`+`freeOver`
+**装不下中间台阶**，不扩接口的话 NavBar / Footer×2 / FAQ×2 / DeliveryWidget×2 / **terms 法务页×2** /
+catering×2 / 6 个博客页会继续宣称「满 45 免运」；`/api/check-delivery` 响应契约要加 `steps[]`（有 6 个消费者，
+老字段语义保留做向后兼容）；4 份 mid 卡前端副本；**Dashboard 手写镜像**
+`incredibowl-dashboard.html:12119-12133`（无 import 无类型检查，改完跑 `npm run sync:dashboard`）；
+**n8n bot** `bowlmama-v2-main.json:757` 模板是二元的；`dogfood-wa-order.mts:110` 断言必然失败（好事）。
+
+**部署坑**：浏览器缓存旧 JS 的顾客会撞「运费计算不一致」400 拒收 → **必须低峰期上线 + 隐身窗口 smoke**。
+**手动单/订阅单不吃阶梯**（`deliveryFeePerDelivery` 是手填固定值），加台阶后订阅老客反而比散客贵，要回去调模板。
+
+**顺带发现的既有 bug**：`src/app/admin/subscriptions/page.tsx:188-196` 档位猜测写的是
+`km≤2.5→near / ≤5→mid / else→far`，真实规则是 `≤5→near / ≤7.5→mid / >7.5→far` ——
+2.5–5km 被误标 mid、5–7.5km 被误标 far。只污染订阅模板存的 `deliveryTier` 标签（运费本身手填不受影响）。
