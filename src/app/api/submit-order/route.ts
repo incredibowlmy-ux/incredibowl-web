@@ -42,7 +42,9 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const {
-      userName, userEmail, userPhone, userAddress,
+      // ⚠️ 这三个只作为 user doc 缺字段时的**回落显示值**，不参与计价、不是权威来源。
+      // 收货地址**完全不读请求体** —— 一律取 user doc（见 orderUserAddress）。
+      userName, userEmail, userPhone,
       cartBundles, // Array of { dishId, dishQty, addOns: [{ id, quantity }], price, quantity, selectedDate, selectedTime, note }
       paymentMethod, receiptUploaded, receiptUrl,
       promoCode, promoDiscount: clientPromoDiscount,
@@ -56,9 +58,8 @@ export async function POST(req: Request) {
     const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
 
     // ── Basic validation ──────────────────────────────────────
-    if (!userPhone || !userAddress) {
-      return NextResponse.json({ error: '缺少用户信息' }, { status: 400 });
-    }
+    // 注意：收货地址 / 电话的**权威校验**在下面读完 user doc 之后（见 orderUserAddress）。
+    // 这里不再拿请求体当门槛 —— body 里的这两个字段已经不参与落库了。
     if (!cartBundles || !Array.isArray(cartBundles) || cartBundles.length === 0) {
       return NextResponse.json({ error: '购物车为空' }, { status: 400 });
     }
@@ -291,6 +292,38 @@ export async function POST(req: Request) {
     const userLat = typeof userData.addressLat === 'number' ? userData.addressLat : null;
     const userLng = typeof userData.addressLng === 'number' ? userData.addressLng : null;
 
+    // 🔒 2026-08-02：收货 / 身份字段一律以服务端 user doc 为准，不接受请求体。
+    //
+    // 原来 payload 里的 userAddress 直接来自 body，而运费、免运门槛、25km 上限、
+    // 防换址比对**全部**读 user doc —— 两边不同源。顾客验证一个 1km 内地址拿到
+    // 免运，下单时在 body 里把 userAddress 换成 6km 外的真地址：订单 deliveryFee=0，
+    // 但 Dashboard / 备餐单 / 装碗页 / 路线规划 / Telegram 提醒读的都是 order.userAddress
+    // = 那个 6km 地址，碗妈照着送。连 Firestore 都不用写，改个 JSON 字段就行。
+    //
+    // 地址硬性要求来自 user doc：下面第 ~305 行本来就要求 deliveryZone 已验证，
+    // 而 zone 只由 lib/deliveryProfile.saveDeliveryProfile 写入，它同时写 phone +
+    // address + addressVerifiedText。所以任何**能正常下单**的账号，doc 里必有地址，
+    // 这条不会误伤（含访客：内嵌收货表单走的是同一个函数）。
+    //
+    // ⚠️ 残余风险（本次未修）：address / addressDistanceKm / deliveryZone 仍在
+    // firestore.rules 的 userSafeFields() 白名单里，客户端可自写一套自洽的假值。
+    // 根治要把地址验证挪到服务端 API（安全计划阶段 2.5）。本改动只是把「连 Firestore
+    // 都不用碰」这条更容易的路堵掉。
+    const orderUserAddress = typeof userData.address === 'string' ? userData.address.trim() : '';
+    if (!orderUserAddress) {
+      return NextResponse.json({
+        error: '请先在「个人资料」填写并确认配送地址',
+      }, { status: 400 });
+    }
+    // 姓名 / 邮箱 / 电话：优先服务端，doc 里没有才回落到请求体（这三个不参与计价，
+    // 回落不会造成金额问题；硬拒会挡住 doc 尚未回填这些字段的老账号）。
+    const orderUserName = (typeof userData.displayName === 'string' && userData.displayName.trim())
+      || userName || 'Guest';
+    const orderUserEmail = (typeof userData.email === 'string' && userData.email.trim())
+      || userEmail || '';
+    const orderUserPhone = (typeof userData.phone === 'string' && userData.phone.trim())
+      || userPhone || '';
+
     if (userZone !== 'within2km' && userZone !== 'outside2km') {
       return NextResponse.json({ error: '请先在「个人资料」确认配送地址（验证配送范围）' }, { status: 400 });
     }
@@ -476,7 +509,12 @@ export async function POST(req: Request) {
       const partDeliveryFee = partDeliveryFees[i];
 
       const payload: Record<string, any> = {
-        userId, userName, userEmail, userPhone, userAddress,
+        // 全部取自服务端 user doc（与运费 / 免运门槛 / 25km 上限同源）。
+        userId,
+        userName: orderUserName,
+        userEmail: orderUserEmail,
+        userPhone: orderUserPhone,
+        userAddress: orderUserAddress,
         trackToken: generateTrackToken(),
         items,
         total: finalTotal,
@@ -635,8 +673,10 @@ export async function POST(req: Request) {
       eventId: checkoutEventId,
       eventSourceUrl: ctx.eventSourceUrl,
       userData: {
-        email: userEmail || undefined,
-        phone: userPhone,
+        // 同样用服务端值 —— Meta 匹配质量按 user doc 里的真实资料算，
+        // 而不是客户端这次提交时碰巧填了什么。
+        email: orderUserEmail || undefined,
+        phone: orderUserPhone,
         externalId: userId,
         fbp: ctx.fbp,
         fbc: ctx.fbc,
