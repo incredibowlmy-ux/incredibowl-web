@@ -413,3 +413,40 @@ RM2.61，据此定加料价 RM7.90。他更正：**5.225 就是半片的价**（
 2. 中英混写的单位（pcs / 片 / 份 / 块）在「半份」场景一律有歧义，别自己选一个。
 3. 拆分/合成的自校验：拆完拿整数份量回算一遍。这次 4 碗鳗鱼饭聚合出
    「马铃薯 150g + 鸡蛋 2 颗」＝正好一整份煎蛋切四块，口径自洽才敢提交。
+
+## 手动补 credit/记录时价格必须查 ADD_ON_PRICES 现价，别抄旧文档（2026-08-01）
+给 Zowi3 手动新建 salmon-upgrade credit 时，我抄了她**旧 credit 里的 RM4**
+（那批是涨价前买的，unitPriceRM 是历史快照），而 addOnsConfig.ts 的
+`ADD_ON_PRICES` 现价是 RM5。结果凭空造出 RM1「差额」还让老板定夺，
+实际上按现价算收款刚好对平——错误的输入制造了不存在的问题。
+**规则：**
+1. Firestore 里的 `unitPriceRM`/`unitAllocatedRM` 是**购买时点的历史快照**，
+   永远不能当现价用。
+2. 任何手动建 credit / 补记录 / 算差额，价格一律先 grep
+   `src/data/addOnsConfig.ts` 的 `ADD_ON_PRICES`（拒收层唯一权威）再动手。
+3. 发现「差额」先怀疑自己的输入数据过时，复核完源头价再上报老板。
+
+---
+
+## 2026-08-01 · Windows/Git Bash 上 `pkill` 杀不掉 next start → 验证假阴性
+
+**症状**：改完「记住上次午/晚餐」，无头浏览器实测 localStorage 死活不写。
+源码对、tsc 过、build 过、连打包产物里都 grep 到了 `localStorage.setItem(k,t)`，
+但线上就是不生效。差点去改一段根本没坏的代码。
+
+**根因**：`pkill -f "next start"` 在 Git Bash 里匹配不到实际的 `node.exe` 进程，
+旧服务器从没被杀掉。新起的 `next start` 撞 `EADDRINUSE` 直接退出——错误只进了
+重定向的日志文件，终端上一片安静，`curl /` 照样 200（旧服务器在应答）。
+于是**我一直在测上一次构建的产物**。
+
+**决定性证据**：`curl` 本次构建新产生的 chunk → **404**。文件在 `.next/` 里躺着，
+服务器却不认，说明服务器和磁盘上的 build 不是同一份。
+
+**规则（下次照做）**：
+1. Windows 上停服务器不要用 `pkill`。用：
+   `PID=$(netstat -ano | grep ":3131" | grep LISTENING | awk '{print $5}' | head -1); taskkill //PID $PID //F`
+2. 启动后**必须**验证服务器是新的，两种任选其一：
+   - `head -3 <启动日志>` 看有没有 `EADDRINUSE`
+   - `curl -o /dev/null -w "%{http_code}" <本次新增的 chunk 路径>` 必须 200
+3. 更普遍的教训：**当「源码对、构建产物里也对、但运行时不对」时，先怀疑跑的
+   不是这份构建**，而不是怀疑代码。验证链条上任何一环没确认过，就不算验证过。
