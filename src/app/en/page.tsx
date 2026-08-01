@@ -259,7 +259,9 @@ export default function EnglishHome() {
 
     const openAddOnModal = (dish: MenuItem) => {
         const dInfo = menuDates[dish.id];
-        if (dInfo && dInfo.disabled) return;
+        // No date info yet → refuse. Mirrors src/app/page.tsx — see the comment
+        // there for why the guard is inverted now that cards are prerendered.
+        if (!dInfo || dInfo.disabled) return;
         setSelectedDish(dish);
         setIsAddOnOpen(true);
     };
@@ -430,7 +432,7 @@ export default function EnglishHome() {
                             ].join('\n'))}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-bold hover:bg-[#1EBE57] transition-colors"
+                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
                         >
                             📲 Get order confirmation on WhatsApp
                         </a>
@@ -440,7 +442,7 @@ export default function EnglishHome() {
                                 href={`/track/${t.token}?lang=en`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-black hover:bg-[#FF6B35]/5 transition-colors"
+                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-medium hover:bg-[#FF6B35]/5 transition-colors"
                             >
                                 📍 Track your order{(fpxSuccess.trackInfo || []).length > 1 ? ` (${t.date} ${t.time?.includes('Lunch') ? 'Lunch' : 'Dinner'})` : ''}
                             </a>

@@ -43,7 +43,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 
                 {/* Desktop Version */}
                 <div className="hidden sm:flex w-full justify-center px-3">
-                    <p className="text-xs lg:text-[13px] font-black tracking-wide truncate">
+                    <p className="text-xs lg:text-[13px] font-medium tracking-wide truncate">
                         温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                     </p>
                 </div>

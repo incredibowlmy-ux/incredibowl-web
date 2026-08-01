@@ -20,7 +20,7 @@ export default function PromoBanner() {
                         {/* Top cluster: badge + heading + intro */}
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-black tracking-widest border border-[#FF6B35]/30">
+                                <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-medium tracking-widest border border-[#FF6B35]/30">
                                     街坊回馈
                                 </span>
                                 <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
@@ -107,7 +107,7 @@ export default function PromoBanner() {
 
                             {/* Cluster C: how to claim — 3 steps (border-t on mobile only, desktop relies on flex spacing) */}
                             <div className="border-t border-white/10 pt-4 space-y-2.5 lg:border-t-0 lg:pt-0">
-                                <p className="text-[11px] lg:text-[12px] font-black text-white/55 lg:text-white/70 uppercase tracking-wider mb-2.5">如何获得</p>
+                                <p className="text-[11px] lg:text-[12px] font-medium text-white/55 lg:text-white/70 uppercase tracking-wider mb-2.5">如何获得</p>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">1</span>
                                     <p className="text-[13px] text-white/75 leading-snug pt-0.5">下单并享用</p>

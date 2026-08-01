@@ -268,7 +268,14 @@ export default function V4BentoLayout() {
 
     const openAddOnModal = (dish: MenuItem) => {
         const dInfo = menuDates[dish.id];
-        if (dInfo && dInfo.disabled) return;
+        // No date info yet → refuse. The menu cards now ship in the prerendered
+        // HTML (2026-08-01), so there is a window between hydration and the
+        // computeMenuDates effect where dInfo is undefined. Opening the modal
+        // then would hand it defaultDate=undefined / minDate='' → the bundle
+        // lands in the cart with selectedDate:'' and /api/submit-order rejects
+        // it as invalid_format. It would also bypass the retired/blocked check,
+        // which lives entirely in menuDates. Default closed, unlock on data.
+        if (!dInfo || dInfo.disabled) return;
         setSelectedDish(dish);
         setIsAddOnOpen(true);
     };
@@ -440,7 +447,7 @@ export default function V4BentoLayout() {
                             ].join('\n'))}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-bold hover:bg-[#1EBE57] transition-colors"
+                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
                         >
                             📲 WhatsApp 接收订单确认
                         </a>
@@ -450,7 +457,7 @@ export default function V4BentoLayout() {
                                 href={`/track/${t.token}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-black hover:bg-[#FF6B35]/5 transition-colors"
+                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-medium hover:bg-[#FF6B35]/5 transition-colors"
                             >
                                 📍 跟踪订单{(fpxSuccess.trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}
                             </a>

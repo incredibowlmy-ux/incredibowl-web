@@ -43,7 +43,7 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
 
                 {/* Desktop */}
                 <div className="hidden sm:flex w-full justify-center px-3">
-                    <p className="text-xs lg:text-[13px] font-black tracking-wide truncate">
+                    <p className="text-xs lg:text-[13px] font-medium tracking-wide truncate">
                         Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_EN}
                     </p>
                 </div>

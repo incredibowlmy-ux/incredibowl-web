@@ -13,19 +13,19 @@ import { getPromoDiscount } from '@/data/promoConfig';
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
 import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
 
+// Single fixed hero backdrop — mirrors HeroSection.tsx (see the comment there
+// for why the 8-second rotation was dropped). Must stay identical to the ZH
+// version so both locales share the same optimised image cache entry.
+const HERO_BG =
+    (signatureDish.image.startsWith('/')
+        ? signatureDish
+        : weeklyMenu.find(d => !d.hidden && !d.retired && d.image.startsWith('/')))?.image ?? null;
+
 export default function HeroSectionEN() {
-    const [heroImgIdx, setHeroImgIdx] = useState(0);
     const [nextSpecial, setNextSpecial] = useState<NextSpecial | null>(null);
 
     useEffect(() => {
         setNextSpecial(computeNextSpecial());
-    }, []);
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setHeroImgIdx(prev => (prev + 1) % weeklyMenu.length);
-        }, 8000);
-        return () => clearInterval(timer);
     }, []);
 
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
@@ -39,13 +39,11 @@ export default function HeroSectionEN() {
         <>
             <div className="lg:col-span-7 bg-[#E3EADA] rounded-[32px] p-8 md:p-12 relative overflow-hidden flex flex-col justify-end min-h-[460px]">
                 <div className="absolute inset-0 pointer-events-none">
-                    {weeklyMenu.map((dish, i) => (
-                        heroImgIdx === i && dish.image.startsWith('/') && (
-                            <div key={dish.id} className="absolute inset-0 animate-fade-in">
-                                <Image src={dish.image} alt="" fill className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority={i === 0} />
-                            </div>
-                        )
-                    ))}
+                    {HERO_BG && (
+                        <div className="absolute inset-0">
+                            <Image src={HERO_BG} alt="" fill sizes="60vw" className="object-cover object-right mix-blend-multiply opacity-[0.18]" priority />
+                        </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-r from-[#E3EADA] from-30% via-[#E3EADA]/85 via-60% to-[#E3EADA]/40 z-10" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#E3EADA] via-[#E3EADA]/20 to-transparent z-10" />
                 </div>
@@ -166,7 +164,7 @@ export default function HeroSectionEN() {
                     </div>
 
                     <div className="flex-1 p-6 md:p-7 flex flex-col">
-                        <p className="text-xs font-black text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
+                        <p className="text-xs font-medium text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
                             {nextSpecial?.labelEn.replace("'S SPECIAL", "").replace(" SPECIAL", "").toLowerCase().replace(/^./, c => c.toUpperCase()) ?? "Tomorrow"} pick
                         </p>
                         <h3 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">

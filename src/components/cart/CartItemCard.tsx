@@ -39,7 +39,7 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                         <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
                             {displayName}
                             {item.dishQty > 1 && (
-                                <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-black inline-block relative -top-0.5">
+                                <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-medium inline-block relative -top-0.5">
                                     x{item.dishQty}
                                 </span>
                             )}

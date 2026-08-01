@@ -7,7 +7,6 @@ import { ShoppingBag, Sparkles, Phone, Ticket } from 'lucide-react';
 import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
-import SkeletonBlock from '@/components/ui/SkeletonBlock';
 import SoldOutNotice from '@/components/home/SoldOutNotice';
 
 interface MenuCarouselProps {
@@ -20,19 +19,28 @@ interface MenuCarouselProps {
 const WD_LABEL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselProps) {
+    // `ready` === the date layer has landed (page.tsx computes it in an effect).
+    // It gates ONLY date-derived values — never the cards themselves.
     const ready = Object.keys(menuDates).length > 0;
     // Desktop-only: retired dishes collapsed by default so new visitors aren't
     // greeted by a wall of unorderable grey cards. Mobile keeps them expanded.
     const [showRetired, setShowRetired] = useState(false);
 
+    // Date-dependent → stays behind `ready`. Computing this during render would
+    // bake the build-day special into the statically prerendered HTML.
     const tomorrowsId = useMemo(() => (ready ? computeNextSpecial().dish.id : null), [ready]);
 
     // Group into the weekly-rotation story: Mon→Fri specials (one band per day),
-    // then always-available 常驻, then retired/paused at the very bottom. Built
-    // ONLY client-side (ready === true) so SSR/first paint keeps the flat skeleton
-    // and hydration matches (the same NO_LCP-safe guard the old layout used).
+    // then always-available 常驻, then retired/paused at the very bottom.
+    //
+    // 2026-08-01: un-gated from `ready` so the cards land in the prerendered HTML
+    // (was a flat skeleton → menu only appeared after ~414KB of JS parsed, and
+    // crawlers saw zero dish names). This is safe because the grouping reads ONLY
+    // weeklyMenu, which is a build-time constant — zero date dependency. Every
+    // date-derived field (topTag / btnText / disabled / dayDateSub / tomorrowsId)
+    // still comes from `menuDates` and renders its static fallback until the
+    // client effect lands, so server HTML === first client render.
     const groups = useMemo(() => {
-        if (!ready) return null;
         const active = weeklyMenu.filter(d => !d.retired && !d.hidden);
         // featureOnAvailableDays 常驻菜（如绍兴酒蒸花肉 周一+周四）改进每个
         // 供应日的列里展示，不占常驻区；排它日的特餐后面，日期头仍取特餐。
@@ -51,7 +59,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
             .filter(g => g.dishes.length > 0);
         const retired = weeklyMenu.filter(d => d.retired);
         return { daily, days, retired };
-    }, [ready]);
+    }, []);
 
     // ── Section header (spans the full row in both grids) ──
     const sectionHeader = (key: string, title: string, dateSub: string | null, highlight: boolean, size: 'sm' | 'lg', badgeNum?: number) => (
@@ -83,11 +91,19 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
         const isLimited = typeof stockLeft === 'number';
         const isSoldOut = isLimited && stockLeft <= 0;
         const isDisabled = !!dInfo?.disabled || isSoldOut;
+        // ⚠️ Interaction guard is the INVERSE of the visual one: no date info =
+        // no open. Cards now ship in the prerendered HTML, so between hydration
+        // and the menuDates effect there is a frame where dInfo is undefined —
+        // opening the modal there would hand it an empty defaultDate/minDate and
+        // put a `selectedDate: ""` bundle in the cart (server rejects it as
+        // invalid_format), and would also let a retired dish through (retired is
+        // carried by menuDates, not by the card). Default closed, unlock on data.
+        const canOpen = !!dInfo && !isDisabled;
         const isTomorrow = dish.id === tomorrowsId && !isDisabled;
         return (
             <div
                 key={dish.id}
-                onClick={() => !isDisabled && onOpenAddOn(dish)}
+                onClick={() => canOpen && onOpenAddOn(dish)}
                 className={`bg-white rounded-2xl p-3 border flex flex-col transition-[transform,box-shadow,border-color,opacity] duration-200 ease-out ${
                     isDisabled
                         ? 'opacity-50 border-gray-100 cursor-not-allowed'
@@ -142,7 +158,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
                 <div className="mt-auto">
                     <button
-                        onClick={(e) => { e.stopPropagation(); if (!isDisabled) onOpenAddOn(dish); }}
+                        onClick={(e) => { e.stopPropagation(); if (canOpen) onOpenAddOn(dish); }}
                         disabled={isDisabled}
                         className={`w-full py-2 rounded-lg font-bold text-[12px] flex justify-center items-center gap-1 transition-colors ${
                             isDisabled
@@ -177,10 +193,12 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
         // sold-out/retired: keep the photo in colour, just dim the card, so the
         // column doesn't look like the dish is gone for good.
         const isCutoffOnly = !!dInfo?.disabled && !isSoldOut && !dish.retired;
+        // See renderMobileCard: interaction requires dInfo, visuals don't.
+        const canOpen = !!dInfo && !isDisabled;
         return (
             <div
                 key={dish.id}
-                onClick={() => !isDisabled && onOpenAddOn(dish)}
+                onClick={() => canOpen && onOpenAddOn(dish)}
                 className={`group bg-white rounded-3xl p-5 border border-gray-100 transition-[transform,box-shadow,border-color,opacity] duration-300 ease-out flex flex-col ${
                     isDisabled
                         ? `${isCutoffOnly ? 'opacity-75' : 'opacity-50'} cursor-not-allowed`
@@ -198,7 +216,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
                 <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled && !isCutoffOnly ? 'grayscale' : ''}`}>
                     {isCutoffOnly && !(isLimited && stockLeft <= 10) && (
-                        <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[13px] font-extrabold shadow-md bg-white/90 text-[#1A2D23]/70">
+                        <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[13px] font-medium shadow-md bg-white/90 text-[#1A2D23]/70">
                             今日已截单
                         </span>
                     )}
@@ -234,7 +252,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
                 <div className="mt-auto">
                     <button
-                        onClick={(e) => { e.stopPropagation(); if (!isDisabled) onOpenAddOn(dish); }}
+                        onClick={(e) => { e.stopPropagation(); if (canOpen) onOpenAddOn(dish); }}
                         disabled={isDisabled}
                         className={`w-full py-3.5 rounded-xl font-bold text-[15px] flex justify-center items-center gap-2 transition-colors ${
                             isDisabled
@@ -244,7 +262,9 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                     >
                         {!isDisabled && <ShoppingBag size={18} />}
                         <span className="truncate">
-                            {isSoldOut ? '售罄' : (dInfo ? dInfo.btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') : '加入明天的预订')}
+                            {/* Fallback is the date-neutral wording: it is what the
+                                prerendered HTML ships before menuDates lands. */}
+                            {isSoldOut ? '售罄' : (dInfo ? dInfo.btnText.replace(` · RM ${dish.price.toFixed(2)}`, '') : '加入预订')}
                         </span>
                     </button>
                 </div>
@@ -255,39 +275,6 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
     // Date sub-label for a day band, derived from that day's first dish's topTag
     // (zh special topTag = "6月30日 周一 · Mon" → "6月30日").
     const dayDateSub = (dish: MenuItem) => menuDates[dish.id]?.topTag?.split(' ')[0] ?? null;
-
-    const mobileSkeleton = weeklyMenu.map((dish) => (
-        <div key={dish.id} className="bg-white rounded-2xl p-3 border border-gray-100 flex flex-col">
-            <div className="flex justify-between items-start mb-2">
-                <SkeletonBlock className="h-4 w-14" />
-                <SkeletonBlock className="h-4 w-12" />
-            </div>
-            <SkeletonBlock className="aspect-square w-full rounded-xl mb-2" />
-            <SkeletonBlock className="h-4 w-3/4 mb-2" />
-            <div className="flex gap-1 mb-3">
-                <SkeletonBlock className="h-4 w-12" />
-                <SkeletonBlock className="h-4 w-10" />
-            </div>
-            <SkeletonBlock className="h-8 w-full mt-auto rounded-lg" />
-        </div>
-    ));
-
-    const desktopSkeleton = weeklyMenu.map((dish) => (
-        <div key={dish.id} className="bg-white rounded-3xl p-5 border border-gray-100 flex flex-col">
-            <div className="flex justify-between items-start mb-4">
-                <SkeletonBlock className="h-5 w-24" />
-                <SkeletonBlock className="h-5 w-16" />
-            </div>
-            <SkeletonBlock className="aspect-square w-full rounded-2xl mb-4" />
-            <SkeletonBlock className="h-6 w-3/4 mb-2" />
-            <SkeletonBlock className="h-4 w-1/2 mb-4" />
-            <div className="flex gap-2 mb-4">
-                <SkeletonBlock className="h-6 w-16" />
-                <SkeletonBlock className="h-6 w-16" />
-            </div>
-            <SkeletonBlock className="h-11 w-full mt-auto" />
-        </div>
-    ));
 
     const whatsappMobile = (
         <a
@@ -300,7 +287,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                 <Sparkles size={20} className="text-[#FF6B35]" strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-black text-[#FF6B35] uppercase tracking-widest mb-0.5">下周预告</p>
+                <p className="text-[11px] font-medium text-[#FF6B35] uppercase tracking-widest mb-0.5">下周预告</p>
                 <p className="text-[14px] font-extrabold text-[#1A2D23] leading-tight">想第一时间收到下周菜单？</p>
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#25D366] text-white rounded-full text-[12px] font-black shadow-sm shadow-[#25D366]/30 shrink-0">
@@ -322,7 +309,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                 <div className="w-16 h-16 bg-[#FF6B35]/20 group-hover:bg-[#FF6B35]/30 rounded-full flex items-center justify-center mb-4 transition-colors shadow-md shadow-[#FF6B35]/20">
                     <Sparkles size={28} className="text-[#FF6B35]" strokeWidth={2.5} />
                 </div>
-                <p className="text-xs font-black text-[#FF6B35] uppercase tracking-widest mb-2">✨ 下周预告</p>
+                <p className="text-xs font-medium text-[#FF6B35] uppercase tracking-widest mb-2">✨ 下周预告</p>
                 <p className="text-[22px] font-extrabold text-[#1A2D23] leading-tight mb-3">Coming<br />Next Week</p>
                 <p className="text-sm font-medium text-[#1A2D23]/70 leading-relaxed max-w-[220px]">
                     碗妈每周更新菜单<br />
@@ -352,104 +339,94 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
 
             {/* MOBILE + TABLET — compact 2-column grid, grouped by weekday */}
             <div className="lg:hidden grid grid-cols-2 gap-3 px-3 pt-2">
-                {!ready || !groups
-                    ? mobileSkeleton
-                    : (
-                        <>
-                            {groups.days.map(g => {
-                                const isNext = g.dishes.some(d => d.id === tomorrowsId);
-                                return (
-                                    <React.Fragment key={`m-day-${g.wd}`}>
-                                        {sectionHeader(`m-hdr-${g.wd}`, WD_LABEL[g.wd], dayDateSub(g.dishes[0]), isNext, 'sm', g.wd)}
-                                        {g.dishes.map(renderMobileCard)}
-                                    </React.Fragment>
-                                );
-                            })}
+                {groups.days.map(g => {
+                    const isNext = g.dishes.some(d => d.id === tomorrowsId);
+                    return (
+                        <React.Fragment key={`m-day-${g.wd}`}>
+                            {sectionHeader(`m-hdr-${g.wd}`, WD_LABEL[g.wd], dayDateSub(g.dishes[0]), isNext, 'sm', g.wd)}
+                            {g.dishes.map(renderMobileCard)}
+                        </React.Fragment>
+                    );
+                })}
 
-                            {groups.daily.length > 0 && (
-                                <>
-                                    {sectionHeader('m-hdr-daily', '⭐ 常驻 · 天天都有', null, false, 'sm')}
-                                    {groups.daily.map(renderMobileCard)}
-                                </>
-                            )}
+                {groups.daily.length > 0 && (
+                    <>
+                        {sectionHeader('m-hdr-daily', '⭐ 常驻 · 天天都有', null, false, 'sm')}
+                        {groups.daily.map(renderMobileCard)}
+                    </>
+                )}
 
-                            {whatsappMobile}
+                {whatsappMobile}
 
-                            {groups.retired.length > 0 && (
-                                <>
-                                    {sectionHeader('m-hdr-retired', '🕰 往期人气菜 · 敬请期待', null, false, 'sm')}
-                                    {groups.retired.map(renderMobileCard)}
-                                </>
-                            )}
-                        </>
-                    )}
+                {groups.retired.length > 0 && (
+                    <>
+                        {sectionHeader('m-hdr-retired', '🕰 往期人气菜 · 敬请期待', null, false, 'sm')}
+                        {groups.retired.map(renderMobileCard)}
+                    </>
+                )}
             </div>
 
             {/* DESKTOP — weekly rotation calendar (lg+): Mon→Fri as 5 day-columns,
                 then always-available 常驻 + 暂别 as their own filled grids. */}
             <div className="hidden lg:block px-2 pt-4">
-                {!ready || !groups
-                    ? <div className="grid lg:grid-cols-3 xl:grid-cols-4 gap-5">{desktopSkeleton}</div>
-                    : (
-                        <>
-                            {/* 本周特餐 · 一周日历（5 列对齐填满宽度，无网格留白） */}
-                            <div className="grid grid-cols-5 gap-4">
-                                {groups.days.map(g => {
-                                    const isNext = g.dishes.some(d => d.id === tomorrowsId);
-                                    return (
-                                        <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
-                                            <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-[#FF6B35]' : 'border-gray-100'}`}>
-                                                <span className="flex items-center gap-2">
-                                                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>{g.wd}</span>
-                                                    <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
-                                                </span>
-                                                <span className="text-[13px] font-bold text-gray-500 mt-1.5">{dayDateSub(g.dishes[0])}</span>
-                                                {/* 非下一餐用 invisible 占位 —— 5 个列头等高，第一行卡片顶对齐 */}
-                                                <span className={`mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>✨ 下一餐</span>
-                                            </div>
-                                            {g.dishes.map(renderDesktopCard)}
-                                        </div>
-                                    );
-                                })}
+                {/* 本周特餐 · 一周日历（5 列对齐填满宽度，无网格留白） */}
+                <div className="grid grid-cols-5 gap-4">
+                    {groups.days.map(g => {
+                        const isNext = g.dishes.some(d => d.id === tomorrowsId);
+                        return (
+                            <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
+                                <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-[#FF6B35]' : 'border-gray-100'}`}>
+                                    <span className="flex items-center gap-2">
+                                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>{g.wd}</span>
+                                        <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
+                                    </span>
+                                    {/* min-h 预留：日期小字来自 menuDates，SSR 时为空。没有它，
+                                        日期落地那一刻 5 个列头同时长高，把整片卡片往下推（CLS）。 */}
+                                    <span className="text-[13px] font-bold text-gray-500 mt-1.5 min-h-[16px]">{dayDateSub(g.dishes[0])}</span>
+                                    {/* 非下一餐用 invisible 占位 —— 5 个列头等高，第一行卡片顶对齐 */}
+                                    <span className={`mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>✨ 下一餐</span>
+                                </div>
+                                {g.dishes.map(renderDesktopCard)}
                             </div>
+                        );
+                    })}
+                </div>
 
-                            {/* 常驻 · 天天都有 — 下周预告 CTA 与常驻卡同行，填满一整行不留白 */}
-                            {groups.daily.length > 0 ? (
-                                <div className="mt-12">
-                                    <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">⭐ 常驻 · 天天都有</h3>
-                                    <div className="grid grid-cols-3 gap-5">
-                                        {groups.daily.map(renderDesktopCard)}
-                                        {whatsappDesktop}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="mt-8 grid grid-cols-3 gap-5">
-                                    {whatsappDesktop}
-                                </div>
-                            )}
+                {/* 常驻 · 天天都有 — 下周预告 CTA 与常驻卡同行，填满一整行不留白 */}
+                {groups.daily.length > 0 ? (
+                    <div className="mt-12">
+                        <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">⭐ 常驻 · 天天都有</h3>
+                        <div className="grid grid-cols-3 gap-5">
+                            {groups.daily.map(renderDesktopCard)}
+                            {whatsappDesktop}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="mt-8 grid grid-cols-3 gap-5">
+                        {whatsappDesktop}
+                    </div>
+                )}
 
-                            {/* 暂别 · 往期菜式 — 默认折叠，点击展开（对新客是噪音，老客有回归期待感） */}
-                            {groups.retired.length > 0 && (
-                                <div className="mt-12">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRetired(v => !v)}
-                                        className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 hover:bg-white border border-gray-200 hover:border-[#FF6B35]/30 rounded-2xl transition-colors text-left"
-                                        aria-expanded={showRetired}
-                                    >
-                                        <span className="text-[20px] font-extrabold text-[#1A2D23] leading-none">🕰 往期人气菜 · 敬请期待</span>
-                                        <span className="text-[14px] font-bold text-gray-400">（{groups.retired.length} 道）</span>
-                                        <span className="ml-auto text-[14px] font-bold text-[#FF6B35]">{showRetired ? '收起 ▲' : '展开看看 ▼'}</span>
-                                    </button>
-                                    {showRetired && (
-                                        <div className="mt-5 grid grid-cols-3 xl:grid-cols-4 gap-5">
-                                            {groups.retired.map(renderDesktopCard)}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </>
-                    )}
+                {/* 暂别 · 往期菜式 — 默认折叠，点击展开（对新客是噪音，老客有回归期待感） */}
+                {groups.retired.length > 0 && (
+                    <div className="mt-12">
+                        <button
+                            type="button"
+                            onClick={() => setShowRetired(v => !v)}
+                            className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 hover:bg-white border border-gray-200 hover:border-[#FF6B35]/30 rounded-2xl transition-colors text-left"
+                            aria-expanded={showRetired}
+                        >
+                            <span className="text-[20px] font-extrabold text-[#1A2D23] leading-none">🕰 往期人气菜 · 敬请期待</span>
+                            <span className="text-[14px] font-bold text-gray-400">（{groups.retired.length} 道）</span>
+                            <span className="ml-auto text-[14px] font-bold text-[#FF6B35]">{showRetired ? '收起 ▲' : '展开看看 ▼'}</span>
+                        </button>
+                        {showRetired && (
+                            <div className="mt-5 grid grid-cols-3 xl:grid-cols-4 gap-5">
+                                {groups.retired.map(renderDesktopCard)}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Meal voucher promo — full-width banner closing the menu section
