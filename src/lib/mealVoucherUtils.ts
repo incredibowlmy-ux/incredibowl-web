@@ -143,6 +143,17 @@ export async function finalizeMealVoucherPurchase(
   const userId: string = d.userId;
   if (!userId) throw new Error(`Purchase ${purchaseId} missing userId`);
 
+  // 🔒 2026-08-02 兜底闸门：这个函数只服务 FPX 自动确认。
+  // 两个调用方都是 FPX 路径（/api/meal-vouchers/confirm-purchase 浏览器确认、
+  // /api/payment/webhook Razorpay 服务端回调），所以只接受：
+  //   'pending' —— FPX 待确认；'paid' —— 幂等重放（下面事务会 no-op）。
+  // 'pending-review'（QR 待老板核收据）一律拒绝：那条路只能走
+  // /api/admin/confirm-meal-voucher-purchase（它用 mintVouchersForPurchase +
+  // 自己的状态门，不经过这里），确保「收到钱才铸券」由服务端强制。
+  if (d.status !== 'pending' && d.status !== 'paid') {
+    throw new Error(`purchase ${purchaseId} 状态为 ${d.status}，不可自动铸券`);
+  }
+
   // Mint first (idempotent — returns existing IDs on retry).
   const voucherIds = await mintVouchersForPurchase(db, {
     userId,

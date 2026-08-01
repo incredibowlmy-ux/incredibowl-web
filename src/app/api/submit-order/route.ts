@@ -62,6 +62,9 @@ export async function POST(req: Request) {
     if (!cartBundles || !Array.isArray(cartBundles) || cartBundles.length === 0) {
       return NextResponse.json({ error: '购物车为空' }, { status: 400 });
     }
+    if (cartBundles.length > 50) {
+      return NextResponse.json({ error: '购物车项目过多，请分批下单' }, { status: 400 });
+    }
     if (!paymentMethod || !['qr', 'fpx', 'voucher'].includes(paymentMethod)) {
       return NextResponse.json({ error: '无效支付方式' }, { status: 400 });
     }
@@ -80,6 +83,24 @@ export async function POST(req: Request) {
 
     // ── Build menu lookup ─────────────────────────────────────
     const menuById = new Map(weeklyMenu.map(d => [d.id, d]));
+
+    /**
+     * 🔒 2026-08-02：body 里的任何数量都当敌意输入。
+     *
+     * 原来是裸 `Number(x) || 0` / `x || 1`，负数直接进金额：
+     * `serverAddOnsTotal += serverPrice * (addOn.quantity || 0)` 塞一个
+     * `quantity: -20` 就能把 RM 50 的单压成 RM 5 —— 而下面第 ~130 行的
+     * 「价格校验」比的是客户端自己传的 `bundle.price × quantity`，两边填一致就通过。
+     * 订单 items 里主菜原样保留，厨房照做全套，收款只收压低后的钱。
+     *
+     * 必须是 1..max 的正整数，否则返回 null 由调用方**拒收**（不静默 clamp ——
+     * clamp 会让金额和客户端对不上，顾客看到的是「价格已更新」这种莫名其妙的报错）。
+     * 前端 cartStore 恒为正整数（quantity ≤ 0 的项会被 filter 掉），正常下单不受影响。
+     */
+    const posInt = (v: unknown, max: number): number | null => {
+      const n = Number(v);
+      return Number.isInteger(n) && n > 0 && n <= max ? n : null;
+    };
 
     // ── Re-calculate each bundle price server-side ────────────
     let serverCartTotal = 0;
@@ -100,27 +121,50 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: dishCheck.message }, { status: 400 });
       }
 
+      // 数量归一（负数 / 小数 / NaN / 超大值一律拒收）。缺省视为 1 份。
+      const dishQty = bundle.dishQty === undefined || bundle.dishQty === null
+        ? 1 : posInt(bundle.dishQty, 99);
+      if (dishQty === null) {
+        return NextResponse.json({ error: `${dish.name} 的份数非法` }, { status: 400 });
+      }
+      const bundleQty = bundle.quantity === undefined || bundle.quantity === null
+        ? 1 : posInt(bundle.quantity, 99);
+      if (bundleQty === null) {
+        return NextResponse.json({ error: `${dish.name} 的数量非法` }, { status: 400 });
+      }
+
       const serverDishPrice = getDishPrice(dish.price);
       let serverAddOnsTotal = 0;
 
       const validatedAddOns: any[] = [];
       if (bundle.addOns && Array.isArray(bundle.addOns)) {
+        // 上限只防荒谬 payload，不防正常点单：ADD_ON_PRICES 目前 65 项，
+        // 就算全选也到不了 80，所以真实订单永远撞不到这条。
+        if (bundle.addOns.length > 80) {
+          return NextResponse.json({ error: `${dish.name} 的加购项过多` }, { status: 400 });
+        }
         for (const addOn of bundle.addOns) {
           const serverPrice = ADD_ON_PRICES[addOn.id];
           if (serverPrice === undefined) {
             return NextResponse.json({ error: `加购项不存在: ${addOn.id}` }, { status: 400 });
           }
-          serverAddOnsTotal += serverPrice * (addOn.quantity || 0);
-          validatedAddOns.push({ ...addOn, price: serverPrice });
+          const addOnQty = posInt(addOn.quantity, 99);
+          if (addOnQty === null) {
+            return NextResponse.json({ error: `加购项数量非法: ${addOn.id}` }, { status: 400 });
+          }
+          serverAddOnsTotal += serverPrice * addOnQty;
+          // quantity 也用归一后的值落库 —— 下面拼 items（↳ 加料行）和厨房备餐单
+          // 读的是这个数组，不能让 body 里的原始值漏过去。
+          validatedAddOns.push({ ...addOn, price: serverPrice, quantity: addOnQty });
         }
       }
 
-      const serverBundlePrice = (serverDishPrice * (bundle.dishQty || 1)) + serverAddOnsTotal;
-      const serverBundleTotal = serverBundlePrice * (bundle.quantity || 1);
+      const serverBundlePrice = (serverDishPrice * dishQty) + serverAddOnsTotal;
+      const serverBundleTotal = serverBundlePrice * bundleQty;
       serverCartTotal += serverBundleTotal;
 
       // Allow RM 0.02 rounding tolerance per bundle
-      const clientBundleTotal = (bundle.price || 0) * (bundle.quantity || 1);
+      const clientBundleTotal = (Number(bundle.price) || 0) * bundleQty;
       if (Math.abs(serverBundleTotal - clientBundleTotal) > 0.02) {
         // 绝大多数情况不是攻击，是「购物车放了几天、期间菜单调过价」：
         // CartBundle 存 localStorage，dish 和 price 都是加入那天的快照。
@@ -134,6 +178,10 @@ export async function POST(req: Request) {
 
       validatedBundles.push({
         ...bundle,
+        // 归一后的数量覆盖 body 原值 —— 下游（餐券份数、加料行、分组小计、
+        // 备餐单）读的都是 vb.dishQty / vb.quantity，不能让原始值从 ...bundle 漏过去。
+        dishQty,
+        quantity: bundleQty,
         dish,
         serverDishPrice,
         addOns: validatedAddOns,

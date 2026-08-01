@@ -68,7 +68,15 @@ export interface RollbackOutcome {
 export async function cancelOrderWithRollback(
     db: Firestore,
     orderId: string,
-    opts: { reason: string },
+    opts: {
+        reason: string;
+        /**
+         * 允许取消**非 pending** 的单（已确认 / 配送中 / 已送达）。
+         * 只有 admin 路径能传 true —— 老板在 Dashboard 取消已确认单是合法操作
+         * （真退款）。顾客侧一律不传，防止「吃完再取消把餐券和库存全额退回」。
+         */
+        allowNonPending?: boolean;
+    },
 ): Promise<RollbackOutcome> {
     const { FieldValue } = await import('firebase-admin/firestore');
     const ref = db.collection('orders').doc(orderId);
@@ -94,6 +102,14 @@ export async function cancelOrderWithRollback(
         const d = snap.data()!;
         // 已经取消过 / 已经回补过 → 本次 no-op（防双取消把库存加两遍）
         if (d.status === 'cancelled' || d.rollbackAt) return;
+        // 🔒 2026-08-02 兜底闸门：终态单（confirmed / preparing / delivering /
+        // delivered）不许走自助取消。菜已经做出来送出去了，退券退库存都是凭空
+        // 印钱印货。调用方的鉴权是第一道锁（confirm-order 只放行 pending），
+        // 这里是第二道 —— 将来第四个调用方接进来时不会重蹈覆辙。
+        if (d.status !== 'pending' && !opts.allowNonPending) {
+            console.warn(`[orderRollback] ${orderId} 状态为 ${d.status}，非 admin 路径不予取消`);
+            return;
+        }
         orderData = d;
         tx.update(ref, {
             status: 'cancelled',

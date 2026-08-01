@@ -95,9 +95,19 @@ export async function POST(req: Request) {
           o.paymentMethod === 'voucher' && (Number(o.total) || 0) === 0 && (Number(o.deliveryFee) || 0) === 0);
       }
     } else if (status === 'cancelled') {
-      // Owner may cancel own orders; anyone may cancel a still-'pending'
-      // (unpaid) order — the redirect-failure flows run without a session.
-      authorized = isOwnerOfAll || gateOrders.every(o => o.status === 'pending');
+      // 🔒 2026-08-02：只允许取消仍是 'pending'（未确认）的单。
+      // 原来是 `isOwnerOfAll || 全 pending` —— isOwnerOfAll 只看「是不是自己的单」，
+      // 不看状态，等于顾客吃完饭还能自助取消：cancelOrderWithRollback 会把餐券翻回
+      // available、预付加料 credit 退回、dishStock 凭空 +N、promo 券 usedCount 减回，
+      // 循环白吃到券过期为止（顺带把已送达单踢出 PAID_STATUSES，营收和 MFRS 15 负债表一起错）。
+      //
+      // 不会误伤任何现有流程：顾客侧三处取消（CartDrawer FPX 弹窗关闭 / 结账失败、
+      // 首页 ?fpx_error= 回跳）取消的都是刚建、还没确认的 pending 单；
+      // 老板在 Dashboard 取消已确认单走上面的 isAdmin 分支，照常可用。
+      //
+      // 保留「无 token 也能取消 pending 单」：银行跳转回来时没有 session，
+      // 这条路必须能走（缓解因素：orderId 是 Firestore 20 字符 auto-id，不可猜）。
+      authorized = gateOrders.every(o => o.status === 'pending');
     }
     if (!authorized) {
       return NextResponse.json({ error: '未授权操作' }, { status: 403 });
@@ -136,6 +146,9 @@ export async function POST(req: Request) {
         const { cancelOrderWithRollback } = await import('@/lib/orderRollback');
         await cancelOrderWithRollback(db, orderId, {
           reason: isAdmin ? 'admin-cancel' : 'web-cancel',
+          // 只有老板能取消已确认 / 配送中 / 已送达的单（真退款）。
+          // 顾客侧上面的鉴权已经只放行 pending，这里是第二道锁。
+          allowNonPending: isAdmin,
         });
         continue;
       }
