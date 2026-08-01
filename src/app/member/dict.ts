@@ -85,6 +85,12 @@ interface MemberDictShape {
     addressErrorMinLength: string;
     addressErrorGeneric: string;
     addressErrorNetwork: string;
+    useMyLocation: string;
+    locating: string;
+    locateUnsupported: string;
+    locateDenied: string;
+    locateFailed: string;
+    locateFilled: string;
     addressChangedReverify: string;
     distanceFromPearlPoint: (km: number) => string;
     allOrdersFreeShipping: string;
@@ -163,6 +169,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         addressErrorMinLength: '请填写完整地址（至少 10 个字符）',
         addressErrorGeneric: '地址验证失败',
         addressErrorNetwork: '网络错误，请重试',
+        useMyLocation: '📍 用我的当前位置',
+        locating: '定位中…',
+        locateUnsupported: '这个浏览器不支持定位，请手动输入地址',
+        locateDenied: '定位被拒绝。请在浏览器允许位置权限，或手动输入地址',
+        locateFailed: '定位失败，请手动输入地址',
+        locateFilled: '已填入定位地址，请补上单位/门牌号再确认',
         addressChangedReverify: '⚠️ 地址已修改，请重新点「确认地址」验证',
         distanceFromPearlPoint: (km) => `距 Pearl Point ${km}km`,
         allOrdersFreeShipping: '✅ 你的订单全部免运',
@@ -239,6 +251,12 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         addressErrorMinLength: 'Please enter a full address (at least 10 characters)',
         addressErrorGeneric: 'Address verification failed',
         addressErrorNetwork: 'Network error, please retry',
+        useMyLocation: '📍 Use my current location',
+        locating: 'Locating…',
+        locateUnsupported: 'This browser does not support location — please type your address',
+        locateDenied: 'Location permission denied. Allow it in your browser, or type your address',
+        locateFailed: 'Could not get your location — please type your address',
+        locateFilled: 'Filled in from your location — add your unit/floor number before verifying',
         addressChangedReverify: '⚠️ Address changed — please verify again',
         distanceFromPearlPoint: (km) => `${km}km from Pearl Point`,
         allOrdersFreeShipping: '✅ All your orders are free delivery',

@@ -97,6 +97,9 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeResult, setGeocodeResult] = useState<{ lat: number; lng: number; distanceKm: number; zone: DeliveryZone; formattedAddress: string; partialMatch: boolean } | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
+    // 「用我的当前位置」：只回填地址串，不参与验证/存档（见 handleUseMyLocation）
+    const [locating, setLocating] = useState(false);
+    const [locateNotice, setLocateNotice] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
     const [mealVoucherInfo, setMealVoucherInfo] = useState<{
         availableCount: number;
@@ -178,6 +181,52 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const addressChangedSinceVerify = !!geocodeResult && editAddress.trim() !== verifiedFor;
     const profileNeedsInitialVerify = !profileData?.addressVerifiedText || (profileData?.addressVerifiedText || '').trim() !== (profileData?.address || '').trim();
     const needsGeocode = (addressChangedSinceProfile || profileNeedsInitialVerify) && (!geocodeResult || addressChangedSinceVerify);
+
+    /**
+     * 「用我的当前位置」—— 与 AuthProfileView 同一套：GPS 只负责回填地址串，
+     * 距离/运费仍由「确认地址」走服务端 geocode 权威解析（/api/geocode 的反查
+     * 分支只回 formattedAddress，不回坐标/距离，所以不构成骗免运的新口子）。
+     */
+    const handleUseMyLocation = () => {
+        if (!currentUser) return;
+        setGeocodeError('');
+        setLocateNotice('');
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+            setGeocodeError(t.locateUnsupported);
+            return;
+        }
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                try {
+                    const token = await currentUser.getIdToken();
+                    const res = await fetch('/api/geocode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.formattedAddress) {
+                        setGeocodeError(data.error || t.locateFailed);
+                        return;
+                    }
+                    setEditAddress(data.formattedAddress);
+                    setGeocodeResult(null);
+                    setVerifiedFor('');
+                    setLocateNotice(t.locateFilled);
+                } catch {
+                    setGeocodeError(t.addressErrorNetwork);
+                } finally {
+                    setLocating(false);
+                }
+            },
+            (err) => {
+                setLocating(false);
+                setGeocodeError(err.code === err.PERMISSION_DENIED ? t.locateDenied : t.locateFailed);
+            },
+            { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+        );
+    };
 
     const handleVerifyAddress = async () => {
         if (!currentUser) return;
@@ -749,11 +798,26 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                         </label>
                                         <textarea
                                             value={editAddress}
-                                            onChange={(e) => setEditAddress(e.target.value)}
+                                            onChange={(e) => { setEditAddress(e.target.value); setLocateNotice(''); }}
                                             placeholder={t.placeholderAddress}
                                             rows={3}
                                             className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium resize-none"
                                         />
+
+                                        {/* 一键定位回填 —— 手机上免去拇指打完整地址 */}
+                                        <button
+                                            type="button"
+                                            onClick={handleUseMyLocation}
+                                            disabled={locating || geocoding}
+                                            className="mt-2 w-full py-2.5 rounded-xl border-2 border-gray-100 bg-white text-[#1A2D23] text-sm font-bold flex items-center justify-center gap-2 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            {locating ? <><Loader2 size={14} className="animate-spin" /> {t.locating}</> : t.useMyLocation}
+                                        </button>
+                                        {locateNotice && (
+                                            <div className="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-800 flex items-start gap-1.5">
+                                                <AlertCircle size={12} className="mt-0.5 shrink-0" /> {locateNotice}
+                                            </div>
+                                        )}
 
                                         <button
                                             type="button"

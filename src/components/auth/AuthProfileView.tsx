@@ -49,6 +49,9 @@ export default function AuthProfileView({
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeResult, setGeocodeResult] = useState<GeocodeResult | null>(null);
     const [geocodeError, setGeocodeError] = useState('');
+    // 「用我的当前位置」状态。定位只负责把地址串填进输入框，不参与验证/存档。
+    const [locating, setLocating] = useState(false);
+    const [locateNotice, setLocateNotice] = useState('');
     // Track which address text the geocode result was for; if user edits the address afterward
     // we must re-verify before saving.
     const [verifiedFor, setVerifiedFor] = useState('');
@@ -106,6 +109,56 @@ export default function AuthProfileView({
 
     const addressChangedSinceVerify = !!geocodeResult && address.trim() !== verifiedFor;
     const needsReVerify = editingProfile && (!geocodeResult || addressChangedSinceVerify);
+
+    /**
+     * 「用我的当前位置」—— 手机上把最痛的一步（拇指打完整马来西亚地址）换成一次点击。
+     *
+     * 只做一件事：GPS 坐标 → 反查地址串 → 填进输入框。距离/运费档位仍由后面的
+     * 「验证地址并保存」走原来的 address 路径由服务端权威解析，所以这里没有引入
+     * 「传个假坐标骗免运」的口子（/api/geocode 反查分支也只回 formattedAddress）。
+     *
+     * 反查结果通常只到楼栋级别，拿不到单位/门牌，所以填完要提示客户补上。
+     */
+    const handleUseMyLocation = () => {
+        setGeocodeError('');
+        setLocateNotice('');
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+            setGeocodeError(t.locateUnsupported);
+            return;
+        }
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                try {
+                    const token = await currentUser.getIdToken();
+                    const res = await fetch('/api/geocode', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.formattedAddress) {
+                        setGeocodeError(data.error || t.locateFailed);
+                        return;
+                    }
+                    setAddress(data.formattedAddress);
+                    // 地址变了 → 作废上一次验证，强制重新 geocode 再保存。
+                    setGeocodeResult(null);
+                    setVerifiedFor('');
+                    setLocateNotice(t.locateFilled);
+                } catch {
+                    setGeocodeError(t.networkError);
+                } finally {
+                    setLocating(false);
+                }
+            },
+            (err) => {
+                setLocating(false);
+                setGeocodeError(err.code === err.PERMISSION_DENIED ? t.locateDenied : t.locateFailed);
+            },
+            { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+        );
+    };
 
     // 一键「验证并保存」：自动跑 geocode 验证，通过立即续接保存 —— 用户不用
     // 分两步点「确认地址」再点「保存」。安全语义不变：没验证过的地址永远
@@ -243,9 +296,23 @@ export default function AuthProfileView({
                     </label>
                     {editingProfile ? (
                         <>
-                            <textarea value={address} onChange={(e) => setAddress(e.target.value)}
+                            <textarea value={address} onChange={(e) => { setAddress(e.target.value); setLocateNotice(''); }}
                                 placeholder={t.addressPlaceholder}
                                 rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
+                            {/* 手机上打完整地址是整条下单链路最痛的一步 —— 一键定位回填 */}
+                            <button
+                                type="button"
+                                onClick={handleUseMyLocation}
+                                disabled={locating || geocoding}
+                                className="mt-2 w-full py-2.5 rounded-xl border-2 border-[#E3EADA] bg-white text-[#1A2D23] text-xs font-bold flex items-center justify-center gap-1.5 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {locating ? <><Loader2 size={13} className="animate-spin" /> {t.locating}</> : t.useMyLocation}
+                            </button>
+                            {locateNotice && (
+                                <div className="mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs font-bold text-amber-800 flex items-start gap-1.5">
+                                    <AlertCircle size={12} className="mt-0.5 shrink-0" /> {locateNotice}
+                                </div>
+                            )}
                             {!currentUser.isAnonymous && (
                                 <input type="text" value={addressLabel} onChange={(e) => setAddressLabel(e.target.value)}
                                     placeholder={t.labelPlaceholder} maxLength={12}

@@ -92,6 +92,12 @@ interface AuthProfileDict {
     addressMin: string;
     geocodeFailed: string;
     networkError: string;
+    useMyLocation: string;
+    locating: string;
+    locateUnsupported: string;
+    locateDenied: string;
+    locateFailed: string;
+    locateFilled: string;
     tierLine: (label: string, km: number) => string;
     freeAllOrders: string;
     partialMatchNote: (km: number) => string;
@@ -200,6 +206,12 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             addressMin: '请填写完整地址（至少 10 个字符）',
             geocodeFailed: '地址验证失败',
             networkError: '网络错误，请重试',
+            useMyLocation: '📍 用我的当前位置',
+            locating: '定位中…',
+            locateUnsupported: '这个浏览器不支持定位，请手动输入地址',
+            locateDenied: '定位被拒绝。请在浏览器地址栏左侧允许位置权限，或手动输入地址',
+            locateFailed: '定位失败，请手动输入地址',
+            locateFilled: '已填入定位地址，请补上单位/门牌号再保存',
             tierLine: (label, km) => `${label} · 距 Pearl Point ${km}km`,
             freeAllOrders: '✅ 你的订单全部免运',
             partialMatchNote: (km) => `⚠️ Google 没找到完全匹配，按 ${km}km 计算运费。如有疑问 WhatsApp 联系碗妈`,
@@ -299,6 +311,12 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             addressMin: 'Please enter your full address (at least 10 characters)',
             geocodeFailed: 'Address verification failed',
             networkError: 'Network error, please try again',
+            useMyLocation: '📍 Use my current location',
+            locating: 'Locating…',
+            locateUnsupported: 'This browser does not support location — please type your address',
+            locateDenied: 'Location permission denied. Allow it in your browser, or type your address',
+            locateFailed: 'Could not get your location — please type your address',
+            locateFilled: 'Filled in from your location — add your unit/floor number before saving',
             tierLine: (label, km) => `${label} · ${km}km from Pearl Point`,
             freeAllOrders: '✅ All your orders ship free',
             partialMatchNote: (km) => `⚠️ Google couldn't find an exact match — delivery fee is based on ${km}km. Questions? WhatsApp BowlMama`,

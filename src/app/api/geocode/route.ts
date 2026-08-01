@@ -79,15 +79,31 @@ export async function POST(req: NextRequest) {
     }
 
     let address: string;
+    let reverseLat: number | null = null;
+    let reverseLng: number | null = null;
     try {
         const body = await req.json();
         address = String(body.address || '').trim();
+        // 「用我的当前位置」：浏览器 GPS → 反查一个地址**字符串**回填输入框。
+        //
+        // ⚠️ 刻意只回 formattedAddress，不回 distanceKm/zone/lat/lng。坐标是
+        // 客户端传上来的，如果拿它直接算距离并存档，等于开了一个「传厨房的
+        // 坐标就免运费」的新篡改口子。回填之后仍然走原来的 address 路径由
+        // 服务端自己 geocode 一次，篡改面为零。
+        if (typeof body.lat === 'number' && typeof body.lng === 'number'
+            && Number.isFinite(body.lat) && Number.isFinite(body.lng)) {
+            reverseLat = body.lat;
+            reverseLng = body.lng;
+        }
     } catch {
         return NextResponse.json({ error: '请求格式错误' }, { status: 400 });
     }
 
-    if (!address || address.length < 5) {
+    if (reverseLat === null && (!address || address.length < 5)) {
         return NextResponse.json({ error: '请输入完整地址' }, { status: 400 });
+    }
+    if (reverseLat !== null && (Math.abs(reverseLat) > 90 || Math.abs(reverseLng!) > 180)) {
+        return NextResponse.json({ error: '定位坐标无效' }, { status: 400 });
     }
 
     // 跨实例硬上限（内存桶挡不住扇出到多个 serverless 实例的攻击）。
@@ -111,13 +127,21 @@ export async function POST(req: NextRequest) {
     // Bias results toward Malaysia (region=my, components=country:MY) AND a
     // ~10km bounding box around Pearl Point, so Google prefers nearby matches
     // over distant same-named places. Bounds is a soft bias, not a hard limit.
-    const params = new URLSearchParams({
-        address,
-        region: 'my',
-        components: 'country:MY',
-        bounds: '3.04,101.62|3.13,101.72',
-        key: apiKey,
-    });
+    const params = reverseLat !== null
+        // Reverse geocode（GPS → 地址串）。bounds/components 是正向查询才有意义的
+        // 偏置参数，反查带上会被忽略甚至报 INVALID_REQUEST，所以这里只给 latlng。
+        ? new URLSearchParams({
+            latlng: `${reverseLat},${reverseLng}`,
+            region: 'my',
+            key: apiKey,
+        })
+        : new URLSearchParams({
+            address,
+            region: 'my',
+            components: 'country:MY',
+            bounds: '3.04,101.62|3.13,101.72',
+            key: apiKey,
+        });
 
     let googleData: {
         status: string;
@@ -143,7 +167,11 @@ export async function POST(req: NextRequest) {
     }
 
     if (googleData.status === 'ZERO_RESULTS') {
-        return NextResponse.json({ error: '找不到这个地址，请检查后重试（建议含 condo 名 + 路名 + 邮编）' }, { status: 404 });
+        return NextResponse.json({
+            error: reverseLat !== null
+                ? '定位成功但查不到对应地址，请手动输入'
+                : '找不到这个地址，请检查后重试（建议含 condo 名 + 路名 + 邮编）',
+        }, { status: 404 });
     }
     if (googleData.status !== 'OK' || !googleData.results?.length) {
         // Surface the underlying Google status + message so the customer (or admin
@@ -166,6 +194,13 @@ export async function POST(req: NextRequest) {
     }
 
     const top = googleData.results[0];
+
+    // 反查模式到此为止：只把地址串还给前端填进输入框，不算距离、不返回坐标。
+    // 客户确认/微调后再走正常的 address 路径，由服务端权威解析一次。
+    if (reverseLat !== null) {
+        return NextResponse.json({ formattedAddress: top.formatted_address, reverse: true });
+    }
+
     const { lat, lng } = top.geometry.location;
     const distanceKm = distanceFromPearlPointKm(lat, lng);
 
