@@ -325,36 +325,45 @@ geocode、自己算 distance/zone、用 Admin SDK 写；然后从 `userSafeField
 
 ---
 
-# ⚠️ 待复核清单（审计代理报的，我没亲验）
+# 剩余 24 条的对抗性复核结果（已完成）
 
-修之前请自己先核一遍。按代理给的严重度排：
+13 组复核代理，指令是「尽力推翻」，不确定一律判 REFUTED。
+结果：**CONFIRMED 17 / PARTIAL 11 / REFUTED 0**。
 
-| 代理定级 | 问题 | 位置 |
-|---|---|---|
-| P0 | 已取消并全额回补的订单能被重新 confirm 复活，资源不重扣 | confirm-order:88,143 |
-| P1 | 加料 `name` 由客户端提供并直接进厨房备餐单（RM0 加料换 RM18.50 鳗鱼） | submit-order:114 |
-| P1 | 手动核销先扣券后扣 credit，加料不足抛错时券已被吞 | admin/manual-voucher-redemption:154 |
-| P1 | 周订阅「确认建单+扣券」幂等非原子且无 maxDuration，重试扣两遍券 | admin/subscriptions/week:314 |
-| P2 | 删掉 user doc 的 `addressDistanceKm` 变「legacy 用户」→ 免运 + 绕 25km 上限 | submit-order:268 |
-| P2 | 未付款的 QR 单立刻占限量菜库存且永不超时清理 → 零成本刷售罄 | release-stale-fpx:53 |
-| P2 | 首单码 FIRST5 提交时不预占，同一账号可连开多单反复减 RM5 | voucherValidation:104 |
-| P2 | 食材盘点「结余」重复扣同一批订单 → 虚假缺货多买货 | admin/ingredient-stock:113 |
-| P2 | 开新配送批次会静默关掉上一趟没送完的单，跟踪页永远转圈 | admin/delivery-batch:77 |
-| P2 | admin 改客户电话不同步 `phoneNormalized` → 后续餐券记到幽灵账号 | admin/update-user:84 |
-| P2 | 购物车清掉过期菜后，解释用的琥珀提示条被同一个 effect 立刻清空 | CartDrawer:168 |
-| P2 | 新内嵌收货表单丢了 `partialMatch` 警告，Google 模糊匹配到别的地址也照存 | CartDeliveryInfo:205 |
-| P2 | 整周 QR 大单的 Telegram 提醒超 4096 字符静默发不出 | ownerNotify:109 |
-| P2 | QR 餐券购买（RM168~333）落 pending-review 后**没有任何老板提醒** | meal-vouchers/create-purchase:127 |
-| P2 | 复活过的订单此后永远取消不掉，接口却返回 success:true | orderRollback:96 |
-| P2 | 首次确认副作用非原子：webhook + 浏览器同时到会记两次 LTV、发两封收据 | confirm-order:143 |
-| P2 | 事务回调里累加外部变量，事务重试导致券 id 重复 | mealVoucherUtils:256 |
-| P3 | 4 个 n8n 端点仍允许 `?key=` 明文传密钥且用 `!==` 比较（另两个已硬化） | n8n/daily-prep:412 |
-| P3 | 成功页/发给碗妈的金额是折前小计，与 FPX 回跳显示的实付不一致 | CartDrawer:780 |
-| P3 | 回给 Meta 的 InitiateCheckout 金额没扣餐券和 credit，餐券单虚报全价 | submit-order:556 |
-| P3 | Meta CAPI 商品 ID 有三套口径，Purchase 用中文菜名，跟目录 feed 永远匹配不上 | confirm-order:166 |
-| P3 | 手动单兜底客户 id 用未归一化电话，同号分裂成两个客户 | manualOrderCore:132 |
-| P3 | 改单同步库存是两次独立 HTTP，第二次失败只 console.warn → 库存永久虚高 | dashboard HTML:13311 |
-| P3 | submit-order 预留 dishStock 后中途抛错，外层 catch 不释放 | submit-order:627 |
+⚠️ 零推翻**不等于**零误报——PARTIAL 那 11 条里，复核员推翻的是原报告的
+**严重度夸大**和**错误修法**（有几个照抄会把 07 月刚修好的 bug 请回来）。
+**逐条判决、修正后的触发路径与改法** → `tasks/security-audit-2026-08-02-verified.md`
+（由结构化判决自动生成，未经改写）。
+
+| 判决 | 级别 | 问题 | 工作量 |
+|---|---|---|---|
+| CONFIRMED | P1 | 已取消并全额回补的单能被翻回 confirmed，资源不重扣（含 `revive-no-reserve` 同一个洞） | ~15 行 |
+| CONFIRMED | P2 | 复活过的单此后永远取消不掉，接口却返回 success:true（寄生在上一条） | 5~8 行 |
+| CONFIRMED | P2 | 加料 `name` 客户端说了算：RM0「少饭」冒充 RM18.50 加三文鱼，厨房/装碗/扣料全认假名 | 半天 |
+| CONFIRMED | P2 | submit-order 抛错不释放已预留库存 —— **少传一个 userName 就能稳定刷售罄** | ~20 行 |
+| CONFIRMED | P2 | 删掉自己的 `addressDistanceKm` → 免运 + 绕 25km 上限 + 绕防换址（原 fix 本身可被绕过） | 临时闸 3 行 |
+| CONFIRMED | P2 | 未付款 QR 单立刻扣限量菜库存，两个超时清理器都只扫 fpx → 零成本刷售罄 | ~20 行 |
+| CONFIRMED | P2 | 开新配送批次静默关掉上一趟未送完的单，跟踪页永久卡住 | ~15 行 |
+| CONFIRMED | P2 | admin 改电话不同步 `phoneNormalized` → 之后卖券会新建幽灵账号（地址那半被夸大） | 4 行 |
+| CONFIRMED | P2 | QR 买券（RM168~333）**零通知**：两条通道都够不到，daily-recap 只查 paid 也漏 | ~40 行 |
+| CONFIRMED | P3 | `tx.update(userRef)` 在 user doc 缺失时整事务回滚：券已铸、purchase 永久 pending（两处） | 1 行 ×2 |
+| CONFIRMED | P3 | 手动单 stub uid 电话未归一 → 同一人两个壳；bot 已因此认不出历史老客 | ~15 行 |
+| CONFIRMED | P3 | 购物车清过期菜后，解释文案被同一个 effect 二次触发抹掉 | 2 行 |
+| CONFIRMED | P3 | 成功页/碗妈 WhatsApp 的金额是折前小计**且漏运费**（比原报告更广） | 1 行 |
+| CONFIRMED | P3 | daily-prep 等 4 个 n8n 端点仍允许 `?key=`（同仓另两个已硬化） | 独立一轮 |
+| CONFIRMED | P3 | InitiateCheckout 金额没减餐券/credit，餐券单按面值上报 Meta | 1 行 |
+| CONFIRMED | P3 | CAPI 商品 ID 三套口径，目录匹配率恒为 0（且全站没发 `content_type`） | ~20 行 |
+| PARTIAL | P2 | 手动核销先扣券后扣 credit，抛错吞券 —— 真的；但「重试再吞一次」是误读，且 admin-only | ~15 行 |
+| PARTIAL | P2 | 周订阅幂等非原子 —— 真的；但「券永久烧掉无路可退」是误读（`manual-voucher-release` 只要 voucherIds） | ~25 行 |
+| PARTIAL | P2 | 首次确认副作用重复执行 —— **生产库已抓到 3 个账号多记 1 单 1 笔钱**；但真凶是老板在 Dashboard 来回点状态，不是 webhook 撞浏览器，原 fix 堵不住 | ~20 行 |
+| PARTIAL | P3 | promo 码确认前窗口可重复减 RM5 —— 真的；但「吃光 RM250 预算」夸大，且原 fix 会把 07 月修好的「FPX 放弃就烧券」bug 请回来 | 半小时 |
+| PARTIAL | P3 | 清空 phone 跳过首单券同号去重 —— 走通了；但根因不是规则白名单，原文两个药方一个没用一个会打断访客下单 | 2 行 |
+| PARTIAL | P3 | 食材盘点重复扣 —— 真的；但只影响采购建议面板、每次盘点自愈，**原 fix 会从「多买」变成「真断货」** | ~15 行 |
+| PARTIAL | P3 | 内嵌表单丢 `partialMatch` 提示 —— 真的；但它本来就只是告知、不拦保存也不改运费 | ~15 分钟 |
+| PARTIAL | P3 | Telegram 超 4096 静默丢 —— 实测 10 单一次结账 4293 字符会被退回；但需买齐整周午+晚，且邮件不受影响 | ~20 行 |
+| PARTIAL | P3 | 事务回调改外部变量 —— 写法确实是经典坑；但生产 252 笔餐券单里 0 笔发生过 | 20 分钟 |
+| PARTIAL | P3 | 4 个 n8n 端点非常量比较 —— 代码事实全对，但 timing attack 不可利用（并入上面 n8n 那条一起修） | 0 |
+| PARTIAL | P3 | 改单库存两次 HTTP 非原子 —— 真的；但只有毫秒级网络窗口 + 只有老板能触发 + 只坏盘点数字 | 5 分钟 |
 
 ---
 
@@ -379,17 +388,30 @@ geocode、自己算 distance/zone、用 Admin SDK 写；然后从 `userSafeField
 
 # 建议修复顺序
 
+## 已完成（commit `6be57bb`，仅本地未 push）
+
+| 项 | 状态 |
+|---|---|
+| **P0-A** 管理员邮箱抢注 | ✅ 老板确认 `hello@incredibowl.my` 已被占用 → 立即可利用性关闭。**代码层 `email_verified` / UID 白名单仍建议做**（定时炸弹：白名单加新邮箱、或该账号被删就重新敞开） |
+| **P0-B** 顾客取消已送达单退券 | ✅ 已修：取消权限收紧成只允许 pending + orderRollback 兜底闸门 |
+| **P0-C** 负数加料压价 | ✅ 已修：`posInt()` 归一，负数/小数/NaN/超大值拒收 |
+| **P0-D** QR 餐券签名重放 | ✅ 已修：强制 fpx + 绑定必须存在且相等 + finalize 状态门 |
+
+验证：`npx tsc --noEmit` 通过、`npm run build` 通过（76 静态页）。**线上 smoke check 待部署后做。**
+
+## 待办（按建议顺序）
+
 | # | 项 | 工作量 | 理由 |
 |---|---|---|---|
-| 1 | **P0-A** Firebase Console 占位 `hello@incredibowl.my` + 停用邮箱密码登录 | 5 分钟 | 唯一一条「全站接管」，且不用改代码就能先堵住 |
-| 2 | **P0-B** confirm-order 取消权限收紧 | 1 行 | 已确认零误伤 |
-| 3 | **P0-C** 数量正数校验 | 10 行 | 直接压价白吃 |
-| 4 | **P0-D** QR 餐券两道锁 | 10 行 | 上一轮就该修 |
-| 5 | P0-A 第二/三层：`email_verified` + UID 白名单 | 半小时 | 根治 |
-| 6 | P1-A 地址以服务端为准 | 5 行 | 顺手堵掉 P1-E 一半 |
-| 7 | P1-B / P1-C / P1-D | 各半小时 | 丢钱但概率低 |
-| 8 | P1-E 地址验证挪服务端（阶段 2.5） | 独立一轮 | 工程量最大 |
-| 9 | ⚠️ 待复核清单：先复核再修 | — | 额度恢复后跑一轮对抗性复核 |
+| 1 | P1-A 地址以服务端为准 | 5 行 | 顺手堵掉 P1-E 一半，也堵掉 `legacy-user-fee-bypass` |
+| 2 | 复核确认的 `cancelled-order-resurrect`（+ 寄生的 rollbackAt 死锁） | ~20 行 | 与 P0-B 同一条链的另一半：取消回补了，复活却不重扣 |
+| 3 | `submit-order-stock-leak-on-throw` + `qr-pending-holds-dishstock` | ~25 行 | 两条都能零成本把限量菜刷成售罄，合一轮做 |
+| 4 | P1-B razorpayOrderId 数组绑定 | 半小时 | 付了钱订单消失，零告警 |
+| 5 | P1-C 多段订单餐券按段挂 / P1-D 铸券幂等进事务 | 各半小时 | 丢钱但概率低 |
+| 6 | `first-confirm-race-double-ltv`（**生产已有 3 个账号被多记**） | ~20 行 | 已在流血，且要跑一次性回退脚本 |
+| 7 | `addon-name-spoof` + `qr-voucher-purchase-no-owner-alert` | 各半天 | 一个骗厨房，一个是你收不到买券通知 |
+| 8 | P1-E 地址验证挪服务端（阶段 2.5） | 独立一轮 | 工程量最大，做完 1 和 legacy 那条一起消 |
+| 9 | 其余 P3 小活打包一轮 | 半天 | 清单见 verified 文档 |
 
 ---
 
