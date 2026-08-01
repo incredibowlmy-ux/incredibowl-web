@@ -105,6 +105,19 @@ export async function validateVoucher(
             return { ok: false, error: '您已使用过此优惠码', status: 400 };
         }
 
+        // firstOrderOnly：公开发放的拉新码（网站自助领取的首单 RM5）用它挡住
+        // 老客户。totalOrders 由 /api/confirm-order:183 在首次确认时 +1，所以
+        // 「还没有一张确认单」== 新客。
+        //
+        // 匿名访客每次都是新 uid、totalOrders 恒为 0，靠下面的 phoneNormalized
+        // 去重兜底 —— 同一个手机号第二次来，会在这里被 usedByPhone 拦下。
+        if (data.firstOrderOnly === true) {
+            const placed = typeof userData.totalOrders === 'number' ? userData.totalOrders : 0;
+            if (placed > 0) {
+                return { ok: false, error: '此优惠码只限首次下单使用', status: 400 };
+            }
+        }
+
         const myPhone = normalizePhone(userData.phone);
         if (myPhone) {
             const sameByPhone = await db

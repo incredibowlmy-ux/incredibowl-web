@@ -19,6 +19,7 @@ import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { dishVoucherValue, weeklyMenu } from '@/data/weeklyMenu';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
+import { readPendingPromo, clearPendingPromo } from '@/lib/firstOrderPromo';
 import { useCartStore } from '@/store/cartStore';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
@@ -287,10 +288,10 @@ export default function CartDrawer({
         return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
     };
 
-    const handleApplyPromo = async () => {
-        const code = promoCode.trim().toUpperCase();
+    const applyPromoCode = async (rawCode: string, opts: { silent?: boolean } = {}) => {
+        const code = rawCode.trim().toUpperCase();
         if (!code) return;
-        if (!currentUser) { onAuthOpen(); return; }
+        if (!currentUser) { if (!opts.silent) onAuthOpen(); return; }
         setIsCheckingPromo(true);
         setPromoError('');
         try {
@@ -302,19 +303,57 @@ export default function CartDrawer({
             });
             const data = await res.json();
             if (!res.ok) {
-                setPromoError(data.error || t.promoInvalid);
+                // silent = 自动套用首单码。码不存在/已用过/只限首单 都不该
+                // 弹红字吓人——客户压根没主动输过这个码。静默清掉即可。
+                if (opts.silent) {
+                    clearPendingPromo();
+                    setPromoCode('');
+                } else {
+                    setPromoError(data.error || t.promoInvalid);
+                }
                 setPromoApplied(false); setPromoDiscount(0);
                 return;
             }
             setPromoDiscount(data.discount);
             setPromoApplied(true);
             setPromoError('');
+            clearPendingPromo();
         } catch (err) {
-            setPromoError(t.promoCheckFailed);
+            if (!opts.silent) setPromoError(t.promoCheckFailed);
         } finally {
             setIsCheckingPromo(false);
         }
     };
+
+    const handleApplyPromo = () => applyPromoCode(promoCode);
+
+    // ── 首单 RM5 自助领取的收尾 ────────────────────────────────
+    // 客户在首页弹窗/底部条点了「领取」→ 码存进 localStorage。这里把它填进
+    // 优惠码框，并在拿到身份后静默套用，客户全程不用点「应用」。
+    //
+    // 两步是分开的、各自只做一次：绝大多数新客打开购物车时还没登录（访客下单
+    // 是在这之后才点的），所以「填入」和「套用」不能绑在同一次尝试上 —— 否则
+    // 码填进去了却永远不会自动生效，「结账自动帮你用上」就是句空话。
+    //
+    // 只有当输入框里就是我们填的那个码时才自动套用；客户自己手打了别的码，
+    // 一律不碰。失败静默清掉，不会反复打 /api/check-voucher。
+    const autoPromo = React.useRef({ filled: false, applied: false });
+    useEffect(() => {
+        if (!isOpen) { autoPromo.current = { filled: false, applied: false }; return; }
+        if (promoApplied || cappedMealVouchersUsed > 0 || cart.length === 0) return;
+        const pending = readPendingPromo();
+        if (!pending) return;
+
+        if (!autoPromo.current.filled && !promoCode) {
+            autoPromo.current.filled = true;
+            setPromoCode(pending);
+            return;   // 等下一轮（promoCode 已就位）再决定要不要套用
+        }
+        if (currentUser && !autoPromo.current.applied && promoCode === pending) {
+            autoPromo.current.applied = true;
+            applyPromoCode(pending, { silent: true });
+        }
+    }, [isOpen, currentUser, promoApplied, promoCode, cappedMealVouchersUsed, cart.length]);
 
     useEffect(() => {
         const script = document.createElement('script');
