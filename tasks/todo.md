@@ -915,3 +915,65 @@ catering×2 / 6 个博客页会继续宣称「满 45 免运」；`/api/check-del
 3131 端口（`EADDRINUSE` 只写进日志没人看），导致「记住时段」验证连续两次假阴性，
 我差点去改没坏的代码。正确姿势：`netstat -ano | grep :PORT | grep LISTENING` 取 PID
 再 `taskkill //PID x //F`，并且**每次重启后 curl 一个本次新增的 chunk 确认 200**。
+
+---
+
+## FIRST5 首单码上线前收尾（2026-08-02）
+
+老板在 Firestore Console 手动建了 `vouchers/FIRST5`，指示「the rest on you」。
+
+### 手动建的文档体检结果
+
+| 字段 | 老板填的 | 判定 |
+|---|---|---|
+| `discount` | `5` (number) | ✅ |
+| `maxUses` | `50` (number) | ✅ 与既有 48 个公开码惯例一致 |
+| `expiresAt` | 2026-11-02 01:30 MYT | ✅ |
+| `code` | `"FIRST5"` (string) | ✅ 纯元数据，没有代码读它 |
+| **`firstOrderOnly`** | **缺失** | ❌ **已补 `true`** |
+
+补字段走 `scripts/patch-first5-first-order-only.mjs --apply`（只写这一个字段，
+`usedCount > 0` 时拒绝执行）。回读校验 `firstOrderOnly = true (boolean)`，
+`discount/maxUses/usedCount` 确认未被改动。
+
+### ⚠️ 上线前 firstOrderOnly 是死字段
+
+判定代码在 `fd5241f`（未推），线上 `origin/main` 的 `voucherValidation.ts` 里
+`firstOrderOnly` **0 命中**。也就是说这个字段要等这批 commit 上线才生效。
+反正领取按钮本身也在未推的 commit 里，线上目前没有任何入口提到 FIRST5，
+不存在「码已流通但规则没生效」的窗口。
+
+### 顺带查出来的现役码全景
+
+| 到期 (MYT) | 码 | 减 | 已用/上限 | 只限首单 |
+|---|---|---|---|---|
+| **2026-08-06** | **BOWL5** | 5 | **17/50** | ❌ |
+| 2026-09-25 | OUGPLATINUM5 | 5 | 0/50 | ❌ |
+| 2026-11-02 | **FIRST5** | 5 | 0/50 | ✅（上线后） |
+| 2027-05-10 | FBOOK5 / INSTA5 / TTOK5 | 5 | 0/50 | ❌ |
+
+**BOWL5 是现役的公开 RM5 码，8/6 到期。** 老板建了 FIRST5 = 选了「新码走网站
+自助领取，BOWL5 让它自然过期」。两码并存期间（到 8/6）**没有互斥** —— 同一个
+客户 BOWL5 用一次、FIRST5 再用一次是可能的，`vouchersUsed` 按码去重。
+只剩 4 天 + BOWL5 只余 33 额度，敞口有限，不处理。
+
+### 验证
+
+`tsc` 0 错 · `npm run build` exit 0 · dogfood 14/14 + 38/0 + 55/55 ·
+**新增 `dogfood-first-order-promo.mts` 7/7**（拿真 `validateVoucher` 打真生产库）：
+
+- 全新 uid（users 文档不存在）→ 放行，RM5 / 上限 50
+- 真老客户 `totalOrders=60` → 拒，理由「只限首次下单使用」
+- 匿名预检（不传 userId）→ 放行（按设计跳过 per-user 判定）
+- 对照组 BOWL5 同一个老客户 → **不是**被「只限首单」拦的（证明差异来自新字段）
+
+### 我做的两个判断（老板可推翻）
+
+1. **`MAX_USES` 2000 → 50**。2000 是我拍脑袋填的，库里全部公开码都是 50，
+   BOWL5 实跑 17/50 说明够用。首单码天然能换手机号重复领，上限是唯一硬止损。
+2. **不在这批修「核销窗口」洞**。`vouchersUsed`/`totalOrders` 只在 confirm-order
+   写，从下单到确认之间码算「没用过」—— QR 单这个窗口有几小时，同一个人能连下
+   两单各减 RM5。但 `maxUses:50` 已把总敞口锁死在 RM250，而修它要动
+   `validateVoucher`（5 个调用点含结账主链路），不值得在一个已经全绿的 10-commit
+   结账批次上加未验证面。**留作独立改动**，方案：校验时把「进行中的订单」也算已用
+   （查 orders 而非加新状态字段 → 不需要释放逻辑，取消单自然不计数）。
