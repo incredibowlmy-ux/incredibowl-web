@@ -57,6 +57,34 @@ export interface AddOnSection {
 }
 
 // Default add-on sections — can be overridden via props
+/**
+ * 记住上次选的午/晚餐。
+ *
+ * 时段是必填（没选 CTA 就灰着写「请先选择时段」），而每加一道菜都要重新点
+ * 一次同一个选择 —— 点 3 道菜就是 3 次重复劳动，而 99% 的客户每次都选同一个。
+ *
+ * ⚠️ 只接受下面两个**逐字**字面量。这两个串会原样进订单文档、备餐单和
+ * dashboard 的午/晚分组，localStorage 是客户可以随便改的地方，绝不能把它
+ * 里面的任意字符串直接当时段用。认不出就当没存过，回到「必须自己选」。
+ */
+const SLOT_LUNCH = 'Lunch (11AM-1PM)';
+const SLOT_DINNER = 'Dinner (5PM-8PM)';
+const LAST_SLOT_KEY = 'incredibowl_last_slot';
+
+function readLastSlot(): string {
+    try {
+        const v = localStorage.getItem(LAST_SLOT_KEY);
+        return v === SLOT_LUNCH || v === SLOT_DINNER ? v : '';
+    } catch {
+        return '';
+    }
+}
+
+function saveLastSlot(slot: string): void {
+    if (slot !== SLOT_LUNCH && slot !== SLOT_DINNER) return;
+    try { localStorage.setItem(LAST_SLOT_KEY, slot); } catch { /* 隐私模式 */ }
+}
+
 const defaultAddOnSections: AddOnSection[] = [
     {
         id: 'sides',
@@ -152,6 +180,10 @@ export default function AddOnModal({
     // Delivery Date and Time
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedTime, setSelectedTime] = useState("");
+    // 日期不可选的原因，内联显示在日期框下面。取代原来的 alert() —— alert
+    // 弹完客户点掉后 input 的值已经被 return 掉了，视觉上「日期没变」却不知
+    // 道为什么，还要重新点开日历重滑一遍。
+    const [dateError, setDateError] = useState('');
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
 
@@ -736,7 +768,10 @@ export default function AddOnModal({
                 setDishQty(1);
                 setNote('');
                 setSelectedDate(defaultDate || minDate || "");
-                setSelectedTime("");
+                // 记住上次选的午/晚餐并默认选中。时段是必填（不选 CTA 灰着），
+                // 点 3 道菜就要重复点 3 次同一个选择；99% 的客户每次都选同一个。
+                // 只认我们自己写进去的两个字面量，其余一律当没存过。
+                setSelectedTime(readLastSlot());
                 const initialExpanded: Record<string, boolean> = {};
                 activeAddOnSections.forEach((s, i) => {
                     initialExpanded[s.id] = i === 0;
@@ -1056,22 +1091,23 @@ export default function AddOnModal({
                                             // 0=Sunday, 6=Saturday
                                             const day = selDate.getDay();
                                             if (day === 0 || day === 6) {
-                                                alert(t.weekendAlert);
+                                                setDateError(t.weekendAlert);
                                                 return;
                                             }
                                             const allow = dish?.availableWeekdays;
                                             if (allow && allow.length && !allow.includes(day)) {
-                                                alert(t.weekdayOnlyAlert(allow));
+                                                setDateError(t.weekdayOnlyAlert(allow));
                                                 return;
                                             }
                                             if (dish && isDishBlockedOn(dish.id, selected)) {
-                                                alert(t.dishPausedAlert);
+                                                setDateError(t.dishPausedAlert);
                                                 return;
                                             }
                                             if (isDateClosed(selected)) {
-                                                alert(t.dateClosedAlert);
+                                                setDateError(t.dateClosedAlert);
                                                 return;
                                             }
+                                            setDateError('');
                                             if (selected < (minDate || "")) {
                                                 setSelectedDate(minDate || "");
                                             } else {
@@ -1086,18 +1122,23 @@ export default function AddOnModal({
                                     {dateLabel || selectedDate} {t.fixedDateSuffix}
                                 </div>
                             )}
+                            {dateError && (
+                                <div className="-mt-1 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-xs font-bold text-red-700 leading-relaxed">
+                                    {dateError}
+                                </div>
+                            )}
                             {/* Both breakpoints: the two slots as big one-tap targets.
                                 (Was a native <select> on mobile — three interactions and
                                 an iOS picker wheel for a two-option choice.) */}
                             <div className="grid grid-cols-2 gap-3">
                                 {([
-                                    { value: 'Lunch (11AM-1PM)', label: t.lunchSlot },
-                                    { value: 'Dinner (5PM-8PM)', label: t.dinnerSlot },
+                                    { value: SLOT_LUNCH, label: t.lunchSlot },
+                                    { value: SLOT_DINNER, label: t.dinnerSlot },
                                 ] as const).map(slot => (
                                     <button
                                         key={slot.value}
                                         type="button"
-                                        onClick={() => setSelectedTime(slot.value)}
+                                        onClick={() => { setSelectedTime(slot.value); saveLastSlot(slot.value); }}
                                         className={`min-h-[46px] px-4 py-3 rounded-2xl text-sm font-bold border-2 transition-colors ${
                                             selectedTime === slot.value
                                                 ? 'border-[#2D5F3E] bg-[#2D5F3E] text-white'

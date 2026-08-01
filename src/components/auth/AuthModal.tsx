@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, upsertSavedAddress } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
+import { saveDeliveryProfile } from '@/lib/deliveryProfile';
 import { User } from 'firebase/auth';
 import { getUserOrders } from '@/lib/orders';
 import { isValidEmail, isValidMyPhone } from '@/lib/cartUtils';
@@ -163,44 +164,17 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
         if (!geocode) { setMessage(t.verifyFirst); return; }
         setLoading(true); setMessage('');
         try {
-            const { serverTimestamp } = await import('firebase/firestore');
-            const updateData: any = {
+            // 写库逻辑抽在 lib/deliveryProfile.ts —— 购物车内嵌表单是第二个宿主，
+            // 字段少一个就是防换址校验不过 / 运费按旧距离算，所以只留一份。
+            await saveDeliveryProfile({
+                uid: currentUser.uid,
+                isAnonymous: currentUser.isAnonymous,
                 phone,
                 address,
-                addressLat: geocode.lat,
-                addressLng: geocode.lng,
-                addressDistanceKm: geocode.distanceKm,
-                deliveryZone: geocode.zone,
-                addressFormatted: geocode.formattedAddress,
-                addressVerifiedAt: serverTimestamp(),
-                addressVerifiedText: address.trim(),  // anti-spoof: server cross-checks this on submit-order
-            };
-            // 访客「怎么称呼」（选填）：填了才覆盖 displayName（默认 "Guest"），
-            // 下单时 CartDrawer 的 userName fallback 会带上，Dashboard 就认得出人
-            if (currentUser.isAnonymous && guestName?.trim()) {
-                updateData.displayName = guestName.trim();
-            }
-            await updateUserProfile(currentUser.uid, updateData);
-
-            // 已验证的地址顺手收编进地址簿（≤5 条自动收，满了不打断保存）。
-            // 匿名访客不建地址簿——升级成正式账号前只维护单一当前地址。
-            if (!currentUser.isAnonymous) {
-                try {
-                    await upsertSavedAddress(currentUser.uid, {
-                        label: (addressLabel || '').trim(),
-                        address: address.trim(),
-                        lat: geocode.lat,
-                        lng: geocode.lng,
-                        distanceKm: geocode.distanceKm,
-                        zone: geocode.zone,
-                        formatted: geocode.formattedAddress,
-                        verifiedText: address.trim(),
-                        verifiedAtMs: Date.now(),
-                    });
-                } catch (e) {
-                    console.warn('[profile] 地址簿同步失败（当前地址已保存）', e);
-                }
-            }
+                geocode,
+                addressLabel,
+                guestName,
+            });
 
             setMessage(t.profileUpdated);
             setEditingProfile(false);
