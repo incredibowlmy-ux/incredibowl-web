@@ -61,7 +61,9 @@ interface ReceiptDict {
 const DICT: Record<Locale, ReceiptDict> = {
     zh: {
         subject: (id) => `订单确认 #${id} · Incredibowl 碗妈`,
-        heading: '🍛 订单确认',
+        // 中文版抬头保持中英并排（老板 08-03 定），英文版则是纯英文；
+        // 两版都不带 emoji。
+        heading: '订单确认 · Order Confirmed',
         intro: (name) => `${name} 你好，碗妈已收到你的订单，按时给你送到 👇`,
         orderLine: (id) => `订单 #${id}`,
         food: '餐费',
@@ -84,7 +86,7 @@ const DICT: Record<Locale, ReceiptDict> = {
     },
     en: {
         subject: (id) => `Order confirmed #${id} · Incredibowl`,
-        heading: '🍛 Order Confirmed',
+        heading: 'Order Confirmed',
         intro: (name) => `Hi ${name}, BowlMama has received your order and will deliver it on time 👇`,
         orderLine: (id) => `Order #${id}`,
         food: 'Food',

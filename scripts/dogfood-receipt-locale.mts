@@ -73,7 +73,8 @@ async function renderReceipt(locale?: 'zh' | 'en') {
 console.log('\n=== 1. 中文订单（locale: zh）===');
 const zh = await renderReceipt('zh');
 check('主题是中文', zh.subject.includes('订单确认'), zh.subject);
-check('抬头「订单确认」', zh.html.includes('🍛 订单确认'));
+check('中文版抬头中英并排', zh.html.includes('>订单确认 · Order Confirmed<'));
+check('中文版抬头无 emoji', !zh.html.includes('🍛'));
 check('正文中文问候', zh.html.includes('碗妈已收到你的订单'));
 check('菜名用中文', zh.html.includes('柠香香煎三文鱼饭'));
 check('不出现英文菜名', !zh.html.includes('Lemon Pan-Seared'));
@@ -84,7 +85,9 @@ check('合计口径不变（76.70 + 5.00 = 81.70）', zh.html.includes('RM 81.70
 console.log('\n=== 2. 英文订单（locale: en）===');
 const en = await renderReceipt('en');
 check('主题是英文', en.subject.includes('Order confirmed'), en.subject);
-check('抬头 Order Confirmed', en.html.includes('🍛 Order Confirmed'));
+check('英文版抬头是纯英文', en.html.includes('>Order Confirmed<'));
+check('英文版抬头不带中文', !en.html.includes('订单确认'));
+check('英文版抬头无 emoji', !en.html.includes('🍛'));
 check('正文英文问候', en.html.includes('BowlMama has received your order'));
 check('菜名用 nameEn', en.html.includes('Lemon Pan-Seared Salmon Rice'));
 check('加料也用 nameEn', en.html.includes('↳ Extra rice'));
@@ -92,11 +95,11 @@ check('时段 Lunch', en.html.includes('Lunch 11AM–1PM'));
 check('付款方式 FPX online banking', en.html.includes('FPX online banking'));
 check('Total / Delivery 表头是英文', en.html.includes('Total (incl. delivery)') && en.html.includes('Delivery'));
 check('金额与中文版逐分一致', en.html.includes('RM 81.70'));
-// 整封信里除了品牌 slogan「家的味道」和碗妈落款，不该再有中文
+// 英文版全篇不该有中文。唯一例外是品牌落款「家的味道」。
 const enBodyCjk = en.html
     .replace(/Incredibowl · 家的味道 · incredibowl.my/g, '')
     .match(/[一-鿿]/g);
-check('英文版正文无残留中文', !enBodyCjk, enBodyCjk ? `残留：${enBodyCjk.join('')}` : '');
+check('英文版无残留中文（品牌落款除外）', !enBodyCjk, enBodyCjk ? `残留：${enBodyCjk.join('')}` : '');
 
 console.log('\n=== 3. 旧单回归（无 locale 字段）===');
 const legacy = await renderReceipt(undefined);
