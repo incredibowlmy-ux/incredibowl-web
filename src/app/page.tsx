@@ -88,6 +88,28 @@ export default function V4BentoLayout() {
         // round-trip. Keep reading legacy sessionStorage for payments started
         // before this deploy.
         const pendingStr = localStorage.getItem('fpx_pending_order') || sessionStorage.getItem('fpx_pending_order');
+
+        // ── 英文客户转交给 /en ─────────────────────────────────
+        // 这里是中文首页。银行回跳只会落在 fpx-callback 指定的路径上，一旦那个
+        // locale query 丢了（Razorpay 是否在所有支付方式下都保留尚未实测），英文
+        // 客户就会带着 fpx_ok 落在这一页，看到一屏中文成功弹窗。
+        //
+        // 快照是我们自己写的 localStorage，活过银行往返，比 URL 参数可靠：里面
+        // locale==='en' 就把整串参数原样转交给 /en，由那边的英文流程接手。必须
+        // 抢在下面任何一条分支之前 return —— 否则订单会被这一页先确认/取消掉，
+        // 转过去的 /en 拿到的是一个已经处理完的 URL。
+        const hasFpxParams = url.searchParams.has('fpx_ok')
+            || url.searchParams.has('fpx_error')
+            || url.searchParams.has('razorpay_payment_id');
+        if (hasFpxParams && pendingStr) {
+            try {
+                if (JSON.parse(pendingStr).locale === 'en') {
+                    window.location.replace(`/en${url.search}`);
+                    return;
+                }
+            } catch { /* 快照坏了就当中文，照常往下走 */ }
+        }
+
         const clearPendingStore = () => {
             localStorage.removeItem('fpx_pending_order');
             sessionStorage.removeItem('fpx_pending_order');

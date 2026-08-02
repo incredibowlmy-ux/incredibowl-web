@@ -53,8 +53,14 @@ export async function POST(req: Request) {
       mealVouchersUsed: rawMealVouchersUsed,
       clientMealVoucherDiscount,
       clientAddonCreditDiscount,
+      locale: rawLocale,
     } = body;
     const userId = auth.uid; // authoritative — body userId ignored
+    // 下单时的界面语言，落到订单文档上供收据邮件选模板。请求体不可信，只认
+    // 'en' 这一个字面量，其余（缺失 / 乱填 / 老版本前端）一律 'zh'。这个字段
+    // 纯文案、不参与计价，是订单通知语言的**唯一**来源。手动单（manualOrderCore）
+    // 不盖这个章 —— 它们 userEmail 为空，收据邮件本来就跳过，加了是死代码。
+    const orderLocale: 'zh' | 'en' = rawLocale === 'en' ? 'en' : 'zh';
     const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
 
     // ── Basic validation ──────────────────────────────────────
@@ -524,6 +530,7 @@ export async function POST(req: Request) {
         deliveryTier: serverDeliveryTier,
         deliveryDate: group.date,
         deliveryTime: group.time,
+        locale: orderLocale,
         paymentMethod,
         receiptUploaded: receiptUploaded || false,
         status: 'pending',
@@ -558,8 +565,12 @@ export async function POST(req: Request) {
       payloads.push(payload);
 
       // Update user lastOrderAt
+      // preferredLocale 只做记录，目前没有读取方（通知语言一律走订单文档上的
+      // locale）。留着是因为这个事实**事后补不回来** —— 想知道某个老客户当初
+      // 用哪种界面下单、想统计英文站占比，只有在下单这一刻记下来才有。
       await db.collection('users').doc(userId).update({
         lastOrderAt: FieldValue.serverTimestamp(),
+        preferredLocale: orderLocale,
       });
     }
 

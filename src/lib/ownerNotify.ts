@@ -43,6 +43,12 @@ const TIME_LABEL: Record<string, string> = {
 };
 const timeLabel = (t: unknown) => TIME_LABEL[String(t)] ?? String(t ?? '');
 
+/**
+ * 这封提醒的收件人是老板，永远中文 —— 但英文站下的单要标出来，否则碗妈
+ * 会用中文去 WhatsApp 回一个英文客户。locale 由 submit-order 落库。
+ */
+const isEnCustomer = (d: Record<string, any>) => d?.locale === 'en';
+
 /** One-order block in plain text (Telegram) — items, totals, receipt link. */
 function orderLinesText(o: NotifyOrder): string[] {
     const d = o.data;
@@ -50,6 +56,7 @@ function orderLinesText(o: NotifyOrder): string[] {
     const lines: string[] = [];
     lines.push(`🧾 订单 #${shortId(o.id)}`);
     lines.push(`👤 ${String(d.userName || '客户')} · ${String(d.userPhone || '')}`.trim());
+    if (isEnCustomer(d)) lines.push('🗣 客户语言：English —— 请用英文回复');
     if (d.userAddress) lines.push(`📍 ${String(d.userAddress)}`);
     lines.push(`🗓 ${String(d.deliveryDate || '')} ${timeLabel(d.deliveryTime)}`.trim());
     for (const it of items) {
@@ -85,6 +92,7 @@ function orderBlockHtml(o: NotifyOrder): string {
     <div style="border:1px solid #eee;border-radius:12px;padding:16px;margin:12px 0;background:#fff;">
         <p style="margin:0 0 6px;font-weight:bold;color:#FF6B35;">订单 #${shortId(o.id)}</p>
         <p style="margin:0 0 4px;color:#1A2D23;font-size:14px;">👤 ${escapeHtml(String(d.userName || '客户'))} · ${escapeHtml(String(d.userPhone || ''))}</p>
+        ${isEnCustomer(d) ? `<p style="margin:0 0 4px;color:#FF6B35;font-size:13px;font-weight:bold;">🗣 客户语言：English —— 请用英文回复</p>` : ''}
         <p style="margin:0 0 4px;color:#666;font-size:13px;">📍 ${escapeHtml(String(d.userAddress || ''))}</p>
         <p style="margin:0 0 8px;color:#666;font-size:13px;">🗓 ${escapeHtml(String(d.deliveryDate || ''))} ${escapeHtml(timeLabel(d.deliveryTime))}</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;">${rows}</table>

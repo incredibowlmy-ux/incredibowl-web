@@ -420,7 +420,12 @@ export default function CartDrawer({
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                     amount: data.amount, currency: data.currency, order_id: data.orderId,
                     name: 'Incredibowl', description: t.razorpayDescription,
-                    callback_url: `${window.location.origin}/api/payment/fpx-callback`,
+                    // locale 随 callback_url 带出去，跳回来时 fpx-callback 才知道
+                    // 该把客户送回 `/` 还是 `/en`（英文客户落在中文首页 = 付完钱
+                    // 看一屏中文）。⚠️ 不确定 Razorpay 是否在所有支付方式下都原样
+                    // 保留这个 query，所以 page.tsx 里还有一道读快照的兜底重定向 ——
+                    // 那条路径 100% 在我们自己手里，不依赖第三方行为。
+                    callback_url: `${window.location.origin}/api/payment/fpx-callback?locale=${locale === 'en' ? 'en' : 'zh'}`,
                     redirect: true,
                     handler: (response: any) => { resolved = true; resolve(response); },
                     modal: {
@@ -560,6 +565,10 @@ export default function CartDrawer({
                 mealVouchersUsed: cappedMealVouchersUsed,
                 clientMealVoucherDiscount: mealVoucherDiscount,
                 clientAddonCreditDiscount: addonCreditDiscount,
+                // 下单时的界面语言 → 落到订单文档上，收据邮件按它选模板。
+                // 邮件是服务端发的（webhook / dashboard 手动确认都可能触发），
+                // 那时候没有浏览器也没有语言头 —— 只能靠下单这一刻存下来。
+                locale,
             }),
         });
 
@@ -698,7 +707,9 @@ export default function CartDrawer({
             // localStorage（不是 sessionStorage）：手机 FPX 跳银行时浏览器常把
             // 原标签页杀掉，sessionStorage 随之丢失 → 跳回后成功弹窗渲染不出
             // （2026-07-05 老板手机实测复现）。localStorage 能活过这趟往返。
-            localStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, createdAt: Date.now() }));
+            // locale 一并写进快照：跳回来时落地页（page.tsx）靠它判断要不要把
+            // 英文客户转交给 /en 渲染。快照活过银行往返，比 URL 参数可靠。
+            localStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, locale, createdAt: Date.now() }));
             setSubmitting(false);
 
             try {
