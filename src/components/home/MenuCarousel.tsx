@@ -446,7 +446,7 @@ export default function MenuCarousel({ menuDates, onOpenAddOn, dishStock = {} }:
                         <div className="flex-1 min-w-0">
                             <p className="text-[14px] lg:text-[18px] font-extrabold text-[#1A2D23] leading-tight">餐券预付包 · 一次买，慢慢吃</p>
                             <p className="text-[11px] lg:text-[13px] text-[#1A2D23]/60 font-bold mt-0.5 leading-snug">
-                                任意主菜都能兑 · 20 张装省 RM 20 · 30 / 60 天有效
+                                任意主菜都能兑 · 20 张装单券低至 RM 17.50 · 30 / 60 天有效
                             </p>
                         </div>
                         <span className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 lg:px-5 lg:py-2.5 bg-[#FF6B35] group-hover:bg-[#E95D31] text-white rounded-full text-[12px] lg:text-[14px] font-black shadow-sm shadow-[#FF6B35]/30 transition-colors">

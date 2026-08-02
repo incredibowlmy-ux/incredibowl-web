@@ -9,7 +9,9 @@ import {
     ArrowLeft, Ticket, CheckCircle, Sparkles, AlertCircle, Loader2,
     CreditCard, Phone, Plus, Calendar, ShieldCheck, Clock, Tag,
 } from 'lucide-react';
-import { MEAL_VOUCHER_BUNDLES, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
+import {
+    MEAL_VOUCHER_BUNDLES, FACE_VALUE_RM, bundleRedeemSavings, formatPercent,
+} from '@/data/mealVoucherConfig';
 import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import type { MealVoucherBundle } from '@/data/mealVoucherConfig';
 import type { Locale } from '../member/dict';
@@ -24,6 +26,15 @@ const bestVoucherValue = Math.max(
         .filter(d => !d.hidden && !d.retired)
         .map(d => dishVoucherValue(d.price, d)),
 );
+
+// 全站展示的折扣一律走这个口径：分母是 bestVoucherValue，不是面值。
+// 面值口径把 5 张装算成 0%（分母 = 单券价），等于把「券能兑更贵的菜」这份
+// 真实价值整个抹掉。详见 mealVoucherConfig.bundleRedeemSavings 的注释。
+const REDEEM_SAVINGS = new Map(
+    MEAL_VOUCHER_BUNDLES.map(b => [b.id, bundleRedeemSavings(b, bestVoucherValue)]),
+);
+// 头部徽章「最高省 X%」取全部装里最高的那档。
+const BEST_SAVINGS_PERCENT = Math.max(0, ...[...REDEEM_SAVINGS.values()].map(s => s.percent));
 
 export default function MealVouchersView({ locale }: { locale: Locale }) {
     const t = MEAL_VOUCHERS_DICT[locale];
@@ -460,7 +471,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                         <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 border border-white/10">
                             <Sparkles size={16} className="text-[#FF6B35] mb-1" />
                             <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{t.badgeSavingsLabel}</p>
-                            <p className="text-xs font-bold text-white">{t.badgeSavingsValue}</p>
+                            <p className="text-xs font-bold text-white">{t.badgeSavingsValue(formatPercent(BEST_SAVINGS_PERCENT))}</p>
                         </div>
                     </div>
                 </div>
@@ -473,6 +484,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                     {MEAL_VOUCHER_BUNDLES.map((bundle) => {
                         const isSelected = selectedBundleId === bundle.id;
                         const highlight = localiseHighlight(bundle.highlight);
+                        const redeem = REDEEM_SAVINGS.get(bundle.id)!;
                         return (
                             <button
                                 key={bundle.id}
@@ -500,9 +512,9 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                         </div>
                                         <p className="text-xs text-gray-500 font-bold">
                                             {t.perVoucher(bundle.pricePerVoucher.toFixed(2))}
-                                            {bundle.savings > 0 && (
+                                            {redeem.perMeal > 0 && (
                                                 <span className="text-green-600 ml-2">
-                                                    {t.savings(bundle.savings.toFixed(2), bundle.savingsPercent)}
+                                                    {t.savingsPerMeal(redeem.perMeal.toFixed(2), formatPercent(redeem.percent))}
                                                 </span>
                                             )}
                                         </p>
@@ -514,37 +526,48 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                         <p className="text-2xl font-black text-[#FF6B35]">
                                             RM {bundle.price.toFixed(2)}
                                         </p>
-                                        {bundle.savings > 0 && (
-                                            <p className="text-[10px] text-gray-400 line-through">
-                                                RM {bundle.faceValue.toFixed(2)}
-                                            </p>
-                                        )}
+                                        {/* 原来这里有一条划掉的面值（RM 370）。已移除：面值口径
+                                            算出来是 5%，跟旁边绿标的 12.1% 是两个分母，同一张卡上
+                                            摆两个对不上的折扣数字只会让客户觉得在灌水。
+                                            RM 370 也不是任何人真付过的价，只是个合成锚点。 */}
                                     </div>
                                 </div>
                             </button>
                         );
                     })}
 
-                    {/* 券到底值多少 —— 5 张装是面值平价（savings 为 0，卡片上那个
-                        绿色「省 RM x」标签根本不渲染），看起来像「买少了被罚」。
-                        真正的价值是「任意主菜都能兑」，包括比面值贵的菜：本周有
-                        RM 19.90 且零补差的菜，用一张 RM 18.50 的券兑它，每份多省
-                        RM 1.40。这句话以前没人说，客户自己看不出来。
-                        数字全部从 weeklyMenu 现算，换菜自动跟上，不会写死过期。 */}
-                    {bestVoucherValue > FACE_VALUE_RM && (
-                        <div className="bg-[#FFF3E0]/70 border border-[#FFD6B0]/70 rounded-2xl px-4 py-3.5">
-                            <p className="text-[13px] font-black text-[#1A2D23] flex items-center gap-1.5">
-                                <Ticket size={14} className="text-[#FF6B35] shrink-0" />
-                                {t.voucherValueNoteTitle}
-                            </p>
-                            <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
-                                {t.voucherValueNote(bestVoucherValue.toFixed(2), (bestVoucherValue - FACE_VALUE_RM).toFixed(2))}
-                            </p>
-                            <p className="text-[11px] text-[#1A2D23]/50 font-medium leading-relaxed mt-1">
-                                {t.voucherValueNoteTopUp}
-                            </p>
-                        </div>
-                    )}
+                    {/* 券到底值多少 —— 真正的价值是「任意主菜都能兑」，包括比面值贵的菜：
+                        本周有 RM 19.90 且零补差的菜，用一张 RM 17.50 的券兑它每份省
+                        RM 2.40 = 12.1%，而面值口径只会报 5%。
+                        这块跟随选中的装现算（选 20 张装就显示 20 张装的数字），
+                        数字全部从 weeklyMenu + config 推导，换菜/调价自动跟上不会写死过期。 */}
+                    {bestVoucherValue > FACE_VALUE_RM && (() => {
+                        const redeem = REDEEM_SAVINGS.get(selectedBundle.id)!;
+                        return (
+                            <div className="bg-[#FFF3E0]/70 border border-[#FFD6B0]/70 rounded-2xl px-4 py-3.5">
+                                <p className="text-[13px] font-black text-[#1A2D23] flex items-center gap-1.5">
+                                    <Ticket size={14} className="text-[#FF6B35] shrink-0" />
+                                    {t.voucherValueNoteTitle}
+                                </p>
+                                <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
+                                    {t.voucherValueNote(
+                                        bestVoucherValue.toFixed(2),
+                                        selectedBundle.pricePerVoucher.toFixed(2),
+                                        redeem.perMeal.toFixed(2),
+                                        formatPercent(redeem.percent),
+                                    )}
+                                </p>
+                                {redeem.total > 0 && (
+                                    <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
+                                        {t.voucherValueNoteTotal(selectedBundle.voucherCount, redeem.total.toFixed(2))}
+                                    </p>
+                                )}
+                                <p className="text-[11px] text-[#1A2D23]/50 font-medium leading-relaxed mt-1">
+                                    {t.voucherValueNoteTopUp}
+                                </p>
+                            </div>
+                        );
+                    })()}
                 </section>
 
                 {/* Promo code */}

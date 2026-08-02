@@ -70,6 +70,46 @@ export function getBundle(bundleId: string): MealVoucherBundle | undefined {
 }
 
 /**
+ * 客户真正拿到的折扣 —— 分母是「一张券最多能兑掉多少钱的菜」，不是面值。
+ *
+ * 面值口径（faceValue / savings / savingsPercent，上面 buildBundle 算的那套）
+ * 把 5 张装算成 0% 折扣，因为它拿 RM 18.50 当分母。但券的价值从来不是面值：
+ * 一张 RM 17.50 的券能兑一份 RM 19.90 的菜，实际省 RM 2.40 = 12.1%，
+ * 面值口径只报 5%。
+ *
+ * `redeemValue` 由调用方从 weeklyMenu 现算（见 MealVouchersView 的
+ * bestVoucherValue），换菜自动跟上，不写死。
+ *
+ * ⚠️ 这是「最高」折扣，只在兑最贵的可兑主菜时成立 —— 兑 RM 18.50 的菜折扣更低。
+ * 所有文案必须带「最高」字样，别写成无条件承诺。
+ *
+ * 面值口径仍是会计口径（MFRS 15 负债按 FACE_VALUE_RM 计），别混用。
+ */
+export interface BundleRedeemSavings {
+  perMeal: number;   // 每份最多省多少 RM
+  total: number;     // 整包最多省多少 RM
+  percent: number;   // 0–100，保留一位小数
+}
+
+export function bundleRedeemSavings(
+  bundle: MealVoucherBundle,
+  redeemValue: number,
+): BundleRedeemSavings {
+  const perMeal = Math.max(0, redeemValue - bundle.pricePerVoucher);
+  const percent = redeemValue > 0 ? (perMeal / redeemValue) * 100 : 0;
+  return {
+    perMeal: Number(perMeal.toFixed(2)),
+    total: Number((perMeal * bundle.voucherCount).toFixed(2)),
+    percent: Math.round(percent * 10) / 10,
+  };
+}
+
+/** 12.1 → "12.1"，7.0 → "7"（不给客户看没意义的小数尾巴）。 */
+export function formatPercent(percent: number): string {
+  return Number.isInteger(percent) ? String(percent) : percent.toFixed(1);
+}
+
+/**
  * Validity for a given bundle. Falls back to the longest configured validity
  * (60 days) when the bundle ID can't be resolved — safer to over-grant than
  * silently expire a real customer's voucher.

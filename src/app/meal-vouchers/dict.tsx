@@ -44,19 +44,22 @@ interface MealVouchersDictShape {
     badgeValidityLabel: string;
     badgeValidityValue: string;
     badgeSavingsLabel: string;
-    badgeSavingsValue: string;
+    badgeSavingsValue: (percent: string) => string;
 
     // Bundle cards
     bundleLabel: (n: number) => string;
     bundleHighlightPopular: string;
     bundleHighlightBestValue: string;
     perVoucher: (rm: string) => string;
-    savings: (rm: string, percent: number) => string;
-    /** 1 张券能兑什么 —— 5 张装是面值平价（省 RM 0），卡片上没有 savings 标签，
-        看起来像「买少了被罚」。真正的价值是「任意主菜都能兑」，包括比面值贵的菜。
+    /** 折扣按「券的最高兑换价值」算，不按面值 —— 见 bundleRedeemSavings。
+        必须带「最高 / up to」，因为兑便宜的菜折扣更低。 */
+    savingsPerMeal: (rm: string, percent: string) => string;
+    /** 1 张券能兑什么 —— 面值口径下 5 张装是 0%，看起来像「买少了被罚」。
+        真正的价值是「任意主菜都能兑」，包括比面值贵的菜。
         数字由 weeklyMenu 现算，不写死。 */
     voucherValueNoteTitle: string;
-    voucherValueNote: (best: string, extra: string) => string;
+    voucherValueNote: (best: string, perVoucher: string, perMeal: string, percent: string) => string;
+    voucherValueNoteTotal: (count: number, total: string) => string;
     voucherValueNoteTopUp: string;
     validityDays: (n: number) => string;
 
@@ -147,7 +150,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         seoLead:
             '餐券预付包让你一次预付、在有效期内随时兑换。1 张餐券 = 1 道主菜（菜单上任意一道，不含加料）—— 不加味精的家常菜，每天清晨从巴刹新鲜采购，从 Pearl Point 出发配送 Old Klang Road / OUG 一带。',
         seoPoints: [
-            '买越多省越多：5 张 RM 92.50、10 张 RM 180（省 RM 5）、20 张 RM 350（每张低至 RM 17.50，最高省 RM 20）。',
+            '买越多省越多：5 张 RM 92.50、10 张 RM 180、20 张 RM 350 —— 每张低至 RM 17.50，而 1 张券连菜单上最贵的可直接兑主菜也能兑。',
             '不限菜品：任意主菜都能兑，菜单每周轮换 + 常驻菜。',
             '有效期清楚：5 / 10 张装 30 天，20 张装 60 天。',
             '兑券简单：下单时自动抵扣，先到期的先用（FIFO）。',
@@ -162,15 +165,17 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         badgeValidityLabel: '有效期',
         badgeValidityValue: '30 / 60 天',
         badgeSavingsLabel: '最高省',
-        badgeSavingsValue: 'RM 20',
+        badgeSavingsValue: (percent) => `${percent}%`,
 
         bundleLabel: (n) => `${n} 张餐券`,
         bundleHighlightPopular: '人气之选',
         bundleHighlightBestValue: '最划算',
         perVoucher: (rm) => `单券 RM ${rm}`,
-        savings: (rm, percent) => `省 RM ${rm}（${percent}%）`,
+        savingsPerMeal: (rm, percent) => `最高省 RM ${rm}/份（${percent}%）`,
         voucherValueNoteTitle: '1 张券 = 1 道主菜，任意价位都能兑',
-        voucherValueNote: (best, extra) => `本周最贵可直接兑的是 RM ${best} 的菜 —— 用券兑它，每份多省 RM ${extra}。`,
+        voucherValueNote: (best, perVoucher, perMeal, percent) =>
+            `本周最贵可直接兑的是 RM ${best} 的菜。你选的这档单券 RM ${perVoucher} —— 兑它每份省 RM ${perMeal}，相当于省 ${percent}%。`,
+        voucherValueNoteTotal: (count, total) => `${count} 张全兑最贵的菜，整包最多省 RM ${total}。兑便宜一点的菜省得少一些。`,
         voucherValueNoteTopUp: '三文鱼 / 鳗鱼这类升级菜也能用券，只补差价。',
         validityDays: (n) => `有效期 ${n} 天`,
 
@@ -253,7 +258,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         seoLead:
             'Meal voucher bundles let you pre-pay once and redeem anytime within the validity period. 1 voucher = 1 main dish (any dish on the menu, add-ons not included) — MSG-free home-cooked food, freshly sourced from the wet market every morning, delivered from Pearl Point across Old Klang Road / OUG.',
         seoPoints: [
-            'Save more by buying more: 5 for RM 92.50, 10 for RM 180 (save RM 5), 20 for RM 350 (as low as RM 17.50/voucher, up to RM 20 off).',
+            'Save more by buying more: 5 for RM 92.50, 10 for RM 180, 20 for RM 350 — as low as RM 17.50 a voucher, and one voucher covers even the priciest main dish on the menu outright.',
             'Any main dish — redeem on any dish; the menu rotates weekly alongside daily staples.',
             'Clear validity — 30 days for the 5 & 10 packs, 60 days for the 20 pack.',
             'Easy to redeem — applied automatically at checkout, oldest voucher used first (FIFO).',
@@ -269,15 +274,17 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         badgeValidityLabel: 'Validity',
         badgeValidityValue: '30 / 60 days',
         badgeSavingsLabel: 'Save up to',
-        badgeSavingsValue: 'RM 20',
+        badgeSavingsValue: (percent) => `${percent}%`,
 
         bundleLabel: (n) => `${n} vouchers`,
         bundleHighlightPopular: 'Most popular',
         bundleHighlightBestValue: 'Best value',
         perVoucher: (rm) => `RM ${rm} per voucher`,
-        savings: (rm, percent) => `Save RM ${rm} (${percent}%)`,
+        savingsPerMeal: (rm, percent) => `Save up to RM ${rm}/meal (${percent}%)`,
         voucherValueNoteTitle: '1 voucher = 1 main dish, at any price',
-        voucherValueNote: (best, extra) => `The priciest dish a voucher covers outright this week is RM ${best} — redeem it and you save an extra RM ${extra} per meal.`,
+        voucherValueNote: (best, perVoucher, perMeal, percent) =>
+            `The priciest dish a voucher covers outright this week is RM ${best}. This bundle works out to RM ${perVoucher} per voucher — redeem it on that dish and you save RM ${perMeal} a meal, or ${percent}%.`,
+        voucherValueNoteTotal: (count, total) => `Redeem all ${count} on the priciest dish and you save up to RM ${total}. Cheaper dishes save less.`,
         voucherValueNoteTopUp: 'Premium dishes (salmon / unagi) work too — you just pay the top-up.',
         validityDays: (n) => `Valid for ${n} days`,
 
