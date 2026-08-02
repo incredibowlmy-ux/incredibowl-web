@@ -977,3 +977,69 @@ catering×2 / 6 个博客页会继续宣称「满 45 免运」；`/api/check-del
    `validateVoucher`（5 个调用点含结账主链路），不值得在一个已经全绿的 10-commit
    结账批次上加未验证面。**留作独立改动**，方案：校验时把「进行中的订单」也算已用
    （查 orders 而非加新状态字段 → 不需要释放逻辑，取消单自然不计数）。
+
+---
+
+## 2026-08-02 · 周订阅：餐券不够不再拦，差额按原价现金收
+
+老板要求（原话 "if client have not enough voucher, charge the rest with cash,
+dish lowest price"）+ 两个口径拍板：
+1. **现金单价 = 那道菜的原价，不打折**（不是菜单最低价 —— 若按 RM16.90 收会比
+   一张券实付 17.50~18.50 还便宜，反向激励客户少买券）
+2. **贵的菜先用券，便宜的收现金**（"dish lowest price" = 最便宜那几份走现金）
+
+### 现状
+`/api/admin/subscriptions/week` 券不足时 preview 报 ⛔、`canConfirm=false`，
+confirm 直接 400 —— 整周建不了单。
+
+### 改法（服务端 3 处 + 前端 3 处）
+- [x] `PlannedDay` 加份级清单 `units`（每份主菜一条：price / voucherValue /
+      voucherTopUp / topUpAddonId / useVoucher）+ `addonNeeds` / `cashUnits` /
+      `cashUnitsAmount` / `deliveryFee`
+- [x] `buildWeekPlan` 只产出 units 与加料储值需求，不再直接算 vCount/coverage/
+      topup 需求（这些改由券分配决定）
+- [x] 新增 `allocateVouchers(days, available)`：跨全周按 voucherValue 降序分券，
+      回填 vCount/coverage/cashUnits/upgradeNeeds/cashDue。**必须在
+      allocateUpgradeCredits 之前跑**（后者会 mutate cashDue）
+- [x] 高价菜 top-up 需求只对「用券的份」登记 —— 付原价现金的三文鱼没有补差概念，
+      绝不能白扣客户的升级储值
+- [x] preview：⛔ 拦截改 ⚠️ 提示（券只够 N/M 份，另 K 份原价现金 RM X）；
+      `canConfirm` 去掉券够条件；`vouchersLeftAfter` 用 used 不用 needed（防负数）
+- [x] confirm：删掉券不足 400；返回实际 vouchersUsed / cashUnits / cashAmount
+- [x] WhatsApp 文案说明「券只够 N 份，另 K 份按原价现金结」
+- [x] 前端头部 + 每日行 + 确认 alert 显示现金份
+
+### 不改
+- `note` 保持 `手动录入 · whatsapp · 餐券抵扣 · 周订阅自动生成` 逐字不动 ——
+  dashboard `stripMachineNote` 正则精确匹配这串，改了要同步 Desktop 源 + sync
+  两副本，爆炸半径不值。订单里 `mealVouchersUsed`/`mealVoucherDiscount` 才是权威。
+- 会计口径零改动：`total = originalTotal − coverage − upgradeCoverage`
+  天然成立（没用券的份 price 全额留在 total 里 = 原价现金收）。
+
+### 额外做的一件事（超出最小改动，但值）
+把 `allocateVouchers` + 四个类型抽到 **`src/lib/subscriptionVoucherPlan.ts`**。
+route.ts 里的函数没法被脚本 import（Next.js route 只允许 export HTTP 方法），
+而生产库里凑不齐「刚好够 / 差两张 / 一张没有 / 同道菜半份用券」这些场景 ——
+抽成 lib 后 dogfood 能打真函数跑构造场景。纯移动，零逻辑改动。
+
+### 验证
+
+`tsc` 0 错 · **`npm run build` exit 0**（记忆里的教训：deploy-affecting 改动不能只信 tsc）
+
+**`dogfood-subscription-voucher-shortfall.mts` 32/32**（打真 `allocateVouchers`，
+菜价从生产菜单现取）：券刚好够（回归）/ 差两张 / 一张没有 / 同道菜 qty=2 只剩 1 张券 /
+blocked 天不抢券 / 加料运费不受影响 / 负数·小数·超量券 / 重跑不漂移 /
+**200 轮随机组合穷举对拍确认「贵的先用券」= 客户最省的最优解**。
+
+**`dogfood-subscription-shortfall-e2e.mts` 111/111**（真 admin token 打真 preview，
+只读 dry-run）：9 个真实订阅逐个核对不变式 —— 用券=min(有,需)、现金份=需−用券、
+天级与汇总对账、`cashDue` 逐天公式、每份非券即现金、券优先抵贵的、
+top-up 只按用券份登记、文案无负数余券。
+
+**回归**：`dogfood-subscription-upgrade-credits.mjs` 35/35（预付储值分配未被改坏）·
+`dogfood-subscription-two-meals.mjs` 9 个订阅 preview 全通。
+
+### 实测发现
+真实数据里 **6 个客户券不足**（改动前他们整周建不了单，正是老板遇到的问题）。
+样例 Candise Chang：需 12 份只有 10 券 → 券全给了三文鱼/鳗鱼/猪扒，
+最便宜的 2 份（当归蒸鸡 18.50 + 山药云耳 18.50）按原价现金收 RM 37.00。

@@ -141,12 +141,18 @@ export default function SubscriptionsAdmin() {
         finally { setPreviewing(false); }
     };
 
-    const confirmWeek = async (subscriptionId: string, name: string) => {
-        if (!confirm(`确认为 ${name} 建下周订单并扣券？此操作会写入正式订单。`)) return;
-        setConfirmingId(subscriptionId); setError('');
+    const confirmWeek = async (p: any) => {
+        // 券不够会按原价现金收整份主菜 —— 金额比平时大，确认前先讲清楚
+        const cashNote = p.cashUnits > 0
+            ? `\n\n⚠️ 餐券只够 ${p.vouchersUsed}/${p.vouchersNeeded} 份，另 ${p.cashUnits} 份按原价现金收 RM ${p.cashUnitsAmount.toFixed(2)}。`
+            : '';
+        if (!confirm(`确认为 ${p.name} 建下周订单并扣券？此操作会写入正式订单。${cashNote}`)) return;
+        setConfirmingId(p.subscriptionId); setError('');
         try {
-            const r = await api('/api/admin/subscriptions/week', { method: 'POST', body: JSON.stringify({ action: 'confirm', weekStart, subscriptionId }) });
-            alert(`✅ 已建 ${r.created.length} 单${r.skippedDays?.length ? `，跳过 ${r.skippedDays.join(', ')}` : ''}`);
+            const r = await api('/api/admin/subscriptions/week', { method: 'POST', body: JSON.stringify({ action: 'confirm', weekStart, subscriptionId: p.subscriptionId }) });
+            alert(`✅ 已建 ${r.created.length} 单 · 扣券 ${r.vouchersUsed}/${r.vouchersNeeded} 份`
+                + (r.cashUnits > 0 ? `\n${r.cashUnits} 份按原价现金 RM ${r.cashUnitsAmount.toFixed(2)}` : '')
+                + (r.skippedDays?.length ? `\n跳过 ${r.skippedDays.join(', ')}` : ''));
             await runPreview();
         } catch (e: any) { setError(e.message); alert(`⛔ ${e.message}`); }
         finally { setConfirmingId(null); }
@@ -277,7 +283,11 @@ export default function SubscriptionsAdmin() {
                 {previews && previews.map(p => (
                     <div key={p.subscriptionId} className={`bg-white rounded-2xl border p-4 space-y-3 ${p.alreadyCreated ? 'border-green-300' : 'border-gray-200'}`}>
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                            <p className="font-black">{p.name} <span className="text-xs text-gray-400 font-bold">{p.phone} · 需 {p.vouchersNeeded} 券 / 有 {p.vouchersAvailable} 券 · 现金 RM {p.cashTotal.toFixed(2)}</span></p>
+                            <p className="font-black">{p.name} <span className="text-xs text-gray-400 font-bold">
+                                {p.phone} · 需 {p.vouchersNeeded} 券 / 有 {p.vouchersAvailable} 券
+                                {p.cashUnits > 0 && <span className="text-amber-600"> · {p.cashUnits} 份原价现金 RM {p.cashUnitsAmount.toFixed(2)}</span>}
+                                {' · '}现金合计 RM {p.cashTotal.toFixed(2)}
+                            </span></p>
                             <div className="flex items-center gap-2">
                                 <button onClick={() => copyText(p.subscriptionId, p.whatsappText)}
                                     className="px-3 py-1.5 bg-[#25D366]/10 text-[#128C7E] rounded-lg text-xs font-bold flex items-center gap-1.5 border border-[#25D366]/30">
@@ -285,7 +295,7 @@ export default function SubscriptionsAdmin() {
                                 </button>
                                 {p.alreadyCreated
                                     ? <span className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-black flex items-center gap-1"><CheckCircle size={12} /> 本周已建单</span>
-                                    : <button onClick={() => confirmWeek(p.subscriptionId, p.name)} disabled={!p.canConfirm || confirmingId === p.subscriptionId}
+                                    : <button onClick={() => confirmWeek(p)} disabled={!p.canConfirm || confirmingId === p.subscriptionId}
                                         className="px-4 py-1.5 bg-[#FF6B35] text-white rounded-lg text-xs font-black disabled:opacity-40 flex items-center gap-1.5">
                                         {confirmingId === p.subscriptionId ? <Loader2 size={12} className="animate-spin" /> : null} 确认建单 + 扣券
                                     </button>}
@@ -302,6 +312,7 @@ export default function SubscriptionsAdmin() {
                                     <span className="text-gray-400">{d.date} {WD_LABEL[String(d.weekday)]} {mealCN(d.meal)} {d.time}</span>
                                     <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
                                     <span className="text-[#FF6B35]">{d.vCount}券抵{d.coverage.toFixed(2)}</span>
+                                    {d.cashUnits > 0 && <span className="text-amber-600">{d.cashUnits}份原价{d.cashUnitsAmount.toFixed(2)}</span>}
                                     {d.upgradeCoverage > 0 && <span className="text-emerald-600">预付储值抵{d.upgradeCoverage.toFixed(2)}</span>}
                                     <span className="text-gray-400">现金 {d.cashDue.toFixed(2)}</span>
                                     {d.warnings.map((w: string, i: number) => <span key={i} className="text-amber-600">⚠ {w}</span>)}
