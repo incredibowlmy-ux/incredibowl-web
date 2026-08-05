@@ -4146,6 +4146,26 @@ incredibowl.my`,
                  + (Number(o.addonCreditsAllocatedRevenue) || 0);
         }
 
+        // ── 组合单（multi-part）工具 ──────────────────────────────
+        // 一次结账拆成多个配送日 → 每个 part 是独立 orders 文档，共享 groupId。
+        // 删/改任何一个都可能牵动同组其他单的餐券账，所以界面必须让它可见。
+        const shortCodeOf = (o) => '#' + String((o && o.id) || '').slice(-6).toUpperCase();
+        function groupSiblings(o) {
+            if (!o || !o.groupId) return [];
+            return (state.orders || []).filter(x => x.groupId === o.groupId && x.id !== o.id);
+        }
+        /**
+         * 「孤儿 part」= 有券/credit 抵扣、却没有 claim 记录的组合单成员。
+         * 券记录挂在同组另一单上，直接删它会退 0 张券（#C77ODR 实例）。
+         * 2026-08-04 起 submit-order 按组精确归属，新单不会再产生。
+         */
+        function isOrphanGroupPart(o) {
+            if (!o || !o.groupId) return false;
+            const discounted = (Number(o.mealVoucherDiscount) || 0) + (Number(o.addonCreditDiscount) || 0);
+            const hasClaim = Array.isArray(o.claimedMealVoucherIds) && o.claimedMealVoucherIds.length > 0;
+            return discounted > 0 && !hasClaim;
+        }
+
         // Filter voucher purchases that were actually paid within the active date range
         // (uses paidAt — pending/rejected purchases don't count as cash flow).
         function filteredMealVoucherPurchases() {
@@ -4534,6 +4554,12 @@ incredibowl.my`,
                 const voucherBadge = mvUsed > 0
                     ? `<span class="channel-badge" style="background:rgba(201,152,92,0.15);color:#9A6E2F" title="用了 ${mvUsed} 张餐券">🎫 ${mvUsed}</span>`
                     : '';
+                // ⛓ 组合单标记（2026-08-04）：一次结账拆成多个配送日的单，界面上
+                // 原本完全看不出来 —— 删/改其中一个会牵动同组其他单的餐券与账。
+                const siblings = groupSiblings(o);
+                const groupBadge = o.groupId
+                    ? `<span class="channel-badge" style="background:rgba(99,102,241,0.15);color:#4F46E5" title="组合单：与 ${escapeHtml(siblings.map(s => shortCodeOf(s) + ' ' + (s.deliveryDate || '')).join('、') || '同组其他单')} 一次结账下的">⛓ ${o.partIndex || '?'}/${o.totalParts || '?'}</span>`
+                    : '';
                 const channelBadge = o.isManual
                     ? `<span class="channel-badge">${o.channel === 'whatsapp' ? 'WA' : o.channel === 'cash' ? '现金' : o.channel === 'walkin' ? 'Walk-in' : '手动'}</span>`
                     : '';
@@ -4583,7 +4609,7 @@ incredibowl.my`,
                             ${deliveryHtml}
                         </div>
                         <div style="min-width:0">
-                            <div class="order-customer">${escapeHtml(o.userName || '匿名')}${channelBadge}${voucherBadge}</div>
+                            <div class="order-customer">${escapeHtml(o.userName || '匿名')}${channelBadge}${voucherBadge}${groupBadge}</div>
                             <div class="order-items-preview">${escapeHtml(itemsPreview)}</div>
                         </div>
                         <div class="order-amount">${fmt.rm(total)}</div>
@@ -11180,6 +11206,22 @@ incredibowl.my`,
             infoHtml += infoRow('支付', escapeHtml(o.paymentMethod || (o.razorpayPaymentId ? 'Razorpay' : '—')));
             if (o.razorpayPaymentId) infoHtml += infoRow('支付 ID', `<span class="mono" style="font-size:11px">${escapeHtml(o.razorpayPaymentId)}</span>`);
             infoHtml += infoRow('备注', o.note ? `<span style="color:#4338CA">「${escapeHtml(o.note)}」</span>` : '');
+            // ⛓ 同组订单：组合单是一次结账拆出来的，改/删任一单前必须看得到兄弟单
+            if (o.groupId) {
+                const sibs = groupSiblings(o);
+                const sibsHtml = sibs.length
+                    ? sibs.map(s => `${shortCodeOf(s)}<span style="color:var(--text-muted)"> ${escapeHtml(s.deliveryDate || '')} ${escapeHtml(s.deliveryTime || '')}</span>`).join('<br>')
+                    : '<span style="color:var(--text-muted)">（同组其他单已不在库中）</span>';
+                const orphanNote = isOrphanGroupPart(o)
+                    ? `<div style="margin-top:4px;padding:4px 6px;background:rgba(239,68,68,0.10);border-radius:4px;color:var(--danger);font-size:11px">
+                           ⚠️ 本单的餐券记录挂在同组另一单上 —— 不要直接删，用 scripts/cancel-group-part.mjs
+                       </div>`
+                    : '';
+                infoHtml += infoRow(
+                    '同组订单',
+                    `<span style="color:#4F46E5;font-weight:600">⛓ part ${o.partIndex || '?'}/${o.totalParts || '?'}</span><br>${sibsHtml}${orphanNote}`,
+                );
+            }
 
             const statusColor = status === 'cancelled' ? 'var(--danger)' : status === 'delivered' ? 'var(--success)' : 'var(--text)';
             $('#odmTitle').textContent = `📄 订单 ${shortId}`;
@@ -11354,7 +11396,28 @@ incredibowl.my`,
                 const voucherWarning = releaseNotes
                     ? `\n\n⚠️ 这单抵扣了 ${releaseNotes} — 删除后会自动 release 回客户账户（重新可用）。`
                     : '';
-                if (!confirm(`确认删除 ${order.userName || '该客户'} 的这单（RM ${((order.total || 0) + (order.deliveryFee || 0)).toFixed(2)}）？\n该操作不可恢复。${voucherWarning}`)) return;
+                // 🔒 2026-08-04 组合单闸门：孤儿 part 的 claimedMealVoucherIds 是空的
+                // → 上面的 releaseNotes 也是空的 → 确认框一个字都不会提餐券，删完
+                // 客户的券直接锁死（#C77ODR 实例）。这里拦死，改走专用脚本。
+                if (isOrphanGroupPart(order)) {
+                    const sibs = groupSiblings(order).map(s => shortCodeOf(s)).join('、') || '同组其他单';
+                    alert(
+                        `⛓ 这单是组合单 part ${order.partIndex || '?'}/${order.totalParts || '?'}，不能直接删。\n\n`
+                        + `它抵扣了 RM ${((Number(order.mealVoucherDiscount) || 0) + (Number(order.addonCreditDiscount) || 0)).toFixed(2)}，`
+                        + `但餐券记录挂在同组的 ${sibs} 上。\n`
+                        + `直接删会退 0 张券给客户，同组其他单的账也会错位。\n\n`
+                        + `请改用：node scripts/cancel-group-part.mjs ${shortCodeOf(order).slice(1)}\n`
+                        + `（会正确退券 + 修正同组其他单的账，默认 dry-run）`
+                    );
+                    return;
+                }
+                // 正常组合单（券归属已正确）：删之前把同组情况说清楚，别让人以为删的是整组
+                const groupWarning = order.groupId
+                    ? `\n\n⛓ 这是组合单 part ${order.partIndex || '?'}/${order.totalParts || '?'}，`
+                      + `同组还有 ${groupSiblings(order).map(s => shortCodeOf(s)).join('、') || '（无）'}。`
+                      + `只删这一单，其他单不受影响。`
+                    : '';
+                if (!confirm(`确认删除 ${order.userName || '该客户'} 的这单（RM ${((order.total || 0) + (order.deliveryFee || 0)).toFixed(2)}）？\n该操作不可恢复。${voucherWarning}${groupWarning}`)) return;
                 delBtn.disabled = true;
                 try {
                     // 先删订单再 release 餐券/credit：反过来的话 deleteDoc 若失败，券已退回

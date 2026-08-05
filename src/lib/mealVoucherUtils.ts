@@ -229,14 +229,19 @@ export async function countAvailableVouchers(
  *   - allocatedTotalRM: sum of allocatedValueRM across claimed vouchers
  *     = MFRS 15 revenue contribution from these vouchers when redeemed.
  *     Legacy vouchers without allocatedValueRM fall back to FACE_VALUE_RM.
+ *   - perVoucher: per-voucher breakdown in the SAME order as `ids`. Callers
+ *     splitting one claim across several order docs (multi-part checkout —
+ *     see submit-order) must sum these instead of averaging allocatedTotalRM:
+ *     vouchers from different purchase bundles carry different allocated
+ *     values, so averaging would smear revenue across parts.
  */
 export async function claimMealVouchers(
   db: Firestore,
   userId: string,
   count: number,
   orderId: string,
-): Promise<{ ids: string[]; allocatedTotalRM: number }> {
-  if (count <= 0) return { ids: [], allocatedTotalRM: 0 };
+): Promise<{ ids: string[]; allocatedTotalRM: number; perVoucher: { id: string; allocatedRM: number }[] }> {
+  if (count <= 0) return { ids: [], allocatedTotalRM: 0, perVoucher: [] };
 
   // Read candidates outside transaction (Firestore Admin transactions can't
   // do queries — they only support .get() on document refs). We read the
@@ -264,10 +269,18 @@ export async function claimMealVouchers(
   }
 
   const targets = candidates.slice(0, count);
-  const claimedIds: string[] = [];
+  let claimedIds: string[] = [];
+  let perVoucher: { id: string; allocatedRM: number }[] = [];
   let allocatedTotal = 0;
 
   await db.runTransaction(async (tx) => {
+    // ⚠️ 必须每次重试都重置。Firestore 事务遇到写冲突会**重跑整个回调**，
+    // 这三个累加器活在回调外面 —— 不清空的话重试会把 ids push 两遍、
+    // allocatedTotal 加两遍，订单上就会记着 2N 张券和双倍摊销收入。
+    // （同款陷阱在 orderRollback 的状态事务里有详细案例。）
+    claimedIds = [];
+    perVoucher = [];
+    allocatedTotal = 0;
     // Re-read each doc inside the tx and verify still 'available'.
     // If anyone else snatched one (e.g. concurrent checkout in two tabs),
     // we abort the whole claim.
@@ -296,10 +309,11 @@ export async function claimMealVouchers(
         updatedAt: FieldValue.serverTimestamp(),
       });
       claimedIds.push(r.id);
+      perVoucher.push({ id: r.id, allocatedRM });
     }
   });
 
-  return { ids: claimedIds, allocatedTotalRM: Number(allocatedTotal.toFixed(2)) };
+  return { ids: claimedIds, allocatedTotalRM: Number(allocatedTotal.toFixed(2)), perVoucher };
 }
 
 /**

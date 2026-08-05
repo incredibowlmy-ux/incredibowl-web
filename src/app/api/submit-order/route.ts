@@ -7,6 +7,7 @@ import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type Delive
 import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
+import { allocateVouchersByGroup } from '@/lib/voucherGroupAllocation';
 import { claimAddonCredits, releaseAddonCredits, getAvailableAddonCredits } from '@/lib/addonCreditUtils';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 
@@ -221,18 +222,29 @@ export async function POST(req: Request) {
 
     // ── Validate meal voucher redemption ──────────────────────
     let serverMealVoucherDiscount = 0;
+    // 每个配送组实际吃掉几张券、抵了多少钱。key 与下面拆组 / addonCreditPlan
+    // 完全同款（`${date}|${time}`），这样每个 part 都能拿到**属于自己的**券。
+    //
+    // 2026-08-04：以前这里只算一个总折扣，拆 part 时按 subtotal 比例摊分，
+    // 券的 claim 记录一股脑挂在 part 1 上（#C77ODR 暴露）。后果是删/取消任
+    // 何一个「裸 part」时 orderRollback 读 claimedMealVoucherIds 读到空数组
+    // → 退 0 张券，客户的券凭空蒸发。现在改成按菜精确归组：排序时把 groupKey
+    // 一起带上，金额口径完全不变（仍是 best-deal-first 取前 N 张），只是不再
+    // 丢掉「哪张券属于哪个配送日」这个信息。
+    let perGroupMV: Record<string, { count: number; discountRM: number }> = {};
     if (mealVouchersUsed > 0) {
       // Count main dish servings across cart, by VOUCHER VALUE (unit price minus
       // any per-dish top-up — e.g. premium salmon: voucher covers RM 19.90, the
       // remaining RM 4 stays payable). Mirrors CartDrawer's client-side math.
-      const mainDishVoucherValues: number[] = [];
+      const servings = [];
       for (const vb of validatedBundles) {
         const units = (vb.dishQty || 1) * (vb.quantity || 1);
         const value = dishVoucherValue(vb.serverDishPrice, vb.dish);
-        for (let k = 0; k < units; k++) mainDishVoucherValues.push(value);
+        const groupKey = `${vb.selectedDate || '未定'}|${vb.selectedTime || 'Lunch'}`;
+        for (let k = 0; k < units; k++) servings.push({ value, groupKey });
       }
-      if (mealVouchersUsed > mainDishVoucherValues.length) {
-        return NextResponse.json({ error: `餐券数量超过主餐数量（最多 ${mainDishVoucherValues.length} 张）` }, { status: 400 });
+      if (mealVouchersUsed > servings.length) {
+        return NextResponse.json({ error: `餐券数量超过主餐数量（最多 ${servings.length} 张）` }, { status: 400 });
       }
 
       const available = await countAvailableVouchers(db, userId);
@@ -240,9 +252,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: `账户餐券不足：需要 ${mealVouchersUsed} 张，可用 ${available} 张` }, { status: 400 });
       }
 
-      // Discount = top X highest-value main dish servings (best-deal first)
-      mainDishVoucherValues.sort((a, b) => b - a);
-      serverMealVoucherDiscount = mainDishVoucherValues.slice(0, mealVouchersUsed).reduce((s, p) => s + p, 0);
+      // Discount = top X highest-value main dish servings (best-deal first),
+      // 同时把「哪张券覆盖哪个配送组」带出来 —— 见 voucherGroupAllocation.ts。
+      const alloc = allocateVouchersByGroup(servings, mealVouchersUsed);
+      serverMealVoucherDiscount = alloc.totalDiscount;
+      perGroupMV = alloc.perGroup;
 
       const clientMV = Number(clientMealVoucherDiscount) || 0;
       if (Math.abs(serverMealVoucherDiscount - clientMV) > 0.02) {
@@ -449,7 +463,6 @@ export async function POST(req: Request) {
 
     // ── Create one order doc per delivery group (grouped above) ──────────
     let remainingPromo = serverPromoDiscount;
-    let remainingMV = serverMealVoucherDiscount;
     const orderIds: string[] = [];
     const payloads: any[] = [];
 
@@ -466,18 +479,15 @@ export async function POST(req: Request) {
           remainingPromo -= currentPromo;
         }
       }
-      let currentMV = 0;
-      if (serverMealVoucherDiscount > 0) {
-        if (i === groups.length - 1) {
-          currentMV = Number(remainingMV.toFixed(2));
-        } else {
-          currentMV = Number(((group.subtotal / serverCartTotal) * serverMealVoucherDiscount).toFixed(2));
-          remainingMV -= currentMV;
-        }
-      }
+      // Meal-voucher discount is allocated per delivery group exactly (which
+      // serving each voucher covers), same as add-on credits below — no
+      // proportional split. A part's discount is the sum of the voucher values
+      // for ITS OWN servings, so cancelling one part never disturbs the others.
+      const groupKey = `${group.date}|${group.time}`;
+      const currentMV = perGroupMV[groupKey]?.discountRM || 0;
       // Addon-credit discount is allocated per delivery group by the plan
       // itself (exact, no proportional split — the algorithm walks bundles).
-      const currentAC = addonCreditPlan.perGroupDiscount[`${group.date}|${group.time}`] || 0;
+      const currentAC = addonCreditPlan.perGroupDiscount[groupKey] || 0;
       const finalTotal = Math.max(0, group.subtotal - currentPromo - currentMV - currentAC);
 
       // Build items array (same format as before)
@@ -610,12 +620,41 @@ export async function POST(req: Request) {
     if (mealVouchersUsed > 0) {
       try {
         const claimed = await claimMealVouchers(db, userId, mealVouchersUsed, orderIds[0]);
-        await db.collection('orders').doc(orderIds[0]).update({
-          mealVouchersUsed,
-          claimedMealVoucherIds: claimed.ids,
-          mealVoucherAllocatedRevenue: claimed.allocatedTotalRM,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
+        // 把这一把券按「哪个配送组吃掉几张」切分，写进各自的 part。
+        // 单 part 结账时循环只跑一圈，orderIds[0] 拿到全部券 —— 与改动前逐字节一致。
+        //
+        // 每个 part 自带 claimedMealVoucherIds 之后，取消/删除任何一个 part 都
+        // 只退它自己的券，同组其他 part 分毫不动（#C77ODR 那种「裸 part」不再产生）。
+        // 摊销收入按张求和而非平均：不同购买批次的券 allocatedValueRM 不同。
+        let cursor = 0;
+        for (let i = 0; i < groups.length; i++) {
+          const n = perGroupMV[`${groups[i].date}|${groups[i].time}`]?.count || 0;
+          if (n === 0) continue;
+          const slice = claimed.perVoucher.slice(cursor, cursor + n);
+          cursor += n;
+          await db.collection('orders').doc(orderIds[i]).update({
+            mealVouchersUsed: n,
+            claimedMealVoucherIds: slice.map(v => v.id),
+            mealVoucherAllocatedRevenue: Number(slice.reduce((s, v) => s + v.allocatedRM, 0).toFixed(2)),
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          // 券文档回指自己那一 part（claim 时统一写的是 orderIds[0]）。best-effort：
+          // 失败只是反查时指向组内另一单，退券仍按订单上的 ID 列表走，不会错退。
+          if (i > 0) {
+            try {
+              const b = db.batch();
+              for (const v of slice) {
+                b.update(db.collection('mealVouchers').doc(v.id), {
+                  redeemedOrderId: orderIds[i],
+                  updatedAt: FieldValue.serverTimestamp(),
+                });
+              }
+              await b.commit();
+            } catch (e) {
+              console.error(`[submit-order] 券 redeemedOrderId 回指 part${i + 1} 失败（不影响退券）:`, e);
+            }
+          }
+        }
       } catch (err: any) {
         // Give back the addon credits claimed above, then roll back the
         // just-created orders + release the reserved dish stock

@@ -57,6 +57,11 @@ export interface RollbackOutcome {
     };
     /** 回补过程中失败的项（不影响取消本身）。 */
     failures: string[];
+    /**
+     * 被闸门挡下时的原因（`cancelled` 为 false 且订单其实还在）。目前只有
+     * 「组合单孤儿 part」一种 —— 调用方应把这句话原样显示给操作者。
+     */
+    blockedReason?: string;
 }
 
 /**
@@ -76,6 +81,11 @@ export async function cancelOrderWithRollback(
          * （真退款）。顾客侧一律不传，防止「吃完再取消把餐券和库存全额退回」。
          */
         allowNonPending?: boolean;
+        /**
+         * 放行「组合单孤儿 part」（见下方闸门）。只有 scripts/cancel-group-part.mjs
+         * 该传 true —— 它自己负责退券 + 修同组其他 part 的账。
+         */
+        allowOrphanGroupPart?: boolean;
     },
 ): Promise<RollbackOutcome> {
     const { FieldValue } = await import('firebase-admin/firestore');
@@ -90,6 +100,7 @@ export async function cancelOrderWithRollback(
 
     // ── 关口：翻状态 + 打标记，一个事务，赢家才继续 ──────────────
     let orderData: FirebaseFirestore.DocumentData | null = null;
+    let blocked: string | null = null;
     await db.runTransaction(async (tx) => {
         // ⚠️ 必须每次重试都重置。Firestore 事务遇到写冲突会**重跑整个回调**：
         // 第一次跑读到 pending、给 orderData 赋了值、提交时输给了并发者；重试
@@ -97,6 +108,7 @@ export async function cancelOrderWithRollback(
         // 函数会以为自己是赢家继续回补库存。
         // 实测：3 个并发取消全部「获胜」，dishStock 被 +3 而不是 +1 = 超卖。
         orderData = null;
+        blocked = null;
         const snap = await tx.get(ref);
         if (!snap.exists) return;
         const d = snap.data()!;
@@ -110,6 +122,23 @@ export async function cancelOrderWithRollback(
             console.warn(`[orderRollback] ${orderId} 状态为 ${d.status}，非 admin 路径不予取消`);
             return;
         }
+        // 🔒 2026-08-04 组合单闸门：一次结账拆成多个配送日时，2026-08-04 之前
+        // 下的单把餐券 claim 记录**全挂在 part 1**，其余 part 只有一个摊分出来
+        // 的 mealVoucherDiscount 数字。这种「孤儿 part」直接走到下面会读到空的
+        // claimedMealVoucherIds → 退 0 张券，客户的券凭空蒸发，同组其他 part 的
+        // 摊销收入也跟着错位（#C77ODR 实例）。
+        // 新单已在 submit-order 按组精确归属，不会再产生孤儿；历史单要么先跑
+        // scripts/backfill-multipart-voucher-attribution.mjs 补归属，要么走
+        // scripts/cancel-group-part.mjs（它带 allowOrphanGroupPart 并自己修账）。
+        const orphanValue = Number(d.mealVoucherDiscount || 0) + Number(d.addonCreditDiscount || 0);
+        const hasClaim = Array.isArray(d.claimedMealVoucherIds) && d.claimedMealVoucherIds.length > 0;
+        if (d.groupId && orphanValue > 0 && !hasClaim && !opts.allowOrphanGroupPart) {
+            blocked = `#${orderId.slice(-6).toUpperCase()} 是组合单 part ${d.partIndex ?? '?'}/${d.totalParts ?? '?'}`
+                + `（groupId ${d.groupId}），抵扣了 RM${orphanValue.toFixed(2)} 但券记录挂在同组另一单上。`
+                + `直接取消会退 0 张券 —— 请改用 scripts/cancel-group-part.mjs。`;
+            console.warn(`[orderRollback] ${blocked}`);
+            return;
+        }
         orderData = d;
         tx.update(ref, {
             status: 'cancelled',
@@ -119,7 +148,11 @@ export async function cancelOrderWithRollback(
         });
     });
 
-    if (!orderData) return out; // 订单不存在，或已被别人取消
+    if (!orderData) {
+        // 订单不存在 / 已被别人取消 / 被闸门挡下（后者带原因，供调用方显示）
+        if (blocked) out.blockedReason = blocked;
+        return out;
+    }
     out.cancelled = true;
     const o = orderData as FirebaseFirestore.DocumentData;
 
