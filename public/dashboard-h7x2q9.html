@@ -13543,7 +13543,6 @@ incredibowl.my`,
         // Returns full profile object — see renderCustomerProfile for shape consumed
         function buildCustomerProfile(key) {
             const orders = (state.orders || []).filter(o => customerKey(o) === key);
-            if (!orders.length && !key.startsWith('u:')) return null;
             orders.sort((a, b) => (tsToDate(b.createdAt)?.getTime() || 0) - (tsToDate(a.createdAt)?.getTime() || 0));
 
             // User doc (if exists) — match by phone or userId
@@ -13556,6 +13555,13 @@ incredibowl.my`,
                 return false;
             });
             const userDoc = userDocCandidates.find(u => !u.mergedInto) || userDocCandidates[0] || null;
+
+            // 「查无此人」只有一种情况：既没订单、也没有用户文档。
+            // ⚠️ 别退回用 key 前缀判断（旧写法 !orders.length && !key.startsWith('u:')）：
+            // buildCustomerIndex 给「没下过单的注册用户」发的 key 是 'p:电话'
+            // （只有连电话都没留的才发 'u:uid'），所以按前缀拦会把每一个
+            // 「注册了 / 买了餐券但还没下单」的新客户判成不存在 —— 那正是这个 bug。
+            if (!orders.length && !userDoc && !key.startsWith('u:')) return null;
 
             // Basic identity (prefer most-recent order, fall back to user doc)
             const lastOrder = orders[0] || null;
