@@ -231,6 +231,14 @@ export async function POST(req: Request) {
               { vouchersUsed: FieldValue.arrayUnion(code) },
               { merge: true }
             );
+            // 「这单确实占用过一次额度」的凭据。取消回补只认它 —— 光有
+            // promoCode 不代表 claim 过（FPX 没付成功、dashboard 手动单写了
+            // 码却从不 claim），照着退会把**别人**占用的 usedCount 减掉。
+            // 注意写在同一个事务里：claim 成功才有凭据，不会各自为政。
+            tx.update(db.collection('orders').doc(orderId), {
+              promoClaimed: true,
+              updatedAt: FieldValue.serverTimestamp(),
+            });
           });
         } catch (e) {
           console.warn('Failed to claim voucher on confirm:', e);

@@ -197,7 +197,7 @@ export async function consumeIngredientStock(
   db: Firestore,
   items: PrepOrderItem[],
   ctx?: { orderId?: string; source?: string },
-): Promise<void> {
+): Promise<IngredientMovementResult> {
   return applyOrderMovement(db, items, -1, 'consume', ctx);
 }
 
@@ -210,8 +210,21 @@ export async function releaseIngredientStock(
   db: Firestore,
   items: PrepOrderItem[],
   ctx?: { orderId?: string; source?: string },
-): Promise<void> {
+): Promise<IngredientMovementResult> {
   return applyOrderMovement(db, items, +1, 'release', ctx);
+}
+
+/**
+ * 结果对象。契约仍是 **NEVER THROWS** —— 但失败会从返回值里**说出来**，
+ * 调用方必须看它才知道到底补没补成（外层 try/catch 结构上永远不会命中，
+ * 以前 orderRollback 就因此无条件记 released.ingredientStock = true，
+ * batch 提交失败时三重静默：没日志行、没 failure 标记、没订单文档）。
+ */
+export interface IngredientMovementResult {
+  ok: boolean;
+  /** 实际写了几个食材文档（0 = 这单没有可追踪的原料，属正常）。 */
+  touched: number;
+  error?: string;
 }
 
 async function applyOrderMovement(
@@ -220,10 +233,10 @@ async function applyOrderMovement(
   sign: 1 | -1,
   type: 'consume' | 'release',
   ctx?: { orderId?: string; source?: string },
-): Promise<void> {
+): Promise<IngredientMovementResult> {
   try {
     const { lines } = aggregateIngredients([{ items }]);
-    if (!lines.length) return;
+    if (!lines.length) return { ok: true, touched: 0 };
 
     // Merge by name (doc id is name only) so a batch never writes the same doc
     // twice — Firestore rejects duplicate writes in one batch.
@@ -256,8 +269,14 @@ async function applyOrderMovement(
       touched++;
     });
     if (touched) await batch.commit();
+    return { ok: true, touched };
   } catch (err) {
     // Advisory layer — log and move on; ordering must never fail on this.
+    // 契约不变（NEVER THROWS），但 2026-08-04 起把失败**返回**出去：以前
+    // 调用方的 try/catch 结构上永远不可能命中，于是 orderRollback 无条件
+    // 记 `released.ingredientStock = true` —— batch 提交失败时没日志行、
+    // 没 failure 标记、（硬删场景下）连订单文档都不剩，三重静默。
     console.error(`[${type}IngredientStock] best-effort movement failed:`, err);
+    return { ok: false, touched: 0, error: err instanceof Error ? err.message : String(err) };
   }
 }

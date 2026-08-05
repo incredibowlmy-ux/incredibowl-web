@@ -210,9 +210,18 @@ export async function writeManualOrderDays(
         })
         .filter((x): x is { dishId: number; qty: number; name: string } => x !== null);
       const { decrementDishStockLenient } = await import('@/lib/stockUtils');
-      await decrementDishStockLenient(db, dishItems);
+      const deducted = await decrementDishStockLenient(db, dishItems);
       const { consumeIngredientStock } = await import('@/lib/ingredientStock');
       await consumeIngredientStock(db, d.items, { source: stockSource, orderId: orderRef.id });
+      // 把**实扣量**记在订单上：lenient 扣减在库存见底时扣不满，取消/删除时
+      // 若按 items 的 qty 全额回补就会凭空印货。有这条记录，回补才退得准。
+      // 同时它也是「这单确实扣过库存」的凭据，比拿 createdAt 猜纪元可靠
+      // （手动单的 createdAt 是配送日 12:00，还能被编辑改写）。
+      await orderRef.update({
+        stockDeducted: deducted,
+        stockDeductedIngredients: true,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
     } catch (err) {
       console.error(`[manualOrderCore] 扣库存失败（订单 ${orderRef.id} 已建，不受影响）:`, err);
     }

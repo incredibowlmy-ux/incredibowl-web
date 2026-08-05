@@ -455,8 +455,11 @@ export async function POST(req: Request) {
       qty: (vb.dishQty || 1) * (vb.quantity || 1),
       name: vb.dish.name,
     }));
+    // 实扣量（dishId → 份数）。严格扣减不 clamp，所以恒等于请求量；记下来是为了
+    // 让取消/删除时按「当初真的扣了多少」回补，而不是拿 items 的 qty 猜。
+    let dishDeductedAll: Record<string, number> = {};
     try {
-      await consumeDishStock(db, stockItems);
+      dishDeductedAll = await consumeDishStock(db, stockItems);
     } catch (err: any) {
       return NextResponse.json({ error: err?.message || '库存不足' }, { status: 400 });
     }
@@ -564,6 +567,17 @@ export async function POST(req: Request) {
         payload.totalParts = groups.length;
         payload.groupId = groupId;
       }
+      // 这一 part 自己那份实扣量 —— 只记真的有 dishStock 文档、真的被扣了的菜
+      // （dishDeductedAll 里出现过的才算；不限量的菜压根没扣）。取消/删除时按它
+      // 精确回补，不再靠 createdAt 猜纪元、也不靠 items 的 qty 猜份数。
+      const partDeducted: Record<string, number> = {};
+      for (const vb of group.bundles) {
+        const key = String(vb.dish.id);
+        if (!dishDeductedAll[key]) continue;
+        partDeducted[key] = (partDeducted[key] || 0) + (vb.dishQty || 1) * (vb.quantity || 1);
+      }
+      if (Object.keys(partDeducted).length) payload.stockDeducted = partDeducted;
+      payload.stockDeductedIngredients = true;
       // Meal voucher accounting (per-part RM discount only — voucherIds attach to part 1 only, populated below)
       if (currentMV > 0) payload.mealVoucherDiscount = currentMV;
       // Prepaid add-on credit accounting (per-part RM discount only — claim

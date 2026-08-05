@@ -4161,9 +4161,24 @@ incredibowl.my`,
          */
         function isOrphanGroupPart(o) {
             if (!o || !o.groupId) return false;
-            const discounted = (Number(o.mealVoucherDiscount) || 0) + (Number(o.addonCreditDiscount) || 0);
-            const hasClaim = Array.isArray(o.claimedMealVoucherIds) && o.claimedMealVoucherIds.length > 0;
-            return discounted > 0 && !hasClaim;
+            // 餐券和预付 credit 是两个独立资源池，各判各的 claim 字段 —— 混判会误伤
+            // 「只用了 credit 且自己带着 addonCreditsUsed」的 part（判据与
+            // src/lib/orderRollback.ts 的服务端闸门保持逐字一致）。
+            // ⚠️ credit 折扣字段有两套名字：网页单（submit-order）写单数
+            // addonCreditDiscount，dashboard 手动单写复数 addonCreditsDiscount。
+            // 两个都要认，否则这半边判据会静默失效。
+            const orphanVoucher = (Number(o.mealVoucherDiscount) || 0) > 0
+                && !(Array.isArray(o.claimedMealVoucherIds) && o.claimedMealVoucherIds.length > 0);
+            const orphanCredit = creditDiscountOf(o) > 0
+                && !(Array.isArray(o.addonCreditsUsed) && o.addonCreditsUsed.length > 0);
+            return orphanVoucher || orphanCredit;
+        }
+        /** credit 折扣金额 —— 兼容单数(网页单)/复数(手动单)两套字段名。 */
+        function creditDiscountOf(o) {
+            if (!o) return 0;
+            const singular = Number(o.addonCreditDiscount);
+            if (Number.isFinite(singular) && singular > 0) return singular;
+            return Number(o.addonCreditsDiscount) || 0;
         }
 
         // Filter voucher purchases that were actually paid within the active date range
@@ -11214,7 +11229,7 @@ incredibowl.my`,
                     : '<span style="color:var(--text-muted)">（同组其他单已不在库中）</span>';
                 const orphanNote = isOrphanGroupPart(o)
                     ? `<div style="margin-top:4px;padding:4px 6px;background:rgba(239,68,68,0.10);border-radius:4px;color:var(--danger);font-size:11px">
-                           ⚠️ 本单的餐券记录挂在同组另一单上 —— 不要直接删，用 scripts/cancel-group-part.mjs
+                           ⚠️ 本单的餐券/credit 领用记录挂在同组另一单上 —— 不要直接删，用 scripts/cancel-group-part.mts
                        </div>`
                     : '';
                 infoHtml += infoRow(
@@ -11403,7 +11418,7 @@ incredibowl.my`,
                     const sibs = groupSiblings(order).map(s => shortCodeOf(s)).join('、') || '同组其他单';
                     alert(
                         `⛓ 这单是组合单 part ${order.partIndex || '?'}/${order.totalParts || '?'}，不能直接删。\n\n`
-                        + `它抵扣了 RM ${((Number(order.mealVoucherDiscount) || 0) + (Number(order.addonCreditDiscount) || 0)).toFixed(2)}，`
+                        + `它抵扣了 RM ${((Number(order.mealVoucherDiscount) || 0) + creditDiscountOf(order)).toFixed(2)}，`
                         + `但餐券记录挂在同组的 ${sibs} 上。\n`
                         + `直接删会退 0 张券给客户，同组其他单的账也会错位。\n\n`
                         + `请改用：node scripts/cancel-group-part.mjs ${shortCodeOf(order).slice(1)}\n`
@@ -11437,14 +11452,23 @@ incredibowl.my`,
                     state.orders = state.orders.filter(o => o.id !== id);
                     $('#sysOrderCount').textContent = state.orders.length;
                     // ─── Credit stock back (dishStock + ingredients) ───
-                    // Orders from the stock system's launch (2026-06-29) onward
-                    // auto-deducted at save time; releasing keeps the hard
-                    // sell-out gate from blocking customers on freed portions.
-                    // Older orders never deducted — releasing them would inflate.
+                    // 优先按 order.stockDeducted（下单时记下的**实扣量**）回补：
+                    // lenient 扣减在库存见底时扣不满，按 items 的 qty 全额退会凭空
+                    // 印货（超卖，比少卖严重）。有这条记录就不必再看 createdAt ——
+                    // 它本身就是「这单确实扣过库存」的凭据，而手动单的 createdAt 是
+                    // 配送日 12:00 且能被编辑改写，拿它当纪元代理会说谎。
+                    // 没记录的历史单才 fallback 到纪元闸 + items 推算。
                     // Best-effort: a failure here must not block the delete.
                     const createdMs = tsToDate(order.createdAt)?.getTime() || 0;
-                    if (createdMs >= new Date('2026-06-29T00:00:00+08:00').getTime() && Array.isArray(order.items) && order.items.length) {
-                        try { await callAdminAPI('/api/admin/consume-stock', { items: order.items, release: true, orderId: id }); }
+                    const hasDeductionRecord = order.stockDeducted && Object.keys(order.stockDeducted).length > 0;
+                    const inStockEra = createdMs >= new Date('2026-06-29T00:00:00+08:00').getTime();
+                    if ((hasDeductionRecord || inStockEra) && Array.isArray(order.items) && order.items.length) {
+                        try {
+                            await callAdminAPI('/api/admin/consume-stock', {
+                                items: order.items, release: true, orderId: id,
+                                ...(hasDeductionRecord ? { stockDeducted: order.stockDeducted } : {}),
+                            });
+                        }
                         catch (relErr) { console.warn('[delete-order] stock release skipped:', relErr && relErr.message); }
                     }
                     // Refresh state so released vouchers/credits reappear as available
@@ -13365,13 +13389,30 @@ incredibowl.my`,
                     // churn the ledger. Best-effort — never blocks the save.
                     const stockShape = (arr) => JSON.stringify((arr || []).map(x => [x.name, x.quantity, (x.addOns || []).map(a => [a.label || a.name || a.id, a.quantity])]));
                     const origCreatedMs = orig ? (tsToDate(orig.createdAt)?.getTime() || 0) : 0;
-                    if (origCreatedMs >= new Date('2026-06-29T00:00:00+08:00').getTime()
+                    // 有 stockDeducted 记录就以它为准 —— 不再看 createdAt。编辑本身
+                    // 就能改写 createdAt（配送日一变就重写），拿它判「扣没扣过」会
+                    // 让同一张单的纪元归属被一次编辑翻面，而翻面时不补扣也不补退。
+                    const origDeduction = orig && orig.stockDeducted && Object.keys(orig.stockDeducted).length > 0
+                        ? orig.stockDeducted : null;
+                    if ((origDeduction || origCreatedMs >= new Date('2026-06-29T00:00:00+08:00').getTime())
                         && stockShape(orig && orig.items) !== stockShape(items)) {
                         try {
                             if (orig && Array.isArray(orig.items) && orig.items.length) {
-                                await callAdminAPI('/api/admin/consume-stock', { items: orig.items, release: true, orderId: editingOrderId });
+                                await callAdminAPI('/api/admin/consume-stock', {
+                                    items: orig.items, release: true, orderId: editingOrderId,
+                                    ...(origDeduction ? { stockDeducted: origDeduction } : {}),
+                                });
                             }
-                            await callAdminAPI('/api/admin/consume-stock', { items, orderId: editingOrderId });
+                            const r2 = await callAdminAPI('/api/admin/consume-stock', { items, orderId: editingOrderId });
+                            // 新的实扣量覆盖旧记录，否则下次删单会按改单前的量回补
+                            const newDeduction = (r2 && r2.dishDecremented) || {};
+                            await updateDoc(doc(db, 'orders', editingOrderId), {
+                                stockDeducted: newDeduction,
+                                stockDeductedIngredients: true,
+                                updatedAt: serverTimestamp(),
+                            });
+                            const idx3 = state.orders.findIndex(o => o.id === editingOrderId);
+                            if (idx3 >= 0) state.orders[idx3] = { ...state.orders[idx3], stockDeducted: newDeduction, stockDeductedIngredients: true };
                             toast('库存已按改单同步（回补旧菜 → 扣新菜）', 'success');
                         } catch (stockErr) { console.warn('[edit-order] stock sync skipped:', stockErr && stockErr.message); }
                     }
@@ -13452,7 +13493,21 @@ incredibowl.my`,
                     // ingredients via the recipe. ADVISORY + best-effort — the order
                     // is already saved, so a stock hiccup only logs, never blocks.
                     // Edits are skipped (item changes → adjust counts in the 库存 panel).
-                    try { await callAdminAPI('/api/admin/consume-stock', { items, orderId }); }
+                    // 把**实扣量**记回订单（dishDecremented = dishId → 真扣了几份）。
+                    // lenient 扣减在库存见底时 clamp 到 0，扣不满；删单若按 items 的
+                    // qty 全额回补就会凭空印货。有这条记录，删单才退得准。
+                    try {
+                        const r = await callAdminAPI('/api/admin/consume-stock', { items, orderId });
+                        if (r && r.dishDecremented) {
+                            await updateDoc(doc(db, 'orders', orderId), {
+                                stockDeducted: r.dishDecremented,
+                                stockDeductedIngredients: true,
+                                updatedAt: serverTimestamp(),
+                            });
+                            const idx2 = state.orders.findIndex(o => o.id === orderId);
+                            if (idx2 >= 0) state.orders[idx2] = { ...state.orders[idx2], stockDeducted: r.dishDecremented, stockDeductedIngredients: true };
+                        }
+                    }
                     catch (stockErr) { console.warn('[manual-order] stock decrement skipped:', stockErr && stockErr.message); }
                 }
                 renderAll();

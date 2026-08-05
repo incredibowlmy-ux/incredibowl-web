@@ -391,9 +391,15 @@ export async function POST(req: NextRequest) {
           })
           .filter((x): x is { dishId: number; qty: number; name: string } => x !== null);
         const { decrementDishStockLenient } = await import('@/lib/stockUtils');
-        await decrementDishStockLenient(db, dishItems);
+        const deducted = await decrementDishStockLenient(db, dishItems);
         const { consumeIngredientStock } = await import('@/lib/ingredientStock');
         await consumeIngredientStock(db, d.items, { source: '周订阅建单', orderId: orderRef.id });
+        // 实扣量存证 —— lenient 见底扣不满，回补按 qty 全额退会印货。见 stockUtils。
+        await orderRef.update({
+          stockDeducted: deducted,
+          stockDeductedIngredients: true,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
       } catch (err) {
         console.error(`[subscriptions] 扣库存失败（订单 ${orderRef.id} 已建，不受影响）:`, err);
       }
