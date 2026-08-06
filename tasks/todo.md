@@ -1,3 +1,79 @@
+# 下周换菜 2026-08-10（一）~ 08-14（五）
+
+老板 08-06 定的菜单（我先出过一版数据驱动方案，老板另有安排，按老板的菜单执行）。
+
+## 排期
+
+| 日 | 特餐 | 变动 |
+|---|---|---|
+| 周一 08-10 | 山药云耳海陆双鲜炒（主打）+ **家乡白萝卜焖花肉 🆕** | 山药 Wed→Mon；新菜首发 |
+| 周二 08-11 | 家乡豆酱焖花肉（**单菜日**） | 留任；老板当天有事，主动压量 |
+| 周三 08-12 | 古早味照烧鳗鱼饭（主打）+ 绍兴酒蒸花肉 | 鳗鱼 周一/四→周三单日；绍兴暂别回归 |
+| 周四 08-13 | 柠檬蜜糖煎鸡扒（主打）+ **家乡白萝卜焖花肉** | 鸡扒暂别回归（07-20 暂别） |
+| 周五 08-14 | 家乡甜酸洋葱猪扒（主打）+ 柠香香煎三文鱼饭 | 猪扒 Thu→Fri；三文鱼 周二/五→周五单日 |
+
+常驻不变：纳豆月见海苔饭、马铃薯炖花肉片。
+转暂别：香煎金黄鸡扒饭、招牌原盅当归蒸鸡全腿、希腊柠香烤鸡胸。
+
+**新菜**：家乡白萝卜焖花肉 RM19.90（webapp id 30 / dash id 30）。
+英文名 `Hometown Stewed Pork Belly with Daikon` 老板 08-06 定稿。
+一菜两天（周一+周四）走 DAILY_DISHES + availableWeekdays[1,4] + featureOnAvailableDays，
+跟鳗鱼/绍兴同款机制（同一道菜不能在 WEEKLY_SCHEDULE 出现两次）。
+
+## 已完成
+
+- [x] `src/data/weeklyMenu.ts`：新菜 id 30 建档 + WEEKLY_SCHEDULE / DAILY_DISHES / PAUSED_DISHES 三表重排
+- [x] 鳗鱼(29) 去掉 availableWeekdays[1,4]+featureOnAvailableDays → 周三单日特餐
+- [x] 三文鱼(21) 去掉 availableWeekdays[2,5]+featureOnAvailableDays → 周五单日特餐
+- [x] `src/data/dishIngredients.ts`：新菜加空配方条目 + TODO（份量待碗妈提供，绝不照豆酱焖花肉猜克数）
+- [x] Desktop `incredibowl-dashboard.html` MENU_SEED 同步（dash id ≠ webapp id，按映射改）
+- [x] `npm run sync:dashboard` → public/dashboard-h7x2q9.html
+- [x] `npx tsc --noEmit` 通过
+- [x] `npm run build` 通过 —— 排期表三条自检规则（id 唯一/不重复/无遗漏）是运行时的，build 过=排期合法
+- [x] 起 production server 实测渲染：周一=山药+白萝卜、周二=豆酱单菜、周三=鳗鱼+绍兴、
+      周四=柠檬鸡扒+白萝卜、周五=猪扒+三文鱼，暂别三道沉底；白萝卜在周一/周四各出现一次 ✅
+- [x] `/en` 同步验证通过（EN 组件树独立但读同一份 weeklyMenu）
+- [x] `npm run sync:menu` dry-run：新建 1 道 + 更新 9 道，与预期完全一致
+
+## 阻塞：新菜没有主图
+
+`/daikon_pork_belly.webp` 不存在，实测 **HTTP 404**（对照 unagi_rice.webp = 200）。
+素材库 `Desktop\Incredibowl Services\Dish image\`（含 Gpt 子目录）里没有白萝卜焖花肉的图。
+
+**图没到位之前不能 push** —— 周一/周四菜单卡片会显示破图。
+老板给图后：转 1024² webp q82 → 放 public/ → 重跑 build → 即可推。
+
+## 待办（图到位后）
+
+- [ ] 放入 `/public/daikon_pork_belly.webp`
+- [ ] `npm run build` 复验
+- [ ] commit 菜单文件（**绝不 `git add -A`**）
+- [ ] ⏳ **等 08-07（周五）06:00 截单后才 push** —— 提前推会让周五的客人看到下周菜单（07-24 事故同款坑）
+- [ ] push 后 `npm run sync:menu --commit` 写 Firestore 排期
+- [ ] curl 线上 grep「家乡白萝卜焖花肉」smoke check
+- [ ] 老板在 dashboard Settings→菜单管理 手动填新菜 costPrice（seed 只给 0，成本未知不编）
+- [ ] 碗妈给新菜份量后补 `dishIngredients.ts` 配方，否则每日备餐采购清单漏白萝卜/花肉
+- [ ] 新菜有图后在 Google Sheet dishes 表加一行，否则 WhatsApp chatbot 发不出该菜图片
+
+## 提醒老板的事
+
+1. **周二订阅单要手动改菜**：8 个订阅客户有周二固定单（本周二实际执行 5 单 9 碗），
+   其中 4 户订阅表里点名三文鱼——下周二没有三文鱼，在 /admin/subscriptions 建单时要手动换。
+2. **周一 Hero「明日主打」会显示山药云耳，不是白萝卜焖花肉**。机制限制：featured 菜
+   （一菜两天）拿不到 isPrimary。老板原话把白萝卜列在第一位，如果要它当周一主打，
+   得改成白萝卜只排周一、周四另换一道菜。
+3. 旧 WhatsApp 模板里的运费「7.5–12km via Grab RM10, Minimum order RM65」与系统实际
+   收费不符（实际 7.5–10km RM15、10–15km RM20，且无 RM65 最低消费）。新模板已按系统实际写。
+
+## Review
+
+数据分析脚本 `scripts/_dish-day-normalized.mjs`（本次新写，未 commit）：按 (菜 × 配送日)
+归一化菜品表现，剔除在途未截单/周末零星/团餐单。结论存在本文件 git 历史里，
+下次排菜单可直接复用：周一最强(RM643/天)、周五最弱(RM436/天)；日均份数王 = 猪扒 14.4、
+鳗鱼 14.33、三文鱼 12.6；最冷 = 纳豆 1.62、参峇臭豆 2.9、马铃薯 3.0、山药 4.25。
+
+---
+
 # Bowlmama v2 — WhatsApp 客服 chatbot 重构（防抖 + 下单闭环）— 2026-08-01
 
 > 老板已拍板：删 Lead/CAPI 支线（Purchase 走每周 cron）；防抖聚合；打通 WhatsApp 下单到 Firestore；
