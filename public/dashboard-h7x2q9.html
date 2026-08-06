@@ -1919,7 +1919,7 @@
                             <div class="form-row">
                                 <label>油价（RON95）</label>
                                 <input type="number" id="cfgPetrolPrice" min="0" step="0.01" value="1.99" />
-                                <span style="font-size:12px;color:var(--text-muted)">RM / L · 账本加油记录 RM1.99</span>
+                                <span style="font-size:12px;color:var(--text-muted);line-height:1.6">RM / L · 账本加油记录<br><span id="cfgPetrolAge"></span></span>
                             </div>
                             <div class="form-row">
                                 <label>自送车油耗</label>
@@ -3567,6 +3567,37 @@ incredibowl.my`,
             const maint = Number(state.cfg.maintPerKm) || 0.13;
             return petrol * l100 / 100 + maint;
         }
+
+        /**
+         * 油价是手填的，系统不联网抓 —— 放着不管就会一直拿一个过期数字算成本，
+         * 而且错得没有任何征兆。这里在设置页把「多久没更新」摆出来。
+         *
+         * 时间来源分三级，各自如实标注，绝不把估算说成实测：
+         *   1. petrolPriceUpdatedAt —— 改过油价才会有，精确
+         *   2. 退回配置文档的 updatedAt —— 只能说明「至少这么久没动」（下限，
+         *      因为油价可能在更早的某次保存就是这个值了）。往「少报天数」的
+         *      方向错，宁可晚提醒也不误报。
+         *   3. 都没有 —— 老实说还没记过
+         */
+        const PETROL_STALE_DAYS = 90;
+        function renderPetrolAge() {
+            const el = $('#cfgPetrolAge');
+            if (!el) return;
+            const exact = tsToDate(state.cfg.petrolPriceUpdatedAt);
+            const floor = exact || tsToDate(state.cfg.updatedAt);
+            if (!floor) {
+                el.innerHTML = '<span style="color:var(--text-muted)">⏱ 还没记过更新时间</span>';
+                return;
+            }
+            const days = Math.max(0, Math.floor((Date.now() - floor.getTime()) / 86400000));
+            const when = ymdKey(floor);
+            const prefix = exact ? `上次更新 ${when}` : `至少从 ${when} 起没动过`;
+            const ago = days === 0 ? '今天' : days === 1 ? '1 天' : `${days} 天`;
+            el.innerHTML = days >= PETROL_STALE_DAYS
+                ? `<span style="color:#B4531F;font-weight:700">⚠️ ${prefix}（${ago}）—— 下次加油顺手核对</span>`
+                : `<span style="color:var(--text-muted)">⏱ ${prefix}（${ago}）</span>`;
+        }
+
         const DELIVERY_METHODS = ['grab', 'self', 'driver', 'pickup'];
         function methodOf(o) {
             if (DELIVERY_METHODS.includes(o.deliveryMethod)) return o.deliveryMethod;
@@ -4083,6 +4114,7 @@ incredibowl.my`,
                 $('#cfgPetrolPrice').value = state.cfg.petrolPriceRm ?? 1.99;
                 $('#cfgFuelL100').value = state.cfg.fuelL100km ?? 11;
                 $('#cfgMaintPerKm').value = state.cfg.maintPerKm ?? 0.13;
+                renderPetrolAge();
                 $('#cfgPackagingUnit').value = state.cfg.packagingUnitPrice ?? 0.60;
                 $('#cfgMainsPerBag').value = state.cfg.mainsPerBag ?? 2;
                 $('#cfgCardFee').value = state.cfg.cardFeePct ?? 2.4;
@@ -7843,6 +7875,7 @@ incredibowl.my`,
         }
 
         $('#saveDeliveryCfgBtn').addEventListener('click', async () => {
+            const prevPetrol = Number(state.cfg.petrolPriceRm);
             const cfg = {
                 within2kmCost: parseFloat($('#cfgWithin2km').value) || 0,
                 outside2kmCost: parseFloat($('#cfgOutside2km').value) || 0,
@@ -7857,6 +7890,9 @@ incredibowl.my`,
                 fpxMinFee: parseFloat($('#cfgFpxMin').value) || 0,
                 updatedAt: Timestamp.now(),
             };
+            // 只在油价真的改了才盖章 —— 保存其它参数不等于「我核对过油价」，
+            // 顺手续命会把提醒变成永远不响的摆设。
+            if (Number(cfg.petrolPriceRm) !== prevPetrol) cfg.petrolPriceUpdatedAt = Timestamp.now();
             const btn = $('#saveDeliveryCfgBtn');
             const status = $('#cfgStatus');
             btn.disabled = true;
@@ -7865,6 +7901,7 @@ incredibowl.my`,
                 await setDoc(doc(db, 'dashboardConfig', 'delivery'), cfg, { merge: true });
                 state.cfg = { ...state.cfg, ...cfg };
                 invalidateDeliveryCostCache();   // 自送率变了，成本图重建
+                renderPetrolAge();
                 status.textContent = '已保存';
                 toast('配置已更新', 'success');
                 renderBudget();
