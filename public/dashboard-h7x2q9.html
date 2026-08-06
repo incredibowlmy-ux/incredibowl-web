@@ -732,6 +732,28 @@
             white-space: nowrap;
         }
         .dbm-assign.on { border-color: #1A2D23; background: #1A2D23; color: #fff; }
+
+        /* ── 交给 Grab 后还没标送达的单（常驻在弹窗顶部）───────── */
+        #dbmPendingGrab { display: grid; gap: 8px; margin-bottom: 16px; }
+        .dbm-pg-head { font-size: 13px; font-weight: 800; color: #8A6100; }
+        .dbm-pg-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-top: -4px; }
+        .dbm-pg-day { padding: 10px 12px; background: #FFF7E6; border: 1px solid #FFE0A3; border-radius: 10px; }
+        /* 送达日已过 = 肯定早就到了，颜色再重一档催一下 */
+        .dbm-pg-day.stale { background: #FFEDE6; border-color: #FFC3A8; }
+        .dbm-pg-daytitle {
+            font-size: 12px; font-weight: 800; color: #8A6100;
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .dbm-pg-order { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: #8A6100; }
+        .dbm-pg-name { flex: 1; overflow-wrap: anywhere; line-height: 1.45; }
+        .dbm-pg-done, .dbm-pg-allday {
+            border-radius: 8px; border: 1.5px solid #8A6100; background: transparent;
+            color: #8A6100; font-weight: 800; cursor: pointer; white-space: nowrap;
+            padding: 5px 10px; font-size: 12px;
+        }
+        .dbm-pg-allday { font-size: 11px; }
+        .dbm-pg-done:disabled, .dbm-pg-allday:disabled { opacity: .5; cursor: default; }
+
         #dbmOrderList { display: grid; gap: 8px; max-height: 340px; overflow-y: auto; }
         #dbmTally {
             margin-top: 8px; padding: 8px 12px; background: var(--bg-subtle);
@@ -1057,6 +1079,7 @@
             .dbm-row { padding: 12px; }
             .dbm-actions { flex-direction: column; gap: 6px; }
             .dbm-assign { padding: 11px 8px; font-size: 13px; }  /* 够大的点击区 */
+            .dbm-pg-done, .dbm-pg-allday { padding: 9px 12px; }  /* 同上，手指点得中 */
             #dbmTally { flex-direction: column; gap: 2px; }
             .modal-body { padding: 18px 18px; }
             .modal-header { padding: 16px 18px; }
@@ -2644,6 +2667,8 @@
                 <button class="modal-close" id="dbmCloseBtn" type="button">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Grab 交出去还没收尾的单 —— 放最上面，因为这是每天开工的必经之路 -->
+                <div id="dbmPendingGrab" class="hidden"></div>
                 <div class="modal-row">
                     <label>时段</label>
                     <div class="channel-pills" id="dbmSlotPills">
@@ -12632,8 +12657,7 @@ incredibowl.my`,
         }
 
         // ── 逐单派工：'self' 自己送（进批次）/ 'grab' 交给骑手（不进批次）/ 'skip' 先不动
-        //    默认值靠 dbmDefaultAssign()：远单默认 grab —— 让「主动选自己跑」而不是
-        //    「忘了取消勾选」成为默认路径。老板点一下就能改。
+        //    默认值见 dbmDefaultAssign()：一律 'self'，绝不替老板预选 Grab。
         let dbmAssign = {};   // orderId -> 'self' | 'grab' | 'skip'
 
         const DBM_FAR_KM = 7.5;   // 与 deliveryUtils 的 MID_RADIUS_KM 同一个界：超过就是 far 档
@@ -12712,8 +12736,15 @@ incredibowl.my`,
         }
 
         /**
-         * Grab 单不进批次，所以司机页那套「逐单点送达」够不着它们 —— 不给个收尾入口
-         * 就会永远卡在 delivering，客户跟踪页也一直显示配送中。
+         * ── Grab 单的收尾 ─────────────────────────────────────────
+         * Grab 单不进批次，所以司机页那套「逐单点送达」够不着它们。唯一的出口
+         * 就是这里；少了它就永远卡在 delivering，客户跟踪页一直显示「已交给外送
+         * 骑手」（2026-08-06 实测积压 19 单，最早的压了 3 天）。
+         *
+         * 所以入口有两个，同一套写库逻辑：
+         *   1. 提交后的成功面板 —— 当场就送到的话顺手点（一次性）
+         *   2. 弹窗顶部常驻的 #dbmPendingGrab —— 关掉弹窗后的补票口，
+         *      每天开工必经之路，跨天的漏网单也捞得回来
          */
         function dbmGrabDoneBtnHtml(ids) {
             if (!ids.length) return '';
@@ -12722,11 +12753,10 @@ incredibowl.my`,
                 ✅ Grab 这 ${ids.length} 单都送到了 → 标记已送达</button>`;
         }
 
-        $('#dbmSuccess').addEventListener('click', async (e) => {
-            const b = e.target.closest('#dbmGrabDoneBtn');
-            if (!b) return;
-            const ids = b.dataset.ids.split(',').filter(Boolean);
-            b.disabled = true; b.textContent = '标记中…';
+        /** 唯一的 delivering → delivered 写入点，两个入口共用 */
+        async function dbmMarkGrabDelivered(ids, btn, doneLabel) {
+            if (!ids.length) return;
+            if (btn) { btn.disabled = true; btn.textContent = '标记中…'; }
             try {
                 await Promise.all(ids.map(id =>
                     updateDoc(doc(db, 'orders', id), { status: 'delivered', updatedAt: serverTimestamp() })));
@@ -12735,12 +12765,68 @@ incredibowl.my`,
                     if (i >= 0) state.orders[i] = { ...state.orders[i], status: 'delivered' };
                 });
                 renderAll();
-                b.textContent = `✅ 已标记 ${ids.length} 单送达`;
+                renderDbmPendingGrab();   // ← 会把常驻块整块重画，btn 可能已经不在文档里
+                if (btn && btn.isConnected) btn.textContent = doneLabel || `✅ 已标记 ${ids.length} 单送达`;
             } catch (err) {
-                b.disabled = false;
-                b.textContent = '标记失败，点我重试';
                 console.warn('[grab done]', err);
+                if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = '标记失败，点我重试'; }
             }
+        }
+
+        /** 交给 Grab 了但还没标送达的单（不限今天 —— 跨天漏的就是要在这捞） */
+        function dbmPendingGrabOrders() {
+            return state.orders
+                .filter(o => o.status === 'delivering' && o.deliveryMethod === 'grab')
+                .sort((a, b) => (a.deliveryDate || '').localeCompare(b.deliveryDate || ''));
+        }
+
+        function dbmDaysAgo(ymd, todayYmd) {
+            const n = Math.round((new Date(todayYmd + 'T00:00:00') - new Date(ymd + 'T00:00:00')) / 86400000);
+            if (!Number.isFinite(n) || n <= 0) return '';
+            return n === 1 ? '昨天' : `${n} 天前`;
+        }
+
+        function renderDbmPendingGrab() {
+            const el = $('#dbmPendingGrab');
+            const list = dbmPendingGrabOrders();
+            if (list.length === 0) { el.innerHTML = ''; el.classList.add('hidden'); return; }
+
+            const today = ymdKey(new Date());
+            const byDate = {};
+            list.forEach(o => { (byDate[o.deliveryDate || '未知日期'] ||= []).push(o); });
+
+            el.innerHTML = `<div class="dbm-pg-head">🚕 交给 Grab 后还没标送达（${list.length} 单）</div>`
+                + `<div class="dbm-pg-sub">这些单不在司机页里 —— 不在这标一下，客户跟踪页会一直显示「配送中」。</div>`
+                + Object.keys(byDate).sort().map(d => {
+                    const os = byDate[d];
+                    const stale = d !== '未知日期' && d < today;
+                    const ago = stale ? dbmDaysAgo(d, today) : (d === today ? '今天' : '');
+                    const ids = os.map(o => o.id).join(',');
+                    return `<div class="dbm-pg-day${stale ? ' stale' : ''}">
+                            <div class="dbm-pg-daytitle">
+                                <span>📅 ${escapeHtml(d)}${ago ? `（${ago}）` : ''} · ${os.length} 单</span>
+                                <button type="button" class="dbm-pg-allday" data-ids="${ids}">这天全标已送达</button>
+                            </div>
+                            ${os.map(o => `<div class="dbm-pg-order">
+                                <span class="dbm-pg-name">#${o.id.slice(-6).toUpperCase()} ${escapeHtml(o.userName || '匿名')}</span>
+                                <button type="button" class="dbm-pg-done" data-ids="${o.id}">✅ 送到了</button>
+                            </div>`).join('')}
+                        </div>`;
+                }).join('');
+            el.classList.remove('hidden');
+        }
+
+        $('#dbmPendingGrab').addEventListener('click', (e) => {
+            const b = e.target.closest('.dbm-pg-done, .dbm-pg-allday');
+            if (!b) return;
+            dbmMarkGrabDelivered(b.dataset.ids.split(',').filter(Boolean), b);
+        });
+
+        $('#dbmSuccess').addEventListener('click', (e) => {
+            const b = e.target.closest('#dbmGrabDoneBtn');
+            if (!b) return;
+            const ids = b.dataset.ids.split(',').filter(Boolean);
+            dbmMarkGrabDelivered(ids, b, `✅ 已标记 ${ids.length} 单送达`);
         });
 
         $('#dbmOrderList').addEventListener('click', (e) => {
@@ -12757,6 +12843,7 @@ incredibowl.my`,
             $('#dbmError').classList.add('hidden');
             $('#dbmSubmitBtn').disabled = false;
             $('#dbmSubmitBtn').textContent = '🛵 开始配送';
+            renderDbmPendingGrab();
             renderDbmList();
             $('#deliveryBatchModal').classList.remove('hidden');
         }
@@ -12813,8 +12900,8 @@ incredibowl.my`,
 
             // 全给 Grab、自己一单都不送 —— 不需要建批次，直接收工
             if (orderIds.length === 0) {
-                state.lastGrabIds = grabIds;
                 renderAll();
+                renderDbmPendingGrab();
                 const s0 = $('#dbmSuccess');
                 s0.innerHTML = `🚕 <strong>${grabIds.length} 单已标记交给 Grab</strong><br>`
                     + `<span style="color:var(--text-muted)">记得去 Grab App 逐单下单。客户跟踪页已显示「已交给外送骑手」。</span>`
