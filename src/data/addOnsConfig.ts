@@ -14,7 +14,7 @@ export interface AddOnPriceDef {
 export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Default sides ─────────────────────────
   'sunny-egg': 2.50,
-  'potato-egg': 3.50,
+  'potato-egg': 4.00,  // 2026-08-06 老板调价 3.50 → 4.00（含下方 alacarte 变体同步）
   'less-rice': 0.00,
   'extra-rice': 2.00,
   'brown-rice': 2.00,
@@ -57,7 +57,7 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── A la carte variants (natto menu) ──────
   'sunny-egg-alacarte': 2.50,
-  'potato-egg-alacarte': 3.50,
+  'potato-egg-alacarte': 4.00,  // 2026-08-06 跟 'potato-egg' 同步调价（同一样东西的单点版）
 
   // ─── Surf & Turf (id:12) specials ──────────
   'surf-turf-super-combo': 11.40,
