@@ -4180,6 +4180,27 @@ incredibowl.my`,
             if (Number.isFinite(singular) && singular > 0) return singular;
             return Number(o.addonCreditsDiscount) || 0;
         }
+        /**
+         * 编辑重算专用：拿回这单当初到底用 credit 抵了多少钱。
+         * 2026-08-06 之前的**订阅单**根本没存抵扣额（只有 addonCreditsUsed 明细 +
+         * addonCreditsAllocatedRevenue 摊销收入，两个都不是抵扣额），所以对这些
+         * 老单用恒等式反推。绝不能改用「明细 × 当前价格表」——credit 会调价
+         * （salmon-upgrade 07-26 从 4.00→5.00），拿今天的价算老单会算出假差额。
+         * ⚠️ 只用于编辑时保住原 total，**不可**用于对账审计（反推必然闭合）。
+         */
+        function origCreditCoverageOf(o) {
+            if (!o) return 0;
+            const explicit = Number(o.addonCreditDiscount ?? o.addonCreditsDiscount);
+            if (Number.isFinite(explicit)) return explicit;
+            if (!Array.isArray(o.addonCreditsUsed) || !o.addonCreditsUsed.length) return 0;
+            const orig = Number(o.originalTotal) || 0;
+            if (orig <= 0) return 0;
+            const back = orig
+                - (Number(o.mealVoucherDiscount) || 0)
+                - (Number(o.promoDiscount || o.discount) || 0)
+                - (Number(o.total) || 0);
+            return back > 0.01 ? Number(back.toFixed(2)) : 0;
+        }
 
         // Filter voucher purchases that were actually paid within the active date range
         // (uses paidAt — pending/rejected purchases don't count as cash flow).
@@ -13292,7 +13313,22 @@ incredibowl.my`,
                 const unit = (c && typeof c.unitAllocatedRM === 'number') ? c.unitAllocatedRM : (opt ? opt.price : 0);
                 return s + unit * it.count;
             }, 0);
-            const cashFoodTotal = Math.max(0, total - mealVoucherDiscount - promoDiscount - prepaidCoverage);
+            // ⚠️ 编辑模式：抵扣不可改（上面 13170 那道闸拦着），而 #moVouchersUsed
+            // 每次开 modal 都被重置为 0 —— 所以编辑时 mealVoucherDiscount /
+            // prepaidCoverage 恒为 0，直接拿它们算 total 会把餐券单的 total 从
+            // 「面值−抵扣」**静默改回全额面值**（改个地址或时段就中招），而
+            // mealVoucherDiscount 等字段是条件写入、编辑时不在 updateFields 里，
+            // 于是订单自相矛盾：total 说客户付了全款、券字段说抵了大半，营收
+            // 公式 total + allocatedRevenue 把同一笔钱算两遍。
+            // 修法：编辑时沿用原单已落库的抵扣额重算。
+            const origForMoney = editingOrderId ? state.orders.find(o => o.id === editingOrderId) : null;
+            const effMealVoucherDiscount = editingOrderId
+                ? (Number(origForMoney && origForMoney.mealVoucherDiscount) || 0)
+                : mealVoucherDiscount;
+            const effPrepaidCoverage = editingOrderId
+                ? origCreditCoverageOf(origForMoney)   // 老订阅单没存抵扣额 → 恒等式反推
+                : prepaidCoverage;
+            const cashFoodTotal = Math.max(0, total - effMealVoucherDiscount - promoDiscount - effPrepaidCoverage);
 
             // Build createdAt: use selected date at noon for consistent sorting
             const dateObj = new Date(date + 'T12:00:00');
@@ -13361,7 +13397,12 @@ incredibowl.my`,
                     const origTotal = Number(orig && orig.total) || 0;
                     const newTotal = Number(orderData.total) || 0;
                     const origItemCount = (orig && Array.isArray(orig.items)) ? orig.items.length : 0;
-                    const bigTotalChange = origTotal > 0 && Math.abs(newTotal - origTotal) / origTotal > 0.15;
+                    // origTotal === 0 时旧写法恒为 false —— 而餐券全覆盖单的 total
+                    // 正好就是 0，等于「最该确认的那一类单永远不弹确认框」。
+                    // 现在 0 元单只要金额有任何变动就弹。
+                    const bigTotalChange = origTotal > 0
+                        ? Math.abs(newTotal - origTotal) / origTotal > 0.15
+                        : Math.abs(newTotal - origTotal) > 0.01;
                     const itemsShrank = items.length < origItemCount;
                     if (bigTotalChange || itemsShrank) {
                         const msg = `确认改动较大的修改？\n\n`

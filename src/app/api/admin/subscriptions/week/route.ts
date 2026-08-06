@@ -371,6 +371,12 @@ export async function POST(req: NextRequest) {
         ...(addonClaim.lines.length > 0 ? {
           addonCreditsUsed: addonClaim.lines.map(l => ({ addonId: l.addonId, count: l.count })),
           addonCreditsAllocatedRevenue: addonClaim.recognizedRevenueRM,
+          // 2026-08-06：credit 的**抵扣金额**必须落库（口径同 dashboard 手动单）。
+          // 以前只存 Used(明细) + AllocatedRevenue(摊销收入)，两个都不是抵扣额：
+          // 摊销价含批量折扣（实测 18.60 抵扣 vs 17.60 摊销），而按明细×价格表
+          // 反推又会踩到调价 —— salmon-upgrade 07-26 从 4.00 涨到 5.00，用今天
+          // 的价去算 07-15 的单会凭空多出 RM2。没有这个字段，订单越老越对不了账。
+          addonCreditsDiscount: round2(d.upgradeCoverage),
         } : {}),
         redemptionRecordedBy: adminEmail,
         // createdAt 落在配送日中午（04:00Z = KL 12:00），与手写周脚本一致，
