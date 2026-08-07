@@ -7,16 +7,31 @@
 //   node scripts/sync-grab-receipts.mjs                       # sync receipts, report unclassified
 //   node scripts/sync-grab-receipts.mjs --rest-self 2026-07-24  # 之后把 ≤该日 仍未分类的配送单标自送
 //   node scripts/sync-grab-receipts.mjs --dry                 # preview only
+//   node scripts/sync-grab-receipts.mjs --rest-self X --force  # 无视护栏（只在你确知没漏收据时用）
 import admin from 'firebase-admin';
 import fs from 'node:fs';
 import { KEY, loadReceipts, loadOrders, matchReceipts } from './lib-delivery-match.mjs';
 
 const DRY = process.argv.includes('--dry');
+const FORCE = process.argv.includes('--force');
 const restSelfIdx = process.argv.indexOf('--rest-self');
 const REST_SELF_UNTIL = restSelfIdx >= 0 ? process.argv[restSelfIdx + 1] : null;
 if (restSelfIdx >= 0 && !/^\d{4}-\d{2}-\d{2}$/.test(REST_SELF_UNTIL || '')) {
     console.error('--rest-self 需要 YYYY-MM-DD 日期'); process.exit(1);
 }
+
+// --rest-self 是**排除法**：「没有收据 = 老板自己送的」。这个推断只有在
+// 「那段时间的收据都齐了」时才成立。下面两道护栏就是在检查这个前提。
+// 用本地日期不用 toISOString —— UTC+8 的凌晨会比 UTC 快一天，按 UTC 算会把
+// 今天当成昨天，反而放宽了滞后天数的检查。
+const todayLocal = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+// 收据本来就滞后（老板送完当天不会立刻传）。扫到离今天太近的日期 = 拿
+// 「还没传的收据」当「没有收据」，Grab 单会被整批误标成自送。
+const MIN_RECEIPT_LAG_DAYS = 2;
 
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY, 'utf-8'))) });
 const db = admin.firestore();
@@ -49,6 +64,67 @@ for (const { r, o } of matchedPairs) {
 // 2) optionally: remaining unclassified delivery orders ≤ REST_SELF_UNTIL → self
 const unclassified = orders.filter(o =>
     !usedOrderIds.has(o.id) && !o.method && o.zone !== null && o.zone !== undefined);
+
+// ── 两道护栏 ────────────────────────────────────────────────
+// 只在真要跑 --rest-self 时检查。`--force` 可以硬闯（合法场景：某周确实一趟
+// Grab 都没叫），但会打印一大段警告，闯了要自己负责。
+if (REST_SELF_UNTIL) {
+    const today = todayLocal();
+    const receiptDates = receipts.map(r => r.date).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    const lastReceipt = receiptDates[receiptDates.length - 1] || null;
+    const sweep = unclassified.filter(o => o.date <= REST_SELF_UNTIL);
+    const blocks = [];
+
+    // 护栏 1：日期离今天太近 —— 那几天的收据大概率还没传
+    const lag = daysBetween(REST_SELF_UNTIL, today);
+    if (lag < MIN_RECEIPT_LAG_DAYS) {
+        blocks.push(`日期 ${REST_SELF_UNTIL} 离今天（${today}）只差 ${lag} 天。`
+            + `收据总是滞后，${MIN_RECEIPT_LAG_DAYS} 天内的 Grab 单大概率还没传收据 —— 现在扫会把它们全标成自送。`);
+    }
+
+    // 护栏 2：扫的范围超出了收据覆盖到的最后一天
+    if (!lastReceipt) {
+        blocks.push('deliveries.csv 里一张收据都没有 —— 收据根本没传，此刻扫等于把所有单标自送。');
+    } else if (REST_SELF_UNTIL > lastReceipt) {
+        const naked = sweep.filter(o => o.date > lastReceipt);
+        blocks.push(`收据只覆盖到 ${lastReceipt}，你要扫到 ${REST_SELF_UNTIL}。`
+            + `中间 ${daysBetween(lastReceipt, REST_SELF_UNTIL)} 天没有任何收据，`
+            + `这段里有 ${naked.length} 单会被无条件标成自送。`);
+    }
+
+    // 逐日明细 —— 光说「有风险」没用，要指出具体哪天可疑
+    if (blocks.length && sweep.length) {
+        const byDay = {};
+        sweep.forEach(o => { (byDay[o.date] ||= 0); byDay[o.date]++; });
+        const rcptByDay = {};
+        receiptDates.forEach(d => { (rcptByDay[d] ||= 0); rcptByDay[d]++; });
+        const risky = Object.keys(byDay).sort().filter(d => !rcptByDay[d]);
+        if (risky.length) {
+            console.log(`\n⚠️ 待扫范围里「有未分类单、但当天一张收据都没有」的日子（${risky.length} 天）：`);
+            risky.slice(-14).forEach(d => console.log(`     ${d}  ${byDay[d]} 单`));
+            if (risky.length > 14) console.log(`     …（只列最近 14 天，共 ${risky.length} 天）`);
+        }
+    }
+
+    if (blocks.length) {
+        console.log(`\n${'═'.repeat(66)}`);
+        console.log('🛑 --rest-self 被护栏拦下 —— 它是排除法（没收据=自送），前提是收据齐了：\n');
+        blocks.forEach((b, i) => console.log(`   ${i + 1}. ${b}\n`));
+        console.log(`   现状：收据 ${receipts.length} 张，覆盖 ${receiptDates[0] || '—'} → ${lastReceipt || '—'}`);
+        console.log(`         此次会扫 ${sweep.length} 单（${REST_SELF_UNTIL} 及之前仍未分类的）`);
+        if (lastReceipt) {
+            const safe = daysBetween(lastReceipt, today) >= MIN_RECEIPT_LAG_DAYS
+                ? lastReceipt
+                : new Date(new Date(today + 'T00:00:00') - MIN_RECEIPT_LAG_DAYS * 86400000).toISOString().slice(0, 10);
+            console.log(`\n   ✅ 安全的做法：先补传收据，或改用 --rest-self ${safe}`);
+        }
+        console.log(`   ⚠️ 确知没漏收据的话可以加 --force 硬闯（比如那周真的一趟 Grab 都没叫）`);
+        console.log(`${'═'.repeat(66)}\n`);
+        if (!FORCE) { await admin.app().delete(); process.exit(1); }
+        console.log('❗ --force 已指定，无视上面的警告继续。错了要自己回滚。\n');
+    }
+}
+
 if (REST_SELF_UNTIL) {
     for (const o of unclassified.filter(o => o.date <= REST_SELF_UNTIL)) {
         // 地址空 = 到店自取（老板 2026-08-07 确认）。以前这里一律标 self，
