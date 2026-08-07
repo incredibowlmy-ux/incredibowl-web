@@ -29,9 +29,6 @@ const todayLocal = () => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 const daysBetween = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
-// 收据本来就滞后（老板送完当天不会立刻传）。扫到离今天太近的日期 = 拿
-// 「还没传的收据」当「没有收据」，Grab 单会被整批误标成自送。
-const MIN_RECEIPT_LAG_DAYS = 2;
 
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(KEY, 'utf-8'))) });
 const db = admin.firestore();
@@ -75,11 +72,15 @@ if (REST_SELF_UNTIL) {
     const sweep = unclassified.filter(o => o.date <= REST_SELF_UNTIL);
     const blocks = [];
 
-    // 护栏 1：日期离今天太近 —— 那几天的收据大概率还没传
-    const lag = daysBetween(REST_SELF_UNTIL, today);
-    if (lag < MIN_RECEIPT_LAG_DAYS) {
-        blocks.push(`日期 ${REST_SELF_UNTIL} 离今天（${today}）只差 ${lag} 天。`
-            + `收据总是滞后，${MIN_RECEIPT_LAG_DAYS} 天内的 Grab 单大概率还没传收据 —— 现在扫会把它们全标成自送。`);
+    // 护栏 1：扫到今天或未来 —— 今天的单还在跑，收据不可能存在。
+    //
+    // 这里刻意**不**要求「离今天至少 N 天」。老板的节奏是周五收工传整周收据，
+    // 然后周末跑收尾 —— 那时扫到周五完全安全（收据刚传完），一个每周误报一次
+    // 的闸只会训练他每次都 --force，等于没有闸。真正的判据是护栏 2 的
+    // 「收据覆盖到哪天」，不是日历上离今天几天。
+    if (REST_SELF_UNTIL >= today) {
+        blocks.push(`日期 ${REST_SELF_UNTIL} 是今天（${today}）或更晚。`
+            + `今天的单还在跑，Grab 收据根本还没产生 —— 扫下去会把今天所有 Grab 单标成自送。`);
     }
 
     // 护栏 2：扫的范围超出了收据覆盖到的最后一天
@@ -113,10 +114,11 @@ if (REST_SELF_UNTIL) {
         console.log(`   现状：收据 ${receipts.length} 张，覆盖 ${receiptDates[0] || '—'} → ${lastReceipt || '—'}`);
         console.log(`         此次会扫 ${sweep.length} 单（${REST_SELF_UNTIL} 及之前仍未分类的）`);
         if (lastReceipt) {
-            const safe = daysBetween(lastReceipt, today) >= MIN_RECEIPT_LAG_DAYS
-                ? lastReceipt
-                : new Date(new Date(today + 'T00:00:00') - MIN_RECEIPT_LAG_DAYS * 86400000).toISOString().slice(0, 10);
-            console.log(`\n   ✅ 安全的做法：先补传收据，或改用 --rest-self ${safe}`);
+            // 安全日期 = 收据覆盖到的最后一天，且不能是今天/未来
+            const safe = lastReceipt < today ? lastReceipt : null;
+            console.log(safe
+                ? `\n   ✅ 安全的做法：先把缺的收据传上去，或改用 --rest-self ${safe}`
+                : `\n   ✅ 安全的做法：等今天过完、把收据传上去再跑`);
         }
         console.log(`   ⚠️ 确知没漏收据的话可以加 --force 硬闯（比如那周真的一趟 Grab 都没叫）`);
         console.log(`${'═'.repeat(66)}\n`);
