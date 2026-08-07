@@ -51,6 +51,17 @@ const unclassified = orders.filter(o =>
     !usedOrderIds.has(o.id) && !o.method && o.zone !== null && o.zone !== undefined);
 if (REST_SELF_UNTIL) {
     for (const o of unclassified.filter(o => o.date <= REST_SELF_UNTIL)) {
+        // 地址空 = 到店自取（老板 2026-08-07 确认）。以前这里一律标 self，
+        // 把 62 单自取单按 zone 默认记了 RM310 的假配送成本；自取的真实成本是 0。
+        // 但「地址空」只是自取的强信号不是铁证 —— 收了运费或上过配送车的照旧算自送。
+        const isPickup = !String(o.addr || '').trim()
+            && !(Number(o.fee) > 0)
+            && !o.batchId;
+        if (isPickup) {
+            updates.push({ id: o.id, set: { deliveryMethod: 'pickup' }, tag: 'pickup',
+                label: `${o.date} ${o.name} #${o.shortId}（地址空 → 自取）` });
+            continue;
+        }
         const set = { deliveryMethod: 'self' };
         if (typeof o.km !== 'number') {
             const km = kmByPhone.get(phoneCore(o.phone));

@@ -3646,6 +3646,39 @@ incredibowl.my`,
             }
             return map;
         }
+        /**
+         * 配送成本的「成色」—— 每单那个数字到底是怎么来的。
+         *
+         * 三档：
+         *   exact 有凭证  自取=0 / Grab·司机的收据实付
+         *   model 算出来  自送 率×km×2（是模型不是花出去的钱，但至少有真实距离）
+         *   est   占位值  缺方式 / 缺距离 / Grab 还没挂收据 → 退回 zone 默认 RM5·RM10
+         *
+         * 为什么要摆出来：总额只有一个数字，看不出里面有多少是拍的。2026-08-07
+         * 审计查出近 4 周 43% 的单走 est 档、占成本金额 55%，而界面上一点征兆都没有
+         * （--rest-self 连着 3 周没跑，成本卡照样显示得像真的一样）。
+         */
+        function deliveryCostQuality(orders) {
+            const q = { total: 0, exact: 0, model: 0, est: 0, noMethod: 0, selfNoKm: 0, grabNoReceipt: 0 };
+            for (const o of orders) {
+                q.total++;
+                const m = methodOf(o);
+                if (m === 'pickup') { q.exact++; continue; }
+                if (m === 'grab' || m === 'driver') {
+                    if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) q.exact++;
+                    else { q.est++; q.grabNoReceipt++; }
+                    continue;
+                }
+                if (m === 'self') {
+                    if (Number(o.deliveryDistanceKm) > 0) q.model++;
+                    else { q.est++; q.selfNoKm++; }
+                    continue;
+                }
+                q.est++; q.noMethod++;
+            }
+            return q;
+        }
+
         // Cached over state.orders (invalidated by renderAll / order edits)
         let _deliveryCostCache = null;
         function deliveryCostMap() {
@@ -6113,6 +6146,28 @@ incredibowl.my`,
                 ['❔ 未分类', mAgg.unclassified, '旧 zone 估算'],
             ].filter(([, b]) => b.orders > 0);
             const outsourcedCost = mAgg.grab.cost + mAgg.driver.cost + unlinkedSpend.rm;
+
+            // ── 这组数字的成色 ──────────────────────────────────
+            // 缺口不会自己喊，得摆在总额旁边，否则「三周没跑收尾脚本」在界面上零征兆。
+            const dq = deliveryCostQuality(orders);
+            const dqPct = n => dq.total ? Math.round(n / dq.total * 100) : 0;
+            const dqGaps = [];
+            if (dq.noMethod) dqGaps.push(`<strong>${dq.noMethod}</strong> 单没标配送方式（跑 <code>sync-grab-receipts --rest-self</code> 收尾）`);
+            if (dq.grabNoReceipt) dqGaps.push(`<strong>${dq.grabNoReceipt}</strong> 单 Grab 还没挂上收据（传收据后自动补）`);
+            if (dq.selfNoKm) dqGaps.push(`<strong>${dq.selfNoKm}</strong> 单自送缺距离（地址太简略，Google 认不出）`);
+            const dqWarn = dqPct(dq.est) >= 20;
+            const dqHtml = dq.total === 0 ? '' : `
+                <div style="margin-top:12px;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.65;
+                            background:${dqWarn ? '#FFF7E6' : 'var(--bg-subtle)'};border:1px solid ${dqWarn ? '#FFE0A3' : 'transparent'}">
+                    <div style="color:${dqWarn ? '#8A6100' : 'var(--text-muted)'};font-weight:${dqWarn ? 800 : 600}">
+                        ${dqWarn ? '⚠️' : '📊'} 这组数字的成色：
+                        有凭证 <strong>${dqPct(dq.exact)}%</strong>（${dq.exact} 单）·
+                        按率算 <strong>${dqPct(dq.model)}%</strong>（${dq.model} 单）·
+                        占位估算 <strong>${dqPct(dq.est)}%</strong>（${dq.est} 单）
+                    </div>
+                    ${dqGaps.length ? `<div style="margin-top:5px;color:var(--text-muted)">占位估算的来源：${dqGaps.join(' · ')}</div>` : ''}
+                </div>`;
+
             $('#deliveryMethodSplit').innerHTML = `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
                     <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px">
@@ -6141,6 +6196,7 @@ incredibowl.my`,
                     </tbody>
                 </table>
                 ${mAgg.grab.trips && mAgg.self.trips ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted)">Grab 每趟均价 ${fmt.rm(mAgg.grab.cost / mAgg.grab.trips)} vs 自送 ${fmt.rm(mAgg.self.cost / mAgg.self.trips)} — 自己跑一趟省 ${fmt.rm(mAgg.grab.cost / mAgg.grab.trips - mAgg.self.cost / mAgg.self.trips)}</div>` : ''}
+                ${dqHtml}
             `;
 
             renderMealVoucherKPIs(orders);

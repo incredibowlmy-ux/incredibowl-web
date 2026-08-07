@@ -104,6 +104,9 @@ export async function loadOrders(db) {
             costActual: o.deliveryCostActual,
             method: o.deliveryMethod,
             addr: (o.userAddress || '').slice(0, 40),
+            // 上过配送车 = 老板真开车送了。--rest-self 用它兜住「地址空但其实送了」
+            // 的单，别把它们误判成自取（实测抓到过 #PVSSDB）。
+            batchId: o.batchId || null,
         };
     }).filter(o => o.status !== 'cancelled' && o.date >= '2026-05-11');
 }

@@ -42,6 +42,18 @@ const MAX_WAYPOINTS = 25;
 
 const ROUTES_TIMEOUT_MS = 8_000;
 const GEOCODE_TIMEOUT_MS = 8_000;
+
+// Geocoding 结果的合理性上限。`bounds` 只是**偏置**不是限制 —— Google 认不出
+// 「Citizenz2」这种没路名没邮编的地址时，会回一个马来半岛中心点（4.21, 101.98，
+// 距厨房 129.5km）而且 status 照样是 OK。以前这里照单全收，还写进 geocodeCache
+// 和订单：2026-08-07 查出 2 个缓存条目 + 7 个订单被污染。真出现在批次里，
+// 「最远的一单当终点」会挑中它，整条路线围着一个 130km 外的幻影点排。
+//
+// 配送硬上限是 25km（老板 2026-07-29 定），留 30km 余量。超出一律当解析失败
+// → 该单进 unlocatedOrderIds 排队尾，/driver 标黄让人工确认。宁可说「定位不到」，
+// 也不能给一个看起来很确定的错坐标。顾客端 /api/geocode 早就有这道校验
+// （isBeyondServiceRange → 422），这里是补上同一道。
+const MAX_SANE_GEOCODE_KM = 30;
 // 整个坐标解析阶段的时间预算。超了就把剩下的单丢进 unlocated（排队尾，
 // /driver 会标黄），绝不让批次卡到 Vercel 函数超时 —— 建不出批次 = 送不了货。
 // 最坏路径预算：坐标解析 20s + Directions 8s×2（带路况失败退一次）= 36s < maxDuration 60s。
@@ -249,21 +261,38 @@ async function geocodeOnce(
             return null;
         }
         const top = data.results[0];
-        return {
-            lat: top.geometry.location.lat,
-            lng: top.geometry.location.lng,
-            formattedAddress: top.formatted_address || '',
-        };
+        const lat = top.geometry.location.lat;
+        const lng = top.geometry.location.lng;
+        // 合理性校验 —— 见 MAX_SANE_GEOCODE_KM 的注释。status=OK 不代表结果可信。
+        const km = distanceFromPearlPointKm(lat, lng);
+        if (!Number.isFinite(km) || km > MAX_SANE_GEOCODE_KM) {
+            console.warn(`[routeOptimizer] geocode 结果离厨房 ${km.toFixed(1)}km，超出 ${MAX_SANE_GEOCODE_KM}km 合理范围，当解析失败：`, address, top.formatted_address);
+            return null;
+        }
+        return { lat, lng, formattedAddress: top.formatted_address || '' };
     } catch (err) {
         console.warn('[routeOptimizer] geocode error', address, err);
         return null;
     }
 }
 
+/**
+ * 坐标可用吗 —— 格式合法**且**落在合理配送半径内。
+ *
+ * 半径这一条不是洁癖：库里已经存在被污染的坐标（2026-08-07 查出 geocodeCache
+ * 2 条 + 订单 7 个，全是 4.21/101.98 这个马来半岛中心点，距厨房 129.5km）。
+ * 光修 geocodeOnce 的写入口挡不住已经落地的脏数据，所以读取口（第 1 层订单
+ * 自带坐标、第 2 层缓存）也得过同一道闸。
+ *
+ * 挡下来的单进 unlocatedOrderIds：排队尾 + /driver 标黄让人工确认顺序。
+ * 「说不知道」永远好过「给一个很确定的错坐标」。
+ */
 function isFiniteCoord(lat: unknown, lng: unknown): boolean {
-    return typeof lat === 'number' && typeof lng === 'number'
-        && isFinite(lat) && isFinite(lng)
-        && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+    if (!isFinite(lat) || !isFinite(lng)) return false;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return false;
+    const km = distanceFromPearlPointKm(lat, lng);
+    return Number.isFinite(km) && km <= MAX_SANE_GEOCODE_KM;
 }
 
 // ─────────────────────────────────────────────────────────────
