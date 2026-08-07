@@ -12750,15 +12750,22 @@ incredibowl.my`,
             return `<div style="padding:8px 12px;margin-top:6px;background:var(--bg-subtle);border-radius:10px;font-size:12px;color:var(--text-muted)">ℹ️ 今天另有 ${excluded.length} 单不在列表：${parts}（此列表只含「已确认/备餐中」）</div>`;
         }
 
-        // ── 逐单派工：'self' 自己送（进批次）/ 'grab' 交给骑手（不进批次）/ 'skip' 先不动
-        //    默认值见 dbmDefaultAssign()：一律 'self'，绝不替老板预选 Grab。
-        let dbmAssign = {};   // orderId -> 'self' | 'grab' | 'skip'
+        // ── 逐单派工 ────────────────────────────────────────────
+        //   'self'   自己送（进批次，排路线，算油钱）
+        //   'grab'   交给骑手（不进批次，成本按收据）
+        //   'pickup' 客户到店自取（不进批次，成本 = 0，直接结单）
+        //   'skip'   先不动
+        //
+        // pickup 这一档是 2026-08-07 补的：以前只有前三个，客户来自取时老板没得选，
+        // 只能按「我送」—— 结果那单进了批次、被标 self、按 zone 默认记了假配送成本
+        // （#PVSSDB Sam Cheong 就是这么来的）。缺一个选项就会逼出一个错数据。
+        let dbmAssign = {};   // orderId -> 'self' | 'grab' | 'pickup' | 'skip'
 
         const DBM_FAR_KM = 7.5;   // 与 deliveryUtils 的 MID_RADIUS_KM 同一个界：超过就是 far 档
 
         // 老板 2026-07-31 明确要求：**永远不要默认 Grab，每次他自己选**。
         // 所以这里一律回 'self'，远单只靠橙色底 + 距离数字提醒，不替他做决定。
-        // （自取的单例外 —— 那本来就不需要送。）
+        // （已经标过自取的单例外 —— 那本来就不需要送，别再问一遍。）
         function dbmDefaultAssign(o) {
             return methodOf(o) === 'pickup' ? 'skip' : 'self';
         }
@@ -12816,6 +12823,7 @@ incredibowl.my`,
                         <div class="dbm-actions">
                             ${btn(o.id, 'self', cur, '🛵 我送')}
                             ${btn(o.id, 'grab', cur, '🚕 Grab')}
+                            ${btn(o.id, 'pickup', cur, '🏠 自取')}
                             ${btn(o.id, 'skip', cur, '⏸ 先不动')}
                         </div>
                     </div>`;
@@ -12826,6 +12834,7 @@ incredibowl.my`,
             $('#dbmTally').innerHTML =
                 `<span>🛵 我送 <b>${c('self')}</b> 单 → 进批次自动排路线</span>`
                 + `<span>🚕 Grab <b>${c('grab')}</b> 单 → 标记已交骑手</span>`
+                + `<span>🏠 自取 <b>${c('pickup')}</b> 单 → 成本 0，直接结单</span>`
                 + `<span>⏸ 先不动 <b>${c('skip')}</b> 单</span>`;
         }
 
@@ -12954,14 +12963,43 @@ incredibowl.my`,
 
         $('#dbmSubmitBtn').addEventListener('click', async () => {
             const eligible = dbmEligibleOrders().map(o => o.id);
-            const orderIds = eligible.filter(id => dbmAssign[id] === 'self');
-            const grabIds  = eligible.filter(id => dbmAssign[id] === 'grab');
+            const orderIds  = eligible.filter(id => dbmAssign[id] === 'self');
+            const grabIds   = eligible.filter(id => dbmAssign[id] === 'grab');
+            const pickupIds = eligible.filter(id => dbmAssign[id] === 'pickup');
             const errEl = $('#dbmError');
             errEl.classList.add('hidden');
-            if (orderIds.length === 0 && grabIds.length === 0) {
-                errEl.textContent = '至少要有 1 单选「我送」或「Grab」';
+            if (orderIds.length === 0 && grabIds.length === 0 && pickupIds.length === 0) {
+                errEl.textContent = '至少要有 1 单选「我送」「Grab」或「自取」';
                 errEl.classList.remove('hidden');
                 return;
+            }
+
+            // ── 自取单：不进批次、成本 0、直接结单 ─────────────────
+            // 客户到店拿走 = 这单从厨房角度已经完成，没有配送段可跟踪。
+            // 放在最前面，理由同 Grab 那段：后面建批次那步会把「没标过方式」的单
+            // 盖成 self，先写死才不会被覆盖。
+            if (pickupIds.length > 0) {
+                const btnP = $('#dbmSubmitBtn');
+                btnP.disabled = true;
+                btnP.textContent = '标记自取单中…';
+                try {
+                    await Promise.all(pickupIds.map(id =>
+                        updateDoc(doc(db, 'orders', id), {
+                            deliveryMethod: 'pickup',
+                            status: 'delivered',
+                            updatedAt: serverTimestamp(),
+                        })));
+                    pickupIds.forEach(id => {
+                        const i = state.orders.findIndex(o => o.id === id);
+                        if (i >= 0) state.orders[i] = { ...state.orders[i], deliveryMethod: 'pickup', status: 'delivered' };
+                    });
+                } catch (err) {
+                    errEl.textContent = '自取单标记失败：' + (err.message || err);
+                    errEl.classList.remove('hidden');
+                    btnP.disabled = false;
+                    btnP.textContent = '🛵 开始配送';
+                    return;
+                }
             }
 
             // ── 先处理 Grab 单 ──────────────────────────────────
@@ -12992,14 +13030,27 @@ incredibowl.my`,
                 }
             }
 
-            // 全给 Grab、自己一单都不送 —— 不需要建批次，直接收工
+            // 自取单的收工提示 —— 两个分支共用
+            const pickupHtml = pickupIds.length === 0 ? '' :
+                `<div style="margin-top:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:10px;font-size:12px">
+                    🏠 <strong>${pickupIds.length} 单已标自取并结单</strong>（成本 RM 0，不进批次）<br>
+                    <span style="color:var(--text-muted)">${pickupIds.map(id => {
+                        const o = state.orders.find(x => x.id === id);
+                        return `#${id.slice(-6).toUpperCase()} ${escapeHtml(o?.userName || '匿名')}`;
+                    }).join('　')}</span>
+                </div>`;
+
+            // 自己一单都不送 —— 不需要建批次，直接收工
             if (orderIds.length === 0) {
                 renderAll();
                 renderDbmPendingGrab();
                 const s0 = $('#dbmSuccess');
-                s0.innerHTML = `🚕 <strong>${grabIds.length} 单已标记交给 Grab</strong><br>`
-                    + `<span style="color:var(--text-muted)">记得去 Grab App 逐单下单。客户跟踪页已显示「已交给外送骑手」。</span>`
-                    + dbmGrabDoneBtnHtml(grabIds);
+                s0.innerHTML = (grabIds.length
+                        ? `🚕 <strong>${grabIds.length} 单已标记交给 Grab</strong><br>`
+                          + `<span style="color:var(--text-muted)">记得去 Grab App 逐单下单。客户跟踪页已显示「已交给外送骑手」。</span>`
+                          + dbmGrabDoneBtnHtml(grabIds)
+                        : `✅ <strong>本趟没有要自己送的单</strong>`)
+                    + pickupHtml;
                 s0.classList.remove('hidden');
                 $('#dbmOrderList').innerHTML = '';
                 $('#dbmTally').innerHTML = '';
@@ -13096,6 +13147,7 @@ incredibowl.my`,
                 + `🗺️ 客户跟踪页现在会显示你的实时位置`
                 + routeHtml
                 + grabHtml
+                + pickupHtml
                 + `<a href="${driverUrl}" target="_blank" rel="noopener" style="display:block;margin-top:10px;padding:12px;background:#FF6B35;color:#fff;border-radius:10px;text-align:center;font-weight:800;text-decoration:none">🛵 打开司机页（按顺序导航 + 逐单点送达）</a>`;
             s.classList.remove('hidden');
             $('#dbmOrderList').innerHTML = '';
