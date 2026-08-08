@@ -2243,6 +2243,7 @@
                     <label>菜品（选择 + 数量）</label>
                     <div id="moItemRows"></div>
                     <button type="button" id="moAddItemBtn" class="btn ghost sm" style="margin-top:8px">+ 加一项</button>
+                    <button type="button" id="moAddStandaloneBtn" class="btn ghost sm" style="margin-top:8px" title="不点主菜也能卖：汤 / 荷包蛋 / 配菜 / 饮料等单点">🥣 只买配菜 / 汤（无主菜）</button>
                 </div>
 
                 <!-- ─── 配送地址 → 自动算距离（复用网站 /api/check-delivery）─── -->
@@ -10322,13 +10323,40 @@ incredibowl.my`,
             return [...base, ...extras];
         }
 
-        function buildItemRow(menu) {
+        // ─── 单点配菜行（无主菜）───
+        // 老板 2026-08-09 要求：客户可以不点主菜只买汤/配菜。items 里的行名用这个
+        // 常量标记，提交/编辑回填/券兑换三处都靠它认行，改名三处一起改。
+        const STANDALONE_SIDES_ITEM_NAME = '单点配菜';
+        // 可单卖清单：汤置顶（UNIVERSAL_ADDONS 第二项就是 side-soup）；
+        // 少饭/换糙米是主菜修饰项，没主菜没意义，不列。
+        function getStandaloneAddons() {
+            const soup = UNIVERSAL_ADDONS.find(u => u.id === 'side-soup');
+            const rest = [
+                ...UNIVERSAL_ADDONS.filter(u => u.id !== 'side-soup'),
+                ...DEFAULT_ADDONS.filter(a => a.id !== 'less-rice' && a.id !== 'brown-rice'),
+            ];
+            const merged = soup ? [soup, ...rest] : rest;
+            return merged.filter((a, i) => merged.findIndex(b => b.id === a.id) === i);
+        }
+
+        function buildItemRow(menu, { standalone = false } = {}) {
             const optsHtml = buildDishOptionsHtml(menu);
 
             const wrap = document.createElement('div');
             wrap.className = 'item-row';
+            if (standalone) wrap.dataset.standalone = '1';
             wrap.style.cssText = 'border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--bg-subtle)';
-            wrap.innerHTML = `
+            // standalone 行：没主菜挑选器，但保留隐藏的空 select + qty=1 —— 让
+            // recomputeTotal 等遍历 .item-row 的旧代码把它当「没选菜的行」自然跳过。
+            wrap.innerHTML = standalone ? `
+                <div style="display:grid;grid-template-columns:1fr 30px;gap:8px;align-items:center">
+                    <div style="font-size:13px;font-weight:600;padding:6px 2px">🥣 单点配菜 / 汤（无主菜）</div>
+                    <select class="mo-item-select" hidden><option value=""></option></select>
+                    <input type="number" class="mo-item-qty" value="1" hidden />
+                    <button type="button" class="mo-item-remove" style="width:30px;height:30px;border-radius:8px;color:var(--text-muted);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center">&times;</button>
+                </div>
+                <div class="mo-addon-pills" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)"></div>
+            ` : `
                 <div style="display:grid;grid-template-columns:1fr 70px 30px;gap:8px;align-items:center">
                     <div class="mo-item-picker" style="position:relative">
                         <input type="text" class="mo-item-search dish-combo-input" placeholder="搜菜名或选择 (e.g. 鸡 / 蒸花肉)" autocomplete="off"
@@ -10350,7 +10378,7 @@ incredibowl.my`,
             const sel = wrap.querySelector('.mo-item-select');
             const qty = wrap.querySelector('.mo-item-qty');
             const addonContainer = wrap.querySelector('.mo-addon-pills');
-            attachDishCombo(wrap, { selectSel: '.mo-item-select', dateInputSel: '#moDate' });
+            if (!standalone) attachDishCombo(wrap, { selectSel: '.mo-item-select', dateInputSel: '#moDate' });
 
             // ─── Pill state model ───
             // qty = 0  → unselected (flat pill, click to add)
@@ -10384,7 +10412,7 @@ incredibowl.my`,
 
             function renderAddons(preselectMap = null) {
                 // preselectMap: either an array of ids (legacy) OR a Map<id, qty> from edit-mode prefill
-                const addons = getDishAddons(sel.value);
+                const addons = standalone ? getStandaloneAddons() : getDishAddons(sel.value);
                 if (!addons.length) {
                     addonContainer.innerHTML = `<div class="mo-addon-empty" style="font-size:11px;color:var(--text-muted);font-style:italic">${sel.value ? '该菜品暂无 add-on 配置' : '选择菜品后，这里会出现 add-on 配料选项'}</div>`;
                     return;
@@ -10452,6 +10480,7 @@ incredibowl.my`,
 
             // Expose for edit-mode prefill
             wrap._renderAddons = renderAddons;
+            if (standalone) renderAddons();   // 单点行没有「选菜」步骤，pills 直接出
             return wrap;
         }
 
@@ -10565,17 +10594,21 @@ incredibowl.my`,
                 // Rebuild item rows from existing items
                 if (orderToEdit.items && orderToEdit.items.length > 0) {
                     orderToEdit.items.forEach(it => {
-                        const row = buildItemRow(state.menu);
+                        // 单点配菜行（无主菜）按行名常量识别，重建成 standalone 行
+                        const isStandalone = it.name === STANDALONE_SIDES_ITEM_NAME;
+                        const row = buildItemRow(state.menu, { standalone: isStandalone });
                         $('#moItemRows').appendChild(row);
-                        const sel = row.querySelector('.mo-item-select');
-                        const matched = [...sel.options].find(opt =>
-                            opt.value && canonicalDishName(opt.value) === canonicalDishName(it.name));
-                        if (matched && row.setDishValue) {
-                            row.setDishValue(matched.value, { silent: true });
-                        } else if (matched) {
-                            sel.value = matched.value;
+                        if (!isStandalone) {
+                            const sel = row.querySelector('.mo-item-select');
+                            const matched = [...sel.options].find(opt =>
+                                opt.value && canonicalDishName(opt.value) === canonicalDishName(it.name));
+                            if (matched && row.setDishValue) {
+                                row.setDishValue(matched.value, { silent: true });
+                            } else if (matched) {
+                                sel.value = matched.value;
+                            }
+                            row.querySelector('.mo-item-qty').value = it.quantity || 1;
                         }
-                        row.querySelector('.mo-item-qty').value = it.quantity || 1;
                         // Restore add-ons WITH their per-pill quantities — Map<id, qty>
                         const addonQtyMap = new Map();
                         if (Array.isArray(it.addOns)) {
@@ -11704,6 +11737,10 @@ incredibowl.my`,
         $('#moAddItemBtn').addEventListener('click', () => {
             $('#moItemRows').appendChild(buildItemRow(state.menu));
         });
+        // 单点配菜/汤（无主菜）行
+        $('#moAddStandaloneBtn').addEventListener('click', () => {
+            $('#moItemRows').appendChild(buildItemRow(state.menu, { standalone: true }));
+        });
 
         // Mark total as user-touched if they manually edit it
         $('#moTotal').addEventListener('input', () => {
@@ -12265,18 +12302,23 @@ incredibowl.my`,
             $$('#moItemRows .item-row').forEach(row => {
                 const sel = row.querySelector('.mo-item-select');
                 const q = parseInt(row.querySelector('.mo-item-qty').value, 10) || 0;
-                if (!sel.value || q <= 0) return;
-                const opt = sel.options[sel.selectedIndex];
-                const fullPrice = opt ? Number(opt.dataset.price) || 0 : 0;
-                // Look up the menu doc for voucherTopUp (sel.value = canonical dish name)
-                const canon = canonicalDishName(sel.value);
-                const dish = (state.menu || []).find(m => canonicalDishName(m.name) === canon);
-                const topUp = dish && typeof dish.voucherTopUp === 'number' ? dish.voucherTopUp : 0;
-                const voucherValue = Math.max(0, fullPrice - topUp);
-                for (let i = 0; i < q; i++) prices.push(voucherValue);
+                const isStandalone = row.dataset.standalone === '1';
+                // 单点配菜行没主菜，跳过主菜单价段；但下面的汤 pills 照样要数
+                if (!isStandalone) {
+                    if (!sel.value || q <= 0) return;
+                    const opt = sel.options[sel.selectedIndex];
+                    const fullPrice = opt ? Number(opt.dataset.price) || 0 : 0;
+                    // Look up the menu doc for voucherTopUp (sel.value = canonical dish name)
+                    const canon = canonicalDishName(sel.value);
+                    const dish = (state.menu || []).find(m => canonicalDishName(m.name) === canon);
+                    const topUp = dish && typeof dish.voucherTopUp === 'number' ? dish.voucherTopUp : 0;
+                    const voucherValue = Math.max(0, fullPrice - topUp);
+                    for (let i = 0; i < q; i++) prices.push(voucherValue);
+                }
                 // Off-menu 汤（side-soup add-on，RM18.50 = 标准主菜价）是唯一可用餐券
                 // 兑换的 add-on（老板 2026-08-01 拍板）：每份汤 = 1 个可覆盖单位，
                 // 进同一个价格池按 FIFO 扣。其他 add-on 仍然不抵。
+                // 单点配菜行（无主菜）里的汤同样计入 —— 老客户光买汤也能用券。
                 row.querySelectorAll('.mo-addon-pill[data-id="side-soup"]').forEach(p => {
                     const soupQty = Number(p.dataset.qty) || 0;
                     const soupPrice = Number(p.dataset.price) || 0;
@@ -13432,10 +13474,7 @@ incredibowl.my`,
             $$('#moItemRows .item-row').forEach(row => {
                 const sel = row.querySelector('.mo-item-select');
                 const qty = parseInt(row.querySelector('.mo-item-qty').value, 10) || 0;
-                if (!sel.value || qty <= 0) return;
-                const opt = sel.options[sel.selectedIndex];
-                const price = Number(opt.dataset.price) || 0;
-                // Per-add-on quantity is independent (not multiplied by dish qty)
+                // Per-add-on quantity is INDEPENDENT (not multiplied by dish qty)
                 const addOns = Array.from(row.querySelectorAll('.mo-addon-pill')).reduce((acc, p) => {
                     const q = Number(p.dataset.qty) || 0;
                     if (q > 0) {
@@ -13448,6 +13487,14 @@ incredibowl.my`,
                     }
                     return acc;
                 }, []);
+                // 单点配菜行：无主菜，行价 0，全部金额在 addOns；一个配菜都没勾就当空行
+                if (row.dataset.standalone === '1') {
+                    if (addOns.length > 0) items.push({ name: STANDALONE_SIDES_ITEM_NAME, price: 0, quantity: 1, addOns });
+                    return;
+                }
+                if (!sel.value || qty <= 0) return;
+                const opt = sel.options[sel.selectedIndex];
+                const price = Number(opt.dataset.price) || 0;
                 const item = { name: sel.value, price, quantity: qty };
                 if (addOns.length > 0) item.addOns = addOns;
                 items.push(item);
