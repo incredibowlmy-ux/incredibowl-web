@@ -119,6 +119,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "马铃薯炖花肉片": [
@@ -231,14 +236,14 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
-    }
-  ],
-  "家乡白萝卜焖花肉": [
+    },
     {
       "id": "extra-daikon-90g",
       "label": "【清甜解腻】加白萝卜 (90g)",
       "price": 3
-    },
+    }
+  ],
+  "家乡白萝卜焖花肉": [
     {
       "id": "less-rice",
       "label": "少饭",
@@ -333,6 +338,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "参峇臭豆虾仁炒花肉": [
@@ -430,6 +440,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "山药云耳海陆双鲜炒": [
@@ -552,6 +567,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "家乡豆酱焖花肉": [
@@ -664,6 +684,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "古早味照烧鳗鱼饭": [
@@ -776,6 +801,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "绍兴酒蒸花肉": [
@@ -888,6 +918,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "柠檬蜜糖煎鸡扒": [
@@ -1000,6 +1035,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "家乡甜酸洋葱猪扒": [
@@ -1112,6 +1152,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "柠香香煎三文鱼饭": [
@@ -1229,6 +1274,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "金黄葱香煎鸡汤": [
@@ -1336,6 +1386,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "澳洲和牛饼饭": [
@@ -1443,6 +1498,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "阿嫲古早味酱油鸡全腿": [
@@ -1545,6 +1605,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "家常日式咖喱饭": [
@@ -1652,6 +1717,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "豆酱焖排骨": [
@@ -1749,6 +1819,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "古早味姜葱鱼片饭": [
@@ -1851,6 +1926,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "香煎金黄鸡扒饭": [
@@ -1963,6 +2043,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "招牌原盅当归蒸鸡全腿": [
@@ -2075,6 +2160,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ],
   "希腊柠香烤鸡胸": [
@@ -2197,6 +2287,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 18.5
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
     }
   ]
 };
@@ -2297,5 +2392,10 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
     "id": "side-soup",
     "label": "汤 (Soup)",
     "price": 18.5
+  },
+  {
+    "id": "extra-daikon-90g",
+    "label": "【清甜解腻】加白萝卜 (90g)",
+    "price": 3
   }
 ];

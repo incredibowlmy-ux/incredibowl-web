@@ -10291,26 +10291,9 @@ incredibowl.my`,
                 { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
                 ...DRINKS_PILLS,
             ],
-            '30': [
-                // 家乡白萝卜焖花肉（常驻·限周一/四，🆕 2026-08-10 首发）— RM 19.90，无 voucherTopUp。
-                // 2026-08-09 老板给这道菜配了唯一一个专属加料：加白萝卜 90g RM3
-                //（与 webapp AddOnModal id:30 同步，label 两边逐字一致所以不用建
-                //  MANUAL_LABEL_ALIASES 别名）。
-                // ⚠️ 一旦在这里登记，DEFAULT_ADDONS 兜底就不再生效 —— 下面标准块必须抄全。
-                { id: 'extra-daikon-90g', label: '【清甜解腻】加白萝卜 (90g)', price: 3.00 },
-                { id: 'less-rice',     label: '少饭', price: 0.00 },
-                { id: 'extra-rice',    label: '加饭', price: 2.00 },
-                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
-                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
-                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
-                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
-                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
-                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
-                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
-            ],
+            // 家乡白萝卜焖花肉（webapp id 30）故意**不建条目**：2026-08-09 老板改口径 ——
+            // 加白萝卜挂 UNIVERSAL_ADDONS 给所有菜用，不再是这道菜的专属。没有专属加料
+            // 的菜就别登记，让 DEFAULT_ADDONS 兜底；在这抄一份标准块只会跟着漂。
         };
 
         // 通用配菜：每道菜都能加（不挂在某一道）。在 getDishAddons 里统一追加，
@@ -10318,6 +10301,12 @@ incredibowl.my`,
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
             { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）
+            // 2026-08-09 老板拍板：白萝卜**只在 dashboard 挂全部菜**，网站那边维持
+            // 只有「家乡白萝卜焖花肉」(webapp id 30) 自己能加（AddOnModal 的 dish.id===30
+            // 分支），别往网站的默认 sides/alacarte 里加 —— 两边故意不对称。
+            // ⚠️ 连带效果：getStandaloneAddons() 也吃 UNIVERSAL_ADDONS，所以「只买配菜
+            // （无主菜）」那条线也能单卖这份萝卜。
+            { id: 'extra-daikon-90g',            label: '【清甜解腻】加白萝卜 (90g)', price: 3.00 },
         ];
         // 新菜兜底加料：DISH_ADDON_MAP 还没登记的菜（刚上架的新菜）自动拿这套
         // 标准 à la carte + 饭量 + 饮品，不用先来这里抄一份才有加料可选。
