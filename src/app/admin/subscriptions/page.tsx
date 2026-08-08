@@ -509,17 +509,33 @@ export default function SubscriptionsAdmin() {
                                                                         </div>
                                                                         {it.addOns.length > 0 && (
                                                                             <div className="flex flex-wrap gap-1.5 pl-1">
-                                                                                {it.addOns.map((a, ai) => (
-                                                                                    <span key={ai} className="inline-flex items-center gap-1 px-2 py-1 bg-[#FF6B35]/10 border border-[#FF6B35]/30 rounded-lg text-[11px] font-bold">
-                                                                                        ＋{a.label} <span className="text-gray-400">RM {a.price.toFixed(2)}</span>
+                                                                                {it.addOns.map((a, ai) => {
+                                                                                    // 特批价：建单时服务端直接用模板里存的这个数（week 路由不查价格表），
+                                                                                    // 所以答应过客户「换糙米只收 RM1」这种事在这里改一次就行。
+                                                                                    // 与目录价不一致时整颗 pill 转琥珀色 —— 免得改完自己都忘了这单是特价。
+                                                                                    const catalogPrice = addonOptions.find(o => o.id === a.id)?.price;
+                                                                                    const custom = catalogPrice !== undefined && Math.abs(catalogPrice - a.price) > 0.001;
+                                                                                    return (
+                                                                                    <span key={ai} className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border ${custom ? 'bg-amber-50 border-amber-400' : 'bg-[#FF6B35]/10 border-[#FF6B35]/30'}`}>
+                                                                                        ＋{a.label} <span className="text-gray-400">RM</span>
+                                                                                        <input type="number" min={0} step={0.5} value={a.price}
+                                                                                            title={custom ? `特批价（目录价 RM ${catalogPrice!.toFixed(2)}）` : '改这里可以给客户特批价'}
+                                                                                            onChange={e => {
+                                                                                                const addOns = [...it.addOns];
+                                                                                                addOns[ai] = { ...a, price: Math.max(0, Number(e.target.value) || 0) };
+                                                                                                setItem({ addOns });
+                                                                                            }} className={`w-14 px-1 py-0.5 border rounded text-[11px] text-center ${custom ? 'border-amber-400 text-amber-700 bg-white' : ''}`} />
+                                                                                        <span className="text-gray-400">×</span>
                                                                                         <input type="number" min={1} value={a.quantity} onChange={e => {
                                                                                             const addOns = [...it.addOns];
                                                                                             addOns[ai] = { ...a, quantity: Math.max(1, Number(e.target.value) || 1) };
                                                                                             setItem({ addOns });
                                                                                         }} className="w-11 px-1 py-0.5 border rounded text-[11px] text-center" />
+                                                                                        {custom && <span className="text-amber-600" title={`目录价 RM ${catalogPrice!.toFixed(2)}`}>特批</span>}
                                                                                         <button onClick={() => setItem({ addOns: it.addOns.filter((_, x) => x !== ai) })} className="text-gray-400 hover:text-red-500 font-black">×</button>
                                                                                     </span>
-                                                                                ))}
+                                                                                    );
+                                                                                })}
                                                                             </div>
                                                                         )}
                                                                     </div>
