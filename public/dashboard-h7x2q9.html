@@ -14083,7 +14083,7 @@ incredibowl.my`,
             const notes = [...noteSet].slice(0, 8);
 
             return {
-                key, name, phone, addresses, km, userDoc,
+                key, name, phone, addresses, km, userDoc, resolvedUserId,
                 firstOrderDate, lastOrderDate, daysSinceFirst, daysSinceLast, avgCycle,
                 totalOrders, cancelledCount,
                 totalRevenue, aov, cashTotal, voucherRev, totalVouchersUsed,
@@ -14163,7 +14163,22 @@ incredibowl.my`,
                         <div><span style="color:var(--text-muted)">付款</span> <strong>${fmt.rm(p.voucherCashSpent)}</strong></div>
                         <div><span style="color:var(--text-muted)">已用</span> <strong>${p.totalVouchersUsed}</strong> / 余 <strong>${p.availableCount}</strong></div>
                         ${p.expiringSoonCount > 0 ? `<div style="color:#C62828"><span>⚠️ 7 天内过期</span> <strong>${p.expiringSoonCount}</strong> 张</div>` : ''}
-                        ${(() => { const e = Object.values(p.addonCredits || {}).filter(c => c.remaining > 0); return e.length ? `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px"><span style="color:var(--text-muted)">🍳 预付加料余额</span> <strong>${e.map(c => `${escapeHtml(c.name)} ${c.remaining}`).join(' · ')}</strong></div>` : ''; })()}
+                        ${(() => {
+                            const e = Object.entries(p.addonCredits || {}).filter(([, c]) => c.remaining > 0);
+                            if (!e.length) return '';
+                            const btnAttrs = (id, c) => `data-uid="${escapeHtml(p.resolvedUserId || '')}" data-cust-key="${escapeHtml(p.key)}" data-addon-id="${escapeHtml(id)}" data-addon-name="${escapeHtml(c.name)}" data-remaining="${c.remaining}"`;
+                            return `<div style="grid-column:1/-1;border-top:1px dashed rgba(201,152,92,0.3);padding-top:6px;margin-top:2px">
+                                <div style="color:var(--text-muted);margin-bottom:4px">🍳 预付加料余额</div>
+                                ${e.map(([id, c]) => `
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0">
+                                    <span>${escapeHtml(c.name)} <strong>${c.remaining}</strong></span>
+                                    <span style="display:inline-flex;gap:6px">
+                                        <button type="button" data-cust-action="adjust-credit" ${btnAttrs(id, c)} title="调低剩余数量（加量请用 ＋充值加料）" style="padding:2px 8px;border-radius:6px;background:rgba(201,152,92,0.18);color:#9A6E2F;font-size:11px;cursor:pointer">✎ 改数量</button>
+                                        <button type="button" data-cust-action="delete-credit" ${btnAttrs(id, c)} title="把这个加料的剩余 credit 全部清零" style="padding:2px 8px;border-radius:6px;background:rgba(211,47,47,0.12);color:#C62828;font-size:11px;cursor:pointer">🗑 清零</button>
+                                    </span>
+                                </div>`).join('')}
+                            </div>`;
+                        })()}
                     </div>
                 </div>
                 ` : (p.phone ? `
@@ -14375,6 +14390,7 @@ incredibowl.my`,
                 openOrderDetail(orow.dataset.orderId);
                 return;
             }
+            // （adjustAddonCreditFlow 定义在本 handler 下方 — 函数声明有提升，直接可调）
             const btn = e.target.closest('[data-cust-action]');
             if (!btn) return;
             const action = btn.dataset.custAction;
@@ -14398,6 +14414,8 @@ incredibowl.my`,
                 const phone = btn.dataset.phone || '';
                 closeCustomerLookup();
                 openAddonTopupModal({ name, phone });
+            } else if (action === 'adjust-credit' || action === 'delete-credit') {
+                adjustAddonCreditFlow(btn, action === 'delete-credit');
             } else if (action === 'new-order') {
                 const name = btn.dataset.name || '';
                 const phone = btn.dataset.phone || '';
@@ -14416,6 +14434,49 @@ incredibowl.my`,
                 }, 150);
             }
         });
+
+        // ─── 预付加料 credit 手动调整（客户档案 ✎ 改数量 / 🗑 清零）───
+        // 只能调低：加量必须走「＋充值加料」留现金记录。服务端从最新一笔充值
+        // 起冲（LIFO），remaining/total 同降 —— 不动确认收入、不留回补空间；
+        // 购买流水和 totalSpent 不动（钱确实收过；那笔录错要另外处理）。
+        async function adjustAddonCreditFlow(btn, wipe) {
+            const uid = btn.dataset.uid || '';
+            const addonId = btn.dataset.addonId || '';
+            const name = btn.dataset.addonName || addonId;
+            const current = Number(btn.dataset.remaining) || 0;
+            const custKey = btn.dataset.custKey || '';
+            if (!uid || !addonId) { toast('缺客户账号信息，无法调整', 'error'); return; }
+
+            let target;
+            if (wipe) {
+                if (!confirm(`把「${name}」剩余 ${current} 个预付 credit 全部清零？\n\n只清可用余额；已收现金记录（购买流水 / totalSpent）不动。\n此操作不可撤销。`)) return;
+                target = 0;
+            } else {
+                const raw = prompt(`「${name}」剩余数量改为？（现在 ${current}）\n\n只能调低；要加量请用「＋充值加料」（有收钱记录）。`, String(current));
+                if (raw === null) return;
+                target = Number(String(raw).trim());
+                if (!Number.isInteger(target) || target < 0) { toast('数量无效', 'error'); return; }
+                if (target > current) { toast('只能调低或清零 — 加量请用「＋充值加料」', 'error'); return; }
+                if (target === current) return;
+                if (!confirm(`确认「${name}」剩余 ${current} → ${target}？\n（冲掉 ${current - target} 个，从最新一笔充值起扣）`)) return;
+            }
+
+            btn.disabled = true;
+            try {
+                const r = await callAdminAPI('/api/admin/adjust-addon-credit', {
+                    userId: uid,
+                    addonId,
+                    newRemaining: target,
+                    note: wipe ? 'dashboard 档案清零' : 'dashboard 档案改数量',
+                });
+                toast(`✅ 「${name}」剩余 ${r.before} → ${r.after}${r.writeOffRM > 0 ? ` · 冲销负债 RM ${r.writeOffRM.toFixed(2)}` : ''}`, 'success');
+                await loadAllData();
+                if (custKey) openCustomerProfileByKey(custKey);
+            } catch (err) {
+                toast('调整失败：' + err.message, 'error');
+                btn.disabled = false;
+            }
+        }
 
     </script>
 
