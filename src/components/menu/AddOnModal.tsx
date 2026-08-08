@@ -666,6 +666,24 @@ export default function AddOnModal({
             return [taucuCombo, ...customSections];
         }
 
+        // If it's Hometown Stewed Pork Belly with Daikon (id: 30), add an extra-daikon upsell to sides
+        // 2026-08-09 老板拍板：新菜首发自带一个专属加料（+90g 白萝卜 RM3）。
+        if (dish.id === 30) {
+            return addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'extra-daikon-90g', name: '【清甜解腻】加白萝卜 (90g)', nameEn: 'Extra Daikon (90g)', price: p('extra-daikon-90g', 3.00), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+        }
+
         // If it's Grandma-Style Ginger-Scallion Fish Fillet (id: 20), add an extra-fish upsell to sides
         if (dish.id === 20) {
             return addOnSections.map(section => {

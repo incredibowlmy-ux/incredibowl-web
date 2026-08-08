@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-08-06
+ * Generated: 2026-08-08
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -234,6 +234,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "家乡白萝卜焖花肉": [
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (90g)",
+      "price": 3
+    },
     {
       "id": "less-rice",
       "label": "少饭",

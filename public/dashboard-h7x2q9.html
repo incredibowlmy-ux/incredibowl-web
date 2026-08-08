@@ -2973,6 +2973,7 @@
             { id: 'extra-taucu-pork-100g',       name: '【家乡浓香】加豆酱花肉 (100g)',         price: 15.50, category: '加菜' },  // 新 add-on 2026-07-16（豆酱焖花肉）；2026-08-01 老板调价 14.90 → 15.50
             { id: 'extra-shaoxing-pork-50g',     name: '【小酌怡情】加绍兴花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
             { id: 'extra-taucu-pork-50g',        name: '【小碗解馋】加豆酱花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
+            { id: 'extra-daikon-90g',            name: '【清甜解腻】加白萝卜 (90g)',            price: 3.00,  category: '加菜' },  // 新 add-on 2026-08-09（白萝卜焖花肉 id 30 专属，老板拍板 RM3）
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
@@ -3417,6 +3418,8 @@ incredibowl.my`,
             '【照烧加倍】加照烧鳗鱼 (0.5片)': 'extra-unagi-half',
             // 甜酸洋葱猪扒 specials (2026-08-01)
             '加甜酸猪扒 (1块)': 'extra-pork-chop',
+            // 白萝卜焖花肉 specials (2026-08-09)
+            '【清甜解腻】加白萝卜 (90g)': 'extra-daikon-90g',
         };
 
         // Resolve a web add-on label → canonical id, tolerant of the cosmetic
@@ -10275,6 +10278,26 @@ incredibowl.my`,
                 { id: 'unagi-double-combo', label: '双倍鳗鱼丼套', price: 19.90 },
                 { id: 'unagi-rice-combo',   label: '照烧干饭套', price: 5.90 },
                 { id: 'extra-unagi-half', label: '加照烧鳗鱼 (0.5片)', price: 18.50 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
+            '30': [
+                // 家乡白萝卜焖花肉（常驻·限周一/四，🆕 2026-08-10 首发）— RM 19.90，无 voucherTopUp。
+                // 2026-08-09 老板给这道菜配了唯一一个专属加料：加白萝卜 90g RM3
+                //（与 webapp AddOnModal id:30 同步，label 两边逐字一致所以不用建
+                //  MANUAL_LABEL_ALIASES 别名）。
+                // ⚠️ 一旦在这里登记，DEFAULT_ADDONS 兜底就不再生效 —— 下面标准块必须抄全。
+                { id: 'extra-daikon-90g', label: '【清甜解腻】加白萝卜 (90g)', price: 3.00 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },

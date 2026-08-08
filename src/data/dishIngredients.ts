@@ -459,6 +459,14 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   '【绵密软糯】加马铃薯 (90g)': [{ name: '马铃薯', qty: 100, unit: 'g' }],
   '【浓香入味】加花肉片 (70g)': [{ name: '五花肉', qty: 125, unit: 'g' }],
 
+  // ─── Daikon Pork Belly add-on (新菜 30 专属，2026-08-09) ────
+  // ⚠️ TODO_CONFIRM: 老板只给了「90g 白萝卜」这一个数，没说是生重还是焖后熟重。
+  // 这里先按 1:1 记 90g 生萝卜（同「鲜脆山药块 (90g) → 山药 90g」惯例），
+  // 不套用马铃薯/椰菜花那种「宁多勿少」加成 —— 焖煮缩水率没实测数据，
+  // 绝不凭空编系数。碗妈给实测后连同主菜本身的克数（dishRecipes 里 30 号
+  // 仍是空数组）一起校准。
+  '【清甜解腻】加白萝卜 (90g)': [{ name: '白萝卜', qty: 90, unit: 'g' }],
+
   // ─── Combos (composite add-ons) ────────────────────────────
   // Each combo is a bundle of single add-ons at a discount. The recipe
   // mirrors the bundle's `extraDesc` in AddOnModal.tsx — KEEP IN SYNC
@@ -688,6 +696,10 @@ export const addOnShortNames: Record<string, string> = {
   // Pork belly stew
   '【绵密软糯】加马铃薯 (90g)': '马铃薯',
   '【浓香入味】加花肉片 (70g)': '花肉',
+
+  // 白萝卜焖花肉 add-on（2026-08-09）—— 主菜 shortName 已占用「萝卜」，
+  // 加料用「加萝卜」区分，否则备餐矩阵会出现两列同名分不清。
+  '【清甜解腻】加白萝卜 (90g)': '加萝卜',
 
   // 2026-07-16 new dish-special add-ons
   '加姜葱鱼片 (120g)': '姜鱼片',

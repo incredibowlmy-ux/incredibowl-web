@@ -116,6 +116,11 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'taucu-rice-king-combo': 12.90,    // 家乡下饭王套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
   'taucu-pork-combo': 16.90,         // 退役 2026-08-01（方案A）；留给在途订单，勿复用勿删
 
+  // ─── Hometown Stewed Pork Belly with Daikon (id:30) specials ──
+  // 2026-08-09 老板拍板：新菜首发就带一个专属加料（白萝卜是这道菜的招牌配角，
+  // 吸饱肉汁、清甜解腻，是最自然的加量项）。
+  'extra-daikon-90g': 3.00,
+
   // ─── Hometown Glazed Unagi Rice (id:29) specials ──
   // 半片进价 RM 5.225（老板 2026-07-31 给；整片 RM 10.45，主菜每份自带半片）。
   // 售价 18.50 是老板拍板的数（÷33% 公式只到 15.90，他要 18.50 = 3.54× 成本，
