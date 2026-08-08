@@ -1119,3 +1119,35 @@ top-up 只按用券份登记、文案无负数余券。
 真实数据里 **6 个客户券不足**（改动前他们整周建不了单，正是老板遇到的问题）。
 样例 Candise Chang：需 12 份只有 10 券 → 券全给了三文鱼/鳗鱼/猪扒，
 最便宜的 2 份（当归蒸鸡 18.50 + 山药云耳 18.50）按原价现金收 RM 37.00。
+
+---
+
+## 2026-08-09 · 白萝卜焖花肉专属加料（加白萝卜 90g RM3）
+
+老板一句话需求：新菜 30「家乡白萝卜焖花肉」加一个 +90g 白萝卜 RM3 的加料。
+
+- [x] `ADD_ON_PRICES` 加 `'extra-daikon-90g': 3.00`（服务端拒收的唯一权威价）
+- [x] `AddOnModal` 新增 `dish.id === 30` 分支（照 id 20/23 结构，插在饭量三项前）
+- [x] `dishIngredients` 两处：配方 `白萝卜 90g` + 矩阵短名 `加萝卜`
+      （主菜 shortName 已占「萝卜」，同名矩阵会出现两列分不清）
+- [x] dashboard 三处：`ADDON_SEED` / `WEB_LABEL_TO_ADDON_ID` / `DISH_ADDON_MAP['30']`
+- [x] `gen-dish-addon-map.mjs` + `sync:dashboard` 收尾
+- [x] 验证：tsc 0 错 · `npm run build` exit 0 · 跨文件自检 18/18 · 产物 chunk 命中 id
+
+### 两个坑（这次踩到的）
+1. **给 30 号建 `DISH_ADDON_MAP` 条目 = `DEFAULT_ADDONS` 兜底立刻失效**，
+   标准块 17 项必须抄全。自检里专门跑了一遍 dashboard 的 `getDishAddons`
+   对拍 `DEFAULT_ADDONS`，确认一项没丢 —— 光肉眼看抄没抄全不算验证。
+2. **两边 label 保持逐字一致**（`【清甜解腻】加白萝卜 (90g)`），
+   就不用再建 `MANUAL_LABEL_ALIASES` 别名。鳗鱼那次两边写法不同就得补别名。
+
+### TODO_CONFIRM（等碗妈）
+90g 是生重还是焖后熟重老板没说。配方先按 1:1 记 90g 生萝卜（同「鲜脆山药块
+(90g) → 山药 90g」惯例），**没有**套马铃薯/椰菜花那种「宁多勿少」加成 ——
+焖煮缩水率没实测数据，绝不编系数。主菜本身的克数（`dishRecipes` 30 号仍是
+空数组）到了一起校准。
+
+### ⚠️ 顺手查到的线上问题（不在本次改动范围）
+`public/daikon_pork_belly.webp` **从未提交过**，但 08-10 菜单已经上线并引用了
+这个路径 —— `https://www.incredibowl.my/daikon_pork_belly.webp` 现在返回 **404**，
+首页 HTML 里有 2 处引用。菜明天（周一 08-10）就开卖，图得赶紧补。
