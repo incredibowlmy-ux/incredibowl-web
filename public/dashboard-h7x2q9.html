@@ -502,6 +502,14 @@
         table.dt td.pos { color: var(--success); font-weight: 600; }
         table.dt td.neg { color: var(--danger); font-weight: 600; }
 
+        /* 库存「按菜可售份数」表：hover 整行高亮 —— 表宽已收到 720px，
+           这是找同一行的第二重保险（老板 2026-08-10 反馈）。
+           背景一律设在 td 上（tr 背景会被 td 盖掉），售罄红底和 hover
+           因此能分层：hover 规则写在后面 → 同优先级时赢。 */
+        tr.inv-dish-row td { background: var(--bg-elev); transition: background 0.12s; }
+        tr.inv-dish-row.sold-out td { background: rgba(211, 47, 47, 0.07); }
+        tr.inv-dish-row:hover td { background: rgba(201, 152, 92, 0.16); }
+
         /* FORMS */
         .form-row {
             display: grid;
@@ -11846,23 +11854,49 @@ incredibowl.my`,
             const dishes = (state.menu || []).filter(d => d.active !== false)
                 .slice().sort((a, b) => Number(a.id) - Number(b.id));
             if (!dishes.length) { el.innerHTML = '<div style="color:var(--text-muted)">菜单为空</div>'; return; }
+            // 排序：限量的排前面（这些才需要盯），售罄(0) 最前；组内按 id。
+            // 不限量的菜沉到下面 —— 平时不用管，要设限量时才往下找。
+            const rank = d => {
+                const r = stockMap[String(d.id)];
+                if (typeof r !== 'number') return 2;      // 不限量
+                return r <= 0 ? 0 : 1;                     // 售罄 → 限量中
+            };
+            dishes.sort((a, b) => (rank(a) - rank(b)) || (Number(a.id) - Number(b.id)));
+
             let rows = '';
+            let lastRank = -1;
+            const GROUP_LABEL = { 0: '🔴 已售罄（网站已停售）', 1: '🟡 限量中', 2: '⚪ 不限量（不用管）' };
             for (const d of dishes) {
                 const r = stockMap[String(d.id)];
                 const isLimited = typeof r === 'number';
-                rows += `<tr data-id="${invEsc(d.id)}" data-name="${invEsc(d.name)}">
-                    <td style="font-weight:600">${invEsc(d.name)}</td>
-                    <td class="mono" style="text-align:center">${isLimited ? r : '<span style="color:var(--text-muted)">不限量</span>'}</td>
-                    <td style="text-align:right;white-space:nowrap">
+                const rk = rank(d);
+                // 组标题：把 19 行切成三段，眼睛不用逐行扫
+                if (rk !== lastRank) {
+                    rows += `<tr class="inv-dish-group"><td colspan="3" style="padding:10px 10px 4px;font-size:11px;font-weight:800;color:var(--text-muted);letter-spacing:0.04em">${GROUP_LABEL[rk]}</td></tr>`;
+                    lastRank = rk;
+                }
+                const soldOut = isLimited && r <= 0;
+                const qtyCell = soldOut
+                    ? `<span style="color:#C62828;font-weight:800">售罄</span>`
+                    : isLimited
+                        ? `<span style="color:#9A6E2F;font-weight:800">${r}</span> <span style="color:var(--text-muted);font-weight:400">份</span>`
+                        : `<span style="color:var(--text-muted)">不限量</span>`;
+                rows += `<tr class="inv-dish-row${soldOut ? ' sold-out' : ''}" data-id="${invEsc(d.id)}" data-name="${invEsc(d.name)}">
+                    <td style="font-weight:600;padding:7px 10px;border-radius:8px 0 0 8px">${invEsc(d.name)}</td>
+                    <td class="mono" style="text-align:right;padding:7px 14px 7px 10px;white-space:nowrap">${qtyCell}</td>
+                    <td style="text-align:left;white-space:nowrap;padding:7px 10px;border-radius:0 8px 8px 0;width:1%">
                         <input type="number" min="0" step="1" class="inv-dish-input" placeholder="份数" value="${isLimited ? r : ''}"
                             style="width:74px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px" />
                         <button class="btn sm inv-dish-save" style="margin-left:6px">保存</button>
                         <button class="btn ghost sm inv-dish-clear" style="margin-left:4px" title="设为不限量（删除限量）">清除</button>
                     </td></tr>`;
             }
-            el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+            // max-width：不限宽的话超宽屏会把菜名和输入框拉到屏幕两端，中间两米
+            // 空白，眼睛必须跨着找同一行（老板 2026-08-10 反馈）。收到 720px
+            // 三列就贴在一起了；配 hover 整行高亮当第二重保险。
+            el.innerHTML = `<table style="width:100%;max-width:560px;border-collapse:separate;border-spacing:0 2px;font-size:13px">
                 <thead><tr style="text-align:left;color:var(--text-muted);font-size:12px">
-                    <th style="padding:6px 4px">菜品</th><th style="padding:6px 4px;text-align:center">当前剩余</th><th style="padding:6px 4px;text-align:right">设置</th>
+                    <th style="padding:6px 10px">菜品</th><th style="padding:6px 14px 6px 10px;text-align:right">当前剩余</th><th style="padding:6px 10px;text-align:left">设置</th>
                 </tr></thead><tbody>${rows}</tbody></table>`;
             // Event delegation (wire once per render).
             el.querySelectorAll('.inv-dish-save').forEach(btn => btn.addEventListener('click', async (ev) => {
