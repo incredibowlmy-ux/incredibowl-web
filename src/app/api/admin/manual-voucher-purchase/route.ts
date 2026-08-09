@@ -5,6 +5,7 @@ import { getBundle, getValidityDaysForBundle } from '@/data/mealVoucherConfig';
 import { getAddOnPrice, getPrepaidAddonOption } from '@/data/addOnsConfig';
 import { normalizePhone } from '@/lib/phoneUtils';
 import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
+import { adoptManualOrders } from '@/lib/manualStubAdoption';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -57,6 +58,8 @@ async function verifyAdmin(req: NextRequest): Promise<{ email: string } | null> 
  * Records an offline voucher sale (WhatsApp / cash / walk-in). Mirrors the
  * web /api/meal-vouchers/confirm-purchase outcome:
  *   1. Find user by normalizedPhone, OR auto-create a stub user
+ *   1.5 接管该电话挂在 manual_<电话> 下的历史订单 + 补 LTV（见
+ *      lib/manualStubAdoption；best-effort，失败不影响发券）
  *   2. Create mealVoucherPurchases doc with status='paid' + isManual=true
  *   3. Mint N mealVouchers docs (reuses mintVouchersForPurchase helper —
  *      same allocatedValueRM calc, same expiresAt logic, same idempotency)
@@ -183,6 +186,35 @@ export async function POST(req: NextRequest) {
       userDataSnapshot = stubData;
     }
 
+    // ── 1.5 接管 manual_<电话> 名下的历史订单 ─────────────────────
+    // 纯 WhatsApp 老客第一次买券时，他的旧单还挂在 dashboard 手动单兜底的
+    // `manual_<电话>` 上（那个 uid 通常连 users 文档都没有）。不接管的话
+    // 券在这个档、单在那个档，新档 totalOrders 永远是空的 —— 2026-08-09
+    // Yan Yuan 就是这么劈开的。已有档案的分支也跑，顺手治好历史分裂。
+    // best-effort：钱已经收了，接管失败绝不能让卖券失败（补救 = 事后跑
+    // scripts/merge-manual-stub-uids.mjs）。
+    let adopted: { orderCount: number; ltvOrderCount: number; ltvSpentAdded: number } | null = null;
+    try {
+      const plan = await adoptManualOrders(db, {
+        targetUserId: userId,
+        phoneRaw: phone,
+        phoneNormalized,
+      });
+      if (plan.orders.length > 0) {
+        adopted = {
+          orderCount: plan.orders.length,
+          ltvOrderCount: plan.ltvOrderCount,
+          ltvSpentAdded: plan.ltvSpentAdded,
+        };
+        console.log('[manual-voucher-purchase] adopted manual orders:', userId, JSON.stringify(adopted));
+      }
+      if (plan.skipped.length > 0) {
+        console.warn('[manual-voucher-purchase] skipped manual orders:', JSON.stringify(plan.skipped));
+      }
+    } catch (adoptErr) {
+      console.error('[manual-voucher-purchase] adopt manual orders failed (券已照常发):', adoptErr);
+    }
+
     // ── 2. Create purchase doc (status='paid' from the start — manual record) ──
     const purchasedAt = typeof paidAtMs === 'number' && paidAtMs > 0
       ? Timestamp.fromMillis(paidAtMs)
@@ -254,6 +286,7 @@ export async function POST(req: NextRequest) {
       userId,
       userName: userDataSnapshot.displayName || '',
       wasStubCreated,
+      adoptedManualOrders: adopted,
       amountPaid,
       addOnAmountPaid,
       totalAmountPaid,

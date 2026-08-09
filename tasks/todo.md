@@ -1151,3 +1151,35 @@ top-up 只按用券份登记、文案无负数余券。
 `public/daikon_pork_belly.webp` **从未提交过**，但 08-10 菜单已经上线并引用了
 这个路径 —— `https://www.incredibowl.my/daikon_pork_belly.webp` 现在返回 **404**，
 首页 HTML 里有 2 处引用。菜明天（周一 08-10）就开卖，图得赶紧补。
+
+## 2026-08-09 · 卖券建 stub 不认领 manual_<电话> 历史单（Yan Yuan 分裂）
+
+老板发现 Yan Yuan（0102250779）的券和历史单挂在两个 uid 上。
+
+### 现场处置（已执行，有回滚日志）
+- [x] 5 单 `manual_0102250779` → `gZKCy1NpJl8XFinqOrUw`，每单留 `userIdMergedFrom`
+- [x] LTV 回填 totalOrders 0→5、totalSpent 445.60→656.50（+210.90）
+- [x] 补 `address`（老板口述）—— 只写文本，坐标不编（本机跑不了 geocode）
+- [x] 脚本：`scripts/merge-yanyuan-stub-to-profile.mjs` / `backfill-yanyuan-address.mjs`
+
+### 根因修复
+`/api/admin/manual-voucher-purchase` 查不到账号时用**随机 uid** 建 stub，而
+dashboard 手动单在无档案时把 userId 兜底写成 `manual_<电话数字>`
+（`manualOrderCore.resolveManualUserId`）。两边各写各的 → 券在新档、单在
+`manual_*`，新档 `totalOrders` 永远是空的。**每卖一次券给纯 WhatsApp 老客就
+劈一次**，不是历史遗留。
+
+- [x] 新增 `src/lib/manualStubAdoption.ts`：纯函数 planner + 薄 IO
+      - `manualUidCandidates` 覆盖 `0xxx / xxx / 60xxx` 三种电话写法（换个录入
+        写法就漏接管一次）
+      - 逐单复核 `userPhone`：uid 是电话拼的但电话可能录错，对不上就不认领
+      - LTV 口径抄 `confirm-order` = `total + deliveryFee`，只数
+        confirmed/delivering/delivered（手动单从没走过 confirm-order，不会重复计）
+- [x] 接进卖券路由 1.5 步，**两个分支都跑**（新建 stub + 已有档案），顺手治历史分裂
+- [x] best-effort：钱已经收了，接管失败只 log 不让卖券失败
+- [x] 验证：dogfood 25/25 · tsc 0 错 · `npm run build` exit 0
+
+### 仍开着的（不在本次范围）
+`manual_0122052100`（Hony）**20 张券挂在 manual_ uid 下**、单也在那边，真实账号
+`PkJVNgvC5G` 是空的 —— 这是**反方向**的分裂（券在 stub 而非目标档），本次接管
+只搬订单不搬券，得单独处理。
