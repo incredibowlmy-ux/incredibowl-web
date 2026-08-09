@@ -98,15 +98,29 @@ export async function POST(req: NextRequest) {
         unreciped = collectUnrecipedLabels(orders);
       }
 
-      // Union of tracked ingredients + anything needed but not yet tracked.
-      const names = new Set<string>([...Object.keys(stock), ...needed.keys()]);
-      const ingredients = [...names].sort((a, b) => a.localeCompare(b, 'zh')).map(name => {
+      // Union of: 已建档 ∪ 当日订单需要 ∪ **配方里用到的全部食材**。
+      // 第三项是 2026-08-10 补的 —— 之前只有前两项，导致「配方里有、但今天
+      // 没订单、也还没建档」的食材（如周五才卖的猪扒）在盘点表里整个不存在，
+      // 老板买菜时看不到要备什么。ALL_RECIPE_INGREDIENTS 从 dishIngredients
+      // 派生，所以加新菜写完配方，盘点表自动就有它。
+      const { ALL_RECIPE_INGREDIENTS, categorizeIngredient, categoryRank } =
+        await import('@/data/ingredientCatalog');
+      const catalogUnit = new Map(ALL_RECIPE_INGREDIENTS.map(i => [i.name, i.unit]));
+      const names = new Set<string>([
+        ...Object.keys(stock),
+        ...needed.keys(),
+        ...ALL_RECIPE_INGREDIENTS.map(i => i.name),
+      ]);
+      const ingredients = [...names].map(name => {
         const s = stock[name];
         const need = needed.get(name) || 0;
         const onHand = s?.onHand ?? 0;
         return {
           name,
-          unit: s?.unit ?? '',
+          // 单位来源：已建档 > 配方登记。未建档的食材以前 unit 是空串，
+          // 界面上 g 类不会换算 kg，看着像另一种东西。
+          unit: s?.unit || catalogUnit.get(name) || '',
+          category: categorizeIngredient(name),
           onHand,
           threshold: s?.threshold ?? null,
           needed: need,
@@ -114,7 +128,9 @@ export async function POST(req: NextRequest) {
           tracked: !!s,
           low: s?.threshold != null && onHand <= s.threshold,
         };
-      });
+      }).sort((a, b) =>
+        (categoryRank(a.category) - categoryRank(b.category))
+        || a.name.localeCompare(b.name, 'zh'));
       return adminJson({ date: date || null, ingredients, unreciped });
     }
 

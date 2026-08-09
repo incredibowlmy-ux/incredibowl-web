@@ -11936,8 +11936,24 @@ incredibowl.my`,
             const list = data.ingredients || [];
             if (!list.length) { el.innerHTML = '<div style="color:var(--text-muted)">无食材数据（先跑 seed-ingredient-stock 脚本）</div>'; return; }
             const inStyle = 'padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right;font-size:13px';
+            // 类别图标：服务端(ingredientCatalog.ts)给 category，这里只负责显示。
+            // 新类别没登记图标也不会出错（回退 📦），列表照常分组。
+            const CAT_ICON = { '肉类': '🥩', '海鲜': '🐟', '蛋类': '🥚', '蔬菜': '🥬', '米·主食': '🍚', '调味·干货': '🫙', '其他': '📦' };
             let rows = '';
+            let lastCat = null;
             for (const it of list) {
+                // API 已按类别→名字排好序，这里遇到类别变化就插一行组标题。
+                // 老 API（还没带 category）时 cat 恒为 undefined → 不分组，退回旧样子。
+                const cat = it.category;
+                if (cat && cat !== lastCat) {
+                    const inCat = list.filter(x => x.category === cat);
+                    const shortInCat = inCat.filter(x => x.shortfall > 0).length;
+                    rows += `<tr class="inv-ing-cat"><td colspan="6" style="padding:14px 4px 5px;font-size:12px;font-weight:800;letter-spacing:0.04em;border-bottom:1px solid var(--border-strong)">
+                        ${CAT_ICON[cat] || '📦'} ${invEsc(cat)}
+                        <span style="color:var(--text-muted);font-weight:400;margin-left:6px">${inCat.length} 种${shortInCat ? ` · <span style="color:#c0392b;font-weight:700">${shortInCat} 种不够</span>` : ''}</span>
+                    </td></tr>`;
+                    lastCat = cat;
+                }
                 const short = it.shortfall > 0;
                 const flag = short ? 'background:rgba(192,57,43,.06)' : (it.low ? 'background:rgba(230,150,0,.07)' : '');
                 rows += `<tr class="inv-ing-row" data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" data-needed="${it.needed}" data-onhand="${it.onHand}" style="${flag};border-bottom:1px solid var(--border)">
