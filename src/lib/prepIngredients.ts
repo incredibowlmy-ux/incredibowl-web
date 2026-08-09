@@ -9,7 +9,10 @@
  * Recipe data lives in src/data/dishIngredients.ts — edit there to add/adjust a
  * dish's ingredients; both consumers pick it up automatically.
  */
-import { getRecipeForDish, getAddOnRecipe, resolveAddOnAlias, UNTRACKED_OK } from '@/data/dishIngredients';
+import {
+  getRecipeForDish, getAddOnRecipe, resolveAddOnAlias, UNTRACKED_OK,
+  NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE,
+} from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
 
 export interface PrepOrderItemAddOn {
@@ -30,6 +33,16 @@ export interface PrepOrder {
   mealType?: 'lunch' | 'dinner' | null;
   items?: PrepOrderItem[];
   status?: string;
+  /**
+   * 新客首单 → 这一单多备一份赠品（马铃薯煎蛋B）。
+   *
+   * ⚠️ 这是**备餐层派生**的标记，Firestore 的订单文档里没有这个字段 —— 调用方
+   * 自己用 lib/newCustomerGift.loadNewCustomerFirstOrderIds() 算出来后打上。
+   * 客人端一无所知（订单 items 没变），加料统计 / 库存扣减 / 营收也不受影响。
+   * 注意 consumeIngredientStock 走的是 `{ items }`（不带这个标记），所以下单
+   * 时不会自动扣赠品那份料 —— 靠老板每天盘点覆盖，与其它 best-effort 口径一致。
+   */
+  isNewCustomer?: boolean;
 }
 
 type Line = { name: string; qty: number; unit: string };
@@ -106,6 +119,8 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
         }
       }
     }
+    // 新客赠品：一位新客一份，与他点了几碗无关。
+    if (o.isNewCustomer) NEW_CUSTOMER_GIFT_RECIPE.forEach(line => bump(line, 1));
   }
   const lines = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'));
   return { lines, text: lines.length === 0 ? '无' : lines.map(l => `${l.name} ${formatQty(l.qty, l.unit)}`).join('；') };
@@ -221,6 +236,11 @@ function aggregateByDish(orders: PrepOrder[]): {
         }
       }
     }
+    // 新客赠品挂进「加料」桶，带自己的来源标签 —— 与客人真花钱加的料分得开，
+    // 备餐单上读作「马铃薯 37.5g（新客赠送·薯煎蛋B）」。
+    if (o.isNewCustomer) {
+      NEW_CUSTOMER_GIFT_RECIPE.forEach(l => addAddOn(l, 1, NEW_CUSTOMER_GIFT_SOURCE));
+    }
   }
   return { mains, addOns, rice, brownRice };
 }
@@ -232,7 +252,10 @@ function aggregateByDish(orders: PrepOrder[]): {
 function formatAddOns(addOns: Map<string, AddOnAgg>): string {
   const tokens: string[] = [];
   for (const { name, unit, bySource } of addOns.values()) {
-    if (bySource.size <= 1) {
+    // 新客赠品即使是这个食材的唯一来源也要带标签 —— 不然备餐单上凭空多出
+    // 「马铃薯 37.5g」，看的人不知道这份是送的、该给谁。
+    const giftOnly = bySource.size === 1 && bySource.has(NEW_CUSTOMER_GIFT_SOURCE);
+    if (bySource.size <= 1 && !giftOnly) {
       const qty = [...bySource.values()].reduce((s, q) => s + q, 0);
       tokens.push(`${name} ${formatQty(qty, unit)}`);
     } else {

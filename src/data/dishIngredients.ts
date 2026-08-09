@@ -615,10 +615,28 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
     { name: '樱桃番茄', qty: 2, unit: '颗' }, // 20g ÷ 15g/颗 ≈ 1.33 → 取 2 颗（同单点版）
   ],
 
-  // ─── TODO_RECIPE (data not provided yet) ───────────────────
-  // '马铃薯煎蛋' (potato-egg / potato-egg-alacarte) — still missing
-  //   ingredient breakdown; user hasn't given portion sizes.
 };
+
+/**
+ * 新客首单赠品（老板 2026-08-10 定）—— **不是加料，也不进订单**。
+ *
+ * 每位新客户的第一张单白送一份「马铃薯煎蛋B」，客人端完全看不到：订单
+ * items / 收据 / 追踪页 / 会员历史全都不出现它，价格也不动。它只在**备餐层
+ * 派生**（谁是新客由 lib/newCustomerGift.ts 按订单历史算出来），所以：
+ *   · 采购汇总、备餐单、库存盘点「所需」都会带上这份料
+ *   · 加料渗透率、营收、dishStock 一概不受影响
+ *
+ * 份量口径 = 加料版「马铃薯煎蛋」(马铃薯 150g + 鸡蛋 2 颗) 的 1/4，与古早味
+ * 照烧鳗鱼饭里配的那份 B 逐字一致（老板 2026-07-31 给的数）。改这里 = 改全部
+ * 三个备餐消费方，不必逐个改。
+ */
+export const NEW_CUSTOMER_GIFT_RECIPE: IngredientLine[] = [
+  { name: '马铃薯', qty: 37.5, unit: 'g' },
+  { name: '鸡蛋(生)', qty: 0.5, unit: '颗' },
+];
+
+/** 备餐单「加料」行里给这份赠品打的来源标签（与真加料区分开）。 */
+export const NEW_CUSTOMER_GIFT_SOURCE = '新客赠送·薯煎蛋B';
 
 // ─── Lookup helpers ──────────────────────────────
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aggregateIngredients, buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
+import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
+import { NEW_CUSTOMER_GIFT_SOURCE } from '@/data/dishIngredients';
 
 /**
  * POST /api/admin/daily-prep
@@ -74,9 +76,21 @@ export async function POST(req: NextRequest) {
   try {
     const db = await getDb();
     const snap = await db.collection('orders').where('deliveryDate', '==', date).get();
+    // 新客首单 → 备餐层多算一份赠品（马铃薯煎蛋B）。订单本身不带这个字段，
+    // 是按全库订单历史现算的；客人端完全无感，见 lib/newCustomerGift.ts。
+    const giftIds = await loadNewCustomerFirstOrderIds(db);
     const orders = snap.docs
-      .map(d => d.data() as PrepOrder)
-      .filter(o => o.status !== 'cancelled');
+      .filter(d => (d.data() as PrepOrder).status !== 'cancelled')
+      .map(d => ({
+        ...(d.data() as PrepOrder & { userName?: string }),
+        isNewCustomer: giftIds.has(d.id),
+      }));
+
+    // 谁是新客要报出来 —— 只知道「多备 37.5g 马铃薯」而不知道放进哪个碗，
+    // 这份料就送不出去。
+    const newCustomers = orders
+      .filter(o => o.isNewCustomer)
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner' }));
 
     const lunchOrders = orders.filter(isLunchOrder);
     const dinnerOrders = orders.filter(o => !isLunchOrder(o));
@@ -90,6 +104,8 @@ export async function POST(req: NextRequest) {
     return corsify(NextResponse.json({
       date,
       dayTotals,
+      newCustomers,
+      newCustomerGift: NEW_CUSTOMER_GIFT_SOURCE,
       lunch: { count: lunchOrders.length, groups: lunch.groups, riceText: lunch.riceText, brownRiceText: lunch.brownRiceText, addOnText: lunch.addOnText },
       dinner: { count: dinnerOrders.length, groups: dinner.groups, riceText: dinner.riceText, brownRiceText: dinner.brownRiceText, addOnText: dinner.addOnText },
     }));

@@ -9228,6 +9228,7 @@ incredibowl.my`,
                 .ing-row { margin:3px 0; }
                 .ing-d { color:#15803d; font-weight:800; }
                 .ingfail { color:#c0392b; font-size:12px; margin-bottom:10px; }
+                .giftbar { background:#fff7ed; border:1px solid #fdba74; color:#9a3412; font-weight:800; font-size:13px; border-radius:8px; padding:6px 10px; margin-bottom:10px; }
                 .order { border:1px solid #ccc; border-radius:8px; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
                 .ohead { display:flex; flex-wrap:wrap; align-items:center; gap:10px; font-size:14px; border-bottom:1px solid #eee; padding-bottom:4px; margin-bottom:4px; }
                 .chk { font-size:18px; line-height:1; }
@@ -9374,11 +9375,14 @@ incredibowl.my`,
             // Render the per-dish ingredient list (with cook-once dishes marked 全天).
             // ingMeal = { groups:[{dish,servings,allDay,text}], addOnText } from the server, or null.
             // dayTotals = 全天结构化食材合计（毛豆/玉米/樱桃番茄行的数据源），可为空。
-            function renderIngredients(ingMeal, dayTotals) {
+            // gifts = 本餐段的新客名单 [{name,meal}]（/api/admin/daily-prep 的 newCustomers）。
+            // 赠品那份料已经算进 addOnText / dayTotals 了，这一行是告诉人「放进谁的碗」。
+            function renderIngredients(ingMeal, dayTotals, gifts) {
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
                 const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
-                if (!groups.length && !hasAddOn && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
+                const giftList = Array.isArray(gifts) ? gifts : [];
+                if (!groups.length && !hasAddOn && !giftList.length && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
                 const rows = groups.map(g =>
                     `<div class="ing-row"><b class="ing-d">【${escP(g.dish)} ×${g.servings}${g.allDay ? ' · 全天' : ''}】</b> ${escP(g.text)}</div>`).join('');
                 // 糙米 is a batch-cooked staple too — beside 白饭, not in 加料.
@@ -9388,8 +9392,11 @@ incredibowl.my`,
                 ].filter(Boolean).join(' · ');
                 const riceRow = staples ? `<div class="ing-row">${staples}</div>` : '';
                 const addOnRow = hasAddOn ? `<div class="ing-row"><b class="ing-d">加料</b> ${escP(ingMeal.addOnText)}</div>` : '';
+                const giftRow = giftList.length
+                    ? `<div class="ing-row"><b class="ing-d">🎁 新客赠送（薯煎蛋B）</b> ${giftList.map(g => escP(g.name)).join(' · ')}</div>`
+                    : '';
                 // 老板指定：全天合计行卡在「白饭（统一煮）」和「加料」两行中间。
-                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}</div>`;
+                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}${giftRow}</div>`;
             }
 
             // 全天合计：毛豆/玉米/樱桃番茄是一次备一天的量（老板 07-15 要求），
@@ -9439,12 +9446,12 @@ incredibowl.my`,
                 </div>`;
             }
 
-            function mealSection(title, orders, ingMeal, dayTotals) {
+            function mealSection(title, orders, ingMeal, dayTotals, gifts) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
                 const agg = aggregate(sorted);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
-                const ingHtml = renderIngredients(ingMeal, dayTotals);
+                const ingHtml = renderIngredients(ingMeal, dayTotals, gifts);
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -9470,9 +9477,16 @@ incredibowl.my`,
                 // ing = { lunch:{ingredientText}, dinner:{ingredientText} } from /api/admin/daily-prep, or null on failure.
                 const ingFail = ing ? '' : '<div class="ingfail">⚠️ 食材清单加载失败（菜品/备餐汇总不受影响）— 检查网络后重新打印</div>';
                 const dayTotals = ing && ing.dayTotals;
-                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals)
-                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals)
-                    + mealSection('其他 / 未分类', other, null, null);
+                // 新客首单赠品：服务端按订单历史判定（电话优先归并），这里只负责显示。
+                // 日级横幅 + 餐段内一行 —— 横幅是兜底，因为服务端只分午/晚两类，
+                // 而这边还有「其他/未分类」段，光靠餐段行会漏掉那种单。
+                const gifts = (ing && Array.isArray(ing.newCustomers)) ? ing.newCustomers : [];
+                const giftBanner = gifts.length
+                    ? `<div class="giftbar">🎁 新客首单赠送 · 每人一份马铃薯煎蛋B：${gifts.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）')).join('、')}</div>`
+                    : '';
+                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals, gifts.filter(g => g.meal !== 'dinner'))
+                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals, gifts.filter(g => g.meal === 'dinner'))
+                    + mealSection('其他 / 未分类', other, null, null, []);
                 return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
                     <header class="sheet-head">
                         <div class="brand">Incredibowl 备餐单</div>
@@ -9480,6 +9494,7 @@ incredibowl.my`,
                         <div class="printed">打印于 ${escP(printedAt)}</div>
                     </header>
                     ${ingFail}
+                    ${giftBanner}
                     ${body || '<p class="empty">这一天暂无订单。</p>'}
                 </body></html>`;
             }

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { verifyAdminEmail, adminJson, corsPreflight } from '@/lib/adminApi';
 import { aggregateIngredients, type PrepOrder } from '@/lib/prepIngredients';
+import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
 
 /**
  * POST /api/admin/ingredient-stock   (admin Bearer token; CORS '*')
@@ -113,7 +114,12 @@ export async function POST(req: NextRequest) {
       let unreciped: { label: string; count: number }[] = [];
       if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         const snap = await db.collection('orders').where('deliveryDate', '==', date).get();
-        const orders = snap.docs.map(d => d.data() as PrepOrder).filter(o => o.status !== 'cancelled');
+        // 带上新客赠品，「所需」才跟备餐单同一个数 —— 两处口径不一样，
+        // 盘点表就永远差那 37.5g 马铃薯，查起来最费神。
+        const giftIds = await loadNewCustomerFirstOrderIds(db);
+        const orders = snap.docs
+          .filter(d => (d.data() as PrepOrder).status !== 'cancelled')
+          .map(d => ({ ...(d.data() as PrepOrder), isNewCustomer: giftIds.has(d.id) }));
         const { lines } = aggregateIngredients(orders);
         for (const l of lines) needed.set(l.name, (needed.get(l.name) || 0) + l.qty);
         const { collectUnrecipedLabels } = await import('@/lib/prepIngredients');
@@ -177,7 +183,10 @@ export async function POST(req: NextRequest) {
       // deliveryDate is an ISO string → lexicographic range == chronological range.
       const snap = await db.collection('orders')
         .where('deliveryDate', '>=', startDate).where('deliveryDate', '<=', endDate).get();
-      const orders = snap.docs.map(x => x.data() as PrepOrder).filter(o => o.status !== 'cancelled');
+      const giftIds = await loadNewCustomerFirstOrderIds(db);
+      const orders = snap.docs
+        .filter(x => (x.data() as PrepOrder).status !== 'cancelled')
+        .map(x => ({ ...(x.data() as PrepOrder), isNewCustomer: giftIds.has(x.id) }));
 
       const byDate = new Map<string, PrepOrder[]>();
       for (const o of orders) {

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDishShortName, getAddOnShortName } from '@/data/dishIngredients';
 import { aggregateIngredients, isLunchOrder } from '@/lib/prepIngredients';
 import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
+import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
+
+/** 客户表「加料」列里给新客赠品打的标记。 */
+const NEW_CUSTOMER_GIFT_TAG = '🎁新客·薯煎蛋B';
 
 /**
  * GET /api/n8n/daily-prep
@@ -82,6 +86,8 @@ interface FirestoreOrder {
   createdAt?: { _seconds?: number; seconds?: number };
   items?: FirestoreOrderItem[];
   note?: string;
+  /** 新客首单标记 —— 备餐层派生，Firestore 里没这个字段。见 lib/newCustomerGift.ts */
+  isNewCustomer?: boolean;
 }
 
 
@@ -319,6 +325,9 @@ function buildOrderMatrix(orders: FirestoreOrder[]): string {
         }
       }
     }
+    // 新客赠品挂在「加料」这一列（表格最后一列，不参与对齐补白，所以 emoji
+    // 不会把整张表撑歪）。碗妈照着这一行就知道哪个客人多配一份薯煎蛋B。
+    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_TAG] = 1;
     rows.push({ name: o.userName || '客户', counts, addOns: addOnCounts });
   }
 
@@ -432,9 +441,15 @@ export async function GET(req: NextRequest) {
       .get();
 
     const nowMs = Date.now();
+    // 新客首单多备一份赠品（马铃薯煎蛋B）。标记是按全库订单历史现算的派生值，
+    // 订单文档里没有，客人端也看不到 —— 见 lib/newCustomerGift.ts。
+    const giftIds = await loadNewCustomerFirstOrderIds(db);
     const allOrders = snap.docs
-      .map(d => d.data() as FirestoreOrder)
-      .filter(o => o.status !== 'cancelled' && !isStaleFpxPending(o, nowMs));
+      .filter(d => {
+        const o = d.data() as FirestoreOrder;
+        return o.status !== 'cancelled' && !isStaleFpxPending(o, nowMs);
+      })
+      .map(d => ({ ...(d.data() as FirestoreOrder), isNewCustomer: giftIds.has(d.id) }));
 
     const lunchOrders = allOrders.filter(isLunchOrder);
     const dinnerOrders = allOrders.filter(o => !isLunchOrder(o));
@@ -448,9 +463,19 @@ export async function GET(req: NextRequest) {
     const lunchSummary = summarizeOrders(lunchOrders);
     const dinnerSummary = summarizeOrders(dinnerOrders);
 
+    // 新客名单单独列一行，碗妈不用在客户表里逐行找 🎁。
+    const newCustomers = allOrders
+      .filter(o => o.isNewCustomer)
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner' }));
+    const newCustomerText = newCustomers.length
+      ? newCustomers.map(c => `${c.name}（${c.meal === 'lunch' ? '午' : '晚'}）`).join('、')
+      : '无';
+
     return NextResponse.json({
       date,
       totalOrders: allOrders.length,
+      newCustomers,
+      newCustomerText,
       lunch: {
         ...aggregate(lunchOrders),
         orders: lunchSummary.orders,
