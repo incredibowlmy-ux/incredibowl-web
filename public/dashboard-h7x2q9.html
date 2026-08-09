@@ -11965,7 +11965,8 @@ incredibowl.my`,
                 rows += `<tr class="inv-ing-row" data-name="${invEsc(it.name)}" data-unit="${invEsc(it.unit)}" data-needed="${it.needed}" data-onhand="${it.onHand}" style="${flag};border-bottom:1px solid var(--border)">
                     <td style="font-weight:600;padding:7px 8px 7px 4px;white-space:nowrap">
                         ${invEsc(it.name)}${it.tracked ? '' : ' <span style="color:#B4531F;font-size:11px;font-weight:400" title="还没有库存记录：从没进过货也没盘点过，系统按 0 算。进货或校正一次就建档了。">未盘点</span>'}
-                        <button class="btn ghost sm inv-ing-ledger" title="进出记录：进货 / 校正 / 下单消耗 / 删单回补" style="padding:1px 7px;margin-left:8px;font-size:11px">进出记录</button></td>
+                        <button class="btn ghost sm inv-ing-ledger" title="进出记录：进货 / 校正 / 下单消耗 / 删单回补 / 厨房加工" style="padding:1px 7px;margin-left:8px;font-size:11px">进出记录</button>
+                        ${it.conversion ? `<button class="btn sm inv-ing-convert" data-from="${invEsc(it.conversion.from)}" data-ratio="${it.conversion.inputPerOutput}" title="厨房现做：扣${invEsc(it.conversion.from)}、加${invEsc(it.name)}，两边都留流水" style="padding:1px 7px;margin-left:4px;font-size:11px;background:#2f6b3d">${invEsc(it.conversion.buttonLabel)}</button>` : ''}</td>
                     <td class="mono" style="text-align:right;padding:7px 14px;color:var(--text-muted)">${it.needed > 0 ? invFmtQty(it.needed, it.unit) : '—'}</td>
                     <td class="mono" style="text-align:right;padding:7px 14px;font-weight:700;white-space:nowrap">${invFmtQty(it.onHand, it.unit)}</td>
                     <td class="mono" style="text-align:right;white-space:nowrap;padding:7px 14px">${invBalanceHtml(it.onHand, it.needed, it.unit)}</td>
@@ -11998,7 +11999,8 @@ incredibowl.my`,
                 <div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8">
                     <b style="color:#2f6b3d">＋进货</b>＝买了新货，把数量<b>加</b>到现有（不影响已有和已扣的账）· <b>校正=</b>＝实物盘点，把现有<b>改成</b>这个数（纠偏）· 消耗由下单自动扣。<br>
                     <b>结余 = 现有 − 当日所需</b>（<span style="color:#1a7f37">绿＝可结转</span> · <span style="color:#c0392b">红＝不够，仅提醒不阻挡</span>）· 橙底＝低于阈值 · 克类填克自动换算 kg。<br>
-                    <b>进出记录</b>＝这个食材的全部出入账（进货 / 校正 / 下单消耗 / 删单回补，最近 30 条，带时间和经手人）· <b style="color:#B4531F">未盘点</b>＝还没有库存记录，系统按 0 算，进货或校正一次就建档。
+                    <b>进出记录</b>＝这个食材的全部出入账（进货 / 校正 / 下单消耗 / 删单回补 / 厨房加工，最近 30 条，带时间和经手人）· <b style="color:#B4531F">未盘点</b>＝还没有库存记录，系统按 0 算，进货或校正一次就建档。<br>
+                    <b style="color:#2f6b3d">用生鸡蛋做</b>（绿钮，只出现在可现做的成品上）＝厨房加工：一次做 N 个，自动扣原料、加成品，两边各记一条「加工」流水。温泉蛋配比 1 颗成品用 1.1 颗生蛋（含破损）。
                 </div></div>`;
 
             const reload = () => { loadInvIngredients($('#invIngDate').value); loadInvMatrix(); };
@@ -12030,6 +12032,31 @@ incredibowl.my`,
                 catch (e) { toast('保存失败：' + e.message, 'error'); }
             }));
             el.querySelectorAll('.inv-ing-ledger').forEach(b => b.addEventListener('click', (ev) => toggleInvLedger(ev.target.closest('tr'))));
+            // 厨房加工：做 N 个成品 → 服务端按配比扣原料。投入量一律服务端算，
+            // 这里只是先算一遍给老板看清楚要用掉多少（确认框里显示）。
+            el.querySelectorAll('.inv-ing-convert').forEach(b => b.addEventListener('click', async (ev) => {
+                const btn = ev.target.closest('.inv-ing-convert');
+                const tr = btn.closest('tr');
+                const to = tr.dataset.name, unit = tr.dataset.unit || '';
+                const from = btn.dataset.from, ratio = Number(btn.dataset.ratio) || 1;
+                const raw = prompt(`现做多少个「${to}」？\n\n配比：每 1 个用 ${ratio} 个${from}（含损耗）`, '20');
+                if (raw === null) return;
+                const outputQty = Number(String(raw).trim());
+                if (!Number.isFinite(outputQty) || outputQty <= 0) { toast('数量无效', 'error'); return; }
+                // 与服务端 conversionInputQty 同一套算法（含抹浮点尘埃那一步）——
+                // 少了 round，确认框会说 111 而服务端实扣 110，数字对不上。
+                const rawNeed = Math.round(outputQty * ratio * 1e6) / 1e6;
+                const need = Number.isInteger(rawNeed) ? rawNeed : Math.ceil(rawNeed);
+                if (!confirm(`确认加工？\n\n扣「${from}」${need}${unit}\n加「${to}」${outputQty}${unit}\n\n两边都会留一条进出记录。`)) return;
+                btn.disabled = true;
+                try {
+                    const r = await callAdminAPI('/api/admin/ingredient-stock', { action: 'convert', to, outputQty });
+                    toast(`已做 ${r.outputQty} 个${to}（用掉 ${r.inputQty} 个${r.from}）· ${r.from}剩 ${r.fromAfter} · ${to}剩 ${r.toAfter}`
+                        + (r.shortOfInput ? ` — 注意：${r.from} 原本就不够，余额已成负数` : ''),
+                        r.shortOfInput ? 'warn' : 'success');
+                    reload();
+                } catch (e) { toast('加工失败：' + e.message, 'error'); btn.disabled = false; }
+            }));
         }
 
         // Toggle the movement-history drawer row under an ingredient row.
@@ -12044,7 +12071,7 @@ incredibowl.my`,
             let entries;
             try { const d = await callAdminAPI('/api/admin/ingredient-stock', { action: 'ledger', name, limit: 30 }); entries = d.entries || []; }
             catch (e) { drawer.querySelector('div').innerHTML = '<span style="color:var(--danger,#c00)">加载失败：' + invEsc(e.message) + '</span>'; return; }
-            const META = { receive: ['进货', '#2f6b3d'], adjust: ['校正', '#2563eb'], consume: ['消耗', 'var(--text-muted)'], release: ['回补', '#8b5cf6'] };
+            const META = { receive: ['进货', '#2f6b3d'], adjust: ['校正', '#2563eb'], consume: ['消耗', 'var(--text-muted)'], release: ['回补', '#8b5cf6'], convert: ['加工', '#B4531F'] };
             const fmtTime = (ms) => { if (!ms) return '—'; const d = new Date(ms); const p = n => String(n).padStart(2, '0'); return `${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
             let inner;
             if (!entries.length) inner = '<div style="font-size:12px;color:var(--text-muted);padding:4px 0">暂无流水记录。</div>';

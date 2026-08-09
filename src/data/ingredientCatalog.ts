@@ -121,6 +121,51 @@ export const ALL_RECIPE_INGREDIENTS: CatalogIngredient[] = (() => {
     .sort((a, b) => a.name.localeCompare(b.name, 'zh'));
 })();
 
+/**
+ * 厨房加工：用原料现做成半成品，两边都是真实库存。
+ *
+ * 老板 2026-08-10 定的模型 —— 他习惯一次做 20 颗温泉蛋放着，所以温泉蛋
+ * 不该只是「下单时折算成生蛋」，它本身就是冰箱里数得出来的成品。
+ * dashboard 上按一次「用生鸡蛋做」＝ 扣生蛋、加温泉蛋，两边各留一条流水。
+ *
+ * inputPerOutput：产出 1 个成品要投入多少原料（>1 即损耗）。
+ * 温泉蛋 1 颗生蛋做 1 颗，按 1.1 计破损（老板给的数，不是我推的）。
+ *
+ * 加新加工品：这里加一条即可，API 白名单和 dashboard 按钮都读这张表。
+ */
+export interface IngredientConversion {
+  /** 成品（库存里独立的一项） */
+  to: string;
+  /** 原料 */
+  from: string;
+  /** 产出 1 个成品要投入的原料数量（含损耗） */
+  inputPerOutput: number;
+  /** dashboard 按钮文案 */
+  buttonLabel: string;
+}
+
+export const INGREDIENT_CONVERSIONS: IngredientConversion[] = [
+  { to: '温泉蛋', from: '鸡蛋(生)', inputPerOutput: 1.1, buttonLabel: '用生鸡蛋做' },
+];
+
+/** 这个食材是不是「可以现做」的成品？是就返回它的加工配方。 */
+export function getConversionFor(name: string): IngredientConversion | undefined {
+  return INGREDIENT_CONVERSIONS.find(c => c.to === name);
+}
+
+/**
+ * 做 outputQty 个成品要投入多少原料。
+ * 向上取整：原料是整颗的（蛋/块），做 15 颗要打 16.5 颗蛋 → 实际得开 17 颗，
+ * 按 16.5 记账会让生蛋余额虚高。宁多勿少，与配方表的一贯口径一致。
+ */
+export function conversionInputQty(conv: IngredientConversion, outputQty: number): number {
+  // ⚠️ 先抹掉浮点尘埃再判整数：100 × 1.1 在 IEEE754 下 = 110.00000000000001，
+  // 直接 Number.isInteger 会判成小数并向上取整成 111 —— 每做 100 颗白吃
+  // 一颗蛋的账。（dogfood-ingredient-conversion.mts 就是拿这个用例抓到的。）
+  const raw = Math.round(outputQty * conv.inputPerOutput * 1e6) / 1e6;
+  return Number.isInteger(raw) ? raw : Math.ceil(raw);
+}
+
 /** 排序用：类别在 CATEGORY_ORDER 里的位置（未知类别排最后）。 */
 export function categoryRank(cat: string): number {
   const i = CATEGORY_ORDER.findIndex(c => c.key === cat);

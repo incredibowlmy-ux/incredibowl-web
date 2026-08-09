@@ -70,7 +70,8 @@ export async function getAllIngredientStock(db: Firestore): Promise<Record<strin
 //   adjust  = 盘点校正（实物重数，覆盖，delta = new − old）
 //   consume = 下单消耗（自动，−）
 //   release = 删单回补（把已扣的加回去，+）
-export type MovementType = 'receive' | 'adjust' | 'consume' | 'release';
+//   convert = 厨房加工（原料 − / 成品 +，一次操作在两个食材上各记一条）
+export type MovementType = 'receive' | 'adjust' | 'consume' | 'release' | 'convert';
 
 export interface LedgerEntry {
   type: MovementType;
@@ -164,6 +165,52 @@ export async function setIngredientThreshold(db: Firestore, name: string, thresh
     threshold: threshold == null ? FieldValue.delete() : threshold,
     updatedAt: FieldValue.serverTimestamp(),
   }, { merge: true });
+}
+
+/**
+ * 厨房加工 (convert): 一次操作同时动两个食材 —— 原料扣 inputQty、成品加
+ * outputQty，各写一条 `convert` 流水互相指认（note 写清对方是谁）。
+ *
+ * 与 receive/adjust 的区别：这不是买货也不是重数，是「把 A 变成 B」，所以
+ * 必须在**同一个事务**里成对发生 —— 否则中途失败会凭空造出或吃掉库存。
+ *
+ * 原料不足**不阻止**（与本层 advisory 的一贯口径一致：老板可能先做了、
+ * 进货还没补录），但把 shortOfInput 返回出去让 dashboard 明确提示。
+ */
+export async function convertIngredientStock(
+  db: Firestore,
+  args: { from: string; to: string; inputQty: number; outputQty: number; by?: string; note?: string },
+): Promise<{ fromAfter: number; toAfter: number; shortOfInput: boolean }> {
+  const { from, to, inputQty, outputQty } = args;
+  const fromRef = db.collection('ingredientStock').doc(ingredientDocId(from));
+  const toRef = db.collection('ingredientStock').doc(ingredientDocId(to));
+  let fromAfter = 0, toAfter = 0, shortOfInput = false;
+
+  await db.runTransaction(async (tx) => {
+    const [fs_, ts_] = await Promise.all([tx.get(fromRef), tx.get(toRef)]);
+    const fromBefore = fs_.exists ? (Number(fs_.data()?.onHand) || 0) : 0;
+    const toBefore = ts_.exists ? (Number(ts_.data()?.onHand) || 0) : 0;
+    const fromUnit = String(fs_.data()?.unit || '') || '颗';
+    const toUnit = String(ts_.data()?.unit || '') || fromUnit;
+
+    fromAfter = fromBefore - inputQty;
+    toAfter = toBefore + outputQty;
+    shortOfInput = fromBefore < inputQty;
+
+    tx.set(fromRef, { name: from, onHand: fromAfter, unit: fromUnit, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    tx.set(toRef, { name: to, onHand: toAfter, unit: toUnit, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+
+    writeLog(tx, fromRef, {
+      type: 'convert', delta: -inputQty, after: fromAfter, unit: fromUnit,
+      note: args.note || `加工成 ${to} ${outputQty}`, by: args.by ?? null,
+    });
+    writeLog(tx, toRef, {
+      type: 'convert', delta: outputQty, after: toAfter, unit: toUnit,
+      note: args.note || `用 ${from} ${inputQty} 做`, by: args.by ?? null,
+    });
+  });
+
+  return { fromAfter, toAfter, shortOfInput };
 }
 
 /** Recent movements for one ingredient, newest first (single-field orderBy → auto index). */

@@ -50,6 +50,28 @@ export async function POST(req: NextRequest) {
       return adminJson({ ok: true, name, delta, onHand });
     }
 
+    if (action === 'convert') {
+      // 厨房加工：用原料现做半成品（如 生鸡蛋 → 温泉蛋）。配比与白名单
+      // 一律服务端说了算 —— 客户端只能说「做几个」，不能自己定投入量。
+      const to = typeof body.to === 'string' ? body.to.trim() : '';
+      const outputQty = Number(body.outputQty);
+      const { getConversionFor, conversionInputQty } = await import('@/data/ingredientCatalog');
+      const conv = getConversionFor(to);
+      if (!conv) return adminJson({ error: `「${to || '?'}」不是可加工的成品` }, 400);
+      if (!Number.isFinite(outputQty) || outputQty <= 0) {
+        return adminJson({ error: '产出数量必须为正数' }, 400);
+      }
+      const inputQty = conversionInputQty(conv, outputQty);
+      const { convertIngredientStock } = await import('@/lib/ingredientStock');
+      const r = await convertIngredientStock(db, {
+        from: conv.from, to: conv.to, inputQty, outputQty, by: adminEmail,
+      });
+      return adminJson({
+        ok: true, from: conv.from, to: conv.to, inputQty, outputQty,
+        fromAfter: r.fromAfter, toAfter: r.toAfter, shortOfInput: r.shortOfInput,
+      });
+    }
+
     if (action === 'ledger') {
       const name = typeof body.name === 'string' ? body.name.trim() : '';
       if (!name) return adminJson({ error: '缺少食材名' }, 400);
@@ -103,7 +125,7 @@ export async function POST(req: NextRequest) {
       // 没订单、也还没建档」的食材（如周五才卖的猪扒）在盘点表里整个不存在，
       // 老板买菜时看不到要备什么。ALL_RECIPE_INGREDIENTS 从 dishIngredients
       // 派生，所以加新菜写完配方，盘点表自动就有它。
-      const { ALL_RECIPE_INGREDIENTS, categorizeIngredient, categoryRank } =
+      const { ALL_RECIPE_INGREDIENTS, categorizeIngredient, categoryRank, getConversionFor } =
         await import('@/data/ingredientCatalog');
       const catalogUnit = new Map(ALL_RECIPE_INGREDIENTS.map(i => [i.name, i.unit]));
       const names = new Set<string>([
@@ -115,8 +137,11 @@ export async function POST(req: NextRequest) {
         const s = stock[name];
         const need = needed.get(name) || 0;
         const onHand = s?.onHand ?? 0;
+        // 可现做的成品（如温泉蛋）带上加工配方，dashboard 据此长出「用生鸡蛋做」按钮
+        const conv = getConversionFor(name);
         return {
           name,
+          ...(conv ? { conversion: { from: conv.from, inputPerOutput: conv.inputPerOutput, buttonLabel: conv.buttonLabel } } : {}),
           // 单位来源：已建档 > 配方登记。未建档的食材以前 unit 是空串，
           // 界面上 g 类不会换算 kg，看着像另一种东西。
           unit: s?.unit || catalogUnit.get(name) || '',
