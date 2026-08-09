@@ -13,9 +13,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
-import { weeklyMenu } from '@/data/weeklyMenu';
 import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
-import DishPicker from '@/components/admin/DishPicker';
+import DishPicker, { defaultDishForWeekday } from '@/components/admin/DishPicker';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     LogOut, CalendarDays, Loader2, CalendarCheck,
@@ -25,7 +24,6 @@ const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
 
 // 可选主菜：目录里未 hidden 未 retired 的全部（含常驻）
-const DISH_OPTIONS = weeklyMenu.filter(d => !d.hidden && !d.retired).map(d => d.name);
 
 interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | 'outside2km'; distanceKm: number; note: string; lastDate: string }
 interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
@@ -62,8 +60,15 @@ function addDays(dateStr: string, n: number): string {
     d.setDate(d.getDate() + n);
     return ymd(d);
 }
+/** 日期串 → weekday（1–5 才有排期意义；周末/格式非法回 undefined）。 */
+function weekdayOf(date: string): number | undefined {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return undefined;
+    const wd = new Date(`${date}T00:00:00`).getDay();
+    return wd >= 1 && wd <= 5 ? wd : undefined;
+}
 function newDay(date: string): DayEntry {
-    return { date, meal: 'lunch', time: '12:00', items: [{ dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] };
+    // 默认填那天的主打菜；菜品下拉也按那天置顶（见 DishPicker weekday）
+    return { date, meal: 'lunch', time: '12:00', items: [{ dishName: defaultDishForWeekday(weekdayOf(date)), qty: 1, addOns: [] }] };
 }
 
 const EMPTY_FORM: Form = {
@@ -323,7 +328,7 @@ export default function MultiDayAdmin() {
                                     return (
                                         <div key={i} className="space-y-1.5">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} />
+                                                <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} weekday={weekdayOf(day.date)} />
                                                 <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
                                                 {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
                                                 <select value="" onChange={e => {
@@ -358,7 +363,7 @@ export default function MultiDayAdmin() {
                                         </div>
                                     );
                                 })}
-                                <button onClick={() => setDay(idx, { ...day, items: [...day.items, { dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] })} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
+                                <button onClick={() => setDay(idx, { ...day, items: [...day.items, { dishName: defaultDishForWeekday(weekdayOf(day.date)), qty: 1, addOns: [] }] })} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
                             </div>
                         </div>
                     ))}

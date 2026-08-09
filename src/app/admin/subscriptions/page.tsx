@@ -14,9 +14,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
-import { weeklyMenu } from '@/data/weeklyMenu';
 import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
-import DishPicker from '@/components/admin/DishPicker';
+import DishPicker, { defaultDishForWeekday } from '@/components/admin/DishPicker';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     ChevronDown, ChevronUp, LogOut, CalendarCheck, CalendarDays, Loader2,
@@ -25,8 +24,6 @@ import {
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 const WD_LABEL: Record<string, string> = { '1': '周一', '2': '周二', '3': '周三', '4': '周四', '5': '周五' };
 
-// 可选主菜：目录里未 hidden 未 retired 的全部（含常驻）
-const DISH_OPTIONS = weeklyMenu.filter(d => !d.hidden && !d.retired).map(d => d.name);
 
 interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | 'outside2km'; distanceKm: number; note: string; lastDate: string }
 interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
@@ -57,8 +54,10 @@ function normalizePlan(raw: any): Record<string, PlanDay[]> {
 
 const mealCN = (m: 'lunch' | 'dinner') => (m === 'dinner' ? '晚' : '午');
 const countMeals = (plan: Record<string, PlanDay[]>) => Object.values(plan).reduce((s, ms) => s + ms.length, 0);
-const emptyMeal = (meal: 'lunch' | 'dinner'): PlanDay =>
-    ({ meal, time: meal === 'dinner' ? '19:00' : '12:00', items: [{ dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }] });
+// 新餐次默认填「那天的主打菜」（WEEKLY_SCHEDULE 该天第一道）——排周三的单
+// 默认就是周三特餐，不用每次改。换菜后自动跟着变（读同一份 weeklyMenu）。
+const emptyMeal = (meal: 'lunch' | 'dinner', wd: string): PlanDay =>
+    ({ meal, time: meal === 'dinner' ? '19:00' : '12:00', items: [{ dishName: defaultDishForWeekday(Number(wd)), qty: 1, addOns: [] }] });
 
 const EMPTY_SUB: Sub = {
     userId: '', name: '', phone: '', address: '',
@@ -452,12 +451,12 @@ export default function SubscriptionsAdmin() {
                                             <div className="flex items-center gap-3 flex-wrap">
                                                 <label className="text-sm font-black flex items-center gap-1.5">
                                                     <input type="checkbox" checked={dayOn}
-                                                        onChange={e => setMeals(wd, e.target.checked ? [emptyMeal('lunch')] : null)} />
+                                                        onChange={e => setMeals(wd, e.target.checked ? [emptyMeal('lunch', wd)] : null)} />
                                                     {WD_LABEL[wd]}
                                                 </label>
                                                 {/* 一天最多午 + 晚两餐（各生成一张单、各扣自己的券） */}
                                                 {dayOn && !(hasLunch && hasDinner) && (
-                                                    <button onClick={() => setMeals(wd, [...meals, emptyMeal(hasLunch ? 'dinner' : 'lunch')])}
+                                                    <button onClick={() => setMeals(wd, [...meals, emptyMeal(hasLunch ? 'dinner' : 'lunch', wd)])}
                                                         className="px-2.5 py-1 rounded-lg text-[11px] font-black text-[#FF6B35] border border-[#FF6B35]/30 bg-[#FF6B35]/5 hover:bg-[#FF6B35]/10">
                                                         ＋ 加{hasLunch ? '晚餐' : '午餐'}（这天再送一趟）
                                                     </button>
@@ -489,7 +488,7 @@ export default function SubscriptionsAdmin() {
                                                                 return (
                                                                     <div key={i} className="space-y-1.5">
                                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                                            <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} />
+                                                                            <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} weekday={Number(wd)} />
                                                                             <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
                                                                             {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
                                                                             <select value="" onChange={e => {
@@ -541,7 +540,7 @@ export default function SubscriptionsAdmin() {
                                                                     </div>
                                                                 );
                                                             })}
-                                                            <button onClick={() => setDayItems([...day.items, { dishName: DISH_OPTIONS[0], qty: 1, addOns: [] }])} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
+                                                            <button onClick={() => setDayItems([...day.items, { dishName: defaultDishForWeekday(Number(wd)), qty: 1, addOns: [] }])} className="text-[11px] font-bold text-[#FF6B35]">+ 加一道主菜</button>
                                                         </div>
                                                     </div>
                                                 );

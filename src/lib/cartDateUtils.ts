@@ -139,27 +139,37 @@ export function isDishOrderableOn(
     const wd = weekdayOfYMD(selectedDate);
     if (wd === null) return { ok: true }; // 格式问题交给 isOrderDateValid
 
-    const allow = dish.availableWeekdays;
-    if (allow && allow.length > 0) {
-        // 常驻限日菜（如 绍兴酒蒸花肉 = 周一/四）
-        if (!allow.includes(wd)) {
-            return {
-                ok: false,
-                reason: 'wrong_weekday',
-                message: `${dish.name} 仅在${allow.map(d => WD_CN[d]).join('、')}供应，无法下单 ${selectedDate}`,
-            };
-        }
-    } else if (typeof dish.weekday === 'number') {
-        // 周特餐：weekday 由 WEEKLY_SCHEDULE 推导，只在自己那天供应。
-        // （常驻菜没有 weekday 字段，走到这里 = 周一至五都能订。）
-        if (wd !== dish.weekday) {
-            return {
-                ok: false,
-                reason: 'wrong_weekday',
-                message: `${dish.name} 是${WD_CN[dish.weekday]}特餐，无法下单 ${selectedDate}`,
-            };
-        }
+    if (!servesOnWeekday(dish, wd)) {
+        const allow = dish.availableWeekdays;
+        return {
+            ok: false,
+            reason: 'wrong_weekday',
+            message: (allow && allow.length > 0)
+                ? `${dish.name} 仅在${allow.map(d => WD_CN[d]).join('、')}供应，无法下单 ${selectedDate}`
+                : `${dish.name} 是${WD_CN[dish.weekday as number]}特餐，无法下单 ${selectedDate}`,
+        };
     }
 
     return { ok: true };
+}
+
+/**
+ * 这道菜在「周几」这一档供应吗 —— 纯 weekday 判定，不看 retired/hidden/
+ * blocked（那三层是日期无关的，由 isDishOrderableOn 单独查）。
+ *
+ * 排期规则的单一来源：isDishOrderableOn 的 weekday 段直接调它，admin 端
+ * 的菜品下拉（DishPicker 按当天置顶分组）也调它。两处共用一份规则，
+ * 换菜改 weeklyMenu 后两边同时跟上，不会各自漂移。
+ *
+ * 优先级与排期表一致：availableWeekdays（常驻限日菜，如白萝卜焖花肉
+ * 周一/四）> weekday（WEEKLY_SCHEDULE 推导的当日特餐）> 全周常驻。
+ */
+export function servesOnWeekday(
+    dish: Pick<MenuItem, 'weekday' | 'availableWeekdays'>,
+    weekday: number,
+): boolean {
+    const allow = dish.availableWeekdays;
+    if (allow && allow.length > 0) return allow.includes(weekday);
+    if (typeof dish.weekday === 'number') return weekday === dish.weekday;
+    return true;   // 常驻菜：周一至五都能订
 }
