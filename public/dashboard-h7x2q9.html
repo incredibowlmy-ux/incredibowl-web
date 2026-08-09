@@ -11949,9 +11949,14 @@ incredibowl.my`,
                 if (cat && cat !== lastCat) {
                     const inCat = list.filter(x => x.category === cat);
                     const shortInCat = inCat.filter(x => x.shortfall > 0).length;
-                    rows += `<tr class="inv-ing-cat"><td colspan="6" style="padding:14px 4px 5px;font-size:12px;font-weight:800;letter-spacing:0.04em;border-bottom:1px solid var(--border-strong)">
-                        ${invEsc(cat)}
-                        <span style="color:var(--text-muted);font-weight:400;margin-left:6px">${inCat.length} 种${shortInCat ? ` · <span style="color:#c0392b;font-weight:700">${shortInCat} 种不够</span>` : ''}</span>
+                    // 组标题做成整条贯通的色带 + 上方留白（老板 2026-08-10：
+                    // 「类目之间的间隔不够明显」）。第一组不留上间距，免得
+                    // 和表头之间空一大块。
+                    rows += `<tr class="inv-ing-cat"><td colspan="6" style="padding:0">
+                        <div style="${lastCat === null ? '' : 'margin-top:22px;'}padding:8px 12px;background:var(--bg-subtle);border-left:4px solid var(--primary,#C9985C);border-radius:0 8px 8px 0;font-size:13px;font-weight:800;letter-spacing:0.04em">
+                            ${invEsc(cat)}
+                            <span style="color:var(--text-muted);font-weight:400;margin-left:8px;font-size:12px">${inCat.length} 种${shortInCat ? ` · <span style="color:#c0392b;font-weight:700">${shortInCat} 种不够</span>` : ''}</span>
+                        </div>
                     </td></tr>`;
                     lastCat = cat;
                 }

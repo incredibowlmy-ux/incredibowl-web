@@ -132,7 +132,7 @@ export const dishRecipes: DishRecipe[] = [
     name: '马铃薯炖花肉片',
     shortName: '花肉',
     ingredients: [
-      { name: '五花肉', qty: 125, unit: 'g' },
+      { name: '顶级梅花肉片', qty: 125, unit: 'g' },
       { name: '马铃薯', qty: 100, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '黄洋葱', qty: 80, unit: 'g' },
@@ -199,7 +199,8 @@ export const dishRecipes: DishRecipe[] = [
     shortName: '绍肉',
     // 仅列生鲜采购项（与本表惯例一致）。完整配方另含绍兴酒/麻油/鱼露/蚝油/糖/
     // 白胡椒等瓶装常备调味品，按惯例不计入每日采购汇总。
-    // 五花肉用「顶级无皮五花肉」独立 SKU（与马铃薯那道的「五花肉」分开采购）。
+    // 五花肉用「顶级无皮五花肉」独立 SKU（与马铃薯那道的「顶级梅花肉片」
+    // 分开采购 —— 那道是梅花/肩胛部位，不是五花，2026-08-10 老板正名）。
     // 白饭存 80g 生米采购重（碗妈表给的 180g 是熟饭，约合 80g 生米，对齐其他菜）。
     // 五花肉 140g 生重：蒸/焖后缩水，按碗妈要求保证熟重 ≥90g（2026-06-29 修正，
     // 由 90g→140g，与同 SKU 的家乡豆酱焖花肉一致）。
@@ -473,7 +474,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
 
   // ─── Pork Belly Stew add-ons ──────────────────────────────
   '【绵密软糯】加马铃薯 (90g)': [{ name: '马铃薯', qty: 100, unit: 'g' }],
-  '【浓香入味】加花肉片 (70g)': [{ name: '五花肉', qty: 125, unit: 'g' }],
+  '【浓香入味】加花肉片 (70g)': [{ name: '顶级梅花肉片', qty: 125, unit: 'g' }],
 
   // ─── Daikon Pork Belly add-on (新菜 30 专属，2026-08-09) ────
   // 标签上的 90g 是**焖后熟重**。
@@ -535,7 +536,7 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   // pork-potato-duo-combo: 马铃薯 + 花肉
   '薯肉双拼满足套 (原价 RM 15.40)': [
     { name: '马铃薯', qty: 100, unit: 'g' },
-    { name: '五花肉', qty: 125, unit: 'g' },
+    { name: '顶级梅花肉片', qty: 125, unit: 'g' },
   ],
 
   // shaoxing-pork-combo: 绍兴花肉 100g + 荷包蛋 + 加饭
