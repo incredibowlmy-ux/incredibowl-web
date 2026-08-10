@@ -9,8 +9,10 @@
     "postbuild": "next-sitemap",
     "start": "next start",
     "lint": "eslint",
-    "sync:dashboard": "node scripts/sync-dashboard.mjs",
-    "sync:menu": "node scripts/sync-menu-to-firestore.mts"
+    "sync:dashboard": "node scripts/sync-dashboard-prices.mts --fix && node scripts/sync-dashboard.mjs",
+    "sync:menu": "node scripts/sync-menu-to-firestore.mts",
+    "check:prices": "node scripts/sync-dashboard-prices.mts",
+    "sync:prices": "node scripts/sync-dashboard-prices.mts --fix"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
