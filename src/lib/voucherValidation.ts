@@ -6,9 +6,11 @@
  *   2. Not expired
  *   3. Global usage cap (maxUses) not exceeded
  *   4. (per-user) Current user has not already redeemed this code
- *   5. (phone dedup) No OTHER user with the same normalized phone has redeemed it
+ *   5. (per-user) Current user has not redeemed a MUTUALLY EXCLUSIVE code
+ *   6. (phone dedup) No OTHER user with the same normalized phone has redeemed
+ *      this code — or an exclusive one
  *
- * Steps 4 + 5 are skipped when userId is missing (anonymous pre-check).
+ * Steps 4–6 are skipped when userId is missing (anonymous pre-check).
  *
  * Returns { ok: true, discount, ... } or { ok: false, error, status }.
  */
@@ -95,6 +97,24 @@ export async function validateVoucher(
         return { ok: false, error: '此优惠码已被使用', status: 400 };
     }
 
+    // excludeIfUsed：互斥码组。写在**这个码自己的文档**上（不是写死在代码里），
+    // 语义是「用过里面任何一个码的账号，不能再用我」。
+    //
+    // 用途：DAD5 这类节日新客码不该发给已经领过 BOWL5 / FIRST5 的老客——
+    // 「每个码每人一次」挡不住同一个人把几个新客码轮流用一遍。
+    //
+    // 之所以放 Firestore 而不是代码常量：validateVoucher 本来就读了这个文档，
+    // 判定零额外查询；加新的互斥关系不用发版。
+    // ⚠️ 手填字段的老陷阱（见 vouchers 集合其它字段）：类型错了不报错。这里
+    //    只认「字符串数组」，逐项 trim + 大写；不是数组 / 混了脏值一律忽略，
+    //    最坏结果是这条规则不生效，绝不会误伤正常客人。
+    const excludeIfUsed: string[] = Array.isArray(data.excludeIfUsed)
+        ? data.excludeIfUsed
+              .filter((c: unknown): c is string => typeof c === 'string')
+              .map((c) => c.trim().toUpperCase())
+              .filter((c) => c && c !== code)
+        : [];
+
     // Per-user + phone dedup (only when we know who's checking).
     if (opts.userId) {
         const userSnap = await db.collection('users').doc(opts.userId).get();
@@ -103,6 +123,9 @@ export async function validateVoucher(
         const usedByMe: string[] = Array.isArray(userData.vouchersUsed) ? userData.vouchersUsed : [];
         if (usedByMe.includes(code)) {
             return { ok: false, error: '您已使用过此优惠码', status: 400 };
+        }
+        if (excludeIfUsed.some((c) => usedByMe.includes(c))) {
+            return { ok: false, error: '此优惠码不能与您已使用过的新客优惠同享', status: 400 };
         }
 
         // firstOrderOnly：公开发放的拉新码（网站自助领取的首单 RM5）用它挡住
@@ -131,6 +154,13 @@ export async function validateVoucher(
                     : [];
                 if (otherUsed.includes(code)) {
                     return { ok: false, error: '此手机号已在另一个账户用过此优惠码', status: 400 };
+                }
+                if (excludeIfUsed.some((c) => otherUsed.includes(c))) {
+                    return {
+                        ok: false,
+                        error: '此手机号已在另一个账户领过新客优惠，不能再用此码',
+                        status: 400,
+                    };
                 }
             }
         }
