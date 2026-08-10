@@ -63,8 +63,9 @@ const ALIAS_PAIRS: [string, string][] = [
 ];
 
 /**
- * dashboard 的「+ 加菜品」选单（DISH_LIBRARY）用的是 legacy `addon-*` id。
- * 它们只是成本表的预填值，不参与下单，所以**不自动改**——只报告，等老板拍板。
+ * dashboard 的「+ 加菜品」选单（DISH_LIBRARY）用的是 legacy `addon-*` id
+ * ——同一样东西的旧编号，只作成本表预填值，不参与下单。
+ * 2026-08-10 老板拍板：它们也跟网站现价走，一并自动同步（先前只报告不改）。
  */
 const LEGACY_LIBRARY_MAP: Record<string, string> = {
   'addon-sunny-egg': 'sunny-egg', 'addon-onsen-egg': 'onsen-egg', 'addon-potato-egg': 'potato-egg',
@@ -147,21 +148,17 @@ for (let i = 0; i < dashLines.length; i++) {
   for (let m = RE_STR_ID.exec(line); m; m = RE_STR_ID.exec(line)) {
     const [, id, numStr] = m;
     const was = Number(numStr);
-    if (LEGACY_LIBRARY_MAP[id]) {
-      const canon = ADD_ON_PRICES[LEGACY_LIBRARY_MAP[id]];
-      if (canon !== undefined && !near(canon, was)) {
-        advisory.push(`DISH_LIBRARY「${id}」RM${money(was)} ≠ canonical「${LEGACY_LIBRARY_MAP[id]}」RM${money(canon)}（legacy 选单，未自动改）`);
-      }
-      continue;
-    }
-    const want = ADD_ON_PRICES[id];
+    // legacy `addon-*` 是同一样东西的旧编号 → 按 canonical 的价来
+    const canonId = LEGACY_LIBRARY_MAP[id];
+    const want = canonId ? ADD_ON_PRICES[canonId] : ADD_ON_PRICES[id];
     if (want === undefined) {                 // dashboard 独有（off-menu 汤、饮品、退役项…）
       if (/^[a-z][a-z0-9-]*$/.test(id)) unmanaged.set(id, was);
       continue;
     }
     scanned++;
     if (near(want, was)) continue;
-    drift.push({ file: 'dashboard', line: i + 1, id, was, want, context: line.trim().slice(0, 70) });
+    const label = canonId ? `${id}（legacy → ${canonId}）` : id;
+    drift.push({ file: 'dashboard', line: i + 1, id: label, was, want, context: line.trim().slice(0, 70) });
     if (FIX) { line = replacePrice(line, m.index, numStr, want); dashChanged++; RE_STR_ID.lastIndex = 0; }
   }
 

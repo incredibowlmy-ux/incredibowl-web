@@ -54,6 +54,10 @@ const CORRUPTIONS: Corruption[] = [
   { find: `{ id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90,`,
     replace: `{ id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 18.50,`,
     expectId: '菜#27', was: '18.50', want: '19.90' },
+  // legacy DISH_LIBRARY：id 是旧编号（addon-corn），价要按 canonical（extra-corn）来
+  { find: `{ id: 'addon-corn', name: '加玉米', price: 2.50,`,
+    replace: `{ id: 'addon-corn', name: '加玉米', price: 2.00,`,
+    expectId: 'addon-corn（legacy → extra-corn）', was: '2.00', want: '2.50' },
 ];
 
 let corrupted = pristine;
