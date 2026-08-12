@@ -3402,9 +3402,9 @@ incredibowl.my`,
             '【地中海风味】加提鲜黑橄榄 (12g)': 'extra-black-olive-12g',  // updated webapp label
             '爽脆多汁小番茄 (20g)': 'cherry-tomato',                       // current webapp label（2026-07-14 全局 40g→20g）
             '爽脆多汁小番茄 (40g)': 'cherry-tomato',                       // legacy webapp label
-            '爽脆多汁小番茄 (50g)': 'cherry-tomato',                       // legacy webapp label
+            //（50g 番茄键上文「鸡扒饭 specials」段已有、暖胃全鸡腿键上文「当归鸡腿 specials」
+            //  段已有，此处不再重复 —— 对象字面量重复键是静默后写覆盖，掩盖真正的键冲突）
             '【犒劳自己】多加一只酱油全鸡腿': 'extra-soy-leg-1',          // C: new add-on for dish 14
-            '【犒劳自己】多加一只暖胃全鸡腿': 'extra-herbal-leg-1',       // already canonical, in case of strict match
             // 马铃薯花肉 specials
             '【绵密软糯】加马铃薯 (90g)': 'extra-potato',
             '【浓香入味】加花肉片 (70g)': 'extra-pork-belly',
@@ -4238,6 +4238,37 @@ incredibowl.my`,
                 return d < tomorrow;
             });
         }
+        // 卡状态订单 —— 送达日已过但状态没走完的两类。全量扫描 state.orders，
+        // 故意不吃 state.range：告警若跟着时间窗走，选「近 7 天」时更早卡住的单
+        // 就静默消失（#6CDnaE 卡在 7-14 一个月无人发现，就是这个盲区）。
+        //   notCounted: pending/preparing   → 不计营收 KPI（做了备了，钱没入账）
+        //   notClosed:  confirmed/delivering → 已计营收但状态不实（送了忘改/其实没送），
+        //               餐券结转、复购分析、配送成本归因都会跟着歪
+        function findStaleOrders() {
+            const todayKey = ymdKey(new Date());
+            const notCounted = [], notClosed = [];
+            (state.orders || []).forEach(o => {
+                if (!o.deliveryDate || o.deliveryDate >= todayKey) return;
+                if (o.status === 'pending' || o.status === 'preparing') notCounted.push(o);
+                else if (o.status === 'confirmed' || o.status === 'delivering') notClosed.push(o);
+            });
+            const byDate = (a, b) => String(a.deliveryDate).localeCompare(String(b.deliveryDate));
+            notCounted.sort(byDate); notClosed.sort(byDate);
+            return { notCounted, notClosed };
+        }
+        function buildStaleWarnHtml() {
+            const { notCounted, notClosed } = findStaleOrders();
+            if (notCounted.length === 0 && notClosed.length === 0) return '';
+            const list = (arr) => arr.slice(0, 5).map(o =>
+                `<span class="mono">#${escapeHtml((o.id || '').slice(-6).toUpperCase())}</span> ${escapeHtml(o.userName || '匿名')} (${escapeHtml(o.deliveryDate)})`
+            ).join(' · ') + (arr.length > 5 ? ` 等 ${arr.length} 单` : '');
+            const parts = [];
+            if (notCounted.length) parts.push(
+                `<div>⚠️ <strong>${notCounted.length} 单送达日已过还卡在 pending/preparing</strong> — 不计营收 KPI。请核对后改 delivered（或取消）：${list(notCounted)}</div>`);
+            if (notClosed.length) parts.push(
+                `<div${notCounted.length ? ' style="margin-top:6px"' : ''}>⏰ <strong>${notClosed.length} 单送达日已过还停在 confirmed/delivering</strong> — 已计营收但状态不实。送完请点 delivered（没送成则取消）：${list(notClosed)}</div>`);
+            return `<div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);font-size:12px;color:#92400E">${parts.join('')}</div>`;
+        }
         function filteredUsers() {
             if (state.range === 'all') return state.users;
             const cutoff = rangeCutoff();
@@ -4412,9 +4443,8 @@ incredibowl.my`,
             state.charts = {};
         }
 
-        window.addEventListener('resize', () => {
-            Object.values(state.charts).forEach(c => c && c.resize());
-        });
+        // （resize 统一走下方 rAF 节流的 resizeAllCharts —— 之前这里还有一个
+        //   未节流监听，拖窗口时 13 张图每帧双倍重绘，已删。）
 
         // ═══════════════════════════════════════════════════════════════
         //   1. REVENUE PAGE
@@ -4666,19 +4696,11 @@ incredibowl.my`,
             }
 
             // ─── Stale-status reconciliation warning ───
-            // 营收 KPI 只计 confirmed/delivered；若某单送达日已过还卡在 pending/preparing
-            // （webhook race 或忘了改状态），它会被做、被备餐，但营收永远少这一单。
-            // 这里显式点名，让老板去把状态改对，而不是账实静默漂移。
-            const staleActive = all.filter(o =>
-                (o.status === 'pending' || o.status === 'preparing')
-                && o.deliveryDate && o.deliveryDate < todayKey);
-            const staleWarnHtml = staleActive.length === 0 ? '' : `
-                <div style="margin-bottom:10px;padding:10px 12px;border-radius:10px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);font-size:12px;color:#92400E">
-                    ⚠️ <strong>${staleActive.length} 单送达日已过但状态还是 pending/preparing</strong> — 它们不计入营收 KPI。
-                    请核对后改成 confirmed/delivered（或取消）：${staleActive.slice(0, 5).map(o =>
-                        `<span class="mono">#${escapeHtml((o.id || '').slice(-6).toUpperCase())}</span> ${escapeHtml(o.userName || '匿名')} (${escapeHtml(o.deliveryDate)})`
-                    ).join(' · ')}${staleActive.length > 5 ? ` 等 ${staleActive.length} 单` : ''}
-                </div>`;
+            // 之前只扫 filteredOrders() 里的 pending/preparing → 两个盲区：
+            //   a) 选「近 7 天」时更早卡住的单直接不报警（#6CDnaE 卡 7-14 一个月无人见）
+            //   b) 过期还停在 confirmed/delivering 的单（送了忘改 / 实际没送）完全不抓
+            // 现改走 findStaleOrders()：全量扫描 + 两类都抓，不受时间窗遮挡。
+            const staleWarnHtml = buildStaleWarnHtml();
 
             // ─── Pagination ───
             const totalCount = filtered.length;
@@ -6314,8 +6336,6 @@ incredibowl.my`,
             (state.addons || []).forEach(a => { addonNameById[a.id] = a.name || a.id; });
 
             let totalCOGS = 0;
-            let totalCOGSAddons = 0;  // tracked separately for "其中 add-on 成本 RM X" hint
-            let cogsCovered = 0;  // # orders with at least 1 item with cost > 0
             let cogsMissing = 0;
             const cogsMissingOrders = []; // { id, userName, dateStr, missingDishes:[name] }
             // B3: track add-ons with 0 cost across all orders so user can fill them in.
@@ -6338,7 +6358,6 @@ incredibowl.my`,
                         const canonId = canonicalAddonId(a.id);
                         const aCost = (addonCostById[canonId] || 0) * aQty;
                         orderCOGS += aCost;
-                        totalCOGSAddons += aCost;
                         // B3: flag add-ons with 0 cost (id missing from map or costPrice = 0)
                         if (canonId && (addonCostById[canonId] || 0) === 0) {
                             const entry = addonsMissingCost.get(canonId) || {
@@ -6358,11 +6377,9 @@ incredibowl.my`,
                     const canonId = canonicalAddonId(u.addonId);
                     const c = (addonCostById[canonId] || 0) * (Number(u.count) || 0);
                     orderCOGS += c;
-                    totalCOGSAddons += c;
                 });
                 totalCOGS += orderCOGS;
-                if (hadCost) cogsCovered++;
-                else {
+                if (!hadCost) {
                     cogsMissing++;
                     const dt = tsToDate(o.createdAt);
                     const dateStr = dt ? `${dt.getMonth() + 1}/${dt.getDate()}` : '—';
@@ -6439,14 +6456,12 @@ incredibowl.my`,
                 ` : ''}
             `;
 
-            // C8: Refunds within range — sum + count for KPI + net deduction
+            // C8: Refunds within range — sum for net deduction（单数在退款追踪卡里显示）
             let totalRefunds = 0;
-            let refundedOrderCount = 0;
             orders.forEach(o => {
                 const r = Number(o.refundAmount) || 0;
                 if (r > 0) {
                     totalRefunds += r;
-                    refundedOrderCount += 1;
                 }
             });
 
@@ -7120,7 +7135,6 @@ incredibowl.my`,
             const total = baseLeads.length;
             const newCount = baseLeads.filter(l => l.status === 'new').length;
             const contactedCount = baseLeads.filter(l => l.status === 'contacted' || l.status === 'hot').length;
-            const lostCount = baseLeads.filter(l => l.status === 'lost').length;
             const convertedFromLeads = all.filter(l => l.hasOrdered).length;
 
             $('#leadsKpis').innerHTML = `
@@ -8801,12 +8815,6 @@ incredibowl.my`,
             const tokens = String(addr).split(/[,，·\n]/).map(t => t.trim()).filter(Boolean);
             // Take first 1-2 meaningful tokens (e.g., "Pearl Point", "Old Klang Road")
             return tokens.slice(0, 2).join(', ').replace(/\b\d{1,5}[A-Za-z]?\b/g, '#').slice(0, 60);
-        }
-
-        // Convert Firestore Timestamp / Date / number / string → ISO string (so JSON travels cleanly)
-        function tsToIso(t) {
-            const d = tsToDate(t);
-            return d ? d.toISOString() : null;
         }
 
         // Strip Firestore-internal junk (functions, undefined) + ISO-ify timestamps recursively
