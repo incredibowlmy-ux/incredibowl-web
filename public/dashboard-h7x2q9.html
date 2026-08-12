@@ -2981,7 +2981,7 @@
             { id: 'extra-taucu-pork-100g',       name: '【家乡浓香】加豆酱花肉 (100g)',         price: 15.50, category: '加菜' },  // 新 add-on 2026-07-16（豆酱焖花肉）；2026-08-01 老板调价 14.90 → 15.50
             { id: 'extra-shaoxing-pork-50g',     name: '【小酌怡情】加绍兴花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
             { id: 'extra-taucu-pork-50g',        name: '【小碗解馋】加豆酱花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
-            { id: 'extra-daikon-90g',            name: '【清甜解腻】加白萝卜 (90g)',            price: 3.00,  category: '加菜' },  // 新 add-on 2026-08-09（白萝卜焖花肉 id 30 专属，老板拍板 RM3）
+            { id: 'extra-daikon-90g',            name: '【清甜解腻】加白萝卜 (100g)',           price: 3.50,  category: '加菜' },  // 新 add-on 2026-08-09（白萝卜焖花肉 id 30 专属）；2026-08-12 老板改 90g→100g 熟、RM3→RM3.50（id 里的 90g 是历史命名，勿按 id 猜克数）
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
@@ -3426,7 +3426,8 @@ incredibowl.my`,
             '【照烧加倍】加照烧鳗鱼 (0.5片)': 'extra-unagi-half',
             // 甜酸洋葱猪扒 specials (2026-08-01)
             '加甜酸猪扒 (1块)': 'extra-pork-chop',
-            // 白萝卜焖花肉 specials (2026-08-09)
+            // 白萝卜焖花肉 specials (2026-08-09)；2026-08-12 改 90g→100g，旧标签留 read-path
+            '【清甜解腻】加白萝卜 (100g)': 'extra-daikon-90g',
             '【清甜解腻】加白萝卜 (90g)': 'extra-daikon-90g',
         };
 
@@ -10329,7 +10330,7 @@ incredibowl.my`,
             // 分支），别往网站的默认 sides/alacarte 里加 —— 两边故意不对称。
             // ⚠️ 连带效果：getStandaloneAddons() 也吃 UNIVERSAL_ADDONS，所以「只买配菜
             // （无主菜）」那条线也能单卖这份萝卜。
-            { id: 'extra-daikon-90g',            label: '【清甜解腻】加白萝卜 (90g)', price: 3.00 },
+            { id: 'extra-daikon-90g',            label: '【清甜解腻】加白萝卜 (100g)', price: 3.50 },
         ];
         // 新菜兜底加料：DISH_ADDON_MAP 还没登记的菜（刚上架的新菜）自动拿这套
         // 标准 à la carte + 饭量 + 饮品，不用先来这里抄一份才有加料可选。
