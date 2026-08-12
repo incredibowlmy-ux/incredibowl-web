@@ -3877,6 +3877,11 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   DATA LOADING
         // ═══════════════════════════════════════════════════════════════
+        // 每会话只跑一轮 seed/migration 检查（menu 元数据同步 / 成本回填 / 改名等）。
+        // 它们幂等但每次都要过一遍全菜单做条件判断；登录跑一次足够，之后的
+        // loadAllData（刷新按钮 / 导出前刷新）纯读。首轮若 menu 读失败会保持 false，
+        // 下轮读成功再补跑。
+        let migrationsDone = false;
         async function loadAllData() {
             showLoading('正在拉取数据...');
             // Track silent migration failures so we can surface a single summary
@@ -3951,8 +3956,8 @@ incredibowl.my`,
 
                 // ─── Menu migrations（menuReadFailed 时整体跳过 — 它们都基于 state.menu
                 //     写 Firestore，而读失败时 state.menu 只是内存 SEED 兜底，据此写库
-                //     会把老板的真实数据覆盖掉）───
-                if (!menuReadFailed) {
+                //     会把老板的真实数据覆盖掉；migrationsDone = 本会话已跑过，跳过）───
+                if (!menuReadFailed && !migrationsDone) {
                 // ─── Migration: backfill any MENU_SEED entry missing from Firestore
                 //     (e.g. newly added 绍兴酒蒸花肉 周四特餐). Runs once per missing
                 //     id; no-op afterwards. Keeps dashboard dropdown in sync when we
@@ -4179,6 +4184,8 @@ incredibowl.my`,
                 $('#sysUserCount').textContent = state.users.length;
                 $('#sysVoucherCount').textContent = state.vouchers.length;
 
+                if (!menuReadFailed) migrationsDone = true;
+
                 renderAll();
                 // Surface accumulated migration failures (B8). Single toast so
                 // user knows something silent went sideways — details in console.
@@ -4188,6 +4195,45 @@ incredibowl.my`,
             } catch (e) {
                 console.error(e);
                 toast('❌ 数据加载失败：' + e.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ─── 轻量重载：存单 / 卖券 / 充值后的「刷新」走这里 ───
+        // 之前每次写操作结束都 loadAllData()：重拉 12 个集合 ~1.6MB + 过一遍
+        // seed/migration 检查。实际上一次写操作只动 2-5 个集合。
+        // only = 集合别名数组（'orders'|'users'|'mealVouchers'|'mealVoucherPurchases'|'addonCredits'），
+        // 不传 = 5 个热集合全刷。menu/addons/spend/cfg 等冷数据用内存现值。
+        // 读失败时整体不落 state（Promise.all 原子性），报错并保留旧数据。
+        async function reloadData(only) {
+            showLoading('刷新数据...');
+            try {
+                const want = only ? new Set(only) : null;
+                const need = k => !want || want.has(k);
+                const jobs = [], setters = [];
+                const grab = (key, promise, apply) => { if (!need(key)) return; jobs.push(promise); setters.push(apply); };
+                grab('orders',
+                    getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
+                    s => { state.orders = s.docs.map(d => ({ id: d.id, ...d.data() })); $('#sysOrderCount').textContent = state.orders.length; });
+                grab('users',
+                    getDocs(collection(db, 'users')),
+                    s => { state.users = s.docs.map(d => ({ id: d.id, ...d.data() })); $('#sysUserCount').textContent = state.users.length; });
+                grab('mealVouchers',
+                    getDocs(collection(db, 'mealVouchers')),
+                    s => state.mealVouchers = s.docs.map(d => ({ id: d.id, ...d.data() })));
+                grab('mealVoucherPurchases',
+                    getDocs(collection(db, 'mealVoucherPurchases')),
+                    s => state.mealVoucherPurchases = s.docs.map(d => ({ id: d.id, ...d.data() })));
+                grab('addonCredits',
+                    getDocs(collection(db, 'mealVoucherAddonCredits')),
+                    s => state.addonCredits = s.docs.map(d => ({ id: d.id, ...d.data() })));
+                const snaps = await Promise.all(jobs);
+                snaps.forEach((s, i) => setters[i](s));
+                renderAll();
+            } catch (e) {
+                console.error('[reloadData]', e);
+                toast('❌ 刷新失败（数据保持旧值）：' + e.message, 'error');
             } finally {
                 hideLoading();
             }
@@ -9864,7 +9910,7 @@ incredibowl.my`,
         $('#packingRefresh')?.addEventListener('click', async () => {
             const btn = $('#packingRefresh');
             btn.disabled = true;
-            try { await loadAllData(); }
+            try { await reloadData(['orders']); }   // 装碗页只吃 orders，不用全量重拉
             catch (e) { toast('刷新失败：' + (e && e.message || e), 'error'); }
             btn.disabled = false;
             renderPacking();
@@ -11808,8 +11854,12 @@ incredibowl.my`,
                         catch (relErr) { console.warn('[delete-order] stock release skipped:', relErr && relErr.message); }
                     }
                     // Refresh state so released vouchers/credits reappear as available
-                    if (claimedVoucherIds.length > 0 || addonCreditCount > 0) await loadAllData();
-                    renderAll();
+                    // （reloadData 内部会 renderAll；无券可放时本地 state 已改，直接重画）
+                    if (claimedVoucherIds.length > 0 || addonCreditCount > 0) {
+                        await reloadData(['orders', 'users', 'mealVouchers', 'mealVoucherPurchases', 'addonCredits']);
+                    } else {
+                        renderAll();
+                    }
                     toast(releaseNotes
                         ? `订单已删除 · ${releaseNotes} 已 release 回客户账户`
                         : '订单已删除（库存已回补）', 'success');
@@ -13579,8 +13629,8 @@ incredibowl.my`,
                     : '';
                 toast(`✅ 已发 ${result.voucherCount} 张餐券给 ${result.userName || name} · 收 RM ${result.amountPaid.toFixed(2)}${addonNote}${result.wasStubCreated ? '（已建 stub 账号）' : ''}`, 'success');
                 closeSellVoucherModal();
-                // Refresh state so KPI cards + Recent Orders pick up the new purchase/vouchers
-                await loadAllData();
+                // Refresh state so KPI cards pick up the new purchase/vouchers（卖券不动 orders）
+                await reloadData(['users', 'mealVouchers', 'mealVoucherPurchases', 'addonCredits']);
             } catch (e) {
                 errEl.textContent = '发券失败：' + e.message;
                 errEl.classList.remove('hidden');
@@ -13670,7 +13720,7 @@ incredibowl.my`,
                 toast(`✅ 已给 ${result.userName || phone} 充值加料 RM ${result.addOnAmountPaid.toFixed(2)}${expStr ? ` · 有效期至 ${expStr}` : ''}`, 'success');
                 closeAddonTopupModal();
                 // Refresh so 预付加料负债 KPI + 客户档案余额 pick up the new credits
-                await loadAllData();
+                await reloadData(['users', 'mealVoucherPurchases', 'addonCredits']);
             } catch (e2) {
                 errEl.textContent = '充值失败：' + e2.message;
                 errEl.classList.remove('hidden');
@@ -14011,7 +14061,7 @@ incredibowl.my`,
                                 }
                             }
                             // Refresh state so available-count hints are accurate next time
-                            await loadAllData();
+                            await reloadData(['orders', 'users', 'mealVouchers', 'mealVoucherPurchases', 'addonCredits']);
                             const voucherPart = vouchersUsed > 0 ? ` + ${vouchersUsed} 张餐券（摊销 RM ${claimResult.allocatedTotalRM.toFixed(2)}）` : '';
                             const addonPart = (claimResult.addonCreditsAllocatedRevenue > 0)
                                 ? ` + 预付加料（确认 RM ${claimResult.addonCreditsAllocatedRevenue.toFixed(2)}）`
@@ -14687,7 +14737,7 @@ incredibowl.my`,
                     note: wipe ? 'dashboard 档案清零' : 'dashboard 档案改数量',
                 });
                 toast(`✅ 「${name}」剩余 ${r.before} → ${r.after}${r.writeOffRM > 0 ? ` · 冲销负债 RM ${r.writeOffRM.toFixed(2)}` : ''}`, 'success');
-                await loadAllData();
+                await reloadData(['users', 'addonCredits']);
                 if (custKey) openCustomerProfileByKey(custKey);
             } catch (err) {
                 toast('调整失败：' + err.message, 'error');
