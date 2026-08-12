@@ -1236,6 +1236,10 @@
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                     <span>预算效率</span>
                 </button>
+                <button class="nav-item" data-page="recon">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <span>现金对账</span>
+                </button>
 
                 <div class="nav-section-label" style="margin-top:12px">客户</div>
                 <button class="nav-item" data-page="customers">
@@ -1834,6 +1838,18 @@
                 </div>
 
                 <!-- ═══════════════ SETTINGS PAGE ═══════════════ -->
+                <!-- ═══ 现金对账 ═══ -->
+                <div class="page" id="page-recon">
+                    <div class="kpi-grid" id="reconKpis"></div>
+                    <div class="card">
+                        <div class="card-header"><div>
+                            <div class="card-title">按日现金对账 · 应收 vs 实收</div>
+                            <div class="card-sub">直收 = QR / 现金 / 手动转账（到账即日）· Razorpay = 网关单净额（毛额−手续费，到账有 T+1~2 滞后，按结算到账日核对）· 轴 = 下单日</div>
+                        </div></div>
+                        <div id="reconTable"></div>
+                    </div>
+                </div>
+
                 <div class="page" id="page-settings">
 
                     <div class="card collapsible" data-collapsible>
@@ -3812,6 +3828,8 @@ incredibowl.my`,
             state.promo = null;
             // WA 对话缓存也要清（共享电脑防泄漏）
             Object.assign(state_leads, { chatRows: [], grouped: {}, leads: [], statusMap: {}, loaded: false });
+            // 对账录入缓存同理
+            Object.assign(state_recon, { loaded: false, loading: false, entries: {} });
             try { localStorage.removeItem('cm_sender'); } catch {}
             await signOut(auth);
         });
@@ -4252,6 +4270,7 @@ incredibowl.my`,
             funnel:    renderFunnel,
             retention: renderRetention,
             budget:    renderBudget,
+            recon:     renderRecon,
             customers: renderCustomers,
         };
         const pageDirty = {};
@@ -8158,12 +8177,198 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   NAVIGATION
         // ═══════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
+        //   现金对账（recon）
+        // ═══════════════════════════════════════════════════════════════
+        // v1 口径（假设都摆在界面上，不藏）：
+        //   轴 = 下单日（KL）。手动单 createdAt = 配送日正午 ≈ 收款日；网页单支付
+        //   发生在下单时刻。Razorpay 网关到账有 T+1~2 滞后 → 实收按结算到账日填，
+        //   隔日差额会自然平移，连续几天累计看就闭合。
+        //   直收组  = QR / 现金 / 手动转账（含手动 fpx 直转、fpx-manual 券购）→ 应收 = 毛额
+        //   Razorpay = 有 razorpayPaymentId 的单 / 网页 fpx / card / ewallet /
+        //              网关券购（fpx、非手动 card）→ 应收 = 毛额 − 手续费（净额到账）
+        //   退款不自动抵扣（退款走的渠道系统不知道）→ 有退款的日子单独标注金额。
+        //   实收由老板按日录入，存 Firestore reconEntries（doc id = YYYY-MM-DD）。
+        const state_recon = { loaded: false, loading: false, entries: {} };
+        const RECON_DAYS = 14;
+        const RECON_TOLERANCE = 0.5;   // 差额 |x| ≤ RM0.50 视为已对平
+
+        function reconChannelOfOrder(o) {
+            const m = String(o.paymentMethod || '').toLowerCase();
+            if (o.razorpayPaymentId) return 'rzp';
+            if (!o.isManual && (m === 'fpx' || m === 'card' || m === 'ewallet' || m === 'razorpay' || m === 'curlec')) return 'rzp';
+            return 'direct';   // qr / cash / 手动转账（含手动 fpx）/ voucher 余额单
+        }
+        function reconChannelOfPurchase(p) {
+            const m = String(p.paymentMethod || '').toLowerCase();
+            if (m === 'fpx') return 'rzp';                    // webapp 券购走 Curlec 网关
+            if (m === 'card' && !p.isManual) return 'rzp';
+            return 'direct';                                  // qr / cash / fpx-manual / manual
+        }
+
+        // Map date(YYYY-MM-DD) -> { direct, rzp, refunds, n }
+        function reconExpectedByDay(fromKey, toKey) {
+            const days = new Map();
+            const bucket = (k) => {
+                let b = days.get(k);
+                if (!b) { b = { direct: 0, rzp: 0, refunds: 0, n: 0 }; days.set(k, b); }
+                return b;
+            };
+            paidOrders(state.orders).forEach(o => {
+                const d = tsToDate(o.createdAt);
+                if (!d) return;
+                const k = ymdKey(d);
+                if (k < fromKey || k > toKey) return;
+                const gross = (Number(o.total) || 0) + (Number(o.deliveryFee) || 0);
+                const b = bucket(k);
+                b.n++;
+                if (gross <= 0) return;                        // 纯券单无现金流
+                if (reconChannelOfOrder(o) === 'rzp') b.rzp += gross - paymentFeeForOrder(o);
+                else b.direct += gross;
+            });
+            (state.mealVoucherPurchases || []).filter(p => p.status === 'paid').forEach(p => {
+                const d = tsToDate(p.paidAt) || tsToDate(p.createdAt);
+                if (!d) return;
+                const k = ymdKey(d);
+                if (k < fromKey || k > toKey) return;
+                const gross = Number(p.totalAmountPaid ?? p.amountPaid) || 0;
+                if (gross <= 0) return;
+                const b = bucket(k);
+                b.n++;
+                if (reconChannelOfPurchase(p) === 'rzp') b.rzp += gross - paymentFeeForVoucherPurchase(p);
+                else b.direct += gross;
+            });
+            // 退款：按退款日标注（不知道退款走哪个渠道，不自动抵扣）
+            (state.orders || []).forEach(o => {
+                const r = Number(o.refundAmount) || 0;
+                if (r <= 0) return;
+                const d = tsToDate(o.refundedAt) || tsToDate(o.createdAt);
+                if (!d) return;
+                const k = ymdKey(d);
+                if (k < fromKey || k > toKey) return;
+                bucket(k).refunds += r;
+            });
+            return days;
+        }
+
+        async function loadReconEntries() {
+            if (state_recon.loading) return;
+            state_recon.loading = true;
+            try {
+                const snap = await getDocs(collection(db, 'reconEntries'));
+                state_recon.entries = {};
+                snap.docs.forEach(d => { state_recon.entries[d.id] = d.data(); });
+                state_recon.loaded = true;
+                renderRecon();
+            } catch (e) {
+                console.error('[recon] load failed:', e);
+                $('#reconTable').innerHTML = `<div class="empty-state" style="padding:30px"><div class="empty-state-msg">对账记录读取失败：${escapeHtml(e.message)}</div></div>`;
+            } finally {
+                state_recon.loading = false;
+            }
+        }
+
+        function renderRecon() {
+            const el = $('#reconTable');
+            if (!el) return;
+            if (!state_recon.loaded) {
+                el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">加载对账记录…</div>`;
+                loadReconEntries();
+                return;
+            }
+            const today = new Date();
+            const from = new Date(today); from.setDate(from.getDate() - (RECON_DAYS - 1));
+            const fromKey = ymdKey(from), toKey = ymdKey(today);
+            const expected = reconExpectedByDay(fromKey, toKey);
+
+            let sumDirectExp = 0, sumDirectAct = 0, sumRzpExp = 0, sumRzpAct = 0, missingDays = 0;
+            const rows = [];
+            for (let i = 0; i < RECON_DAYS; i++) {
+                const d = new Date(today); d.setDate(d.getDate() - i);
+                const k = ymdKey(d);
+                const exp = expected.get(k) || { direct: 0, rzp: 0, refunds: 0, n: 0 };
+                const ent = state_recon.entries[k] || {};
+                const dirAct = (ent.directActual == null || ent.directActual === '') ? null : Number(ent.directActual);
+                const rzpAct = (ent.rzpActual == null || ent.rzpActual === '') ? null : Number(ent.rzpActual);
+                sumDirectExp += exp.direct; sumRzpExp += exp.rzp;
+                if (dirAct != null) sumDirectAct += dirAct;
+                if (rzpAct != null) sumRzpAct += rzpAct;
+                if ((exp.direct > 0 || exp.rzp > 0) && dirAct == null && rzpAct == null && i > 0) missingDays++;
+                rows.push({ k, exp, ent, dirAct, rzpAct });
+            }
+
+            const diffCell = (exp, act) => {
+                if (act == null) return `<span style="color:var(--text-muted)">—</span>`;
+                const diff = act - exp;
+                if (Math.abs(diff) <= RECON_TOLERANCE) return `<span style="color:var(--success);font-weight:700">✓</span>`;
+                return `<span style="color:${diff < 0 ? 'var(--danger)' : 'var(--warning)'};font-weight:700">${diff > 0 ? '+' : ''}${diff.toFixed(2)}</span>`;
+            };
+
+            el.innerHTML = `
+                <div style="display:grid;grid-template-columns:76px 1fr 90px 64px 1fr 90px 64px 1fr 52px;gap:6px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border-strong);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;font-weight:600">
+                    <div>日期</div>
+                    <div class="r" style="text-align:right">直收应收</div><div>直收实收</div><div style="text-align:center">差</div>
+                    <div class="r" style="text-align:right">Rzp净应收</div><div>Rzp实收</div><div style="text-align:center">差</div>
+                    <div>备注</div><div></div>
+                </div>
+                ${rows.map(r => `
+                    <div class="recon-row" data-date="${r.k}" style="display:grid;grid-template-columns:76px 1fr 90px 64px 1fr 90px 64px 1fr 52px;gap:6px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12.5px">
+                        <div class="mono" style="font-weight:600">${r.k.slice(5)}</div>
+                        <div class="num" style="text-align:right">${r.exp.direct > 0 ? fmt.rm(r.exp.direct) : '<span style="color:var(--text-muted)">—</span>'}${r.exp.refunds > 0 ? `<div style="font-size:10px;color:var(--danger)">退款 −${r.exp.refunds.toFixed(2)}</div>` : ''}</div>
+                        <div><input type="number" step="0.01" class="recon-inp" data-f="directActual" value="${r.dirAct == null ? '' : r.dirAct}" placeholder="—" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:right;background:var(--bg)"/></div>
+                        <div style="text-align:center">${diffCell(r.exp.direct, r.dirAct)}</div>
+                        <div class="num" style="text-align:right">${r.exp.rzp > 0 ? fmt.rm(r.exp.rzp) : '<span style="color:var(--text-muted)">—</span>'}</div>
+                        <div><input type="number" step="0.01" class="recon-inp" data-f="rzpActual" value="${r.rzpAct == null ? '' : r.rzpAct}" placeholder="—" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;text-align:right;background:var(--bg)"/></div>
+                        <div style="text-align:center">${diffCell(r.exp.rzp, r.rzpAct)}</div>
+                        <div><input type="text" class="recon-inp" data-f="note" value="${escapeHtml(r.ent.note || '')}" placeholder="备注" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--bg)"/></div>
+                        <div><button type="button" class="recon-save-btn" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg-subtle);cursor:pointer;font-size:11px">存</button></div>
+                    </div>
+                `).join('')}
+                <div style="margin-top:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px;font-size:11px;color:var(--text-muted);line-height:1.7">
+                    <strong>用法</strong>：每天（或隔几天）把银行 App 的当日入账、Razorpay 结算报表的到账额填进「实收」，点「存」。
+                    差额 |≤RM0.50| 记 ✓；红色 = 实收少了要追（漏转账 / 网关没结算）；黄色 = 实收多了（可能是 Razorpay 迟到的前几日结算，累计几天看会平）。
+                    退款金额单独标注在应收下方，核对时自己心算进去。
+                </div>`;
+
+            $('#reconKpis').innerHTML = `
+                ${kpi('直收 · ' + RECON_DAYS + ' 天应收', fmt.rm(sumDirectExp), null, `已录实收 ${fmt.rm(sumDirectAct)} · 差 ${(sumDirectAct - sumDirectExp) >= 0 ? '+' : ''}${(sumDirectAct - sumDirectExp).toFixed(2)}`)}
+                ${kpi('Razorpay · ' + RECON_DAYS + ' 天净应收', fmt.rm(sumRzpExp), null, `已录实收 ${fmt.rm(sumRzpAct)} · 差 ${(sumRzpAct - sumRzpExp) >= 0 ? '+' : ''}${(sumRzpAct - sumRzpExp).toFixed(2)}`)}
+                ${kpi('未对账天数', fmt.int(missingDays), null, `有应收但两栏实收都空（不含今天）`)}
+            `;
+        }
+
+        // 对账行保存（delegated，重渲染不掉绑定）
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.recon-save-btn');
+            if (!btn) return;
+            const row = btn.closest('.recon-row');
+            if (!row) return;
+            const date = row.dataset.date;
+            const data = { updatedAt: Timestamp.now() };
+            row.querySelectorAll('.recon-inp').forEach(inp => {
+                const f = inp.dataset.f;
+                if (f === 'note') data.note = inp.value.trim();
+                else data[f] = inp.value === '' ? null : Number(inp.value);
+            });
+            btn.disabled = true; btn.textContent = '…';
+            try {
+                await setDoc(doc(db, 'reconEntries', date), data, { merge: true });
+                state_recon.entries[date] = { ...(state_recon.entries[date] || {}), ...data };
+                toast(`${date} 对账已保存`, 'success');
+                renderRecon();
+            } catch (err) {
+                toast('保存失败：' + err.message, 'error');
+                btn.disabled = false; btn.textContent = '存';
+            }
+        });
+
         const PAGE_INFO = {
             revenue:   { title: '营收',     sub: '营业收入与订单趋势' },
             cac:       { title: '获客成本', sub: '新客获取效率与营销 ROI' },
             funnel:    { title: '转化漏斗', sub: '从下单到送达 / 注册到忠诚客户' },
             retention: { title: '复购留存', sub: '客户粘性与 cohort 分析' },
             budget:    { title: '预算效率', sub: '毛利 / 净利 / 营销 / 配送 / Add-on 全方位' },
+            recon:     { title: '现金对账', sub: '按日应收 vs 实收 · 直收与 Razorpay 分开对' },
             customers: { title: '客户列表', sub: '同电话归并 · 流失警报 · 完整列表' },
             chat:      { title: '客户对话', sub: 'WhatsApp 对话历史（来自 Google Sheets）' },
             leads:     { title: '潜在客户', sub: 'WA 聊过但没下单的人 · 跟进转化用' },
