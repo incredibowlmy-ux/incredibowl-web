@@ -4222,6 +4222,22 @@ incredibowl.my`,
                 return d && d >= cutoff;
             });
         }
+        // 营收/分析类聚合的统一入口：filteredOrders 再封一个「明天 00:00」上界。
+        // 手动预订单把 createdAt 写成未来配送日正午（见 saveManualOrder 的
+        // 「Build createdAt」段），不封上界的话「近 N 天营收」会把未来单当已发生
+        // 收入 —— 2026-08-12 生产实测：近 7 天虚高 24.7%（RM 1,333.70 / 17 单），
+        // 单张 08-21 团餐 RM 636.80 提前 9 天进账，净利/ROAS/客单价全部跟着错。
+        // 订单管理列表（renderRecentOrders）故意不走这里：预订单要能看到、能改。
+        // 「未来 7 天预测」也不走这里：它按 deliveryDate 展示未来本来就是本职。
+        function revenueWindowOrders() {
+            const tomorrow = startOfDay(new Date());
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return filteredOrders().filter(o => {
+                const d = tsToDate(o.createdAt);
+                if (!d) return true;   // range='all' 时无日期订单原本就在，口径不变
+                return d < tomorrow;
+            });
+        }
         function filteredUsers() {
             if (state.range === 'all') return state.users;
             const cutoff = rangeCutoff();
@@ -4404,7 +4420,7 @@ incredibowl.my`,
         //   1. REVENUE PAGE
         // ═══════════════════════════════════════════════════════════════
         function renderRevenue() {
-            const orders = paidOrders(filteredOrders());
+            const orders = paidOrders(revenueWindowOrders());
 
             // KPI — accrual revenue (MFRS 15): 统一走 orderAccrualRevenue()（现金 +
             // 餐券摊销 + 预付加料摊销）。之前这里手写公式只加了餐券摊销，漏掉
@@ -4435,8 +4451,21 @@ incredibowl.my`,
                 ? ` · 含预付加料摊销 ${fmt.rmShort(addonAllocatedRev)}`
                 : '');
 
+            // 预订单提示：createdAt 在明天 00:00 之后的 paid 单（手动预订单），已被
+            // revenueWindowOrders() 从上面所有数字剔除，到配送日自动滚入。这里点名
+            // 数量+金额，免得钱「消失」了没人知道去哪了；逐日明细看「未来 7 天预测」卡。
+            const futureCut = startOfDay(new Date()); futureCut.setDate(futureCut.getDate() + 1);
+            const futureOrders = paidOrders(state.orders).filter(o => {
+                const d = tsToDate(o.createdAt);
+                return d && d >= futureCut;
+            });
+            const futureRev = futureOrders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
+            const futureHint = futureOrders.length > 0
+                ? ` · 另有 ${futureOrders.length} 张预订单 ${fmt.rmShort(futureRev)} 未计入（到配送日滚入）`
+                : '';
+
             $('#revenueKpis').innerHTML = `
-                ${kpi('总营收', fmt.rm(totalRev), delta(totalRev, prevRev), `${orderCount} 单 · 食物 ${fmt.rmShort(foodRev)} + 配送 ${fmt.rmShort(deliveryRev)}${voucherHint}`)}
+                ${kpi('总营收', fmt.rm(totalRev), delta(totalRev, prevRev), `${orderCount} 单 · 食物 ${fmt.rmShort(foodRev)} + 配送 ${fmt.rmShort(deliveryRev)}${voucherHint}${futureHint}`)}
                 ${kpi('订单数', fmt.int(orderCount), delta(orderCount, prevCount), `已确认 / 准备 / 送达`)}
                 ${kpi('平均客单价', fmt.rm(aov), delta(aov, prevAov), `每单平均收入`)}
                 ${kpi('活跃客户', fmt.int(activeCustomers), delta(activeCustomers, prevCust), `下过单的不重复客户`)}
@@ -5588,7 +5617,7 @@ incredibowl.my`,
             const arr = months.map(k => monthData[k]);
 
             // KPIs (over filtered range or all)
-            const fOrders = paidOrders(filteredOrders());
+            const fOrders = paidOrders(revenueWindowOrders());
             const fUsers = filteredUsers();
 
             // computeSpendInRange()：按天 pro-rata，跟预算页同一口径。之前的「整月
@@ -5780,7 +5809,7 @@ incredibowl.my`,
         function renderFunnel() {
             renderWAFunnel();
             // 1. Order status funnel
-            const orders = filteredOrders();
+            const orders = revenueWindowOrders();
             const counts = { pending: 0, confirmed: 0, preparing: 0, delivered: 0, cancelled: 0 };
             orders.forEach(o => { if (counts[o.status] != null) counts[o.status] += 1; });
 
@@ -6057,7 +6086,7 @@ incredibowl.my`,
         //   5. BUDGET EFFICIENCY PAGE
         // ═══════════════════════════════════════════════════════════════
         function renderBudget() {
-            const orders = paidOrders(filteredOrders());
+            const orders = paidOrders(revenueWindowOrders());
 
             // Marketing ROI — totalRevenue is accrual (MFRS 15): cash + voucher-allocated
             const totalSpend = computeSpendInRange();
@@ -8992,7 +9021,9 @@ incredibowl.my`,
         }
 
         function buildExportData(opts) {
-            const ordersScope = opts.range === 'current' ? filteredOrders() : state.orders;
+            // 'current' 走 revenueWindowOrders：导出给 AI 复盘的 KPI 快照与界面同口径
+            //（未来预订单不混进「已发生」营收）。'all' 保留全量含未来单。
+            const ordersScope = opts.range === 'current' ? revenueWindowOrders() : state.orders;
             const usersScope  = opts.range === 'current' ? filteredUsers()  : state.users;
 
             return {
@@ -10728,7 +10759,8 @@ incredibowl.my`,
             // paidOrders(): the breakdown TABLE this drills into sums over paid
             // orders only — the detail must use the same population or its total
             // exceeds the row it explains (pending/cancelled would leak in).
-            const orders = paidOrders(filteredOrders());
+            // revenueWindowOrders(): 与 renderBudget 同口径（未来预订单同样不进钻取）。
+            const orders = paidOrders(revenueWindowOrders());
             let title = '', subtitle = '', rows = [], totalAmount = 0;
 
             if (key === 'razorpay') {
