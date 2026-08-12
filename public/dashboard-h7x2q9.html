@@ -4406,10 +4406,14 @@ incredibowl.my`,
         function renderRevenue() {
             const orders = paidOrders(filteredOrders());
 
-            // KPI — accrual revenue (MFRS 15): cash + voucher-allocated revenue from this period's orders
+            // KPI — accrual revenue (MFRS 15): 统一走 orderAccrualRevenue()（现金 +
+            // 餐券摊销 + 预付加料摊销）。之前这里手写公式只加了餐券摊销，漏掉
+            // addonCreditsAllocatedRevenue → 跟预算页 / 渠道分布 / Top 客户（都走
+            // orderAccrualRevenue）永远对不上，全期差过 RM 732。
             const voucherAllocatedRev = orders.reduce((s, o) => s + (Number(o.mealVoucherAllocatedRevenue) || 0), 0);
-            const totalRev = orders.reduce((s, o) => s + (o.total || 0) + (o.deliveryFee || 0), 0) + voucherAllocatedRev;
-            const foodRev = orders.reduce((s, o) => s + (o.total || 0), 0) + voucherAllocatedRev;
+            const addonAllocatedRev = orders.reduce((s, o) => s + (Number(o.addonCreditsAllocatedRevenue) || 0), 0);
+            const totalRev = orders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
+            const foodRev = orders.reduce((s, o) => s + orderAccrualRevenue(o), 0);
             const deliveryRev = orders.reduce((s, o) => s + (o.deliveryFee || 0), 0);
             const orderCount = orders.length;
             const aov = orderCount ? totalRev / orderCount : 0;
@@ -4417,8 +4421,7 @@ incredibowl.my`,
 
             // Compare with previous period
             const prevOrders = previousPeriodPaidOrders();
-            const prevVoucherAlloc = prevOrders.reduce((s, o) => s + (Number(o.mealVoucherAllocatedRevenue) || 0), 0);
-            const prevRev = prevOrders.reduce((s, o) => s + (o.total || 0) + (o.deliveryFee || 0), 0) + prevVoucherAlloc;
+            const prevRev = prevOrders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
             const prevCount = prevOrders.length;
             const prevAov = prevCount ? prevRev / prevCount : 0;
             const prevCust = new Set(prevOrders.map(customerKey)).size;
@@ -4426,9 +4429,11 @@ incredibowl.my`,
             const delta = (curr, prev) => prev === 0 ? null : (curr - prev) / prev;
 
             // Subtle voucher-revenue hint in KPI footer if any allocated revenue this period
-            const voucherHint = voucherAllocatedRev > 0
+            const voucherHint = (voucherAllocatedRev > 0
                 ? ` · 含餐券摊销 ${fmt.rmShort(voucherAllocatedRev)}`
-                : '';
+                : '') + (addonAllocatedRev > 0
+                ? ` · 含预付加料摊销 ${fmt.rmShort(addonAllocatedRev)}`
+                : '');
 
             $('#revenueKpis').innerHTML = `
                 ${kpi('总营收', fmt.rm(totalRev), delta(totalRev, prevRev), `${orderCount} 单 · 食物 ${fmt.rmShort(foodRev)} + 配送 ${fmt.rmShort(deliveryRev)}${voucherHint}`)}
@@ -4456,7 +4461,8 @@ incredibowl.my`,
             const totals = { lunch: { rev: 0, count: 0 }, dinner: { rev: 0, count: 0 }, unknown: { rev: 0, count: 0 } };
             orders.forEach(o => {
                 const m = mealType(o);
-                const amt = (o.total || 0) + (o.deliveryFee || 0) + (Number(o.mealVoucherAllocatedRevenue) || 0);
+                // 跟总营收 KPI 同口径：orderAccrualRevenue = 现金 + 餐券摊销 + 预付加料摊销
+                const amt = orderAccrualRevenue(o) + (o.deliveryFee || 0);
                 totals[m].rev += amt;
                 totals[m].count += 1;
             });
@@ -4781,12 +4787,14 @@ incredibowl.my`,
             return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
+        // 对比期 = 紧贴本期窗口之前的 N 个日历天：[rangeCutoff − N 天, rangeCutoff)。
+        // 之前用「now − 2N×24h ~ now − N×24h」滚动钟点窗，而本期（rangeCutoff）早已
+        // 改成日历天 —— 两窗边界/长度不齐，KPI 的 ▲▼% 带半天级漂移。统一日历天。
         function previousPeriodPaidOrders() {
             if (state.range === 'all') return [];
             const days = Number(state.range);
-            const now = new Date();
-            const start = new Date(now); start.setDate(start.getDate() - days * 2);
-            const end = new Date(now); end.setDate(end.getDate() - days);
+            const end = rangeCutoff();                              // 本期起点（含）= 对比期终点（不含）
+            const start = new Date(end); start.setDate(start.getDate() - days);
             return paidOrders(state.orders.filter(o => {
                 const d = tsToDate(o.createdAt);
                 return d && d >= start && d < end;
@@ -6449,23 +6457,19 @@ incredibowl.my`,
             `;
 
             // ─── Add-on Attach Rate ───
-            // Detect add-ons: items with names not in main menu (assume add-ons),
-            // OR items with low price (< 6 RM is typical for add-ons)
-            const menuNames = new Set(state.menu.map(m => canonicalDishName(m.name)));
+            // 用 normalizeOrderItems() 统一两种落库形态（网站单 = ↳ 顶层行、手动单 =
+            // 嵌套 it.addOns），跟「畅销加点」同口径。之前只扫顶层 items 靠「不在主菜
+            // 名单」猜 → 手动单加料（60% 的单）一份都数不到，加菜率/加菜营收低报一半+
+            //（2026-08-12 生产实测：近 30 天 29.1%/RM971 vs 真实 64.2%/RM2103）。
             let ordersWithAddOn = 0;
             let totalAddOnRevenue = 0;
-            let totalAddOnCount = 0;
             orders.forEach(o => {
                 let hasAddOn = false;
-                (o.items || []).forEach(it => {
-                    const isMain = menuNames.has(canonicalDishName(it.name));
-                    const itPrice = effectiveItemPrice(it);
-                    // Heuristic: not in main menu OR price < 6 → likely add-on
-                    if (!isMain || itPrice < 6) {
+                normalizeOrderItems(o).forEach(it => {
+                    (it.addOns || []).forEach(a => {
                         hasAddOn = true;
-                        totalAddOnRevenue += itPrice * (it.quantity || 0);
-                        totalAddOnCount += 1;
-                    }
+                        totalAddOnRevenue += (Number(a.price) || 0) * (Number(a.quantity) || 1);
+                    });
                 });
                 if (hasAddOn) ordersWithAddOn++;
             });
