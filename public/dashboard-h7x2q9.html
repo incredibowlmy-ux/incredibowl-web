@@ -1331,6 +1331,9 @@
 
                 <!-- ═══════════════ REVENUE PAGE ═══════════════ -->
                 <div class="page active" id="page-revenue">
+                    <!-- 运营异常汇总：卡状态单（全量扫）+ 配送成本成色 + Grab 缺收据。
+                         全绿时整块收成一行，不占视线；有异常时置顶显眼。 -->
+                    <div id="opsAlerts" style="margin-bottom:14px"></div>
                     <div class="kpi-grid" id="revenueKpis"></div>
 
                     <div class="card" id="forecastCard">
@@ -3671,23 +3674,28 @@ incredibowl.my`,
          * 审计查出近 4 周 43% 的单走 est 档、占成本金额 55%，而界面上一点征兆都没有
          * （--rest-self 连着 3 周没跑，成本卡照样显示得像真的一样）。
          */
-        function deliveryCostQuality(orders) {
-            const q = { total: 0, exact: 0, model: 0, est: 0, noMethod: 0, selfNoKm: 0, grabNoReceipt: 0 };
+        // 可选第二参 costMap（deliveryCostMap()）：传入时额外按档累计金额
+        // （exactRM/modelRM/estRM），运营异常面板用「est 占成本金额比」说话 ——
+        // 8-07 审计的核心发现是 43% 的单占成本 55%，按单数看会低估问题。
+        function deliveryCostQuality(orders, costMap) {
+            const q = { total: 0, exact: 0, model: 0, est: 0, noMethod: 0, selfNoKm: 0, grabNoReceipt: 0,
+                        exactRM: 0, modelRM: 0, estRM: 0 };
+            const rm = costMap ? (o => costMap.get(o.id) || 0) : (() => 0);
             for (const o of orders) {
                 q.total++;
                 const m = methodOf(o);
                 if (m === 'pickup') { q.exact++; continue; }
                 if (m === 'grab' || m === 'driver') {
-                    if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) q.exact++;
-                    else { q.est++; q.grabNoReceipt++; }
+                    if (typeof o.deliveryCostActual === 'number' && o.deliveryCostActual >= 0) { q.exact++; q.exactRM += rm(o); }
+                    else { q.est++; q.grabNoReceipt++; q.estRM += rm(o); }
                     continue;
                 }
                 if (m === 'self') {
-                    if (Number(o.deliveryDistanceKm) > 0) q.model++;
-                    else { q.est++; q.selfNoKm++; }
+                    if (Number(o.deliveryDistanceKm) > 0) { q.model++; q.modelRM += rm(o); }
+                    else { q.est++; q.selfNoKm++; q.estRM += rm(o); }
                     continue;
                 }
-                q.est++; q.noMethod++;
+                q.est++; q.noMethod++; q.estRM += rm(o);
             }
             return q;
         }
@@ -4447,9 +4455,60 @@ incredibowl.my`,
         //   未节流监听，拖窗口时 13 张图每帧双倍重绘，已删。）
 
         // ═══════════════════════════════════════════════════════════════
+        //   0. 运营异常汇总（营收页置顶）
+        // ═══════════════════════════════════════════════════════════════
+        // 把散落各处、平时看不见的「账实漂移信号」收拢到首屏一块卡：
+        //   1. 卡状态订单（findStaleOrders 全量扫描，两类分列）
+        //   2. 配送成本成色（近 28 天按送达日，独立于 state.range —— 告警不该被
+        //      时间窗切走）：est 占位值单数 + 占成本金额比 + 三个缺因明细
+        // 全绿 → 收成一行绿字不占视线；有异常 → 黄卡逐项列出 + 该做什么。
+        const OPS_EST_WARN_PCT = 0.15;   // est 单数占比超过 15% 才亮黄
+        function renderOpsAlerts() {
+            const el = $('#opsAlerts');
+            if (!el) return;
+            const stale = findStaleOrders();
+
+            const today = ymdKey(new Date());
+            const cut = new Date(); cut.setHours(0, 0, 0, 0); cut.setDate(cut.getDate() - 27);
+            const cutKey = ymdKey(cut);
+            const recent = paidOrders(state.orders).filter(o =>
+                o.deliveryDate && o.deliveryDate >= cutKey && o.deliveryDate <= today
+                && methodOf(o) !== 'pickup');
+            const q = deliveryCostQuality(recent, deliveryCostMap());
+            const estPct = q.total ? q.est / q.total : 0;
+            const totalRM = q.exactRM + q.modelRM + q.estRM;
+            const estRMPct = totalRM > 0 ? q.estRM / totalRM : 0;
+
+            const rows = [];
+            if (stale.notCounted.length > 0) rows.push(
+                `⚠️ <strong>${stale.notCounted.length} 单送达日已过还卡 pending/preparing</strong>（不计营收）— 明细见下方「最近订单」黄条`);
+            if (stale.notClosed.length > 0) rows.push(
+                `⏰ <strong>${stale.notClosed.length} 单送达日已过还停 confirmed/delivering</strong>（已计营收但状态不实，最早 ${escapeHtml(stale.notClosed[0].deliveryDate)}）— 送完点 delivered，没送成则取消`);
+            if (q.total > 0 && estPct > OPS_EST_WARN_PCT) {
+                const reasons = [];
+                if (q.grabNoReceipt) reasons.push(`Grab/司机未挂收据 ${q.grabNoReceipt} 单（跑 sync-grab-receipts）`);
+                if (q.selfNoKm) reasons.push(`自送缺距离 ${q.selfNoKm} 单`);
+                if (q.noMethod) reasons.push(`缺配送方式 ${q.noMethod} 单`);
+                rows.push(
+                    `📦 <strong>配送成本 ${(estPct * 100).toFixed(0)}% 的单在用占位估算</strong>（近 28 天 ${q.est}/${q.total} 单 · 占成本金额 ${(estRMPct * 100).toFixed(0)}%）— ${reasons.join(' · ')}`);
+            }
+
+            if (rows.length === 0) {
+                el.innerHTML = `<div style="padding:8px 14px;border-radius:10px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);font-size:12px;color:#047857">✓ 运营信号正常 — 无卡状态订单 · 近 28 天配送成本 ${q.total ? (100 - estPct * 100).toFixed(0) : '—'}% 有凭证/实距</div>`;
+                return;
+            }
+            el.innerHTML = `
+                <div style="padding:12px 14px;border-radius:12px;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.4)">
+                    <div style="font-size:12px;font-weight:700;color:#92400E;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">运营异常 · ${rows.length} 项</div>
+                    <div style="font-size:12.5px;color:#78350F;line-height:1.9">${rows.map(r => `<div>${r}</div>`).join('')}</div>
+                </div>`;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //   1. REVENUE PAGE
         // ═══════════════════════════════════════════════════════════════
         function renderRevenue() {
+            renderOpsAlerts();
             const orders = paidOrders(revenueWindowOrders());
 
             // KPI — accrual revenue (MFRS 15): 统一走 orderAccrualRevenue()（现金 +
