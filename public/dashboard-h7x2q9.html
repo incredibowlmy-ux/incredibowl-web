@@ -4194,14 +4194,34 @@ incredibowl.my`,
         }
 
         let settingsRendered = false;
+        // ─── 按页懒渲染 ───
+        // 之前 renderAll 一口气渲染 6 个页面 + 13 张 ECharts，而可见的只有当前页
+        // —— 登录 / 切时间窗 / 每次存单后的重渲染都在为看不见的页面买单。
+        // 现改脏标记：数据变了只标脏 + 渲染当前页；其余页面切过去时才补渲染。
+        // 副作用修复：ECharts 在 hidden 容器上 init 尺寸为 0，之前靠 switchPage
+        // 的延迟 resize 兜底；懒渲染后图表总是在可见容器上初始化，天然正确。
+        const PAGE_RENDERERS = {
+            revenue:   renderRevenue,
+            cac:       renderCAC,
+            funnel:    renderFunnel,
+            retention: renderRetention,
+            budget:    renderBudget,
+            customers: renderCustomers,
+        };
+        const pageDirty = {};
+        function renderPage(page) {
+            const fn = PAGE_RENDERERS[page];
+            if (!fn) return;                       // chat/leads 等自管页不走这里
+            if (pageDirty[page] === false) return; // 数据没变，切回来不用重画
+            fn();
+            pageDirty[page] = false;
+        }
         function renderAll() {
             invalidateDeliveryCostCache();   // orders / cfg 可能已变，成本图重建
-            renderRevenue();
-            renderCAC();
-            renderFunnel();
-            renderRetention();
-            renderBudget();
-            renderCustomers();
+            Object.keys(PAGE_RENDERERS).forEach(k => { pageDirty[k] = true; });
+            // 当前页是分析页 → 立刻重渲染；在装碗/库存等自管页 → 只标脏，
+            // 等切回分析页时再画（别在 hidden 容器上 init ECharts）。
+            if (PAGE_RENDERERS[state.currentPage]) renderPage(state.currentPage);
             // Settings forms only render once on initial load and after explicit saves —
             // re-rendering on every date-range change would erase user's typed-but-unsaved values.
             if (!settingsRendered) {
@@ -8114,6 +8134,10 @@ incredibowl.my`,
             const info = PAGE_INFO[page];
             $('#pageTitle').textContent = info.title;
             $('#pageSub').textContent = info.sub;
+
+            // 懒渲染：脏页切过来时才补渲染（active class 已切好 → 容器可见，
+            // ECharts init 拿到真实尺寸）。干净页跳过，切页零开销。
+            renderPage(page);
 
             // Lazy-load leads data on first navigation
             if (page === 'leads' && !state_leads.loaded) {
