@@ -112,36 +112,35 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-08-10（Mon 10 Aug）。老板 08-06 定的菜单，整周重排：
-//     · 新菜「家乡白萝卜焖花肉」首发，一菜两天（周一 + 周四）。
-//     · 周二只排一道（豆酱焖花肉）—— 老板当天有事，主动压量，不是漏排。
-//     · 鳗鱼从「周一/四」收成周三一天；三文鱼从「周二/五」收成周五一天
-//       （单日供应不需要 DAILY_DISHES 机制，直接回 WEEKLY_SCHEDULE 当特餐）。
-//     · 回归：绍兴酒蒸花肉(周三)、柠檬蜜糖煎鸡扒(周四)。
-//     · 转暂别：金黄鸡扒、当归蒸鸡全腿、希腊柠香烤鸡胸。
-//   ⚠️ 必须等 08-07 06:00 截单后才推 —— 提前推会让周五 08-07 的客人看到下周
-//   菜单，即 07-24 提前上线事故的同一个坑。
-//   ⚠️ 新菜 30 的主图 /daikon_pork_belly.webp 尚未到位，图没放进 public/ 之前
-//   绝不能推（菜单卡片会 404）。
+//   生效周：2026-08-17（Mon 17 Aug）。老板 08-13 定的菜单（08-14 改周五三文鱼
+//   → 鳗鱼），整周重排：
+//     · 新菜「古早味卤三层肉豆腐蛋」周一首发主打（无实拍图，emoji 占位）。
+//     · 鳗鱼改「周二 + 周五」两天（走常驻 + availableWeekdays + featured 机制）；
+//       三文鱼收成周三单日特餐。
+//     · 回归：甜酸洋葱猪扒(周一)、金黄鸡扒(周二)、姜葱鱼片(周四)、
+//       当归蒸鸡全腿(周五)。
+//     · 转暂别：山药云耳、柠檬蜜糖煎鸡扒、白萝卜焖花肉。
+//   ⚠️ 老板指示 08-14（周五）06:01 截单后 push —— 提前推会让周五的客人看到
+//   下周菜单（07-24 事故同款坑）。
 //
-//   本周「一菜两天」只剩白萝卜焖花肉 (周一/四)：同一道菜不能在 WEEKLY_SCHEDULE
+//   本周「一菜两天」只剩照烧鳗鱼 (周二/五)：同一道菜不能在 WEEKLY_SCHEDULE
 //   出现两次，故走 DAILY_DISHES + availableWeekdays + featureOnAvailableDays
-//   （绍兴/猪扒/鳗鱼同款机制），显示在各供应日的每日精选列里，不占常驻区。
-//   ⚠️ 代价：featured 菜拿不到 isPrimary，故 Hero「明日主打」周一显示的是当天
-//   另一道特餐（山药云耳）；周四主打则是柠檬蜜糖煎鸡扒。
+//   （绍兴/猪扒/白萝卜同款机制），显示在各供应日的每日精选列里，不占常驻区。
+//   ⚠️ 代价：featured 菜拿不到 isPrimary，故 Hero「明日主打」周二显示的是
+//   金黄鸡扒；周五主打则是当归蒸鸡全腿。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
-    1: [12],     // 周一：山药云耳(主打)；白萝卜焖花肉在常驻(限周一/四·featured·新菜)
-    2: [23],     // 周二：家乡豆酱焖花肉(主打·单菜日，老板有事主动压量)
-    3: [29, 4],  // 周三：照烧鳗鱼饭(主打·从周一/四收成周三)、绍兴酒蒸花肉(回归)
-    4: [26],     // 周四：柠檬蜜糖煎鸡扒(主打·回归)；白萝卜焖花肉 featured 也在列
-    5: [27, 21], // 周五：甜酸洋葱猪扒(主打)、柠香三文鱼(从常驻收回特餐·限周五)
+    1: [31, 27], // 周一：新菜卤三层肉豆腐蛋(主打·首发)、甜酸洋葱猪扒(回归)
+    2: [14],     // 周二：金黄鸡扒(回归·主打)；照烧鳗鱼在常驻(限周二/五·featured)
+    3: [21, 23], // 周三：柠香三文鱼(主打·从周五收成周三)、家乡豆酱焖花肉
+    4: [20, 4],  // 周四：姜葱鱼片(回归·主打)、绍兴酒蒸花肉
+    5: [2],      // 周五：当归蒸鸡全腿(回归·主打)；照烧鳗鱼 featured 也在列
 };
 
-// 纳豆月见(全周)、马铃薯炖花肉片(全周)、家乡白萝卜焖花肉(限周一/四·featured·新菜)
-// —— 白萝卜焖花肉的供应日由 availableWeekdays 限定（菜单灰显 + 服务端拒收），
+// 纳豆月见(全周)、马铃薯炖花肉片(全周)、古早味照烧鳗鱼饭(限周二/五·featured)
+// —— 鳗鱼的供应日由 availableWeekdays 限定（菜单灰显 + 服务端拒收），
 // 并在各供应日的每日精选列里展示。
-const DAILY_DISHES: number[] = [11, 13, 30];
+const DAILY_DISHES: number[] = [11, 13, 29];
 
 const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
@@ -150,10 +149,10 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 1, day: 'Mon / 周一' },     // 酱油鸡全腿 暂别 2026-07-27
     { id: 25, day: 'Tue / 周二' },    // 家常日式咖喱饭 暂别 2026-08-03
     { id: 28, day: 'Fri / 周五' },    // 豆酱焖排骨 暂别 2026-07-31（周五让位鳗鱼首发；已售 8 单照常出餐）
-    { id: 20, day: 'Fri / 周五' },    // 古早味姜葱鱼片饭 暂别 2026-08-03
-    { id: 14, day: 'Mon / 周一' },    // 香煎金黄鸡扒饭 暂别 2026-08-10
-    { id: 2, day: 'Wed / 周三' },     // 招牌原盅当归蒸鸡全腿 暂别 2026-08-10
     { id: 3, day: 'Fri / 周五' },     // 希腊柠香烤鸡胸 暂别 2026-08-10
+    { id: 12, day: 'Mon / 周一' },    // 山药云耳海陆双鲜炒 暂别 2026-08-17
+    { id: 26, day: 'Thu / 周四' },    // 柠檬蜜糖煎鸡扒 暂别 2026-08-17
+    { id: 30, day: 'Mon / 周一' },    // 家乡白萝卜焖花肉 暂别 2026-08-17（首发周热卖 35 份，歇一周再回）
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -373,8 +372,12 @@ const DISH_CATALOG: DishData[] = [
         name: "古早味照烧鳗鱼饭",
         nameEn: "Hometown Glazed Unagi Rice",
         price: 24.90,
-        // 2026-08-10 起收成周三单日特餐（原周一/四），故去掉 availableWeekdays
-        // + featureOnAvailableDays —— 单日供应由 WEEKLY_SCHEDULE 直接管。
+        // 2026-08-10 周收成周三单日；2026-08-17 起改「周二+周五」两天供应 →
+        // 常驻 + availableWeekdays + featureOnAvailableDays（白萝卜同款机制）。
+        availableWeekdays: [2, 5],
+        featureOnAvailableDays: true,
+        unavailableNote: "仅周二、周五供应",
+        unavailableNoteEn: "Tue & Fri only",
         voucherTopUp: 5,
         topUpAddonId: "unagi-upgrade",
         image: "/unagi_rice.webp",
@@ -397,25 +400,39 @@ const DISH_CATALOG: DishData[] = [
         descEn: "Pork belly slow-braised in hometown fermented soybean paste (taucu) — savoury, tender and deeply infused, made for rice."
     },
     {
-        // 全新菜 2026-08-10 首发（老板 08-06 定）。一菜两天：周一 + 周四，走
-        // DAILY_DISHES + availableWeekdays + featureOnAvailableDays（鳗鱼同款机制）。
-        // nameEn 由老板 08-06 定稿。
-        // ⚠️ 主图未到位：/daikon_pork_belly.webp 还没放进 public/，图到之前不能推上线。
+        // 全新菜 2026-08-10 首发（老板 08-06 定），首周热卖 35 份全周销冠。
+        // 2026-08-17 转暂别歇一周（见 PAUSED_DISHES），随之移除
+        // availableWeekdays / featureOnAvailableDays（暂别期残留「仅周一、周四
+        // 供应」会误导顾客，猪扒 08-03 同款处理）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿，待老板审定。
         id: 30,
         name: "家乡白萝卜焖花肉",
         nameEn: "Hometown Stewed Pork Belly with Daikon",
         price: 19.90,
-        availableWeekdays: [1, 4],
-        featureOnAvailableDays: true,
-        unavailableNote: "仅周一、周四供应",
-        unavailableNoteEn: "Mon & Thu only",
+        unavailableNote: "白萝卜焖花肉暂别，敬请期待回归",
+        unavailableNoteEn: "Daikon pork belly paused — back soon",
         image: "/daikon_pork_belly.webp",
         tags: ["白萝卜清甜", "慢火焖到软烂", "汤汁下饭", "家常暖胃"],
         tagsEn: ["Sweet daikon", "Stewed till tender", "Rich gravy", "Homely comfort"],
         desc: "花肉配白萝卜慢火焖到软烂，萝卜吸饱了肉汁，清甜解腻——一口就是家里的味道。",
         descEn: "Pork belly and daikon stewed low and slow until meltingly tender — the radish drinks up every drop of the gravy, sweet and never heavy."
+    },
+    {
+        // 全新菜 2026-08-14 入系统，2026-08-17（周一）首发主打（老板 08-13 定，
+        // 广播已按此发出）。无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，
+        // 并提醒老板在 Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
+        // 简介为初稿（与 broadcast 文案同源），待老板审定。
+        id: 31,
+        name: "古早味卤三层肉豆腐蛋",
+        nameEn: "Hometown Braised Pork Belly with Tofu & Egg",
+        price: 19.90,
+        image: "🍖",
+        tags: ["古早味卤香", "三层肉软糯", "豆腐吸满卤汁", "下饭神器"],
+        tagsEn: ["Old-school braise", "Melt-in-your-mouth belly", "Tofu soaked in gravy", "Made for rice"],
+        desc: "三层肉慢火卤到软糯入味，豆腐和蛋吸饱卤汁——一口就是阿嫲家的味道。",
+        descEn: "Pork belly slow-braised in old-school soy gravy until meltingly tender, with tofu and egg soaking up every drop."
     },
     {
         // 暂别中（见 PAUSED_DISHES）。unavailableNote 是菜的暂别文案，跟菜走。
