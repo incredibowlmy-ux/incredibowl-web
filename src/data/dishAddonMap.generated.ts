@@ -464,6 +464,31 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "古早味卤三层肉豆腐蛋": [
     {
+      "id": "braised-rice-king-combo",
+      "label": "卤味下饭王套",
+      "price": 12.9
+    },
+    {
+      "id": "braised-rice-combo",
+      "label": "卤汁干饭套",
+      "price": 5.9
+    },
+    {
+      "id": "extra-braised-pork-50g",
+      "label": "【浅尝卤味】加卤三层肉 (50g)",
+      "price": 7.9
+    },
+    {
+      "id": "extra-braised-pork-100g",
+      "label": "【古早卤香】加卤三层肉 (100g)",
+      "price": 15.5
+    },
+    {
+      "id": "braised-egg",
+      "label": "卤蛋",
+      "price": 3
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0

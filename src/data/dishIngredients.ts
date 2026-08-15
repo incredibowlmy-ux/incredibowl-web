@@ -458,6 +458,18 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
   '【小酌怡情】加绍兴花肉 (50g)': [{ name: '顶级无皮五花肉', qty: 80, unit: 'g' }],
   '【小碗解馋】加豆酱花肉 (50g)': [{ name: '顶级无皮五花肉', qty: 80, unit: 'g' }],
 
+  // ─── Braised pork belly (id:31) add-ons ────────────────────
+  // 同样是「标签克数=熟重、配方存生重」。老板 2026-08-16 拍板：有皮五花的缩水率
+  // 沿用上面无皮那两道的实测比例（碗妈口径 140生→90熟 ≈ 0.64），不用 Ingredient
+  // Costing 里那个 yield 0.7 —— 所以换算与绍兴/豆酱**逐字相同**：
+  //   100g 熟 ≈ 156g 生 → 取 160g；50g 熟 ≈ 78g 生 → 取 80g（宁多勿少惯例）。
+  // 同一口径也用在主菜身上：主菜 156g 生重 = 100g 熟重（成本表 D15 填的就是 100g）。
+  // TODO_CONFIRM: 碗妈实测有皮五花的焖后缩水率后，这两行与成本表 D15 要一起校准。
+  '【古早卤香】加卤三层肉 (100g)': [{ name: '顶级有皮五花肉', qty: 160, unit: 'g' }],
+  '【浅尝卤味】加卤三层肉 (50g)': [{ name: '顶级有皮五花肉', qty: 80, unit: 'g' }],
+  // 卤蛋：与荷包蛋同样是 1 颗生蛋，卤汁按 pantry staples 惯例不计入采购汇总。
+  '古早味卤蛋': [{ name: '鸡蛋(生)', qty: 1, unit: '颗' }],
+
   // ─── Japanese Curry Rice add-on ────────────────────────────
   // 沿用「嫩炒鸡丁 (50g) = 65g 鸡胸肉生重」同款换算。
   // TODO_CONFIRM: 碗妈确认后更新。
@@ -597,6 +609,22 @@ export const addOnRecipes: Record<string, IngredientLine[]> = {
     { name: '西兰花', qty: 200, unit: 'g' },
     { name: '鸡蛋(生)', qty: 4, unit: '颗' }, // 炒蛋 3 颗 + 荷包蛋 1 颗
     { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // braised-rice-king-combo: 蒜蓉西兰花炒蛋 + 卤蛋 + 加饭
+  // 结构同甜酸下饭套/家乡下饭王套，只是那颗蛋从荷包蛋换成卤蛋（同一锅卤汁出货）——
+  // 生鲜用量完全一致，所以食材行照抄。
+  '卤味下饭王套 (原价 RM 15.90)': [
+    { name: '西兰花', qty: 200, unit: 'g' },
+    { name: '鸡蛋(生)', qty: 4, unit: '颗' }, // 炒蛋 3 颗 + 卤蛋 1 颗
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+  ],
+
+  // braised-rice-combo: 卤蛋 + 加饭 + 毛豆 25g（结构同照烧干饭套，蛋型不同）
+  '卤汁干饭套 (原价 RM 7.50)': [
+    { name: '鸡蛋(生)', qty: 1, unit: '颗' },
+    { name: '白饭', qty: 70, unit: 'g' }, // 加饭生重 70g（150g 熟重的生米量）
+    { name: '毛豆', qty: 25, unit: 'g' },
   ],
 
   // sweetsour-rice-combo: 荷包蛋 + 加饭 + 毛豆 25g
@@ -788,6 +816,13 @@ export const addOnShortNames: Record<string, string> = {
   '加甜酸猪扒 (1块)': '加猪扒',
   '甜酸下饭套 (原价 RM 15.40)': '甜酸套',
   '猪扒干饭套 (原价 RM 7.00)': '猪扒套',
+  // 2026-08-16 新增（卤三层肉豆腐蛋）—— 主菜 shortName 已占用「卤肉」，
+  // 加料用「加卤肉」区分，否则备餐矩阵会出现两列同名分不清（同白萝卜那次的坑）。
+  '【古早卤香】加卤三层肉 (100g)': '加卤肉',
+  '【浅尝卤味】加卤三层肉 (50g)': '加卤肉',
+  '古早味卤蛋': '卤蛋',
+  '卤味下饭王套 (原价 RM 15.90)': '卤味套',
+  '卤汁干饭套 (原价 RM 7.50)': '卤饭套',
 };
 
 export function getAddOnShortName(label: string): string {
@@ -850,6 +885,10 @@ const MANUAL_LABEL_ALIASES: Record<string, string> = {
   '照烧干饭套': '照烧干饭套 (原价 RM 7.50)',
   '甜酸下饭套': '甜酸下饭套 (原价 RM 15.40)',
   '猪扒干饭套': '猪扒干饭套 (原价 RM 7.00)',
+  '卤味下饭王套': '卤味下饭王套 (原价 RM 15.90)',
+  '卤汁干饭套': '卤汁干饭套 (原价 RM 7.50)',
+  // dashboard 的卤蛋 pill 用短名「卤蛋」，网页购物车存「古早味卤蛋」
+  '卤蛋': '古早味卤蛋',
   // Unagi half-fillet (drop 【…】 prefix)
   '加照烧鳗鱼 (0.5片)': '【照烧加倍】加照烧鳗鱼 (0.5片)',
   // Rice swap — manual short label has its OWN recipe entry above (loop skips

@@ -666,6 +666,57 @@ export default function AddOnModal({
             return [taucuCombo, ...customSections];
         }
 
+        // If it's Hometown Braised Pork Belly with Tofu & Egg (id: 31), prepend two combos
+        // + dual-tier pork add-ons. 选品依据 analytics/weekly 三周：花肉家族里带
+        // 「专属套餐 + 双档加肉」的（豆酱 3.48、绍兴 4.36 RM/份）加料客单是只有单个
+        // 专属加料的（白萝卜焖花肉 1.28，当周销量第一）的 2.7 倍 —— 新菜首发就补齐，
+        // 不重蹈白萝卜那道「卖最多收最少」的覆辙。
+        // 两套都用卤蛋不用荷包蛋：菜里自带卤蛋，同一锅卤汁出货不额外开工，比荷包蛋贴题。
+        if (dish.id === 31) {
+            const braisedKingWorth = comboWorth('braised-rice-king-combo', 12.90, [['broccoli-egg', 10.9], ['braised-egg', 3], ['extra-rice', 2]]);
+            const braisedKingCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'braised-rice-king-combo-section',
+                title: '✨ 卤味下饭王套',
+                titleEn: 'Braised Rice King Set (+ RM 12.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味卤蛋 (${rm('braised-egg', 3)}) + 加饭 150g (${rm('extra-rice', 2)})${braisedKingWorth.zh}\n"卤汁那么香，最缺一口青——蒜蓉西兰花炒蛋补上，再添一颗吸饱卤汁的卤蛋捞饭，这碗才够本。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + braised soy egg (${rm('braised-egg', 3)}) + extra rice 150g (${rm('extra-rice', 2)})${braisedKingWorth.en}\n"That braising liquid deserves greens — garlicky broccoli-egg, one more soy-soaked egg, and rice to soak it all up."`,
+                items: [
+                    { id: 'braised-rice-king-combo', name: '卤味下饭王套 (原价 RM 15.90)', nameEn: 'Braised Rice King Set', price: p('braised-rice-king-combo', 12.90), category: 'combo' }
+                ]
+            };
+            const braisedRiceWorth = comboWorth('braised-rice-combo', 5.90, [['braised-egg', 3], ['extra-rice', 2], ['extra-edamame', 2.5]]);
+            const braisedRiceCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'braised-rice-combo-section',
+                title: '✨ 卤汁干饭套',
+                titleEn: 'Braised Gravy Rice Set (+ RM 5.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: `包含：古早味卤蛋 (${rm('braised-egg', 3)}) + 加饭 150g (${rm('extra-rice', 2)}) + 清甜毛豆 25g (${rm('extra-edamame', 2.5)})${braisedRiceWorth.zh}\n"碗底那勺卤汁最金贵——多一碗饭、多一颗卤蛋，配把脆毛豆，一滴都不剩。"`,
+                extraDescEn: `Includes: braised soy egg (${rm('braised-egg', 3)}) + extra rice 150g (${rm('extra-rice', 2)}) + 25g edamame (${rm('extra-edamame', 2.5)})${braisedRiceWorth.en}\n"The gravy at the bottom is the best part — extra rice, another soy egg and crisp edamame finish every drop."`,
+                items: [
+                    { id: 'braised-rice-combo', name: '卤汁干饭套 (原价 RM 7.50)', nameEn: 'Braised Gravy Rice Set', price: p('braised-rice-combo', 5.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
+                if (section.id === 'sides') {
+                    return {
+                        ...section,
+                        items: [
+                            ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
+                            { id: 'braised-egg', name: '古早味卤蛋', nameEn: 'Braised Soy Egg', price: p('braised-egg', 3), category: 'sides', maxQty: 3 },
+                            { id: 'extra-braised-pork-50g', name: '【浅尝卤味】加卤三层肉 (50g)', nameEn: 'Extra Braised Pork Belly (50g)', price: p('extra-braised-pork-50g', 7.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-braised-pork-100g', name: '【古早卤香】加卤三层肉 (100g)', nameEn: 'Extra Braised Pork Belly (100g)', price: p('extra-braised-pork-100g', 15.50), category: 'sides', maxQty: 3 },
+                            ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
+                        ]
+                    };
+                }
+                return section;
+            });
+            return [braisedKingCombo, braisedRiceCombo, ...customSections];
+        }
+
         // If it's Hometown Stewed Pork Belly with Daikon (id: 30), add an extra-daikon upsell to sides
         // 2026-08-09 老板拍板：新菜首发自带一个专属加料（+90g 白萝卜 RM3）。
         // 2026-08-12 老板改：份量 90g→100g 熟（生重 200g），价 RM3→RM3.50。

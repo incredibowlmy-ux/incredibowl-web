@@ -2968,6 +2968,8 @@
             { id: 'unagi-rice-combo',            name: '照烧干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-07-31（照烧鳗鱼饭）温泉蛋+加饭+毛豆25g，原价 7.50
             { id: 'sweetsour-chop-combo',        name: '甜酸下饭套',           price: 12.90, category: '套餐组合' },  // 新 2026-08-01（甜酸洋葱猪扒）西兰花炒蛋+荷包蛋+加饭，原价 15.40
             { id: 'sweetsour-rice-combo',        name: '猪扒干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-08-01（甜酸洋葱猪扒）荷包蛋+加饭+毛豆25g，原价 7.00
+            { id: 'braised-rice-king-combo',     name: '卤味下饭王套',         price: 12.90, category: '套餐组合' },  // 新 2026-08-16（卤三层肉豆腐蛋 id31 首发）西兰花炒蛋+卤蛋+加饭，原价 15.90
+            { id: 'braised-rice-combo',          name: '卤汁干饭套',           price: 5.90,  category: '套餐组合' },  // 新 2026-08-16（同上）卤蛋+加饭+毛豆25g，原价 7.50（结构同照烧干饭套）
 
             // 加菜 / 配菜
             { id: 'natto-side',                  name: '健康发酵纳豆',                          price: 7.90,  category: '加菜' },  // 2026-07-16 老板调价 4.90 → 7.90
@@ -3002,9 +3004,12 @@
             { id: 'extra-shaoxing-pork-50g',     name: '【小酌怡情】加绍兴花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
             { id: 'extra-taucu-pork-50g',        name: '【小碗解馋】加豆酱花肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-07-16 双档低门槛
             { id: 'extra-daikon-90g',            name: '【清甜解腻】加白萝卜 (100g)',           price: 3.50,  category: '加菜' },  // 新 add-on 2026-08-09（白萝卜焖花肉 id 30 专属）；2026-08-12 老板改 90g→100g 熟、RM3→RM3.50（id 里的 90g 是历史命名，勿按 id 猜克数）
+            { id: 'extra-braised-pork-100g',     name: '【古早卤香】加卤三层肉 (100g)',         price: 15.50, category: '加菜' },  // 新 add-on 2026-08-16（卤三层肉豆腐蛋 id31）；克数是熟重，配方存 160g 生重（与绍兴/豆酱同换算，老板 08-16 定）
+            { id: 'extra-braised-pork-50g',      name: '【浅尝卤味】加卤三层肉 (50g)',          price: 7.90,  category: '加菜' },  // 新 add-on 2026-08-16 双档低门槛（同豆酱/绍兴的 7.90 价位）
 
             // 单点 (A la carte)
             { id: 'sunny-egg',                   name: '荷包蛋',                                price: 2.50,  category: '单点' },
+            { id: 'braised-egg',                 name: '卤蛋',                                  price: 3.00,  category: '单点' },  // 新 add-on 2026-08-16（卤三层肉豆腐蛋 id31）；老板定 RM3.00，同一锅卤汁出货
             { id: 'onsen-egg',                   name: '温泉蛋',                                price: 3.00,  category: '单点' },
             { id: 'potato-egg',                  name: '马铃薯煎蛋',                            price: 4.00,  category: '单点' },
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
@@ -3061,6 +3066,8 @@
             'salmon-protein-duo-combo':     ['broccoli-egg', 'onsen-egg'],
             'salmon-tricolor-combo':        ['extra-edamame', 'extra-corn', 'cherry-tomato'],
             'sweetsour-chop-combo':         ['broccoli-egg', 'sunny-egg', 'extra-rice'],
+            'braised-rice-king-combo':      ['broccoli-egg', 'braised-egg', 'extra-rice'],
+            'braised-rice-combo':           ['braised-egg', 'extra-rice', 'extra-edamame'],
             'sweetsour-rice-combo':         ['sunny-egg', 'extra-rice', 'extra-edamame'],
             'unagi-double-combo':           ['extra-unagi-half', 'onsen-egg', 'extra-rice'],
             'unagi-rice-combo':             ['onsen-egg', 'extra-rice', 'extra-edamame'],
@@ -3435,6 +3442,9 @@ incredibowl.my`,
             '照烧干饭套 (原价 RM 7.50)': 'unagi-rice-combo',
             '甜酸下饭套 (原价 RM 15.40)': 'sweetsour-chop-combo',
             '猪扒干饭套 (原价 RM 7.00)': 'sweetsour-rice-combo',
+            // 卤三层肉豆腐蛋 specials (2026-08-16)
+            '卤味下饭王套 (原价 RM 15.90)': 'braised-rice-king-combo',
+            '卤汁干饭套 (原价 RM 7.50)': 'braised-rice-combo',
             // 纳豆 specials
             '健康发酵纳豆': 'natto-side',
             '海苔': 'nori',
@@ -3487,6 +3497,10 @@ incredibowl.my`,
             '【照烧加倍】加照烧鳗鱼 (0.5片)': 'extra-unagi-half',
             // 甜酸洋葱猪扒 specials (2026-08-01)
             '加甜酸猪扒 (1块)': 'extra-pork-chop',
+            // 卤三层肉豆腐蛋 specials (2026-08-16)
+            '【古早卤香】加卤三层肉 (100g)': 'extra-braised-pork-100g',
+            '【浅尝卤味】加卤三层肉 (50g)': 'extra-braised-pork-50g',
+            '古早味卤蛋': 'braised-egg',
             // 白萝卜焖花肉 specials (2026-08-09)；2026-08-12 改 90g→100g，旧标签留 read-path
             '【清甜解腻】加白萝卜 (100g)': 'extra-daikon-90g',
             '【清甜解腻】加白萝卜 (90g)': 'extra-daikon-90g',
@@ -9718,7 +9732,7 @@ incredibowl.my`,
                 '古早味卤三层肉豆腐蛋': { '卤蛋': 1 },   // 2026-08-17 新菜，每份自带 1 颗卤蛋（老板 08-15 给的配方）
             };
             // 哪些 add-on label 算「鸡蛋类加料」（按蛋型分别累加）
-            const EGG_ADDON_TYPES = new Set(['荷包蛋', '温泉蛋', '马铃薯煎蛋']);
+            const EGG_ADDON_TYPES = new Set(['荷包蛋', '温泉蛋', '马铃薯煎蛋', '卤蛋']);
             const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔', '卤蛋': '🥚' };
 
             function aggregate(orders) {
@@ -10010,6 +10024,7 @@ incredibowl.my`,
             'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）；taucu-pork-combo 已退役留给在途订单
             'unagi-double-combo', 'unagi-rice-combo',      // 2026-08-01 补漏：07-31 新套含加饭但没进本集合，装碗页少标加饭
             'sweetsour-chop-combo', 'sweetsour-rice-combo', // 2026-08-01 补漏：同上（甜酸猪扒两套）
+            'braised-rice-king-combo', 'braised-rice-combo', // 2026-08-16 卤三层肉豆腐蛋两套（均含加饭）
             'taucu-rice-king-combo',                        // 2026-08-01 方案A 新套（含加饭）
         ]);
 
@@ -10793,6 +10808,29 @@ incredibowl.my`,
             // 家乡白萝卜焖花肉（webapp id 30）故意**不建条目**：2026-08-09 老板改口径 ——
             // 加白萝卜挂 UNIVERSAL_ADDONS 给所有菜用，不再是这道菜的专属。没有专属加料
             // 的菜就别登记，让 DEFAULT_ADDONS 兜底；在这抄一份标准块只会跟着漂。
+            '31': [
+                // 古早味卤三层肉豆腐蛋（周一首发 🆕 2026-08-17）— RM 19.90，无 voucherTopUp。
+                // 菜本身自带 1 颗卤蛋 + 西兰花 50g，下面列的都是 EXTRA。
+                // 2026-08-16 起自带两个专属套餐 + 双档加肉（与 webapp AddOnModal id:31 同步）。
+                // 两套都用卤蛋不用荷包蛋：同一锅卤汁出货，不额外开工。
+                { id: 'braised-rice-king-combo', label: '卤味下饭王套', price: 12.90 },
+                { id: 'braised-rice-combo',      label: '卤汁干饭套', price: 5.90 },
+                { id: 'extra-braised-pork-50g',  label: '【浅尝卤味】加卤三层肉 (50g)', price: 7.90 },
+                { id: 'extra-braised-pork-100g', label: '【古早卤香】加卤三层肉 (100g)', price: 15.50 },
+                { id: 'braised-egg',   label: '卤蛋', price: 3.00 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
+                ...DRINKS_PILLS,
+            ],
         };
 
         // 通用配菜：每道菜都能加（不挂在某一道）。在 getDishAddons 里统一追加，
