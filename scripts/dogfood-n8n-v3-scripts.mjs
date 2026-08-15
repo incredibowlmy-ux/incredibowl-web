@@ -130,20 +130,74 @@ check('菜单 API 挂了 -> 不编菜名，走安抚 + 求救', gDown.kind === '
 check('  兜底文案里没有任何菜名', !menu.dishes.some(d => gDown.reply.includes(d.name)));
 
 // ── 3. Message Gate ──────────────────────────────────
-console.log('\n=== 3. 防抖闸门（lead 文档当水位线）===');
-const [rGate] = runNode(codeOf('Router'), [waMsg('60111222333', '第一条')], {});
-const keep = runNode(codeOf('Message Gate'), [{ json: { lead: { lastMsgMs: 1000 } } }], {
-  'Lead Touch': [{ json: { lead: { lastMsgMs: 1000 } } }], Router: [rGate],
-});
-check('自己就是最新一条 -> 继续', keep.length === 1 && keep[0].json.text === '第一条');
-const drop = runNode(codeOf('Message Gate'), [{ json: { lead: { lastMsgMs: 2000 } } }], {
-  'Lead Touch': [{ json: { lead: { lastMsgMs: 1000 } } }], Router: [rGate],
-});
-check('等待期间客户又发新消息 -> 这条静默退出（不重复回复）', drop.length === 0);
-const readFail = runNode(codeOf('Message Gate'), [{ json: {} }], {
-  'Lead Touch': [{ json: { lead: { lastMsgMs: 1000 } } }], Router: [rGate],
-});
-check('lead 读取失败 -> 放行（宁可多回一条，绝不吃掉客户消息）', readFail.length === 1);
+console.log('\n=== 3. 防抖闸门（只回一条 + 看到全部内容）===');
+const [rGate] = runNode(codeOf('Router'), [waMsg('60111222333', '送 Pearl Suria')], {});
+const nodesGate = { 'Lead Touch': [{ json: { lead: { lastMsgMs: 1000 } } }], Router: [rGate] };
+
+const drop = runNode(codeOf('Message Gate'), [{ json: { isLatest: false } }], nodesGate);
+check('客户连发时，不是最后一条 -> 静默退出（客户只会收到一条回复）', drop.length === 0);
+
+const merged = runNode(codeOf('Message Gate'),
+  [{ json: { isLatest: true, mergedText: '我要订两份\n送 Pearl Suria' } }], nodesGate);
+check('胜出的那条拿到**合并后**的全文（v2 的关键行为，不能丢）',
+  merged.length === 1 && merged[0].json.text === '我要订两份\n送 Pearl Suria', merged[0] && merged[0].json.text);
+check('  并标记 merged=true', merged[0].json.merged === true);
+
+const solo = runNode(codeOf('Message Gate'), [{ json: { isLatest: true, mergedText: '' } }], nodesGate);
+check('只有一条消息时 -> 就用它自己', solo.length === 1 && solo[0].json.text === '送 Pearl Suria');
+
+const readFail = runNode(codeOf('Message Gate'), [{ json: {} }], nodesGate);
+check('lead 端点挂了 -> 放行并按自己这条处理（宁可多回，绝不吃掉客户消息）',
+  readFail.length === 1 && readFail[0].json.text === '送 Pearl Suria');
+
+// ── 3b. Context Builder：新喂的资料真的进得了 prompt 吗 ──
+console.log('\n=== 3b. Context Builder（自取/回复时间/包伙食/成分/覆盖区域）===');
+function buildContext(menuJson = menu, custJson = custNew, lang = 'zh') {
+  const [c] = runNode(codeOf('Context Builder'), [{ json: {} }], {
+    'Get Live Menu': [{ json: menuJson }],
+    'Get Promo': [{ json: { active: false } }],
+    'Get Dishes': [{ json: { dish_id: 'natto', name_zh: '纳豆月见海苔饭', price: 16.9, active: true } }],
+    'Get Customer': [{ json: custJson }],
+    'Message Gate': [{ json: { phone: '60111', text: '有猪肉吗', lang, intent: 'retail' } }],
+    'Lead Touch': [{ json: { lead: { clickToken: 'tk' } } }],
+  });
+  return c.json;
+}
+const ctx = buildContext();
+check('覆盖区域进了上下文', ctx.coverage_text === menu.coverage_text, ctx.coverage_text);
+check('  含 OUG / Taman Desa（之前 bot 答不了「送 OUG 吗」）',
+  /OUG/.test(ctx.coverage_text) && /Taman Desa/.test(ctx.coverage_text));
+check('逐道菜成分进了上下文', /纳豆月见海苔饭：/.test(ctx.ingredients_block));
+check('  真实成分不是编的', ctx.ingredients_block.includes('温泉蛋'));
+check('成分边界说明跟着数据走', /过敏/.test(ctx.ingredients_note) && /求救老板/.test(ctx.ingredients_note));
+check('包伙食三档全在', /5 张 RM92.50/.test(ctx.package_block)
+  && /10 张 RM180.00/.test(ctx.package_block) && /20 张 RM350.00/.test(ctx.package_block));
+check('  折扣是现算的「最高省 X%」而不是写死',
+  ctx.package_block.includes(`最高省 ${menu.meal_packages.max_save_percent}%`), ctx.package_block.split('\n')[0]);
+check('  有效期 30/30/60 天都说清楚',
+  /5 张[^\n]*30 天/.test(ctx.package_block) && /20 张[^\n]*60 天/.test(ctx.package_block));
+check('买券链接（中文）', ctx.package_url === menu.meal_packages.buy_url);
+check('英文客户拿到英文买券链接',
+  buildContext(menu, custNew, 'en').package_url === menu.meal_packages.buy_url_en);
+
+// 菜单 API 挂掉时，绝不让 AI 凭菜名猜成分 / 编包伙食价格
+const ctxDown = buildContext({ error: 'boom' });
+check('菜单挂了 -> 成分块变成「求救老板」而不是空/瞎猜', /求救老板/.test(ctxDown.ingredients_block));
+check('菜单挂了 -> 包伙食块也求救，不报任何价格',
+  /求救老板/.test(ctxDown.package_block) && !/RM/.test(ctxDown.package_block), ctxDown.package_block);
+
+// prompt 本身有没有把这些字段用上
+const prompt = wf.nodes.find(n => n.name === 'AI Agent').parameters.options.systemMessage;
+for (const f of ['coverage_text', 'ingredients_block', 'ingredients_note', 'package_block', 'package_url']) {
+  check(`prompt 引用了 ${f}`, prompt.includes(`$json.${f}`));
+}
+check('prompt 写了自取 Pearl Suria 大堂 + RM2', /Pearl Suria Residence/.test(prompt) && /RM2/.test(prompt));
+check('  并明确「自取不要发下单链接」（网站会照收运费）',
+  /不要发下单链接/.test(prompt));
+check('prompt 写了人工回复时间 8am-8pm', /早上 8 点 – 晚上 8 点/.test(prompt));
+check('prompt 写死了餐券与折扣码互斥（否则客户结账被拒）',
+  /不能再叠 RM 折扣码/.test(prompt));
+check('prompt 写死了过敏必须求救', /一提「\*\*过敏\*\*」|过敏[^\n]*求救老板/.test(prompt));
 
 // ── 4. 追单文案 ──────────────────────────────────────
 console.log('\n=== 4. 追单文案 ===');

@@ -44,6 +44,10 @@ const COL = 'waLeads';
 const DUE_LIMIT = 30;
 /** 刚发过追单的 lead 在这个时间内不再认领（防 cron 重叠执行）。 */
 const RECLAIM_GUARD_MS = 10 * 60 * 1000;
+/** 未处理消息缓冲上限（客户连发太多时只保留最近的）。 */
+const PENDING_MAX = 10;
+/** 单条消息进缓冲时的长度上限。 */
+const PENDING_TEXT_MAX = 500;
 
 type Lang = 'zh' | 'en';
 type Intent = 'retail' | 'catering';
@@ -99,13 +103,49 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     const now = Date.now();
 
-    // ── 单个 lead ────────────────────────────────────────
+    // ── 单个 lead（可同时当「防抖闸门」用）─────────────────
+    //
+    // 带 sinceTs 时顺便回答一个问题：**「我是不是这个客户最新的一条消息？」**
+    // 这就是防抖：客户 3 秒内连发三条，三个 n8n 执行都会问这一句，只有最后一条
+    // 得到 isLatest=true 继续往下走，前两条静默退出 —— 客户只会收到一条回复。
+    //
+    // ⚠️ 判定和取合并文本必须在**同一次调用**里做完（服务端原子完成）。
+    // 早先想过「读的时候就清空缓冲」，但那样先到的失败者会把缓冲吃掉再退出，
+    // 真正的胜出者反而拿不到前几条 —— 只有确认自己是最新的那一次才允许消费。
     if (action !== 'due') {
       const phone = digitsOf(url.searchParams.get('phone'));
       if (!phone) return NextResponse.json({ error: '缺 phone' }, { status: 400 });
       const snap = await db.collection(COL).doc(phone).get();
-      if (!snap.exists) return NextResponse.json({ found: false });
-      return NextResponse.json({ found: true, lead: publicLead(snap.id, snap.data() as any) });
+      if (!snap.exists) return NextResponse.json({ found: false, isLatest: true, mergedText: '' });
+
+      const d = snap.data() as Record<string, any>;
+      const sinceRaw = url.searchParams.get('sinceTs');
+      const wantsGate = sinceRaw !== null;
+      const sinceTs = Number(sinceRaw) || 0;
+      const lastMsgMs = Number(d.lastMsgMs) || 0;
+      const isLatest = !wantsGate || !(lastMsgMs > sinceTs);
+
+      let mergedText = '';
+      if (wantsGate && isLatest && url.searchParams.get('consume') === '1') {
+        const pending: { ts: number; text: string }[] = Array.isArray(d.pending) ? d.pending : [];
+        mergedText = pending
+          .slice()
+          .sort((a, b) => (Number(a?.ts) || 0) - (Number(b?.ts) || 0))
+          .map(p => String(p?.text || '').trim())
+          .filter(Boolean)
+          .join('\n');
+        if (pending.length) {
+          // 消费掉：这些消息即将交给 AI 一起回答，不能在下一轮再被合并一次
+          await snap.ref.update({ pending: [], pendingConsumedAtMs: now });
+        }
+      }
+
+      return NextResponse.json({
+        found: true,
+        isLatest,
+        mergedText,
+        lead: publicLead(snap.id, d),
+      }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     // ── 到点该追的 lead（claim-on-read）────────────────────
@@ -222,9 +262,19 @@ export async function POST(req: NextRequest) {
     const lastNudgeMs = newSession ? 0 : (Number(prev.lastNudgeMs) || 0);
     const nextNudgeMs = computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
 
+    // 未处理消息缓冲：客户连发的每一条都进来，等胜出的那次执行一并取走。
+    // 这是 v2「Google Sheet 合并多条」的替代品 —— 少一张表、少四个节点，
+    // 但保住了那个真正重要的行为：**AI 看到的是客户说的全部，不是最后一句。**
+    const prevPending: { ts: number; text: string }[] = Array.isArray(prev.pending) ? prev.pending : [];
+    const incoming = String(body?.text || '').trim().slice(0, PENDING_TEXT_MAX);
+    const pending = (newSession ? [] : prevPending)
+      .concat(incoming ? [{ ts: now, text: incoming }] : [])
+      .slice(-PENDING_MAX);
+
     const patch: Record<string, any> = {
       phone,
       status: 'engaged',
+      pending,
       lastMsgMs: now,
       nudgeCount,
       lastNudgeMs,

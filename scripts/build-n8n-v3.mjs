@@ -280,27 +280,31 @@ return [{ json: { phone: r.phone, reply, kind, escalate: false, lang: r.lang, in
 // Message Gate —— 用 lead 文档当防抖水位线（取代 v2 的 Google Sheet 三件套）
 // ════════════════════════════════════════════════════════════
 const GATE_CODE = `// ============================
-// 防抖 v3：**lead 文档自己就是水位线**。
+// 防抖 v3：**lead 文档自己就是水位线**，判定在服务端做完。
 //
 // v2 用 Google Sheet 做防抖（Append→Wait→Read→Gate→Mark 五个节点 + 一张表，
-// 老板还要手工建 tab、定期清行）。但我们已经有一份每条消息都会更新的
-// lastMsgMs —— 等待期后回头看它变没变，就知道自己是不是最后一条。
-// 客户连发三条：前两条的执行在这里静默退出，只有最后一条继续。
+// 老板还要手工建 tab、定期清行）。v3 只用一次 HTTP：Lead Recheck 带着
+// sinceTs + consume=1 去问「我是不是最新那条？是的话把攒下的消息给我」。
 //
-// 读失败一律**放行**（返回自己），宁可多回一条也绝不吃掉客户消息。
+// 客户 3 秒内连发三条 → 三个执行都问这一句 → 前两条拿到 isLatest=false 静默退出，
+// 只有最后一条继续，并且拿到**三条合并起来的文本**交给 AI。
+// 「只回一条」和「看到全部内容」是两件事，v2 都做到了，v3 也必须都做到 ——
+// 只做前者的话，客户说「我要订两份」「送 Pearl Suria」会变成只回答后半句。
+//
+// 任何一步读失败都**放行并退回自己这条**：宁可多回一条，绝不吃掉客户消息。
 // ============================
 
-const mine = $('Lead Touch').first().json;
-const myTs = Number(mine?.lead?.lastMsgMs) || 0;
-const fresh = $input.first().json;
-const nowTs = Number(fresh?.lead?.lastMsgMs) || 0;
-
-if (myTs > 0 && nowTs > 0 && nowTs > myTs) {
-  return []; // 等待期间客户又发了新消息 —— 让那一条去回复，这条静默结束
-}
-
 const r = $('Router').first().json;
-return [{ json: { phone: r.phone, text: r.text, lang: r.lang, intent: r.intent } }];`;
+const fresh = $input.first().json || {};
+
+// 服务端明确说了不是最新 → 让后面那条去回复
+if (fresh.isLatest === false) return [];
+
+// 服务端没给判定（端点挂了/字段缺失）→ 退化成「按自己这条处理」
+const merged = typeof fresh.mergedText === 'string' ? fresh.mergedText.trim() : '';
+const text = merged || r.text;
+
+return [{ json: { phone: r.phone, text, lang: r.lang, intent: r.intent, merged: !!merged } }];`;
 
 // ════════════════════════════════════════════════════════════
 // Context Builder v3
@@ -352,12 +356,35 @@ const customerContext = typeof cust.contextBlock === 'string' && cust.contextBlo
   ? cust.contextBlock
   : '【客户档案】查询暂时失败 —— 不要假设客户身份，正常接待即可。';
 
+// 逐道菜的主要食材。API 挂了就给一句「查不到」——绝不让 AI 凭菜名猜成分。
+const ingredientsBlock = apiOk && Array.isArray(menuApi.dishes)
+  ? (menuApi.dishes
+      .filter(d => Array.isArray(d.ingredients) && d.ingredients.length)
+      .map(d => \`- \${d.name}：\${d.ingredients.join('、')}\`)
+      .join('\\n') || '（这批菜的成分表暂时取不到，客户问成分一律 [求救老板]）')
+  : '（成分表暂时取不到，客户问成分一律 [求救老板]）';
+const ingredientsNote = (apiOk && menuApi.ingredients_note)
+  || '成分数据取不到时，客户问成分一律 [求救老板]，绝不凭菜名猜。';
+
+// 包伙食（餐券预付包）。折扣率由服务端按当周菜单现算，这里只转述。
+const pkg = (apiOk && menuApi.meal_packages) ? menuApi.meal_packages : null;
+const packageBlock = pkg
+  ? \`\${pkg.name}（最高省 \${pkg.max_save_percent}%）：\\n\${pkg.pitch_block}\`
+  : '（包伙食资料暂时取不到，客户问起就说碗妈马上帮你确认，并 [求救老板]）';
+const packageUrl = pkg ? (zh ? pkg.buy_url : (pkg.buy_url_en || pkg.buy_url)) : '';
+const coverageText = (apiOk && menuApi.coverage_text) || 'Old Klang Road 一带';
+
 return [{
   json: {
     phone: gate.phone,
     text: gate.text,
     lang: gate.lang,
     reply_language: zh ? '简体中文' : 'English',
+    coverage_text: coverageText,
+    ingredients_block: ingredientsBlock,
+    ingredients_note: ingredientsNote,
+    package_block: packageBlock,
+    package_url: packageUrl,
     delivery_context: deliveryContext,
     delivery_label: deliveryLabel,
     today_menu: todayMenu,
@@ -414,6 +441,31 @@ create_order_draft 工具走 WhatsApp 内下单：工具返回什么明细和总
 【配送时段与方式】
 午餐 11:00 AM – 1:00 PM；晚餐 5:30 PM – 8:00 PM。送到楼下 / 门口 / 办公室门口。
 散客只做周一到周五，周末碗妈陪孩子休息。
+配送覆盖：{{ $json.coverage_text }}。客户报的地方在这几区里就直接说「送的哦」，
+具体运费仍然要调 check_delivery_fee 报数。
+
+【自取（Pearl Suria Residence 大堂）—— 立减 RM2】
+客户可以到 Pearl Suria Residence 大堂自取，**减 RM2**（省了运费还多减 2 块）。
+同栋楼的住户尤其划算，主动可以提一句。
+⚠️ 但**网站的下单链接目前不支持自取**（会照收运费）。所以客户说要自取时：
+不要发下单链接，改说「自取碗妈帮你安排，减 RM2」，然后回复开头加 [求救老板]
+让老板接手。绝不要让客户点链接下单后自己去拿——他会被多收运费。
+
+【碗妈的人工回复时间：早上 8 点 – 晚上 8 点】
+超出这个时段客户找人工时，照样收下需求并求救，但要如实说明：
+「碗妈这边早上 8 点到晚上 8 点回消息，现在先帮你记下，一上线马上回你 ❤️」
+别让客户空等一夜还以为随时有人。
+
+【包伙食（餐券预付包）—— 可以主动介绍并卖】
+{{ $json.package_block }}
+· 1 张券 = 1 份主餐；加料仍要现金另付。
+· 买券链接：{{ $json.package_url }}
+· ⚠️ **餐券单不能再叠 RM 折扣码（含新客 RM5）**，系统会直接拒收。
+  客户如果两个都想要，如实说「这两个只能二选一哦」，别两个都答应。
+· 折扣一律说「最高省 X%」，X 用上面给的数字，**绝不自己算、绝不写死**——
+  兑越贵的菜省越多，兑便宜的菜省得少。
+· 什么时候提：客户说「常吃 / 每天都要 / 有没有更划算 / 包月 / 包伙食 / meal plan」
+  时提。客户没问就别硬推。
 
 【运费 —— 只准用工具报数】
 客户消息里出现任何地址、condo 名、Taman 名、路名，必须调用 check_delivery_fee，把客户原话地址传进去。
@@ -435,6 +487,14 @@ create_order_draft 工具走 WhatsApp 内下单：工具返回什么明细和总
 · 素食 / 清真 / 忌口：**不要主动提**。客户问了才诚实说：厨房不是清真认证，也没法单独做素食或忌口定制。
 · 收齐「哪天几点 + 几位 + 地址」就报价，格式：逐道菜列出 名称×份数 = 小计，然后餐费合计、运费、总额、定金金额。
 · 报完价问「要碗妈帮你锁档期吗？回 1 就发定金 QR」，并在回复开头加 [求救老板]（团餐单必须老板过目）。
+
+【菜里有什么 —— 成分问答的硬边界】
+{{ $json.ingredients_block }}
+
+{{ $json.ingredients_note }}
+再说一次这条红线：客户问「有没有猪肉 / 牛肉 / 蛋 / 海鲜 / 辣不辣」→ 照上面的成分表答。
+客户一提「**过敏**」（花生、坚果、麸质、海鲜过敏…）→ **立刻 [求救老板]，绝不自己判断**。
+成分表是采购单不是过敏原声明，答错这个是会出人命的事，不是服务好不好的事。
 
 【推荐策略】
 只推荐【可点菜单】里当天有的菜。客户犹豫 → 优先推当天特餐。客户没主动问就不推销。
@@ -542,7 +602,9 @@ nodes.push({
     genericAuthType: 'httpBearerAuth',
     sendBody: true,
     specifyBody: 'json',
-    jsonBody: '={{ JSON.stringify({ action: "touch", phone: $json.phone, lang: $json.lang, intent: $json.intent, name: $json.profileName }) }}',
+    // text 必须传：服务端把它压进未处理缓冲，等胜出的那次执行一并取走 ——
+    // 这是「客户连发三条，AI 看到全部而不是只看最后一句」的关键。
+    jsonBody: '={{ JSON.stringify({ action: "touch", phone: $json.phone, lang: $json.lang, intent: $json.intent, name: $json.profileName, text: $json.text }) }}',
     options: {},
   },
   type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [-3900, -900],
@@ -562,8 +624,12 @@ nodes.push({
   type: 'n8n-nodes-base.wait', typeVersion: 1.1, position: [-3420, -740],
   id: 'v3-wait', name: 'Wait 防抖', webhookId: 'b2f1e7a0-v3wa-4a00-9c00-bowlmamav300',
 });
+// sinceTs = 本次执行那条消息的时间戳；consume=1 = 「确认我是最新的话，把缓冲里
+// 攒下的消息一并给我并清空」。判定与取走在服务端同一次调用里原子完成 —— 分成两步
+// 会让先到的失败者把缓冲吃掉再退出，真正的胜出者反而拿不到前几条。
 nodes.push(httpNode('Lead Recheck', 'v3-lead-recheck',
-  `=${SITE}/api/n8n/lead?phone={{ $('Router').first().json.phone }}`, [-3180, -740]));
+  `=${SITE}/api/n8n/lead?phone={{ $('Router').first().json.phone }}&sinceTs={{ $('Lead Touch').first().json.lead.lastMsgMs }}&consume=1`,
+  [-3180, -740]));
 nodes.push(codeNode('Message Gate', 'v3-gate', GATE_CODE, [-2940, -740]));
 
 // ── 团餐档期工具（给 AI 用）──────────────────────────

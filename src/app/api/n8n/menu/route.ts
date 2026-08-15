@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
+import { weeklyMenu, MenuItem, dishVoucherValue } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import { dishRecipes } from '@/data/dishIngredients';
+import { COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import {
+  MEAL_VOUCHER_BUNDLES, FACE_VALUE_RM, bundleRedeemSavings, formatPercent,
+} from '@/data/mealVoucherConfig';
 
 /**
  * GET /api/n8n/menu
@@ -81,6 +86,27 @@ function menuLineEn(
     ? ` (only ${remaining} left today)` : '';
   return `${prefix}${kind === 'staple' ? ' ' : ''}${dish.nameEn} RM${dish.price.toFixed(2)}${low}`;
 }
+
+/**
+ * 逐道菜的成分名单（给 bot 回答「有没有猪肉 / 有蛋吗」）。
+ *
+ * ⚠️ 数据源 dishIngredients.ts 是**采购表**，文件头明写「跳过盐/胡椒/食用油/大蒜」，
+ * 也不追踪交叉污染。所以它能支持「结构性成分」问答（有没有猪肉/牛肉/蛋/海鲜——
+ * 宗教与口味回避），**绝不能当过敏原声明用**（花生/麸质/坚果一律要人工确认）。
+ * 这条边界同时写进 API 返回的 ingredients_note 和 bot 的 system prompt，
+ * 让它跟着数据一起走，而不是只活在某个人的记忆里。
+ */
+const RECIPE_BY_NAME = new Map(dishRecipes.map(r => [r.name, r]));
+function ingredientNames(dish: MenuItem): string[] {
+  const r = RECIPE_BY_NAME.get(dish.name);
+  if (!r || !r.ingredients.length) return [];
+  return r.ingredients.map(i => i.name);
+}
+
+const INGREDIENTS_NOTE =
+  '这份成分表来自厨房采购单，只列主要食材（盐/胡椒/食用油/蒜等常备调料未列出），'
+  + '也没有追踪交叉污染。可以用来回答「有没有猪肉/牛肉/蛋/海鲜」这类问题；'
+  + '客户一提「过敏」两个字，一律 [求救老板]，绝不自行判断能不能吃。';
 
 /** 碗妈 bot 发给客户的一键下单链接。ref=wa 用于归因，lead 由 n8n 拼上去。 */
 const ORDER_BASE = 'https://www.incredibowl.my/o';
@@ -232,11 +258,59 @@ export async function GET(req: NextRequest) {
     // 一键下单链接：bot 直接发，不用自己拼 URL（拼错就是死链）
     orderUrl: orderUrl(d.id, 'zh'),
     orderUrlEn: orderUrl(d.id, 'en'),
+    // 主要食材（边界见 ingredients_note）
+    ingredients: ingredientNames(d),
   });
+
+  // ── 包伙食（餐券预付包）——— bot 要能介绍并卖 ─────────────
+  //
+  // ⚠️ 折扣率**必须现算，绝不写死**。一张券真正的价值是「最多能兑掉多少钱的菜」，
+  // 换菜之后这个数会变；写死的百分比某天就变成谎话。算法与 /meal-vouchers 页
+  // 逐字同源（bestVoucherValue → bundleRedeemSavings），换菜自动跟上。
+  // 同时口径必须是「**最高**省 X%」—— 只在兑最贵那道可兑主菜时成立。
+  const bestVoucherValue = Math.max(
+    FACE_VALUE_RM,
+    ...live.map(d => dishVoucherValue(d.price, d)),
+  );
+  const voucherBundles = MEAL_VOUCHER_BUNDLES.map(b => {
+    const s = bundleRedeemSavings(b, bestVoucherValue);
+    return {
+      id: b.id,
+      count: b.voucherCount,
+      price: b.price,
+      pricePerVoucher: b.pricePerVoucher,
+      validityDays: b.validityDays,
+      highlight: b.highlight ?? '',
+      maxSavePercent: formatPercent(s.percent),
+      maxSaveTotal: s.total,
+    };
+  });
+  const voucherPitch = voucherBundles
+    .map(b => `· ${b.count} 张 RM${b.price.toFixed(2)}（每餐 RM${b.pricePerVoucher.toFixed(2)}，${b.validityDays} 天内用完${b.highlight ? `，${b.highlight}` : ''}）`)
+    .join('\n');
 
   return NextResponse.json(
     {
       generated_at: new Date().toISOString(),
+      // 配送覆盖区域（bot 之前只会说「Pearl Suria 一带」，答不了「送 OUG 吗」）
+      coverage_areas: COVERAGE_AREAS,
+      coverage_text: COVERAGE_AREAS.join(' · '),
+      // 成分问答的数据边界，跟着数据一起走
+      ingredients_note: INGREDIENTS_NOTE,
+      // 包伙食
+      meal_packages: {
+        name: '包伙食（餐券预付包）',
+        bundles: voucherBundles,
+        pitch_block: voucherPitch,
+        max_save_percent: formatPercent(Math.max(0, ...voucherBundles.map(b => Number(b.maxSavePercent)))),
+        buy_url: 'https://www.incredibowl.my/meal-vouchers',
+        buy_url_en: 'https://www.incredibowl.my/en/meal-vouchers',
+        rules: [
+          '1 张券 = 1 份主餐，加料仍要现金另付',
+          '餐券单不能再叠 RM 折扣码（含新客 RM5），系统会拒收——两者只能二选一',
+          '折扣是「最高」值，兑越贵的菜省越多，兑便宜的菜省得少',
+        ],
+      },
       delivery: {
         date: deliveryDate,
         weekday: wd,
