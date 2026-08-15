@@ -2954,7 +2954,10 @@
             // 套餐组合 (per-dish combos)
             { id: 'natto-super-combo',           name: '灵魂三件套',           price: 5.00,  category: '套餐组合' },
             { id: 'surf-turf-super-combo',       name: '海陆澎湃三件套',       price: 11.40, category: '套餐组合' },
-            { id: 'chicken-chop-nostalgia-combo',name: '古早味大满贯三件套',   price: 12.90, category: '套餐组合' },
+            { id: 'chicken-chop-rice-king-combo',name: '古早味下饭套',         price: 12.90, category: '套餐组合' },  // 新 2026-08-16（鸡扒饭/柠檬蜜糖鸡扒）西兰花炒蛋+荷包蛋+加饭，原价 15.40；鸡扒涨价后旧套穿帮，换互补型
+            { id: 'herbal-chicken-rice-king-combo',name: '归香下饭套',         price: 12.90, category: '套餐组合' },  // 新 2026-08-16（当归蒸鸡全腿）西兰花炒蛋+荷包蛋+加饭，原价 15.40
+            { id: 'ginger-fish-rice-king-combo', name: '姜葱下饭套',           price: 13.90, category: '套餐组合' },  // 新 2026-08-16（姜葱鱼片饭）西兰花炒蛋+马铃薯煎蛋+加饭，原价 16.90 —— ⚠️ 唯一不含荷包蛋的一套（该菜自带荷包蛋）
+            { id: 'chicken-chop-nostalgia-combo',name: '古早味大满贯三件套',   price: 12.90, category: '套餐组合' },  // 退役 2026-08-16（换互补型）；留着给历史订单 COGS 归因，勿删勿复用
             { id: 'greek-protein-bomb-combo',    name: '蛋白质核弹三件套',     price: 15.90, category: '套餐组合' },
             { id: 'pork-potato-duo-combo',       name: '薯肉双拼满足套',       price: 13.40, category: '套餐组合' },
             { id: 'scallion-soup-combo',         name: '爆量满足三件套',       price: 12.90, category: '套餐组合' },
@@ -2984,7 +2987,7 @@
             { id: 'extra-herbal-leg-2',          name: '加 2 只暖胃鸡腿 (legacy)',              price: 27.80, category: '加菜' },
             { id: 'extra-herbal-leg-3',          name: '加 3 只暖胃鸡腿 (legacy)',              price: 41.40, category: '加菜' },
             { id: 'extra-soy-leg-1',             name: '【犒劳自己】多加一只酱油全鸡腿',        price: 16.50, category: '加菜' },
-            { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 10.90, category: '加菜' },
+            { id: 'extra-chicken-chop',          name: '加香煎金鸡扒 (150g)',                   price: 12.90, category: '加菜' },  // 2026-08-16 调价 10.90 → 12.90
             { id: 'extra-unagi-half',            name: '【照烧加倍】加照烧鳗鱼 (0.5片)',        price: 18.50, category: '加菜' },  // 新 2026-07-31；半片进价 RM5.225，老板拍板 18.50（与加三文鱼同价位）
             { id: 'extra-pork-chop',             name: '加甜酸猪扒 (1块)',                      price: 14.90, category: '加菜' },  // 新 2026-08-01；进价 RM4.00/块（同鸡扒），老板拍板 14.90（先说 11.90，后自己改高）
             { id: 'cherry-tomato',               name: '爽脆多汁小番茄 (20g)',                  price: 2.50,  category: '加菜' },  // 2026-07-14 全局 40g→20g（老板拍板，价不变）
@@ -3062,7 +3065,10 @@
         const COMBO_CONTENTS = {
             'natto-super-combo':            ['onsen-egg-side', 'nori', 'soy-sauce'],
             'surf-turf-super-combo':        ['extra-prawns', 'extra-chicken-breast', 'extra-fungus'],
-            'chicken-chop-nostalgia-combo': ['extra-chicken-chop', 'sunny-egg', 'extra-rice'],
+            'chicken-chop-rice-king-combo':  ['broccoli-egg', 'sunny-egg', 'extra-rice'],
+            'herbal-chicken-rice-king-combo':['broccoli-egg', 'sunny-egg', 'extra-rice'],
+            'ginger-fish-rice-king-combo':   ['broccoli-egg', 'potato-egg', 'extra-rice'],  // 无荷包蛋：姜葱鱼片自带（见 DISH_DEFAULT_EGGS）
+            'chicken-chop-nostalgia-combo': ['extra-chicken-chop', 'sunny-egg', 'extra-rice'],  // 退役 2026-08-16，留着让在途订单的备餐单还能展开
             'greek-protein-bomb-combo':     ['extra-greek-chicken-180g', 'extra-aus-potato-80g', 'extra-cauliflower-80g'],
             'salmon-protein-duo-combo':     ['broccoli-egg', 'onsen-egg'],
             'salmon-tricolor-combo':        ['extra-edamame', 'extra-corn', 'cherry-tomato'],
@@ -3150,7 +3156,7 @@
             { id: 'addon-black-olive', name: '加黑橄榄', price: 2.50, category: '蔬菜配料' },
 
             { id: 'addon-extra-chicken-breast', name: '加鸡胸 150g', price: 11.90, category: '加肉' },
-            { id: 'addon-extra-chicken-chop', name: '加鸡扒', price: 10.90, category: '加肉' },
+            { id: 'addon-extra-chicken-chop', name: '加鸡扒', price: 12.90, category: '加肉' },  // 2026-08-16 随 extra-chicken-chop 同步调价
             { id: 'addon-extra-pork-belly', name: '加花肉片', price: 11.90, category: '加肉' },
             { id: 'addon-extra-prawns', name: '加虾仁', price: 7.00, category: '加肉' },
             { id: 'addon-extra-fungus', name: '加云耳', price: 2.50, category: '加肉' },
@@ -3429,7 +3435,10 @@ incredibowl.my`,
             '灵魂三件套 (原价 RM 6.50)': 'natto-super-combo',  // 2026-08-01 原价 6.0→6.50 修正
             '灵魂三件套 (原价 RM 6.0)': 'natto-super-combo',   // legacy 标签
             '海陆澎湃三件套 (原价 RM 14.0)': 'surf-turf-super-combo',
-            '古早味大满贯三件套 (原价 RM 15.40)': 'chicken-chop-nostalgia-combo',
+            '古早味下饭套 (原价 RM 15.40)': 'chicken-chop-rice-king-combo',  // 2026-08-16 互补型新套
+            '归香下饭套 (原价 RM 15.40)': 'herbal-chicken-rice-king-combo',  // 2026-08-16 当归蒸鸡首套
+            '姜葱下饭套 (原价 RM 16.90)': 'ginger-fish-rice-king-combo',    // 2026-08-16 姜葱鱼片首套
+            '古早味大满贯三件套 (原价 RM 15.40)': 'chicken-chop-nostalgia-combo',  // legacy（鸡扒版退役）
             '蛋白质核弹三件套 (原价 RM 18.40)': 'greek-protein-bomb-combo',
             '薯肉双拼满足套 (原价 RM 15.40)': 'pork-potato-duo-combo',
             '爆量满足三件套 (原价 RM 15.40)': 'scallion-soup-combo',
@@ -10024,7 +10033,9 @@ incredibowl.my`,
         ];
         // 自带加饭的套餐（来源 AddOnModal.tsx extraDesc「包含：… + 加饭」，2026-07-14 核实）
         const PACKING_COMBO_EXTRA_RICE = new Set([
-            'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）；taucu-pork-combo / shaoxing-pork-combo 已退役留给在途订单
+            'chicken-chop-nostalgia-combo', 'scallion-soup-combo', 'shaoxing-pork-combo', 'taucu-pork-combo', 'curry-trio-combo',  // 2026-07-16 新增三套（均含加饭）；taucu-pork-combo / shaoxing-pork-combo / chicken-chop-nostalgia-combo 已退役留给在途订单
+            'chicken-chop-rice-king-combo',                 // 2026-08-16 鸡扒饭换互补型（含加饭）
+            'herbal-chicken-rice-king-combo', 'ginger-fish-rice-king-combo',  // 2026-08-16 当归蒸鸡 / 姜葱鱼片首次配套餐（均含加饭）
             'shaoxing-rice-king-combo',                     // 2026-08-16 绍兴换互补型（含加饭）
             'unagi-double-combo', 'unagi-rice-combo',      // 2026-08-01 补漏：07-31 新套含加饭但没进本集合，装碗页少标加饭
             'sweetsour-chop-combo', 'sweetsour-rice-combo', // 2026-08-01 补漏：同上（甜酸猪扒两套）
@@ -10504,6 +10515,7 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '13': [
+                { id: 'herbal-chicken-rice-king-combo', label: '归香下饭套', price: 12.90 },  // 2026-08-16 首套（西兰花炒蛋+荷包蛋+加饭）
                 { id: 'extra-herbal-leg-1', label: '多加一只暖胃全鸡腿', price: 16.50 },
                 { id: 'extra-herbal-leg-2', label: '加 2 只暖胃鸡腿 (legacy)', price: 27.80 },
                 { id: 'extra-herbal-leg-3', label: '加 3 只暖胃鸡腿 (legacy)', price: 41.40 },
@@ -10538,8 +10550,8 @@ incredibowl.my`,
                 ...DRINKS_PILLS,
             ],
             '1': [
-                { id: 'chicken-chop-nostalgia-combo', label: '古早味大满贯三件套', price: 12.90 },
-                { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 10.90 },
+                { id: 'chicken-chop-rice-king-combo', label: '古早味下饭套', price: 12.90 },  // 2026-08-16 换互补型（旧古早味大满贯三件套鸡扒版退役，不再可选）
+                { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 12.90 },  // 2026-08-16 调价 10.90 → 12.90
                 { id: 'cherry-tomato',                label: '小番茄 (20g)', price: 2.50 },
                 { id: 'extra-edamame',                label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',                   label: '甜玉米 (30g)', price: 2.50 },
@@ -10634,6 +10646,7 @@ incredibowl.my`,
             ],
             '20': [
                 // 古早味姜葱鱼片饭 — 2026-07-16 起自带专属 side（与 webapp AddOnModal id:20 同步）：加姜葱鱼片
+                { id: 'ginger-fish-rice-king-combo', label: '姜葱下饭套', price: 13.90 },  // 2026-08-16 首套（西兰花炒蛋+马铃薯煎蛋+加饭）；该菜自带荷包蛋故套内不放
                 { id: 'extra-fish-120g', label: '加姜葱鱼片 (120g)', price: 13.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
@@ -10747,8 +10760,8 @@ incredibowl.my`,
             '26': [
                 // 柠檬蜜糖煎鸡扒（周二 Hero，🆕 2026-07-13）— RM 18.50
                 // 加料与鸡扒系列（'1' 香煎金黄鸡扒饭）整套看齐，含三件套照搬（老板 2026-07-14 拍板）
-                { id: 'chicken-chop-nostalgia-combo', label: '古早味大满贯三件套', price: 12.90 },
-                { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 10.90 },
+                { id: 'chicken-chop-rice-king-combo', label: '古早味下饭套', price: 12.90 },  // 2026-08-16 换互补型（旧古早味大满贯三件套鸡扒版退役，不再可选）
+                { id: 'extra-chicken-chop',           label: '加香煎金鸡扒 (150g)', price: 12.90 },  // 2026-08-16 调价 10.90 → 12.90
                 { id: 'cherry-tomato',                label: '小番茄 (20g)', price: 2.50 },
                 { id: 'extra-edamame',                label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',                   label: '甜玉米 (30g)', price: 2.50 },

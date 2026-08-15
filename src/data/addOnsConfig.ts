@@ -30,8 +30,15 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'soy-sauce': 1.50,
 
   // ─── Chicken Chop (now daily, id:14) specials ──────────
-  'extra-chicken-chop': 10.90,
-  'chicken-chop-nostalgia-combo': 12.90,
+  'extra-chicken-chop': 12.90,       // 2026-08-16 老板调价 10.90 → 12.90（成本 RM4.75/块 → 毛利 56.4%→63.2%，与其他加肉档位看齐）
+  // 2026-08-16 套餐换互补型。病因同 08-01 豆酱 / 08-16 绍兴：套餐里塞主料，主料一涨价
+  // 套餐就穿帮 —— 鸡扒涨到 12.90 后旧套原价变 17.40，而售价 12.90 = 单点一块鸡扒价，
+  // 等于荷包蛋+加饭 RM4.50 白送。且 11 个周次快照显示客人根本不要第二块鸡扒：
+  // 加鸡扒累计只卖 2 次、旧套 6 周共 6 次，而荷包蛋 17 次 / 西兰花炒蛋 9 次 / 加饭 8 次。
+  // 鸡扒饭自带毛豆+玉米+番茄却没有酱汁（只有盐和胡椒），客人缺的是湿润度和绿色，不是更多肉。
+  // 内容全换故换新 id，老 id 留着：在途购物车还能结账 + dashboard 历史 COGS 归因不失真。
+  'chicken-chop-rice-king-combo': 12.90, // 古早味下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'chicken-chop-nostalgia-combo': 12.90, // 退役 2026-08-16（换互补型）；留给在途订单，勿复用勿删
   'edamame': 2.00,
   'corn': 2.00,
   'cherry-tomato': 2.50,
@@ -81,6 +88,10 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Angelica Chicken (Tuesday special, id:2) specials ─────
   'extra-herbal-leg-1': 16.50,
+  // 2026-08-16 首次配套餐。10 周 117 碗的快照里，这道菜的付费加料第一名就是蒜蓉西兰花
+  // 炒蛋（19 次）、第二名荷包蛋（16 次）—— 套餐等于把客人本来就在单点的两样打包，
+  // 结构与家乡下饭王套/甜酸下饭套/酒香下饭套/古早味下饭套一致。
+  'herbal-chicken-rice-king-combo': 12.90, // 归香下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
 
   // ─── Soy Sauce Chicken (now Monday special, id:1) specials ────
   'extra-soy-leg-1': 16.50,
@@ -96,6 +107,11 @@ export const ADD_ON_PRICES: Record<string, number> = {
 
   // ─── Ginger-Scallion Fish Fillet (id:20) specials ──
   'extra-fish-120g': 13.90,
+  // 2026-08-16 首次配套餐。这套跟其他五道**不同**，故意不放荷包蛋：这道菜本身就自带
+  // 一颗荷包蛋（见 dishIngredients 配方 + dashboard DISH_DEFAULT_EGGS），套餐里再放
+  // 就是重复。而配方里除了葱 32g / 姜 12g **完全没有蔬菜**，是全菜单缺绿最严重的一道，
+  // 所以用「西兰花炒蛋补绿 + 马铃薯煎蛋补淀粉和蛋」。
+  'ginger-fish-rice-king-combo': 13.90, // 姜葱下饭套：西兰花炒蛋+马铃薯煎蛋+加饭（原价 16.90）
 
   // ─── Shaoxing Wine Steamed Pork Belly (id:4) specials ──
   'extra-shaoxing-pork-100g': 14.90,

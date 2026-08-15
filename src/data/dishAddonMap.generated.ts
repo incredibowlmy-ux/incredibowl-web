@@ -708,14 +708,14 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "香煎金黄鸡扒饭": [
     {
-      "id": "chicken-chop-nostalgia-combo",
-      "label": "古早味大满贯三件套",
+      "id": "chicken-chop-rice-king-combo",
+      "label": "古早味下饭套",
       "price": 12.9
     },
     {
       "id": "extra-chicken-chop",
       "label": "加香煎金鸡扒 (150g)",
-      "price": 10.9
+      "price": 12.9
     },
     {
       "id": "cherry-tomato",
@@ -1064,6 +1064,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "古早味姜葱鱼片饭": [
     {
+      "id": "ginger-fish-rice-king-combo",
+      "label": "姜葱下饭套",
+      "price": 13.9
+    },
+    {
       "id": "extra-fish-120g",
       "label": "加姜葱鱼片 (120g)",
       "price": 13.9
@@ -1287,6 +1292,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "招牌原盅当归蒸鸡全腿": [
+    {
+      "id": "herbal-chicken-rice-king-combo",
+      "label": "归香下饭套",
+      "price": 12.9
+    },
     {
       "id": "extra-herbal-leg-1",
       "label": "多加一只暖胃全鸡腿",
@@ -2204,14 +2214,14 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "柠檬蜜糖煎鸡扒": [
     {
-      "id": "chicken-chop-nostalgia-combo",
-      "label": "古早味大满贯三件套",
+      "id": "chicken-chop-rice-king-combo",
+      "label": "古早味下饭套",
       "price": 12.9
     },
     {
       "id": "extra-chicken-chop",
       "label": "加香煎金鸡扒 (150g)",
-      "price": 10.9
+      "price": 12.9
     },
     {
       "id": "cherry-tomato",

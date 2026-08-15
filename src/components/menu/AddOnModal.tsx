@@ -271,17 +271,22 @@ export default function AddOnModal({
         // Glazed Chicken Chop (id: 26), append the chop-series add-ons to the
         // sides. 柠扒与鸡扒同系列，配菜+三件套整套看齐（老板 2026-07-14 拍板）。
         if (dish.id === 14 || dish.id === 26) {
-            const chopWorth = comboWorth('chicken-chop-nostalgia-combo', 12.90, [['extra-chicken-chop', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
+            // 2026-08-16 鸡扒调价 10.90→12.90，旧「古早味澎湃大满贯三件套」当场穿帮
+            // （原价变 17.40 但售价 12.90 = 单点一块鸡扒价，蛋+饭白送）。数据也不支持它：
+            // 11 个周次快照里加鸡扒累计只卖 2 次、旧套 6 周共 6 次，而荷包蛋 17 / 西兰花
+            // 炒蛋 9 / 加饭 8 —— 鸡扒饭自带毛豆玉米番茄却没酱汁，客人缺的是湿润度和绿色。
+            // 换互补型「古早味下饭套」，结构照抄已验证的家乡下饭王套/甜酸下饭套/酒香下饭套。
+            const chopWorth = comboWorth('chicken-chop-rice-king-combo', 12.90, [['broccoli-egg', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const chickenChopSpecial: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'chicken-chop-combo',
-                title: '✨ 古早味澎湃大满贯三件套',
-                titleEn: 'Ultimate Nostalgia Combo (+ RM 12.90)',
+                title: '✨ 古早味下饭套',
+                titleEn: 'Nostalgia Rice King Set (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: `包含：多加一块香煎金鸡扒 (${rm('extra-chicken-chop', 10.9)}) + 荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${chopWorth.zh}\n“想要彻底犒劳自己的一顿饭？双份酒香鸡扒的爆棚肉感，戳破流心的古早味荷包蛋拌入白饭，这是干饭人最顶级的满足感！”`,
-                extraDescEn: `Includes: one extra pan-fried golden chicken chop (${rm('extra-chicken-chop', 10.9)}) + sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${chopWorth.en}\n"A double-chop feast with a runny-yolk egg stirred into rice — the ultimate treat for big eaters!"`,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${chopWorth.zh}\n"焦香鸡扒配白饭，就差一口湿润和青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，一口都不干。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${chopWorth.en}\n"A seared chop needs greens and a runny yolk — garlicky broccoli-egg and a burst of yolk keep every bite moist."`,
                 items: [
-                    { id: 'chicken-chop-nostalgia-combo', name: '古早味大满贯三件套 (原价 RM 15.40)', nameEn: 'Ultimate Nostalgia Combo', price: p('chicken-chop-nostalgia-combo', 12.90), category: 'combo' }
+                    { id: 'chicken-chop-rice-king-combo', name: '古早味下饭套 (原价 RM 15.40)', nameEn: 'Nostalgia Rice King Set', price: p('chicken-chop-rice-king-combo', 12.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {
@@ -290,7 +295,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop (150g)', price: p('extra-chicken-chop', 10.90), category: 'sides', maxQty: 3 },
+                            { id: 'extra-chicken-chop', name: '加香煎金鸡扒 (150g)', nameEn: 'Extra Chicken Chop (150g)', price: p('extra-chicken-chop', 12.90), category: 'sides', maxQty: 3 },
                             { id: 'extra-edamame-side', name: '清甜水煮毛豆仁 (25g)', nameEn: 'Edamame', price: p('extra-edamame-side', 2.50), category: 'sides', maxQty: 3 },
                             { id: 'extra-corn-side', name: '金黄甜玉米 (30g)', nameEn: 'Corn', price: p('extra-corn-side', 2.50), category: 'sides', maxQty: 3 },
                             { id: 'cherry-tomato', name: '爽脆多汁小番茄 (20g)', nameEn: 'Cherry Tomato', price: p('cherry-tomato', 2.50), category: 'sides', maxQty: 3 },
@@ -535,7 +540,23 @@ export default function AddOnModal({
 
         // If it's Angelica Steamed Whole Chicken Leg (Tuesday special, id: 2), append specific add-ons to the sides
         if (dish.id === 2) {
-            return addOnSections.map(section => {
+            // 2026-08-16 首次配套餐。10 周 117 碗的快照里这道菜付费加料第一名就是蒜蓉
+            // 西兰花炒蛋（19 次）、第二名荷包蛋（16 次），套餐等于把客人本来就在单点的
+            // 两样打包；结构与家乡/甜酸/酒香/古早味下饭套一致。
+            const herbalWorth = comboWorth('herbal-chicken-rice-king-combo', 12.90, [['broccoli-egg', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
+            const herbalCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'herbal-chicken-combo',
+                title: '✨ 归香下饭套',
+                titleEn: 'Angelica Rice King Set (+ RM 12.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${herbalWorth.zh}\n"当归汤汁最该拿来泡饭——蒜香西兰花炒蛋添一口青，再戳破流心荷包蛋，一盅热汤一碗饭，暖到心口。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${herbalWorth.en}\n"That angelica broth was made for rice — greens, a runny yolk, and a bowl to soak it all up."`,
+                items: [
+                    { id: 'herbal-chicken-rice-king-combo', name: '归香下饭套 (原价 RM 15.40)', nameEn: 'Angelica Rice King Set', price: p('herbal-chicken-rice-king-combo', 12.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {
                         ...section,
@@ -548,6 +569,7 @@ export default function AddOnModal({
                 }
                 return section;
             });
+            return [herbalCombo, ...customSections];
         }
 
         // If it's Grandma's Traditional Soy Sauce Chicken Whole Leg (now Monday special, id: 1), same pattern as id:13
@@ -743,7 +765,24 @@ export default function AddOnModal({
 
         // If it's Grandma-Style Ginger-Scallion Fish Fillet (id: 20), add an extra-fish upsell to sides
         if (dish.id === 20) {
-            return addOnSections.map(section => {
+            // 2026-08-16 首次配套餐。这套是六道菜里唯一不放荷包蛋的 —— 姜葱鱼片本身就
+            // 自带一颗荷包蛋（配方 + dashboard DISH_DEFAULT_EGGS 都是这么记的），再放
+            // 就是重复；而它除了葱 32g / 姜 12g 完全没有蔬菜，是全菜单缺绿最严重的一道。
+            // 所以走「西兰花炒蛋补绿 + 马铃薯煎蛋补淀粉和蛋」。
+            const fishWorth = comboWorth('ginger-fish-rice-king-combo', 13.90, [['broccoli-egg', 10.9], ['potato-egg', 4], ['extra-rice', 2]]);
+            const fishCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
+                id: 'ginger-fish-combo',
+                title: '✨ 姜葱下饭套',
+                titleEn: 'Ginger-Scallion Rice King Set (+ RM 13.90)',
+                minSelect: 0,
+                maxSelect: 3,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 马铃薯煎蛋 (${rm('potato-egg', 4)}) + 加饭 150g (${rm('extra-rice', 2)})${fishWorth.zh}\n"姜葱爆香的鱼片本来就配一颗荷包蛋，再添蒜香西兰花炒蛋和绵软马铃薯煎蛋——鱼嫩、菜香、蛋绵，一碗饭根本不够。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + potato fried egg (${rm('potato-egg', 4)}) + extra rice 150g (${rm('extra-rice', 2)})${fishWorth.en}\n"The fish already comes with a sunny-side-up egg — add garlicky greens and a soft potato-egg, and one bowl of rice won't be enough."`,
+                items: [
+                    { id: 'ginger-fish-rice-king-combo', name: '姜葱下饭套 (原价 RM 16.90)', nameEn: 'Ginger-Scallion Rice King Set', price: p('ginger-fish-rice-king-combo', 13.90), category: 'combo' }
+                ]
+            };
+            const customSections = addOnSections.map(section => {
                 if (section.id === 'sides') {
                     return {
                         ...section,
@@ -756,6 +795,7 @@ export default function AddOnModal({
                 }
                 return section;
             });
+            return [fishCombo, ...customSections];
         }
 
         // If it's Golden Scallion Pan-Fried Chicken Soup (id: 5), prepend combo + chicken leg add-ons
