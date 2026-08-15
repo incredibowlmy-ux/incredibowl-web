@@ -119,7 +119,9 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Hometown Stewed Pork Belly with Daikon (id:30) specials ──
   // 2026-08-09 老板拍板：新菜首发就带一个专属加料（白萝卜是这道菜的招牌配角，
   // 吸饱肉汁、清甜解腻，是最自然的加量项）。
-  'extra-daikon-90g': 3.00,
+  // 2026-08-12 老板改：份量 90g→100g 熟（采购生重 127g→200g），价 RM3→RM3.50。
+  // id 里的 90g 是历史命名，**别按 id 猜克数**（不改 id：历史 COGS 归因不失真）。
+  'extra-daikon-90g': 3.50,
 
   // ─── Hometown Glazed Unagi Rice (id:29) specials ──
   // 半片进价 RM 5.225（老板 2026-07-31 给；整片 RM 10.45，主菜每份自带半片）。

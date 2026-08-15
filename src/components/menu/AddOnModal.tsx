@@ -668,6 +668,8 @@ export default function AddOnModal({
 
         // If it's Hometown Stewed Pork Belly with Daikon (id: 30), add an extra-daikon upsell to sides
         // 2026-08-09 老板拍板：新菜首发自带一个专属加料（+90g 白萝卜 RM3）。
+        // 2026-08-12 老板改：份量 90g→100g 熟（生重 200g），价 RM3→RM3.50。
+        // id 保持 extra-daikon-90g（历史命名，不改 id 以免历史成本归因失真）。
         if (dish.id === 30) {
             return addOnSections.map(section => {
                 if (section.id === 'sides') {
@@ -675,7 +677,7 @@ export default function AddOnModal({
                         ...section,
                         items: [
                             ...section.items.filter(item => item.id !== 'less-rice' && item.id !== 'extra-rice' && item.id !== 'brown-rice'),
-                            { id: 'extra-daikon-90g', name: '【清甜解腻】加白萝卜 (90g)', nameEn: 'Extra Daikon (90g)', price: p('extra-daikon-90g', 3.00), category: 'sides', maxQty: 3 },
+                            { id: 'extra-daikon-90g', name: '【清甜解腻】加白萝卜 (100g)', nameEn: 'Extra Daikon (100g)', price: p('extra-daikon-90g', 3.50), category: 'sides', maxQty: 3 },
                             ...section.items.filter(item => item.id === 'less-rice' || item.id === 'extra-rice' || item.id === 'brown-rice')
                         ]
                     };

@@ -3010,7 +3010,7 @@
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
             { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋',                      price: 6.80,  category: '单点' },  // 新 add-on 2026-06-29，通用配菜（所有菜可加）
-            { id: 'side-soup',                   name: '汤 (Soup)',                             price: 18.50, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；2026-08-01 起唯一可用餐券兑换的 add-on（collectMainDishUnitPrices 认 id）；具体汤名待老板提供后更新
+            { id: 'side-soup',                   name: '汤 (Soup)',                             price: 19.90, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；2026-08-01 起唯一可用餐券兑换的 add-on（collectMainDishUnitPrices 认 id）；2026-08-15 老板调价 18.50→19.90；具体汤名待老板提供后更新
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (25g)',                  price: 2.50,  category: '单点' },
             { id: 'extra-corn',                  name: '金黄甜玉米 (30g)',                      price: 2.50,  category: '单点' },
             { id: 'chia-pudding',                name: '奇亚籽布丁',                            price: 6.90,  category: '单点' },
@@ -3040,6 +3040,47 @@
         };
         function canonicalAddonId(id) {
             return id ? (ADDON_ID_ALIASES[id] || id) : id;
+        }
+
+        // ─── 套餐 → 组成项（add-on id）───────────────────────────────
+        // 老板 2026-08-15 要求：备餐单上套餐要写清「叫什么 + 包含什么」，位置在
+        // 每道菜下面、白饭行之上；「装碗分组」里的套餐也一起展开。
+        //
+        // 权威来源 = webapp src/components/menu/AddOnModal.tsx 里每个套餐的
+        // comboWorth(comboId, 兜底价, [[组成id, 单价], …]) 第三个参数 —— 那张表
+        // 同时是「原价 RM x」的算价依据，改套餐内容必然要改它，不会偷偷漂走。
+        //
+        // 这里只存 id 不存名字：显示名一律从 state.addons / ADDON_SEED 现取，
+        // 所以改加料名字（或克数）这边自动跟上，不必两头改。
+        // ⚠️ 新增套餐 = 这里也要加一条，否则备餐单只印套餐名、不印内容。
+        const COMBO_CONTENTS = {
+            'natto-super-combo':            ['onsen-egg-side', 'nori', 'soy-sauce'],
+            'surf-turf-super-combo':        ['extra-prawns', 'extra-chicken-breast', 'extra-fungus'],
+            'chicken-chop-nostalgia-combo': ['extra-chicken-chop', 'sunny-egg', 'extra-rice'],
+            'greek-protein-bomb-combo':     ['extra-greek-chicken-180g', 'extra-aus-potato-80g', 'extra-cauliflower-80g'],
+            'salmon-protein-duo-combo':     ['broccoli-egg', 'onsen-egg'],
+            'salmon-tricolor-combo':        ['extra-edamame', 'extra-corn', 'cherry-tomato'],
+            'sweetsour-chop-combo':         ['broccoli-egg', 'sunny-egg', 'extra-rice'],
+            'sweetsour-rice-combo':         ['sunny-egg', 'extra-rice', 'extra-edamame'],
+            'unagi-double-combo':           ['extra-unagi-half', 'onsen-egg', 'extra-rice'],
+            'unagi-rice-combo':             ['onsen-egg', 'extra-rice', 'extra-edamame'],
+            'shaoxing-pork-combo':          ['extra-shaoxing-pork-100g', 'sunny-egg', 'extra-rice'],
+            'curry-trio-combo':             ['extra-curry-chicken-50g', 'onsen-egg', 'extra-rice'],
+            'taucu-rice-king-combo':        ['broccoli-egg', 'sunny-egg', 'extra-rice'],
+            'scallion-soup-combo':          ['extra-scallion-chop-side', 'sunny-egg', 'extra-rice'],
+            'pork-potato-duo-combo':        ['extra-potato', 'extra-pork-belly'],
+        };
+        function isComboAddon(id) { return !!COMBO_CONTENTS[canonicalAddonId(id)]; }
+        // 「蒜蓉西兰花炒蛋 ＋ 荷包蛋 ＋ 加饭」——【…】营销前缀去掉（厨房不需要），
+        // 克数保留（(100g) 这种是备料要看的）。查不到内容就回空串，调用方不印这行。
+        function comboContentText(id) {
+            const parts = COMBO_CONTENTS[canonicalAddonId(id)];
+            if (!parts) return '';
+            return parts.map(pid => {
+                const cid = canonicalAddonId(pid);
+                const hit = (state.addons || []).find(x => x.id === cid) || ADDON_SEED.find(x => x.id === cid);
+                return String((hit && hit.name) || cid).replace(/^【[^】]*】/, '');
+            }).join(' ＋ ');
         }
 
         // ─── Legacy `menu` collection had `addon-*` entries (added via "+ 加菜品" picker).
@@ -9606,6 +9647,10 @@ incredibowl.my`,
                 .ing-t { font-weight:800; color:#1a7a3a; margin-bottom:3px; }
                 .ing-row { margin:3px 0; }
                 .ing-d { color:#15803d; font-weight:800; }
+                /* 套餐展开行：挂在所属主菜下面，比主菜行缩进一级、颜色淡一档 */
+                .ing-combo { margin:1px 0 3px 16px; color:#166534; }
+                .ing-combo b { font-weight:700; }
+                .ing-norecipe { color:#b45309; font-weight:600; }
                 .ingfail { color:#c0392b; font-size:12px; margin-bottom:10px; }
                 .giftbar { background:#fff7ed; border:1px solid #fdba74; color:#9a3412; font-weight:800; font-size:13px; border-radius:8px; padding:6px 10px; margin-bottom:10px; }
                 .order { border:1px solid #ccc; border-radius:8px; padding:8px 10px; margin-bottom:8px; page-break-inside:avoid; }
@@ -9629,6 +9674,7 @@ incredibowl.my`,
                 .rice-t { font-weight:800; color:#b45309; margin-bottom:3px; }
                 .rice-g { margin:5px 0 2px; font-weight:800; }
                 .rice-row { margin:1px 0 1px 14px; }
+                .rice-combo { margin:0 0 2px 32px; color:#92400e; font-size:12px; }
                 .rice-who { color:#666; }
                 /* 每个餐段（午餐→晚餐→其他）都从新的一页开始，晚餐不再接在午餐尾巴上 */
                 section.meal + section.meal { break-before:page; page-break-before:always; }
@@ -9669,10 +9715,11 @@ incredibowl.my`,
                 '古早味姜葱鱼片饭':   { '荷包蛋': 1 },
                 '山药云耳海陆双鲜炒': { '荷包蛋': 1 },
                 '澳洲和牛饼饭':       { '温泉蛋': 1 },
+                '古早味卤三层肉豆腐蛋': { '卤蛋': 1 },   // 2026-08-17 新菜，每份自带 1 颗卤蛋（老板 08-15 给的配方）
             };
             // 哪些 add-on label 算「鸡蛋类加料」（按蛋型分别累加）
             const EGG_ADDON_TYPES = new Set(['荷包蛋', '温泉蛋', '马铃薯煎蛋']);
-            const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔' };
+            const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔', '卤蛋': '🥚' };
 
             function aggregate(orders) {
                 const dishes = new Map(), addons = new Map();
@@ -9751,19 +9798,59 @@ incredibowl.my`,
                 </div>`;
             }
 
+            // 每道菜今天卖出了哪些套餐 → Map<菜名, Map<套餐名, {label,qty,contents}>>。
+            // 从订单现算（不走 /api/admin/daily-prep）——套餐行只要名字和内容，
+            // 不要克数，所以跟服务端那套食材聚合各管各的，两边不会打架。
+            // 套餐份数不乘主菜数量：addOns.quantity 存的本来就是这一行的总份数
+            //（与 collectPackingData / prepIngredients.ts 同口径）。
+            function collectComboByDish(orders) {
+                const byDish = new Map();
+                const labelToId = packingLabelToId();
+                orders.forEach(o => normalizeOrderItems(o).forEach(it => {
+                    const dish = canonicalDishName(it.name);
+                    if (!dish) return;
+                    (it.addOns || []).forEach(a => {
+                        const label = String(a.label || a.name || a.id || '');
+                        const cid = canonicalAddonId(a.id || lookupAddonId(labelToId, label) || label);
+                        if (!isComboAddon(cid)) return;
+                        const clean = label.replace(ADDON_PRICE_SUFFIX_RE, '') || cid;
+                        let m = byDish.get(dish);
+                        if (!m) { m = new Map(); byDish.set(dish, m); }
+                        const cur = m.get(clean) || { label: clean, qty: 0, contents: comboContentText(cid) };
+                        cur.qty += Math.max(1, Number(a.quantity) || 1);
+                        m.set(clean, cur);
+                    });
+                }));
+                return byDish;
+            }
+
             // Render the per-dish ingredient list (with cook-once dishes marked 全天).
             // ingMeal = { groups:[{dish,servings,allDay,text}], addOnText } from the server, or null.
             // dayTotals = 全天结构化食材合计（毛豆/玉米/樱桃番茄行的数据源），可为空。
             // gifts = 本餐段的新客名单 [{name,meal}]（/api/admin/daily-prep 的 newCustomers）。
             // 赠品那份料已经算进 addOnText / dayTotals 了，这一行是告诉人「放进谁的碗」。
-            function renderIngredients(ingMeal, dayTotals, gifts) {
+            function renderIngredients(ingMeal, dayTotals, gifts, comboByDish) {
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
                 const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
                 const giftList = Array.isArray(gifts) ? gifts : [];
-                if (!groups.length && !hasAddOn && !giftList.length && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
+                const cmb = comboByDish instanceof Map ? comboByDish : new Map();
+                if (!groups.length && !hasAddOn && !giftList.length && !cmb.size && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
+                // 套餐行：跟在所属主菜后面、白饭行之前（老板 2026-08-15 指定位置）。
+                // 只印名字 + 包含哪几样，不印克数 —— 克数在下面「加料」总量行里，
+                // 印两遍会被当成两份料备。
+                const comboRows = (dish) => {
+                    const m = cmb.get(dish);
+                    if (!m) return '';
+                    return [...m.values()].map(c =>
+                        `<div class="ing-combo"><b>${escP(c.label)} ×${c.qty}</b>${c.contents ? ` ＝ ${escP(c.contents)}` : ''}</div>`).join('');
+                };
                 const rows = groups.map(g =>
-                    `<div class="ing-row"><b class="ing-d">【${escP(g.dish)} ×${g.servings}${g.allDay ? ' · 全天' : ''}】</b> ${escP(g.text)}</div>`).join('');
+                    `<div class="ing-row"><b class="ing-d">【${escP(g.dish)} ×${g.servings}${g.allDay ? ' · 全天' : ''}】</b> ${escP(g.text)}</div>` + comboRows(g.dish)).join('')
+                    // 卖了套餐、但这道菜还没录配方 → 主菜行根本不存在，套餐会凭空消失。
+                    // 单独补一行，顺便把「没配方」这件事摆在明面上。
+                    + [...cmb.keys()].filter(d => !groups.some(g => g.dish === d)).map(d =>
+                        `<div class="ing-row"><b class="ing-d">【${escP(d)}】</b> <span class="ing-norecipe">（暂无配方，未计入采购）</span></div>` + comboRows(d)).join('');
                 // 糙米 is a batch-cooked staple too — beside 白饭, not in 加料.
                 const staples = [
                     ingMeal.riceText ? `<b class="ing-d">白饭（统一煮）</b> ${escP(ingMeal.riceText)}` : '',
@@ -9807,9 +9894,13 @@ incredibowl.my`,
                     const rows = groups[g.key];
                     const total = sum(rows);
                     if (total === 0) return '';
-                    const lines = rows.map(r =>
-                        `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`
-                    ).join('');
+                    const lines = rows.map(r => {
+                        const bowl = `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`;
+                        // 套餐展开成「包含哪几样」—— 装碗的人不必回头翻菜单（老板 2026-08-15）
+                        const combo = (r.combos || []).filter(c => c.contents).map(c =>
+                            `<div class="rice-combo">${escP(c.label)} ×${c.qty} ＝ ${escP(c.contents)}</div>`).join('');
+                        return bowl + combo;
+                    }).join('');
                     return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${lines}`;
                 }).join('');
                 // 加饭明细独立小节（和少饭分组同级同样式）：逐份列饭型+菜+客户
@@ -9830,7 +9921,7 @@ incredibowl.my`,
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
                 const agg = aggregate(sorted);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
-                const ingHtml = renderIngredients(ingMeal, dayTotals, gifts);
+                const ingHtml = renderIngredients(ingMeal, dayTotals, gifts, collectComboByDish(sorted));
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -9956,6 +10047,9 @@ incredibowl.my`,
                     const dish = canonicalDishName(it.name) || '—';
                     let brownQty = 0, lessQty = 0, extraQty = 0, tagQty = 0;
                     const tags = [];
+                    // 套餐单独再存一份结构化的（tags 不动 —— 装碗打包页与备餐单共用
+                    // 同一套 tags 口径）。打印备餐单拿它把套餐展开成「包含哪几样」。
+                    const combos = [];
                     (it.addOns || []).forEach(a => {
                         const label = String(a.label || a.name || a.id || '加料');
                         const q = Math.max(1, Number(a.quantity) || 1);
@@ -9966,6 +10060,9 @@ incredibowl.my`,
                         if (PACKING_COMBO_EXTRA_RICE.has(cid)) { extraQty += q; }
                         tagQty += q;
                         tags.push(`${label.replace(ADDON_PRICE_SUFFIX_RE, '')} ×${q}`);
+                        if (isComboAddon(cid)) {
+                            combos.push({ label: label.replace(ADDON_PRICE_SUFFIX_RE, ''), qty: q, contents: comboContentText(cid) });
+                        }
                         const seed = (state.addons || []).find(x => x.id === cid);
                         const cur = sides.get(cid) || { name: (seed && seed.name) || label.replace(ADDON_PRICE_SUFFIX_RE, ''), qty: 0 };
                         cur.qty += q;
@@ -9983,7 +10080,7 @@ incredibowl.my`,
                     const noteParts = [];
                     if (it.note) noteParts.push(String(it.note).trim());
                     if (orderNote) noteParts.push(orderNote);
-                    const row = { dish, tags, tagQty, note: noteParts.join('；'), who, code, extraQty };
+                    const row = { dish, tags, tagQty, combos, note: noteParts.join('；'), who, code, extraQty };
                     if (wn > 0) groups.whiteNormal.push({ ...row, count: wn });
                     if (wl > 0) groups.whiteLess.push({ ...row, count: wl });
                     if (bn > 0) groups.brownNormal.push({ ...row, count: bn });
@@ -10702,7 +10799,7 @@ incredibowl.my`,
         // 避免逐道菜往 DISH_ADDON_MAP 复制。如该菜已自列同 id 则去重。
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
-            { id: 'side-soup',                   label: '汤 (Soup)',        price: 18.50 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）
+            { id: 'side-soup',                   label: '汤 (Soup)',        price: 19.90 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）；2026-08-15 调价 18.50→19.90
             // 2026-08-09 老板拍板：白萝卜**只在 dashboard 挂全部菜**，网站那边维持
             // 只有「家乡白萝卜焖花肉」(webapp id 30) 自己能加（AddOnModal 的 dish.id===30
             // 分支），别往网站的默认 sides/alacarte 里加 —— 两边故意不对称。
@@ -12811,7 +12908,7 @@ incredibowl.my`,
                     const voucherValue = Math.max(0, fullPrice - topUp);
                     for (let i = 0; i < q; i++) prices.push(voucherValue);
                 }
-                // Off-menu 汤（side-soup add-on，RM18.50 = 标准主菜价）是唯一可用餐券
+                // Off-menu 汤（side-soup add-on，RM19.90 = 主菜价上档）是唯一可用餐券
                 // 兑换的 add-on（老板 2026-08-01 拍板）：每份汤 = 1 个可覆盖单位，
                 // 进同一个价格池按 FIFO 扣。其他 add-on 仍然不抵。
                 // 单点配菜行（无主菜）里的汤同样计入 —— 老客户光买汤也能用券。
