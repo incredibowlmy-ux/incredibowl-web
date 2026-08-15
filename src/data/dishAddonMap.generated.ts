@@ -1171,9 +1171,9 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "绍兴酒蒸花肉": [
     {
-      "id": "shaoxing-pork-combo",
-      "label": "酒香干饭套",
-      "price": 15.9
+      "id": "shaoxing-rice-king-combo",
+      "label": "酒香下饭套",
+      "price": 12.9
     },
     {
       "id": "extra-shaoxing-pork-50g",

@@ -569,17 +569,21 @@ export default function AddOnModal({
 
         // If it's Shaoxing Wine Steamed Pork Belly (id: 4), prepend combo + dual-tier pork add-ons
         if (dish.id === 4) {
-            const shaoxingWorth = comboWorth('shaoxing-pork-combo', 15.90, [['extra-shaoxing-pork-100g', 14.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
+            // 2026-08-16 老板要求「照豆酱那套改」：旧「酒香干饭套」(花肉100g+蛋+饭 15.90，
+            // 原价 19.40 逼近整碗 19.90、套内肉比主菜自带还多) 退役，换互补型「酒香下饭套」
+            // —— 结构照抄已验证的家乡下饭王套/甜酸下饭套（西兰花炒蛋是花肉家族常年加料王），
+            // 加肉走 50g/100g 单点双档。与 08-01 豆酱那次同一套解法、同一个价位。
+            const shaoxingWorth = comboWorth('shaoxing-rice-king-combo', 12.90, [['broccoli-egg', 10.9], ['sunny-egg', 2.5], ['extra-rice', 2]]);
             const shaoxingCombo: AddOnSection & { extraDesc?: string; extraDescEn?: string } = {
                 id: 'shaoxing-combo',
-                title: '✨ 酒香干饭套',
-                titleEn: 'Shaoxing Rice King Set (+ RM 15.90)',
+                title: '✨ 酒香下饭套',
+                titleEn: 'Shaoxing Rice King Set (+ RM 12.90)',
                 minSelect: 0,
                 maxSelect: 3,
-                extraDesc: `包含：酒香绍兴花肉 100g (${rm('extra-shaoxing-pork-100g', 14.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${shaoxingWorth.zh}\n"绍兴酒香渗进双倍花肉，戳破流心荷包蛋拌饭——干饭魂彻底点燃！"`,
-                extraDescEn: `Includes: 100g Shaoxing pork belly (${rm('extra-shaoxing-pork-100g', 14.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${shaoxingWorth.en}\n"Double pork soaked in Shaoxing wine, a runny egg over extra rice — pure comfort."`,
+                extraDesc: `包含：蒜蓉西兰花炒蛋 (${rm('broccoli-egg', 10.9)}) + 古早味荷包蛋 (${rm('sunny-egg', 2.5)}) + 加饭 150g (${rm('extra-rice', 2)})${shaoxingWorth.zh}\n"绍兴酒香最勾饭，就缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，酒香一滴不剩。"`,
+                extraDescEn: `Includes: garlic broccoli with soft-scrambled egg (${rm('broccoli-egg', 10.9)}) + old-school sunny-side-up egg (${rm('sunny-egg', 2.5)}) + extra rice 150g (${rm('extra-rice', 2)})${shaoxingWorth.en}\n"Shaoxing wine begs for rice — garlicky broccoli-egg and a runny yolk finish every drop."`,
                 items: [
-                    { id: 'shaoxing-pork-combo', name: '酒香干饭套 (原价 RM 19.40)', nameEn: 'Shaoxing Rice King Set', price: p('shaoxing-pork-combo', 15.90), category: 'combo' }
+                    { id: 'shaoxing-rice-king-combo', name: '酒香下饭套 (原价 RM 15.40)', nameEn: 'Shaoxing Rice King Set', price: p('shaoxing-rice-king-combo', 12.90), category: 'combo' }
                 ]
             };
             const customSections = addOnSections.map(section => {

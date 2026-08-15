@@ -100,7 +100,13 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // ─── Shaoxing Wine Steamed Pork Belly (id:4) specials ──
   'extra-shaoxing-pork-100g': 14.90,
   'extra-shaoxing-pork-50g': 7.90,   // 2026-07-16 双档策略：低门槛档
-  'shaoxing-pork-combo': 15.90,      // 酒香干饭套：花肉100g+荷包蛋+加饭（原价 19.40）
+  // 2026-08-16 老板要求「照豆酱那套改」——与 08-01 豆酱重构同一个病因：旧「酒香干饭套」
+  // (花肉100g+荷包蛋+加饭 15.90) 原价 19.40 逼近整碗 19.90，且套内肉 100g 熟(=160g 生)
+  // 比主菜自带的 140g 生还多。换互补型「酒香下饭套」——结构照抄已验证的家乡下饭王套/
+  // 甜酸下饭套，加肉需求交给 50g/100g 单点双档。内容全换所以换新 id，老 id 留着：
+  // 在途购物车还能结账 + dashboard 历史 COGS 归因不失真。
+  'shaoxing-rice-king-combo': 12.90, // 酒香下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'shaoxing-pork-combo': 15.90,      // 退役 2026-08-16（换互补型）；留给在途订单，勿复用勿删
 
   // ─── Homestyle Japanese Curry Rice (id:25) specials ──
   'extra-curry-chicken-50g': 4.50,
