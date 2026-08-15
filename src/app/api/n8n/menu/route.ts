@@ -67,6 +67,29 @@ function menuLine(
     : `${prefix}${body}${topUp}${warningSuffix(dish)}${low}`;
 }
 
+const WD_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** English mirror of menuLine —— 客流是中英混，bot 的英文剧本直接引用这一段。 */
+function menuLineEn(
+  dish: MenuItem,
+  kind: 'staple' | 'special',
+  wd: number,
+  remaining: number | undefined,
+): string {
+  const prefix = kind === 'staple' ? '·' : `· ${WD_EN[wd]} special: `;
+  const low = typeof remaining === 'number' && remaining > 0 && remaining <= 5
+    ? ` (only ${remaining} left today)` : '';
+  return `${prefix}${kind === 'staple' ? ' ' : ''}${dish.nameEn} RM${dish.price.toFixed(2)}${low}`;
+}
+
+/** 碗妈 bot 发给客户的一键下单链接。ref=wa 用于归因，lead 由 n8n 拼上去。 */
+const ORDER_BASE = 'https://www.incredibowl.my/o';
+function orderUrl(dishId: number | null, locale: 'zh' | 'en'): string {
+  const path = locale === 'en' ? 'https://www.incredibowl.my/en/o' : ORDER_BASE;
+  const qs = dishId === null ? 'ref=wa' : `d=${dishId}&ref=wa`;
+  return `${path}?${qs}`;
+}
+
 export async function GET(req: NextRequest) {
   // ── Auth ──────────────────────────────────────────────────
   const expected = process.env.N8N_API_KEY;
@@ -113,16 +136,24 @@ export async function GET(req: NextRequest) {
   const relative = daysAhead === 0 ? '今天' : daysAhead === 1 ? '明天' : daysAhead === 2 ? '后天' : '';
   const deliveryLabel = relative ? `${relative} ${dateStr}（${dayName}）` : `${dateStr}（${dayName}）`;
 
+  // 配送情境文案：中英必须**同源同语义**。曾经英文侧硬编码「Orders close 6:00 AM
+  // daily」而中文走这里的情境判断 —— 结果周末的英文客户被告知截单时间，却不知道
+  // 要等到周一。凡是会被 bot 原样念给客户的句子，两种语言都在这里生成。
   let deliveryContext: string;
+  let deliveryContextEn: string;
   if (isWeekendOrder) {
     deliveryContext = `今天是周末,碗妈休息。下单后${dayName}送达。`;
+    deliveryContextEn = `It's the weekend — BowlMama rests. Order now and it arrives ${WD_EN[wd]}.`;
   } else if (isAfterCutoff || daysAhead > 0) {
     deliveryContext = `已过早上6点截单,下单${dayName}配送。`;
+    deliveryContextEn = `Today's 6:00 AM cut-off has passed — order now for ${WD_EN[wd]} delivery.`;
   } else {
     deliveryContext = `还没截单,下单今天就能送到。`;
+    deliveryContextEn = `Still before the 6:00 AM cut-off — order now and it arrives today.`;
   }
   if (closedSkipped) {
     deliveryContext += `（${closedSkipped} 当天暂停接单,已顺延。）`;
+    deliveryContextEn += ` (We're closed on ${closedSkipped}, so it rolls forward.)`;
   }
 
   // ── Dish stock (fail-open: stock read error never blanks the menu) ──
@@ -167,6 +198,28 @@ export async function GET(req: NextRequest) {
   }
   const todayMenu = lines.join('\n');
 
+  // ── 短版：**只有能点的菜**，给 bot 的新客第一条消息用 ────────
+  // 长版 today_menu 尾部会挂「暂别中」（现在有 10 道）——那对一个刚点进来、
+  // 只想知道"今天能吃什么"的新客是纯噪音，一屏刷满全是吃不到的菜名。
+  // 客服问答仍然用长版（客户问「XX 还有吗」要答得出来）。
+  const shortLines: string[] = [];
+  for (const d of orderableStaples) shortLines.push(menuLine(d, 'staple', wd, remainingOf(d)));
+  for (const d of orderableSpecials) shortLines.push(menuLine(d, 'special', wd, remainingOf(d)));
+  const todayMenuShort = shortLines.join('\n');
+
+  // ── 英文版菜单块（客流中英混，bot 按客户语言二选一）──────
+  const linesEn: string[] = ['Available every day:'];
+  for (const d of orderableStaples) linesEn.push(menuLineEn(d, 'staple', wd, remainingOf(d)));
+  for (const d of orderableSpecials) linesEn.push(menuLineEn(d, 'special', wd, remainingOf(d)));
+  if (soldOut.length) {
+    linesEn.push(`Sold out today: ${soldOut.map(d => d.nameEn).join(', ')}`);
+  }
+  const todayMenuEn = linesEn.join('\n');
+  const shortLinesEn: string[] = [];
+  for (const d of orderableStaples) shortLinesEn.push(menuLineEn(d, 'staple', wd, remainingOf(d)));
+  for (const d of orderableSpecials) shortLinesEn.push(menuLineEn(d, 'special', wd, remainingOf(d)));
+  const todayMenuShortEn = shortLinesEn.join('\n');
+
   const dishJson = (d: MenuItem, kind: 'staple' | 'special') => ({
     id: d.id,
     name: d.name,
@@ -176,6 +229,9 @@ export async function GET(req: NextRequest) {
     kind,
     remaining: remainingOf(d) ?? null, // null = unlimited
     soldOut: isSoldOut(d),
+    // 一键下单链接：bot 直接发，不用自己拼 URL（拼错就是死链）
+    orderUrl: orderUrl(d.id, 'zh'),
+    orderUrlEn: orderUrl(d.id, 'en'),
   });
 
   return NextResponse.json(
@@ -188,8 +244,19 @@ export async function GET(req: NextRequest) {
         is_after_cutoff: isAfterCutoff,
       },
       delivery_label: deliveryLabel,
+      delivery_label_en: relative
+        ? `${daysAhead === 0 ? 'today' : daysAhead === 1 ? 'tomorrow' : 'the day after'} ${WD_EN[wd]}`
+        : WD_EN[wd],
       delivery_context: deliveryContext,
+      delivery_context_en: deliveryContextEn,
       today_menu: todayMenu,
+      today_menu_en: todayMenuEn,
+      // 短版 = 只有能点的菜（新客第一条消息用）。长版留给客服问答。
+      today_menu_short: todayMenuShort,
+      today_menu_short_en: todayMenuShortEn,
+      // 通用下单入口（没指定菜时用）—— 落在极简下单页，不是首页
+      order_url: orderUrl(null, 'zh'),
+      order_url_en: orderUrl(null, 'en'),
       dishes: [
         ...staples.map(d => dishJson(d, 'staple')),
         ...specials.map(d => dishJson(d, 'special')),

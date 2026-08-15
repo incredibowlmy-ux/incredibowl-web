@@ -79,13 +79,25 @@ export async function GET(req: NextRequest) {
     const normalized = normalizePhone(phoneRaw);
     const userSnap = normalized ? await findUserByNormalizedPhone(db, normalized) : null;
     const user = userSnap ? (userSnap.data() as Record<string, any>) : null;
-    const uid = userSnap ? userSnap.id : `manual_${phoneDigits}`; // 纯 WhatsApp 客户的订单挂在 manual_*
+    const uid = userSnap ? userSnap.id : `manual_${phoneDigits}`; // 券/credit 仍按这个主 uid 查
+
+    // ⚠️ 手动单的 userId 用的是**本地号码格式**（`manual_0125230066`），而 WhatsApp
+    // webhook 传进来的 msg.from 是国际格式（`60125230066`）。只拼 `manual_${digits}`
+    // 会得到 `manual_60125230066` —— 对不上任何一笔，全库 266 笔手动单客户对 bot
+    // 完全隐形，「老客一键复购」会对几乎所有纯 WhatsApp 老客退化成陌生人接待。
+    // 两种格式都查（单字段 in 查询，自动索引，不需要建复合索引）。
+    const localDigits = phoneDigits.startsWith('60') ? `0${phoneDigits.slice(2)}` : phoneDigits;
+    const uidCandidates = Array.from(new Set([
+      ...(userSnap ? [userSnap.id] : []),
+      `manual_${phoneDigits}`,
+      `manual_${localDigits}`,
+    ])).slice(0, 10); // Firestore in 查询上限，实际最多 3 个
 
     // ── 并行查：订单 / 餐券 / 加料 credit ──────────────
     const now = Date.now();
     const [ordersQ, vouchersQ, addonCredits] = await Promise.all([
       // 等值查询不需要复合索引；单客户订单量小，内存排序即可
-      db.collection('orders').where('userId', '==', uid).limit(300).get(),
+      db.collection('orders').where('userId', 'in', uidCandidates).limit(300).get(),
       userSnap
         ? db.collection('mealVouchers')
             .where('userId', '==', uid)
@@ -122,6 +134,7 @@ export async function GET(req: NextRequest) {
         deliveryTime: String(o.deliveryTime || ''),
         status: String(o.status || ''),
         items: itemsSummary(o.items),
+        rawItems: Array.isArray(o.items) ? o.items : [],
         trackToken: typeof o.trackToken === 'string' ? o.trackToken : '',
         userName: String(o.userName || ''),
       };
@@ -143,6 +156,47 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.deliveryDate.localeCompare(a.deliveryDate))
       .slice(0, 3)
       .map(o => ({ deliveryDate: o.deliveryDate, items: o.items }));
+
+    // ── 一键复购链接 ────────────────────────────────────
+    // 老客剧本的核心：「还是老样子吗？点这里 30 秒付好」。名字→dish id 的映射
+    // 和「这道菜下个配送日到底还能不能点」都在服务端算完，n8n 只负责把链接发出去
+    // ——让 bot 自己拼 URL / 自己判断可点性，就是 v2 报错菜单那类事故的老路。
+    const lastOrder = all
+      .filter(o => o.deliveryDate < today && o.status !== 'cancelled')
+      .sort((a, b) => b.deliveryDate.localeCompare(a.deliveryDate))[0];
+    let reorder: {
+      items: { dishId: number; name: string; qty: number }[];
+      meal: 'lunch' | 'dinner';
+      url: string; urlEn: string; summary: string; dropped: string[];
+    } | null = null;
+    if (lastOrder) {
+      const { weeklyMenu } = await import('@/data/weeklyMenu');
+      const picked: { dishId: number; name: string; qty: number }[] = [];
+      const dropped: string[] = [];
+      for (const it of lastOrder.rawItems) {
+        const nm = String((it as any)?.name || '');
+        if (!nm || nm.trimStart().startsWith('↳')) continue; // 加料行不参与复购链接
+        const dish = weeklyMenu.find(d => !d.retired && !d.hidden && (d.name === nm || d.nameEn === nm));
+        const qty = Math.max(1, Math.floor(Number((it as any)?.quantity) || 1));
+        if (!dish) { dropped.push(nm); continue; }
+        picked.push({ dishId: dish.id, name: dish.name, qty });
+      }
+      // ⚠️ 这里**故意不判**「这道菜下个配送日能不能点」。判它需要一份 MYT 正确的
+      // 配送日计算，而 computeMenuDates 是客户端函数（用本地 getHours，服务器跑在
+      // UTC 上会差 8 小时）——再抄一份日期逻辑正是 memory 里记的事故根因。
+      // /o 页收到链接后会把每道菜落到它各自的最近可点日，点不了的还会明确告诉客户。
+      // 判断留在唯一有正确时钟的地方。
+      if (picked.length) {
+        const meal: 'lunch' | 'dinner' = lastOrder.mealType === 'dinner' ? 'dinner' : 'lunch';
+        const qs = `items=${picked.map(p => `${p.dishId}x${p.qty}`).join(',')}&meal=${meal}&ref=wa`;
+        reorder = {
+          items: picked, meal, dropped,
+          summary: picked.map(p => `${p.name}×${p.qty}`).join(' + '),
+          url: `${SITE}/o?${qs}`,
+          urlEn: `${SITE}/en/o?${qs}`,
+        };
+      }
+    }
 
     const found = !!userSnap || all.length > 0;
     const name = user?.displayName || all[0]?.userName || '';
@@ -188,6 +242,7 @@ export async function GET(req: NextRequest) {
       addonCredits: (addonCredits as any[]).map(c => ({ addonId: c.addonId, name: c.addonName, remaining: c.remaining })),
       activeOrders: active,
       recentOrders: recent,
+      reorder,
       contextBlock: lines.join('\n'),
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err: any) {

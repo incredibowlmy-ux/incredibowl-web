@@ -55,6 +55,8 @@ export async function POST(req: Request) {
       clientMealVoucherDiscount,
       clientAddonCreditDiscount,
       locale: rawLocale,
+      ref: rawRef,
+      leadToken: rawLeadToken,
     } = body;
     const userId = auth.uid; // authoritative — body userId ignored
     // 下单时的界面语言，落到订单文档上供收据邮件选模板。请求体不可信，只认
@@ -62,6 +64,12 @@ export async function POST(req: Request) {
     // 纯文案、不参与计价，是订单通知语言的**唯一**来源。手动单（manualOrderCore）
     // 不盖这个章 —— 它们 userEmail 为空，收据邮件本来就跳过，加了是死代码。
     const orderLocale: 'zh' | 'en' = rawLocale === 'en' ? 'en' : 'zh';
+    // 来源归因（碗妈 bot 的 /o 深链）。**纯统计**：不参与计价、不参与权限，
+    // 伪造它最多把自己的订单标错来源。所以只做白名单 + 长度裁剪，不做校验。
+    const orderSource: string = rawRef === 'wa' ? 'wa' : '';
+    const waLeadToken: string = typeof rawLeadToken === 'string'
+      ? rawLeadToken.replace(/[^a-z0-9]/gi, '').slice(0, 32)
+      : '';
     const mealVouchersUsed = Math.max(0, Math.floor(Number(rawMealVouchersUsed) || 0));
 
     // ── Basic validation ──────────────────────────────────────
@@ -558,6 +566,8 @@ export async function POST(req: Request) {
         payload.deliveryLng = userLng;
       }
       if (receiptUrl) payload.receiptUrl = receiptUrl;
+      if (orderSource) payload.orderSource = orderSource;
+      if (waLeadToken) payload.waLeadToken = waLeadToken;
       if (promoCode) payload.promoCode = promoCode.trim().toUpperCase();
       if (currentPromo > 0) payload.promoDiscount = currentPromo;
       if (orderNote) payload.note = orderNote;

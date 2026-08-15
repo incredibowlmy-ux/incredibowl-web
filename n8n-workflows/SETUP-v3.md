@@ -1,0 +1,119 @@
+# Bowlmama v3 部署手册（老板照着点就行）
+
+> v3 解决的问题：v2 上线以来 **0 成交**（Firestore 实查：`waOrderDrafts` 0 份、
+> `batchTag=wa-*` 订单 0 笔）。根因是「让 AI 当收银员」—— 新客要打字说清 6 样信息
+> 才能下单，客户沉默后又没有任何追单。v3 把成交路径确定性化：**秒回一条把菜单+
+> RM5+下单链接一次给全，客户点链接在网站付款；沉默就自动追两次。**
+
+---
+
+## 文件清单
+
+| 文件 | 是什么 | 必须？ |
+|---|---|---|
+| `bowlmama-v3-main.json` | 主 workflow（替代 v2） | ✅ |
+| `bowlmama-v3-followup.json` | 自动追单 cron（每 15 分钟） | ✅ 这是「不用你手动跟进」的那一半 |
+| `bowlmama-v3-error.json` | 挂了自动 Telegram 报警 | 强烈建议 |
+| `bowlmama-v2-draft-tool.json` | AI 的「建订单草稿」子 workflow | ✅ **沿用 v2 那个，不用重导** |
+
+> ⚠️ 前置：网站要先部署上线（`/api/n8n/lead`、`/api/n8n/capacity`、`/o` 极简下单页）。
+> 没上线的话 bot 仍能聊天，但链接是死的、追单不会触发。
+
+---
+
+## 第 1 步：导入 3 个 JSON（每个 2 分钟）
+
+n8n → Workflows → ⋯ → Import from File。
+
+**导入后逐项核对：**
+
+1. **凭据**：WhatsApp / Google Sheets / Gemini / N8N API Key 四种应自动挂上
+   （凭据 id 与 v2 相同）。看到红色感叹号才需要手动重选。
+2. **`create_order_draft` 节点** → Workflow 下拉里**重新选**「Bowlmama v2 — 下单草稿工具」
+   （跨实例导入 workflow id 会变，必须手动选一次）。这是 v2 那个子 workflow，不用重导。
+3. **`Boss Alert Telegram` 节点** → 凭据选你现有的 Telegram Bot；
+   chatId 默认读环境变量 `TELEGRAM_OWNER_CHAT_ID`，n8n 里没这个变量的话直接填你的 chat id。
+4. **`check_capacity` 工具节点** → 确认 Body 里有一个 `date` 参数、值为「由模型提供」。
+5. **`Wait 防抖`** → 默认 8 秒，单位必须是 **seconds**（已写死，别改成小时）。
+
+**Error Handler**：主 workflow → 右上 ⋯ → Settings → **Error Workflow** →
+选「Bowlmama v3 — Error Handler」→ Save。追单 workflow 也照做一次。
+
+## 第 2 步：切换上线（30 秒，可随时切回）
+
+v3 的 webhook path 与 v2 相同（`whatsapp-receive`），**Meta 后台什么都不用改**：
+
+1. 「Bowlmama v2」设为 **Inactive**
+2. 「Bowlmama v3」设为 **Active**
+3. 「Bowlmama v3 — 自动追单」设为 **Active**
+
+回滚 = 反过来，10 秒完成。
+
+> 📌 **不再需要 `wa_buffer` 表**。v3 的防抖改用 Firestore 的 lead 文档当水位线，
+> 那张 Google Sheet 表从此没人读了（留着不影响，想删也行）。
+> `dishes` / `promo` / 聊天日志几张表照旧在用，**别删**。
+
+---
+
+## 第 3 步：真机 smoke（15 分钟，拿你自己的非老板手机号测）
+
+按顺序测，全过才算上线成功：
+
+1. **新客秒回**：发「hi」→ 应在 **1-2 秒内**收到一条完整开场（菜单 + RM5 + 链接），
+   不是等 10 秒。
+2. **链接能下单**：点开场里的链接 → 应落在极简下单页，菜已经在车里 → 填地址 → FPX 付款
+   → dashboard 出现订单，且订单文档带 `orderSource: "wa"`。
+3. **英文**：换一句英文发（如 "hi what do you have"）→ 应收到**全英文**开场 + `/en/o` 链接。
+4. **老客认得出**：用有历史单的号码发「今天有什么」→ 开场应叫得出名字 +「还是老样子吗？
+   <上次点的菜>」+ 预填好的复购链接。
+5. **自动追单**：发完「hi」后**不要再动**。35 分钟后应收到第 1 条追单；当晚 21:00 收到第 2 条。
+   （⚠️ 若在 22:00–09:00 之间测，第 1 条会顺延到早上 9 点 —— 这是设计如此，不是坏了。）
+6. **追单会停**：点了链接或下了单之后，**不该**再收到追单。
+7. **团餐**：发「我要订 30 份公司午餐」→ 应收到团餐开场（餐盒式/不是 buffet/附餐具/
+   ±15 分钟准点/可开收据/只问 3 样）。再补上日期人数地址 → 碗妈应报出**菜单原价×份数**
+   的明细 + 50% 定金金额，并同时给你发求救警报（团餐必须你过目）。
+8. **档期防超卖**：挑一个已经排满的日子问团餐 → 碗妈**不该**当场承诺，应说「档期比较满」。
+9. **运费工具**：发一个地址 → 运费应与网站 DeliveryChecker 一致。
+10. **位置 pin**：发一个定位 → 秒回距离+运费 **+ 下单链接**（v3 新增）。
+11. **求救双通道**：发「我要投诉」→ 你的 WhatsApp **和** Telegram 都应收到警报。
+12. **老板转达**（回归测试）：引用求救警报回一句话 → 客户收到润色版。
+13. **QR 兜底路径**（回归测试）：跟碗妈说「不想点链接，帮我直接落单」→ 应走草稿→QR→
+    你核截图回「1」→ 建单。这条链路与 v2 完全一致，没动过。
+14. **Error Workflow**：临时把 `Get Live Menu` 的 URL 改错一个字母 → 发消息 →
+    Telegram 应收到报警 → 改回来。
+
+---
+
+## 已知边界（诚实清单）
+
+- **客户到底肯不肯点链接，是全案唯一没验证过的假设。** 兜底是追单第 1 条里那句
+  「不想点链接也行，回 1 碗妈直接帮你落单」—— 客户回 1 就走原来的 WhatsApp 内 QR 流程。
+  两周后看 `waLeads` 里 `clicked / engaged` 的比值就知道答案。
+- **6 点截单没改**。中午来的广告新客最早只能订明天，话术能改善，物理改善不了。
+- **QR 单仍需你人工核截图**（你要求先看到钱）。只有走链接 FPX 的单是真正无人值守的。
+- **追单只在 24 小时客服窗口内**（Meta 规则）。超窗要用审核过的 template，第一阶段没做。
+  影响最大的是团餐 —— 决策周期常常超过一天，当晚 21:00 那一跟往往不够。
+- **FIRST5 只剩 42 次额度**（maxUses 50、已用 8）。按你的决定不提额度，用完后
+  客户点链接会看到「优惠码无效」。要提额度告诉我一声。
+- **素食 / 清真 / 忌口一律不做**，按你的要求 bot 不主动提、客户问了才诚实讲。
+- **餐券抵扣单不走 bot**（与 v2 相同）。
+
+## 出问题怎么办
+
+- 客户已读不回 + Telegram 有报警 → 打开报警里的执行链接看哪个节点红了
+- 想临时回到 v2 → v3 Inactive、v2 Active（10 秒）
+- 追单没发 → 打开「Bowlmama v3 — 自动追单」看执行记录；
+  `/api/n8n/lead?action=due` 返回空是正常的（没到点 / 客户已成交 / 已超 24h 窗口）
+- 客户抱怨被打扰 → 追单上限写死 2 次、静默时段 22:00–09:00 不发，
+  这些规则有 35 条断言看着（`npx tsx scripts/dogfood-wa-lead.mts`）
+
+## 改动了要重新生成
+
+workflow JSON 是**脚本生成的**，别手改 JSON：
+
+```
+node scripts/build-n8n-v3.mjs          # 改 scripts/build-n8n-v3.mjs 后重新生成
+node scripts/validate-n8n-workflows.mjs # 图结构 / 表达式引用 / 凭据校验
+node scripts/verify-n8n-v3.mjs   # Code 节点语法 + Wait 单位 + 孤儿节点
+node scripts/dogfood-n8n-v3-scripts.mjs http://localhost:PORT KEY   # 真数据跑话术
+```

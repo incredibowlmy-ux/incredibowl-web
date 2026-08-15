@@ -8,7 +8,12 @@ module.exports = {
   // them out of the sitemap. /meal-vouchers + legal pages stay (self-canonical,
   // indexable).
   // /driver + /track are the delivery-tracking internal/private pages (noindex).
-  exclude: ['/admin*', '/checkout*', '/member*', '/en/member*', '/account*', '/login*', '/icon.png', '/dashboard-*', '/driver*', '/track*'],
+  // /o + /en/o are the WhatsApp bot's deep-link order landing pages: noindex by
+  // metadata, entered ONLY via a link BowlMama sends. Listing a noindex URL in
+  // the sitemap makes Search Console flag "Submitted URL marked noindex", and a
+  // bare /o would compete with / and /order for the same intent.
+  // ⚠️ Exact strings, NOT '/o*' — that glob would swallow /order and /en/order.
+  exclude: ['/admin*', '/checkout*', '/member*', '/en/member*', '/account*', '/login*', '/icon.png', '/dashboard-*', '/driver*', '/track*', '/o', '/en/o'],
   robotsTxtOptions: {
     policies: [
       // Default policy for all crawlers (Google, Bing, DuckDuckGo, etc.)

@@ -20,6 +20,7 @@ import { getDishPrice } from '@/data/promoConfig';
 import { dishVoucherValue, weeklyMenu } from '@/data/weeklyMenu';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 import { readPendingPromo, clearPendingPromo } from '@/lib/firstOrderPromo';
+import { readOrderAttribution } from '@/lib/orderAttribution';
 import { useCartStore } from '@/store/cartStore';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
@@ -569,6 +570,9 @@ export default function CartDrawer({
                 // 邮件是服务端发的（webhook / dashboard 手动确认都可能触发），
                 // 那时候没有浏览器也没有语言头 —— 只能靠下单这一刻存下来。
                 locale,
+                // 来源归因（从 /o 深链进来的 WhatsApp 客户才有）。纯统计字段，
+                // 不参与计价；服务端会再裁剪一遍。见 lib/orderAttribution.ts。
+                ...(readOrderAttribution() ?? {}),
             }),
         });
 
