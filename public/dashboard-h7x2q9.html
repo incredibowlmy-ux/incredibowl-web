@@ -10856,6 +10856,10 @@ incredibowl.my`,
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
             { id: 'minced-pork-egg',             label: '猪肉碎煎蛋',      price: 10.90 },  // 新 add-on 2026-08-16，off-menu 只在 dashboard（网站 AddOnModal 故意不上）；单点配菜行也能单卖
+            // 2026-08-16 老板拍板：大虾仁**只在 dashboard 挂全部菜**（原本只有
+            // 「山药云耳海陆双鲜炒」webapp id 12 自己能加），网站那边维持原样 ——
+            // 两边故意不对称，同白萝卜那条。id 12 自列了同 id，getDishAddons 会去重。
+            { id: 'extra-prawns',                label: '鲜甜大虾仁 (4只)', price: 7.00 },
             { id: 'side-soup',                   label: '汤 (Soup)',        price: 19.90 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）；2026-08-15 调价 18.50→19.90
             // 2026-08-09 老板拍板：白萝卜**只在 dashboard 挂全部菜**，网站那边维持
             // 只有「家乡白萝卜焖花肉」(webapp id 30) 自己能加（AddOnModal 的 dish.id===30

@@ -121,6 +121,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -241,6 +246,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -365,6 +375,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -470,6 +485,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -604,6 +624,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -726,6 +751,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -846,6 +876,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -975,6 +1010,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1097,6 +1137,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1212,6 +1257,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -1334,6 +1384,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -1463,6 +1518,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1578,6 +1638,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -1697,6 +1762,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1807,6 +1877,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -1926,6 +2001,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -2031,6 +2111,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -2163,6 +2248,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -2419,6 +2509,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -2524,6 +2619,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "minced-pork-egg",
       "label": "猪肉碎煎蛋",
       "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
     },
     {
       "id": "side-soup",
@@ -2634,6 +2734,11 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
     "id": "minced-pork-egg",
     "label": "猪肉碎煎蛋",
     "price": 10.9
+  },
+  {
+    "id": "extra-prawns",
+    "label": "鲜甜大虾仁 (4只)",
+    "price": 7
   },
   {
     "id": "side-soup",
