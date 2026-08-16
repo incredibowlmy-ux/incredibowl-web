@@ -3018,6 +3018,7 @@
             { id: 'potato-egg',                  name: '马铃薯煎蛋',                            price: 4.00,  category: '单点' },
             { id: 'broccoli-egg',                name: '蒜蓉西兰花炒蛋',                        price: 10.90, category: '单点' },
             { id: 'shrimp-egg',                  name: '虾仁炒蛋',                              price: 12.90, category: '单点' },
+            { id: 'minced-pork-egg',             name: '猪肉碎煎蛋',                            price: 10.90, category: '单点' },  // 新 add-on 2026-08-16，off-menu 只在 dashboard（网站不上）；通用配菜挂全部菜（UNIVERSAL_ADDONS）；⚠️ 配方（猪肉碎 g / 蛋颗数）待老板给，暂无 addOnRecipes = 备餐不算料
             { id: 'shrimp-broccoli-steamed-egg', name: '鲜虾西兰花滑蒸蛋',                      price: 6.80,  category: '单点' },  // 新 add-on 2026-06-29，通用配菜（所有菜可加）
             { id: 'side-soup',                   name: '汤 (Soup)',                             price: 19.90, category: '单点' },  // 新 add-on 2026-07-10，off-menu 只在 dashboard（网站不上）；2026-08-01 起唯一可用餐券兑换的 add-on（collectMainDishUnitPrices 认 id）；2026-08-15 老板调价 18.50→19.90；具体汤名待老板提供后更新
             { id: 'extra-edamame',               name: '清甜水煮毛豆仁 (25g)',                  price: 2.50,  category: '单点' },
@@ -10854,6 +10855,7 @@ incredibowl.my`,
         // 避免逐道菜往 DISH_ADDON_MAP 复制。如该菜已自列同 id 则去重。
         const UNIVERSAL_ADDONS = [
             { id: 'shrimp-broccoli-steamed-egg', label: '鲜虾西兰花滑蒸蛋', price: 6.80 },  // 新 add-on 2026-06-29
+            { id: 'minced-pork-egg',             label: '猪肉碎煎蛋',      price: 10.90 },  // 新 add-on 2026-08-16，off-menu 只在 dashboard（网站 AddOnModal 故意不上）；单点配菜行也能单卖
             { id: 'side-soup',                   label: '汤 (Soup)',        price: 19.90 },  // 新 add-on 2026-07-10，off-menu 只在 dashboard；2026-08-01 起可用餐券兑换（1 份汤 = 1 张券，collectMainDishUnitPrices）；2026-08-15 调价 18.50→19.90
             // 2026-08-09 老板拍板：白萝卜**只在 dashboard 挂全部菜**，网站那边维持
             // 只有「家乡白萝卜焖花肉」(webapp id 30) 自己能加（AddOnModal 的 dish.id===30

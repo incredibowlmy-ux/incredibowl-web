@@ -774,6 +774,7 @@ export const addOnShortNames: Record<string, string> = {
   '马铃薯煎蛋': '薯煎蛋',
   '蒜蓉西兰花炒蛋': '西兰花蛋',
   '鲜虾西兰花滑蒸蛋': '鲜虾蛋',
+  '猪肉碎煎蛋': '肉碎蛋',
 
   // Generic sides (current + legacy gram labels)
   '清甜水煮毛豆仁 (25g)': '毛豆',
@@ -971,6 +972,12 @@ if (!addOnRecipes['加 3 只暖胃鸡腿 (legacy)']) addOnRecipes['加 3 只暖�
 // yet (虾只数 / 西兰花 g / 蛋颗数 unknown). shortName '鲜虾蛋' registered for the
 // matrix, but NO addOnRecipes entry — DO NOT fabricate. Add the recipe once the
 // boss provides the 虾/西兰花/蛋 portions; then it auto-aggregates in prep.
+//
+// ⚠️ TODO_RECIPE: '猪肉碎煎蛋' (minced-pork-egg, RM 10.90) — new 2026-08-16
+// dashboard-only universal add-on (每道菜的手动录单 picker + 单点配菜行).
+// NO portion data yet (猪肉碎 g / 蛋颗数 unknown). shortName '肉碎蛋' registered,
+// but NO addOnRecipes entry — DO NOT fabricate. 老板给克数后补进 addOnRecipes
+// 即自动进备餐汇总；在那之前会被「未计食材」告警点名（这是刻意的）。
 
 // ─── Intentionally untracked items ───────────────────────────────
 /**

@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-08-15
+ * Generated: 2026-08-16
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -114,6 +114,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -233,6 +238,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -350,6 +360,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -450,6 +465,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -579,6 +599,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -696,6 +721,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -811,6 +841,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -935,6 +970,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1052,6 +1092,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1162,6 +1207,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -1279,6 +1329,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -1403,6 +1458,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1513,6 +1573,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -1627,6 +1692,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1732,6 +1802,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -1846,6 +1921,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -1946,6 +2026,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -2075,6 +2160,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -2202,6 +2292,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -2319,6 +2414,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 6.8
     },
     {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
       "id": "side-soup",
       "label": "汤 (Soup)",
       "price": 19.9
@@ -2419,6 +2519,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
     },
     {
       "id": "side-soup",
@@ -2524,6 +2629,11 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
     "id": "shrimp-broccoli-steamed-egg",
     "label": "鲜虾西兰花滑蒸蛋",
     "price": 6.8
+  },
+  {
+    "id": "minced-pork-egg",
+    "label": "猪肉碎煎蛋",
+    "price": 10.9
   },
   {
     "id": "side-soup",
