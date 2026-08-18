@@ -9743,18 +9743,43 @@ incredibowl.my`,
                 '山药云耳海陆双鲜炒': { '荷包蛋': 1 },
                 '澳洲和牛饼饭':       { '温泉蛋': 1 },
                 '古早味卤三层肉豆腐蛋': { '卤蛋': 1 },   // 2026-08-17 新菜，每份自带 1 颗卤蛋（老板 08-15 给的配方）
+                '纳豆月见海苔饭':     { '温泉蛋': 2 },   // 2026-08-18 补漏：配方一直是 2 颗温泉蛋，这张表漏登记 → 鸡蛋合计少算
+                // 自带一块「马铃薯煎蛋B」= 加料版马铃薯煎蛋的 1/4（老板 2026-07-31 定义，
+                // 见 dishIngredients.ts 该菜配方注释）→ 每份 0.5 颗蛋。B 与整份分开列：
+                // 厨房做法不同（B 是切一块），并成一行会读成「要煎 N 份完整煎蛋」。
+                '古早味照烧鳗鱼饭':   { '马铃薯煎蛋B': 0.5 }, // 2026-08-18 补漏；常驻菜，06-01 起已卖 94 份=47 颗蛋一直没算
             };
-            // 哪些 add-on label 算「鸡蛋类加料」（按蛋型分别累加）
-            const EGG_ADDON_TYPES = new Set(['荷包蛋', '温泉蛋', '马铃薯煎蛋', '卤蛋']);
-            const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔', '卤蛋': '🥚' };
+            // 加料 → 每份要打几颗蛋。纯蛋类 1 颗（马铃薯煎蛋 2 颗）；复合成品按配方
+            // 折算（蒜蓉西兰花炒蛋 3 颗）。2026-08-18 前这里是个只认纯蛋名的 Set，于是
+            // 所有含蛋套餐 + 炒蛋一律算 0 颗 —— 08-19 晚餐实测报 3 颗、实需 14 颗。
+            // ⚠️ 与 webapp src/data/dishIngredients.ts 的 addOnRecipes 对齐。
+            //    套餐不必列 —— prepUnitIds() 会先把套餐拆成这些组成项。
+            const ADDON_EGGS = { '荷包蛋': 1, '温泉蛋': 1, '马铃薯煎蛋': 2, '卤蛋': 1, '蒜蓉西兰花炒蛋': 3 };
+            const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔', '卤蛋': '🥚', '蒜蓉西兰花炒蛋': '🥬', '马铃薯煎蛋B': '🥔' };
+
+            // 套餐 → 它实际要做的东西（老板 2026-08-18：备餐看的是「总共做几份什么」，
+            // 不是「哪份来自哪个套餐」）。与 webapp prepIngredients.prepUnits 同口径：
+            // 拆得开就拆，拆不开（退役套餐没登记内容）原样一项。
+            // 套餐名不会因此丢失 —— 食材清单的套餐展开行和装碗分组仍按套餐印。
+            const prepUnitIds = (id) => {
+                const cid = canonicalAddonId(id);
+                const parts = COMBO_CONTENTS[cid];
+                return (parts && parts.length) ? parts.map(canonicalAddonId) : [cid];
+            };
+            const addonDisplayName = (cid, fallback) => {
+                const hit = (state.addons || []).find(x => x.id === cid) || ADDON_SEED.find(x => x.id === cid);
+                return (hit && hit.name) || fallback;
+            };
 
             function aggregate(orders) {
                 const dishes = new Map(), addons = new Map();
-                // 蛋型 → { default: N, addon: M }
+                // 蛋型 → { default: 颗, addon: 颗, servings: 份 }
+                // 份 ≠ 颗：马铃薯煎蛋 1 份 = 2 颗、蒜蓉西兰花炒蛋 1 份 = 3 颗。
                 const eggCounts = new Map();
-                const bumpEgg = (type, kind, qty) => {
-                    const cur = eggCounts.get(type) || { default: 0, addon: 0 };
-                    cur[kind] += qty;
+                const bumpEgg = (type, kind, servings, per) => {
+                    const cur = eggCounts.get(type) || { default: 0, addon: 0, servings: 0 };
+                    cur[kind] += per * servings;
+                    cur.servings += servings;
                     eggCounts.set(type, cur);
                 };
                 // 加料显示名归一：手动短 label（换糙米）和网页长 label（白饭换糙米 (180g)）
@@ -9769,29 +9794,34 @@ incredibowl.my`,
                         // 累计该菜 default 带的各种蛋
                         const dmap = DISH_DEFAULT_EGGS[name];
                         if (dmap) {
-                            Object.entries(dmap).forEach(([type, per]) => bumpEgg(type, 'default', per * qty));
+                            Object.entries(dmap).forEach(([type, per]) => bumpEgg(type, 'default', qty, per));
                         }
                     }
                     (it.addOns || []).forEach(a => {
                         const raw = String(a.label || a.name || a.id || '加料');
                         const cid = canonicalAddonId(a.id || lookupAddonId(labelToId, raw) || raw);
-                        const seed = (state.addons || []).find(x => x.id === cid);
-                        const lbl = (seed && seed.name) || raw.replace(ADDON_PRICE_SUFFIX_RE, '');
                         const aq = Number(a.quantity) || 1;
-                        addons.set(lbl, (addons.get(lbl) || 0) + aq);
-                        if (EGG_ADDON_TYPES.has(lbl)) bumpEgg(lbl, 'addon', aq);
+                        // 套餐拆成组成项后再计数：套餐里的荷包蛋和独立点的荷包蛋并成一行，
+                        // 鸡蛋合计也才数得到（改前套餐整份算 0 颗蛋）。
+                        prepUnitIds(cid).forEach(uid => {
+                            const lbl = addonDisplayName(uid, raw.replace(ADDON_PRICE_SUFFIX_RE, ''));
+                            addons.set(lbl, (addons.get(lbl) || 0) + aq);
+                            if (ADDON_EGGS[lbl]) bumpEgg(lbl, 'addon', aq, ADDON_EGGS[lbl]);
+                        });
                     });
                 }));
                 const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escP(k)} <b>×${v}</b>`).join(' · ');
 
-                // Per-type egg lines（按总数倒序），跳过 0 项
+                // Per-type egg lines（按总数倒序），跳过 0 项。一份多颗的（马铃薯煎蛋 /
+                // 蒜蓉西兰花炒蛋）额外印份数 —— 光看「9 颗」不知道要炒几份。
                 const eggLines = [...eggCounts.entries()]
                     .filter(([, c]) => (c.default + c.addon) > 0)
                     .sort((a, b) => (b[1].default + b[1].addon) - (a[1].default + a[1].addon))
                     .map(([type, c]) => {
                         const total = c.default + c.addon;
                         const icon = EGG_ICON[type] || '🥚';
-                        return `${icon} ${escP(type)} 共 <b>${total}</b> 颗（菜品自带 ${c.default} + 客户加料 ${c.addon}）`;
+                        const per = c.servings !== total ? `${c.servings} 份 → ` : '';
+                        return `${icon} ${escP(type)} ${per}共 <b>${total}</b> 颗（菜品自带 ${c.default} + 客户加料 ${c.addon}）`;
                     });
                 const totalEggs = [...eggCounts.values()].reduce((s, c) => s + c.default + c.addon, 0);
                 const eggsHtml = eggLines.length > 0 ? eggLines.join('<br/>') : '无';

@@ -11,7 +11,7 @@
  */
 import {
   getRecipeForDish, getAddOnRecipe, resolveAddOnAlias, UNTRACKED_OK,
-  NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE,
+  NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, expandComboLabel,
 } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
 
@@ -178,41 +178,75 @@ const cleanAddOnLabel = (s: string) => {
   return canonical.replace(/^【[^】]*】/, '').replace(/\s*\([^)]*\)\s*$/, '').trim() || canonical;
 };
 
-interface AddOnAgg { name: string; unit: string; bySource: Map<string, number> }
+// 加料桶按「成品」聚合（老板 2026-08-18）：一个 unit = 厨房实际要做的一样东西
+//（荷包蛋 / 蒜蓉西兰花炒蛋 / 加饭）。套餐**先拆成组成项再入桶**，所以套餐里的荷包蛋
+// 和独立点的荷包蛋并成一行。备餐要回答的是「总共做几份什么」，不是「哪份来自哪个
+// 套餐」—— 套餐名在食材清单的套餐展开行和装碗分组里另有交代。
+interface AddOnUnitAgg { label: string; servings: number; lines: Map<string, Line> }
 
 // Aggregate ingredients grouped PER MAIN DISH. Same ingredient across two dishes
 // (马铃薯 in 炖肉 vs 烤鸡胸) stays separate — each dish carries its own line.
-// 白饭 is pulled into a per-meal `rice` total. Add-ons keep per-source quantities
-// so an overlapping ingredient (鸡胸肉 from 嫩炒鸡丁 vs 增肌加鸡胸) can be split.
+// 白饭 is pulled into a per-meal `rice` total. Add-ons group per finished unit
+// (see AddOnUnitAgg) so each stays attributable to what the kitchen actually makes.
 // 糙米 is ALSO a batch-cooked staple (rice-swap add-on) — it belongs next to
 // 白饭（统一煮）on the prep sheet, not buried in the add-on string (boss 2026-07-03).
 const BROWN_RICE_STAPLE = '糙米';
 
+/**
+ * 一个订单里的 add-on label → 备餐实际要做的成品清单。
+ * 套餐拆成组成项（家乡下饭王套 → 蒜蓉西兰花炒蛋 / 荷包蛋 / 加饭）；非套餐原样一项。
+ *
+ * ⚠️ 只有**每一个**组成项都查得到配方才拆 —— 缺任何一项就整套回落到套餐自己那行
+ * 手写配方（来源标签仍写套餐名）。宁可显示得粗一点，也绝不能因为拆开而漏食材。
+ * 退役套餐没登记组成（见 COMBO_COMPONENTS 注释），走的就是这条回落路径。
+ */
+function prepUnits(label: string): { label: string; recipe: IngredientLine[] }[] {
+  const parts = expandComboLabel(label);
+  if (parts) {
+    const units: { label: string; recipe: IngredientLine[] }[] = [];
+    for (const p of parts) {
+      const recipe = getAddOnRecipe(p);
+      if (!recipe) { units.length = 0; break; }   // 缺一个组成项就放弃拆解，整套回落
+      units.push({ label: cleanAddOnLabel(p), recipe });
+    }
+    if (units.length) return units;
+  }
+  const own = getAddOnRecipe(label);
+  return own ? [{ label: cleanAddOnLabel(label), recipe: own }] : [];
+}
+
 function aggregateByDish(orders: PrepOrder[]): {
   mains: Map<string, { servings: number; lines: Map<string, Line> }>;
-  addOns: Map<string, AddOnAgg>;
+  addOns: Map<string, AddOnUnitAgg>;
   rice: number;
   brownRice: number;
 } {
   const mains = new Map<string, { servings: number; lines: Map<string, Line> }>();
-  const addOns = new Map<string, AddOnAgg>();
+  const addOns = new Map<string, AddOnUnitAgg>();
   let rice = 0;
   let brownRice = 0;
-  const addAddOn = (line: IngredientLine, mult: number, source: string) => {
-    if (line.name === UNIVERSAL_STAPLE) { rice += line.qty * mult; return; }
-    if (line.name === BROWN_RICE_STAPLE) { brownRice += line.qty * mult; return; }
-    const key = `${line.name} ${line.unit}`;
-    let cur = addOns.get(key);
-    if (!cur) { cur = { name: line.name, unit: line.unit, bySource: new Map() }; addOns.set(key, cur); }
-    cur.bySource.set(source, (cur.bySource.get(source) || 0) + line.qty * mult);
+  // 一份成品入桶：份数累加，食材按份数放大；白饭/糙米抽进「统一煮」的总量，
+  // 所以「加饭」这一项最后只剩份数没有食材行 —— 那正是老板要的读法。
+  const addUnit = (label: string, servings: number, recipe: IngredientLine[]) => {
+    let cur = addOns.get(label);
+    if (!cur) { cur = { label, servings: 0, lines: new Map() }; addOns.set(label, cur); }
+    cur.servings += servings;
+    for (const line of recipe) {
+      const qty = line.qty * servings;
+      if (line.name === UNIVERSAL_STAPLE) { rice += qty; continue; }
+      if (line.name === BROWN_RICE_STAPLE) { brownRice += qty; continue; }
+      const key = `${line.name} ${line.unit}`;
+      const hit = cur.lines.get(key);
+      if (hit) hit.qty += qty;
+      else cur.lines.set(key, { name: line.name, qty, unit: line.unit });
+    }
   };
   for (const o of orders) {
     for (const it of o.items || []) {
       const qty = it.quantity || 0;
       if (qty <= 0) continue;
       if (isAddOnItem(it.name)) {
-        const r = getAddOnRecipe(stripAddOnPrefix(it.name));
-        if (r) r.forEach(l => addAddOn(l, qty, cleanAddOnLabel(stripAddOnPrefix(it.name))));
+        for (const u of prepUnits(stripAddOnPrefix(it.name))) addUnit(u.label, qty, u.recipe);
       } else {
         const recipe = getRecipeForDish(it.name);
         if (recipe) {
@@ -231,37 +265,34 @@ function aggregateByDish(orders: PrepOrder[]): {
           const label = a.label || a.name || a.id || '';
           const aQty = a.quantity || 0;
           if (!label || aQty <= 0) continue;
-          const ar = getAddOnRecipe(label);
-          if (ar) ar.forEach(l => addAddOn(l, aQty, cleanAddOnLabel(label)));
+          for (const u of prepUnits(label)) addUnit(u.label, aQty, u.recipe);
         }
       }
     }
     // 新客赠品挂进「加料」桶，带自己的来源标签 —— 与客人真花钱加的料分得开，
-    // 备餐单上读作「马铃薯 37.5g（新客赠送·薯煎蛋B）」。
-    if (o.isNewCustomer) {
-      NEW_CUSTOMER_GIFT_RECIPE.forEach(l => addAddOn(l, 1, NEW_CUSTOMER_GIFT_SOURCE));
-    }
+    // 备餐单上读作「新客赠送·薯煎蛋B ×1（马铃薯 37.5g · …）」。
+    if (o.isNewCustomer) addUnit(NEW_CUSTOMER_GIFT_SOURCE, 1, NEW_CUSTOMER_GIFT_RECIPE);
   }
   return { mains, addOns, rice, brownRice };
 }
 
-// Format the add-on bucket. An ingredient from a SINGLE add-on shows plain
-// ("糙米 90g"); one coming from MULTIPLE add-ons is split with its source tag
-// ("鸡胸肉 65g（嫩炒鸡丁）· 鸡胸肉 200g（加柠香烤鸡胸）") so the boss preps each
-// correctly — different add-ons mean different cooking.
-function formatAddOns(addOns: Map<string, AddOnAgg>): string {
-  const tokens: string[] = [];
-  for (const { name, unit, bySource } of addOns.values()) {
-    // 新客赠品即使是这个食材的唯一来源也要带标签 —— 不然备餐单上凭空多出
-    // 「马铃薯 37.5g」，看的人不知道这份是送的、该给谁。
-    const giftOnly = bySource.size === 1 && bySource.has(NEW_CUSTOMER_GIFT_SOURCE);
-    if (bySource.size <= 1 && !giftOnly) {
-      const qty = [...bySource.values()].reduce((s, q) => s + q, 0);
-      tokens.push(`${name} ${formatQty(qty, unit)}`);
-    } else {
-      for (const [label, qty] of bySource) tokens.push(`${name} ${formatQty(qty, unit)}（${label}）`);
-    }
-  }
+/**
+ * 加料桶 → 一行文本，按成品排（份数多的在前）：
+ *   「蒜蓉西兰花炒蛋 ×3（西兰花 600g · 鸡蛋(生) 9颗）· 荷包蛋 ×5（鸡蛋(生) 5颗）· 加饭 ×2」
+ * 份数回答「要做几份」，括号里的克数回答「要称多少」（老板 2026-08-18 指定两个都要）。
+ * 加饭这类只出主食的项食材行为空，就只印份数。
+ */
+function formatAddOns(addOns: Map<string, AddOnUnitAgg>): string {
+  const tokens = [...addOns.values()]
+    .sort((a, b) => b.servings - a.servings || a.label.localeCompare(b.label, 'zh'))
+    .map(u => {
+      const lines = [...u.lines.values()];
+      // 「温泉蛋 ×2（温泉蛋 2颗）」这种同名同量的括号是纯噪音，省掉；
+      // 「荷包蛋 ×5（鸡蛋(生) 5颗）」成品名≠生料名，那个括号有信息量，留着。
+      const echo = lines.length === 1 && lines[0].name === u.label && lines[0].qty === u.servings;
+      const text = echo ? '—' : formatLines(lines);
+      return `${u.label} ×${u.servings}${text === '—' ? '' : `（${text}）`}`;
+    });
   return tokens.length ? tokens.join(' · ') : '—';
 }
 
