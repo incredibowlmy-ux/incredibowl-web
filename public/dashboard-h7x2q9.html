@@ -9939,32 +9939,62 @@ incredibowl.my`,
                 if (parts.length === 0) return '';
                 return `<div class="ing-row"><b class="ing-d">全天合计（午+晚一次备好）</b> ${parts.join(' · ')}</div>`;
             }
-
             // 装碗分组：白饭/糙米 × 正常/少饭 逐碗核对 — 与「装碗打包」页共用 collectPackingData 同一套口径
             function riceGroupBlock(orders) {
-                const { groups, bowlTotal, extraRiceTotal, extraRiceWhite, extraRiceBrown, extraRiceRows } = collectPackingData(orders, packingLabelToId());
+                const { groups, bowlTotal, extraRiceTotal, extraRiceWhite, extraRiceBrown } = collectPackingData(orders, packingLabelToId());
                 if (bowlTotal === 0) return '';
                 const sum = rows => rows.reduce((s, r) => s + r.count, 0);
+                // ⚠️ 先算总数再抽加饭行 —— 顶部「⚪ 白饭 14 + 🟤 糙米 3」是真实要盛的饭量，
+                //    不因为加饭碗换个位置印就变小（老板 2026-08-18 指定保持）。
                 const whiteBowls = sum(groups.whiteNormal) + sum(groups.whiteLess);
                 const brownBowls = sum(groups.brownNormal) + sum(groups.brownLess);
+
+                // 要加饭的碗整行抽出来，末尾单独一节（老板 2026-08-18）：装碗时最后专门
+                // 处理这一批，不会混在十几碗里漏掉。抽走后原饭型分组的碗数相应减少。
+                // 每行保留饭型图标 —— 加饭节跨白饭/糙米，不标的话不知道底饭盛哪种。
+                const RICE_ICON = { whiteNormal: '⚪', whiteLess: '⚪', brownNormal: '🟤', brownLess: '🟤' };
+                const extraRows = [];
+                PACKING_RICE_GROUPS.forEach(g => {
+                    groups[g.key] = groups[g.key].filter(r => {
+                        if (!(r.extraQty > 0)) return true;
+                        extraRows.push({ ...r, riceIcon: RICE_ICON[g.key], less: g.key.endsWith('Less') });
+                        return false;
+                    });
+                });
+                // 完全一样的行合成一行（老板 2026-08-18）：一单点 2 碗、每碗各配一个含加饭的
+                // 套餐时，改前会列出两条一模一样的 ×1。菜/饭型/加料/备注/客户全同才合。
+                const mergedExtra = [];
+                for (const r of extraRows) {
+                    const key = [r.dish, r.riceIcon, r.less, r.tags.join('|'), r.note, r.who, r.code].join('\u00a7');
+                    const hit = mergedExtra.find(x => x._key === key);
+                    if (hit) { hit.count += r.count; hit._n += 1; }
+                    else mergedExtra.push({ ...r, _key: key, _n: 1 });
+                }
+                // 合了 N 行 → 行内加料/套餐份数同步 ×N（2 碗各 1 套 = 这一行共 2 套），
+                // 与其它合并行的读法一致（「×2 … ＋荷包蛋 ×2」= 2 碗共 2 个蛋）。
+                const scaleQty = (text, n) => n > 1 ? String(text).replace(/×(\d+)(\s*)$/, (_, q, tail) => `×${Number(q) * n}${tail}`) : text;
+
+                const rowHtml = (r, icon) => {
+                    const bowl = `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${icon}${escP(r.dish)}${r.less ? ' <b>[少饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.map(t => scaleQty(t, r._n || 1)).join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`;
+                    // 套餐展开成「包含哪几样」—— 装碗的人不必回头翻菜单（老板 2026-08-15）
+                    const combo = (r.combos || []).filter(c => c.contents).map(c =>
+                        `<div class="rice-combo">${escP(c.label)} ×${c.qty * (r._n || 1)} ＝ ${escP(c.contents)}</div>`).join('');
+                    return bowl + combo;
+                };
+
                 const blocks = PACKING_RICE_GROUPS.map(g => {
                     const rows = groups[g.key];
                     const total = sum(rows);
                     if (total === 0) return '';
-                    const lines = rows.map(r => {
-                        const bowl = `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`;
-                        // 套餐展开成「包含哪几样」—— 装碗的人不必回头翻菜单（老板 2026-08-15）
-                        const combo = (r.combos || []).filter(c => c.contents).map(c =>
-                            `<div class="rice-combo">${escP(c.label)} ×${c.qty} ＝ ${escP(c.contents)}</div>`).join('');
-                        return bowl + combo;
-                    }).join('');
-                    return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${lines}`;
+                    return `<div class="rice-g">${g.label} — 共 ${total} 碗</div>${rows.map(r => rowHtml(r, '')).join('')}`;
                 }).join('');
-                // 加饭明细独立小节（和少饭分组同级同样式）：逐份列饭型+菜+客户
-                const extraBlock = extraRiceTotal > 0
-                    ? `<div class="rice-g">🍚 加饭明细 — 共 ${extraRiceTotal} 份</div>` + extraRiceRows.map(r =>
-                        `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${r.riceType === 'brown' ? '🟤 糙米加饭' : '⚪ 白饭加饭'} — ${escP(r.dish)} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`
-                    ).join('')
+
+                // 加饭节（放最后，老板 2026-08-18 指定）。标题印碗数；一碗点了 2 份饭时
+                // 碗数 ≠ 份数，那就两个都印，免得少盛。
+                const extraBowls = sum(mergedExtra);
+                const extraBlock = mergedExtra.length
+                    ? `<div class="rice-g">🍚 加饭 — 共 ${extraBowls} 碗${extraBowls === extraRiceTotal ? '' : ` / ${extraRiceTotal} 份`}（${extraRiceSplitText(extraRiceWhite, extraRiceBrown)}）</div>`
+                      + mergedExtra.map(r => rowHtml(r, r.riceIcon + ' ')).join('')
                     : '';
                 return `<div class="rice">
                     <div class="rice-t">🍚 装碗分组（共 ${bowlTotal} 碗 = ⚪ 白饭 ${whiteBowls} + 🟤 糙米 ${brownBowls}${extraRiceTotal > 0 ? ` · 其中加饭 ${extraRiceTotal} 份（${extraRiceSplitText(extraRiceWhite, extraRiceBrown)}）` : ''}）</div>
