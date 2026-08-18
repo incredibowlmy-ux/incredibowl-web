@@ -9952,7 +9952,7 @@ incredibowl.my`,
                     const total = sum(rows);
                     if (total === 0) return '';
                     const lines = rows.map(r => {
-                        const bowl = `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.extraQty > 0 ? ' <b>[加饭]</b>' : ''}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`;
+                        const bowl = `<div class="rice-row">${'☐'.repeat(Math.min(r.count, 15))} <b>×${r.count}</b> ${escP(r.dish)}${r.tags.length ? ' ＋' + escP(r.tags.join('、')) : ''}${r.note ? ` <span class="inote">📝 ${escP(r.note)}</span>` : ''} <span class="rice-who">${escP(r.who)}${r.code ? ' ' + escP(r.code) : ''}</span></div>`;
                         // 套餐展开成「包含哪几样」—— 装碗的人不必回头翻菜单（老板 2026-08-15）
                         const combo = (r.combos || []).filter(c => c.contents).map(c =>
                             `<div class="rice-combo">${escP(c.label)} ×${c.qty} ＝ ${escP(c.contents)}</div>`).join('');
@@ -10133,7 +10133,15 @@ incredibowl.my`,
                     lessQty = Math.min(lessQty, qty);
                     // 加饭饭型跟碗走：该行有糙米碗就算糙米加饭，否则白饭
                     //（网页端加饭/糙米都挂同一行 item，qty=1 时天然准确）。
-                    if (extraQty > 0) extraRiceRows.push({ dish, count: extraQty, riceType: brownQty > 0 ? 'brown' : 'white', who, code });
+                    if (extraQty > 0) {
+                        // 同一位客户、同一道菜、同一饭型的加饭合成一行 —— 一单点 2 碗、
+                        // 每碗各带一个含加饭的套餐时，本来会列出两条一模一样的 ×1
+                        //（老板 2026-08-18：加饭只在这一节交代，就别在这节里再重复）。
+                        const rt = brownQty > 0 ? 'brown' : 'white';
+                        const hit = extraRiceRows.find(r => r.dish === dish && r.who === who && r.code === code && r.riceType === rt);
+                        if (hit) hit.count += extraQty;
+                        else extraRiceRows.push({ dish, count: extraQty, riceType: rt, who, code });
+                    }
                     const bl = Math.min(brownQty, lessQty);   // 糙米+少饭重叠碗数
                     const bn = brownQty - bl;
                     const wl = lessQty - bl;
