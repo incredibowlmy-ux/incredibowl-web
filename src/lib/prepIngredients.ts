@@ -228,13 +228,22 @@ function aggregateByDish(orders: PrepOrder[]): {
   // 一份成品入桶：份数累加，食材按份数放大；白饭/糙米抽进「统一煮」的总量，
   // 所以「加饭」这一项最后只剩份数没有食材行 —— 那正是老板要的读法。
   const addUnit = (label: string, servings: number, recipe: IngredientLine[]) => {
-    let cur = addOns.get(label);
-    if (!cur) { cur = { label, servings: 0, lines: new Map() }; addOns.set(label, cur); }
-    cur.servings += servings;
+    // 只出主食的项（加饭 / 换糙米）：份量照常进「白饭/糙米（统一煮）」的总量，但**不在
+    // 加料行露面** —— 备餐单底部的装碗分组已经按饭型逐碗列过，加饭还有独立明细小节，
+    // 加料行再列一次是同一件事说两遍（老板 2026-08-18）。
+    const stapleOnly = recipe.length > 0
+      && recipe.every(l => l.name === UNIVERSAL_STAPLE || l.name === BROWN_RICE_STAPLE);
+    let cur: AddOnUnitAgg | undefined;
+    if (!stapleOnly) {
+      cur = addOns.get(label);
+      if (!cur) { cur = { label, servings: 0, lines: new Map() }; addOns.set(label, cur); }
+      cur.servings += servings;
+    }
     for (const line of recipe) {
       const qty = line.qty * servings;
       if (line.name === UNIVERSAL_STAPLE) { rice += qty; continue; }
       if (line.name === BROWN_RICE_STAPLE) { brownRice += qty; continue; }
+      if (!cur) continue;   // stapleOnly 按定义不该走到这，保险
       const key = `${line.name} ${line.unit}`;
       const hit = cur.lines.get(key);
       if (hit) hit.qty += qty;
