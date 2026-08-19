@@ -2909,28 +2909,28 @@
             { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Daily', availableWeekdays: ['Tue', 'Fri'], active: true, voucherTopUp: 5 },  // 2026-08-17 从周三单日改常驻限周二/五（webapp id 29，availableWeekdays:[2,5]）
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // webapp retired 2026-06-27；dashboard 留 active 给 WA 加单
             // ─── 周一 Mon ────────────────────────────────────────────
-            { id: 31, name: '古早味卤三层肉豆腐蛋', nameEn: 'Hometown Braised Pork Belly with Tofu & Egg', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // 🆕 2026-08-17 新菜首发周一 Hero（webapp id 31，同号）；costPrice 未知需 Settings 手动填
-            { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // 2026-08-17 从 Fri 改周一第二道（webapp id 27）
+            { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-24 暂别回归·周一（webapp id 1，07-27 起暂别）；⚠️ 8/21 06:01 截单后当归蒸鸡全腿(dash 13)从 Fri 挪来当周一 Hero
             // ─── 周二 Tue ────────────────────────────────────────────
-            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // 2026-08-17 暂别回归·周二 Hero（webapp id 14）；照烧鳗鱼 featured 也在周二
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 5 },  // 2026-08-24 从 Wed 挪到周二 Hero（webapp id 21）；照烧鳗鱼 featured 也在周二
+            { id: 30, name: '家乡白萝卜焖花肉', nameEn: 'Hometown Stewed Pork Belly with Daikon', price: 19.90, costPrice: 0, day: 'Tue', active: true },  // 2026-08-24 暂别回归·周二第二道（webapp id 30，08-17 歇一周）；costPrice 未知需 Settings 手动填
             // ─── 周三 Wed ────────────────────────────────────────────
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Wed', active: true, voucherTopUp: 5 },  // 2026-08-17 从周五收成周三单日 Hero（webapp id 21）
-            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-08-17 从 Tue 改周三第二道（webapp id 23）
+            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-08-17 从 Tue 改周三；2026-08-24 升周三 Hero（webapp id 23）
+            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Wed', active: true },  // 2026-08-24 从 Tue 挪到周三第二道（webapp id 14）
             // ─── 周四 Thu ────────────────────────────────────────────
             { id: 20, name: '古早味姜葱鱼片饭', nameEn: 'Grandma-Style Ginger-Scallion Fish Fillet', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-08-17 暂别回归·周四 Hero（webapp id 20）（⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90，seed 价不覆盖）
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-08-17 从 Wed 改周四第二道（webapp id 4）
             // ─── 周五 Fri ────────────────────────────────────────────
-            { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 2026-08-17 暂别回归·周五 Hero（webapp id 2）；照烧鳗鱼 featured 也在周五
+            { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 2026-08-17 暂别回归·周五 Hero（webapp id 2）；⚠️ 8/21 06:01 截单后改 day:'Mon'（老板 08-19 指示挪周一），届时周五需另补一道
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
-            { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 1 暂别 2026-07-27；dashboard 留 active 给 WA 加单
             { id: 25, name: '家常日式咖喱饭', nameEn: 'Homestyle Japanese Curry Rice', price: 18.50, costPrice: 0, day: 'Tue', active: true },  // webapp 暂别 2026-08-03；dashboard 留 active 给 WA 加单
             { id: 28, name: '豆酱焖排骨', nameEn: 'Hometown Taucu Braised Pork Ribs', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp 暂别 2026-08-03（上线仅一周）；dashboard 留 active 给 WA 加单
             { id: 3,  name: '希腊柠香烤鸡胸', nameEn: 'Greek Mediterranean Lemon Chicken', price: 19.90, costPrice: 0, day: 'Fri', active: true },  // webapp id 3 暂别 2026-08-10；dashboard 留 active 给 WA 加单
             { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 12 暂别 2026-08-17；dashboard 留 active 给 WA 加单
             { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // webapp id 26 暂别 2026-08-17；dashboard 留 active 给 WA 加单
-            { id: 30, name: '家乡白萝卜焖花肉', nameEn: 'Hometown Stewed Pork Belly with Daikon', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // webapp id 30 暂别 2026-08-17（首发周 35 份销冠，歇一周）；dashboard 留 active 给 WA 加单；costPrice 未知需 Settings 手动填
+            { id: 31, name: '古早味卤三层肉豆腐蛋', nameEn: 'Hometown Braised Pork Belly with Tofu & Egg', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // webapp id 31 暂别 2026-08-24（首发周后歇）；dashboard 留 active 给 WA 加单；costPrice 未知需 Settings 手动填
+            { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // webapp id 27 暂别 2026-08-24；dashboard 留 active 给 WA 加单
         ];
 
         // ═══════════════════════════════════════════════════════════════
