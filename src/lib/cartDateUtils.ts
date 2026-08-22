@@ -15,7 +15,7 @@
  * Client-side check in CartDrawer auto-cleans stale items as a UX courtesy.
  */
 
-import { isDateClosed, isDishBlockedOn } from '@/data/blockedDates';
+import { isDateClosed, isDishBlockedOn, isDinnerClosedOn } from '@/data/blockedDates';
 import type { MenuItem } from '@/data/weeklyMenu';
 
 const CUTOFF_HOUR_MY = 6;
@@ -172,4 +172,41 @@ export function servesOnWeekday(
     if (allow && allow.length > 0) return allow.includes(weekday);
     if (typeof dish.weekday === 'number') return weekday === dish.weekday;
     return true;   // 常驻菜：周一至五都能订
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 时段 × 日期 的可下单校验
+//
+// 有些日子只做半天（例：长假前最后一天只送午餐）。整天关店走 CLOSED_DATES
+// （isOrderDateValid 的 sold_out 分支），这里只管「这天开，但某个时段不开」。
+//
+// 与 isDishOrderableOn 同样是**唯一**判定来源：AddOnModal 灰掉按钮、
+// CartDrawer 清购物车、/api/submit-order 拒收，三处都调它。
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** 订单里的时段字面量是否算晚餐。与 prepIngredients.isLunchOrder 的口径一致。 */
+export function isDinnerSlot(slot: string | null | undefined): boolean {
+    const t = String(slot || '').toLowerCase();
+    return t.includes('dinner') || t.includes('晚');
+}
+
+export type SlotValidity =
+    | { ok: true }
+    | { ok: false; reason: 'dinner_closed'; message: string };
+
+/**
+ * 这个时段在 selectedDate 能不能下单。
+ *
+ * 日期本身的合法性（过去 / 已截单 / 周末 / 整日停业）交给 isOrderDateValid，
+ * 这里只查时段，避免同一个问题报两次互相矛盾的错。
+ */
+export function isSlotOrderableOn(selectedDate: string, selectedTime: string | null | undefined): SlotValidity {
+    if (isDinnerSlot(selectedTime) && isDinnerClosedOn(selectedDate)) {
+        return {
+            ok: false,
+            reason: 'dinner_closed',
+            message: `${selectedDate} 只送午餐，晚市休息，请改选午餐时段`,
+        };
+    }
+    return { ok: true };
 }

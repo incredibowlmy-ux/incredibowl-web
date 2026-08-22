@@ -4,7 +4,7 @@ import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type DeliveryZone } from '@/lib/deliveryUtils';
-import { isOrderDateValid, isDishOrderableOn } from '@/lib/cartDateUtils';
+import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 import { allocateVouchersByGroup } from '@/lib/voucherGroupAllocation';
@@ -94,6 +94,12 @@ export async function POST(req: Request) {
         return NextResponse.json({
           error: `购物车里有过期菜品（${check.message}）。请关闭购物车重新加入今日菜单。`,
         }, { status: 400 });
+      }
+      // 半天营业的日子（只送午餐）：晚市时段直接拒收。前端 AddOnModal 已把
+      // 按钮灰掉，这里挡的是过夜的旧购物车和直接打 API 的。
+      const slotCheck = isSlotOrderableOn(String(bundle.selectedDate || ''), bundle.selectedTime);
+      if (!slotCheck.ok) {
+        return NextResponse.json({ error: slotCheck.message }, { status: 400 });
       }
     }
 

@@ -32,6 +32,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Plus, Minus, X, ShoppingBag, Loader2 } from 'lucide-react';
 import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
+import { isDinnerClosedOn } from '@/data/blockedDates';
 import { computeMenuDates, type MenuDateInfo } from '@/lib/dateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { useCartStore } from '@/store/cartStore';
@@ -45,6 +46,12 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 
 const LUNCH = 'Lunch (11AM-1PM)';
 const DINNER = 'Dinner (5PM-8PM)';
+
+// 只送午餐的日子（blockedDates.DINNER_CLOSED_DATES）按天回落到午餐。这一页
+// 的午/晚是整车开关，但每个 bundle 各带各的日期 —— 不按天判就会把晚市单塞进
+// 购物车，客户一路填到付款才被 submit-order 拒收。
+const slotOn = (date: string, wantDinner: boolean) =>
+  (wantDinner && !isDinnerClosedOn(date) ? DINNER : LUNCH);
 
 const WD_ZH = ['日', '一', '二', '三', '四', '五', '六'];
 const WD_EN_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -231,7 +238,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
           // 把一个卖不了的日期塞进购物车（submit-order 会直接拒收）
           const date = askedDate && askedDate === info.actualDate ? askedDate : info.actualDate;
           if (askedDate && date !== askedDate) moved = true;
-          built.push(bundleFor(dish, w.qty, date, time, i));
+          built.push(bundleFor(dish, w.qty, date, slotOn(date, wantDinner), i));
         });
 
         // ⚠️ 链接携带菜品时 = **替换**购物车，不是追加。两个理由：
@@ -254,14 +261,14 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   // 午/晚切换：整车统一（这一页刻意不支持一单里午晚混点 —— 那是首页的场景）
   const switchMeal = (next: 'lunch' | 'dinner') => {
     setMeal(next);
-    const time = next === 'dinner' ? DINNER : LUNCH;
-    useCartStore.getState().cart.forEach(b => updateBundle(b.cartItemId, { selectedTime: time }));
+    useCartStore.getState().cart.forEach(b =>
+      updateBundle(b.cartItemId, { selectedTime: slotOn(b.selectedDate, next === 'dinner') }));
   };
 
   const addDish = (dish: MenuItem) => {
     const info = dates[dish.id];
     if (!info || info.disabled || !info.actualDate) return;
-    const time = meal === 'dinner' ? DINNER : LUNCH;
+    const time = slotOn(info.actualDate, meal === 'dinner');
     const hit = cart.find(b => b.dish?.id === dish.id && b.selectedDate === info.actualDate && b.selectedTime === time);
     if (hit) {
       updateBundle(hit.cartItemId, {

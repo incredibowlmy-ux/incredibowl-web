@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar } from 'lucide-react';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
-import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import { isDishBlockedOn, isDateClosed, isDinnerClosedOn, closureReasonOn } from '@/data/blockedDates';
 import type { Locale } from '@/lib/locale';
 import { ADDON_DICT } from './dict';
 
@@ -186,6 +186,14 @@ export default function AddOnModal({
     const [dateError, setDateError] = useState('');
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
+
+    // 只送午餐的日子（长假前最后一天等）：晚餐按钮灰掉。上次记住的时段是
+    // 晚餐、或者先选了晚餐再改日期的，都要把已选时段清掉 —— 否则 CTA 亮着
+    // 却会被 /api/submit-order 拒收。
+    const dinnerClosed = !!selectedDate && isDinnerClosedOn(selectedDate);
+    useEffect(() => {
+        if (dinnerClosed && selectedTime === SLOT_DINNER) setSelectedTime('');
+    }, [dinnerClosed, selectedTime]);
 
     // Compute dynamic add-on sections based on the selected dish
     const activeAddOnSections = React.useMemo(() => {
@@ -1219,7 +1227,10 @@ export default function AddOnModal({
                                                 return;
                                             }
                                             if (isDateClosed(selected)) {
-                                                setDateError(t.dateClosedAlert);
+                                                // 计划内的休假不能挂「已售罄」——那是两件事。
+                                                setDateError(closureReasonOn(selected) === 'holiday'
+                                                    ? t.dateHolidayAlert
+                                                    : t.dateClosedAlert);
                                                 return;
                                             }
                                             setDateError('');
@@ -1249,21 +1260,32 @@ export default function AddOnModal({
                                 {([
                                     { value: SLOT_LUNCH, label: t.lunchSlot },
                                     { value: SLOT_DINNER, label: t.dinnerSlot },
-                                ] as const).map(slot => (
+                                ] as const).map(slot => {
+                                    const closed = slot.value === SLOT_DINNER && dinnerClosed;
+                                    return (
                                     <button
                                         key={slot.value}
                                         type="button"
+                                        disabled={closed}
                                         onClick={() => { setSelectedTime(slot.value); saveLastSlot(slot.value); }}
                                         className={`min-h-[46px] px-4 py-3 rounded-2xl text-sm font-bold border-2 transition-colors ${
-                                            selectedTime === slot.value
+                                            closed
+                                                ? 'border-[#E8DFD0] bg-[#E8DFD0]/40 text-[#8B7355]/50 line-through cursor-not-allowed'
+                                                : selectedTime === slot.value
                                                 ? 'border-[#2D5F3E] bg-[#2D5F3E] text-white'
                                                 : 'border-[#E8DFD0] bg-white text-[#3B2A1A] hover:border-[#2D5F3E]/50'
                                         }`}
                                     >
                                         {slot.label}
                                     </button>
-                                ))}
+                                    );
+                                })}
                             </div>
+                            {dinnerClosed && (
+                                <div className="-mt-1 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800 leading-relaxed">
+                                    {t.dinnerClosedNote}
+                                </div>
+                            )}
                         </div>
                     </div>
 
