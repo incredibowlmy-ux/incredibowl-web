@@ -73,6 +73,20 @@ export async function GET(req: NextRequest) {
   // 按客户去重聚合历史配送信息（最新在前，每人最多 5 组）。
   // 多段单运费只挂 part 1，后续 part 会产生假的 RM0 选项 → 跳过。
   const optionsByUser = new Map<string, { _k: string; address: string; fee: number; zone: string; distanceKm: number; note: string; lastDate: string }[]>();
+
+  // 每位客户「最近一个非零距离」——订阅生成的单 deliveryDistanceKm 常是 0，
+  // 而前端建订阅会自动套用最近一单 → 0 一路传下去自我强化（2026-08-24 查出
+  // 5 份在跑的订阅 km=0，近 28 天 35 单配送成本因此只能按 RM5 拍）。
+  // 这里兜一层：单本身没距离时，退回该客户历史上真算出来过的距离。
+  const bestKmByUser = new Map<string, number>();
+  for (const d of ordersSnap.docs) {
+    const v = d.data() || {};
+    if (v.status === 'cancelled') continue;
+    const uid = String(v.userId || '');
+    const km = Number(v.deliveryDistanceKm);
+    if (uid && km > 0 && !bestKmByUser.has(uid)) bestKmByUser.set(uid, km);   // docs 已按 createdAt 倒序
+  }
+
   for (const d of ordersSnap.docs) {
     const v = d.data() || {};
     if (v.status === 'cancelled') continue;
@@ -86,7 +100,7 @@ export async function GET(req: NextRequest) {
       address,
       fee: Number(v.deliveryFee) || 0,
       zone: v.deliveryZone === 'outside2km' ? 'outside2km' : v.deliveryZone === 'within2km' ? 'within2km' : '',
-      distanceKm: Number(v.deliveryDistanceKm) || 0,
+      distanceKm: Number(v.deliveryDistanceKm) || bestKmByUser.get(uid) || 0,
       note: rawNote.startsWith('手动录入') ? '' : rawNote,
       lastDate: String(v.deliveryDate || ''),
     };
@@ -107,7 +121,7 @@ export async function GET(req: NextRequest) {
         name: String(v.displayName || v.name || ''),
         phone: String(v.phone || ''),
         address: String(v.address || ''),
-        deliveryDistanceKm: Number(v.deliveryDistanceKm) || 0,
+        deliveryDistanceKm: Number(v.deliveryDistanceKm) || bestKmByUser.get(d.id) || 0,
         orderOptions: (optionsByUser.get(d.id) ?? []).map(({ _k, ...o }) => o),
       };
     })
@@ -130,7 +144,7 @@ export async function GET(req: NextRequest) {
       userId: uid,
       name, phone,
       address: String(v.userAddress || ''),
-      deliveryDistanceKm: Number(v.deliveryDistanceKm) || 0,
+      deliveryDistanceKm: Number(v.deliveryDistanceKm) || bestKmByUser.get(uid) || 0,
       orderOptions: (optionsByUser.get(uid) ?? []).map(({ _k, ...o }) => o),
     });
   }
