@@ -112,27 +112,30 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //     2. 排期中的菜不能带 hidden。
 //     3. 目录里没进任何列表的菜必须带 hidden（防止忘排期静默消失）。
 //
-//   生效周：2026-08-31（Mon 31 Aug）。老板 08-28（周五 15:30）发的下周菜单。
-//   ⚠️ 这周只有两个营业日 —— 8/31~9/2 休假（CLOSURES，见 blockedDates.ts），
-//      9/3 周四复工、9/4 周五正常。老板只给周四/周五两天，正是复工那两天。
+//   生效周：2026-09-07（Mon 7 Sep）。老板 09-04（周五凌晨 04:28）发的下周菜单。
+//   ⚠️ 上线时机：排期按 weekday 生效，周五那格一改、当天页面立刻跟着变 —— 而
+//      9/4 周五整天还在卖柠香三文鱼+金黄鸡扒。所以这批改动必须等 9/4 收工后
+//      才能上线（老板 09-04 原话「when the current one expire」），先落在
+//      menu/week-0907 分支，绝不提前进 main。
 //   本周变动：
-//     · 周一：当归蒸鸡全腿(#2·主打·招牌菜) + 酱油鸡全腿(#1)。不变。休假日，仅展示。
-//     · 周二：白萝卜焖花肉(#30 副菜升主打) + 姜葱鱼片(#20 从周四挪来)。休假日，仅展示。
-//     · 周三：甜酸洋葱猪扒(#27 从周四挪来·主打) + 绍兴酒蒸花肉(#4 从周五挪来)。
-//       休假日，仅展示。
-//     · 周四 9/3【复工日】：照烧鳗鱼(#29 从周三挪来·主打) + 豆酱焖花肉(#23 从周三挪来)。
-//     · 周五 9/4：柠香三文鱼(#21 从周二挪来·主打) + 金黄鸡扒(#14 留原位)。
-//   周一~周三休假不接单，排期只影响网站展示分组 + 作为 9/7 那周的默认值。老板 08-28
-//   拍板「全用原班菜填、零暂别变动」——被周四/周五顶掉的 #20/#27/#4 恰好补满周二1个+
-//   周三2个空位，PAUSED_DISHES 本周一动不动（9 道暂别菜原样留着）。
-//   本周无新菜、无限日菜，DAILY_DISHES 维持纯全周常驻两道。
+//     · 周一~周三：老板指定「remain」，一道不动 —— 当归蒸鸡#2/酱油鸡#1、
+//       白萝卜焖花肉#30/姜葱鱼片#20、甜酸洋葱猪扒#27/绍兴酒蒸花肉#4。
+//     · 周四 9/10：🆕蜜糖香煎三文鱼饭(#32·主打·新菜) + 豆酱焖花肉(#23 留原位)。
+//     · 周五 9/11：🆕芝麻蜜汁鸡扒饭(#33·主打·新菜) + 照烧鳗鱼(#29 从周四挪来)。
+//     · 转暂别：柠香三文鱼(#21)、金黄鸡扒(#14) —— 各自被同类新菜顶替（老板 09-04
+//       拍板「两道一起转暂别」）。暂别菜 9 → 11 道。
+//   ⚠️ #21 转暂别后 salmon-upgrade 预付升级池由 #32 继续承接（同 RM24.90 / +RM5
+//      口径），已预充三文鱼升级券的客户不会卡死 —— 换菜时这条最容易漏。
+//   ⚠️ 两道新菜的实拍图老板 09-04 尚未提供（/honey_salmon.webp、
+//      /sesame_honey_chicken_chop.webp）。图不到位就 push = 线上破图。
+//   本周无限日菜，DAILY_DISHES 维持纯全周常驻两道。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKLY_SCHEDULE: Record<number, number[]> = {
     1: [2, 1],    // 周一：当归蒸鸡全腿(主打·招牌菜)、酱油鸡全腿 —— 休假日，仅展示
     2: [30, 20],  // 周二：白萝卜焖花肉(主打)、姜葱鱼片(从周四挪来) —— 休假日，仅展示
     3: [27, 4],   // 周三：甜酸洋葱猪扒(主打·从周四挪来)、绍兴酒蒸花肉(从周五挪来) —— 休假日
-    4: [29, 23],  // 周四 9/3 复工：照烧鳗鱼(主打·从周三挪来)、豆酱焖花肉(从周三挪来)
-    5: [21, 14],  // 周五 9/4：柠香三文鱼(主打·从周二挪来)、金黄鸡扒(留原位)
+    4: [32, 23],  // 周四 9/10：蜜糖香煎三文鱼饭(主打·🆕新菜)、豆酱焖花肉(留原位)
+    5: [33, 29],  // 周五 9/11：芝麻蜜汁鸡扒饭(主打·🆕新菜)、照烧鳗鱼(从周四挪来)
 };
 
 // 纳豆月见、马铃薯炖花肉片 —— 全周常驻，无限日菜（鳗鱼 08-31 起挪成周四单日特餐）。
@@ -148,6 +151,8 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 12, day: 'Mon / 周一' },    // 山药云耳海陆双鲜炒 暂别 2026-08-17
     { id: 26, day: 'Thu / 周四' },    // 柠檬蜜糖煎鸡扒 暂别 2026-08-17
     { id: 31, day: 'Mon / 周一' },    // 古早味卤三层肉豆腐蛋 暂别 2026-08-24（首发周后歇）
+    { id: 21, day: 'Fri / 周五' },    // 柠香香煎三文鱼饭 暂别 2026-09-07（被新菜 #32 蜜糖三文鱼顶替）
+    { id: 14, day: 'Fri / 周五' },    // 香煎金黄鸡扒饭 暂别 2026-09-07（被新菜 #33 芝麻蜜汁鸡扒顶替）
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -467,6 +472,44 @@ const DISH_CATALOG: DishData[] = [
         tagsEn: ["28g+ protein", "Old-school", "Ginger-scallion sear", "Sunny-side egg", "Silky fish"],
         desc: "巴丁鱼片用姜丝葱段爆香，淋一勺绍兴酒提鲜，盖一颗荷包蛋——古早味的温柔。",
         descEn: "Patin fish fillet stir-fried with ginger and scallion, lifted by a splash of Shaoxing wine and crowned with a sunny-side-up egg — gentle, old-school comfort."
+    },
+    {
+        // 全新菜 2026-09-04 入系统（老板 09-04 凌晨定名+定价），09-11 周四上线主打。
+        // ⚠️ 主图 /honey_salmon.webp 老板尚未提供 —— 图到位前绝不 push，否则线上破图。
+        // 蛋白标签沿用 #21 柠香三文鱼：同为 120g 三文鱼、同一套配菜（配方照搬，见
+        //   dishIngredients.ts），克数不变则蛋白不变；仍待碗妈复核后定稿。
+        // 简介为初稿，待老板审定。a la carte RM24.90（老板 09-04 定）；餐券抵扣需补
+        //   RM5，复用现有 salmon-upgrade 预付升级池 —— #21 转暂别后，已预充三文鱼
+        //   升级券的客户可直接拿来抵这道，不会卡死（老板 09-04 拍板）。
+        id: 32,
+        name: "蜜糖香煎三文鱼饭",
+        nameEn: "Honey Pan-Seared Salmon Rice",
+        price: 24.90,
+        voucherTopUp: 5,
+        topUpAddonId: "salmon-upgrade",
+        image: "/honey_salmon.webp",
+        tags: ["高蛋白 30g+", "蜜糖焦香", "香煎三文鱼", "Omega-3", "餐券+RM5"],
+        tagsEn: ["30g+ protein", "Honey glaze", "Pan-seared salmon", "Omega-3", "Voucher +RM5"],
+        desc: "香煎三文鱼裹上蜜糖酱收得亮亮的，甜香贴着鱼肉一层层化开，配西兰花、毛豆、玉米与樱桃番茄——甜咸之间刚刚好。",
+        descEn: "Pan-seared salmon glazed in honey until glossy, the sweetness settling into every flake — served with broccoli, edamame, corn and cherry tomato."
+    },
+    {
+        // 全新菜 2026-09-04 入系统（老板 09-04 凌晨定名+定价），09-12 周五上线主打。
+        // ⚠️ 主图 /sesame_honey_chicken_chop.webp 老板尚未提供 —— 图到位前绝不 push。
+        // 命名把「芝麻」顶到最前，是为了跟暂别中的 #26 柠檬蜜糖煎鸡扒（Honey Lemon
+        //   Glazed Chicken Chop）拉开距离，两道都是 honey+鸡扒，老客户容易混（老板 09-04 选定）。
+        // 蛋白标签沿用 #14 金黄鸡扒：同为 1 块鸡扒、同一套配菜；仍待碗妈复核。
+        // 白芝麻按调味料处理、不进备餐采购清单（老板 09-04 拍板，与蜜糖/柠檬/酱油同口径）。
+        // 简介为初稿，待老板审定。a la carte RM18.50（老板 09-04 定），餐券全覆盖无 top-up。
+        id: 33,
+        name: "芝麻蜜汁鸡扒饭",
+        nameEn: "Sesame Honey Glazed Chicken Chop",
+        price: 18.50,
+        image: "/sesame_honey_chicken_chop.webp",
+        tags: ["高蛋白 43g+", "蜜汁芝麻", "香煎鸡扒", "外脆里嫩"],
+        tagsEn: ["43g+ protein", "Honey sesame glaze", "Pan-seared chicken chop", "Crisp & juicy"],
+        desc: "鸡扒煎到金黄，淋上蜜汁再撒一把白芝麻，芝麻的焦香把甜味托起来，外脆里嫩很下饭。",
+        descEn: "Chicken chop pan-seared golden, finished with a honey glaze and a scatter of toasted sesame — nutty, sweet and made for rice."
     },
 ];
 

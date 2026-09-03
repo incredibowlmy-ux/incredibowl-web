@@ -2918,12 +2918,12 @@
             { id: 27, name: '家乡甜酸洋葱猪扒', nameEn: 'Hometown Sweet & Sour Onion Pork Chop', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-08-31 从 Thu 挪到周三 Hero（webapp id 27）
             { id: 2,  name: '绍兴酒蒸花肉', nameEn: 'Shaoxing Wine Steamed Pork Belly', price: 19.90, costPrice: 0, day: 'Wed', active: true },  // 2026-08-31 从 Fri 挪到周三第二道（webapp id 4）
             // ─── 周四 Thu ────────────────────────────────────────────
-            //   ⚠️ 2026-09-03 是长假后复工第一天（老板 08-28 定的下周菜单只给周四/周五）。
-            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Thu', active: true, voucherTopUp: 5 },  // 2026-08-31 从 Wed 挪到周四 Hero（webapp id 29，availableWeekdays 已删）
-            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-08-31 从 Wed 挪到周四第二道（webapp id 23）
+            //   ⚠️ 2026-09-10 起 Hero 换成新菜 #32 蜜糖香煎三文鱼饭（老板 09-04 定名定价）。
+            { id: 32, name: '蜜糖香煎三文鱼饭', nameEn: 'Honey Pan-Seared Salmon Rice', price: 24.90, costPrice: 0, day: 'Thu', active: true, voucherTopUp: 5 },  // 🆕 2026-09-04 新菜（webapp id 32）；顶替 #21 柠香三文鱼，沿用 salmon-upgrade 预付池；costPrice 未知需 Settings 手动填
+            { id: 23, name: '家乡豆酱焖花肉', nameEn: 'Hometown Taucu Braised Pork Belly', price: 19.90, costPrice: 0, day: 'Thu', active: true },  // 2026-09-07 留原位·周四第二道（webapp id 23）
             // ─── 周五 Fri ────────────────────────────────────────────
-            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 5 },  // 2026-08-31 从 Tue 挪到周五 Hero（webapp id 21）
-            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 2026-08-31 留原位·周五第二道（webapp id 14）
+            { id: 33, name: '芝麻蜜汁鸡扒饭', nameEn: 'Sesame Honey Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 🆕 2026-09-04 新菜（webapp id 33）；顶替 #1 金黄鸡扒；命名刻意与 #26 柠檬蜜糖鸡扒拉开距离；costPrice 未知需 Settings 手动填
+            { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 5 },  // 2026-09-07 从 Thu 挪到周五第二道（webapp id 29）
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
@@ -2933,6 +2933,8 @@
             { id: 12, name: '山药云耳海陆双鲜炒', nameEn: 'Chinese Yam & Black Fungus Surf & Turf', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // webapp id 12 暂别 2026-08-17；dashboard 留 active 给 WA 加单
             { id: 26, name: '柠檬蜜糖煎鸡扒', nameEn: 'Honey Lemon Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Thu', active: true },  // webapp id 26 暂别 2026-08-17；dashboard 留 active 给 WA 加单
             { id: 31, name: '古早味卤三层肉豆腐蛋', nameEn: 'Hometown Braised Pork Belly with Tofu & Egg', price: 19.90, costPrice: 0, day: 'Mon', active: true },  // webapp id 31 暂别 2026-08-24（首发周后歇）；dashboard 留 active 给 WA 加单；costPrice 未知需 Settings 手动填
+            { id: 21, name: '柠香香煎三文鱼饭', nameEn: 'Lemon Pan-Seared Salmon', price: 24.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 5 },  // webapp id 21 暂别 2026-09-07（被新菜 #32 蜜糖三文鱼顶替）；dashboard 留 active 给 WA 加单
+            { id: 1,  name: '香煎金黄鸡扒饭', nameEn: 'Pan-Fried Golden Chicken Chop Rice', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // webapp id 14 暂别 2026-09-07（被新菜 #33 芝麻蜜汁鸡扒顶替）；dashboard 留 active 给 WA 加单
         ];
 
         // ═══════════════════════════════════════════════════════════════
@@ -2940,6 +2942,8 @@
         //   Auto-applied to Firestore menu docs that have costPrice = 0.
         // ═══════════════════════════════════════════════════════════════
         const MENU_COSTS_FROM_EXCEL = {
+            '32': 0,      // 蜜糖香煎三文鱼饭 — 2026-09-04 新菜，NOT in Excel, fill manually
+            '33': 0,      // 芝麻蜜汁鸡扒饭 — 2026-09-04 新菜，NOT in Excel, fill manually
             '11': 5.41,   // 纳豆月见海苔饭
             '12': 6.73,   // 山药云耳海陆双鲜炒
             '13': 8.60,   // 招牌原盅当归蒸鸡全腿
