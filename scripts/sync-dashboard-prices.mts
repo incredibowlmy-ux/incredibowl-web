@@ -35,8 +35,17 @@ const COMMIT = process.argv.includes('--commit');
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DASHBOARD = process.env.DASHBOARD_SRC
   || 'C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html';
-/** webapp 里也存着价格兜底值的文件（p('id', N) / rm('id', N)）。 */
-const WEBAPP_FALLBACK_FILES = ['src/components/menu/AddOnModal.tsx'];
+/**
+ * webapp 里也存着价格兜底值的文件。两种形态：
+ *   · p('id', N) / rm('id', N)（默认分区，addOnSections.ts）
+ *   · { id: 'x', …, fallback: N }（2026-09-05 C2 之后按菜配置在 dishCombos.ts）
+ * AddOnModal.tsx 现在不再含兜底价，留在名单里无害（扫到 0 条）。
+ */
+const WEBAPP_FALLBACK_FILES = [
+  'src/components/menu/addOnSections.ts',
+  'src/data/dishCombos.ts',
+  'src/components/menu/AddOnModal.tsx',
+];
 
 /** webapp 菜品 id → dashboard 菜品 id（历史遗留，只有这 5 个不同）。与 sync-menu-to-firestore 同表。 */
 const WEBAPP_TO_DASH: Record<number, number> = { 1: 14, 2: 13, 4: 2, 13: 4, 14: 1 };
@@ -182,7 +191,7 @@ for (let i = 0; i < dashLines.length; i++) {
 if (FIX && dashChanged > 0) fs.writeFileSync(DASHBOARD, dashLines.join(DASH_EOL), 'utf-8');
 
 // ── ③ webapp 自己的 p()/rm() 兜底值 ─────────────────────────────────────────
-const RE_FALLBACK = /\b(?:p|rm)\('([^']+)',\s*(\d+(?:\.\d+)?)\)/g;
+const RE_FALLBACK = /\b(?:p|rm)\('([^']+)',\s*(\d+(?:\.\d+)?)\)|\bid:\s*'([^']+)'[^{}]*?\bfallback:\s*(\d+(?:\.\d+)?)/g;
 for (const rel of (process.env.PRICE_SYNC_SKIP_WEBAPP ? [] : WEBAPP_FALLBACK_FILES)) {
   const abs = path.join(repoRoot, rel);
   if (!fs.existsSync(abs)) continue;
@@ -194,7 +203,8 @@ for (const rel of (process.env.PRICE_SYNC_SKIP_WEBAPP ? [] : WEBAPP_FALLBACK_FIL
     let line = lines[i];
     RE_FALLBACK.lastIndex = 0;
     for (let m = RE_FALLBACK.exec(line); m; m = RE_FALLBACK.exec(line)) {
-      const [, id, numStr] = m;
+      const id = m[1] ?? m[3];
+      const numStr = m[2] ?? m[4];
       const want = ADD_ON_PRICES[id];
       if (want === undefined) { advisory.push(`${rel}:${i + 1} 兜底价引用了未登记的 add-on「${id}」`); continue; }
       scanned++;
