@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
 const WHATSAPP_NUMBER = '60103370197';
 
-const MESSAGES = {
-    hero:     'Hi 碗妈！我刚看到你的网站，想了解一下你的厨房和这周的菜单。',
-    menu:     'Hi 碗妈！我看了菜单，想问下明天的预订和配送细节。',
-    feedback: 'Hi 碗妈！我看了邻居的评价想试试，可以推荐一道入门菜吗？',
-} as const;
+// 三个区域的预填文案在 dict.ts 的 whatsAppFloat.messages：zh 按区域（hero / menu /
+// feedback）换句子；en 历史上只有一句固定文案（原 WhatsAppFloatEN 没有区域观察器），
+// 合并后三个区域填同一句，链接永远相同——用户看到的行为不变。
+export type Zone = 'hero' | 'menu' | 'feedback';
 
-type Zone = keyof typeof MESSAGES;
-
-export default function WhatsAppFloat() {
+export default function WhatsAppFloat({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].whatsAppFloat;
     const [zone, setZone] = useState<Zone>('hero');
     const [stickyOpen, setStickyOpen] = useState(false);
 
@@ -62,7 +62,7 @@ export default function WhatsAppFloat() {
         };
     }, []);
 
-    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(MESSAGES[zone])}`;
+    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(t.messages[zone])}`;
 
     if (stickyOpen) return null;
 
@@ -71,7 +71,7 @@ export default function WhatsAppFloat() {
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="WhatsApp 碗妈"
+            aria-label={t.ariaLabel}
             style={{ bottom: 'calc(var(--sticky-bar-h, 0px) + 1.25rem + env(safe-area-inset-bottom, 0px))' }}
             className="group fixed right-5 md:right-7 z-[80] flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full bg-[#25D366] hover:bg-[#20BE5A] text-white shadow-2xl shadow-[#25D366]/40 hover:scale-110 active:scale-95 transition-[bottom,transform,background-color] duration-200 ease-out"
         >

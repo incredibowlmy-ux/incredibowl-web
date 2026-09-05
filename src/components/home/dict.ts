@@ -35,10 +35,61 @@ interface CutoffBannerDict {
     ariaLabel: (label: string, crossesDay: boolean, daysLeft: number, hoursLeft: number, minutesLeft: number) => string;
 }
 
+interface PromoBannerDict {
+    badge: string;
+    heading: string;
+    /** 两行简介：`{introLine1}<br />{introLine2}` */
+    introLine1: string;
+    introLine2: string;
+    free: string;
+    freeSideTitle: string;
+    freeSideSub: string;
+    /** `{readReviewsBefore}{GOOGLE_REVIEW_COUNT}{readReviewsAfter}`（三个子节点，见文件头） */
+    readReviewsBefore: string;
+    readReviewsAfter: string;
+    offerTitle: string;
+    /** `{shareBefore}<b>{shareBold}</b>{shareAfter}` */
+    shareBefore: string;
+    shareBold: string;
+    shareAfter: string;
+    googleTitle: string;
+    googleReviews: string;
+    recommended: string;
+    howToClaim: string;
+    step1: string;
+    step2: string;
+    step3: string;
+    ctaTitle: string;
+    ctaSub: string;
+}
+
+interface WhatsAppFloatDict {
+    /** 按页面区域切换的预填句子；en 三个区域同一句（原 EN 组件只有一句固定文案） */
+    messages: { hero: string; menu: string; feedback: string };
+    ariaLabel: string;
+}
+
+interface WhatsAppStickyBarDict {
+    prefilled: string;
+    waAriaLabel: string;
+    claimed: string;
+    /** `{firstOrderBefore}<b>RM {N}</b>{firstOrderAfter}`——zh 文字在前、en 在后，另一侧留空串 */
+    firstOrderBefore: string;
+    firstOrderAfter: string;
+    claimedSub: (code: string) => string;
+    claimSub: string;
+    order: string;
+    claim: string;
+    close: string;
+}
+
 export interface HomeDict {
     faqHeroStrip: FaqHeroStripDict;
     heroTrustStrip: HeroTrustStripDict;
     cutoffBanner: CutoffBannerDict;
+    promoBanner: PromoBannerDict;
+    whatsAppFloat: WhatsAppFloatDict;
+    whatsAppStickyBar: WhatsAppStickyBarDict;
 }
 
 const ZH_WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -75,6 +126,51 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             ariaLabel: (label, crossesDay, daysLeft, hoursLeft, minutesLeft) =>
                 `${label}，还剩${crossesDay ? ` ${daysLeft} 天` : ''} ${hoursLeft} 小时 ${minutesLeft} 分钟。点击查看菜单`,
         },
+        promoBanner: {
+            badge: '街坊回馈',
+            heading: '感恩折扣',
+            introLine1: '感谢街坊一路支持 🧡',
+            introLine2: '你的声音很重要 — 评价送一份惊喜小菜',
+            free: '免费',
+            freeSideTitle: '惊喜小菜 / Free Side',
+            freeSideSub: '好评后下次下单附上 · 碗妈当天配',
+            readReviewsBefore: '看 ',
+            readReviewsAfter: '+ 邻居怎么说',
+            offerTitle: '好评送小菜',
+            shareBefore: '分享你的评价，送你 ',
+            shareBold: '一份惊喜小菜',
+            shareAfter: '。',
+            googleTitle: '在 Google 查看评价',
+            googleReviews: 'Google 评价',
+            recommended: '邻居推荐',
+            howToClaim: '如何获得',
+            step1: '下单并享用',
+            step2: '在 Facebook 留评价（带图更好）',
+            step3: '截图发 WhatsApp 给碗妈领小菜',
+            ctaTitle: '去看菜单',
+            ctaSub: '好评换一份小菜',
+        },
+        whatsAppFloat: {
+            messages: {
+                hero:     'Hi 碗妈！我刚看到你的网站，想了解一下你的厨房和这周的菜单。',
+                menu:     'Hi 碗妈！我看了菜单，想问下明天的预订和配送细节。',
+                feedback: 'Hi 碗妈！我看了邻居的评价想试试，可以推荐一道入门菜吗？',
+            },
+            ariaLabel: 'WhatsApp 碗妈',
+        },
+        whatsAppStickyBar: {
+            // Trailing 🥡 is a silent source tag — Carmen can tell at-a-glance this came from the sticky bar.
+            prefilled: 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后有新 Promo 可以通知我 🙏 🥡',
+            waAriaLabel: 'WhatsApp 碗妈 · 收新菜通知',
+            claimed: '优惠码已领取',
+            firstOrderBefore: '首单立减 ',
+            firstOrderAfter: '',
+            claimedSub: (code) => `${code} · 结账自动帮你用上`,
+            claimSub: '点一下就领，结账自动套用',
+            order: '去点菜',
+            claim: '领取',
+            close: '关闭',
+        },
     },
     en: {
         faqHeroStrip: {
@@ -99,6 +195,51 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             },
             ariaLabel: (label, crossesDay, daysLeft, hoursLeft, minutesLeft) =>
                 `${label}, ${crossesDay ? `${daysLeft}d ` : ''}${hoursLeft}h ${minutesLeft}m left. Tap to view menu.`,
+        },
+        promoBanner: {
+            badge: 'NEIGHBOUR THANKS',
+            heading: 'Thank-you discount',
+            introLine1: 'Thank you neighbours for your support 🧡',
+            introLine2: 'Your voice matters — leave a review for a surprise side dish',
+            free: 'FREE',
+            freeSideTitle: 'Surprise Side / Free Side',
+            freeSideSub: 'Added to your next order · cooked fresh that day',
+            readReviewsBefore: 'Read ',
+            readReviewsAfter: '+ neighbour reviews',
+            offerTitle: 'Review-for-side-dish',
+            shareBefore: 'Share your review, get a ',
+            shareBold: 'surprise side dish',
+            shareAfter: '.',
+            googleTitle: 'View reviews on Google',
+            googleReviews: 'Google reviews',
+            recommended: 'neighbour-recommended',
+            howToClaim: 'How to claim',
+            step1: 'Order and enjoy',
+            step2: 'Leave a review on Facebook (photos even better)',
+            step3: 'WhatsApp BowlMama a screenshot to claim your side dish',
+            ctaTitle: 'See the menu',
+            ctaSub: 'A review earns a free side',
+        },
+        whatsAppFloat: {
+            // 原 WhatsAppFloatEN 只有这一句固定文案（没有区域观察器）；三个区域填同一句，链接不变。
+            messages: {
+                hero:     "Hi BowlMama! I'd like to see today's menu.",
+                menu:     "Hi BowlMama! I'd like to see today's menu.",
+                feedback: "Hi BowlMama! I'd like to see today's menu.",
+            },
+            ariaLabel: 'WhatsApp BowlMama',
+        },
+        whatsAppStickyBar: {
+            prefilled: "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks! 🥡",
+            waAriaLabel: 'WhatsApp BowlMama for new-dish alerts',
+            claimed: 'Voucher claimed',
+            firstOrderBefore: '',
+            firstOrderAfter: ' off your first order',
+            claimedSub: (code) => `${code} · applied automatically at checkout`,
+            claimSub: 'One tap to claim · applied at checkout',
+            order: 'Order',
+            claim: 'Claim',
+            close: 'Close',
         },
     },
 };

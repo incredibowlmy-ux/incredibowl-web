@@ -2,8 +2,11 @@
 
 import { MessageCircleHeart, ArrowRight, Star, Salad, ExternalLink } from 'lucide-react';
 import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
-export default function PromoBanner() {
+export default function PromoBanner({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].promoBanner;
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
@@ -21,15 +24,15 @@ export default function PromoBanner() {
                         <div>
                             <div className="flex items-center gap-2 mb-3">
                                 <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-medium tracking-widest border border-[#FF6B35]/30">
-                                    街坊回馈
+                                    {t.badge}
                                 </span>
                                 <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
-                                    感恩折扣
+                                    {t.heading}
                                 </h2>
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
-                                感谢街坊一路支持 🧡<br />
-                                你的声音很重要 — 评价送一份惊喜小菜
+                                {t.introLine1}<br />
+                                {t.introLine2}
                             </p>
                         </div>
 
@@ -41,13 +44,13 @@ export default function PromoBanner() {
                             {/* Free side value badge */}
                             <div className="flex-shrink-0 flex flex-col items-center justify-center px-4 py-2.5 bg-[#FF6B35]/25 rounded-xl border border-[#FF6B35]/40 relative">
                                 <Salad size={26} className="text-[#FF9B50]" strokeWidth={2.5} />
-                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">免费</span>
+                                <span className="text-[11px] font-black text-[#FF9B50] leading-none tracking-wider mt-1.5">{t.free}</span>
                             </div>
 
                             {/* Details */}
                             <div className="flex-1 min-w-0 relative">
-                                <p className="text-sm font-black text-white leading-tight">惊喜小菜 / Free Side</p>
-                                <p className="text-[12px] text-white/75 leading-snug mt-1">好评后下次下单附上 · 碗妈当天配</p>
+                                <p className="text-sm font-black text-white leading-tight">{t.freeSideTitle}</p>
+                                <p className="text-[12px] text-white/75 leading-snug mt-1">{t.freeSideSub}</p>
                             </div>
                         </div>
 
@@ -57,7 +60,8 @@ export default function PromoBanner() {
                             onClick={scrollToFeedback}
                             className="hidden lg:inline-flex items-center gap-1.5 self-start text-[#FF9B50] hover:text-[#FFB770] text-sm font-bold underline-offset-4 hover:underline transition-colors group"
                         >
-                            <span>看 {GOOGLE_REVIEW_COUNT}+ 邻居怎么说</span>
+                            {/* 三个子节点（前缀 / 数字 / 后缀）——SSR 在文本节点之间插 <!-- -->，别合并 */}
+                            <span>{t.readReviewsBefore}{GOOGLE_REVIEW_COUNT}{t.readReviewsAfter}</span>
                             <ArrowRight size={13} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
                         </button>
                     </div>
@@ -69,10 +73,10 @@ export default function PromoBanner() {
                             <div>
                                 <div className="flex items-center gap-2 mb-3">
                                     <MessageCircleHeart size={18} className="text-[#FF9B50]" strokeWidth={2.5} />
-                                    <p className="text-[#FF9B50] font-black text-[15px]">好评送小菜</p>
+                                    <p className="text-[#FF9B50] font-black text-[15px]">{t.offerTitle}</p>
                                 </div>
                                 <p className="text-white/85 text-[15px] leading-relaxed">
-                                    分享你的评价，送你 <span className="text-[#FF9B50] font-black">一份惊喜小菜</span>。
+                                    {t.shareBefore}<span className="text-[#FF9B50] font-black">{t.shareBold}</span>{t.shareAfter}
                                 </p>
                             </div>
 
@@ -84,7 +88,7 @@ export default function PromoBanner() {
                                     href={GOOGLE_REVIEWS_URL}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    title="在 Google 查看评价"
+                                    title={t.googleTitle}
                                     className="group inline-flex items-center gap-4 rounded-md hover:opacity-90 transition-opacity"
                                 >
                                     <div className="flex items-center gap-1.5">
@@ -94,31 +98,31 @@ export default function PromoBanner() {
                                     <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                     <div className="text-xs leading-none inline-flex items-center gap-1">
                                         <span className="text-white font-black">{GOOGLE_REVIEW_COUNT}+</span>
-                                        <span className="text-white/70 font-medium">Google 评价</span>
+                                        <span className="text-white/70 font-medium">{t.googleReviews}</span>
                                         <ExternalLink size={11} className="text-white/40 group-hover:text-[#FF9B50] transition-colors" strokeWidth={2.5} />
                                     </div>
                                 </a>
                                 <span className="w-px h-4 bg-white/15" aria-hidden="true" />
                                 <div className="text-xs leading-none">
                                     <span className="text-white font-black">100%</span>
-                                    <span className="text-white/70 font-medium ml-1">邻居推荐</span>
+                                    <span className="text-white/70 font-medium ml-1">{t.recommended}</span>
                                 </div>
                             </div>
 
                             {/* Cluster C: how to claim — 3 steps (border-t on mobile only, desktop relies on flex spacing) */}
                             <div className="border-t border-white/10 pt-4 space-y-2.5 lg:border-t-0 lg:pt-0">
-                                <p className="text-[11px] lg:text-[12px] font-medium text-white/55 lg:text-white/70 uppercase tracking-wider mb-2.5">如何获得</p>
+                                <p className="text-[11px] lg:text-[12px] font-medium text-white/55 lg:text-white/70 uppercase tracking-wider mb-2.5">{t.howToClaim}</p>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">1</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">下单并享用</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">{t.step1}</p>
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">2</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">在 Facebook 留评价（带图更好）</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">{t.step2}</p>
                                 </div>
                                 <div className="flex items-start gap-2.5">
                                     <span className="flex-shrink-0 w-5 h-5 rounded-full bg-[#FF6B35]/20 text-[#FF9B50] text-[11px] font-black flex items-center justify-center">3</span>
-                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">截图发 WhatsApp 给碗妈领小菜</p>
+                                    <p className="text-[13px] text-white/75 leading-snug pt-0.5">{t.step3}</p>
                                 </div>
                             </div>
 
@@ -129,8 +133,8 @@ export default function PromoBanner() {
                                 className="mt-5 lg:mt-0 self-start lg:self-end inline-flex items-center gap-3 px-5 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full shadow-md shadow-[#FF6B35]/20 transition-[background-color,transform,box-shadow] duration-150 ease-out active:scale-[0.97] active:brightness-95 group"
                             >
                                 <div className="flex flex-col items-start">
-                                    <span className="text-[15px] font-bold leading-tight">去看菜单</span>
-                                    <span className="text-[11px] lg:text-[12px] font-medium text-white/75 leading-tight">好评换一份小菜</span>
+                                    <span className="text-[15px] font-bold leading-tight">{t.ctaTitle}</span>
+                                    <span className="text-[11px] lg:text-[12px] font-medium text-white/75 leading-tight">{t.ctaSub}</span>
                                 </div>
                                 <ArrowRight size={14} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
                             </button>

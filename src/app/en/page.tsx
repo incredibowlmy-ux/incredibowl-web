@@ -10,16 +10,16 @@ const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: 
 // FPX 回跳的成功 / 失败弹窗（2026-09-05 F3：以前两个首页各写一套硬编码 overlay）
 const CartSuccess = dynamic(() => import('@/components/cart/CartSuccess'), { ssr: false });
 const PaymentErrorModal = dynamic(() => import('@/components/cart/PaymentErrorModal'), { ssr: false });
-const WhatsAppFloatEN = dynamic(() => import('@/components/home-en/WhatsAppFloatEN'), { ssr: false });
+const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), { ssr: false });
 const SubscribeModalEN = dynamic(() => import('@/components/home-en/SubscribeModalEN'), { ssr: false });
-const WhatsAppStickyBarEN = dynamic(() => import('@/components/home-en/WhatsAppStickyBarEN'), { ssr: false });
+const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
 
 import NavBarEN from '@/components/home-en/NavBarEN';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
 import FaqHeroStrip from '@/components/home/FaqHeroStrip';
 import CutoffBanner from '@/components/home/CutoffBanner';
 import HeroTrustStrip from '@/components/home/HeroTrustStrip';
-import PromoBannerEN from '@/components/home-en/PromoBannerEN';
+import PromoBanner from '@/components/home/PromoBanner';
 import DeliveryWidgetEN from '@/components/home-en/DeliveryWidgetEN';
 import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
 import AboutBowlMamaEN from '@/components/home-en/AboutBowlMamaEN';
@@ -341,11 +341,11 @@ export default function EnglishHome() {
                         "do you have a shopfront" before seeing any food.
                         Desktop order is unchanged. */}
                     <div className="contents lg:hidden">
-                        <PromoBannerEN />
+                        <PromoBanner locale="en" />
                     </div>
                     <FaqHeroStrip locale="en" />
                     <div className="hidden lg:contents">
-                        <PromoBannerEN />
+                        <PromoBanner locale="en" />
                     </div>
                     <ErrorBoundary>
                         <AboutBowlMamaEN />
@@ -361,8 +361,8 @@ export default function EnglishHome() {
 
             <FooterEN />
 
-            <WhatsAppFloatEN />
-            <WhatsAppStickyBarEN />
+            <WhatsAppFloat locale="en" />
+            <WhatsAppStickyBar locale="en" />
             <SubscribeModalEN />
 
             {isCartOpen && (
