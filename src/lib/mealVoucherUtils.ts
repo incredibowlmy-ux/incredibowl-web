@@ -179,9 +179,12 @@ export async function finalizeMealVoucherPurchase(
       finalizedBy: payment.source,
       updatedAt: FieldValue.serverTimestamp(),
     });
-    tx.update(userRef, {
+    // 2026-09-05（07-26 审计 P3-1）：以前是 tx.update —— user doc 不存在时整个
+    // 事务抛错，而**券已经在上面 batch 里铸出来了**，purchase 却永远卡在 pending，
+    // webhook 无限重试。改 set+merge，与 confirm-order 的写法一致。
+    tx.set(userRef, {
       totalSpent: FieldValue.increment(Number(fd.amountPaid) || 0),
-    });
+    }, { merge: true });
   });
 
   // Burn the promo voucher only on the first paid transition. Best-effort: a

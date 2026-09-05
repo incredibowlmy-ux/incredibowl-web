@@ -2936,18 +2936,14 @@
         ];
 
         // ═══════════════════════════════════════════════════════════════
-        //   COST PRICES (from incredibowl_costing_v4A.xlsx, May 2026)
-        //   Auto-applied to Firestore menu docs that have costPrice = 0.
+        //   COST PRICES — 种子/回填用，**故意全部留 0**
+        //   2026-09-05：这里原来写着 7 道菜的真实成本（v4A Excel, May 2026）。
+        //   这个文件是公网可下载的，配上公开菜单价等于把毛利全公开了，所以清掉。
+        //   真实成本在 Firestore menu 文档的 costPrice（受 isAdmin() 保护），
+        //   在下面的「设置 → 菜品成本」里改；每次载入的回填只补 costPrice 仍为 0 的。
+        //   新菜要设成本 → 在设置页填，不要写回这里。
         // ═══════════════════════════════════════════════════════════════
         const MENU_COSTS_FROM_EXCEL = {
-            '11': 5.41,   // 纳豆月见海苔饭
-            '12': 6.73,   // 山药云耳海陆双鲜炒
-            '13': 8.60,   // 招牌原盅当归蒸鸡全腿
-            '14': 0,      // 酱油鸡全腿 — NOT in Excel, fill manually
-            '1':  7.58,   // 香煎金黄鸡扒饭
-            '3':  7.55,   // 希腊柠香烤鸡胸 (Local Pomace version)
-            '4':  5.43,   // 马铃薯炖花肉片(炒)
-            '5':  7.43,   // 金黄葱香煎鸡汤
         };
 
         // ─── ADD-ON SEED (deduped from DISH_ADDON_MAP) — cost prices start at 0, user fills ───

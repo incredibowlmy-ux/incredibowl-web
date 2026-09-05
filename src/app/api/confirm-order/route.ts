@@ -41,14 +41,14 @@ function isValidRazorpaySignature(orderId: string, paymentId: string, signature:
  *                 binding stamped on the orders by create-order (FPX; works
  *                 even when the bank redirect lands with no auth session)
  *               | owner token + voucher-fully-covered order (total 0, no cash)
- *   → cancelled:  admin | owner token | order still 'pending' (unpaid
- *                 throwaway — redirect-failure flows cancel without a session;
- *                 doc ids are unguessable)
+ *   → cancelled:  admin | owner token | (no session) still-'pending' order PLUS a
+ *                 holder credential — its own trackToken, or a razorpayOrderId it
+ *                 is bound to. 光凭 orderId 就能取消是不够的（2026-09-05，见下）。
  *   → preparing/delivering/delivered: admin only
  */
 export async function POST(req: Request) {
   try {
-    const { orderIds, status, paymentData } = await req.json();
+    const { orderIds, status, paymentData, holderTokens } = await req.json();
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0 || orderIds.length > 20) {
       return NextResponse.json({ error: '缺少订单 ID' }, { status: 400 });
@@ -110,9 +110,25 @@ export async function POST(req: Request) {
       // 首页 ?fpx_error= 回跳）取消的都是刚建、还没确认的 pending 单；
       // 老板在 Dashboard 取消已确认单走上面的 isAdmin 分支，照常可用。
       //
-      // 保留「无 token 也能取消 pending 单」：银行跳转回来时没有 session，
-      // 这条路必须能走（缓解因素：orderId 是 Firestore 20 字符 auto-id，不可猜）。
-      authorized = gateOrders.every(o => o.status === 'pending');
+      // 🔒 2026-09-05：无 token 时**光凭 orderId 不够**。以前只要单子还是 pending，
+      // 任何人拿到 orderId 就能取消 —— 而取消会走 cancelOrderWithRollback 把餐券翻回、
+      // 预付 credit 退回、dishStock +N，等于「知道 id 就能烧掉别人的库存和券」。
+      // 现在无 session 的取消必须出示**持有凭证**：这张单自己的 trackToken，或者
+      // create-order 绑给它的 razorpayOrderId。两者都只有真正下单的那个浏览器有。
+      //
+      // 不影响现有流程：顾客侧三处取消（CartDrawer 两处 + 首页 ?fpx_error= 回跳）
+      // 都从 fpx_pending_order 快照里带上 trackToken；登录态本人和 admin 走上面两条。
+      // 万一凭证真拿不出来（快照坏了），单子留在 pending，1 小时后由
+      // release-stale-fpx 完整回补 —— 比放行陌生人取消安全。
+      const allPending = gateOrders.every(o => o.status === 'pending');
+      if (allPending) {
+        if (isOwnerOfAll) {
+          authorized = true;
+        } else {
+          const { allHeldBy } = await import('@/lib/razorpayBinding');
+          authorized = allHeldBy(gateOrders, Array.isArray(holderTokens) ? holderTokens : [holderTokens]);
+        }
+      }
     }
     if (!authorized) {
       return NextResponse.json({ error: '未授权操作' }, { status: 403 });

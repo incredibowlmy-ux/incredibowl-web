@@ -45,3 +45,35 @@ export function allBoundTo(orders: Array<RazorpayBindable | null | undefined>, r
   if (!Array.isArray(orders) || orders.length === 0) return false;
   return orders.every(o => isBoundTo(o, rzpOrderId));
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+ * 持有凭证 —— 「没有登录 session 的人，凭什么动这张单」
+ *
+ * 银行跳转回来时 session 常常已经没了，所以取消 pending 单这条路必须能无 token
+ * 走通。但以前的条件只有「单子还是 pending」，等于**知道 orderId 就能取消别人的
+ * 单** —— 而取消会走 cancelOrderWithRollback 把餐券翻回、预付 credit 退回、
+ * dishStock +N，是能被用来烧库存的。
+ *
+ * 持有凭证 = 只有真正下单的那个浏览器才有的东西：这张单自己的 trackToken
+ * （submit-order 建单时生成，随成功页/WhatsApp 链接发给顾客），或者 create-order
+ * 绑给它的 razorpayOrderId。
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface OrderHolderSubject extends RazorpayBindable {
+  /** 公开的跟踪凭据（**不是** doc id）。 */
+  trackToken?: string | null;
+}
+
+/** 单张订单是否被这组凭证之一持有。 */
+export function isHeldBy(order: OrderHolderSubject | null | undefined, tokens: unknown[]): boolean {
+  if (!order || !Array.isArray(tokens)) return false;
+  const clean = tokens.filter((x): x is string => typeof x === 'string' && x.length > 0);
+  if (clean.length === 0) return false;
+  return clean.some(tk => (!!order.trackToken && order.trackToken === tk) || isBoundTo(order, tk));
+}
+
+/** 一批订单是否**全部**被这组凭证持有（无 session 取消的放行条件）。 */
+export function allHeldBy(orders: Array<OrderHolderSubject | null | undefined>, tokens: unknown[]): boolean {
+  if (!Array.isArray(orders) || orders.length === 0) return false;
+  return orders.every(o => isHeldBy(o, tokens));
+}

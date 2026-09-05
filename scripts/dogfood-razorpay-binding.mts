@@ -5,7 +5,7 @@
  * 顾客付掉前一笔就再也确认不了 = 收了钱订单没了。改成数组累加后，这里必须同时
  * 证明两件事：① 老单（只有单值字段）照常认；② 跨订单重放依然拒。
  */
-import { isBoundTo, allBoundTo } from '../src/lib/razorpayBinding.ts';
+import { isBoundTo, allBoundTo, isHeldBy, allHeldBy } from '../src/lib/razorpayBinding.ts';
 
 let pass = 0, fail = 0;
 const t = (label: string, cond: boolean) => { cond ? pass++ : fail++; console.log(`  ${cond ? '✓' : '✗'} ${label}`); };
@@ -40,6 +40,27 @@ t('多单全绑同一笔 → 认', allBoundTo([{ razorpayOrderIds: [R1] }, { raz
 t('多单里有一单没绑上 → 拒', !allBoundTo([{ razorpayOrderIds: [R1] }, { razorpayOrderId: R2 }], R1));
 t('空数组 → 拒（没有订单不等于全部通过）', !allBoundTo([], R1));
 t('数组含 null 成员 → 拒', !allBoundTo([{ razorpayOrderIds: [R1] }, null], R1));
+
+// ── 持有凭证：无 session 取消 pending 单的放行条件 ────────────────────
+// 守的是「知道 orderId 就能烧掉别人的库存和餐券」那个洞。
+const TK1 = 'trk_aaaaaaaaaaaa';
+const TK2 = 'trk_bbbbbbbbbbbb';
+const orderA = { trackToken: TK1, razorpayOrderId: R1, razorpayOrderIds: [R1] };
+const orderB = { trackToken: TK2, razorpayOrderId: R1, razorpayOrderIds: [R1] };
+
+t('拿自己的 trackToken → 认', isHeldBy(orderA, [TK1]));
+t('拿别人的 trackToken → 拒', !isHeldBy(orderA, [TK2]));
+t('拿绑定的 razorpayOrderId → 认（成功回跳带 URL 参数那条路）', isHeldBy(orderA, [R1]));
+t('拿没绑定的 razorpayOrderId → 拒', !isHeldBy(orderA, [R2]));
+t('空凭证数组 → 拒（这就是修的洞：光有 orderId 不算数）', !isHeldBy(orderA, []));
+t('凭证全是空串/undefined → 拒', !isHeldBy(orderA, ['', undefined, null]));
+t('订单没有 trackToken 且凭证也是 undefined → 拒', !isHeldBy({ trackToken: undefined }, [undefined]));
+t('凭证不是数组 → 拒', !isHeldBy(orderA, 'not-an-array' as unknown as unknown[]));
+
+t('多日拆单：两张各自的 token 都带上 → 认', allHeldBy([orderA, orderB], [TK1, TK2]));
+t('多日拆单：只带一张的 token → 拒（不能顺手取消另一张）', !allHeldBy([orderA, orderB], [TK1]));
+t('多日拆单：共同的 razorpayOrderId → 认', allHeldBy([orderA, orderB], [R1]));
+t('空订单列表 → 拒', !allHeldBy([], [TK1]));
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败\n`);
 process.exit(fail === 0 ? 0 : 1);

@@ -119,11 +119,18 @@ export default function V4BentoLayout() {
         const cancelPending = () => {
             if (!pendingStr) return;
             try {
-                const { orderIds } = JSON.parse(pendingStr);
+                const snap = JSON.parse(pendingStr);
+                const { orderIds } = snap;
+                // 持有凭证：银行跳回来时没有 session，confirm-order 2026-09-05 起要求
+                // 无 token 的取消出示 trackToken（否则任何人拿到 orderId 就能烧掉
+                // 别人的库存和餐券）。token 就在我们自己写的快照里。
+                const holderTokens = (snap?.summary?.trackInfo || [])
+                    .map((t: { token?: string }) => t?.token)
+                    .filter(Boolean);
                 fetch('/api/confirm-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderIds, status: 'cancelled' }),
+                    body: JSON.stringify({ orderIds, status: 'cancelled', holderTokens }),
                 }).catch(() => {});
             } catch (e) {
                 console.error('FPX pending order cancel error:', e);

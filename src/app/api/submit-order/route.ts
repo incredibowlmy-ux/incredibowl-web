@@ -85,6 +85,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '无效支付方式' }, { status: 400 });
     }
 
+    // 🔒 2026-09-05（07-26 审计 P3-3）：receiptUrl 会被 ownerNotify 渲染成老板
+    // 通知里的 <a href>，escapeHtml 挡不住 javascript: / data: 协议。合法来源
+    // 只有 Firebase Storage 的 getDownloadURL，所以按域名白名单卡死。
+    const { isAllowedReceiptUrl } = await import('@/lib/receiptUrl');
+    if (!isAllowedReceiptUrl(receiptUrl)) {
+      return NextResponse.json({ error: '付款截图地址无效，请重新上传' }, { status: 400 });
+    }
+    // 🔒 P3-4：QR 单必须真的有截图。以前只有 CartDrawer 的前端提示挡着，直接
+    // 打 API 就能建一张「说自己付了但没有凭证」的 QR 单，老板还得逐笔去查。
+    if (paymentMethod === 'qr' && !receiptUrl) {
+      return NextResponse.json({ error: '请先上传付款截图再提交订单' }, { status: 400 });
+    }
+
     // ── Date validation: every bundle's selectedDate must still be valid ──
     // Catches the stale-cart bug: customer added items yesterday with a
     // date that's now in the past, came back today and clicked pay.
