@@ -2,28 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
 type CutoffInfo = {
     daysLeft: number;
     hoursLeft: number;
     minutesLeft: number;
     secondsLeft: number;
-    labelDay: string;
+    label: string;
 };
-
-const ZH_WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 /**
  * Compute time until next 06:00 cutoff. Skips Sat/Sun (kitchen closed).
  * Pre-cutoff (00:00-05:59): countdown to today's 06:00
  * Post-cutoff: countdown to next weekday 06:00
  *
- * labelDay reflects the actual cutoff day:
- *   今日 (cutoff is today)
- *   明日 (cutoff is tomorrow, no weekend skip)
- *   周一/二/三/四/五 (any further out, e.g. Fri afternoon → Mon)
+ * label reflects the actual cutoff day (文案在 dict.ts 的 cutoffBanner.label)：
+ *   今日 / Today's cutoff (cutoff is today)
+ *   明日 / tomorrow (cutoff is tomorrow, no weekend skip)
+ *   周一/二/三/四/五 / Monday… (any further out, e.g. Fri afternoon → Mon)
  */
-function computeCutoff(now: Date): CutoffInfo {
+function computeCutoff(now: Date, locale: Locale): CutoffInfo {
     const today6am = new Date(now);
     today6am.setHours(6, 0, 0, 0);
 
@@ -48,10 +48,7 @@ function computeCutoff(now: Date): CutoffInfo {
         (startOfCutoffDay.getTime() - startOfToday.getTime()) / 86_400_000
     );
 
-    let labelDay: string;
-    if (dayDiff === 0) labelDay = '今日';
-    else if (dayDiff === 1) labelDay = '明日';
-    else labelDay = ZH_WEEKDAYS[cutoff.getDay()];
+    const label = HOME_DICT[locale].cutoffBanner.label(dayDiff, cutoff.getDay());
 
     const diffMs = Math.max(0, cutoff.getTime() - now.getTime());
     const totalSec = Math.floor(diffMs / 1000);
@@ -60,7 +57,7 @@ function computeCutoff(now: Date): CutoffInfo {
     const minutesLeft = Math.floor((totalSec % 3600) / 60);
     const secondsLeft = totalSec % 60;
 
-    return { daysLeft, hoursLeft, minutesLeft, secondsLeft, labelDay };
+    return { daysLeft, hoursLeft, minutesLeft, secondsLeft, label };
 }
 
 const pad = (n: number) => n.toString().padStart(2, '0');
@@ -73,17 +70,18 @@ const pad = (n: number) => n.toString().padStart(2, '0');
 // items-center：min-h 只用来留白，不能把胶囊拉高（flex 默认 stretch 会拉伸）。
 const WRAPPER_CLASS = 'lg:col-span-12 -mb-2 flex items-center justify-center min-h-[38px] md:min-h-[40px]';
 
-export default function CutoffBanner() {
+export default function CutoffBanner({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].cutoffBanner;
     const [info, setInfo] = useState<CutoffInfo | null>(null);
 
     useEffect(() => {
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const tick = () => setInfo(computeCutoff(new Date()));
+        const tick = () => setInfo(computeCutoff(new Date(), locale));
         tick();
         // 1Hz live ticker; 60s if user prefers reduced motion
         const id = setInterval(tick, reduceMotion ? 60_000 : 1_000);
         return () => clearInterval(id);
-    }, []);
+    }, [locale]);
 
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
 
@@ -95,7 +93,7 @@ export default function CutoffBanner() {
         );
     }
 
-    const { daysLeft, hoursLeft, minutesLeft, secondsLeft, labelDay } = info;
+    const { daysLeft, hoursLeft, minutesLeft, secondsLeft, label } = info;
     const totalMinLeft = daysLeft * 1440 + hoursLeft * 60 + minutesLeft;
     const crossesDay = daysLeft > 0;
 
@@ -114,14 +112,12 @@ export default function CutoffBanner() {
         urgent: 'bg-[#FF6B35] animate-pulse',
     }[tier];
 
-    const label = `${labelDay} 06:00 截单`;
-
     return (
         <div className={WRAPPER_CLASS}>
             <button
                 type="button"
                 onClick={scrollToMenu}
-                aria-label={`${label}，还剩${crossesDay ? ` ${daysLeft} 天` : ''} ${hoursLeft} 小时 ${minutesLeft} 分钟。点击查看菜单`}
+                aria-label={t.ariaLabel(label, crossesDay, daysLeft, hoursLeft, minutesLeft)}
                 className={`group inline-flex items-center gap-2.5 px-3.5 md:px-4 py-1.5 rounded-full text-[12px] md:text-[13px] font-bold shadow-sm border backdrop-blur-sm transition-[background-color,border-color,transform] duration-200 ease-out hover:brightness-95 active:scale-[0.98] ${tierClasses}`}
             >
                 {/* Status dot */}

@@ -16,9 +16,9 @@ const WhatsAppStickyBarEN = dynamic(() => import('@/components/home-en/WhatsAppS
 
 import NavBarEN from '@/components/home-en/NavBarEN';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
-import FaqHeroStripEN from '@/components/home-en/FaqHeroStripEN';
-import CutoffBannerEN from '@/components/home-en/CutoffBannerEN';
-import HeroTrustStripEN from '@/components/home-en/HeroTrustStripEN';
+import FaqHeroStrip from '@/components/home/FaqHeroStrip';
+import CutoffBanner from '@/components/home/CutoffBanner';
+import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBannerEN from '@/components/home-en/PromoBannerEN';
 import DeliveryWidgetEN from '@/components/home-en/DeliveryWidgetEN';
 import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
@@ -318,18 +318,18 @@ export default function EnglishHome() {
 
             <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
-                    <CutoffBannerEN />
+                    <CutoffBanner locale="en" />
                     <HeroSectionEN />
                     {/* Desktop declutter mirrors the ZH homepage: trust strip moves
                         down to sit right before the menu (social proof at the decision
                         point), FAQ teaser hidden at lg, promo banner re-rendered after
                         the menu. Mobile keeps the original order — mobile is frozen. */}
                     <div className="contents lg:hidden">
-                        <HeroTrustStripEN />
+                        <HeroTrustStrip locale="en" />
                     </div>
                     <DeliveryWidgetEN />
                     <div className="hidden lg:contents">
-                        <HeroTrustStripEN />
+                        <HeroTrustStrip locale="en" />
                     </div>
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
@@ -343,7 +343,7 @@ export default function EnglishHome() {
                     <div className="contents lg:hidden">
                         <PromoBannerEN />
                     </div>
-                    <FaqHeroStripEN />
+                    <FaqHeroStrip locale="en" />
                     <div className="hidden lg:contents">
                         <PromoBannerEN />
                     </div>

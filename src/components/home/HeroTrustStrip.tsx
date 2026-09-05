@@ -3,8 +3,11 @@
 import { Star } from 'lucide-react';
 import { COVERAGE_AREAS, COVERAGE_AREAS_TEXT } from '@/lib/deliveryCopy';
 import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
-export default function HeroTrustStrip() {
+export default function HeroTrustStrip({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].heroTrustStrip;
     const scrollToFeedback = () => document.getElementById('feedback')?.scrollIntoView({ behavior: 'smooth' });
 
     return (
@@ -12,7 +15,7 @@ export default function HeroTrustStrip() {
             <button
                 type="button"
                 onClick={scrollToFeedback}
-                aria-label="查看 Google 评价与邻居好评"
+                aria-label={t.ariaLabel}
                 className="w-full bg-white/70 backdrop-blur rounded-2xl border border-[#E3EADA] px-4 md:px-6 py-3 md:py-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 hover:bg-white/90 hover:border-[#FF6B35]/30 transition-[background-color,border-color] duration-150 ease-out group"
             >
                 {/* 5 stars + score */}
@@ -35,7 +38,8 @@ export default function HeroTrustStrip() {
                         <path d="M5.84 14.09c-.22-.66-.35-1.37-.35-2.09s.13-1.43.35-2.09V7.07H2.18a10.97 10.97 0 0 0 0 9.86l3.66-2.84z" fill="#FBBC05"/>
                         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" fill="#EA4335"/>
                     </svg>
-                    <span>{GOOGLE_REVIEW_COUNT}+ Google 评价</span>
+                    {/* 两个子节点（数字 + 后缀）——SSR 在中间插 <!-- -->，合并成一个字符串会改 HTML */}
+                    <span>{GOOGLE_REVIEW_COUNT}{t.googleReviewsSuffix}</span>
                 </span>
 
                 <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
@@ -43,7 +47,7 @@ export default function HeroTrustStrip() {
                 {/* Coverage areas — plain line on mobile, pill chips on desktop
                     (real text either way, doubles as GEO keywords) */}
                 <span className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
-                    <span>{COVERAGE_AREAS_TEXT} <span className="opacity-70">邻居都在吃</span></span>
+                    <span>{COVERAGE_AREAS_TEXT} <span className="opacity-70">{t.neighbours}</span></span>
                 </span>
                 <span className="hidden lg:inline-flex items-center flex-wrap justify-center gap-1.5">
                     {COVERAGE_AREAS.map((area) => (
@@ -52,7 +56,7 @@ export default function HeroTrustStrip() {
                             {area}
                         </span>
                     ))}
-                    <span className="ml-1 text-[13px] font-semibold text-[#1A2D23]/60">邻居都在吃</span>
+                    <span className="ml-1 text-[13px] font-semibold text-[#1A2D23]/60">{t.neighbours}</span>
                 </span>
             </button>
         </div>
