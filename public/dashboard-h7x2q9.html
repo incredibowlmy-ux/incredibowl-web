@@ -2900,15 +2900,15 @@
             //   所以保持 ID 稳定，只同步 day/active/voucherTopUp）。改 day 时同步更新本注释。
             // ─── 常驻 Daily ──────────────────────────────────────────
             //   ⚠️ 「常驻+限日」菜（day 记 'Daily' + availableWeekdays）本周一道也没有 ——
-            //   照烧鳗鱼 2026-08-31 起挪成周四单日特餐，字段已删。以后若又出现限日菜，
+            //   照烧鳗鱼 2026-09-07 起挪成周五单日特餐（08-31 那次是周四），字段已删。以后若又出现限日菜，
             //   day 一律记 'Daily'（与 sync:menu 写库口径一致，否则两边互相覆盖），另加
             //   availableWeekdays（镜像 webapp weeklyMenu.ts 同名字段，数字转 Mon/Tue…键）。
             { id: 11, name: '纳豆月见海苔饭', nameEn: 'Natto Tsukimi Seaweed Rice Bowl', price: 16.90, costPrice: 0, day: 'Daily', active: true },
             { id: 4,  name: '马铃薯炖花肉片', nameEn: 'Pork Belly & Potato Stew', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 2026-07-27 webapp 恢复全周常驻；⚠️ Firestore 旧文档价格若仍 18.50 需 Settings→菜单管理 手动改 19.90（seed 价不覆盖）
             { id: 22, name: '参峇臭豆虾仁炒花肉', nameEn: 'Sambal Petai Prawn & Pork Belly', price: 22.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 3 },  // webapp retired 2026-06-27；dashboard 留 active 给 WA 加单
             // ─── 周一 Mon ────────────────────────────────────────────
-            //   ⚠️ 2026-08-31~09-02（周一~周三）老板休假不接单（webapp CLOSURES），9/3 周四复工。
-            //   这三天的排期只作展示分组 + 9/7 那周的默认值，本周实际只卖周四、周五两天。
+            //   2026-09-07 起周一~周三恢复正常营业（8/31~9/2 那次休假已过，CLOSURES 里是旧记录）。
+            //   这三天菜色老板 09-04 指定「remain」，一道不动。
             { id: 13, name: '招牌原盅当归蒸鸡全腿', nameEn: 'Angelica Steamed Whole Chicken Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-31 留原位·周一 Hero（webapp id 2，招牌菜）
             { id: 14, name: '阿嫲古早味酱油鸡全腿', nameEn: 'Grandma-Style Soy Sauce Chicken Whole Leg', price: 18.50, costPrice: 0, day: 'Mon', active: true },  // 2026-08-31 留原位·周一第二道（webapp id 1）
             // ─── 周二 Tue ────────────────────────────────────────────
@@ -2938,20 +2938,14 @@
         ];
 
         // ═══════════════════════════════════════════════════════════════
-        //   COST PRICES (from incredibowl_costing_v4A.xlsx, May 2026)
-        //   Auto-applied to Firestore menu docs that have costPrice = 0.
+        //   COST PRICES — 种子/回填用，**故意全部留 0**
+        //   2026-09-05：这里原来写着 7 道菜的真实成本（v4A Excel, May 2026）。
+        //   这个文件会被同步到 public/ 公网可下载，配上公开菜单价等于把毛利全公开，所以清掉。
+        //   真实成本在 Firestore menu 文档的 costPrice（受 isAdmin() 保护），
+        //   在「设置 → 菜品成本」里改；每次载入的回填只补 costPrice 仍为 0 的。
+        //   新菜要设成本 → 在设置页填，不要写回这里。
         // ═══════════════════════════════════════════════════════════════
         const MENU_COSTS_FROM_EXCEL = {
-            '32': 0,      // 蜜糖香煎三文鱼饭 — 2026-09-04 新菜，NOT in Excel, fill manually
-            '33': 0,      // 芝麻蜜汁鸡扒饭 — 2026-09-04 新菜，NOT in Excel, fill manually
-            '11': 5.41,   // 纳豆月见海苔饭
-            '12': 6.73,   // 山药云耳海陆双鲜炒
-            '13': 8.60,   // 招牌原盅当归蒸鸡全腿
-            '14': 0,      // 酱油鸡全腿 — NOT in Excel, fill manually
-            '1':  7.58,   // 香煎金黄鸡扒饭
-            '3':  7.55,   // 希腊柠香烤鸡胸 (Local Pomace version)
-            '4':  5.43,   // 马铃薯炖花肉片(炒)
-            '5':  7.43,   // 金黄葱香煎鸡汤
         };
 
         // ─── ADD-ON SEED (deduped from DISH_ADDON_MAP) — cost prices start at 0, user fills ───
