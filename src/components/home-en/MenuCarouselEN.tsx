@@ -138,9 +138,9 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                     )}
                 </div>
 
-                <h3 className="font-extrabold text-[14px] leading-tight mb-1.5 text-[#1A2D23] line-clamp-2 min-h-[34px]">
+                <h4 className="font-extrabold text-[14px] leading-tight mb-1.5 text-[#1A2D23] line-clamp-2 min-h-[34px]">
                     {dish.nameEn}
-                </h3>
+                </h4>
 
                 <div className="flex flex-wrap gap-1 mb-2.5 min-h-[18px] overflow-hidden max-h-[18px]">
                     {(dish.tagsEn ?? dish.tags).slice(0, 2).map(tag => (
@@ -154,7 +154,7 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
                     <button
                         onClick={(e) => { e.stopPropagation(); if (canOpen) onOpenAddOn(dish); }}
                         disabled={isDisabled}
-                        className={`w-full py-2 rounded-lg font-bold text-[12px] flex justify-center items-center gap-1 transition-colors ${
+                        className={`w-full min-h-[40px] py-2.5 rounded-xl font-bold text-[13px] flex justify-center items-center gap-1 transition-colors ${
                             isDisabled
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : isTomorrow
@@ -354,8 +354,21 @@ export default function MenuCarouselEN({ menuDates, onOpenAddOn, dishStock = {} 
 
                 {groups.retired.length > 0 && (
                     <>
-                        {sectionHeader('m-hdr-retired', '🕰 Past favourites · Back soon', null, false, 'sm')}
-                        {groups.retired.map(renderMobileCard)}
+                        {/* 2026-09-05：移动端原来把 9 张 50% 灰度的暂别卡**全量渲染**在菜单底部
+                            （桌面端早就折起来了）。改成和桌面共用同一个 showRetired 开关。 */}
+                        <div className="col-span-2 mt-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowRetired(v => !v)}
+                                aria-expanded={showRetired}
+                                className="w-full min-h-[44px] flex items-center gap-2 px-3 py-2.5 bg-white/70 border border-gray-200 rounded-xl"
+                            >
+                                <span className="text-[15px] font-extrabold text-[#1A2D23] leading-none">🕰 Past favourites · Back soon</span>
+                                <span className="text-[12px] font-bold text-gray-400">({groups.retired.length})</span>
+                                <span className="ml-auto text-[12px] font-bold text-[#FF6B35]">{showRetired ? 'Hide ▲' : 'Take a look ▼'}</span>
+                            </button>
+                        </div>
+                        {showRetired && groups.retired.map(renderMobileCard)}
                     </>
                 )}
             </div>

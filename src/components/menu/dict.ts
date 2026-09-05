@@ -25,12 +25,20 @@ interface AddOnDictShape {
     updateCart: (total: string) => string;
     addToCart: (total: string) => string;
     pickTimeFirst: string;
+    /** 未选时段时 CTA 的文案。按钮**不再灰掉** —— 点它会滚到时段区并高亮。 */
+    chooseSlotCta: string;
+    /** 折叠区标题右侧的「已选 N」徽章。 */
+    selectedCount: (n: number) => string;
+    closeModal: string;
+    decreaseQty: (name: string) => string;
+    increaseQty: (name: string) => string;
+    dishQtyLabel: string;
 }
 
 export const ADDON_DICT: Record<Locale, AddOnDictShape> = {
     zh: {
         nutritionDisclaimer: '* 营养数据为估算值，实际可能因食材批次略有差异。',
-        scheduleTitle: '送达时间 / Delivery Schedule',
+        scheduleTitle: '送达时间',
         weekendAlert: "周末不对外开灶哦！请选择周一至周五的配送。 (Weekends are only for BowlMama's rest!)",
         weekdayOnlyAlert: (allow) =>
             `这道菜仅周${allow.map(d => WD_CN[d]).join('、周')}供应，请另选日期。 (This dish is served on ${allow.map(d => WD_EN[d]).join(' & ')} only — please pick another day.)`,
@@ -41,12 +49,18 @@ export const ADDON_DICT: Record<Locale, AddOnDictShape> = {
         lunchSlot: '🌞 午餐 11AM - 1PM',
         dinnerSlot: '🌙 晚餐 5PM - 8PM',
         dinnerClosedNote: '该日只送午餐，晚市休息。 (Lunch only on this date — no dinner delivery.)',
-        noteTitle: '备注 / Note to Kitchen',
-        notePlaceholder: '告诉碗妈你的要求（如：不放葱、送到门口/家楼下guard house等） Special instructions (e.g., No green onions, leave at door/guard house)...',
+        noteTitle: '备注（选填）',
+        notePlaceholder: '告诉碗妈你的要求，例如：不放葱、送到门口或楼下 guard house…',
         summaryLine: (main, addons) => `主菜 RM ${main} + 加购 RM ${addons}`,
         updateCart: (total) => `更新订单配置 · RM ${total}`,
         addToCart: (total) => `加入预订 · RM ${total}`,
         pickTimeFirst: '请先选择送达时段 👆',
+        chooseSlotCta: '选择送达时段',
+        selectedCount: (n) => `已选 ${n}`,
+        closeModal: '关闭',
+        decreaseQty: (name) => `减少 ${name}`,
+        increaseQty: (name) => `增加 ${name}`,
+        dishQtyLabel: '份数',
     },
     en: {
         nutritionDisclaimer: '* Nutrition values are estimates and may vary slightly by ingredient batch.',
@@ -67,5 +81,11 @@ export const ADDON_DICT: Record<Locale, AddOnDictShape> = {
         updateCart: (total) => `Update item · RM ${total}`,
         addToCart: (total) => `Add to order · RM ${total}`,
         pickTimeFirst: 'Pick a delivery slot first 👆',
+        chooseSlotCta: 'Choose a delivery slot',
+        selectedCount: (n) => `${n} selected`,
+        closeModal: 'Close',
+        decreaseQty: (name) => `Decrease ${name}`,
+        increaseQty: (name) => `Increase ${name}`,
+        dishQtyLabel: 'Quantity',
     },
 };

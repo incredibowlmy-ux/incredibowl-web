@@ -18,20 +18,19 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
     const t = CART_DICT[locale].itemCard;
     const displayName = locale === 'en' ? (item.dish.nameEn || item.dish.name) : item.dish.name;
     return (
+        // 2026-09-05：这里原来还盖着一个铺满整卡的隐形 <button aria-label="Edit Item">
+        // （两个语言都是写死英文），和下面那个可见的「修改」按钮是**同一个动作的两个
+        // 控件** —— 读屏会念两遍，手指点在卡片任何位置都会开编辑弹窗（想点删除、
+        // 想选文字都会误触）。删掉隐形那层，只留可见按钮。
         <div
             className="bg-white rounded-[24px] p-4 border border-[#E3EADA]/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group"
             style={{ animationDelay: `${animationDelay}ms` }}
         >
-            {onEdit && (
-                <button onClick={() => onEdit(item)}
-                    className="absolute inset-0 w-full h-full z-0 rounded-[24px] hover:bg-[#1A2D23]/[0.02] transition-colors"
-                    aria-label="Edit Item" />
-            )}
-
             <div className="flex gap-4 items-center relative z-20">
                 <div className="w-16 h-16 rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-[#E3EADA]/30">
                     {item.dish.image?.startsWith('/') ? (
-                        <Image src={item.dish.image} alt={item.dish.name} fill className="object-cover" />
+                        // sizes 必填：容器固定 64px，不给的话 next/image 按最大宽取图。
+                        <Image src={item.dish.image} alt={item.dish.name} fill sizes="64px" className="object-cover" />
                     ) : item.dish.image}
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
@@ -61,7 +60,8 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                     </p>
                 </div>
                 <button onClick={() => onRemove(item.cartItemId)}
-                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute top-0 right-0 z-20">
+                    aria-label={t.removeItem(displayName)}
+                    className="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute -top-1 -right-1 z-20">
                     <Trash2 size={16} />
                 </button>
             </div>
@@ -69,8 +69,8 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
             {onEdit && (
                 <div className="mt-2.5 flex justify-end px-1 relative z-20">
                     <button onClick={() => onEdit(item)}
-                        className="px-3 py-1 bg-gray-50 text-gray-400 text-[11px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-600 transition-all border border-gray-100">
-                        Edit
+                        className="min-h-[40px] px-4 bg-gray-50 text-gray-500 text-[12px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-all border border-gray-100">
+                        {t.edit}
                     </button>
                 </div>
             )}

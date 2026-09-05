@@ -220,7 +220,7 @@ export default function AuthProfileView({
             <div className="text-center space-y-2">
                 <div className="relative w-16 h-16 mx-auto rounded-full bg-[#E3EADA] flex items-center justify-center overflow-hidden border-2 border-[#E3EADA]">
                     {currentUser.photoURL ? (
-                        <Image src={currentUser.photoURL} alt="Avatar" fill className="object-cover" />
+                        <Image src={currentUser.photoURL} alt="Avatar" fill sizes="64px" className="object-cover" />
                     ) : (
                         <UserIcon size={28} className="text-[#1A2D23]" />
                     )}

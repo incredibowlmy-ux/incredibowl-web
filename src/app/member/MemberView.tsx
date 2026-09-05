@@ -22,6 +22,9 @@ import { MEMBER_DICT, type Locale } from './dict';
 import { useAuth } from '@/context/AuthContext';
 import AddressBook from '@/components/auth/AddressBook';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
+import dynamic from 'next/dynamic';
+// 未登录 gate 里的页内登录弹窗。ssr:false —— AuthModal 依赖 Firebase Auth。
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 import { useCartStore } from '@/store/cartStore';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { computeMenuDates } from '@/lib/dateUtils';
@@ -82,6 +85,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
+    const [authOpen, setAuthOpen] = useState(false);
     const [profileData, setProfileData] = useState<any>(null);
     // 地址簿切换/删除后要同步刷新 AuthProvider 的缓存（购物车读那份）
     const { refreshProfile: refreshGlobalProfile } = useAuth();
@@ -104,6 +108,9 @@ export default function MemberView({ locale }: { locale: Locale }) {
     const [locating, setLocating] = useState(false);
     const [locateNotice, setLocateNotice] = useState('');
     const [verifiedFor, setVerifiedFor] = useState('');
+    // 'loading' = 还在拉；'error' = 拉失败（以前被 catch 吞掉，界面显示成「你没有餐券」）；
+    // 'ok' = 拿到了（数量可能是 0）。三态分开，别再让加载失败冒充空钱包。
+    const [voucherLoad, setVoucherLoad] = useState<'loading' | 'error' | 'ok'>('loading');
     const [mealVoucherInfo, setMealVoucherInfo] = useState<{
         availableCount: number;
         soonestDaysLeft: number | null;
@@ -131,7 +138,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
             });
-            if (!res.ok) return;
+            if (!res.ok) { setVoucherLoad('error'); return; }
             const data = await res.json();
             setMealVoucherInfo({
                 availableCount: data.availableCount || 0,
@@ -140,8 +147,10 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 recentPurchases: data.recentPurchases || [],
                 addonCredits: Array.isArray(data.addonCredits) ? data.addonCredits : [],
             });
+            setVoucherLoad('ok');
         } catch (e) {
             console.warn('Failed to load meal vouchers:', e);
+            setVoucherLoad('error');
         }
     };
 
@@ -336,9 +345,18 @@ export default function MemberView({ locale }: { locale: Locale }) {
                     <div className="text-6xl">🔐</div>
                     <h1 className="text-2xl font-black text-[#1A2D23]">{t.memberCenter}</h1>
                     <p className="text-gray-500 text-sm">{t.pleaseLoginFirst}</p>
-                    <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                    {/* 2026-09-05：主行动改成**页内登录**。原来只有「返回首页登录」——
+                        人被赶回首页自己找入口，登录完还得再走回来。 */}
+                    <button
+                        onClick={() => setAuthOpen(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] transition-colors"
+                    >
+                        {t.signInHere}
+                    </button>
+                    <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-[#1A2D23]/60 rounded-xl font-bold text-sm hover:text-[#1A2D23] transition-colors">
                         <ArrowLeft size={16} /> {t.loginReturnHome}
                     </Link>
+                    {authOpen && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} locale={locale} />}
                 </div>
             </div>
         );
@@ -353,7 +371,10 @@ export default function MemberView({ locale }: { locale: Locale }) {
     }
 
     const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
-    const pagedOrders = orders.slice(page * ORDERS_PER_PAGE, (page + 1) * ORDERS_PER_PAGE);
+    // 订单刷新（下单 / 取消 / 一键回购之后）可能让总页数变少，而 page 还停在
+    // 旧页码上 —— 那一页现在是空的。夹回合法范围。
+    const safePage = totalPages > 0 ? Math.min(page, totalPages - 1) : 0;
+    const pagedOrders = orders.slice(safePage * ORDERS_PER_PAGE, (safePage + 1) * ORDERS_PER_PAGE);
 
     const memberDays = profileData?.createdAt?.seconds
         ? Math.floor((Date.now() / 1000 - profileData.createdAt.seconds) / 86400)
@@ -432,11 +453,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 <div className="absolute top-40 -left-20 w-72 h-72 bg-[#FF6B35]/5 rounded-full blur-[100px]" />
                 <div className="absolute bottom-40 -right-20 w-96 h-96 bg-[#1A2D23]/5 rounded-full blur-[120px]" />
             </div>
-            <style jsx global>{`
-
-                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-            `}</style>
-
             {/* Header */}
             <header className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] text-white pb-28 pt-8 px-4 relative overflow-hidden shadow-2xl shadow-[#1A2D23]/10">
                 <div className="absolute inset-0 pointer-events-none">
@@ -586,10 +602,16 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
                                     return (
                                         <div key={order.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <button
-                                                className="w-full p-4 flex items-center gap-3 text-left"
-                                                onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                                            >
+                                            {/* 2026-09-05：这里原来是 <button> 里再套一个「再来一单」<button> ——
+                                                非法 HTML（浏览器会把内层甩出外层），移动端点击判定也打架。
+                                                改成：整行是 div，展开由左侧那块负责，再来一单是并列的兄弟按钮。 */}
+                                            <div className="w-full p-4 flex items-center gap-3 text-left">
+                                                <button
+                                                    type="button"
+                                                    aria-expanded={isExpanded}
+                                                    onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                                                    className="flex-1 min-w-0 flex items-center gap-3 text-left"
+                                                >
                                                 <div className="w-12 h-12 rounded-xl overflow-hidden relative shrink-0 bg-[#F5F3EF]">
                                                     {mainDishImage ? (
                                                         <Image src={mainDishImage} alt={mainDish} fill className="object-cover" />
@@ -609,16 +631,18 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                     </p>
                                                     <p className="text-[10px] text-gray-400 mt-0.5">📅 {order.deliveryDate}</p>
                                                 </div>
+                                                </button>
                                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
                                                     <p className="font-black text-[#FF6B35]">RM {(order.total || 0).toFixed(2)}</p>
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); handleReorder(order); }}
-                                                        className="px-3 py-1 bg-[#FF6B35] text-white rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-[#E95D31] transition-colors shadow-sm"
+                                                        type="button"
+                                                        onClick={() => handleReorder(order)}
+                                                        className="min-h-[36px] px-3.5 bg-[#FF6B35] text-white rounded-lg text-[12px] font-bold flex items-center gap-1 hover:bg-[#E95D31] transition-colors shadow-sm"
                                                     >
-                                                        <RefreshCw size={10} /> {t.reorder}
+                                                        <RefreshCw size={12} /> {t.reorder}
                                                     </button>
                                                 </div>
-                                            </button>
+                                            </div>
 
                                             {isExpanded && (
                                                 <div className="px-4 pb-4 animate-in slide-in-from-top-2 duration-200 space-y-3">
@@ -647,18 +671,18 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             {totalPages > 1 && (
                                 <div className="p-4 border-t border-gray-100 flex items-center justify-center gap-4">
                                     <button
-                                        onClick={() => setPage(p => Math.max(0, p - 1))}
-                                        disabled={page === 0}
+                                        onClick={() => setPage(Math.max(0, safePage - 1))}
+                                        disabled={safePage === 0}
                                         className="p-2 rounded-lg bg-gray-100 disabled:opacity-30 hover:bg-gray-200 transition-colors"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
                                     <span className="text-xs font-bold text-gray-400">
-                                        {page + 1} / {totalPages}
+                                        {safePage + 1} / {totalPages}
                                     </span>
                                     <button
-                                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-                                        disabled={page >= totalPages - 1}
+                                        onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
+                                        disabled={safePage >= totalPages - 1}
                                         className="p-2 rounded-lg bg-gray-100 disabled:opacity-30 hover:bg-gray-200 transition-colors"
                                     >
                                         <ChevronRight size={16} />
@@ -685,7 +709,22 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             )}
                         </div>
 
-                        {!mealVoucherInfo || mealVoucherInfo.availableCount === 0 ? (
+                        {voucherLoad === 'loading' ? (
+                            <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
+                                <div className="h-6 w-24 mx-auto rounded bg-gray-200 animate-pulse" />
+                            </div>
+                        ) : voucherLoad === 'error' ? (
+                            <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
+                                <p className="text-sm text-[#1A2D23]/70 font-bold mb-3">{t.voucherLoadFailed}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => { if (currentUser) { setVoucherLoad('loading'); loadMealVouchers(currentUser); } }}
+                                    className="inline-flex items-center gap-2 min-h-[40px] px-5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold"
+                                >
+                                    {t.retry}
+                                </button>
+                            </div>
+                        ) : !mealVoucherInfo || mealVoucherInfo.availableCount === 0 ? (
                             <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
                                 <p className="text-sm text-[#1A2D23]/70 font-bold mb-1">{t.noMealVouchers}</p>
                                 <p className="text-[11px] text-[#1A2D23]/50 leading-relaxed mb-4">

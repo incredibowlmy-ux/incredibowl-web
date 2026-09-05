@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -24,6 +24,7 @@ import { readOrderAttribution } from '@/lib/orderAttribution';
 import { useCartStore } from '@/store/cartStore';
 import CartSuccess from './CartSuccess';
 import CartItemCard from './CartItemCard';
+import { useModalA11y } from '@/components/ui/useModalA11y';
 import CartDeliveryInfo from './CartDeliveryInfo';
 import QRPaymentSection from './QRPaymentSection';
 import { CART_DICT } from './dict';
@@ -60,7 +61,21 @@ export default function CartDrawer({
     // 结账链路的错误统一走这里，取代 alert()。alert 是同步系统弹窗：手机上
     // 顶着域名前缀、冻结整个页面、里面的支付编号还选不中复制不了 —— 客户
     // 刚从银行页回来最慌的那一秒吃这个，观感等同诈骗弹窗。
-    const [checkoutError, setCheckoutError] = useState<{ msg: string; paymentId?: string } | null>(null);
+    // kind='notice'（琥珀色）用于「不是出错、只是没走完」的情况，比如顾客自己
+    // 关掉了银行支付页 —— 拿红色报警吓人不合适，但完全不给反馈更糟。
+    const [checkoutError, setCheckoutError] = useState<{ msg: string; paymentId?: string; kind?: 'error' | 'notice' } | null>(null);
+    // 开支付页的那段网络往返（create-order → Razorpay 弹窗打开之前）。
+    // 以前这段按钮是解锁的，双击就会建两组 pending 单，第一组变孤儿。
+    const [openingPayment, setOpeningPayment] = useState(false);
+    // 结账整体的在途闸门。submitting 是给 UI 看的，这个是给逻辑用的：
+    // React 的 setState 是异步的，靠 submitting 挡不住同一个 tick 里的第二次点击。
+    const inFlightRef = useRef(false);
+    /** 抽屉面板本体（焦点陷阱边界）。 */
+    const panelRef = useRef<HTMLDivElement | null>(null);
+    /** QR 收据上传块：选了 QR 之后要把人送过去。 */
+    const qrBlockRef = useRef<HTMLDivElement | null>(null);
+    /** 优惠码默认收起 —— 它挡在「费用明细 → 支付方式」这条必经路上。 */
+    const [promoOpen, setPromoOpen] = useState(false);
     const [copiedId, setCopiedId] = useState(false);
 
     // 访客快速下单：静默建匿名账号（零注册）。建完**不再跳 AuthModal** ——
@@ -72,7 +87,13 @@ export default function CartDrawer({
         try {
             const { signInAsGuest } = await import('@/lib/auth');
             await signInAsGuest();
-            // 资料为空 → 下面的 showDeliveryForm 自动为 true，表单就地展开
+            // 资料为空 → 下面的 showDeliveryForm 自动为 true，表单就地展开。
+            // ⚠️ 表单长在滚动区**顶部**，而客人刚才点的按钮在底部固定条上 ——
+            // 不主动滚过去的话，他看到的是「按了一下，什么都没发生」。
+            requestAnimationFrame(() => {
+                deliveryFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                deliveryFormRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true });
+            });
         } catch (e) {
             console.error('[guest] anonymous sign-in failed:', e);
             setCheckoutError({ msg: t.guestUnavailable });
@@ -483,7 +504,29 @@ export default function CartDrawer({
         fetchMealVouchers();
     }, [isOpen, currentUser]);
 
+    // Escape 关闭 / 背景不滚 / 焦点关在抽屉里。抽屉以前完全没有这些：开着抽屉
+    // 背景照样滚，Tab 会走到后面的页面上去，Escape 关不掉。
+    // ⚠️ 必须在下面的 early return 之前调用（hook 规则）。
+    useModalA11y({ open: isOpen, onClose, panelRef });
+
     if (!isOpen) return null;
+
+    /**
+     * 结账还缺什么 —— 一个来源，UI 三处（提示文字、按钮禁用、按钮样式）都读它。
+     * 以前那个谓词在 `disabled=` 和 `className=` 里逐字抄了两遍，按钮文案还是
+     * 四层三元；改一次要同步三处，而客人始终看不到「到底缺哪一项」。
+     */
+    const checkoutBlockers: string[] = [];
+    if (currentUser) {
+        if (!userProfile?.address) checkoutBlockers.push(t.missingAddress);
+        if (!userProfile?.phone) checkoutBlockers.push(t.missingPhone);
+        if (!isFullyCoveredByVouchers) {
+            if (!paymentMethod) checkoutBlockers.push(t.missingPayment);
+            else if (paymentMethod === 'qr' && !receiptUploaded) checkoutBlockers.push(t.missingReceipt);
+        }
+    }
+    // deliveryTier 拿不到 = 地址还没验过配送范围，属于「地址」这一项，不另列。
+    const checkoutDisabled = submitting || !currentUser || !deliveryTier || checkoutBlockers.length > 0;
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
@@ -610,7 +653,25 @@ export default function CartDrawer({
         }
     };
 
+    /**
+     * 结账入口。真正的流程在 runCheckout 里，这一层只做**双提交闸门**。
+     *
+     * 2026-09-05 修：原来 FPX 分支在 `await initiateRazorpayPayment(...)` 之前就
+     * 把 submitting 置回 false，而那个函数里还要 POST /api/payment/create-order。
+     * 这段网络往返里按钮是正常可点的 —— 再点一次就又跑一遍 submitOrderViaAPI，
+     * 建出第二组 pending 单，第一组的 orderIds 成孤儿（占库存、占餐券，等 1h 超时）。
+     */
     const handleCheckout = async () => {
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
+        try {
+            await runCheckout();
+        } finally {
+            inFlightRef.current = false;
+        }
+    };
+
+    const runCheckout = async () => {
         setCheckoutError(null);
         if (!currentUser) { onAuthOpen(); return; }
         // 资料不齐 → 就地展开内嵌表单并滚过去，不再把人送去第二个全屏 modal
@@ -720,7 +781,9 @@ export default function CartDrawer({
             // locale 一并写进快照：跳回来时落地页（page.tsx）靠它判断要不要把
             // 英文客户转交给 /en 渲染。快照活过银行往返，比 URL 参数可靠。
             localStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, locale, createdAt: Date.now() }));
-            setSubmitting(false);
+            // ⚠️ 这里以前是 `setSubmitting(false)` —— 见 handleCheckout 的注释。
+            // 按钮从这一刻起到支付流程结束**全程保持禁用**，只换文案。
+            setOpeningPayment(true);
 
             try {
                 const paymentResult = await initiateRazorpayPayment(orderIds);
@@ -729,8 +792,15 @@ export default function CartDrawer({
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { setCheckoutError({ msg: t.verifyFailed, paymentId: paymentResult.razorpay_payment_id }); return; }
-                setSubmitting(true);
+                if (!verifyData.verified) {
+                    // ⚠️ 只报错，**不取消 pending 单**：验签失败但钱可能已经扣了，
+                    // webhook 还会回来确认。取消掉它反而会把已付款的单弄丢。
+                    // （按钮由下面的 finally 解锁——以前这里 return 之后 submitting
+                    //   一直是 true，客户看着「提交中…」再也点不动。）
+                    setCheckoutError({ msg: t.verifyFailed, paymentId: paymentResult.razorpay_payment_id });
+                    return;
+                }
+                setOpeningPayment(false);
                 const payData = {
                     razorpayPaymentId: paymentResult.razorpay_payment_id,
                     razorpayOrderId: paymentResult.razorpay_order_id,
@@ -775,11 +845,17 @@ export default function CartDrawer({
                     }),
                 }).catch(() => {});
                 localStorage.removeItem('fpx_pending_order');
-                if (err.message !== t.paymentCancelled) {
+                if (err.message === t.paymentCancelled) {
+                    // 顾客自己关掉了银行支付页。以前这条分支什么都不显示 ——
+                    // 人回到购物车，看见的和点之前一模一样，不知道刚才那下算不算数。
+                    setCheckoutError({ msg: t.paymentDismissed, kind: 'notice' });
+                } else {
                     setCheckoutError({ msg: err.message || t.payFailed });
                 }
+            } finally {
+                setOpeningPayment(false);
+                setSubmitting(false);
             }
-            setSubmitting(false);
             return;
         }
 
@@ -817,14 +893,20 @@ export default function CartDrawer({
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
             <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col border-l border-[#E3EADA] animate-in slide-in-from-right duration-500">
+            <div
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cart-drawer-title"
+                className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col border-l border-[#E3EADA] animate-in slide-in-from-right duration-500"
+            >
 
                 {/* Header */}
                 <div className="p-6 bg-white border-b border-[#E3EADA] flex justify-between items-center">
-                    <h2 className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
+                    <h2 id="cart-drawer-title" className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
                         <ShoppingBag size={22} /> {t.title} ({cartCount})
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400"><X size={22} /></button>
+                    <button onClick={onClose} aria-label={t.closeCart} className="w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-xl text-gray-400"><X size={22} /></button>
                 </div>
 
                 {/* Scrollable body */}
@@ -877,7 +959,7 @@ export default function CartDrawer({
                                             <button key={entry.id}
                                                 onClick={() => handleSwitchAddress(entry)}
                                                 disabled={!!switchingAddress || isCurrent}
-                                                className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition-all disabled:cursor-default ${isCurrent
+                                                className={`min-h-[36px] px-3 py-1.5 rounded-full text-[12px] font-black border transition-all disabled:cursor-default ${isCurrent
                                                     ? 'bg-[#FF6B35] text-white border-[#FF6B35]'
                                                     : 'bg-white text-[#1A2D23] border-[#E3EADA] hover:border-[#FF6B35] disabled:opacity-50'}`}>
                                                 {switchingAddress === entry.id ? t.switching : (entry.label || `${(entry.address || '').slice(0, 14)}…`)}
@@ -1051,8 +1133,9 @@ export default function CartDrawer({
                                                 <button
                                                     type="button"
                                                     onClick={() => setMealVouchersUsed(Math.max(0, cappedMealVouchersUsed - 1))}
+                                                    aria-label={t.voucherRedeemTitle + " −1"}
                                                     disabled={vouchersLockedByPromo || cappedMealVouchersUsed <= 0}
-                                                    className="w-7 h-7 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
                                                 >
                                                     <Minus size={12} strokeWidth={3} />
                                                 </button>
@@ -1062,8 +1145,9 @@ export default function CartDrawer({
                                                 <button
                                                     type="button"
                                                     onClick={() => setMealVouchersUsed(Math.min(maxRedeemable, cappedMealVouchersUsed + 1))}
+                                                    aria-label={t.voucherRedeemTitle + " +1"}
                                                     disabled={vouchersLockedByPromo || cappedMealVouchersUsed >= maxRedeemable}
-                                                    className="w-7 h-7 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
                                                 >
                                                     <Plus size={12} strokeWidth={3} />
                                                 </button>
@@ -1176,22 +1260,16 @@ export default function CartDrawer({
 
                             {/* Total + auth warnings live in the fixed bottom bar below */}
 
-                            {/* Payment method selector — hidden when vouchers cover the bill */}
+                            {/* 2026-09-05：支付方式的两个按钮搬去底部固定条了（见下方），
+                                因为它原来排在优惠码 / 餐券 / 费用明细之后 —— 只放一件商品
+                                的购物车里，它就在折叠线以下，客人得先滚动才知道要选支付方式。
+                                这里只留「选完之后要看的东西」：QR 收据上传 / FPX 说明。 */}
                             {!isFullyCoveredByVouchers && (
                                 <>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button onClick={() => setPaymentMethod('qr')}
-                                            className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
-                                            <Phone size={14} /> DuitNow / QR
-                                        </button>
-                                        <button onClick={() => setPaymentMethod('fpx')}
-                                            className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-400'}`}>
-                                            <CreditCard size={14} /> FPX / Card
-                                        </button>
-                                    </div>
-
                                     {paymentMethod === 'qr' && (
-                                        <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} locale={locale} />
+                                        <div ref={qrBlockRef}>
+                                            <QRPaymentSection receiptUploaded={receiptUploaded} receiptUrl={receiptUrl} uploading={uploading} onUpload={handleUpload} locale={locale} />
+                                        </div>
                                     )}
 
                                     {paymentMethod === 'fpx' && (
@@ -1247,8 +1325,10 @@ export default function CartDrawer({
                         {/* 结账错误内联提示（取代 alert）。支付编号可一键复制 +
                             一键发给碗妈 —— alert 里的编号客户根本选不中。 */}
                         {checkoutError && (
-                            <div className="px-3.5 py-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
-                                <p className="text-xs font-bold text-red-700 flex items-start gap-1.5">
+                            <div className={`px-3.5 py-3 border rounded-xl space-y-2 ${checkoutError.kind === 'notice'
+                                ? 'bg-amber-50 border-amber-200'
+                                : 'bg-red-50 border-red-200'}`}>
+                                <p className={`text-xs font-bold flex items-start gap-1.5 ${checkoutError.kind === 'notice' ? 'text-amber-800' : 'text-red-700'}`}>
                                     <AlertCircle size={13} className="mt-0.5 shrink-0" /> {checkoutError.msg}
                                 </p>
                                 {checkoutError.paymentId && (
@@ -1258,7 +1338,7 @@ export default function CartDrawer({
                                             <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23]">{checkoutError.paymentId}</code>
                                             <button type="button"
                                                 onClick={() => { navigator.clipboard?.writeText(checkoutError.paymentId!).then(() => { setCopiedId(true); setTimeout(() => setCopiedId(false), 2000); }).catch(() => {}); }}
-                                                className="shrink-0 px-2 py-0.5 rounded-md bg-[#1A2D23] text-white text-[10px] font-bold">
+                                                className="shrink-0 min-h-[36px] px-3 rounded-md bg-[#1A2D23] text-white text-[11px] font-bold">
                                                 {copiedId ? t.copied : t.copyId}
                                             </button>
                                         </div>
@@ -1271,6 +1351,23 @@ export default function CartDrawer({
                                 )}
                             </div>
                         )}
+                        {/* 支付方式：搬到固定条里，和 Total、确认按钮在同一屏。
+                            以前它排在优惠码 / 餐券 / 费用明细之后，只放一件商品时就在
+                            折叠线以下 —— 客人看到的是一个灰按钮，并不知道要往下滚。 */}
+                        {currentUser && !isFullyCoveredByVouchers && (
+                            <div className="grid grid-cols-2 gap-3" role="group" aria-label={t.paymentLabel}>
+                                <button onClick={() => { setPaymentMethod('qr'); setTimeout(() => qrBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120); }}
+                                    aria-pressed={paymentMethod === 'qr'}
+                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-500'}`}>
+                                    <Phone size={14} /> DuitNow / QR
+                                </button>
+                                <button onClick={() => setPaymentMethod('fpx')}
+                                    aria-pressed={paymentMethod === 'fpx'}
+                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-500'}`}>
+                                    <CreditCard size={14} /> FPX / {locale === 'en' ? 'Card' : '银行卡'}
+                                </button>
+                            </div>
+                        )}
                         <div className="flex justify-between items-baseline">
                             <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total</span>
                             <div className="text-right">
@@ -1280,16 +1377,21 @@ export default function CartDrawer({
                                 <span className="text-2xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
                             </div>
                         </div>
+                        {/* 还缺什么，写出来。以前 CTA 只是灰着，缺项的判据在
+                            disabled= 和 className= 里各抄了一遍、文案是四层三元 ——
+                            客人只能自己猜是哪一项没填。 */}
+                        {checkoutBlockers.length > 0 && currentUser && (
+                            <p className="text-[12px] font-medium text-[#1A2D23]/55 text-center">
+                                {t.missingPrefix}{checkoutBlockers.join(' · ')}
+                            </p>
+                        )}
                         <button onClick={handleCheckout}
-                            disabled={submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))}
-                            className={`w-full py-3.5 rounded-2xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${submitting || !currentUser || !deliveryTier || (!isFullyCoveredByVouchers && (!paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)))
+                            disabled={checkoutDisabled}
+                            className={`w-full py-3.5 rounded-2xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${checkoutDisabled
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                 : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                             <CheckCircle size={20} />
-                            {submitting ? t.submitting
-                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && !paymentMethod) ? t.choosePayment
-                                : (currentUser && deliveryTier && !isFullyCoveredByVouchers && paymentMethod === 'qr' && !receiptUploaded) ? t.uploadFirst
-                                : t.confirmOrder}
+                            {openingPayment ? t.openingPayment : submitting ? t.submitting : t.confirmOrder}
                         </button>
                     </div>
                 )}

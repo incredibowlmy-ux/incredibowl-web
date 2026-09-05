@@ -20,9 +20,9 @@ export default function PromoBannerEN() {
                                 <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-medium tracking-widest border border-[#FF6B35]/30">
                                     NEIGHBOUR THANKS
                                 </span>
-                                <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
                                     Thank-you discount
-                                </h3>
+                                </h2>
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 Thank you neighbours for your support 🧡<br />

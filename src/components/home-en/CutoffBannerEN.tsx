@@ -54,6 +54,14 @@ function computeCutoff(now: Date): CutoffInfo {
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 
+// 倒计时只能在客户端算，首帧必然是占位态 —— 外层得先把高度占住，否则真的横幅一
+// 出现就把下面整页往下推（CLS）。高度是照渲染结果量出来的，不是拍的：
+//   胶囊 = py-1.5(6+6) + border(1+1) + 最高的那个子元素 24px
+//   （数字块：12px 字 × 1.5 行高 = 18px + py-0.5(2+2) + border(1+1)）→ 38px
+//   md 起字号变 13px → 19.5 + 4 + 2 = 25.5，胶囊 39.5px → 向上取整 40px
+// items-center：min-h 只用来留白，不能把胶囊拉高（flex 默认 stretch 会拉伸）。
+const WRAPPER_CLASS = 'lg:col-span-12 -mb-2 flex items-center justify-center min-h-[38px] md:min-h-[40px]';
+
 export default function CutoffBannerEN() {
     const [info, setInfo] = useState<CutoffInfo | null>(null);
 
@@ -69,8 +77,8 @@ export default function CutoffBannerEN() {
 
     if (!info) {
         return (
-            <div className="lg:col-span-12 -mb-2 flex justify-center">
-                <div className="h-9 w-72 rounded-full bg-[#FFF3E0] border border-[#FF6B35]/20" />
+            <div className={WRAPPER_CLASS}>
+                <div className="h-[38px] md:h-[40px] w-72 rounded-full bg-[#FFF3E0] border border-[#FF6B35]/20" />
             </div>
         );
     }
@@ -94,7 +102,7 @@ export default function CutoffBannerEN() {
     }[tier];
 
     return (
-        <div className="lg:col-span-12 -mb-2 flex justify-center">
+        <div className={WRAPPER_CLASS}>
             <button
                 type="button"
                 onClick={scrollToMenu}

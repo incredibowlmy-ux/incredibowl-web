@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, Plus, X, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
 import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks';
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
+import { useModalA11y } from '@/components/ui/useModalA11y';
 import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
 
 type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string; isGoogle?: boolean };
@@ -94,6 +95,13 @@ export default function FeedbackSection() {
         setFeedbackMessage(null);
         setIsFeedbackModalOpen(false);
     };
+
+    // 两个弹窗的 Escape 关闭 / 焦点陷阱 / 背景锁滚。弹窗本身是条件渲染的，
+    // 但 hook 必须无条件在顶层调用 —— 所以把各自的开关状态当 open 传进去。
+    const readerPanelRef = useRef<HTMLDivElement | null>(null);
+    const formPanelRef = useRef<HTMLDivElement | null>(null);
+    useModalA11y({ open: !!selectedReview, onClose: () => setSelectedReview(null), panelRef: readerPanelRef });
+    useModalA11y({ open: isFeedbackModalOpen, onClose: closeFeedbackModal, panelRef: formPanelRef });
 
     useEffect(() => {
         getApprovedFeedbacks()
@@ -199,38 +207,49 @@ export default function FeedbackSection() {
                 {/* Reviews marquee — horizontal auto-scroll, hover to pause */}
                 <div className="bg-[#E3EADA] pb-10 md:pb-12 rounded-b-[32px]">
                     {loading ? (
-                        <div className="px-4 md:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {Array.from({ length: 3 }).map((_, idx) => (
-                                <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-                                    <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-4">
-                                        <SkeletonBlock className="h-3.5 w-full mb-2" />
-                                        <SkeletonBlock className="h-3.5 w-4/5 mb-2" />
-                                        <SkeletonBlock className="h-3.5 w-3/5" />
+                        // 骨架屏必须和加载完成后的跑马灯占同一个盒子：同样是「横向一行、
+                        // 不换行、超出裁掉」，高度也一样。原来是 3 张竖着堆的卡片，手机上
+                        // 高出好几百 px，数据一到整段内容被往上抽（CLS）。
+                        // 卡片外层类名与真实卡片逐字一致；内部块高按真实文案行高摞出来：
+                        // 5 行 text-sm/leading-relaxed（5 × 22.75px）+「阅读全文」一行（6 + 16px）。
+                        <div className="overflow-hidden">
+                            <div className="flex gap-4 w-max">
+                                {Array.from({ length: 5 }).map((_, idx) => (
+                                    <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0">
+                                        <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3">
+                                            <SkeletonBlock className="h-3.5 w-full mb-3" />
+                                            <SkeletonBlock className="h-3.5 w-full mb-3" />
+                                            <SkeletonBlock className="h-3.5 w-11/12 mb-3" />
+                                            <SkeletonBlock className="h-3.5 w-full mb-3" />
+                                            <SkeletonBlock className="h-3.5 w-3/5" />
+                                            <SkeletonBlock className="h-3 w-20 mt-1.5" />
+                                        </div>
+                                        <div className="mt-auto flex items-center justify-between gap-2 px-1 h-4">
+                                            <SkeletonBlock className="h-3 w-28" />
+                                            <SkeletonBlock className="h-3 w-10" />
+                                        </div>
                                     </div>
-                                    <SkeletonBlock className="h-3 w-32" />
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     ) : (
-                        <>
-                            <div className="feedback-marquee group/marquee relative overflow-hidden">
-                                {/* Edge fades */}
-                                <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-16 bg-gradient-to-r from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
-                                <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-16 bg-gradient-to-l from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
+                        <div className="feedback-marquee group/marquee relative overflow-hidden">
+                            {/* Edge fades */}
+                            <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-16 bg-gradient-to-r from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-16 bg-gradient-to-l from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
 
-                                <div
-                                    className="feedback-marquee-track flex gap-4 w-max"
-                                    style={{ animationDuration: `${marqueeDurationSec}s` }}
-                                >
-                                    {marqueeMessages.map((msg, idx) => {
-                                        const isLong = msg.text.length > 90;
-                                        return (
-                                        <div
-                                            key={idx}
-                                            aria-hidden={idx >= allMessages.length}
-                                            onClick={isLong ? () => setSelectedReview(msg) : undefined}
-                                            className={`bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0${isLong ? ' cursor-pointer hover:border-[#C9985C]/50 transition-colors' : ''}`}
-                                        >
+                            <div
+                                className="feedback-marquee-track flex gap-4 w-max"
+                                style={{ animationDuration: `${marqueeDurationSec}s` }}
+                            >
+                                {marqueeMessages.map((msg, idx) => {
+                                    const isLong = msg.text.length > 90;
+                                    // 后半段是为无缝滚动复制出来的重复卡片：既然对读屏隐藏，
+                                    // 就必须同时移出 Tab 顺序（aria-hidden 里不能藏可聚焦元素）。
+                                    const isClone = idx >= allMessages.length;
+                                    const cardClass = `bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0${isLong ? ' cursor-pointer hover:border-[#C9985C]/50 transition-colors text-left' : ''}`;
+                                    const cardInner = (
+                                        <>
                                             {/* Quote bubble */}
                                             <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
                                                 <p className="text-[#1A2D23] font-medium leading-relaxed text-sm line-clamp-5">
@@ -245,7 +264,7 @@ export default function FeedbackSection() {
                                             <div className="mt-auto flex items-center justify-between gap-2 px-1">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     {msg.isGoogle && (
-                                                        <span className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                                        <span role="img" aria-label="5 星好评" className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                                     )}
                                                     <span className="text-xs font-bold text-[#1A2D23]/75 truncate">— {msg.name}</span>
                                                 </div>
@@ -253,32 +272,51 @@ export default function FeedbackSection() {
                                                     <span className="text-xs text-[#1A2D23]/45 font-medium shrink-0">{msg.time}</span>
                                                 )}
                                             </div>
+                                        </>
+                                    );
+                                    // 长评价整张卡可点开全文：原来是挂 onClick 的 <div>，
+                                    // 键盘 Tab 根本走不到，只有鼠标能用 → 换成真正的 <button>。
+                                    return isLong ? (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            aria-hidden={isClone}
+                                            tabIndex={isClone ? -1 : undefined}
+                                            onClick={() => setSelectedReview(msg)}
+                                            className={cardClass}
+                                        >
+                                            {cardInner}
+                                        </button>
+                                    ) : (
+                                        <div key={idx} aria-hidden={isClone} className={cardClass}>
+                                            {cardInner}
                                         </div>
-                                        );
-                                    })}
-                                </div>
+                                    );
+                                })}
                             </div>
-
-                            {/* Bottom CTA — verify on Google + write your own */}
-                            <div className="mt-6 px-4 md:px-8 flex flex-wrap items-center justify-center gap-3">
-                                <a
-                                    href={GOOGLE_REVIEWS_URL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-[#FDFBF7] text-[#1A2D23] text-sm font-bold rounded-full border border-[#1A2D23]/15 shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
-                                >
-                                    <span className="text-amber-500">★</span> 在 Google 查看全部评价
-                                    <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
-                                </a>
-                                <button
-                                    onClick={() => { setFeedbackMessage(null); setIsFeedbackModalOpen(true); }}
-                                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
-                                >
-                                    <Plus size={16} /> 写下您的留言
-                                </button>
-                            </div>
-                        </>
+                        </div>
                     )}
+
+                    {/* Bottom CTA — verify on Google + write your own。
+                        不依赖 feedbacks 数据，所以放在 loading 分支外面：加载中就能点，
+                        而且 loading→loaded 只换跑马灯那一格，CTA 不会被推上推下。 */}
+                    <div className="mt-6 px-4 md:px-8 flex flex-wrap items-center justify-center gap-3">
+                        <a
+                            href={GOOGLE_REVIEWS_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-[#FDFBF7] text-[#1A2D23] text-sm font-bold rounded-full border border-[#1A2D23]/15 shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                        >
+                            <span className="text-amber-500">★</span> 在 Google 查看全部评价
+                            <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
+                        </a>
+                        <button
+                            onClick={() => { setFeedbackMessage(null); setIsFeedbackModalOpen(true); }}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
+                        >
+                            <Plus size={16} /> 写下您的留言
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -286,16 +324,22 @@ export default function FeedbackSection() {
             {selectedReview && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={() => setSelectedReview(null)}></div>
-                    <div className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div
+                        ref={readerPanelRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="feedback-reader-title"
+                        className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                    >
                         <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
-                            <button onClick={() => setSelectedReview(null)} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button type="button" onClick={() => setSelectedReview(null)} aria-label="关闭" className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <X size={20} />
                             </button>
                             <div className="flex items-center gap-2 mb-4 pr-12">
                                 {selectedReview.isGoogle && (
-                                    <span className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                    <span role="img" aria-label="5 星好评" className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                 )}
-                                <span className="text-sm font-black text-[#1A2D23]">{selectedReview.name}</span>
+                                <span id="feedback-reader-title" className="text-sm font-black text-[#1A2D23]">{selectedReview.name}</span>
                                 {selectedReview.time && (
                                     <span className="text-xs text-[#1A2D23]/45 font-medium">· {selectedReview.time}</span>
                                 )}
@@ -312,12 +356,18 @@ export default function FeedbackSection() {
             {isFeedbackModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={closeFeedbackModal}></div>
-                    <div className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                    <div
+                        ref={formPanelRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="feedback-form-title"
+                        className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                    >
                         <div className="p-6 md:p-8 border-b border-[#E3EADA]">
-                            <button onClick={closeFeedbackModal} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button type="button" onClick={closeFeedbackModal} aria-label="关闭" className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <X size={20} />
                             </button>
-                            <h3 className="text-2xl font-black text-[#1A2D23] pr-12">留下真实评价</h3>
+                            <h3 id="feedback-form-title" className="text-2xl font-black text-[#1A2D23] pr-12">留下真实评价</h3>
                             <p className="text-sm font-medium text-[#1A2D23]/60 mt-2">分享您的用餐体验给邻居们吧</p>
                         </div>
                         <div className="p-6 md:p-8 bg-white">

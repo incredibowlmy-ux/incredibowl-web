@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, User, ChevronRight } from 'lucide-react';
+import { ShoppingBag, User, ChevronRight, Menu, X } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import LanguageSwitcher from './LanguageSwitcher';
+import { useModalA11y } from '@/components/ui/useModalA11y';
 import { DELIVERY_SUMMARY_ZH } from '@/lib/deliveryCopy';
 
 interface NavBarProps {
@@ -18,12 +19,18 @@ interface NavBarProps {
 
 export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, onAuthOpen }: NavBarProps) {
     const [scrolled, setScrolled] = useState(false);
+    // H4：<lg 的导航。原来四个锚点都是 hidden lg:flex，手机上零导航。
+    const [navOpen, setNavOpen] = useState(false);
+    const navPanelRef = React.useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+    // 面板的 Escape / 焦点陷阱（背景滚动锁对下拉式导航也合适：
+    // 它是覆盖在内容之上的临时层）。
+    useModalA11y({ open: navOpen, onClose: () => setNavOpen(false), panelRef: navPanelRef });
 
     return (
         <>
@@ -54,8 +61,8 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
-                        {/* Duplicate for seamless infinite loop */}
-                        <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
+                        {/* Duplicate for seamless infinite loop — aria-hidden 否则读屏把同一句念两遍 */}
+                        <span aria-hidden="true" className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
                     </div>
@@ -122,7 +129,30 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         </>
                     )}
 
-                    <LanguageSwitcher current="zh" />
+                    {/* 汉堡：只在 <lg 出现（桌面有那排锚点） */}
+
+                    <button
+
+                        type="button"
+
+                        onClick={() => setNavOpen(v => !v)}
+
+                        aria-label={navOpen ? '关闭菜单' : '打开菜单'}
+
+                        aria-expanded={navOpen}
+
+                        aria-controls="mobile-nav-panel"
+
+                        className="lg:hidden p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-colors"
+
+                    >
+
+                        {navOpen ? <X size={20} className="text-[#1A2D23]" /> : <Menu size={20} className="text-[#1A2D23]" />}
+
+                    </button>
+
+
+                    <div className="hidden lg:block"><LanguageSwitcher current="zh" /></div>
 
                     {cartCount > 0 ? (
                         /* With items — dark-green pill always; price text only shows on md+ */
@@ -149,6 +179,24 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     )}
                 </div>
             </div>
+        {/* 移动导航面板。不做全屏遮罩：下拉一层就够，也不打断浏览。 */}
+        {navOpen && (
+            <div
+                id="mobile-nav-panel"
+                ref={navPanelRef}
+                className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl overflow-hidden"
+            >
+                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">每日菜单</a>
+                <Link href="/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">餐券预付包</Link>
+                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">邻居好评</a>
+                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">联系碗妈</a>
+                {currentUser && <Link href="/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">会员中心</Link>}
+                <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
+                    <span className="text-[13px] font-bold text-[#1A2D23]/60">语言 / Language</span>
+                    <span className="ml-auto"><LanguageSwitcher current="zh" /></span>
+                </div>
+            </div>
+        )}
         </nav>
         </>
     );

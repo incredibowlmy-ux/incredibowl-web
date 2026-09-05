@@ -24,6 +24,9 @@ export default function DeliveryWidgetEN() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<Result | null>(null);
     const [error, setError] = useState('');
+    // 运费表在移动端默认收起：它有 4 行 + 一段远距离说明，原来整块挡在
+    // Hero 和菜单之间。桌面（lg+）一直展开，与改动前一致。
+    const [feesOpen, setFeesOpen] = useState(false);
 
     const check = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,47 +123,47 @@ export default function DeliveryWidgetEN() {
                     )}
 
                     {result && result.tier === 'near' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-amber-50 border border-amber-200">
-                            <p className="text-[14px] font-extrabold text-amber-800 flex items-center gap-1.5">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFF3E0] border border-[#FF6B35]/25">
+                            <p className="text-[14px] font-extrabold text-[#C84518] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 Delivery fee RM {result.fee} &middot; {result.distanceKm} km away
                             </p>
-                            <p className="text-[12px] text-amber-800/80 mt-1">
+                            <p className="text-[12px] text-[#C84518]/85 mt-1">
                                 Spend <span className="font-bold">RM {result.threshold}+</span> and it&apos;s <span className="font-bold">free</span>
                             </p>
                             {result.formattedAddress && (
-                                <p className="text-[11px] text-amber-700/60 mt-1 truncate">{result.formattedAddress}</p>
+                                <p className="text-[11px] text-[#C84518]/60 mt-1 truncate">{result.formattedAddress}</p>
                             )}
                         </div>
                     )}
 
                     {result && result.tier === 'mid' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
-                            <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
+                            <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 Delivery fee RM {result.fee} &middot; {result.distanceKm} km away
                             </p>
-                            <p className="text-[12px] text-orange-800/80 mt-1">
+                            <p className="text-[12px] text-[#9A3412]/85 mt-1">
                                 Spend <span className="font-bold">RM {result.threshold}+</span> and the fee drops to <span className="font-bold">RM {result.feeAtThreshold}</span>
                             </p>
                             {result.formattedAddress && (
-                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{result.formattedAddress}</p>
+                                <p className="text-[11px] text-[#9A3412]/60 mt-1 truncate">{result.formattedAddress}</p>
                             )}
                         </div>
                     )}
 
                     {/* Far (7.5km+): flat fee, no threshold — see ZH twin. */}
                     {result && result.tier === 'far' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-orange-50 border border-orange-200">
-                            <p className="text-[14px] font-extrabold text-orange-800 flex items-center gap-1.5">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
+                            <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 Delivery fee RM {result.fee} &middot; {result.distanceKm} km away
                             </p>
-                            <p className="text-[12px] text-orange-800/80 mt-1">
+                            <p className="text-[12px] text-[#9A3412]/85 mt-1">
                                 Long-distance orders are delivered by <span className="font-bold">Grab</span> at a flat <span className="font-bold">RM {result.fee}</span> &mdash; no free-delivery threshold
                             </p>
                             {result.formattedAddress && (
-                                <p className="text-[11px] text-orange-700/60 mt-1 truncate">{result.formattedAddress}</p>
+                                <p className="text-[11px] text-[#9A3412]/60 mt-1 truncate">{result.formattedAddress}</p>
                             )}
                         </div>
                     )}
@@ -188,13 +191,21 @@ export default function DeliveryWidgetEN() {
                     bar cover the rest. */}
                 <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-[#FF6B35]/10 lg:content-center lg:gap-8">
                     <div>
-                        <p className="text-[13px] font-extrabold text-[#1A2D23]">Delivery fee at a glance</p>
-                        <p className="text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5">{DISTANCE_BASIS_EN}</p>
-                        <ul className="space-y-1.5 lg:space-y-2 text-[13px] leading-snug">
+                        <button
+                            type="button"
+                            onClick={() => setFeesOpen(v => !v)}
+                            aria-expanded={feesOpen}
+                            className="w-full min-h-[40px] flex items-center gap-2 text-left lg:min-h-0 lg:pointer-events-none"
+                        >
+                            <span className="text-[13px] font-extrabold text-[#1A2D23]">Delivery fee at a glance</span>
+                            <span className="ml-auto text-[12px] font-bold text-[#FF6B35] lg:hidden">{feesOpen ? 'Hide ▴' : 'View ▾'}</span>
+                        </button>
+                        <p className={`text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5 ${feesOpen ? '' : 'hidden'} lg:block`}>{DISTANCE_BASIS_EN}</p>
+                        <ul className={`space-y-1.5 lg:space-y-2 text-[13px] leading-snug ${feesOpen ? '' : 'hidden'} lg:block`}>
                             {DELIVERY_TIER_COPY.map((t, i) => (
                                 <li key={t.rangeEn} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
                                     <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeEn}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-amber-600' : 'text-[#FF6B35]'}`}>{t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`}</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-[#9A3412]' : 'text-[#FF6B35]'}`}>{t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`}</span></span>
                                 </li>
                             ))}
                             {/* Far bands as one compact row — see ZH twin. */}

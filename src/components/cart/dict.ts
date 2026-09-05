@@ -4,6 +4,10 @@
 // ⚠️ 只翻译「渲染」层：写进 Firestore / submit-order 的菜名、加料名、备注
 // 一律保持原样，绝不经过这里。
 import type { Locale } from '@/lib/locale';
+// 餐段判定只能有一份。这个文件里原来有两套写法：drawer 的 `time === 'Dinner'`
+// 和 success 的 `time?.includes('Lunch')`。落库值其实是 `'Dinner (5PM-8PM)'`，
+// 所以前者永远为假 → 多配送分组的运费明细每一趟都标「午餐」（2026-09-05 修）。
+import { isDinnerSlot } from '@/lib/cartDateUtils';
 
 interface CartDrawerDict {
     title: string;
@@ -35,6 +39,8 @@ interface CartDrawerDict {
     promoPlaceholder: string;
     promoPlaceholderLocked: string;
     cancel: string;
+    /** 退掉已应用的优惠码（en 是 Remove）。**别拿它当表单的「取消」** —— B6 就是这么错的。 */
+    cancelEdit: string;
     checking: string;
     apply: string;
     promoSaved: (amt: string) => string;
@@ -104,7 +110,19 @@ interface CartDrawerDict {
     waAskBowlMama: string;
     confirmAddress: string;
     submitting: string;
+    /** 正在开支付页（Razorpay 弹窗打开前的网络往返，以前这段按钮是可再点的）。 */
+    openingPayment: string;
     choosePayment: string;
+    /** 结账缺项清单：「还差：送达地址 · 支付方式」。以前按钮只是灰着，不说缺什么。 */
+    missingPrefix: string;
+    missingAddress: string;
+    missingPhone: string;
+    missingPayment: string;
+    missingReceipt: string;
+    paymentLabel: string;
+    /** 优惠码默认折叠成一行链接，别占着结账路径上的一屏。 */
+    havePromo: string;
+    closeCart: string;
     uploadFirst: string;
     confirmOrder: string;
     razorpayDescription: string;
@@ -114,6 +132,8 @@ interface CartDrawerDict {
     promoCheckFailed: string;
     createPaymentFailed: string;
     paymentCancelled: string;
+    /** 顾客自己关掉了银行支付页 —— 以前这条分支静默无反馈。 */
+    paymentDismissed: string;
     uploadImageOnly: string;
     uploadTooLarge: (mb: string) => string;
     loginBeforeUpload: string;
@@ -182,6 +202,10 @@ interface QRDict {
 interface ItemCardDict {
     addOnsList: (names: string) => string;
     noteBadge: string;
+    /** 可见的「修改」按钮文字（以前写死英文 Edit，两个语言都是）。 */
+    edit: string;
+    /** 删除按钮的可访问名（图标按钮，以前完全没有名字）。 */
+    removeItem: (name: string) => string;
 }
 
 export interface CartDict {
@@ -218,6 +242,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             promoPlaceholder: '输入优惠码 / Promo Code',
             promoPlaceholderLocked: '使用餐券中（不可叠加）',
             cancel: '取消',
+            cancelEdit: '取消',
             checking: '验证中…',
             apply: '使用',
             promoSaved: (amt) => `已减免 RM ${amt}`,
@@ -239,7 +264,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             trips: (n) => `· ${n} 趟配送`,
             free: '免费 🛵',
             freeShort: '免费',
-            mealWord: (time) => (time === 'Dinner' ? '晚餐' : '午餐'),
+            mealWord: (time) => (isDinnerSlot(time) ? '晚餐' : '午餐'),
             shortfallInline: (amt) => ` · 差 RM ${amt} 免运`,
             stillNeed: '还差',
             toFree: ' 即可免运',
@@ -282,20 +307,30 @@ export const CART_DICT: Record<Locale, CartDict> = {
             copyId: '复制',
             copied: '已复制',
             waAskBowlMama: '📲 把这条发给碗妈处理',
-            confirmAddress: '请进入个人资料确认配送地址（验证配送范围）',
+            confirmAddress: '请在下方填写送达地址（我们会先验证是否在配送范围）',
             submitting: '提交中...',
+            openingPayment: '正在打开支付页…',
             choosePayment: '请先选择付款方式 👆',
-            uploadFirst: '请先上传转账截图 👆',
+            missingPrefix: '还差：',
+            missingAddress: '送达地址',
+            missingPhone: '手机号码',
+            missingPayment: '支付方式',
+            missingReceipt: '付款截图',
+            paymentLabel: '支付方式',
+            havePromo: '有优惠码？',
+            closeCart: '关闭购物车',
+            uploadFirst: '请先上传付款截图 👆',
             confirmOrder: '确认下单 →',
-            razorpayDescription: '餐点预订',
+            razorpayDescription: 'Incredibowl 订单',
             guestUnavailable: '访客模式暂时不可用，请用 Google 登录下单（一样很快）',
             promoInvalid: '优惠码无效',
             promoCheckFailed: '验证失败，请稍后再试',
             createPaymentFailed: '创建支付订单失败',
             paymentCancelled: '已取消支付',
+            paymentDismissed: '付款未完成，订单还没建立。可以重新选择支付方式再试一次。',
             uploadImageOnly: '请上传图片文件（JPG / PNG）',
             uploadTooLarge: (mb) => `图片太大（${mb}MB），请压缩后上传，最大 5MB`,
-            loginBeforeUpload: '请先登录再上传付款凭证',
+            loginBeforeUpload: '请先登录再上传付款截图',
             uploadFailedRetry: '上传失败，请重试',
             uploadUnauthorized: '上传被拒绝（Storage 权限规则未授权）。请联系客服并截图发 WhatsApp。',
             uploadCancelled: '上传被取消，请重试',
@@ -303,7 +338,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             uploadQuota: '存储空间已满，请联系客服',
             uploadFailedWithMsg: (msg) => `上传失败：${msg}`,
             submitOrderFailed: '提交订单失败',
-            invalidPhone: '手机号码格式不正确，请到会员资料更新，例: 010-337 0197',
+            invalidPhone: '手机号码格式不正确，请在下方修改，例: 010-337 0197',
             missingDate: '部分菜品未选择配送日期，请移除后重试！',
             confirmFailed: '订单确认失败',
             uploadReceiptFirstAlert: '请先上传付款截图！',
@@ -319,14 +354,14 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waItem: (name, qty, date, meal) => `🍛 ${name} ×${qty}（${date} ${meal}）`,
             waTrack: (multi, date, meal, url) => `📍 跟踪订单${multi ? `（${date} ${meal}）` : ''}：${url}`,
             dateTbdWa: '日期未定',
-            mealWord: (time) => (time?.includes('Lunch') ? '午餐' : '晚餐'),
+            mealWord: (time) => (isDinnerSlot(time) ? '晚餐' : '午餐'),
             title: '订单已提交！',
             orderIdLabel: (isGroup) => (isGroup ? '订单群组编号：' : '订单编号：'),
             groupSplitNote: '你的订单已按送达日期自动拆分方便碗妈备餐',
             deliveryPlan: '📅 配送安排：',
             multiDay: '多日配送 (已各自独立建单)',
-            lunchEmoji: '🌞午餐',
-            dinnerEmoji: '🌙晚餐',
+            lunchEmoji: '🌞 午餐',
+            dinnerEmoji: '🌙 晚餐',
             dateTbd: '未定',
             addressLabel: '📍 地址：',
             amountLabel: '💰 金额：',
@@ -356,6 +391,8 @@ export const CART_DICT: Record<Locale, CartDict> = {
         itemCard: {
             addOnsList: (names) => `加购：${names}`,
             noteBadge: '📝 备注',
+            edit: '修改',
+            removeItem: (name) => `移除 ${name}`,
         },
     },
     en: {
@@ -384,6 +421,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             promoPlaceholder: 'Enter promo code',
             promoPlaceholderLocked: 'Meal vouchers in use (cannot stack)',
             cancel: 'Remove',
+            cancelEdit: 'Cancel',
             checking: 'Checking…',
             apply: 'Apply',
             promoSaved: (amt) => `RM ${amt} off applied`,
@@ -405,7 +443,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             trips: (n) => `· ${n} deliveries`,
             free: 'Free 🛵',
             freeShort: 'Free',
-            mealWord: (time) => (time === 'Dinner' ? 'Dinner' : 'Lunch'),
+            mealWord: (time) => (isDinnerSlot(time) ? 'Dinner' : 'Lunch'),
             shortfallInline: (amt) => ` · RM ${amt} to free delivery`,
             stillNeed: 'Add',
             toFree: ' more for free delivery',
@@ -448,17 +486,27 @@ export const CART_DICT: Record<Locale, CartDict> = {
             copyId: 'Copy',
             copied: 'Copied',
             waAskBowlMama: '📲 Send this to BowlMama',
-            confirmAddress: 'Please open your profile to confirm the delivery address (coverage check)',
+            confirmAddress: "Fill in your delivery address below (we'll check it's within range)",
             submitting: 'Submitting...',
+            openingPayment: 'Opening payment page…',
             choosePayment: 'Choose a payment method first 👆',
+            missingPrefix: 'Still needed: ',
+            missingAddress: 'delivery address',
+            missingPhone: 'phone number',
+            missingPayment: 'payment method',
+            missingReceipt: 'payment screenshot',
+            paymentLabel: 'Payment method',
+            havePromo: 'Have a promo code?',
+            closeCart: 'Close cart',
             uploadFirst: 'Upload your payment screenshot first 👆',
             confirmOrder: 'Place order →',
-            razorpayDescription: 'Meal order',
+            razorpayDescription: 'Incredibowl order',
             guestUnavailable: 'Guest mode is temporarily unavailable — please sign in with Google (just as fast)',
             promoInvalid: 'Invalid promo code',
             promoCheckFailed: 'Verification failed, please try again later',
             createPaymentFailed: 'Failed to create payment order',
             paymentCancelled: 'Payment cancelled',
+            paymentDismissed: "Payment wasn't completed and no order was created. Pick a payment method and try again.",
             uploadImageOnly: 'Please upload an image file (JPG / PNG)',
             uploadTooLarge: (mb) => `Image too large (${mb}MB) — please compress it first, max 5MB`,
             loginBeforeUpload: 'Please sign in before uploading the payment receipt',
@@ -469,7 +517,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             uploadQuota: 'Storage is full, please contact support',
             uploadFailedWithMsg: (msg) => `Upload failed: ${msg}`,
             submitOrderFailed: 'Failed to submit order',
-            invalidPhone: 'Invalid phone number format — please update it in your profile, e.g. 010-337 0197',
+            invalidPhone: 'Invalid phone number format — please fix it below, e.g. 010-337 0197',
             missingDate: 'Some dishes have no delivery date selected — please remove them and try again!',
             confirmFailed: 'Order confirmation failed',
             uploadReceiptFirstAlert: 'Please upload your payment screenshot first!',
@@ -485,7 +533,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             waItem: (name, qty, date, meal) => `🍛 ${name} ×${qty} (${date} ${meal})`,
             waTrack: (multi, date, meal, url) => `📍 Track order${multi ? ` (${date} ${meal})` : ''}: ${url}`,
             dateTbdWa: 'date TBD',
-            mealWord: (time) => (time?.includes('Lunch') ? 'Lunch' : 'Dinner'),
+            mealWord: (time) => (isDinnerSlot(time) ? 'Dinner' : 'Lunch'),
             title: 'Order submitted!',
             orderIdLabel: (isGroup) => (isGroup ? 'Order group ID: ' : 'Order ID: '),
             groupSplitNote: 'Your order was auto-split by delivery date so BowlMama can prep each day',
@@ -522,6 +570,8 @@ export const CART_DICT: Record<Locale, CartDict> = {
         itemCard: {
             addOnsList: (names) => `Add-ons: ${names}`,
             noteBadge: '📝 Note',
+            edit: 'Edit',
+            removeItem: (name) => `Remove ${name}`,
         },
     },
 };

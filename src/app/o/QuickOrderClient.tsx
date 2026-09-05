@@ -323,7 +323,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] text-[#2B2B2B] flex flex-col">
+    <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] flex flex-col">
       {/* ── 头部：极简，不放导航（这一页只有一个出口：结账）── */}
       <header className="px-5 pt-6 pb-4">
         <p className="text-[15px] font-bold tracking-tight">{t.brand} 🍲</p>
@@ -337,14 +337,14 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
             // 多日那句自带完整语义，不能再被 forDate() 包一层（会读成「分 2 天送达 送达」）
             <p className="text-[13px] text-[#6B6B6B] mb-2">{multiDate ? dateLabel : t.forDate(dateLabel)}</p>
           )}
-          <div className="inline-flex rounded-full bg-[#F0EBE1] p-1">
+          <div className="inline-flex rounded-full bg-[#E3EADA] p-1">
             {(['lunch', 'dinner'] as const).map(m => (
               <button
                 key={m}
                 type="button"
                 onClick={() => switchMeal(m)}
                 className={`px-4 py-2 rounded-full text-[13px] font-semibold transition ${
-                  meal === m ? 'bg-white text-[#2B2B2B] shadow-sm' : 'text-[#8A8A8A]'
+                  meal === m ? 'bg-white text-[#1A2D23] shadow-sm' : 'text-[#8A8A8A]'
                 }`}
               >
                 {m === 'lunch' ? t.lunch : t.dinner}
@@ -368,7 +368,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
           <ul className="space-y-3">
             {cart.map(b => (
               <li key={b.cartItemId} className="flex gap-3 bg-white rounded-2xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-[#F0EBE1]">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
                   <DishThumb dish={b.dish} size="80px" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -411,7 +411,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                 <li key={d.id}>
                   <button type="button" onClick={() => addDish(d)}
                     className="w-full flex gap-3 items-center bg-white rounded-2xl p-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] active:scale-[0.99] transition">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#F0EBE1]">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
                       <DishThumb dish={d} size="56px" />
                     </div>
                     <div className="flex-1 min-w-0">

@@ -7,6 +7,7 @@ import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { isDishBlockedOn, isDateClosed, isDinnerClosedOn, closureReasonOn } from '@/data/blockedDates';
 import type { Locale } from '@/lib/locale';
 import { ADDON_DICT } from './dict';
+import { useModalA11y } from '@/components/ui/useModalA11y';
 
 /** Resolve add-on price from the centralized config (single source of truth). */
 function p(id: string, fallback: number): number {
@@ -186,6 +187,12 @@ export default function AddOnModal({
     const [dateError, setDateError] = useState('');
     // Animation state
     const [isVisible, setIsVisible] = useState(false);
+    /** 面板本体：焦点陷阱要知道「哪块算弹窗内部」。 */
+    const panelRef = React.useRef<HTMLDivElement | null>(null);
+    /** 时段区：CTA 点下去要能滚过来并闪一下。 */
+    const scheduleRef = React.useRef<HTMLDivElement | null>(null);
+    /** 时段区的一次性高亮（1.2s 后自动撤）。 */
+    const [slotHighlight, setSlotHighlight] = useState(false);
 
     // 只送午餐的日子（长假前最后一天等）：晚餐按钮灰掉。上次记住的时段是
     // 晚餐、或者先选了晚餐再改日期的，都要把已选时段清掉 —— 否则 CTA 亮着
@@ -895,9 +902,15 @@ export default function AddOnModal({
                 // 点 3 道菜就要重复点 3 次同一个选择；99% 的客户每次都选同一个。
                 // 只认我们自己写进去的两个字面量，其余一律当没存过。
                 setSelectedTime(readLastSlot());
+                // 默认展开**第一个非套餐区**。套餐区经常就是 index 0，而它通常只有
+                // 1 个商品 —— 展开它等于把真正的 7~12 个加料全折起来，客人打开弹窗
+                // 只看得到一行。套餐区自己有橙色高亮，不靠展开也够显眼。
+                const firstRegular = activeAddOnSections.findIndex(
+                    sec => !sec.items.some(it => it.category === 'combo'));
+                const openIdx = firstRegular >= 0 ? firstRegular : 0;
                 const initialExpanded: Record<string, boolean> = {};
                 activeAddOnSections.forEach((s, i) => {
-                    initialExpanded[s.id] = i === 0;
+                    initialExpanded[s.id] = i === openIdx;
                 });
                 setExpandedSections(initialExpanded);
             }
@@ -908,15 +921,17 @@ export default function AddOnModal({
         }
     }, [isOpen, dish, activeAddOnSections, defaultDate, minDate, initialConfig]);
 
-    // Prevent body scroll when modal is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => { document.body.style.overflow = ''; };
-    }, [isOpen]);
+    // 背景滚动锁 / Escape / 焦点陷阱全部交给共享 hook。原来这里的实现结束时把
+    // overflow 写死成 ''，而购物车抽屉可以叠在这个弹窗之上打开 —— 后关的那个会
+    // 把前一个的锁一起解掉。hook 记的是「打开前的值」。
+    // ⚠️ 必须在任何 early return **之前**声明并调用（hook 规则），所以
+    // handleClose 也提到这里 —— 原来它定义在 `if (!isOpen) return null` 之后。
+    const handleClose = () => {
+        setIsVisible(false);
+        setTimeout(onClose, 300); // wait for exit animation
+    };
+
+    useModalA11y({ open: isOpen, onClose: handleClose, panelRef });
 
     if (!isOpen || !dish) return null;
 
@@ -966,9 +981,15 @@ export default function AddOnModal({
         handleClose();
     };
 
-    const handleClose = () => {
-        setIsVisible(false);
-        setTimeout(onClose, 300); // wait for exit animation
+    /**
+     * 没选时段时点主按钮：不再是「按钮灰着 + 一句指向看不见的地方的提示」，
+     * 而是把人送到时段区并高亮一下。移动端图片 + 标题 + 标签 + 价格行大约 700px，
+     * 时段区本来就在首屏之外，客人看不到那个 👆 指的是什么。
+     */
+    const focusSlotPicker = () => {
+        scheduleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setSlotHighlight(true);
+        setTimeout(() => setSlotHighlight(false), 1200);
     };
 
     // ─── Render ───────────────────────────────────────────────────
@@ -983,12 +1004,17 @@ export default function AddOnModal({
 
             {/* Modal Panel */}
             <div
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="addon-modal-title"
                 className={`relative w-full max-w-lg h-[92vh] md:h-auto md:max-h-[88vh] bg-[#FDF8F0] md:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-[0.97]'}`}
             >
                 {/* ─── Close Button ─── */}
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 z-20 w-9 h-9 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all duration-200 border border-[#E8DFD0]"
+                    aria-label={t.closeModal}
+                    className="absolute top-4 right-4 z-20 w-11 h-11 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all duration-200 border border-[#E8DFD0]"
                 >
                     <X size={18} className="text-[#5C4A32]" />
                 </button>
@@ -997,7 +1023,7 @@ export default function AddOnModal({
                 <div className="flex-1 overflow-y-auto overscroll-contain pb-6">
 
                     {/* ─── Dish Hero Image ─── */}
-                    <div className="relative w-full aspect-[4/3] bg-[#E8DFD0]">
+                    <div className="relative w-full aspect-[16/9] md:aspect-[4/3] bg-[#E8DFD0]">
                         {dish.image.startsWith('/') ? (
                             <Image
                                 src={dish.image}
@@ -1023,7 +1049,7 @@ export default function AddOnModal({
                             <span className="text-[11px] font-bold text-[#2D5F3E]">{dish.day}</span>
                         </div>
 
-                        <h2 className="text-2xl font-extrabold text-[#3B2A1A] leading-tight mb-1">
+                        <h2 id="addon-modal-title" className="text-2xl font-extrabold text-[#3B2A1A] leading-tight mb-1">
                             {isEn ? dish.nameEn : dish.name}
                         </h2>
                         <p className="text-sm font-medium text-[#8B7355] mb-3">
@@ -1032,7 +1058,7 @@ export default function AddOnModal({
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-1.5 mb-1.5">
-                            {(isEn ? ((dish as any).tagsEn || dish.tags) : dish.tags).map((tag: string) => (
+                            {(isEn ? ((dish as any).tagsEn || dish.tags) : dish.tags).slice(0, 3).map((tag: string) => (
                                 <span
                                     key={tag}
                                     className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#C76F40]/15 text-[#C76F40]"
@@ -1056,19 +1082,21 @@ export default function AddOnModal({
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setDishQty(Math.max(1, dishQty - 1))}
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${dishQty <= 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white'}`}
+                                    aria-label={t.decreaseQty(t.dishQtyLabel)}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${dishQty <= 1 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white'}`}
                                     disabled={dishQty <= 1}
                                 >
-                                    <Minus size={14} />
+                                    <Minus size={16} />
                                 </button>
-                                <span className="w-8 text-center text-lg font-extrabold text-[#3B2A1A]">
+                                <span className="w-8 text-center text-lg font-extrabold text-[#3B2A1A]" aria-live="polite">
                                     {dishQty}
                                 </span>
                                 <button
                                     onClick={() => setDishQty(dishQty + 1)}
-                                    className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white transition-all duration-200"
+                                    aria-label={t.increaseQty(t.dishQtyLabel)}
+                                    className="w-10 h-10 rounded-full flex items-center justify-center border-2 border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white transition-all duration-200"
                                 >
-                                    <Plus size={14} />
+                                    <Plus size={16} />
                                 </button>
                             </div>
                         </div>
@@ -1081,118 +1109,12 @@ export default function AddOnModal({
                         on BOTH breakpoints, so the disabled "请先选择送达时段" CTA is
                         explained without scroll-hunting. (Was desktop-only; boss approved
                         aligning mobile 2026-07-05.) */}
+                    {/* 送达时间（必选）在 DOM 里就排在加料（可选）之前 ——
+                        2026-09-05 之前是靠 CSS order-1/order-2 反转视觉顺序，
+                        Tab 和读屏走 DOM 顺序，会先撞进十来个加料才到必选项。 */}
                     <div className="flex flex-col">
-
-                    {/* ─── Add-on Sections ─── */}
-                    <div className="px-5 md:px-6 mt-6 space-y-3 order-2">
-                        {activeAddOnSections.map(section => {
-                            const selectedCount = getSectionSelectedCount(section);
-                            const isExpanded = expandedSections[section.id] ?? false;
-                            // 套餐区一律高亮（橙框橙底橙字）。这里原本是四个 section id 的
-                            // 硬编码白名单，2026-07-16 新增的四个套餐（greek/shaoxing/
-                            // taucu/curry）没人往名单里补，结果长得跟普通配菜区一模一样。
-                            // 改成看内容：这一区放的是 combo 商品就高亮，以后加套餐不会再漏。
-                            const isSpecialCombo = section.items.some(item => item.category === 'combo');
-
-                            return (
-                                <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
-                                    {/* Section Header */}
-                                    <button
-                                        onClick={() => toggleSection(section.id)}
-                                        className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${isSpecialCombo ? 'bg-[#FFF3E0]' : ''}`}
-                                    >
-                                        <div className="text-left">
-                                            <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
-                                                {isEn ? (section.titleDisplayEn || section.titleEn) : section.title}
-                                            </h3>
-                                            <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
-                                                {isEn ? section.title : section.titleEn}
-                                            </p>
-                                            {((section as any).extraDesc || (section as any).extraDescEn) && (
-                                                <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-[#FF6B35]/70 lg:text-[#FF6B35]/85 whitespace-pre-wrap">
-                                                    {isEn ? ((section as any).extraDescEn || (section as any).extraDesc) : (section as any).extraDesc}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            {isExpanded ? (
-                                                <ChevronUp size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
-                                            ) : (
-                                                <ChevronDown size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
-                                            )}
-                                        </div>
-                                    </button>
-
-                                    {/* Section Items */}
-                                    <div
-                                        className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}
-                                    >
-                                        <div className={`border-t ${isSpecialCombo ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
-                                            {section.items.map((item, itemIdx) => {
-                                                const qty = quantities[item.id] || 0;
-                                                const sectionCount = getSectionSelectedCount(section);
-                                                const mutexBlocked = MUTEX_PAIRS[item.id] ? (quantities[MUTEX_PAIRS[item.id]] || 0) > 0 : false;
-
-                                                return (
-                                                    <div
-                                                        key={item.id}
-                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (isSpecialCombo ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
-                                                    >
-                                                        {/* Thumbnail */}
-                                                        {item.image && (
-                                                            <div className="w-12 h-12 rounded-xl bg-[#FDF8F0] overflow-hidden shrink-0 border border-[#E8DFD0]/60 relative">
-                                                                <Image
-                                                                    src={item.image}
-                                                                    alt={item.name}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                    sizes="48px"
-                                                                />
-                                                            </div>
-                                                        )}
-
-                                                        {/* Item Info */}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-bold text-[#3B2A1A] truncate">
-                                                                {isEn ? item.nameEn : item.name}
-                                                            </p>
-                                                            <p className="text-[11px] lg:text-[12px] text-[#8B7355]">
-                                                                {isEn ? item.name : item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Quantity Stepper */}
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <button
-                                                                onClick={() => updateQty(item.id, -1)}
-                                                                disabled={qty === 0}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${qty === 0 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
-                                                            >
-                                                                <Minus size={14} />
-                                                            </button>
-                                                            <span className={`w-6 text-center text-sm font-extrabold transition-colors ${qty > 0 ? 'text-[#2D5F3E]' : 'text-gray-300'}`}>
-                                                                {qty}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => updateQty(item.id, 1)}
-                                                                disabled={qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked}
-                                                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
-                                                            >
-                                                                <Plus size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-
                     {/* ─── Delivery Date and Time ─── */}
-                    <div className="px-5 md:px-6 mt-4 order-1">
+                    <div ref={scheduleRef} className={`px-5 md:px-6 mt-4 rounded-2xl transition-shadow duration-300 ${slotHighlight ? 'ring-2 ring-[#FF6B35] ring-offset-2 ring-offset-[#FDF8F0]' : ''}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
                             <h3 className="text-sm font-extrabold text-[#3B2A1A]">{t.scheduleTitle}</h3>
@@ -1289,6 +1211,122 @@ export default function AddOnModal({
                         </div>
                     </div>
 
+                    {/* ─── Add-on Sections ─── */}
+                    <div className="px-5 md:px-6 mt-6 space-y-3">
+                        {activeAddOnSections.map(section => {
+                            const selectedCount = getSectionSelectedCount(section);
+                            const isExpanded = expandedSections[section.id] ?? false;
+                            // 套餐区一律高亮（橙框橙底橙字）。这里原本是四个 section id 的
+                            // 硬编码白名单，2026-07-16 新增的四个套餐（greek/shaoxing/
+                            // taucu/curry）没人往名单里补，结果长得跟普通配菜区一模一样。
+                            // 改成看内容：这一区放的是 combo 商品就高亮，以后加套餐不会再漏。
+                            const isSpecialCombo = section.items.some(item => item.category === 'combo');
+
+                            return (
+                                <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
+                                    {/* Section Header */}
+                                    <button
+                                        onClick={() => toggleSection(section.id)}
+                                        className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${isSpecialCombo ? 'bg-[#FFF3E0]' : ''}`}
+                                    >
+                                        <div className="text-left">
+                                            <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
+                                                {isEn ? (section.titleDisplayEn || section.titleEn) : section.title}
+                                            </h3>
+                                            <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
+                                                {isEn ? section.title : section.titleEn}
+                                            </p>
+                                            {/* 收起时不显示已选数量的话，客人不知道这一区里还有东西。
+                                                selectedCount 一直算着，只是从来没渲染过。 */}
+                                            {!isExpanded && selectedCount > 0 && (
+                                                <span className="inline-block mt-1 text-[11px] font-bold text-white bg-[#FF6B35] rounded-full px-2 py-0.5">
+                                                    {t.selectedCount(selectedCount)}
+                                                </span>
+                                            )}
+                                            {((section as any).extraDesc || (section as any).extraDescEn) && (
+                                                <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-[#FF6B35]/70 lg:text-[#FF6B35]/85 whitespace-pre-wrap">
+                                                    {isEn ? ((section as any).extraDescEn || (section as any).extraDesc) : (section as any).extraDesc}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            {isExpanded ? (
+                                                <ChevronUp size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                            ) : (
+                                                <ChevronDown size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    {/* Section Items */}
+                                    <div
+                                        className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}
+                                    >
+                                        <div className={`border-t ${isSpecialCombo ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
+                                            {section.items.map((item, itemIdx) => {
+                                                const qty = quantities[item.id] || 0;
+                                                const sectionCount = getSectionSelectedCount(section);
+                                                const mutexBlocked = MUTEX_PAIRS[item.id] ? (quantities[MUTEX_PAIRS[item.id]] || 0) > 0 : false;
+
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (isSpecialCombo ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
+                                                    >
+                                                        {/* Thumbnail */}
+                                                        {item.image && (
+                                                            <div className="w-12 h-12 rounded-xl bg-[#FDF8F0] overflow-hidden shrink-0 border border-[#E8DFD0]/60 relative">
+                                                                <Image
+                                                                    src={item.image}
+                                                                    alt={item.name}
+                                                                    fill
+                                                                    className="object-cover"
+                                                                    sizes="48px"
+                                                                />
+                                                            </div>
+                                                        )}
+
+                                                        {/* Item Info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-bold text-[#3B2A1A] truncate">
+                                                                {isEn ? item.nameEn : item.name}
+                                                            </p>
+                                                            <p className="text-[11px] lg:text-[12px] text-[#8B7355]">
+                                                                {isEn ? item.name : item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>
+                                                            </p>
+                                                        </div>
+
+                                                        {/* Quantity Stepper */}
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                onClick={() => updateQty(item.id, -1)}
+                                                                disabled={qty === 0}
+                                                                aria-label={t.decreaseQty(isEn ? (item.nameEn || item.name) : item.name)}
+                                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${qty === 0 ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
+                                                            >
+                                                                <Minus size={16} />
+                                                            </button>
+                                                            <span className={`w-6 text-center text-sm font-extrabold transition-colors ${qty > 0 ? 'text-[#2D5F3E]' : 'text-gray-300'}`} aria-live="polite">
+                                                                {qty}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => updateQty(item.id, 1)}
+                                                                disabled={qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked}
+                                                                aria-label={t.increaseQty(isEn ? (item.nameEn || item.name) : item.name)}
+                                                                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-200 ${(qty >= (item.maxQty ?? 10) || sectionCount >= section.maxSelect || mutexBlocked) ? 'border-gray-200 text-gray-300 cursor-not-allowed' : 'border-[#2D5F3E] text-[#2D5F3E] hover:bg-[#2D5F3E] hover:text-white active:scale-90'}`}
+                                                            >
+                                                                <Plus size={16} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                     </div>{/* /desktop reorder wrapper */}
 
                     {/* ─── Note to Restaurant ─── */}
@@ -1314,16 +1352,18 @@ export default function AddOnModal({
                             <span>{t.summaryLine((dish.price * dishQty).toFixed(2), addOnsTotal.toFixed(2))}</span>
                         </div>
                     )}
+                    {/* 未选时段时按钮**不再灰掉**。原来是灰按钮 + 「请先选择送达时段 👆」，
+                        而那个 👆 指向的时段区在移动端根本不在首屏 —— 客人看到的是一个
+                        点不动的按钮和一句指着空白处的话。现在点它会滚过去并高亮。 */}
                     <button
-                        onClick={handleAddToCart}
-                        disabled={!selectedTime}
+                        onClick={selectedTime ? handleAddToCart : focusSlotPicker}
                         className={`w-full py-4 rounded-2xl font-extrabold text-base flex justify-center items-center gap-2.5 transition-all duration-200 shadow-lg ${selectedTime
                             ? 'bg-[#2D5F3E] hover:bg-[#244E33] active:scale-[0.98] text-white shadow-[#2D5F3E]/20'
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                            : 'bg-[#C76F40] hover:bg-[#B05F33] active:scale-[0.98] text-white shadow-[#C76F40]/20'
                             }`}
                     >
-                        <ShoppingBag size={20} />
-                        {selectedTime ? (initialConfig ? t.updateCart(grandTotal.toFixed(2)) : t.addToCart(grandTotal.toFixed(2))) : t.pickTimeFirst}
+                        {selectedTime ? <ShoppingBag size={20} /> : <Calendar size={20} />}
+                        {selectedTime ? (initialConfig ? t.updateCart(grandTotal.toFixed(2)) : t.addToCart(grandTotal.toFixed(2))) : t.chooseSlotCta}
                     </button>
                 </div>
             </div>

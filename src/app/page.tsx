@@ -344,26 +344,6 @@ export default function V4BentoLayout() {
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">
-            <style jsx global>{`
-
-                h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .menu-carousel-padding {
-                    padding-left: calc(50% - 150px);
-                    padding-right: calc(50% - 150px);
-                    scroll-padding-inline: calc(50% - 150px);
-                }
-                @media (min-width: 768px) {
-                    .menu-carousel-padding {
-                        padding-left: calc(50% - 180px);
-                        padding-right: calc(50% - 180px);
-                        scroll-padding-inline: calc(50% - 180px);
-                    }
-                }
-            `}</style>
-
             <NavBar
                 currentUser={currentUser}
                 cartCount={cartCount}
@@ -372,7 +352,7 @@ export default function V4BentoLayout() {
                 onAuthOpen={() => setIsAuthOpen(true)}
             />
 
-            <main className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
+            <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
                     <HeroSection />
@@ -386,16 +366,20 @@ export default function V4BentoLayout() {
                         <HeroTrustStrip />
                     </div>
                     <DeliveryWidget />
-                    <div className="contents lg:hidden">
-                        <PromoBanner />
-                    </div>
-                    <FaqHeroStrip />
                     <div className="hidden lg:contents">
                         <HeroTrustStrip />
                     </div>
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
+                    {/* 2026-09-05：移动端把「感恩折扣」和 FAQ 引导条挪到菜单**之后**。
+                        实测点 Hero 主按钮后菜单标题落在 scrollY≈2575（第 4 屏）——
+                        新客要先翻过运费表 + 好评送小菜 + 有没有店面，才看得到菜。
+                        桌面端顺序原样不动。 */}
+                    <div className="contents lg:hidden">
+                        <PromoBanner />
+                    </div>
+                    <FaqHeroStrip />
                     <div className="hidden lg:contents">
                         <PromoBanner />
                     </div>

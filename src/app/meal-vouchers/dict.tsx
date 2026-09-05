@@ -19,6 +19,8 @@ interface MealVouchersDictShape {
     pageTitle: string;
     loginRequired: string;
     loginReturnHome: string;
+    /** 页内登录按钮（2026-09-05）。付费页面不该把人赶回首页。 */
+    signInHere: string;
     // Anonymous guest → in-place Google upgrade (same uid, keeps orders)
     guestUpgradeHint: string;
     guestUpgradeButton: string;
@@ -138,8 +140,9 @@ interface MealVouchersDictShape {
 export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     zh: {
         pageTitle: '餐券预付包',
-        loginRequired: '请先在首页登录后再购买餐券',
-        loginReturnHome: '返回首页登录',
+        loginRequired: '登录后即可购买餐券（餐券绑定账号，换设备也在）',
+        loginReturnHome: '返回首页',
+        signInHere: '登录 / 邻里会员',
         guestUpgradeHint: '你正在使用访客账号。餐券绑定账号保存，绑定 Google 后即可购买，订单记录也会永久保留。',
         guestUpgradeButton: '🔗 绑定 Google，继续购买',
         guestUpgradeSuccess: '绑定成功，正在刷新页面…',
@@ -216,7 +219,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         fpxBlurb: (n) => `点击「立即购买」后将跳转至 Curlec 支付页面，付款成功后 ${n} 张餐券即刻到账`,
         uploadInvalidType: '请上传图片文件（JPG / PNG）',
         uploadTooLarge: (mb) => `图片太大（${mb}MB），请压缩后上传，最大 5MB`,
-        uploadRequiresLogin: '请先登录再上传付款凭证',
+        uploadRequiresLogin: '请先登录再上传付款截图',
         uploadGenericError: '上传失败，请重试',
         uploadUnauthorized: '上传被拒绝（Storage 权限规则未授权）。请刷新页面重试，仍失败请 WhatsApp 010-337 0197',
         uploadCanceled: '上传被取消，请重试',
@@ -236,7 +239,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         razorpayDescription: (n, days) => `${n} 张餐券（${days} 天有效）`,
 
         pendingReviewTitle: '付款已收到，等待核对',
-        pendingReviewBody1: '我们会在 24 小时内核对你的付款凭证。',
+        pendingReviewBody1: '我们会在 24 小时内核对你的付款截图。',
         pendingReviewBody2: (n, days) => <>核对通过后，<span className="text-[#FF6B35] font-bold">{n} 张餐券</span>即刻到账，{days} 天有效。</>,
         successTitle: '购买成功 🎉',
         successBody: (n, days) => <><span className="text-[#FF6B35] font-bold text-xl">{n} 张餐券</span>已到账，可在结账时一键抵扣主餐。<br />有效期：{days} 天</>,
@@ -248,7 +251,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     },
     en: {
         pageTitle: 'Meal Voucher Bundles',
-        loginRequired: 'Please sign in from the homepage first to buy vouchers.',
+        loginRequired: 'Sign in to buy vouchers — they are tied to your account, so they follow you across devices.',
         guestUpgradeHint: 'You are browsing as a guest. Vouchers are saved to your account — link Google to buy, and your order history will be kept permanently too.',
         guestUpgradeButton: '🔗 Link Google to continue',
         guestUpgradeSuccess: 'Linked successfully — refreshing the page…',
@@ -266,6 +269,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         seoHow:
             'How it works: sign in from the homepage, pick a bundle, pay by DuitNow QR or FPX, and the vouchers are credited to your account — ready to use at checkout.',
         loginReturnHome: 'Back to homepage',
+        signInHere: 'Sign in',
 
         backHome: 'Back to home',
         subtitle: 'Buy once, eat anytime',
