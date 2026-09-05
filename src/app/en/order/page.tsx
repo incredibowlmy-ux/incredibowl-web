@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import OrderClient from "./OrderClient";
+// 与 /order 共用同一个组件（照 /o 的做法），只传 locale —— 这一页原来是 543 行的
+// 复制品，任何修复都要改两遍，中英菜名已经因此漂移过（见 OrderClient 顶部注释）。
+import OrderClient from "../../order/OrderClient";
 import { DELIVERY_PROSE_SHORT_EN, COVERAGE_AREAS } from "@/lib/deliveryCopy";
 
 export const metadata: Metadata = {
@@ -35,5 +37,5 @@ export const metadata: Metadata = {
 };
 
 export default function OrderLandingPageEn() {
-    return <OrderClient />;
+    return <OrderClient locale="en" />;
 }

@@ -34,8 +34,13 @@ export function useModalA11y({
 }) {
   // onClose 每次渲染都是新函数；放进 ref 才不会让 effect 反复重挂、
   // 也不用逼调用方去 useCallback。
+  // ⚠️ 同步动作必须在 effect 里做，不能在渲染期直接写 `ref.current = onClose`
+  // （React 19 的 react-hooks/refs 会报错）：并发渲染下这次渲染可能被丢弃，
+  // 而 ref 的写入已经发生，键盘事件就会调到一个从没提交过的闭包。
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;

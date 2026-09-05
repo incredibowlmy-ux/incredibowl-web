@@ -20,6 +20,9 @@ interface MemberDictShape {
     loginReturnHome: string;
     /** 页内登录按钮（2026-09-05）。原来只给「返回首页登录」= 死胡同。 */
     signInHere: string;
+    /** 餐券钱包加载失败（以前失败被吞掉，显示成「你没有餐券」）。 */
+    voucherLoadFailed: string;
+    retry: string;
 
     // Header
     backHome: string;
@@ -111,6 +114,8 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         pleaseLoginFirst: '登录后查看你的订单、餐券和地址簿',
         loginReturnHome: '返回首页',
         signInHere: '登录 / 邻里会员',
+        voucherLoadFailed: '餐券余额没能加载出来',
+        retry: '重试',
 
         backHome: '返回首页',
         logout: '登出帐号',
@@ -194,6 +199,8 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
         pleaseLoginFirst: 'Please sign in from the homepage first.',
         loginReturnHome: 'Back to homepage',
         signInHere: 'Sign in',
+        voucherLoadFailed: "Couldn't load your voucher balance",
+        retry: 'Retry',
 
         backHome: 'Back to home',
         logout: 'Log out',
