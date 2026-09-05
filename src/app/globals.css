@@ -64,6 +64,33 @@ body {
   animation: glow-breathe 2.5s ease-in-out infinite !important;
 }
 
+/* 键盘焦点环。2026-09-05 之前全站 `focus-visible` **零命中** —— 几十个自定义
+   圆角按钮/卡片全靠浏览器默认环，而其中两处还写了 outline-none 把它关掉了。
+   只在 :focus-visible 上画，鼠标点击不会出现。 */
+:focus-visible {
+  outline: 2px solid #FF6B35;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 跳到主内容：键盘用户不必每次都 Tab 过整个导航。平时不可见，聚焦时出现。 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #1A2D23;
+  color: #fff;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
 /* 隐藏横向滚动条（admin 的日期/菜品横滑条在用）。
    2026-09-05：这条规则原来只写在 page.tsx / en/page.tsx 的 <style jsx global>
    里，而那两个组件只在 `/` 和 `/en` 渲染 —— /admin 引用同名 class 却拿不到规则，

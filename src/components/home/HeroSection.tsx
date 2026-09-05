@@ -127,7 +127,7 @@ export default function HeroSection() {
                         {/* Tertiary CTA — meal voucher bundles (outlined, below primary in hierarchy) */}
                         <Link
                             href="/meal-vouchers"
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/50 border-2 border-[#FF6B35]/25 hover:border-[#FF6B35]/60 hover:bg-white/70 text-[#1A2D23] rounded-full font-bold text-sm transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.97]"
+                            className="hidden lg:inline-flex items-center gap-2 px-5 py-2.5 bg-white/50 border-2 border-[#FF6B35]/25 hover:border-[#FF6B35]/60 hover:bg-white/70 text-[#1A2D23] rounded-full font-bold text-sm transition-[transform,border-color,background-color] duration-150 ease-out active:scale-[0.97]"
                         >
                             <Ticket size={15} className="text-[#FF6B35]" />
                             <span lang="zh">先囤券更划算</span>
@@ -186,9 +186,9 @@ export default function HeroSection() {
                         <p className="text-xs font-medium text-[#FF6B35] tracking-[0.2em] uppercase mb-2">
                             {nextSpecial?.labelZh ?? '明日特餐'}
                         </p>
-                        <h3 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">
+                        <h2 className="text-xl md:text-2xl font-black text-[#1A2D23] leading-tight mb-1">
                             {nextSpecial?.dish.name ?? signatureDish.name}
-                        </h3>
+                        </h2>
                         <p className="text-xs md:text-sm font-semibold text-[#1A2D23]/55 italic mb-4">
                             {nextSpecial?.dish.nameEn ?? signatureDish.nameEn}
                         </p>

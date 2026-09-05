@@ -306,7 +306,7 @@ export default function EnglishHome() {
                 onAuthOpen={() => setIsAuthOpen(true)}
             />
 
-            <main className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
+            <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBannerEN />
                     <HeroSectionEN />
@@ -318,16 +318,22 @@ export default function EnglishHome() {
                         <HeroTrustStripEN />
                     </div>
                     <DeliveryWidgetEN />
-                    <div className="contents lg:hidden">
-                        <PromoBannerEN />
-                    </div>
-                    <FaqHeroStripEN />
                     <div className="hidden lg:contents">
                         <HeroTrustStripEN />
                     </div>
                     <ErrorBoundary>
                         <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
+                    {/* 2026-09-05: on mobile the promo banner and FAQ teaser move BELOW
+                        the menu. Measured on the ZH twin: tapping the hero CTA landed the
+                        menu heading at scrollY≈2575 (4th screen) — a new customer had to
+                        scroll past the fee table, the review-for-a-free-side pitch and
+                        "do you have a shopfront" before seeing any food.
+                        Desktop order is unchanged. */}
+                    <div className="contents lg:hidden">
+                        <PromoBannerEN />
+                    </div>
+                    <FaqHeroStripEN />
                     <div className="hidden lg:contents">
                         <PromoBannerEN />
                     </div>

@@ -320,6 +320,9 @@ gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-Z78ZLBH7CF'}')
         className={`${plusJakarta.variable} antialiased`}
         style={{ fontFamily: `'Plus Jakarta Sans', ${CJK_STACK}, system-ui, -apple-system, sans-serif` }}
       >
+        {/* 跳到主内容 —— 平时不可见，Tab 第一下才出现。首页导航 + 跑马灯 +
+            Hero 之前有十几个可聚焦元素，键盘用户每次进站都要穿过一遍。 */}
+        <a href="#main" className="skip-link">跳到主内容 / Skip to content</a>
         <noscript>
           <img
             height="1"

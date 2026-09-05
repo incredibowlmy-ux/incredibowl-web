@@ -15,11 +15,11 @@ export const metadata: Metadata = {
 
 export default function RefundPolicyEN() {
     return (
-        <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
+        <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans p-8 md:p-20">
             <SetHtmlLang />
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
-                <Link href="/en" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home</Link>
-                <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Refund & Cancellation Policy</h1>
+                <Link href="/en" className="text-[#FF6B35] font-bold mb-8 inline-block">← Back to Home</Link>
+                <h1 className="text-4xl font-black mb-4 text-[#FF6B35]">Refund & Cancellation Policy</h1>
                 <p className="text-sm opacity-60 mb-10">Effective Date: 11 May 2026</p>
 
                 <div className="space-y-12 leading-relaxed">

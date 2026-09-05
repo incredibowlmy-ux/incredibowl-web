@@ -5,10 +5,10 @@ import Link from 'next/link';
 
 export default function PrivacyPolicy() {
     return (
-        <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
+        <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans p-8 md:p-20">
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
-                <Link href="/" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
-                <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Privacy Policy / 隐私政策</h1>
+                <Link href="/" className="text-[#FF6B35] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
+                <h1 className="text-4xl font-black mb-4 text-[#FF6B35]">Privacy Policy / 隐私政策</h1>
                 <p className="text-sm opacity-60 mb-10">Effective Date / 生效日期：2026年3月17日</p>
 
                 <div className="space-y-12 leading-relaxed text-sm">

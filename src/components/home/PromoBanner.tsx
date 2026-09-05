@@ -23,9 +23,9 @@ export default function PromoBanner() {
                                 <span className="px-2.5 py-1 rounded-md bg-[#FF6B35]/20 text-[#FF9B50] text-xs font-medium tracking-widest border border-[#FF6B35]/30">
                                     街坊回馈
                                 </span>
-                                <h3 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
                                     感恩折扣
-                                </h3>
+                                </h2>
                             </div>
                             <p className="text-white/80 text-sm leading-relaxed">
                                 感谢街坊一路支持 🧡<br />

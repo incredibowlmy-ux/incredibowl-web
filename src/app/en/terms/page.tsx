@@ -18,11 +18,11 @@ export const metadata: Metadata = {
 
 export default function TermsAndConditionsEN() {
     return (
-        <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
+        <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans p-8 md:p-20">
             <SetHtmlLang />
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
-                <Link href="/en" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home</Link>
-                <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Terms & Conditions</h1>
+                <Link href="/en" className="text-[#FF6B35] font-bold mb-8 inline-block">← Back to Home</Link>
+                <h1 className="text-4xl font-black mb-4 text-[#FF6B35]">Terms & Conditions</h1>
                 <p className="text-sm opacity-60 mb-10">Effective Date: 11 May 2026</p>
 
                 <div className="space-y-12 leading-relaxed text-sm">
@@ -54,7 +54,7 @@ export default function TermsAndConditionsEN() {
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier.</p>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout.</p>
-                        <p className="mt-2 text-[#E76F51] font-bold">Delivery Times:</p>
+                        <p className="mt-2 text-[#FF6B35] font-bold">Delivery Times:</p>
                         <ul className="list-disc ml-6 mt-1">
                             <li>Lunch: 11:00 AM - 1:00 PM</li>
                             <li>Dinner: 5:00 PM - 8:00 PM</li>
@@ -82,7 +82,7 @@ export default function TermsAndConditionsEN() {
                             <li><strong>Non-refundable in cash</strong>. The only exception is when a QR-payment purchase is rejected by us due to failed verification — in that case, full cash refund within 3 working days via DuitNow.</li>
                             <li><strong>Cannot be combined with promo codes</strong> (referral / points / custom codes) on the same order.</li>
                             <li>If an order paid with vouchers is later cancelled (per the Refund Policy), the vouchers are <strong>returned to the customer&apos;s wallet</strong> with the original expiry date preserved.</li>
-                            <li>For the full set of rules including refund handling, see the <Link href="/en/refund" className="text-[#E76F51] underline">Refund Policy</Link>.</li>
+                            <li>For the full set of rules including refund handling, see the <Link href="/en/refund" className="text-[#FF6B35] underline">Refund Policy</Link>.</li>
                         </ul>
                     </section>
 

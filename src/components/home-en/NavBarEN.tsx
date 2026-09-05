@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, User, ChevronRight } from 'lucide-react';
+import { ShoppingBag, User, ChevronRight, Menu, X } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import LanguageSwitcher from '../home/LanguageSwitcher';
+import { useModalA11y } from '@/components/ui/useModalA11y';
 import { DELIVERY_SUMMARY_EN } from '@/lib/deliveryCopy';
 
 interface NavBarENProps {
@@ -18,12 +19,18 @@ interface NavBarENProps {
 
 export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen, onAuthOpen }: NavBarENProps) {
     const [scrolled, setScrolled] = useState(false);
+    // H4：<lg 的导航。原来四个锚点都是 hidden lg:flex，手机上零导航。
+    const [navOpen, setNavOpen] = useState(false);
+    const navPanelRef = React.useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+    // 面板的 Escape / 焦点陷阱（背景滚动锁对下拉式导航也合适：
+    // 它是覆盖在内容之上的临时层）。
+    useModalA11y({ open: navOpen, onClose: () => setNavOpen(false), panelRef: navPanelRef });
 
     return (
         <>
@@ -116,7 +123,30 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                             </>
                         )}
 
-                        <LanguageSwitcher current="en" />
+                        {/* 汉堡：只在 <lg 出现（桌面有那排锚点） */}
+
+                        <button
+
+                            type="button"
+
+                            onClick={() => setNavOpen(v => !v)}
+
+                            aria-label={navOpen ? 'Close menu' : 'Open menu'}
+
+                            aria-expanded={navOpen}
+
+                            aria-controls="mobile-nav-panel"
+
+                            className="lg:hidden p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-colors"
+
+                        >
+
+                            {navOpen ? <X size={20} className="text-[#1A2D23]" /> : <Menu size={20} className="text-[#1A2D23]" />}
+
+                        </button>
+
+
+                        <div className="hidden lg:block"><LanguageSwitcher current="en" /></div>
 
                         {cartCount > 0 ? (
                             /* With items — dark-green pill always; price text only shows on md+ */
@@ -143,6 +173,24 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                         )}
                     </div>
                 </div>
+            {/* 移动导航面板。不做全屏遮罩：下拉一层就够，也不打断浏览。 */}
+            {navOpen && (
+                <div
+                    id="mobile-nav-panel"
+                    ref={navPanelRef}
+                    className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl overflow-hidden"
+                >
+                    <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Daily Menu</a>
+                    <Link href="/en/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Meal Vouchers</Link>
+                    <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Neighbour Reviews</a>
+                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Contact BowlMama</a>
+                    {currentUser && <Link href="/en/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Member</Link>}
+                    <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
+                        <span className="text-[13px] font-bold text-[#1A2D23]/60">Language / 语言</span>
+                        <span className="ml-auto"><LanguageSwitcher current="en" /></span>
+                    </div>
+                </div>
+            )}
             </nav>
         </>
     );

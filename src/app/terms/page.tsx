@@ -7,10 +7,10 @@ import { MID_RADIUS_KM, MAX_DELIVERY_KM } from '@/lib/deliveryUtils';
 
 export default function TermsAndConditions() {
     return (
-        <div className="min-h-screen bg-[#FEFAE0] text-[#264653] font-sans p-8 md:p-20">
+        <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans p-8 md:p-20">
             <div className="max-w-4xl mx-auto bg-white rounded-[40px] p-12 shadow-xl">
-                <Link href="/" className="text-[#E76F51] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
-                <h1 className="text-4xl font-black mb-4 text-[#E76F51]">Terms & Conditions / 服务条款</h1>
+                <Link href="/" className="text-[#FF6B35] font-bold mb-8 inline-block">← Back to Home / 返回首页</Link>
+                <h1 className="text-4xl font-black mb-4 text-[#FF6B35]">Terms & Conditions / 服务条款</h1>
                 <p className="text-sm opacity-60 mb-10">Effective Date / 生效日期：2026年5月11日</p>
 
                 <div className="space-y-12 leading-relaxed text-sm">
@@ -42,7 +42,7 @@ export default function TermsAndConditions() {
                         </ul>
                         <p className="mt-2 italic opacity-70">Existing customers (registered before 2026-05-16) within 2 km are grandfathered onto the previous free-delivery tier. / 2026-05-16 之前注册的老客户，2 km 内沿用旧的免运政策。</p>
                         <p className="mt-2 italic opacity-70">Distance is measured by geocoding your saved delivery address. Please verify your address in your profile before checkout. / 距离由您保存的配送地址通过 Google Maps 自动测算。下单前请在个人资料中确认地址。</p>
-                        <p className="mt-2 text-[#E76F51] font-bold">Delivery Times / 配送时间：</p>
+                        <p className="mt-2 text-[#FF6B35] font-bold">Delivery Times / 配送时间：</p>
                         <ul className="list-disc ml-6 mt-1">
                             <li>Lunch / 午餐：11:00 AM - 1:00 PM</li>
                             <li>Dinner / 晚餐：5:00 PM - 8:00 PM</li>
@@ -70,7 +70,7 @@ export default function TermsAndConditions() {
                             <li><strong>Non-refundable in cash</strong>. The only exception is when a QR-payment purchase is rejected by us due to failed verification — in that case, full cash refund within 3 working days via DuitNow. / <strong>不提供现金退款</strong>。唯一例外：QR 付款被我方因凭证不符拒绝的，3 个工作日内通过 DuitNow 全额现金退还。</li>
                             <li><strong>Cannot be combined with promo codes</strong> (referral / points / custom codes) on the same order. / 不可与优惠码（推荐码 / 积分券 / 自定义码）同时使用。</li>
                             <li>If an order paid with vouchers is later cancelled (per the Refund Policy), the vouchers are <strong>returned to the customer&apos;s wallet</strong> with the original expiry date preserved. / 用券订单按退款政策取消的，餐券<strong>退回钱包</strong>，原到期日保持不变。</li>
-                            <li>For the full set of rules including refund handling, see the <Link href="/refund" className="text-[#E76F51] underline">Refund Policy</Link>. / 完整规则（含退款处理）见<Link href="/refund" className="text-[#E76F51] underline">退款政策</Link>。</li>
+                            <li>For the full set of rules including refund handling, see the <Link href="/refund" className="text-[#FF6B35] underline">Refund Policy</Link>. / 完整规则（含退款处理）见<Link href="/refund" className="text-[#FF6B35] underline">退款政策</Link>。</li>
                         </ul>
                     </section>
 

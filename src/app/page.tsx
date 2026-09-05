@@ -345,7 +345,7 @@ export default function V4BentoLayout() {
                 onAuthOpen={() => setIsAuthOpen(true)}
             />
 
-            <main className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
+            <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
                     <HeroSection />
@@ -359,16 +359,20 @@ export default function V4BentoLayout() {
                         <HeroTrustStrip />
                     </div>
                     <DeliveryWidget />
-                    <div className="contents lg:hidden">
-                        <PromoBanner />
-                    </div>
-                    <FaqHeroStrip />
                     <div className="hidden lg:contents">
                         <HeroTrustStrip />
                     </div>
                     <ErrorBoundary>
                         <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
+                    {/* 2026-09-05：移动端把「感恩折扣」和 FAQ 引导条挪到菜单**之后**。
+                        实测点 Hero 主按钮后菜单标题落在 scrollY≈2575（第 4 屏）——
+                        新客要先翻过运费表 + 好评送小菜 + 有没有店面，才看得到菜。
+                        桌面端顺序原样不动。 */}
+                    <div className="contents lg:hidden">
+                        <PromoBanner />
+                    </div>
+                    <FaqHeroStrip />
                     <div className="hidden lg:contents">
                         <PromoBanner />
                     </div>
