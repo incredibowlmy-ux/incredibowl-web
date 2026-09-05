@@ -47,9 +47,18 @@ service cloud.firestore {
 
     // ───────────── 用户资料 ─────────────
     match /users/{userId} {
-      // 创建：只能创建自己的，敏感数字必须为安全默认值
+      // 创建：只能创建自己的，敏感数字必须为安全默认值，且不得自带
+      // 任何运费相关字段。address（纯地址串）允许，注册表单会填；但 zone /
+      // 距离 / 坐标 / verified* 只能由 /api/save-address 服务端写。
+      // ⚠️ 不加这条，新账号可以绕开 update 白名单：首次建 doc 时直接塞
+      //    deliveryZone:'within2km'，submit-order 的 legacy 分支会判永久免运费。
       allow create: if isSignedIn() && request.auth.uid == userId
-                    && safeInitialDefaults();
+                    && safeInitialDefaults()
+                    && !request.resource.data.keys().hasAny([
+                         'addressLat', 'addressLng', 'addressDistanceKm',
+                         'deliveryZone', 'addressFormatted',
+                         'addressVerifiedAt', 'addressVerifiedText'
+                       ]);
 
       // 更新：本人 + 只能改安全字段；地址簿（savedAddresses）最多 5 条
       allow update: if isSignedIn() && request.auth.uid == userId
