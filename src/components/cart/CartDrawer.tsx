@@ -630,9 +630,13 @@ export default function CartDrawer({
         if (isFullyCoveredByVouchers) {
             setSubmitting(true);
             let voucherOrderIds: string[] = [];
+            let voucherHolderTokens: string[] = [];
             try {
                 const result = await submitOrderViaAPI('voucher');
                 voucherOrderIds = result.orderIds;
+                // 回滚用的持有凭证：authHeaders 拿不到 token 时（session 过期）
+                // confirm-order 会要求 trackToken 才放行取消。
+                voucherHolderTokens = (result.trackInfo || []).map(t => t.token).filter(Boolean);
                 trackPixel('InitiateCheckout', { value: 0, currency: 'MYR' }, result.checkoutEventId);
                 const confirmRes = await fetch('/api/confirm-order', {
                     method: 'POST',
@@ -650,7 +654,7 @@ export default function CartDrawer({
                     await fetch('/api/confirm-order', {
                         method: 'POST',
                         headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
-                        body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled' }),
+                        body: JSON.stringify({ orderIds: voucherOrderIds, status: 'cancelled', holderTokens: voucherHolderTokens }),
                     }).catch(() => {});
                 }
                 setCheckoutError({ msg: err.message || t.placeOrderFailed });
@@ -762,7 +766,13 @@ export default function CartDrawer({
                 await fetch('/api/confirm-order', {
                     method: 'POST',
                     headers: await authHeaders().catch(() => ({ 'Content-Type': 'application/json' })),
-                    body: JSON.stringify({ orderIds, status: 'cancelled' }),
+                    body: JSON.stringify({
+                        orderIds,
+                        status: 'cancelled',
+                        // session 过期时 authHeaders 拿不到 token，confirm-order 会
+                        // 要求 trackToken 才放行取消（2026-09-05）。
+                        holderTokens: (trackInfo || []).map(t => t.token).filter(Boolean),
+                    }),
                 }).catch(() => {});
                 localStorage.removeItem('fpx_pending_order');
                 if (err.message !== t.paymentCancelled) {
