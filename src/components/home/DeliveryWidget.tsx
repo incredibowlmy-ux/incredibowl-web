@@ -73,7 +73,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                 <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8 lg:col-span-6 lg:flex lg:flex-col lg:justify-center">
                     <div className="flex items-center gap-2.5 mb-1.5">
                         <MapPin size={18} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                        <h2 id={headingId} className="text-[18px] md:text-[22px] lg:text-[26px] font-extrabold text-[#1A2D23] leading-tight">
+                        <h2 id={headingId} className="text-[18px] md:text-[22px] lg:text-[28px] font-extrabold text-[#1A2D23] leading-tight">
                             {t.heading}
                         </h2>
                     </div>
@@ -107,7 +107,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                         <button
                             type="submit"
                             disabled={loading || !address.trim()}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#FF6B35] hover:bg-[#E95D31] disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-[14px] transition-colors active:scale-[0.97] shadow-md shadow-[#FF6B35]/20"
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 btn-primary disabled:bg-gray-300 disabled:cursor-not-allowed text-[14px] transition-colors active:scale-[0.97] shadow-md shadow-[#FF6B35]/20"
                         >
                             {loading ? (
                                 <>

@@ -92,7 +92,7 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                         </div>
                         <h2
                             id="about-heading"
-                            className="text-[26px] md:text-[32px] lg:text-[44px] font-extrabold tracking-tight text-[#1A2D23] leading-tight"
+                            className="text-[26px] md:text-[32px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight"
                         >
                             {t.heading}
                         </h2>
@@ -101,11 +101,11 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                     {/* Desktop: 2-col grid for body + photo. Mobile: text first, photo below. */}
                     <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-10 xl:gap-14 lg:items-start">
                         {/* Body — storytelling, generous spacing */}
-                        <div className={`max-w-[640px] lg:max-w-none space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[19px] ${bodyLeading} text-[#1A2D23]/85 font-medium`}>
+                        <div className={`max-w-[640px] lg:max-w-none space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[17px] ${bodyLeading} text-[#1A2D23]/85 font-medium`}>
                             {BODY[locale]}
 
                             {/* Signature */}
-                            <div className="!mt-8 lg:!mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[19px] font-bold text-[#1A2D23]">
+                            <div className="!mt-8 lg:!mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[17px] font-bold text-[#1A2D23]">
                                 <span className="text-[#FF6B35]">{t.signatureDash}</span>
                                 <span>{t.signatureName}</span>
                             </div>

@@ -237,7 +237,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                         href={waHref}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block w-full py-3.5 bg-[#25D366] text-white rounded-2xl text-sm font-black hover:bg-[#1EBE57] transition-colors shadow-lg shadow-[#25D366]/25"
+                        className="block w-full py-3.5 bg-[#25D366] text-white rounded-xl text-sm font-black hover:bg-[#1EBE57] transition-colors shadow-lg shadow-[#25D366]/25"
                     >
                         {t.waButton}
                     </a>
@@ -249,7 +249,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                                     href={`/track/${tr.token}${trackQuery}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="block w-full py-3 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-2xl text-sm font-black hover:bg-[#FF6B35]/5 transition-colors"
+                                    className="block w-full py-3 btn-secondary text-sm font-black"
                                 >
                                     {t.trackBtn(multiTrack, tr.date, t.mealWord(tr.time))}
                                 </a>
@@ -261,7 +261,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                     {isMember && (
                         <a
                             href={memberHref}
-                            className="block w-full py-3 bg-white border-2 border-[#E3EADA] text-[#1A2D23] rounded-2xl text-sm font-black hover:border-[#FF6B35]/40 hover:text-[#FF6B35] transition-colors"
+                            className="block w-full py-3 bg-white border-2 border-[#E3EADA] text-[#1A2D23] rounded-xl text-sm font-black hover:border-[#FF6B35]/40 hover:text-[#FF6B35] transition-colors"
                         >
                             {t.viewMyOrders}
                         </a>

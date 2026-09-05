@@ -120,7 +120,7 @@ export default function WhatsAppStickyBar({ locale = 'zh' }: { locale?: Locale }
                     <button
                         type="button"
                         onClick={goOrder}
-                        className="shrink-0 px-3.5 py-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
+                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
                     >
                         {t.order}
                     </button>
@@ -128,7 +128,7 @@ export default function WhatsAppStickyBar({ locale = 'zh' }: { locale?: Locale }
                     <button
                         type="button"
                         onClick={claim}
-                        className="shrink-0 px-3.5 py-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
+                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
                     >
                         {t.claim}
                     </button>

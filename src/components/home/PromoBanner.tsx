@@ -130,7 +130,7 @@ export default function PromoBanner({ locale = 'zh' }: { locale?: Locale }) {
                             <button
                                 type="button"
                                 onClick={scrollToMenu}
-                                className="mt-5 lg:mt-0 self-start lg:self-end inline-flex items-center gap-3 px-5 py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-full shadow-md shadow-[#FF6B35]/20 transition-[background-color,transform,box-shadow] duration-150 ease-out active:scale-[0.97] active:brightness-95 group"
+                                className="mt-5 lg:mt-0 self-start lg:self-end inline-flex items-center gap-3 px-5 py-3 btn-primary shadow-md shadow-[#FF6B35]/20 transition-[background-color,transform,box-shadow] duration-150 ease-out active:scale-[0.97] active:brightness-95 group"
                             >
                                 <div className="flex flex-col items-start">
                                     <span className="text-[15px] font-bold leading-tight">{t.ctaTitle}</span>

@@ -69,13 +69,13 @@ export default function NotFoundBody() {
         <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Link
             href={t.homeHref}
-            className="inline-flex items-center justify-center rounded-full bg-[#FF6B35] px-8 py-3 font-bold text-white transition-colors hover:bg-[#E95D31]"
+            className="inline-flex items-center justify-center btn-primary px-8 py-3"
           >
             {t.home}
           </Link>
           <Link
             href={t.menuHref}
-            className="inline-flex items-center justify-center rounded-full border-2 border-[#E3EADA] bg-white px-8 py-3 font-bold text-[#1A2D23] transition-colors hover:border-[#FF6B35] hover:text-[#FF6B35]"
+            className="inline-flex items-center justify-center rounded-xl border-2 border-[#E3EADA] bg-white px-8 py-3 font-bold text-[#1A2D23] transition-colors hover:border-[#FF6B35] hover:text-[#FF6B35]"
           >
             {t.menu}
           </Link>
@@ -85,7 +85,7 @@ export default function NotFoundBody() {
           href="https://wa.me/60103370197"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-10 text-sm font-bold text-[#FF6B35] transition-colors hover:text-[#E95D31] hover:underline"
+          className="mt-10 text-sm btn-link"
         >
           {t.ask}
         </a>

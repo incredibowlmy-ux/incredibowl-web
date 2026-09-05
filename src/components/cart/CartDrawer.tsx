@@ -1405,9 +1405,9 @@ export default function CartDrawer({
                         )}
                         <button onClick={handleCheckout}
                             disabled={checkoutDisabled}
-                            className={`w-full py-3.5 rounded-2xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${checkoutDisabled
+                            className={`w-full py-3.5 rounded-xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${checkoutDisabled
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
+                                : 'btn-primary shadow-[#FF6B35]/20'}`}>
                             <CheckCircle size={20} />
                             {openingPayment ? t.openingPayment : submitting ? t.submitting : t.confirmOrder}
                         </button>

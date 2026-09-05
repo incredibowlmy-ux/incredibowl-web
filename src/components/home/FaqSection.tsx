@@ -46,7 +46,7 @@ const FAQS: Record<Locale, FaqItem[]> = {
             a: (
                 <>
                     主要送 <span className="font-semibold text-[#1A2D23]">{COVERAGE_AREAS.join(' / ')}</span> 一带：
-                    <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
+                    <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[15px]">
                         {DELIVERY_TIER_COPY.map((t) => (
                             <li key={t.rangeZh}>• {t.rangeZh} —— <span className="font-semibold">RM {t.fee}</span>（
                                 {t.freeOver === null
@@ -116,7 +116,7 @@ const FAQS: Record<Locale, FaqItem[]> = {
             a: (
                 <>
                     Mainly <span className="font-semibold text-[#1A2D23]">{COVERAGE_AREAS.join(' / ')}</span>:
-                    <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[16px]">
+                    <ul className="mt-2 space-y-1 text-[14px] md:text-[15px] lg:text-[15px]">
                         {DELIVERY_TIER_COPY.map((t) => (
                             <li key={t.rangeEn}>• {t.rangeEn} &mdash; <span className="font-semibold">RM {t.fee}</span> (
                                 {t.freeOver === null
@@ -250,7 +250,7 @@ export default function FaqSection({ locale = 'zh' }: { locale?: Locale }) {
                                         <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-[#FF6B35]/12 text-[#C84518] font-black text-[13px] lg:text-sm">
                                             Q
                                         </span>
-                                        <span className="text-[15px] md:text-[17px] lg:text-[19px] font-extrabold text-[#1A2D23] leading-snug">
+                                        <span className="text-[15px] md:text-[17px] lg:text-[17px] font-extrabold text-[#1A2D23] leading-snug">
                                             {item.q}
                                         </span>
                                     </span>
