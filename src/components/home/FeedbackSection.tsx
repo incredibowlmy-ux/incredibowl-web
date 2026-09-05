@@ -6,8 +6,11 @@ import { getApprovedFeedbacks, submitFeedback, Feedback } from '@/lib/feedbacks'
 import SkeletonBlock from '@/components/ui/SkeletonBlock';
 import { useModalA11y } from '@/components/ui/useModalA11y';
 import { GOOGLE_RATING_VALUE, GOOGLE_REVIEW_COUNT, GOOGLE_REVIEWS_URL } from '@/data/googleReviews';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
-type SeedFeedback = { name: string; text: string; time?: string; reviewDate?: string; isGoogle?: boolean };
+// time：手动录入的 WhatsApp 留言时间戳，两种语言各一份（Google 评价走 reviewDate 算相对时间）
+type SeedFeedback = { name: string; text: string; time?: Record<Locale, string>; reviewDate?: string; isGoogle?: boolean };
 
 // Google reviews first (highest credibility), then community WhatsApp messages
 const SEED_FEEDBACKS: SeedFeedback[] = [
@@ -18,9 +21,9 @@ const SEED_FEEDBACKS: SeedFeedback[] = [
     { name: "Jia Chee Chong (Local Guide)", text: "I ordered two meals (Herbal Chicken & Prawn) for consecutive two days. To my surprise, the chicken thigh and prawns are huge and fresh, tastes good and healthy too. Will definitely reorder :)", reviewDate: "2026-05-01", isGoogle: true },
     { name: "ebby cheong", text: "是我喜欢的味道！不会咸，虾很大一下也很新鲜。有机会的话我还会再下单，推荐！", reviewDate: "2026-04-12", isGoogle: true },
     { name: "Curry", text: "Food is nice, price is okay. The downside is they have different menu everyday, that's mean I might not getting the dish I want.. Overall, I recommend this food seller I will repeat my order.", reviewDate: "2026-03-29", isGoogle: true },
-    { name: "Little Jack (Citizen 1 & 2)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: "上午 11:42" },
-    { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: "下午 12:15" },
-    { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: "昨天" },
+    { name: "Little Jack (Citizen 1 & 2)", text: "练完gym最需要蛋白质，碗妈的鸡扒饭份量刚好，吃饱不撑。比自己煮鸡胸肉好吃一百倍。", time: { zh: "上午 11:42", en: "11:42 AM" } },
+    { name: "Ah Hao (Pearl Point)", text: "一开始看到纳豆有点怕，结果配上温泉蛋一拌，上瘾了😂 现在每天固定一碗。", time: { zh: "下午 12:15", en: "12:15 PM" } },
+    { name: "Amy Tan (Millerz Square)", text: "当归鸡真的很补，喝完整个人暖起来。我月经期每次都订这个，比自己炖方便太多。", time: { zh: "昨天", en: "Yesterday" } },
 ];
 
 // GBP rating/count/URL come from the shared single source of truth
@@ -54,21 +57,17 @@ const reviewJsonLd = {
     })),
 };
 
-/** Format an ISO date string as a Chinese relative time. Returns "" if input is empty. */
-function formatRelativeCN(dateStr?: string): string {
+/** Format an ISO date string as a relative time（文案在 dict.ts 的 feedbackSection.relativeTime）. Returns "" if input is empty. */
+function formatRelative(dateStr: string | undefined, locale: Locale): string {
     if (!dateStr) return "";
     const target = new Date(dateStr);
     if (isNaN(target.getTime())) return "";
     const diffDays = Math.floor((Date.now() - target.getTime()) / 86400000);
-    if (diffDays < 1) return "今天";
-    if (diffDays === 1) return "昨天";
-    if (diffDays < 7) return `${diffDays} 天前`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} 个月前`;
-    return `${Math.floor(diffDays / 365)} 年前`;
+    return HOME_DICT[locale].feedbackSection.relativeTime(diffDays);
 }
 
-export default function FeedbackSection() {
+export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].feedbackSection;
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [loading, setLoading] = useState(true);
     const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
@@ -125,7 +124,7 @@ export default function FeedbackSection() {
             await submitFeedback(feedbackName, feedbackText);
             // 成功提示先留在弹窗里让客户看到，2.5 秒后再清表单关窗
             // （alert 时代是先弹窗后关窗；现在关窗必须放到提示读完之后，否则提示看不见）
-            setFeedbackMessage({ type: 'success', text: '留言提交成功！感谢您的真实反馈。' });
+            setFeedbackMessage({ type: 'success', text: t.submitSuccess });
             successTimerRef.current = setTimeout(() => {
                 successTimerRef.current = null;
                 setFeedbackName('');
@@ -136,7 +135,7 @@ export default function FeedbackSection() {
         } catch (error) {
             console.error("Feedback submit error", error);
             // 失败提示常驻不自动消失，也不关窗，客户读完可直接重试
-            setFeedbackMessage({ type: 'error', text: '提交失败，请重试。' });
+            setFeedbackMessage({ type: 'error', text: t.submitError });
         } finally {
             setFeedbackSubmitting(false);
         }
@@ -146,13 +145,13 @@ export default function FeedbackSection() {
         ...SEED_FEEDBACKS.map(msg => ({
             name: msg.name,
             text: msg.text,
-            time: msg.reviewDate ? (mounted ? formatRelativeCN(msg.reviewDate) : '近期') : (msg.time || ''),
+            time: msg.reviewDate ? (mounted ? formatRelative(msg.reviewDate, locale) : t.recently) : (msg.time?.[locale] || ''),
             isGoogle: !!msg.isGoogle,
         })),
         ...feedbacks.map(f => ({
             name: f.name,
             text: f.text,
-            time: mounted && f.createdAt ? formatRelativeCN(f.createdAt) : f.time,
+            time: mounted && f.createdAt ? formatRelative(f.createdAt, locale) : f.time,
             isGoogle: false,
         })),
     ];
@@ -163,10 +162,15 @@ export default function FeedbackSection() {
 
     return (
         <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewJsonLd) }}
-            />
+            {/* ⚠️ 只有 zh 版有 Review/aggregateRating JSON-LD：原 FeedbackSectionEN 没做，/en 的 HTML
+                里没有这段 <script>。C1 零 diff 合并原样保留；要给 /en 补上只需去掉这个 locale 判断
+                （@id 是同一个 Restaurant 实体，可直接复用）。 */}
+            {locale === 'zh' && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewJsonLd) }}
+                />
+            )}
             <div id="feedback" className="lg:col-span-12 mt-4 scroll-mt-32">
                 {/* Compact header — single row */}
                 <div className="bg-[#E3EADA] rounded-t-[32px] px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -175,9 +179,9 @@ export default function FeedbackSection() {
                             <MessageCircle size={18} className="text-[#1A2D23]" />
                         </div>
                         <div>
-                            <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight">隔壁邻居怎么说</h2>
+                            <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight">{t.heading}</h2>
                             <p className="text-[13px] lg:text-base text-[#1A2D23]/65 font-medium leading-relaxed mt-0.5 lg:mt-2">
-                                Old Klang Road 邻居真实留言 · 没有网红，没有广告
+                                {t.sub}
                             </p>
                         </div>
                     </div>
@@ -186,6 +190,13 @@ export default function FeedbackSection() {
                 {/* Stats summary — sits between header and grid */}
                 <div className="bg-[#E3EADA] px-4 md:px-8 pb-4">
                     <div className="bg-white/55 backdrop-blur-sm rounded-2xl px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border border-white/70">
+                        {/* 历史漂移：zh 是可点去 Google 的链接（评分 + 则数 + 外链图标），en 只有一个写死
+                            「5.0 ★」的 span。C1 零 diff 合并两边原样保留，要不要让 /en 追平由老板定。 */}
+                        {locale === 'en' ? (
+                            <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23]">
+                                Google <span className="text-amber-500">5.0 ★</span>
+                            </span>
+                        ) : (
                         <a
                             href={GOOGLE_REVIEWS_URL}
                             target="_blank"
@@ -197,10 +208,11 @@ export default function FeedbackSection() {
                             <span className="text-[#1A2D23]/55 font-bold group-hover:text-[#FF6B35]/70">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
                             <ExternalLink size={13} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] shrink-0" strokeWidth={2.5} />
                         </a>
+                        )}
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length} 条留言</span>
+                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length}{t.reviewsCountSuffix}</span>
                         <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">来自 Pearl Point / Millerz / Citizen 1 & 2 等社区</span>
+                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">{t.statsFrom}</span>
                     </div>
                 </div>
 
@@ -256,7 +268,7 @@ export default function FeedbackSection() {
                                                     &ldquo;{msg.text}&rdquo;
                                                 </p>
                                                 {isLong && (
-                                                    <span className="inline-block mt-1.5 text-xs font-bold text-[#C9985C]">阅读全文 →</span>
+                                                    <span className="inline-block mt-1.5 text-xs font-bold text-[#C9985C]">{t.readMore}</span>
                                                 )}
                                             </div>
 
@@ -264,7 +276,7 @@ export default function FeedbackSection() {
                                             <div className="mt-auto flex items-center justify-between gap-2 px-1">
                                                 <div className="flex items-center gap-1.5 min-w-0">
                                                     {msg.isGoogle && (
-                                                        <span role="img" aria-label="5 星好评" className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                                        <span role="img" aria-label={t.fiveStars} className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                                     )}
                                                     <span className="text-xs font-bold text-[#1A2D23]/75 truncate">— {msg.name}</span>
                                                 </div>
@@ -308,7 +320,10 @@ export default function FeedbackSection() {
                     {/* Bottom CTA — verify on Google + write your own。
                         不依赖 feedbacks 数据，所以放在 loading 分支外面：加载中就能点，
                         而且 loading→loaded 只换跑马灯那一格，CTA 不会被推上推下。 */}
-                    <div className="mt-6 px-4 md:px-8 flex flex-wrap items-center justify-center gap-3">
+                    {/* 历史漂移：zh 多一个「在 Google 查看全部评价」按钮、容器带 flex-wrap/gap；en 只有
+                        写留言一个按钮。C1 零 diff 合并原样保留。 */}
+                    <div className={locale === 'en' ? 'mt-6 px-4 md:px-8 flex justify-center' : 'mt-6 px-4 md:px-8 flex flex-wrap items-center justify-center gap-3'}>
+                        {locale === 'zh' && (
                         <a
                             href={GOOGLE_REVIEWS_URL}
                             target="_blank"
@@ -318,11 +333,12 @@ export default function FeedbackSection() {
                             <span className="text-amber-500">★</span> 在 Google 查看全部评价
                             <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
                         </a>
+                        )}
                         <button
                             onClick={() => { setFeedbackMessage(null); setIsFeedbackModalOpen(true); }}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
                         >
-                            <Plus size={16} /> 写下您的留言
+                            <Plus size={16} />{t.leaveReview}
                         </button>
                     </div>
                 </div>
@@ -340,12 +356,12 @@ export default function FeedbackSection() {
                         className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
                     >
                         <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
-                            <button type="button" onClick={() => setSelectedReview(null)} aria-label="关闭" className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button type="button" onClick={() => setSelectedReview(null)} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <X size={20} />
                             </button>
                             <div className="flex items-center gap-2 mb-4 pr-12">
                                 {selectedReview.isGoogle && (
-                                    <span role="img" aria-label="5 星好评" className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
+                                    <span role="img" aria-label={t.fiveStars} className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                 )}
                                 <span id="feedback-reader-title" className="text-sm font-black text-[#1A2D23]">{selectedReview.name}</span>
                                 {selectedReview.time && (
@@ -372,31 +388,31 @@ export default function FeedbackSection() {
                         className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
                     >
                         <div className="p-6 md:p-8 border-b border-[#E3EADA]">
-                            <button type="button" onClick={closeFeedbackModal} aria-label="关闭" className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button type="button" onClick={closeFeedbackModal} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <X size={20} />
                             </button>
-                            <h3 id="feedback-form-title" className="text-2xl font-black text-[#1A2D23] pr-12">留下真实评价</h3>
-                            <p className="text-sm font-medium text-[#1A2D23]/60 mt-2">分享您的用餐体验给邻居们吧</p>
+                            <h3 id="feedback-form-title" className="text-2xl font-black text-[#1A2D23] pr-12">{t.formTitle}</h3>
+                            <p className="text-sm font-medium text-[#1A2D23]/60 mt-2">{t.formSub}</p>
                         </div>
                         <div className="p-6 md:p-8 bg-white">
                             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">你的称呼 (选填居住地)</label>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{t.nameLabel}</label>
                                     <input
                                         type="text"
                                         value={feedbackName}
                                         onChange={e => setFeedbackName(e.target.value)}
-                                        placeholder="例如: Amy Tan (Pearl Point)"
+                                        placeholder={t.namePlaceholder}
                                         className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">留言内容</label>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{t.textLabel}</label>
                                     <textarea
                                         value={feedbackText}
                                         onChange={e => setFeedbackText(e.target.value)}
-                                        placeholder="碗妈煮的菜好吃吗？"
+                                        placeholder={t.textPlaceholder}
                                         rows={4}
                                         className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium resize-none"
                                         required
@@ -419,7 +435,7 @@ export default function FeedbackSection() {
                                 )}
                                 {/* 成功后弹窗还会停 2.5 秒，此时禁用按钮防止重复提交（alert 时代靠阻塞天然挡住） */}
                                 <button disabled={feedbackSubmitting || feedbackMessage?.type === 'success'} type="submit" className="w-full py-4 mt-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
-                                    {feedbackSubmitting ? '提交中...' : '提交留言'}
+                                    {feedbackSubmitting ? t.submitting : t.submit}
                                 </button>
                             </form>
                         </div>

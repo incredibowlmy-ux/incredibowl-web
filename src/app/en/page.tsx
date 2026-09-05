@@ -22,9 +22,9 @@ import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
 import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
-import AboutBowlMamaEN from '@/components/home-en/AboutBowlMamaEN';
-import FaqSectionEN from '@/components/home-en/FaqSectionEN';
-import FeedbackSectionEN from '@/components/home-en/FeedbackSectionEN';
+import AboutBowlMama from '@/components/home/AboutBowlMama';
+import FaqSection from '@/components/home/FaqSection';
+import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
 
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
@@ -349,13 +349,13 @@ export default function EnglishHome() {
                         <PromoBanner locale="en" />
                     </div>
                     <ErrorBoundary>
-                        <AboutBowlMamaEN />
+                        <AboutBowlMama locale="en" />
                     </ErrorBoundary>
                     <ErrorBoundary>
-                        <FeedbackSectionEN />
+                        <FeedbackSection locale="en" />
                     </ErrorBoundary>
                     <ErrorBoundary>
-                        <FaqSectionEN />
+                        <FaqSection locale="en" />
                     </ErrorBoundary>
                 </div>
             </main>

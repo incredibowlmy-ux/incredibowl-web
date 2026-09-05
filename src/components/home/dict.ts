@@ -189,6 +189,47 @@ interface DeliveryWidgetDict {
     windowsTitle: string;
 }
 
+interface AboutBowlMamaDict {
+    heading: string;
+    /** 签名行两个 span：破折号 + 名字（zh「——」是两个全角横杠，en 是一个 &mdash;） */
+    signatureDash: string;
+    signatureName: string;
+    photoAlt: string;
+    photoCaption: string;
+}
+
+interface FaqSectionDict {
+    heading: string;
+    sub: string;
+}
+
+interface FeedbackSectionDict {
+    /** 相对时间：diffDays = 距今天数（负数/0 都算「今天」） */
+    relativeTime: (diffDays: number) => string;
+    /** SSR 首帧（mounted 前）Google 评价日期的占位 */
+    recently: string;
+    heading: string;
+    sub: string;
+    /** 跟在 `{allMessages.length}` 后面，保持独立子节点（见文件头） */
+    reviewsCountSuffix: string;
+    statsFrom: string;
+    readMore: string;
+    fiveStars: string;
+    /** 跟在 <Plus /> 后面、带前导空格——原文「图标 + 同行文本」是一个文本子节点 */
+    leaveReview: string;
+    close: string;
+    formTitle: string;
+    formSub: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    textLabel: string;
+    textPlaceholder: string;
+    submitting: string;
+    submit: string;
+    submitSuccess: string;
+    submitError: string;
+}
+
 export interface HomeDict {
     faqHeroStrip: FaqHeroStripDict;
     heroTrustStrip: HeroTrustStripDict;
@@ -199,6 +240,9 @@ export interface HomeDict {
     footer: FooterDict;
     navBar: NavBarDict;
     deliveryWidget: DeliveryWidgetDict;
+    aboutBowlMama: AboutBowlMamaDict;
+    faqSection: FaqSectionDict;
+    feedbackSection: FeedbackSectionDict;
 }
 
 const ZH_WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -362,6 +406,46 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             cutoffSub: '06:00 前下单当日配送',
             windowsTitle: '配送时段',
         },
+        aboutBowlMama: {
+            heading: '关于碗妈',
+            signatureDash: '——',
+            signatureName: '碗妈',
+            photoAlt: '碗妈每天凌晨 6 点到巴刹挑食材',
+            photoCaption: '凌晨 6 点的巴刹，手挑番茄 · RM 3.60 / 600g',
+        },
+        faqSection: {
+            heading: '常见问题',
+            sub: '邻居都在问',
+        },
+        feedbackSection: {
+            relativeTime: (diffDays) => {
+                if (diffDays < 1) return "今天";
+                if (diffDays === 1) return "昨天";
+                if (diffDays < 7) return `${diffDays} 天前`;
+                if (diffDays < 30) return `${Math.floor(diffDays / 7)} 周前`;
+                if (diffDays < 365) return `${Math.floor(diffDays / 30)} 个月前`;
+                return `${Math.floor(diffDays / 365)} 年前`;
+            },
+            recently: '近期',
+            heading: '隔壁邻居怎么说',
+            sub: 'Old Klang Road 邻居真实留言 · 没有网红，没有广告',
+            reviewsCountSuffix: ' 条留言',
+            statsFrom: '来自 Pearl Point / Millerz / Citizen 1 & 2 等社区',
+            readMore: '阅读全文 →',
+            fiveStars: '5 星好评',
+            leaveReview: ' 写下您的留言',
+            close: '关闭',
+            formTitle: '留下真实评价',
+            formSub: '分享您的用餐体验给邻居们吧',
+            nameLabel: '你的称呼 (选填居住地)',
+            namePlaceholder: '例如: Amy Tan (Pearl Point)',
+            textLabel: '留言内容',
+            textPlaceholder: '碗妈煮的菜好吃吗？',
+            submitting: '提交中...',
+            submit: '提交留言',
+            submitSuccess: '留言提交成功！感谢您的真实反馈。',
+            submitError: '提交失败，请重试。',
+        },
     },
     en: {
         faqHeroStrip: {
@@ -513,6 +597,46 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             cutoffTitle: 'Orders close 06:00 daily',
             cutoffSub: 'Order before 06:00 for same-day delivery',
             windowsTitle: 'Delivery windows',
+        },
+        aboutBowlMama: {
+            heading: 'About BowlMama',
+            signatureDash: '—',
+            signatureName: 'BowlMama',
+            photoAlt: 'BowlMama picks produce at the wet market at 6 AM',
+            photoCaption: '6 AM at the wet market — picking tomatoes by hand',
+        },
+        faqSection: {
+            heading: 'FAQ',
+            sub: 'What neighbours often ask',
+        },
+        feedbackSection: {
+            relativeTime: (diffDays) => {
+                if (diffDays < 1) return "today";
+                if (diffDays === 1) return "yesterday";
+                if (diffDays < 7) return `${diffDays} days ago`;
+                if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+                if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+                return `${Math.floor(diffDays / 365)} years ago`;
+            },
+            recently: 'recently',
+            heading: 'What our neighbours say',
+            sub: 'Real reviews from Old Klang Road locals · No influencers, no ads',
+            reviewsCountSuffix: ' real reviews',
+            statsFrom: 'From Pearl Point / Millerz / Citizen 1 & 2 and nearby',
+            readMore: 'Read more →',
+            fiveStars: '5 star rating',
+            leaveReview: ' Leave a review',
+            close: 'Close',
+            formTitle: 'Leave an honest review',
+            formSub: 'Share your experience with the neighbourhood',
+            nameLabel: 'Your name (optional area)',
+            namePlaceholder: 'e.g. Amy Tan (Pearl Point)',
+            textLabel: 'Your review',
+            textPlaceholder: 'How was the food?',
+            submitting: 'Submitting…',
+            submit: 'Submit review',
+            submitSuccess: 'Submitted! Thank you for the honest review.',
+            submitError: 'Submit failed. Please try again.',
         },
     },
 };
