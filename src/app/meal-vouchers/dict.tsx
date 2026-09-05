@@ -19,6 +19,8 @@ interface MealVouchersDictShape {
     pageTitle: string;
     loginRequired: string;
     loginReturnHome: string;
+    /** 页内登录按钮（2026-09-05）。付费页面不该把人赶回首页。 */
+    signInHere: string;
     // Anonymous guest → in-place Google upgrade (same uid, keeps orders)
     guestUpgradeHint: string;
     guestUpgradeButton: string;
@@ -138,8 +140,9 @@ interface MealVouchersDictShape {
 export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     zh: {
         pageTitle: '餐券预付包',
-        loginRequired: '请先在首页登录后再购买餐券',
-        loginReturnHome: '返回首页登录',
+        loginRequired: '登录后即可购买餐券（餐券绑定账号，换设备也在）',
+        loginReturnHome: '返回首页',
+        signInHere: '登录 / 邻里会员',
         guestUpgradeHint: '你正在使用访客账号。餐券绑定账号保存，绑定 Google 后即可购买，订单记录也会永久保留。',
         guestUpgradeButton: '🔗 绑定 Google，继续购买',
         guestUpgradeSuccess: '绑定成功，正在刷新页面…',
@@ -248,7 +251,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
     },
     en: {
         pageTitle: 'Meal Voucher Bundles',
-        loginRequired: 'Please sign in from the homepage first to buy vouchers.',
+        loginRequired: 'Sign in to buy vouchers — they are tied to your account, so they follow you across devices.',
         guestUpgradeHint: 'You are browsing as a guest. Vouchers are saved to your account — link Google to buy, and your order history will be kept permanently too.',
         guestUpgradeButton: '🔗 Link Google to continue',
         guestUpgradeSuccess: 'Linked successfully — refreshing the page…',
@@ -266,6 +269,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         seoHow:
             'How it works: sign in from the homepage, pick a bundle, pay by DuitNow QR or FPX, and the vouchers are credited to your account — ready to use at checkout.',
         loginReturnHome: 'Back to homepage',
+        signInHere: 'Sign in',
 
         backHome: 'Back to home',
         subtitle: 'Buy once, eat anytime',

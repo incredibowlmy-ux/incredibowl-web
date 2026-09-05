@@ -22,6 +22,9 @@ import { MEMBER_DICT, type Locale } from './dict';
 import { useAuth } from '@/context/AuthContext';
 import AddressBook from '@/components/auth/AddressBook';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
+import dynamic from 'next/dynamic';
+// 未登录 gate 里的页内登录弹窗。ssr:false —— AuthModal 依赖 Firebase Auth。
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 import { useCartStore } from '@/store/cartStore';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { computeMenuDates } from '@/lib/dateUtils';
@@ -82,6 +85,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
+    const [authOpen, setAuthOpen] = useState(false);
     const [profileData, setProfileData] = useState<any>(null);
     // 地址簿切换/删除后要同步刷新 AuthProvider 的缓存（购物车读那份）
     const { refreshProfile: refreshGlobalProfile } = useAuth();
@@ -336,9 +340,18 @@ export default function MemberView({ locale }: { locale: Locale }) {
                     <div className="text-6xl">🔐</div>
                     <h1 className="text-2xl font-black text-[#1A2D23]">{t.memberCenter}</h1>
                     <p className="text-gray-500 text-sm">{t.pleaseLoginFirst}</p>
-                    <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                    {/* 2026-09-05：主行动改成**页内登录**。原来只有「返回首页登录」——
+                        人被赶回首页自己找入口，登录完还得再走回来。 */}
+                    <button
+                        onClick={() => setAuthOpen(true)}
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] transition-colors"
+                    >
+                        {t.signInHere}
+                    </button>
+                    <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-[#1A2D23]/60 rounded-xl font-bold text-sm hover:text-[#1A2D23] transition-colors">
                         <ArrowLeft size={16} /> {t.loginReturnHome}
                     </Link>
+                    {authOpen && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} locale={locale} />}
                 </div>
             </div>
         );

@@ -17,6 +17,9 @@ import type { MealVoucherBundle } from '@/data/mealVoucherConfig';
 import type { Locale } from '../member/dict';
 import { MEAL_VOUCHERS_DICT } from './dict';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
+import dynamic from 'next/dynamic';
+// 未登录 gate 里的页内登录弹窗。ssr:false —— AuthModal 依赖 Firebase Auth。
+const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 
 // 一张券最多能直接兑掉多少钱的菜（不补差价的前提下）。本周菜单现算 ——
 // 换菜自动跟上，不会像写死的数字一样某天变成谎话。
@@ -54,6 +57,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
+    const [authOpen, setAuthOpen] = useState(false);
     const [userProfile, setUserProfile] = useState<any>(null);
     const [selectedBundleId, setSelectedBundleId] = useState<MealVoucherBundle['id']>('10');
     const [paymentMethod, setPaymentMethod] = useState<'qr' | 'fpx' | ''>('');
@@ -353,9 +357,20 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 {t.guestUpgradeButton}
                             </button>
                         ) : (
-                            <Link href={homeHref} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
-                                <ArrowLeft size={16} /> {t.loginReturnHome}
-                            </Link>
+                            <>
+                                {/* 2026-09-05：主行动改成**页内登录**。这是付费页面，
+                                    原来只给「返回首页登录」等于把想买券的人赶走。 */}
+                                <button
+                                    onClick={() => setAuthOpen(true)}
+                                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] transition-colors"
+                                >
+                                    {t.signInHere}
+                                </button>
+                                <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-[#1A2D23]/60 rounded-xl font-bold text-sm hover:text-[#1A2D23] transition-colors">
+                                    <ArrowLeft size={16} /> {t.loginReturnHome}
+                                </Link>
+                                {authOpen && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} locale={locale} />}
+                            </>
                         )}
                         {/* 绑定结果就贴在按钮下方，不自动消失（失败文案要能看完/复制） */}
                         {guestMsg && (
