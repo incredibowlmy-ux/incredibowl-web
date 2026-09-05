@@ -54,8 +54,8 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
-                        {/* Duplicate for seamless infinite loop */}
-                        <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
+                        {/* Duplicate for seamless infinite loop — aria-hidden 否则读屏把同一句念两遍 */}
+                        <span aria-hidden="true" className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
                         </span>
                     </div>

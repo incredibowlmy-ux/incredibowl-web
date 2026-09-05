@@ -432,11 +432,6 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 <div className="absolute top-40 -left-20 w-72 h-72 bg-[#FF6B35]/5 rounded-full blur-[100px]" />
                 <div className="absolute bottom-40 -right-20 w-96 h-96 bg-[#1A2D23]/5 rounded-full blur-[120px]" />
             </div>
-            <style jsx global>{`
-
-                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-            `}</style>
-
             {/* Header */}
             <header className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] text-white pb-28 pt-8 px-4 relative overflow-hidden shadow-2xl shadow-[#1A2D23]/10">
                 <div className="absolute inset-0 pointer-events-none">

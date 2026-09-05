@@ -337,26 +337,6 @@ export default function V4BentoLayout() {
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">
-            <style jsx global>{`
-
-                h1, h2, h3, h4, h5, h6 { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-                body { font-family: 'Plus Jakarta Sans', "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .menu-carousel-padding {
-                    padding-left: calc(50% - 150px);
-                    padding-right: calc(50% - 150px);
-                    scroll-padding-inline: calc(50% - 150px);
-                }
-                @media (min-width: 768px) {
-                    .menu-carousel-padding {
-                        padding-left: calc(50% - 180px);
-                        padding-right: calc(50% - 180px);
-                        scroll-padding-inline: calc(50% - 180px);
-                    }
-                }
-            `}</style>
-
             <NavBar
                 currentUser={currentUser}
                 cartCount={cartCount}

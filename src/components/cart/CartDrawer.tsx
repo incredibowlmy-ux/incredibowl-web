@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, X, Plus, Minus, AlertCircle, Tag, CheckCircle, Utensils, CreditCard, Phone, Calendar, Ticket } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -60,7 +60,15 @@ export default function CartDrawer({
     // 结账链路的错误统一走这里，取代 alert()。alert 是同步系统弹窗：手机上
     // 顶着域名前缀、冻结整个页面、里面的支付编号还选不中复制不了 —— 客户
     // 刚从银行页回来最慌的那一秒吃这个，观感等同诈骗弹窗。
-    const [checkoutError, setCheckoutError] = useState<{ msg: string; paymentId?: string } | null>(null);
+    // kind='notice'（琥珀色）用于「不是出错、只是没走完」的情况，比如顾客自己
+    // 关掉了银行支付页 —— 拿红色报警吓人不合适，但完全不给反馈更糟。
+    const [checkoutError, setCheckoutError] = useState<{ msg: string; paymentId?: string; kind?: 'error' | 'notice' } | null>(null);
+    // 开支付页的那段网络往返（create-order → Razorpay 弹窗打开之前）。
+    // 以前这段按钮是解锁的，双击就会建两组 pending 单，第一组变孤儿。
+    const [openingPayment, setOpeningPayment] = useState(false);
+    // 结账整体的在途闸门。submitting 是给 UI 看的，这个是给逻辑用的：
+    // React 的 setState 是异步的，靠 submitting 挡不住同一个 tick 里的第二次点击。
+    const inFlightRef = useRef(false);
     const [copiedId, setCopiedId] = useState(false);
 
     // 访客快速下单：静默建匿名账号（零注册）。建完**不再跳 AuthModal** ——
@@ -610,7 +618,25 @@ export default function CartDrawer({
         }
     };
 
+    /**
+     * 结账入口。真正的流程在 runCheckout 里，这一层只做**双提交闸门**。
+     *
+     * 2026-09-05 修：原来 FPX 分支在 `await initiateRazorpayPayment(...)` 之前就
+     * 把 submitting 置回 false，而那个函数里还要 POST /api/payment/create-order。
+     * 这段网络往返里按钮是正常可点的 —— 再点一次就又跑一遍 submitOrderViaAPI，
+     * 建出第二组 pending 单，第一组的 orderIds 成孤儿（占库存、占餐券，等 1h 超时）。
+     */
     const handleCheckout = async () => {
+        if (inFlightRef.current) return;
+        inFlightRef.current = true;
+        try {
+            await runCheckout();
+        } finally {
+            inFlightRef.current = false;
+        }
+    };
+
+    const runCheckout = async () => {
         setCheckoutError(null);
         if (!currentUser) { onAuthOpen(); return; }
         // 资料不齐 → 就地展开内嵌表单并滚过去，不再把人送去第二个全屏 modal
@@ -716,7 +742,9 @@ export default function CartDrawer({
             // locale 一并写进快照：跳回来时落地页（page.tsx）靠它判断要不要把
             // 英文客户转交给 /en 渲染。快照活过银行往返，比 URL 参数可靠。
             localStorage.setItem('fpx_pending_order', JSON.stringify({ orderIds, groupId, isMultiPart, payloads, summary, locale, createdAt: Date.now() }));
-            setSubmitting(false);
+            // ⚠️ 这里以前是 `setSubmitting(false)` —— 见 handleCheckout 的注释。
+            // 按钮从这一刻起到支付流程结束**全程保持禁用**，只换文案。
+            setOpeningPayment(true);
 
             try {
                 const paymentResult = await initiateRazorpayPayment(orderIds);
@@ -725,8 +753,15 @@ export default function CartDrawer({
                     body: JSON.stringify(paymentResult),
                 });
                 const verifyData = await verifyRes.json();
-                if (!verifyData.verified) { setCheckoutError({ msg: t.verifyFailed, paymentId: paymentResult.razorpay_payment_id }); return; }
-                setSubmitting(true);
+                if (!verifyData.verified) {
+                    // ⚠️ 只报错，**不取消 pending 单**：验签失败但钱可能已经扣了，
+                    // webhook 还会回来确认。取消掉它反而会把已付款的单弄丢。
+                    // （按钮由下面的 finally 解锁——以前这里 return 之后 submitting
+                    //   一直是 true，客户看着「提交中…」再也点不动。）
+                    setCheckoutError({ msg: t.verifyFailed, paymentId: paymentResult.razorpay_payment_id });
+                    return;
+                }
+                setOpeningPayment(false);
                 const payData = {
                     razorpayPaymentId: paymentResult.razorpay_payment_id,
                     razorpayOrderId: paymentResult.razorpay_order_id,
@@ -765,11 +800,17 @@ export default function CartDrawer({
                     body: JSON.stringify({ orderIds, status: 'cancelled' }),
                 }).catch(() => {});
                 localStorage.removeItem('fpx_pending_order');
-                if (err.message !== t.paymentCancelled) {
+                if (err.message === t.paymentCancelled) {
+                    // 顾客自己关掉了银行支付页。以前这条分支什么都不显示 ——
+                    // 人回到购物车，看见的和点之前一模一样，不知道刚才那下算不算数。
+                    setCheckoutError({ msg: t.paymentDismissed, kind: 'notice' });
+                } else {
                     setCheckoutError({ msg: err.message || t.payFailed });
                 }
+            } finally {
+                setOpeningPayment(false);
+                setSubmitting(false);
             }
-            setSubmitting(false);
             return;
         }
 
@@ -1237,8 +1278,10 @@ export default function CartDrawer({
                         {/* 结账错误内联提示（取代 alert）。支付编号可一键复制 +
                             一键发给碗妈 —— alert 里的编号客户根本选不中。 */}
                         {checkoutError && (
-                            <div className="px-3.5 py-3 bg-red-50 border border-red-200 rounded-xl space-y-2">
-                                <p className="text-xs font-bold text-red-700 flex items-start gap-1.5">
+                            <div className={`px-3.5 py-3 border rounded-xl space-y-2 ${checkoutError.kind === 'notice'
+                                ? 'bg-amber-50 border-amber-200'
+                                : 'bg-red-50 border-red-200'}`}>
+                                <p className={`text-xs font-bold flex items-start gap-1.5 ${checkoutError.kind === 'notice' ? 'text-amber-800' : 'text-red-700'}`}>
                                     <AlertCircle size={13} className="mt-0.5 shrink-0" /> {checkoutError.msg}
                                 </p>
                                 {checkoutError.paymentId && (
@@ -1276,7 +1319,8 @@ export default function CartDrawer({
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
                                 : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'}`}>
                             <CheckCircle size={20} />
-                            {submitting ? t.submitting
+                            {openingPayment ? t.openingPayment
+                                : submitting ? t.submitting
                                 : (currentUser && deliveryTier && !isFullyCoveredByVouchers && !paymentMethod) ? t.choosePayment
                                 : (currentUser && deliveryTier && !isFullyCoveredByVouchers && paymentMethod === 'qr' && !receiptUploaded) ? t.uploadFirst
                                 : t.confirmOrder}

@@ -19,8 +19,14 @@ export default function FooterEN() {
                         </div>
                     </div>
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
-                        {/* Mobile frozen: new links are desktop-only (hidden lg:inline) */}
-                        <Link href="/en/catering" className="hidden lg:inline hover:text-[#FF6B35] transition-colors">Catering</Link>
+                        {/* 2026-09-05: the EN footer had no Blog link at all, so /en/blog
+                            was an orphan page (in the sitemap, linked from nowhere).
+                            Catering was desktop-only, and below lg there is no nav at all. */}
+                        <Link href="/en#menu" className="hover:text-[#FF6B35] transition-colors">Daily Menu</Link>
+                        <Link href="/en/meal-vouchers" className="hover:text-[#FF6B35] transition-colors">Meal Vouchers</Link>
+                        <Link href="/en/member" className="hover:text-[#FF6B35] transition-colors">Member</Link>
+                        <Link href="/en/blog" className="hover:text-[#FF6B35] transition-colors">Blog</Link>
+                        <Link href="/en/catering" className="hover:text-[#FF6B35] transition-colors">Catering</Link>
                         <Link href="/en/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
                         <Link href="/en/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
                         <Link href="/en/refund" className="hover:text-[#FF6B35] transition-colors">Refund &amp; Cancellation</Link>

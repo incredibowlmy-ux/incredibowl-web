@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
@@ -61,6 +61,19 @@ const plusJakarta = Plus_Jakarta_Sans({
 // subset woff2 files (~1.6 MB, 4.6s critical path on mobile) — system fonts
 // render the same clean sans CJK at zero download cost.
 const CJK_STACK = `"PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Hiragino Sans GB", "Source Han Sans SC"`;
+
+/**
+ * viewport-fit=cover 是 `env(safe-area-inset-*)` 生效的**前提**。没有它，那几个
+ * 变量在 iPhone 上恒为 0 —— CartDrawer 底部结账条和 /o 的固定底栏里早就写了
+ * `env(safe-area-inset-bottom)`，但一直没起作用，按钮压在 Home 指示条下面。
+ * （2026-09-05 补：项目此前从未导出过 viewport。）
+ */
+export const viewport: Viewport = {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    themeColor: "#FDFBF7",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.incredibowl.my"),

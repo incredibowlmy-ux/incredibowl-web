@@ -64,14 +64,14 @@ body {
   animation: glow-breathe 2.5s ease-in-out infinite !important;
 }
 
-@keyframes hero-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+/* 隐藏横向滚动条（admin 的日期/菜品横滑条在用）。
+   2026-09-05：这条规则原来只写在 page.tsx / en/page.tsx 的 <style jsx global>
+   里，而那两个组件只在 `/` 和 `/en` 渲染 —— /admin 引用同名 class 却拿不到规则，
+   一直是**没生效**的。挪到 globals.css 顺手修好。 */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-.animate-fade-in {
-  animation: hero-fade-in 1.5s ease-in-out forwards;
-}
+/* 2026-09-05 删掉 .animate-fade-in / @keyframes hero-fade-in：全站零引用。 */
 
 @keyframes feedback-marquee-x {
   from { transform: translateX(0); }
@@ -98,7 +98,6 @@ body {
     scroll-behavior: auto !important;
   }
   .animate-breathe,
-  .animate-fade-in,
   .animate-marquee-mobile,
   .animate-pulse,
   .animate-ping,

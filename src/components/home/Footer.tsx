@@ -19,9 +19,14 @@ export default function Footer() {
                         </div>
                     </div>
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
+                        {/* 2026-09-05：页脚原来只有 Blog + 法务三条，而 Catering 还
+                            `hidden lg:inline` —— 手机上整站唯一的导航（NavBar 的锚点）
+                            也是 lg 才有，等于餐券包 / 会员中心 / 到会在移动端完全无入口。 */}
+                        <Link href="/#menu" className="hover:text-[#FF6B35] transition-colors">每日菜单</Link>
+                        <Link href="/meal-vouchers" className="hover:text-[#FF6B35] transition-colors">餐券预付包</Link>
+                        <Link href="/member" className="hover:text-[#FF6B35] transition-colors">会员中心</Link>
                         <Link href="/blog" className="hover:text-[#FF6B35] transition-colors">Blog</Link>
-                        {/* 移动端冻结：新链接只在桌面端露出（hidden lg:inline） */}
-                        <Link href="/catering" className="hidden lg:inline hover:text-[#FF6B35] transition-colors">Catering 到会</Link>
+                        <Link href="/catering" className="hover:text-[#FF6B35] transition-colors">Catering 到会</Link>
                         <Link href="/privacy" className="hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
                         <Link href="/terms" className="hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
                         <Link href="/refund" className="hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>

@@ -54,7 +54,8 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             Orders close 06:00 · {DELIVERY_SUMMARY_EN}
                         </span>
-                        <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
+                        {/* Duplicate for the seamless loop — aria-hidden so screen readers don't read it twice */}
+                        <span aria-hidden="true" className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
                             Orders close 06:00 · {DELIVERY_SUMMARY_EN}
                         </span>
                     </div>

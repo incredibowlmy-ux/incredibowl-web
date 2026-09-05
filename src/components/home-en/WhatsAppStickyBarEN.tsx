@@ -79,7 +79,7 @@ export default function WhatsAppStickyBarEN() {
     const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(PREFILLED)}`;
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[70] px-3 pb-3 md:px-4 md:pb-4 pointer-events-none animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-[70] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-4 md:pb-[calc(1rem+env(safe-area-inset-bottom))] pointer-events-none animate-in slide-in-from-bottom-4 fade-in duration-300">
             <div className="pointer-events-auto max-w-md mx-auto bg-[#1A2D23] text-white rounded-2xl shadow-2xl shadow-black/40 backdrop-blur flex items-center gap-2.5 pl-3 pr-2 py-2 ring-1 ring-white/5">
                 {/* WhatsApp demoted to this green circle — the primary action is the
                     on-site claim. Mirrors WhatsAppStickyBar.tsx. */}

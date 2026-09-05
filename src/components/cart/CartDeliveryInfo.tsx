@@ -156,7 +156,9 @@ export default function CartDeliveryInfo({
                 {onCancel && (
                     <button type="button" onClick={onCancel}
                         className="shrink-0 text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors">
-                        {t.cancel}
+                        {/* t.cancel 的英文值是 "Remove"（本意是退掉已应用的优惠码）——
+                            用在这里，英文客户看到的是自己地址表单旁边一个「Remove」。 */}
+                        {t.cancelEdit}
                     </button>
                 )}
             </div>
