@@ -146,7 +146,16 @@ console.log('\n=== 9. 备餐单上赠品带来源标签（否则不知道这份�
     ],
     [],
   ).lunch;
-  ok('赠品与客人自费加料分行显示', mixed.addOnText.includes('（加马铃薯）') && mixed.addOnText.includes(`（${NEW_CUSTOMER_GIFT_SOURCE}）`));
+  // 2026-09-05 修断言（不是改行为）：6423a0e「加料按成品聚合」之后，括号里装的是
+  // **食材明细**（`加马铃薯 ×1（马铃薯 100g）`），不再是来源名。旧断言找的是
+  // `（加马铃薯）` 这种把来源套进括号的老格式，永远匹配不上 —— 一直红着没人看见，
+  // 因为当时没有 CI。真正要守的性质是「两个来源各自成段、数量不合并」：自费那份
+  // 100g、赠品那份 37.5g 必须分开出现，绝不能糊成一坨 137.5g。
+  ok('赠品与客人自费加料分行显示',
+    mixed.addOnText.includes('加马铃薯 ×1')
+    && mixed.addOnText.includes(`${NEW_CUSTOMER_GIFT_SOURCE} ×1`)
+    && mixed.addOnText.includes('马铃薯 100g')
+    && mixed.addOnText.includes('马铃薯 37.5g'));
   console.log(`     混合时实际内容：${mixed.addOnText}`);
 }
 

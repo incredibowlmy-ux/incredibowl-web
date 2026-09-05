@@ -12,7 +12,9 @@
     "sync:dashboard": "node scripts/sync-dashboard-prices.mts --fix && node scripts/sync-dashboard.mjs",
     "sync:menu": "node scripts/sync-menu-to-firestore.mts",
     "check:prices": "node scripts/sync-dashboard-prices.mts",
-    "sync:prices": "node scripts/sync-dashboard-prices.mts --fix"
+    "sync:prices": "node scripts/sync-dashboard-prices.mts --fix",
+    "typecheck": "tsc --noEmit",
+    "dogfood": "node scripts/run-dogfood.mjs"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
@@ -38,6 +40,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   },
   "//browserslist": "Modern target so SWC stops injecting polyfills (Array.at, Object.hasOwn, flat/flatMap, fromEntries, trimStart/End) for browsers that already support them natively. Covers Safari/iOS 15.4+ (Mar 2022) and current Chrome/Firefox/Edge — drops only browsers older than that.",
