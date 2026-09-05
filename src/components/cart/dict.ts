@@ -186,6 +186,36 @@ interface CartSuccessDict {
     voucherRenewSub: string;
     // "View my orders" entry (feedback 2A)
     viewMyOrders: string;
+    // ── FPX 回跳成功（2026-09-05 F3：首页两套硬编码 overlay 并进 CartSuccess）──
+    fpxTitle: string;
+    fpxConfirmedNote: string;
+    paidTotal: string;
+    waIntroPaid: string;
+    waItemPaid: (name: string, qty: number, date: string) => string;
+    waPaid: (amt: string) => string;
+    /** 访客 → Google 绑定（同一 uid，订单记录保留）。 */
+    linkGoogleBtn: string;
+    linkOk: string;
+    linkErrInUse: string;
+    linkErrGeneric: string;
+    voucherUpsellPre: string;
+    voucherUpsellCta: string;
+}
+
+/** FPX 回跳失败弹窗（cart/PaymentErrorModal）。三种失败由 kind 选。 */
+interface PaymentErrorDict {
+    fpxNotCompleted: string;
+    verifyFailed: string;
+    confirmFailed: string;
+    maybeCharged: string;
+    paymentIdLabel: string;
+    waIdLine: (id: string) => string;
+    copy: string;
+    copied: string;
+    waPrefix: string;
+    waSend: string;
+    notCharged: string;
+    close: string;
 }
 
 interface QRDict {
@@ -211,6 +241,7 @@ interface ItemCardDict {
 export interface CartDict {
     drawer: CartDrawerDict;
     success: CartSuccessDict;
+    paymentError: PaymentErrorDict;
     qr: QRDict;
     itemCard: ItemCardDict;
 }
@@ -377,6 +408,32 @@ export const CART_DICT: Record<Locale, CartDict> = {
             voucherRenewCta: '续购餐券 →',
             voucherRenewSub: '囤券更划算 · 20 张装单券低至 RM 17.50',
             viewMyOrders: '📋 查看我的订单',
+            fpxTitle: 'FPX 支付成功！🎉',
+            fpxConfirmedNote: '订单已确认，感谢您的订购！',
+            paidTotal: '已付总额',
+            waIntroPaid: '你好碗妈 👋 我刚在网站付款下单成功，想在 WhatsApp 接收订单确认：',
+            waItemPaid: (name, qty, date) => `🍛 ${name} ×${qty}（${date}）`,
+            waPaid: (amt) => `💰 已付 RM ${amt}`,
+            linkGoogleBtn: '🔗 绑定 Google 保存订单记录（下次一键回购）',
+            linkOk: '✅ 已绑定 Google！订单记录已保存，下次可一键回购',
+            linkErrInUse: '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理',
+            linkErrGeneric: '绑定未完成，可稍后再试（订单不受影响）',
+            voucherUpsellPre: '喜欢碗妈的菜？',
+            voucherUpsellCta: '餐券包更划算 →',
+        },
+        paymentError: {
+            fpxNotCompleted: 'FPX 支付未能完成，请重试或选择其他方式。',
+            verifyFailed: '支付验证失败，请联系碗妈处理。',
+            confirmFailed: '订单确认失败，请联系碗妈处理。',
+            maybeCharged: '钱可能已经扣了。把下面的支付编号发给碗妈，我们马上帮你查。',
+            paymentIdLabel: '支付编号',
+            waIdLine: (id) => `支付编号：${id}`,
+            copy: '复制',
+            copied: '已复制',
+            waPrefix: '你好碗妈 🙏 我刚下单付款出了问题：',
+            waSend: '📲 把这条发给碗妈处理',
+            notCharged: '没有扣款。可以重新下单，或换 DuitNow QR 付款。',
+            close: '知道了',
         },
         qr: {
             merchantLabel: '✅ 商户：',
@@ -556,6 +613,32 @@ export const CART_DICT: Record<Locale, CartDict> = {
             voucherRenewCta: 'Top up vouchers →',
             voucherRenewSub: 'Stock up & save · 20-pack from RM 17.50 a voucher',
             viewMyOrders: '📋 View my orders',
+            fpxTitle: 'FPX payment successful! 🎉',
+            fpxConfirmedNote: 'Order confirmed, thank you!',
+            paidTotal: 'Total paid',
+            waIntroPaid: "Hi BowlMama 👋 I've just paid for my order and would like a WhatsApp confirmation:",
+            waItemPaid: (name, qty, date) => `🍛 ${name} ×${qty} (${date})`,
+            waPaid: (amt) => `💰 Paid RM ${amt}`,
+            linkGoogleBtn: '🔗 Link Google to save your order history',
+            linkOk: '✅ Google account linked! Your order history is saved for one-tap reorders.',
+            linkErrInUse: 'This Google account already has a member record — WhatsApp BowlMama to merge the two.',
+            linkErrGeneric: 'Linking did not complete — you can retry later (your order is unaffected).',
+            voucherUpsellPre: "Love BowlMama's food? ",
+            voucherUpsellCta: 'Voucher bundles save you more →',
+        },
+        paymentError: {
+            fpxNotCompleted: 'FPX payment did not complete. Please retry or use another method.',
+            verifyFailed: 'Payment verification failed — please contact BowlMama.',
+            confirmFailed: 'Order confirmation failed — please contact BowlMama.',
+            maybeCharged: "You may already have been charged. Send the payment ID below to BowlMama and we'll check right away.",
+            paymentIdLabel: 'Payment ID',
+            waIdLine: (id) => `Payment ID: ${id}`,
+            copy: 'Copy',
+            copied: 'Copied',
+            waPrefix: 'Hi BowlMama 🙏 I hit a problem paying for my order:',
+            waSend: '📲 Send this to BowlMama',
+            notCharged: 'You were not charged. Feel free to order again, or pay with DuitNow QR instead.',
+            close: 'Got it',
         },
         qr: {
             merchantLabel: '✅ Merchant: ',

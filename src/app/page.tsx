@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
 const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
+// FPX 回跳的成功 / 失败弹窗（2026-09-05 F3：以前两个首页各写一套硬编码 overlay）
+const CartSuccess = dynamic(() => import('@/components/cart/CartSuccess'), { ssr: false });
+const PaymentErrorModal = dynamic(() => import('@/components/cart/PaymentErrorModal'), { ssr: false });
 const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), { ssr: false });
 const SubscribeModal = dynamic(() => import('@/components/home/SubscribeModal'), { ssr: false });
 const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
@@ -29,7 +31,7 @@ import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import { useAuth } from '@/context/AuthContext';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import type { PaymentErrorInfo } from '@/components/cart/PaymentErrorModal';
 
 export default function V4BentoLayout() {
     const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -54,10 +56,8 @@ export default function V4BentoLayout() {
     // 吃到一个顶着「www.incredibowl.my 显示：」的系统灰框，还要他**手抄**里面
     // 那串支付编号 —— 系统弹窗里的文字选不中、复制不了。现在给可一键复制的
     // 编号 + 一键把编号发给碗妈的按钮。
-    const [fpxError, setFpxError] = useState<{ msg: string; paymentId?: string } | null>(null);
-    const [copiedPid, setCopiedPid] = useState(false);
+    const [fpxError, setFpxError] = useState<PaymentErrorInfo | null>(null);
     // 访客绑定 Google 的结果提示（原来也是 alert）
-    const [linkNotice, setLinkNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
     // Live per-dish stock for limited dishes (e.g. petai) → menu「仅剩 X / 售罄」.
     useEffect(() => {
@@ -144,7 +144,7 @@ export default function V4BentoLayout() {
             url.searchParams.delete('fpx_error');
             window.history.replaceState({}, '', url.toString());
             cancelPending();
-            setFpxError({ msg: 'FPX 支付未能完成，请重试或选择其他方式。' });
+            setFpxError({ kind: 'fpxNotCompleted' });
             return;
         }
 
@@ -193,7 +193,7 @@ export default function V4BentoLayout() {
                     .then(r => r.json())
                     .then(async (verifyData) => {
                         if (!verifyData.verified) {
-                            setFpxError({ msg: '支付验证失败，请联系碗妈处理。', paymentId: pid });
+                            setFpxError({ kind: 'verifyFailed', paymentId: pid });
                             return;
                         }
                         const payData = { razorpayPaymentId: pid, razorpayOrderId: oid, razorpaySignature: sig };
@@ -234,7 +234,7 @@ export default function V4BentoLayout() {
                     })
                     .catch((err) => {
                         console.error('FPX order confirmation failed:', err);
-                        setFpxError({ msg: '订单确认失败，请联系碗妈处理。', paymentId: pid });
+                        setFpxError({ kind: 'confirmFailed', paymentId: pid });
                     });
             } catch (e) {
                 console.error('FPX pending order parse error:', e);
@@ -428,142 +428,18 @@ export default function V4BentoLayout() {
                     }}
                 />
             </ErrorBoundary>
-            {/* FPX redirect success overlay */}
+            {/* FPX 回跳成功 → 与 QR 下单同一个成功页（CartSuccess，fpx 模式） */}
             {fpxSuccess && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxSuccess(null)}>
-                    <div className="bg-white rounded-3xl p-8 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
-                        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle size={44} className="text-green-500" />
-                        </div>
-                        <h3 className="text-2xl font-black text-[#1A2D23] mb-2">FPX 支付成功！🎉</h3>
-                        <p className="text-sm text-gray-500 mb-1">
-                            订单编号：<span className="font-bold text-[#FF6B35]">#{fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}</span>
-                        </p>
-                        {fpxSuccess.items.length > 0 && (
-                            <div className="mt-3 bg-gray-50 rounded-xl p-3 text-left text-sm text-gray-600 space-y-1">
-                                {fpxSuccess.items.map((it, i) => (
-                                    <div key={i} className="flex justify-between gap-3">
-                                        <span>{it.name} ×{it.qty}{it.addOns?.length ? ` + ${it.addOns.join(' + ')}` : ''}</span>
-                                        <span className="text-gray-400 whitespace-nowrap">{it.date}</span>
-                                    </div>
-                                ))}
-                                {fpxSuccess.total != null && (
-                                    <div className="flex justify-between border-t border-gray-200 pt-1.5 mt-1.5 font-bold text-[#1A2D23]">
-                                        <span>已付总额</span>
-                                        <span>RM {fpxSuccess.total.toFixed(2)}</span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        <p className="text-xs text-gray-400 mt-3">订单已确认，感谢您的订购！</p>
-                        {/* WhatsApp confirmation deep link — puts a copy of the
-                            order in the customer's own chat (their receipt) and
-                            opens the private-domain channel in one tap. */}
-                        <a
-                            href={`https://wa.me/60165119118?text=${encodeURIComponent([
-                                '你好碗妈 👋 我刚在网站付款下单成功，想在 WhatsApp 接收订单确认：',
-                                `📌 订单号：#${fpxSuccess.id.startsWith('GRP') ? fpxSuccess.id : fpxSuccess.id.slice(-6).toUpperCase()}`,
-                                ...fpxSuccess.items.map(it => `🍛 ${it.name} ×${it.qty}${it.addOns?.length ? ` + ${it.addOns.join(' + ')}` : ''}（${it.date}）`),
-                                ...(fpxSuccess.total != null ? [`💰 已付 RM ${fpxSuccess.total.toFixed(2)}`] : []),
-                                ...(fpxSuccess.trackInfo || []).map(t =>
-                                    `📍 跟踪订单${(fpxSuccess.trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}：https://www.incredibowl.my/track/${t.token}`),
-                            ].join('\n'))}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-3 block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
-                        >
-                            📲 WhatsApp 接收订单确认
-                        </a>
-                        {(fpxSuccess.trackInfo || []).map(t => (
-                            <a
-                                key={t.token}
-                                href={`/track/${t.token}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-2 block w-full py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-medium hover:bg-[#FF6B35]/5 transition-colors"
-                            >
-                                📍 跟踪订单{(fpxSuccess.trackInfo || []).length > 1 ? `（${t.date} ${t.time?.includes('Lunch') ? '午餐' : '晚餐'}）` : ''}
-                            </a>
-                        ))}
-                        {/* Guest → Google upgrade: link in place, SAME uid, order
-                            history preserved. Only shown to anonymous guests. */}
-                        {currentUser?.isAnonymous && (
-                            <button
-                                onClick={async () => {
-                                    try {
-                                        const { linkGuestToGoogle } = await import('@/lib/auth');
-                                        await linkGuestToGoogle();
-                                        setLinkNotice({ kind: 'ok', text: '✅ 已绑定 Google！订单记录已保存，下次可一键回购' });
-                                    } catch (e: any) {
-                                        setLinkNotice({ kind: 'err', text: e?.code === 'auth/credential-already-in-use'
-                                            ? '这个 Google 账号已有会员记录，想合并两边订单请 WhatsApp 碗妈处理'
-                                            : '绑定未完成，可稍后再试（订单不受影响）' });
-                                    }
-                                }}
-                                className="mt-3 w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors"
-                            >
-                                🔗 绑定 Google 保存订单记录（下次一键回购）
-                            </button>
-                        )}
-                        {linkNotice && (
-                            <p className={`mt-2 px-3 py-2 rounded-lg text-[11px] font-bold leading-relaxed text-left ${linkNotice.kind === 'ok'
-                                ? 'bg-green-50 border border-green-200 text-green-800'
-                                : 'bg-red-50 border border-red-200 text-red-700'}`}>
-                                {linkNotice.text}
-                            </p>
-                        )}
-                        {/* Meal voucher upsell — subtle, below the confirmation info */}
-                        <Link
-                            href="/meal-vouchers"
-                            className="mt-4 block bg-[#FFF3E0]/60 border border-[#FFD6B0]/60 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A2D23]/70 hover:border-[#FF6B35]/50 hover:text-[#1A2D23] transition-colors"
-                        >
-                            喜欢碗妈的菜？<span className="text-[#FF6B35]">餐券包更划算 →</span>
-                        </Link>
-                        <button onClick={() => setFpxSuccess(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">好的</button>
-                    </div>
-                </div>
+                <CartSuccess
+                    locale="zh"
+                    fpx={{ items: fpxSuccess.items, total: fpxSuccess.total }}
+                    orderSuccess={{ id: fpxSuccess.id, items: [], total: fpxSuccess.total ?? 0, trackInfo: fpxSuccess.trackInfo }}
+                    currentUser={currentUser}
+                    onDone={() => setFpxSuccess(null)}
+                />
             )}
-
-            {/* FPX 失败弹窗 —— 与上面的成功弹窗对称。取代三条 alert：
-                客户刚从银行页回来最慌的那一秒，不该吃一个顶着域名前缀、
-                文字还选不中的系统灰框。支付编号可一键复制 + 一键发给碗妈。 */}
             {fpxError && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setFpxError(null)}>
-                    <div className="bg-white rounded-3xl p-7 text-center max-w-sm mx-4 shadow-2xl animate-in zoom-in-95 duration-300" onClick={e => e.stopPropagation()}>
-                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <AlertCircle size={36} className="text-red-500" />
-                        </div>
-                        <h3 className="text-xl font-black text-[#1A2D23] mb-2">{fpxError.msg}</h3>
-                        {fpxError.paymentId ? (
-                            <>
-                                <p className="text-xs text-gray-500 leading-relaxed mb-3">
-                                    钱可能已经扣了。把下面的支付编号发给碗妈，我们马上帮你查。
-                                </p>
-                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
-                                    <span className="text-[10px] font-medium text-gray-400 shrink-0">支付编号</span>
-                                    <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23] text-left">{fpxError.paymentId}</code>
-                                    <button
-                                        type="button"
-                                        onClick={() => { navigator.clipboard?.writeText(fpxError.paymentId!).then(() => { setCopiedPid(true); setTimeout(() => setCopiedPid(false), 2000); }).catch(() => {}); }}
-                                        className="shrink-0 px-2.5 py-1 rounded-lg bg-[#1A2D23] text-white text-[10px] font-bold"
-                                    >
-                                        {copiedPid ? '已复制' : '复制'}
-                                    </button>
-                                </div>
-                                <a
-                                    href={`https://wa.me/60103370197?text=${encodeURIComponent(`你好碗妈 🙏 我刚下单付款出了问题：\n${fpxError.msg}\n支付编号：${fpxError.paymentId}`)}`}
-                                    target="_blank" rel="noopener noreferrer"
-                                    className="block w-full py-2.5 bg-[#25D366] text-white rounded-xl text-xs font-black hover:bg-[#1EBE57] transition-colors"
-                                >
-                                    📲 把这条发给碗妈处理
-                                </a>
-                            </>
-                        ) : (
-                            <p className="text-xs text-gray-500 leading-relaxed">没有扣款。可以重新下单，或换 DuitNow QR 付款。</p>
-                        )}
-                        <button onClick={() => setFpxError(null)} className="mt-4 px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">知道了</button>
-                    </div>
-                </div>
+                <PaymentErrorModal locale="zh" error={fpxError} onClose={() => setFpxError(null)} />
             )}
 
             {selectedDish && (

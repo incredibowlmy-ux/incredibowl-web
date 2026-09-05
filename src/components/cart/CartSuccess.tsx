@@ -9,7 +9,17 @@ interface CartSuccessProps {
     // Snapshot taken at submit time — the live cart is cleared the moment
     // the order succeeds, so this screen must not read from it.
     orderSuccess: { id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] };
-    userProfile: any;
+    userProfile?: any;
+    /**
+     * FPX 回跳成功（2026-09-05 F3）：银行跳回来时购物车早已清空，只有下单前存在
+     * localStorage 的快照 summary（菜名 / 份数 / 日期 / 加料），没有 cart item。
+     * 传了它就按「已付款、已确认」渲染：标题换成 FPX 成功、不再显示「碗妈正在核对
+     * 截图」、明细走这份 summary。total 为 null = 快照丢了（换浏览器付的），只报成功不报金额。
+     */
+    fpx?: {
+        items: { name: string; nameEn?: string; qty: number; date: string; addOns?: string[]; addOnsEn?: string[] }[];
+        total: number | null;
+    };
     onDone: () => void;
     locale?: Locale;
     // Firebase auth user (may be anonymous / null for guests). Used to
@@ -32,8 +42,25 @@ const WHATSAPP_NUMBER = '60165119118';
 // CAPI event IDs returned by /api/submit-order and /api/confirm-order
 // — needed to deduplicate browser events against the server-side
 // Conversions API events fired from those routes.
-export default function CartSuccess({ orderSuccess, userProfile, onDone, locale = 'zh', currentUser, voucherUsed }: CartSuccessProps) {
+export default function CartSuccess({ orderSuccess, userProfile, onDone, locale = 'zh', currentUser, voucherUsed, fpx }: CartSuccessProps) {
     const t = CART_DICT[locale].success;
+    const voucherHrefUpsell = locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers';
+    // 访客 → Google 绑定的结果提示（原来在首页的 FPX overlay 里，现在 QR / FPX 都有）
+    const [linkNotice, setLinkNotice] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+    const linkGoogle = async () => {
+        try {
+            const { linkGuestToGoogle } = await import('@/lib/auth');
+            await linkGuestToGoogle();
+            setLinkNotice({ kind: 'ok', text: t.linkOk });
+        } catch (e: any) {
+            setLinkNotice({ kind: 'err', text: e?.code === 'auth/credential-already-in-use' ? t.linkErrInUse : t.linkErrGeneric });
+        }
+    };
+    const fpxItemName = (it: { name: string; nameEn?: string; addOns?: string[]; addOnsEn?: string[] }) => {
+        const base = locale === 'en' ? (it.nameEn || it.name) : it.name;
+        const addOns = locale === 'en' ? (it.addOnsEn || it.addOns) : it.addOns;
+        return addOns?.length ? `${base} + ${addOns.join(' + ')}` : base;
+    };
     const { id, items, total, trackInfo } = orderSuccess;
 
     // Logged-in, non-anonymous customer → they own an account with orders +
@@ -90,14 +117,22 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
     const trackLines = (trackInfo || []).map(tr =>
         t.waTrack(multiTrack, tr.date, t.mealWord(tr.time), `https://www.incredibowl.my/track/${tr.token}${trackQuery}`));
 
-    const waText = [
-        t.waIntro,
-        t.waOrderNo(isGroup, displayId),
-        ...items.map((item: any) =>
-            t.waItem(dishName(item), (item.dishQty || 1) * (item.quantity || 1), item.selectedDate || t.dateTbdWa, t.mealWord(item.selectedTime))),
-        `💰 RM ${total.toFixed(2)}`,
-        ...trackLines,
-    ].join('\n');
+    const waText = (fpx
+        ? [
+            t.waIntroPaid,
+            t.waOrderNo(isGroup, displayId),
+            ...fpx.items.map(it => t.waItemPaid(fpxItemName(it), it.qty, it.date)),
+            ...(fpx.total != null ? [t.waPaid(fpx.total.toFixed(2))] : []),
+            ...trackLines,
+        ]
+        : [
+            t.waIntro,
+            t.waOrderNo(isGroup, displayId),
+            ...items.map((item: any) =>
+                t.waItem(dishName(item), (item.dishQty || 1) * (item.quantity || 1), item.selectedDate || t.dateTbdWa, t.mealWord(item.selectedTime))),
+            `💰 RM ${total.toFixed(2)}`,
+            ...trackLines,
+        ]).join('\n');
     const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waText)}`;
 
     return (
@@ -108,7 +143,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                     <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
                         <CheckCircle size={48} className="text-green-500" />
                     </div>
-                    <h2 className="text-3xl font-black text-[#1A2D23]">{t.title}</h2>
+                    <h2 className="text-3xl font-black text-[#1A2D23]">{fpx ? t.fpxTitle : t.title}</h2>
                     <p className="text-gray-500 flex flex-col items-center gap-1">
                         <span>
                             {t.orderIdLabel(isGroup)}
@@ -120,18 +155,37 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                             </span>
                         )}
                     </p>
-                    <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
-                        <p className="text-sm">
-                            <span className="font-bold">{t.deliveryPlan}</span>
-                            <span className="text-[#FF6B35] font-black">
-                                {isGroup
-                                    ? t.multiDay
-                                    : `${items[0]?.selectedDate || t.dateTbd} ${items[0]?.selectedTime?.includes('Lunch') ? t.lunchEmoji : t.dinnerEmoji}`}
-                            </span>
-                        </p>
-                        <p className="text-sm"><span className="font-bold">{t.addressLabel}</span>{userProfile?.address}</p>
-                        <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
-                    </div>
+                    {fpx ? (
+                        (fpx.items.length > 0 || fpx.total != null) && (
+                            <div className="bg-white rounded-2xl p-4 border border-[#E3EADA] text-left text-sm text-gray-600 space-y-1">
+                                {fpx.items.map((it, i) => (
+                                    <div key={i} className="flex justify-between gap-3">
+                                        <span>{fpxItemName(it)} ×{it.qty}</span>
+                                        <span className="text-gray-400 whitespace-nowrap">{it.date}</span>
+                                    </div>
+                                ))}
+                                {fpx.total != null && (
+                                    <div className="flex justify-between border-t border-gray-200 pt-1.5 mt-1.5 font-bold text-[#1A2D23]">
+                                        <span>{t.paidTotal}</span>
+                                        <span>RM {fpx.total.toFixed(2)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    ) : (
+                        <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
+                            <p className="text-sm">
+                                <span className="font-bold">{t.deliveryPlan}</span>
+                                <span className="text-[#FF6B35] font-black">
+                                    {isGroup
+                                        ? t.multiDay
+                                        : `${items[0]?.selectedDate || t.dateTbd} ${items[0]?.selectedTime?.includes('Lunch') ? t.lunchEmoji : t.dinnerEmoji}`}
+                                </span>
+                            </p>
+                            <p className="text-sm"><span className="font-bold">{t.addressLabel}</span>{userProfile?.address}</p>
+                            <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
+                        </div>
+                    )}
 
                     {/* Voucher balance recap — the post-order moment is the prime
                         "should I renew?" trigger for voucher customers. */}
@@ -165,8 +219,14 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                         </div>
                     )}
 
-                    <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.verifying}</p>
-                    <p className="text-xs text-gray-400">{t.verifiedNote}</p>
+                    {fpx ? (
+                        <p className="text-xs text-gray-400">{t.fpxConfirmedNote}</p>
+                    ) : (
+                        <>
+                            <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.verifying}</p>
+                            <p className="text-xs text-gray-400">{t.verifiedNote}</p>
+                        </>
+                    )}
 
                     {/* WhatsApp confirmation deep link — puts a copy of the order
                         in the customer's own chat (their receipt) and opens the
@@ -203,6 +263,33 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                             className="block w-full py-3 bg-white border-2 border-[#E3EADA] text-[#1A2D23] rounded-2xl text-sm font-black hover:border-[#FF6B35]/40 hover:text-[#FF6B35] transition-colors"
                         >
                             {t.viewMyOrders}
+                        </a>
+                    )}
+                    {/* Guest → Google upgrade: link in place, SAME uid, order history
+                        preserved. Only shown to anonymous guests. */}
+                    {currentUser?.isAnonymous && (
+                        <button
+                            type="button"
+                            onClick={linkGoogle}
+                            className="block w-full py-3 bg-[#1A2D23] text-white rounded-2xl text-sm font-bold hover:bg-[#2A3D33] transition-colors"
+                        >
+                            {t.linkGoogleBtn}
+                        </button>
+                    )}
+                    {linkNotice && (
+                        <p className={`px-3 py-2 rounded-lg text-[11px] font-bold leading-relaxed text-left ${linkNotice.kind === 'ok'
+                            ? 'bg-green-50 border border-green-200 text-green-800'
+                            : 'bg-red-50 border border-red-200 text-red-700'}`}>
+                            {linkNotice.text}
+                        </p>
+                    )}
+                    {/* 餐券轻量 upsell：只在 FPX（已付款）这条路上，和以前一样。 */}
+                    {fpx && !showVoucherCard && (
+                        <a
+                            href={voucherHrefUpsell}
+                            className="block bg-[#FFF3E0]/60 border border-[#FFD6B0]/60 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A2D23]/70 hover:border-[#FF6B35]/50 hover:text-[#1A2D23] transition-colors"
+                        >
+                            {t.voucherUpsellPre}<span className="text-[#FF6B35]">{t.voucherUpsellCta}</span>
                         </a>
                     )}
                     <button
