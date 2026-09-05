@@ -354,7 +354,7 @@ export default function AddOnModal({
                         Tab 和读屏走 DOM 顺序，会先撞进十来个加料才到必选项。 */}
                     <div className="flex flex-col">
                     {/* ─── Delivery Date and Time ─── */}
-                    <div ref={scheduleRef} className={`px-5 md:px-6 mt-4 rounded-2xl transition-shadow duration-300 ${slotHighlight ? 'ring-2 ring-[#FF6B35] ring-offset-2 ring-offset-[#FDF8F0]' : ''}`}>
+                    <div ref={scheduleRef} className={`px-5 md:px-6 mt-4 rounded-2xl transition-shadow duration-300 ${slotHighlight ? 'ring-2 ring-primary ring-offset-2 ring-offset-[#FDF8F0]' : ''}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar size={18} className="text-[#8B7355]" />
                             <h3 className="text-sm font-extrabold text-[#3B2A1A]">{t.scheduleTitle}</h3>
@@ -463,37 +463,37 @@ export default function AddOnModal({
                             const isSpecialCombo = section.items.some(item => item.category === 'combo');
 
                             return (
-                                <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-[#FF6B35] shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
+                                <div key={section.id} className={`bg-white rounded-2xl border ${isSpecialCombo ? 'border-primary shadow-sm' : 'border-[#E8DFD0]'} overflow-hidden transition-all duration-300`}>
                                     {/* Section Header */}
                                     <button
                                         onClick={() => toggleSection(section.id)}
                                         className={`w-full flex items-center justify-between px-4 py-3.5 hover:bg-[#FDF8F0]/50 transition-colors ${isSpecialCombo ? 'bg-[#FFF3E0]' : ''}`}
                                     >
                                         <div className="text-left">
-                                            <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#3B2A1A]'}`}>
+                                            <h3 className={`text-sm font-extrabold ${isSpecialCombo ? 'text-primary' : 'text-[#3B2A1A]'}`}>
                                                 {isEn ? (section.titleDisplayEn || section.titleEn) : section.title}
                                             </h3>
-                                            <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-[#FF6B35]/80' : 'text-[#8B7355]'}`}>
+                                            <p className={`text-[11px] lg:text-[12px] font-medium ${isSpecialCombo ? 'text-primary/80' : 'text-[#8B7355]'}`}>
                                                 {isEn ? section.title : section.titleEn}
                                             </p>
                                             {/* 收起时不显示已选数量的话，客人不知道这一区里还有东西。
                                                 selectedCount 一直算着，只是从来没渲染过。 */}
                                             {!isExpanded && selectedCount > 0 && (
-                                                <span className="inline-block mt-1 text-[11px] font-bold text-white bg-[#FF6B35] rounded-full px-2 py-0.5">
+                                                <span className="inline-block mt-1 text-[11px] font-bold text-white bg-primary rounded-full px-2 py-0.5">
                                                     {t.selectedCount(selectedCount)}
                                                 </span>
                                             )}
                                             {((section as any).extraDesc || (section as any).extraDescEn) && (
-                                                <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-[#FF6B35]/70 lg:text-[#FF6B35]/85 whitespace-pre-wrap">
+                                                <p className="max-w-[85%] text-[10px] lg:text-[11px] mt-1.5 leading-relaxed text-primary/70 lg:text-primary/85 whitespace-pre-wrap">
                                                     {isEn ? ((section as any).extraDescEn || (section as any).extraDesc) : (section as any).extraDesc}
                                                 </p>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isExpanded ? (
-                                                <ChevronUp size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                                <ChevronUp size={18} className={isSpecialCombo ? 'text-primary' : 'text-[#8B7355]'} />
                                             ) : (
-                                                <ChevronDown size={18} className={isSpecialCombo ? 'text-[#FF6B35]' : 'text-[#8B7355]'} />
+                                                <ChevronDown size={18} className={isSpecialCombo ? 'text-primary' : 'text-[#8B7355]'} />
                                             )}
                                         </div>
                                     </button>
@@ -502,7 +502,7 @@ export default function AddOnModal({
                                     <div
                                         className={`transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}
                                     >
-                                        <div className={`border-t ${isSpecialCombo ? 'border-[#FF6B35]/20' : 'border-[#E8DFD0]/60'}`}>
+                                        <div className={`border-t ${isSpecialCombo ? 'border-primary/20' : 'border-[#E8DFD0]/60'}`}>
                                             {section.items.map((item, itemIdx) => {
                                                 const qty = quantities[item.id] || 0;
                                                 const sectionCount = getSectionSelectedCount(section);
@@ -511,7 +511,7 @@ export default function AddOnModal({
                                                 return (
                                                     <div
                                                         key={item.id}
-                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (isSpecialCombo ? 'border-b border-[#FF6B35]/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
+                                                        className={`flex items-center gap-3 px-4 py-3 ${itemIdx < section.items.length - 1 ? (isSpecialCombo ? 'border-b border-primary/10' : 'border-b border-[#E8DFD0]/40') : ''} transition-colors ${mutexBlocked ? 'opacity-35' : 'hover:bg-[#FDF8F0]/30'}`}
                                                     >
                                                         {/* Thumbnail */}
                                                         {item.image && (

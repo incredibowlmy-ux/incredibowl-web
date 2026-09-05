@@ -142,16 +142,16 @@ export default function CartDeliveryInfo({
         ? (isExisting && result.distanceKm <= FREE_DELIVERY_RADIUS_KM ? 'free' : tierFromDistance(result.distanceKm))
         : null;
 
-    const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors';
+    const inputCls = 'w-full px-3.5 py-2.5 bg-white border border-line rounded-xl text-sm outline-none focus:border-primary transition-colors';
 
     return (
-        <div className="mx-5 mt-4 rounded-2xl border border-[#FF6B35]/25 bg-white p-4 space-y-3">
+        <div className="mx-5 mt-4 rounded-2xl border border-primary/25 bg-white p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
                 <div>
-                    <p className="text-sm font-bold text-[#1A2D23] flex items-center gap-1.5">
-                        <MapPin size={14} className="text-[#FF6B35]" /> {t.deliveryInfoTitle}
+                    <p className="text-sm font-bold text-ink flex items-center gap-1.5">
+                        <MapPin size={14} className="text-primary" /> {t.deliveryInfoTitle}
                     </p>
-                    <p className="text-[11px] text-[#1A2D23]/50 font-medium mt-0.5">{t.deliveryInfoSub}</p>
+                    <p className="text-[11px] text-ink/50 font-medium mt-0.5">{t.deliveryInfoSub}</p>
                 </div>
                 {onCancel && (
                     <button type="button" onClick={onCancel}
@@ -184,7 +184,7 @@ export default function CartDeliveryInfo({
                     onChange={e => { setAddress(e.target.value); setResult(null); setNotice(''); setError(''); }}
                     placeholder={t.addressPlaceholder} className={`${inputCls} mt-1 resize-none`} />
                 <button type="button" onClick={useMyLocation} disabled={locating || busy !== ''}
-                    className="mt-2 w-full py-2.5 rounded-xl border border-[#E3EADA] bg-[#FDFBF7] text-[#1A2D23] text-xs font-bold flex items-center justify-center gap-1.5 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    className="mt-2 w-full py-2.5 rounded-xl border border-line bg-paper text-ink text-xs font-bold flex items-center justify-center gap-1.5 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                     {locating ? <><Loader2 size={13} className="animate-spin" /> {t.locating}</> : t.useMyLocation}
                 </button>
                 {!currentUser.isAnonymous && (
@@ -217,7 +217,7 @@ export default function CartDeliveryInfo({
                 disabled={busy !== '' || locating || !phone.trim() || !address.trim()}
                 className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${busy !== '' || locating || !phone.trim() || !address.trim()
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
+                    : 'bg-ink text-white hover:bg-[#2A3D33]'}`}>
                 {busy === 'geocoding' ? <><Loader2 size={14} className="animate-spin" /> {t.verifyingAddress}</>
                     : busy === 'saving' ? <><Loader2 size={14} className="animate-spin" /> {t.savingProfile}</>
                     : <><Save size={14} /> {t.verifyAndSave}</>}

@@ -88,7 +88,7 @@ export default function CutoffBanner({ locale = 'zh' }: { locale?: Locale }) {
     if (!info) {
         return (
             <div className={WRAPPER_CLASS}>
-                <div className="h-[38px] md:h-[40px] w-72 rounded-full bg-[#FFF3E0] border border-[#FF6B35]/20" />
+                <div className="h-[38px] md:h-[40px] w-72 rounded-full bg-[#FFF3E0] border border-primary/20" />
             </div>
         );
     }
@@ -101,15 +101,15 @@ export default function CutoffBanner({ locale = 'zh' }: { locale?: Locale }) {
     const tier = totalMinLeft >= 240 ? 'calm' : totalMinLeft >= 60 ? 'soon' : 'urgent';
 
     const tierClasses = {
-        calm: 'bg-[#FFF3E0] border-[#FF6B35]/25 text-[#1A2D23]/90',
-        soon: 'bg-[#FFE9C2] border-[#FF6B35]/40 text-[#C84518]',
-        urgent: 'bg-[#FFE4D6] border-[#FF6B35]/60 text-[#C84518]',
+        calm: 'bg-[#FFF3E0] border-primary/25 text-ink/90',
+        soon: 'bg-[#FFE9C2] border-primary/40 text-[#C84518]',
+        urgent: 'bg-[#FFE4D6] border-primary/60 text-[#C84518]',
     }[tier];
 
     const dotClasses = {
         calm: 'bg-[#34A853]',
         soon: 'bg-[#FF9B50]',
-        urgent: 'bg-[#FF6B35] animate-pulse',
+        urgent: 'bg-primary animate-pulse',
     }[tier];
 
     return (

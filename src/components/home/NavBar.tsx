@@ -25,26 +25,26 @@ interface NavBarProps {
 // 删掉 en 那一组即可。
 const LAYOUT = {
     zh: {
-        topBar: (scrolled: boolean) => `fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center transition-transform duration-300 ease-out ${scrolled ? '-translate-y-full' : 'translate-y-0'}`,
+        topBar: (scrolled: boolean) => `fixed top-0 w-full z-[60] bg-primary text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center transition-transform duration-300 ease-out ${scrolled ? '-translate-y-full' : 'translate-y-0'}`,
         keyframes: 'marquee-horizontal',
         marqueeClass: 'animate-marquee-mobile',
-        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[top,background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out ${scrolled ? 'top-0 bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-2' : 'top-[28px] sm:top-[30px] bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-4'}`,
-        logo: 'w-14 h-14 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300',
+        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[top,background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out ${scrolled ? 'top-0 bg-paper/95 backdrop-blur-md shadow-md border-b border-line/60 py-2' : 'top-[28px] sm:top-[30px] bg-gradient-to-b from-paper/80 to-transparent py-4'}`,
+        logo: 'w-14 h-14 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-line hover:scale-105 transition-transform duration-300',
         mobileAvatarLink: 'md:hidden flex items-center justify-center min-w-[44px] min-h-[44px]',
-        mobileLoginBtn: 'md:hidden p-3 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors',
-        cartFilled: 'relative inline-flex items-center gap-2 p-3 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
-        cartEmpty: 'relative p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out',
+        mobileLoginBtn: 'md:hidden p-3 bg-line/60 rounded-full border border-line hover:bg-line transition-colors',
+        cartFilled: 'relative inline-flex items-center gap-2 p-3 md:pl-3 md:pr-4 md:py-3 bg-ink hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
+        cartEmpty: 'relative p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-ink/20 transition-[border-color,box-shadow] duration-150 ease-out',
     },
     en: {
-        topBar: () => 'fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center',
+        topBar: () => 'fixed top-0 w-full z-[60] bg-primary text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center',
         keyframes: 'marquee-horizontal-en',
         marqueeClass: 'animate-marquee-mobile-en',
-        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`,
-        logo: 'w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300',
+        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-paper/95 backdrop-blur-md shadow-md border-b border-line/60 py-3' : 'bg-gradient-to-b from-paper/80 to-transparent py-6'}`,
+        logo: 'w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-line hover:scale-105 transition-transform duration-300',
         mobileAvatarLink: 'md:hidden',
-        mobileLoginBtn: 'md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors',
-        cartFilled: 'relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
-        cartEmpty: 'relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out',
+        mobileLoginBtn: 'md:hidden p-2.5 bg-line/60 rounded-full border border-line hover:bg-line transition-colors',
+        cartFilled: 'relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-ink hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
+        cartEmpty: 'relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-ink/20 transition-[border-color,box-shadow] duration-150 ease-out',
     },
 } as const;
 
@@ -115,20 +115,20 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     </div>
                     <div>
                         {/* Brand name — semantically a link/label, not the page H1 (page H1 lives in Hero) */}
-                        <Link href={t.homeHref} aria-label={t.homeAriaLabel} className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">{t.brandName}</Link>
+                        <Link href={t.homeHref} aria-label={t.homeAriaLabel} className="block text-2xl md:text-[28px] font-black tracking-tight text-ink hover:text-primary transition-colors">{t.brandName}</Link>
                         <div className="flex items-center gap-2">
-                            <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
-                            <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
+                            <span className="h-[1px] w-3 bg-primary"></span>
+                            <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-primary">Incredibowl.my</p>
                         </div>
                     </div>
                 </div>
 
                 {/* Desktop-only quick nav anchors (hidden on mobile/tablet) */}
-                <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-[#1A2D23]/75">
-                    <a href="#menu" className="hover:text-[#FF6B35] transition-colors">{t.dailyMenu}</a>
-                    <Link href={t.vouchersHref} className="hover:text-[#FF6B35] transition-colors">{t.mealVouchers}</Link>
-                    <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">{t.reviews}</a>
-                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">{t.contact}</a>
+                <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-ink/75">
+                    <a href="#menu" className="hover:text-primary transition-colors">{t.dailyMenu}</a>
+                    <Link href={t.vouchersHref} className="hover:text-primary transition-colors">{t.mealVouchers}</Link>
+                    <a href="#feedback" className="hover:text-primary transition-colors">{t.reviews}</a>
+                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{t.contact}</a>
                 </nav>
 
                 <div className="flex items-center gap-2 md:gap-3">
@@ -136,7 +136,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         <>
                             {/* Mobile: avatar only — brand-orange letter on transparent ring */}
                             <a href={t.memberHref} aria-label={t.memberAria} className={L.mobileAvatarLink}>
-                                <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
+                                <div className="relative w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
                                     {(currentUser.displayName || 'U')[0].toUpperCase()}
                                 </div>
                             </a>
@@ -145,25 +145,25 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                                 href={t.memberHref}
                                 title={t.memberTitle}
                                 aria-label={t.memberAria}
-                                className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"
+                                className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-ink/10 hover:bg-paper hover:border-ink/25 transition-[background-color,border-color] duration-150 ease-out group"
                             >
-                                <div className="relative w-8 h-8 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm">
+                                <div className="relative w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-black text-sm shadow-sm">
                                     {(currentUser.displayName || 'U')[0].toUpperCase()}
                                 </div>
-                                <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || t.member}</span>
-                                <ChevronRight size={12} className="text-[#1A2D23]/30 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2} />
+                                <span className="text-xs font-bold text-ink max-w-[100px] truncate">{currentUser.displayName || t.member}</span>
+                                <ChevronRight size={12} className="text-ink/30 group-hover:text-primary group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2} />
                             </a>
                         </>
                     ) : (
                         <>
                             {/* Mobile: icon-only login button */}
                             <button onClick={onAuthOpen} aria-label={t.signInMobileAria} className={L.mobileLoginBtn}>
-                                <User size={18} className="text-[#1A2D23]" />
+                                <User size={18} className="text-ink" />
                             </button>
                             {/* Desktop: full login button */}
-                            <button onClick={onAuthOpen} aria-label={t.signInDesktopAria} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
-                                <User size={16} className="text-[#1A2D23]" />
-                                <span className="text-xs font-bold text-[#1A2D23]">{t.signInLabel}</span>
+                            <button onClick={onAuthOpen} aria-label={t.signInDesktopAria} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-line/50 rounded-full border border-line hover:bg-line transition-colors">
+                                <User size={16} className="text-ink" />
+                                <span className="text-xs font-bold text-ink">{t.signInLabel}</span>
                             </button>
                         </>
                     )}
@@ -182,11 +182,11 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
 
                         aria-controls="mobile-nav-panel"
 
-                        className="lg:hidden p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-colors"
+                        className="lg:hidden p-3 bg-white rounded-xl shadow-sm border border-gray-100 hover:border-ink/20 transition-colors"
 
                     >
 
-                        {navOpen ? <X size={20} className="text-[#1A2D23]" /> : <Menu size={20} className="text-[#1A2D23]" />}
+                        {navOpen ? <X size={20} className="text-ink" /> : <Menu size={20} className="text-ink" />}
 
                     </button>
 
@@ -202,7 +202,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         >
                             <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
                             <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
-                            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-[#FF6B35] text-white text-[11px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-[#FDFBF7]">
+                            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-primary text-white text-[11px] rounded-full inline-flex items-center justify-center font-black shadow-md ring-2 ring-paper">
                                 {cartCount}
                             </span>
                         </button>
@@ -213,7 +213,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                             aria-label={t.cartEmptyAria}
                             className={L.cartEmpty}
                         >
-                            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
+                            <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-ink" />
                         </button>
                     )}
                 </div>
@@ -223,15 +223,15 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
             <div
                 id="mobile-nav-panel"
                 ref={navPanelRef}
-                className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl"
+                className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-line shadow-xl"
             >
-                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.dailyMenu}</a>
-                <Link href={t.vouchersHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.mealVouchers}</Link>
-                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.panelReviews}</a>
-                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.contact}</a>
-                {currentUser && <Link href={t.memberHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.member}</Link>}
-                <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
-                    <span className="text-[13px] font-bold text-[#1A2D23]/60">{t.languageLabel}</span>
+                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-ink hover:bg-paper border-b border-line/50 last:border-0">{t.dailyMenu}</a>
+                <Link href={t.vouchersHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-ink hover:bg-paper border-b border-line/50 last:border-0">{t.mealVouchers}</Link>
+                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-ink hover:bg-paper border-b border-line/50 last:border-0">{t.panelReviews}</a>
+                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-ink hover:bg-paper border-b border-line/50 last:border-0">{t.contact}</a>
+                {currentUser && <Link href={t.memberHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-ink hover:bg-paper border-b border-line/50 last:border-0">{t.member}</Link>}
+                <div className="flex items-center gap-3 px-5 py-3 border-t border-line/50">
+                    <span className="text-[13px] font-bold text-ink/60">{t.languageLabel}</span>
                     <span className="ml-auto"><LanguageSwitcher current={locale} /></span>
                 </div>
             </div>

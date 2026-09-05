@@ -210,8 +210,8 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" onClick={resetAndClose} />
-            <div className="relative w-full max-w-lg bg-[#FDFBF7] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+            <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={resetAndClose} />
+            <div className="relative w-full max-w-lg bg-paper rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
                 <AuthHeader onClose={resetAndClose} />
 
                 {view === 'profile' && currentUser && (

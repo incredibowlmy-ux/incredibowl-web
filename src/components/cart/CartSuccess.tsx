@@ -138,27 +138,27 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
-            <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" />
-            <div className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col items-center justify-center border-l border-[#E3EADA] overflow-y-auto">
+            <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" />
+            <div className="relative w-full max-w-md bg-paper h-full shadow-2xl flex flex-col items-center justify-center border-l border-line overflow-y-auto">
                 <div className="text-center space-y-5 p-8 animate-in zoom-in-95 duration-500 w-full">
                     <div className="w-24 h-24 mx-auto bg-green-100 rounded-full flex items-center justify-center">
                         <CheckCircle size={48} className="text-green-500" />
                     </div>
-                    <h2 className="text-3xl font-black text-[#1A2D23]">{fpx ? t.fpxTitle : t.title}</h2>
+                    <h2 className="text-3xl font-black text-ink">{fpx ? t.fpxTitle : t.title}</h2>
                     <p className="text-gray-500 flex flex-col items-center gap-1">
                         <span>
                             {t.orderIdLabel(isGroup)}
-                            <span className="font-bold text-[#FF6B35]">#{displayId}</span>
+                            <span className="font-bold text-primary">#{displayId}</span>
                         </span>
                         {isGroup && (
-                            <span className="text-[10px] font-bold text-[#FF6B35]/70 bg-[#FF6B35]/10 px-2 py-0.5 rounded-full mt-1">
+                            <span className="text-[10px] font-bold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full mt-1">
                                 {t.groupSplitNote}
                             </span>
                         )}
                     </p>
                     {fpx ? (
                         (fpx.items.length > 0 || fpx.total != null) && (
-                            <div className="bg-white rounded-2xl p-4 border border-[#E3EADA] text-left text-sm text-gray-600 space-y-1">
+                            <div className="bg-white rounded-2xl p-4 border border-line text-left text-sm text-gray-600 space-y-1">
                                 {fpx.items.map((it, i) => (
                                     <div key={i} className="flex justify-between gap-3">
                                         <span>{fpxItemName(it)} ×{it.qty}</span>
@@ -166,7 +166,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                                     </div>
                                 ))}
                                 {fpx.total != null && (
-                                    <div className="flex justify-between border-t border-gray-200 pt-1.5 mt-1.5 font-bold text-[#1A2D23]">
+                                    <div className="flex justify-between border-t border-gray-200 pt-1.5 mt-1.5 font-bold text-ink">
                                         <span>{t.paidTotal}</span>
                                         <span>RM {fpx.total.toFixed(2)}</span>
                                     </div>
@@ -174,17 +174,17 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                             </div>
                         )
                     ) : (
-                        <div className="bg-white rounded-2xl p-5 border border-[#E3EADA] text-left space-y-2">
+                        <div className="bg-white rounded-2xl p-5 border border-line text-left space-y-2">
                             <p className="text-sm">
                                 <span className="font-bold">{t.deliveryPlan}</span>
-                                <span className="text-[#FF6B35] font-black">
+                                <span className="text-primary font-black">
                                     {isGroup
                                         ? t.multiDay
                                         : `${items[0]?.selectedDate || t.dateTbd} ${items[0]?.selectedTime?.includes('Lunch') ? t.lunchEmoji : t.dinnerEmoji}`}
                                 </span>
                             </p>
                             <p className="text-sm"><span className="font-bold">{t.addressLabel}</span>{userProfile?.address}</p>
-                            <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-[#FF6B35] font-black">RM {total.toFixed(2)}</span></p>
+                            <p className="text-sm"><span className="font-bold">{t.amountLabel}</span><span className="text-primary font-black">RM {total.toFixed(2)}</span></p>
                         </div>
                     )}
 
@@ -193,13 +193,13 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                     {showVoucherCard && balance && (
                         <div className="bg-gradient-to-br from-[#FFF3E0] to-[#FFE9D5] rounded-2xl p-4 border border-[#FFD6B0]/70 text-left">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm font-bold text-[#1A2D23] flex items-center gap-1.5">
-                                    <Ticket size={16} className="text-[#FF6B35]" />
+                                <span className="text-sm font-bold text-ink flex items-center gap-1.5">
+                                    <Ticket size={16} className="text-primary" />
                                     {t.voucherBalanceLabel}
                                 </span>
-                                <span className="text-2xl font-black text-[#FF6B35] leading-none">
+                                <span className="text-2xl font-black text-primary leading-none">
                                     {balance.availableCount}
-                                    <span className="text-xs font-bold text-[#1A2D23]/50 ml-1">{t.voucherUnit}</span>
+                                    <span className="text-xs font-bold text-ink/50 ml-1">{t.voucherUnit}</span>
                                 </span>
                             </div>
                             {balance.availableCount > 0 && balance.soonestDaysLeft !== null && balance.soonestDaysLeft <= 7 && (
@@ -211,10 +211,10 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                             {lowBalance && (
                                 <a
                                     href={voucherHref}
-                                    className="mt-3 flex items-center justify-between w-full px-3 py-2 bg-white border border-[#FF6B35]/40 rounded-xl hover:bg-[#FF6B35]/5 transition-colors"
+                                    className="mt-3 flex items-center justify-between w-full px-3 py-2 bg-white border border-primary/40 rounded-xl hover:bg-primary/5 transition-colors"
                                 >
-                                    <span className="text-[11px] text-[#1A2D23]/60 font-bold">{t.voucherRenewSub}</span>
-                                    <span className="text-xs text-[#FF6B35] font-black whitespace-nowrap ml-2">{t.voucherRenewCta}</span>
+                                    <span className="text-[11px] text-ink/60 font-bold">{t.voucherRenewSub}</span>
+                                    <span className="text-xs text-primary font-black whitespace-nowrap ml-2">{t.voucherRenewCta}</span>
                                 </a>
                             )}
                         </div>
@@ -224,7 +224,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                         <p className="text-xs text-gray-400">{t.fpxConfirmedNote}</p>
                     ) : (
                         <>
-                            <p className="text-sm font-bold text-[#FF6B35] animate-pulse">{t.verifying}</p>
+                            <p className="text-sm font-bold text-primary animate-pulse">{t.verifying}</p>
                             <p className="text-xs text-gray-400">{t.verifiedNote}</p>
                         </>
                     )}
@@ -261,7 +261,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                     {isMember && (
                         <a
                             href={memberHref}
-                            className="block w-full py-3 bg-white border-2 border-[#E3EADA] text-[#1A2D23] rounded-xl text-sm font-black hover:border-[#FF6B35]/40 hover:text-[#FF6B35] transition-colors"
+                            className="block w-full py-3 bg-white border-2 border-line text-ink rounded-xl text-sm font-black hover:border-primary/40 hover:text-primary transition-colors"
                         >
                             {t.viewMyOrders}
                         </a>
@@ -272,7 +272,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                         <button
                             type="button"
                             onClick={linkGoogle}
-                            className="block w-full py-3 bg-[#1A2D23] text-white rounded-2xl text-sm font-bold hover:bg-[#2A3D33] transition-colors"
+                            className="block w-full py-3 bg-ink text-white rounded-2xl text-sm font-bold hover:bg-[#2A3D33] transition-colors"
                         >
                             {t.linkGoogleBtn}
                         </button>
@@ -288,14 +288,14 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
                     {fpx && !showVoucherCard && (
                         <a
                             href={voucherHrefUpsell}
-                            className="block bg-[#FFF3E0]/60 border border-[#FFD6B0]/60 rounded-xl px-4 py-2.5 text-xs font-bold text-[#1A2D23]/70 hover:border-[#FF6B35]/50 hover:text-[#1A2D23] transition-colors"
+                            className="block bg-[#FFF3E0]/60 border border-[#FFD6B0]/60 rounded-xl px-4 py-2.5 text-xs font-bold text-ink/70 hover:border-primary/50 hover:text-ink transition-colors"
                         >
-                            {t.voucherUpsellPre}<span className="text-[#FF6B35]">{t.voucherUpsellCta}</span>
+                            {t.voucherUpsellPre}<span className="text-primary">{t.voucherUpsellCta}</span>
                         </a>
                     )}
                     <button
                         onClick={onDone}
-                        className="w-full py-2.5 text-sm font-bold text-gray-400 hover:text-[#1A2D23] transition-colors"
+                        className="w-full py-2.5 text-sm font-bold text-gray-400 hover:text-ink transition-colors"
                     >
                         {t.done}
                     </button>

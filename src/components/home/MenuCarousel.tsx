@@ -71,16 +71,16 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             className={`${size === 'sm' ? 'col-span-2 mt-3 first:mt-1 px-1' : 'col-span-full mt-5 first:mt-0 px-1'} flex items-center gap-2`}
         >
             {badgeNum != null && (
-                <span className={`inline-flex items-center justify-center rounded-full font-black shrink-0 ${size === 'sm' ? 'w-5 h-5 text-[11px]' : 'w-6 h-6 text-[13px]'} ${highlight ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>
+                <span className={`inline-flex items-center justify-center rounded-full font-black shrink-0 ${size === 'sm' ? 'w-5 h-5 text-[11px]' : 'w-6 h-6 text-[13px]'} ${highlight ? 'bg-primary text-white' : 'bg-line text-ink'}`}>
                     {badgeNum}
                 </span>
             )}
-            <h3 className={`font-extrabold leading-none ${size === 'sm' ? 'text-[16px]' : 'text-[24px]'} ${highlight ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>
+            <h3 className={`font-extrabold leading-none ${size === 'sm' ? 'text-[16px]' : 'text-[24px]'} ${highlight ? 'text-primary' : 'text-ink'}`}>
                 {title}
             </h3>
             {dateSub && <span className={`font-bold text-gray-400 ${size === 'sm' ? 'text-[11px]' : 'text-[14px]'}`}>{dateSub}</span>}
             {highlight && (
-                <span className={`ml-auto inline-flex items-center gap-1 font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full ${size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-[12px] px-2.5 py-1'}`}>
+                <span className={`ml-auto inline-flex items-center gap-1 font-black text-primary bg-primary/12 rounded-full ${size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-[12px] px-2.5 py-1'}`}>
                     {t.upNext}
                 </span>
             )}
@@ -111,26 +111,26 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                     isDisabled
                         ? 'opacity-50 border-gray-100 cursor-not-allowed'
                         : isTomorrow
-                            ? 'border-[#FF6B35]/40 shadow-md shadow-[#FF6B35]/15 cursor-pointer active:scale-[0.98]'
+                            ? 'border-primary/40 shadow-md shadow-primary/15 cursor-pointer active:scale-[0.98]'
                             : 'border-gray-100 cursor-pointer active:scale-[0.98]'
                 }`}
             >
                 <div className="flex justify-between items-start mb-2 gap-1">
                     <div className={`px-1.5 py-0.5 rounded text-[11px] font-bold truncate ${
                         isTomorrow
-                            ? 'bg-[#FF6B35]/15 text-[#FF6B35]'
-                            : 'bg-[#FDFBF7] text-gray-500'
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-paper text-gray-500'
                     }`}>
                         {isTomorrow ? t.tomorrowTag : (dInfo ? dInfo.topTag.split(' · ')[0] : dish.day)}
                     </div>
-                    <p className="font-extrabold text-[13px] leading-none text-[#FF6B35] shrink-0">
+                    <p className="font-extrabold text-[13px] leading-none text-primary shrink-0">
                         RM{dish.price.toFixed(2)}
                     </p>
                 </div>
 
-                <div className={`aspect-square w-full rounded-xl bg-[#FDFBF7] mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
+                <div className={`aspect-square w-full rounded-xl bg-paper mb-2 relative overflow-hidden ${isDisabled ? 'grayscale' : ''}`}>
                     {isLimited && stockLeft <= 10 && (
-                        <span className={`absolute top-1.5 left-1.5 z-10 px-2 py-1 rounded-md text-[12px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                        <span className={`absolute top-1.5 left-1.5 z-10 px-2 py-1 rounded-md text-[12px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-primary text-white'}`}>
                             {isSoldOut ? t.soldOut : t.stockLeft(stockLeft)}
                         </span>
                     )}
@@ -147,13 +147,13 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                     )}
                 </div>
 
-                <h4 className="font-extrabold text-[14px] leading-tight mb-1.5 text-[#1A2D23] line-clamp-2 min-h-[34px]">
+                <h4 className="font-extrabold text-[14px] leading-tight mb-1.5 text-ink line-clamp-2 min-h-[34px]">
                     {locale === 'en' ? dish.nameEn : dish.name}
                 </h4>
 
                 <div className="flex flex-wrap gap-1 mb-2.5 min-h-[18px] overflow-hidden max-h-[18px]">
                     {(locale === 'en' ? (dish.tagsEn ?? dish.tags) : dish.tags).slice(0, 2).map(tag => (
-                        <span key={tag} className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-[#E3EADA]/70 text-[#1A2D23] truncate max-w-full">
+                        <span key={tag} className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-line/70 text-ink truncate max-w-full">
                             {tag}
                         </span>
                     ))}
@@ -167,8 +167,8 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                             isDisabled
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : isTomorrow
-                                    ? 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-sm shadow-[#FF6B35]/30'
-                                    : 'bg-[#FF6B35]/10 text-[#FF6B35] hover:bg-[#FF6B35] hover:text-white'
+                                    ? 'bg-primary hover:bg-primary-dark text-white shadow-sm shadow-primary/30'
+                                    : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'
                         }`}
                     >
                         {!isDisabled && <ShoppingBag size={12} />}
@@ -206,26 +206,26 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                 className={`group bg-white rounded-3xl p-5 border border-gray-100 transition-[transform,box-shadow,border-color,opacity] duration-300 ease-out flex flex-col ${
                     isDisabled
                         ? `${isCutoffOnly ? 'opacity-75' : 'opacity-50'} cursor-not-allowed`
-                        : 'cursor-pointer hover:shadow-xl hover:shadow-[#1A2D23]/5 hover:-translate-y-1 hover:border-[#FF6B35]/20 active:scale-[0.99]'
+                        : 'cursor-pointer hover:shadow-xl hover:shadow-ink/5 hover:-translate-y-1 hover:border-primary/20 active:scale-[0.99]'
                 }`}
             >
                 <div className="flex justify-between items-start mb-4">
-                    <div className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FDFBF7] text-gray-500">
+                    <div className="px-2.5 py-1 rounded-lg text-xs font-bold bg-paper text-gray-500">
                         {dInfo ? dInfo.topTag : dish.day}
                     </div>
-                    <p className="font-extrabold text-[20px] leading-none text-[#FF6B35]">
+                    <p className="font-extrabold text-[20px] leading-none text-primary">
                         RM {dish.price.toFixed(2)}
                     </p>
                 </div>
 
-                <div className={`aspect-square w-full rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled && !isCutoffOnly ? 'grayscale' : ''}`}>
+                <div className={`aspect-square w-full rounded-2xl bg-paper flex items-center justify-center text-6xl mb-4 relative overflow-hidden ${isDisabled && !isCutoffOnly ? 'grayscale' : ''}`}>
                     {isCutoffOnly && !(isLimited && stockLeft <= 10) && (
-                        <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[13px] font-medium shadow-md bg-white/90 text-[#1A2D23]/70">
+                        <span className="absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[13px] font-medium shadow-md bg-white/90 text-ink/70">
                             {t.closedToday}
                         </span>
                     )}
                     {isLimited && stockLeft <= 10 && (
-                        <span className={`absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[14px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-[#FF6B35] text-white'}`}>
+                        <span className={`absolute top-2.5 left-2.5 z-10 px-2.5 py-1 rounded-md text-[14px] font-extrabold shadow-md ${isSoldOut ? 'bg-gray-800/90 text-white' : 'bg-primary text-white'}`}>
                             {isSoldOut ? t.soldOut : t.stockLeft(stockLeft)}
                         </span>
                     )}
@@ -247,19 +247,19 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                     zh 是 <h4>中文名</h4><p>英文名</p>；en 历史上是 <h3>英文名</h3><h4 lang="zh">中文名</h4>——按 locale 原样保留。 */}
                 {locale === 'en' ? (
                     <>
-                        <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23] line-clamp-2 min-h-[56px]">{dish.nameEn}</h3>
+                        <h3 className="font-extrabold text-[22px] leading-tight mb-1 text-ink line-clamp-2 min-h-[56px]">{dish.nameEn}</h3>
                         <h4 lang="zh" className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400 line-clamp-2 min-h-[49px]">{dish.name}</h4>
                     </>
                 ) : (
                     <>
-                        <h4 className="font-extrabold text-[22px] leading-tight mb-1 text-[#1A2D23] line-clamp-2 min-h-[56px]">{dish.name}</h4>
+                        <h4 className="font-extrabold text-[22px] leading-tight mb-1 text-ink line-clamp-2 min-h-[56px]">{dish.name}</h4>
                         <p className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400 line-clamp-2 min-h-[49px]">{dish.nameEn}</p>
                     </>
                 )}
 
                 <div className="flex flex-wrap gap-1.5 mb-5 content-start min-h-[62px] max-h-[62px] overflow-hidden">
                     {(locale === 'en' ? (dish.tagsEn ?? dish.tags) : dish.tags).map(tag => (
-                        <span key={tag} className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-[#E3EADA]/70 text-[#1A2D23]">
+                        <span key={tag} className="text-[13px] font-bold px-2.5 py-1 rounded-md bg-line/70 text-ink">
                             {tag}
                         </span>
                     ))}
@@ -272,7 +272,7 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                         className={`w-full py-3.5 rounded-xl font-bold text-[15px] flex justify-center items-center gap-2 transition-colors ${
                             isDisabled
                                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : 'bg-[#FF6B35] hover:bg-[#E95D31] text-white shadow-md shadow-[#FF6B35]/20'
+                                : 'bg-primary hover:bg-primary-dark text-white shadow-md shadow-primary/20'
                         }`}
                     >
                         {!isDisabled && <ShoppingBag size={18} />}
@@ -297,14 +297,14 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             href={t.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="col-span-2 mt-1 group bg-gradient-to-br from-[#FFF3E0] to-[#FFE5C9]/70 rounded-2xl p-4 border-2 border-[#FF6B35]/30 shadow-sm shadow-[#FF6B35]/10 flex items-center gap-3 transition-[transform,box-shadow] duration-200 active:scale-[0.99] relative overflow-hidden"
+            className="col-span-2 mt-1 group bg-gradient-to-br from-[#FFF3E0] to-[#FFE5C9]/70 rounded-2xl p-4 border-2 border-primary/30 shadow-sm shadow-primary/10 flex items-center gap-3 transition-[transform,box-shadow] duration-200 active:scale-[0.99] relative overflow-hidden"
         >
-            <div className="w-12 h-12 bg-[#FF6B35]/20 rounded-full flex items-center justify-center shrink-0 shadow-sm shadow-[#FF6B35]/20">
-                <Sparkles size={20} className="text-[#FF6B35]" strokeWidth={2.5} />
+            <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center shrink-0 shadow-sm shadow-primary/20">
+                <Sparkles size={20} className="text-primary" strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-[#FF6B35] uppercase tracking-widest mb-0.5">{t.nextWeekEyebrow}</p>
-                <p className="text-[14px] font-extrabold text-[#1A2D23] leading-tight">{t.nextWeekQuestion}</p>
+                <p className="text-[11px] font-medium text-primary uppercase tracking-widest mb-0.5">{t.nextWeekEyebrow}</p>
+                <p className="text-[14px] font-extrabold text-ink leading-tight">{t.nextWeekQuestion}</p>
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#25D366] text-white rounded-full text-[12px] font-black shadow-sm shadow-[#25D366]/30 shrink-0">
                 <Phone size={12} strokeWidth={2.5} /> WhatsApp
@@ -317,19 +317,19 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             href={t.whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="group bg-gradient-to-br from-[#FFF3E0] to-[#FFE5C9]/70 rounded-3xl p-5 border-2 border-[#FF6B35]/30 shadow-md shadow-[#FF6B35]/10 hover:shadow-xl hover:shadow-[#FF6B35]/20 hover:-translate-y-1 hover:border-[#FF6B35]/60 flex flex-col text-center transition-[transform,box-shadow,border-color] duration-300 ease-out cursor-pointer min-h-[420px] relative overflow-hidden"
+            className="group bg-gradient-to-br from-[#FFF3E0] to-[#FFE5C9]/70 rounded-3xl p-5 border-2 border-primary/30 shadow-md shadow-primary/10 hover:shadow-xl hover:shadow-primary/20 hover:-translate-y-1 hover:border-primary/60 flex flex-col text-center transition-[transform,box-shadow,border-color] duration-300 ease-out cursor-pointer min-h-[420px] relative overflow-hidden"
         >
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#FF6B35] rounded-full blur-3xl opacity-15 pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary rounded-full blur-3xl opacity-15 pointer-events-none" />
 
             <div className="relative flex-1 flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-[#FF6B35]/20 group-hover:bg-[#FF6B35]/30 rounded-full flex items-center justify-center mb-4 transition-colors shadow-md shadow-[#FF6B35]/20">
-                    <Sparkles size={28} className="text-[#FF6B35]" strokeWidth={2.5} />
+                <div className="w-16 h-16 bg-primary/20 group-hover:bg-primary/30 rounded-full flex items-center justify-center mb-4 transition-colors shadow-md shadow-primary/20">
+                    <Sparkles size={28} className="text-primary" strokeWidth={2.5} />
                 </div>
-                <p className="text-xs font-medium text-[#FF6B35] uppercase tracking-widest mb-2">{t.nextWeekEyebrowDesktop}</p>
-                <p className="text-[22px] font-extrabold text-[#1A2D23] leading-tight mb-3">Coming<br />Next Week</p>
-                <p className="text-sm font-medium text-[#1A2D23]/70 leading-relaxed max-w-[220px]">
+                <p className="text-xs font-medium text-primary uppercase tracking-widest mb-2">{t.nextWeekEyebrowDesktop}</p>
+                <p className="text-[22px] font-extrabold text-ink leading-tight mb-3">Coming<br />Next Week</p>
+                <p className="text-sm font-medium text-ink/70 leading-relaxed max-w-[220px]">
                     {t.nextWeekLine1}<br />
-                    <span className="text-[#1A2D23] font-bold">{t.nextWeekLine2}</span>
+                    <span className="text-ink font-bold">{t.nextWeekLine2}</span>
                 </p>
             </div>
 
@@ -385,9 +385,9 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                                 aria-expanded={showRetired}
                                 className="w-full min-h-[44px] flex items-center gap-2 px-3 py-2.5 bg-white/70 border border-gray-200 rounded-xl"
                             >
-                                <span className="text-[15px] font-extrabold text-[#1A2D23] leading-none">{t.retiredTitle}</span>
+                                <span className="text-[15px] font-extrabold text-ink leading-none">{t.retiredTitle}</span>
                                 <span className="text-[12px] font-bold text-gray-400">{t.retiredCountBefore}{groups.retired.length}{t.retiredCountAfter}</span>
-                                <span className="ml-auto text-[12px] font-bold text-[#FF6B35]">{showRetired ? t.collapse : t.expand}</span>
+                                <span className="ml-auto text-[12px] font-bold text-primary">{showRetired ? t.collapse : t.expand}</span>
                             </button>
                         </div>
                         {showRetired && groups.retired.map(renderMobileCard)}
@@ -404,16 +404,16 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                         const isNext = g.dishes.some(d => d.id === tomorrowsId);
                         return (
                             <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
-                                <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-[#FF6B35]' : 'border-gray-100'}`}>
+                                <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-primary' : 'border-gray-100'}`}>
                                     <span className="flex items-center gap-2">
-                                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-[#FF6B35] text-white' : 'bg-[#E3EADA] text-[#1A2D23]'}`}>{g.wd}</span>
-                                        <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-[#FF6B35]' : 'text-[#1A2D23]'}`}>{WD_LABEL[g.wd]}</span>
+                                        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black ${isNext ? 'bg-primary text-white' : 'bg-line text-ink'}`}>{g.wd}</span>
+                                        <span className={`text-[22px] font-extrabold leading-none ${isNext ? 'text-primary' : 'text-ink'}`}>{WD_LABEL[g.wd]}</span>
                                     </span>
                                     {/* min-h 预留：日期小字来自 menuDates，SSR 时为空。没有它，
                                         日期落地那一刻 5 个列头同时长高，把整片卡片往下推（CLS）。 */}
                                     <span className="text-[13px] font-bold text-gray-500 mt-1.5 min-h-[16px]">{dayDateSub(g.dishes[0])}</span>
                                     {/* 非下一餐用 invisible 占位 —— 5 个列头等高，第一行卡片顶对齐 */}
-                                    <span className={`mt-1.5 text-[11px] font-black text-[#FF6B35] bg-[#FF6B35]/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>{t.upNext}</span>
+                                    <span className={`mt-1.5 text-[11px] font-black text-primary bg-primary/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>{t.upNext}</span>
                                 </div>
                                 {g.dishes.map(renderDesktopCard)}
                             </div>
@@ -424,7 +424,7 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                 {/* 常驻 · 天天都有 — 下周预告 CTA 与常驻卡同行，填满一整行不留白 */}
                 {groups.daily.length > 0 ? (
                     <div className="mt-12">
-                        <h3 className="text-[24px] font-extrabold text-[#1A2D23] leading-none px-1 mb-5">{t.dailyHeading}</h3>
+                        <h3 className="text-[24px] font-extrabold text-ink leading-none px-1 mb-5">{t.dailyHeading}</h3>
                         <div className="grid grid-cols-3 gap-5">
                             {groups.daily.map(renderDesktopCard)}
                             {whatsappDesktop}
@@ -442,12 +442,12 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                         <button
                             type="button"
                             onClick={() => setShowRetired(v => !v)}
-                            className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 hover:bg-white border border-gray-200 hover:border-[#FF6B35]/30 rounded-2xl transition-colors text-left"
+                            className="w-full flex items-center gap-3 px-5 py-4 bg-white/70 hover:bg-white border border-gray-200 hover:border-primary/30 rounded-2xl transition-colors text-left"
                             aria-expanded={showRetired}
                         >
-                            <span className="text-[20px] font-extrabold text-[#1A2D23] leading-none">{t.retiredTitle}</span>
+                            <span className="text-[20px] font-extrabold text-ink leading-none">{t.retiredTitle}</span>
                             <span className="text-[14px] font-bold text-gray-400">{t.retiredCountBefore}{groups.retired.length}{t.retiredCountAfter}</span>
-                            <span className="ml-auto text-[14px] font-bold text-[#FF6B35]">{showRetired ? t.collapse : t.expand}</span>
+                            <span className="ml-auto text-[14px] font-bold text-primary">{showRetired ? t.collapse : t.expand}</span>
                         </button>
                         {showRetired && (
                             <div className="mt-5 grid grid-cols-3 xl:grid-cols-4 gap-5">
@@ -464,21 +464,21 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             <div className="mt-8 lg:mt-12 px-3 lg:px-2">
                 <Link
                     href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
-                    className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl lg:rounded-3xl p-4 lg:p-6 hover:shadow-lg hover:border-[#FF6B35]/40 transition-[box-shadow,border-color] duration-200 relative overflow-hidden"
+                    className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl lg:rounded-3xl p-4 lg:p-6 hover:shadow-lg hover:border-primary/40 transition-[box-shadow,border-color] duration-200 relative overflow-hidden"
                 >
-                    <div className="absolute -top-8 -right-8 w-28 h-28 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute -top-8 -right-8 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
                     <div className="relative flex items-center gap-3 lg:gap-5">
-                        <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl bg-[#FF6B35] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#FF6B35]/30">
+                        <div className="w-11 h-11 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
                             <Ticket size={22} className="lg:hidden" />
                             <Ticket size={28} className="hidden lg:block" />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-[14px] lg:text-[17px] font-extrabold text-[#1A2D23] leading-tight">{t.voucherTitle}</p>
-                            <p className="text-[11px] lg:text-[13px] text-[#1A2D23]/60 font-bold mt-0.5 leading-snug">
+                            <p className="text-[14px] lg:text-[17px] font-extrabold text-ink leading-tight">{t.voucherTitle}</p>
+                            <p className="text-[11px] lg:text-[13px] text-ink/60 font-bold mt-0.5 leading-snug">
                                 {t.voucherSub}
                             </p>
                         </div>
-                        <span className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 lg:px-5 lg:py-2.5 btn-primary group-hover:bg-[#E95D31] text-[12px] lg:text-[14px] font-black shadow-sm shadow-[#FF6B35]/30 transition-colors">
+                        <span className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 lg:px-5 lg:py-2.5 btn-primary group-hover:bg-primary-dark text-[12px] lg:text-[14px] font-black shadow-sm shadow-primary/30 transition-colors">
                             {t.voucherCta}<span className="hidden lg:inline"> →</span>
                         </span>
                     </div>

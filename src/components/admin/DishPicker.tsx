@@ -123,13 +123,13 @@ export default function DishPicker({ value, onChange, weekday }: {
                     {groups.map(g => (
                         <div key={g.label}>
                             <p className={`px-3 pt-2 pb-1 text-[10px] font-black sticky top-0 ${g.highlight
-                                ? 'text-[#FF6B35] bg-[#FF6B35]/10' : 'text-gray-400 bg-[#F5F3EF]'}`}>
+                                ? 'text-primary bg-primary/10' : 'text-gray-400 bg-[#F5F3EF]'}`}>
                                 {g.label}
                             </p>
                             {g.dishes.map(d => (
                                 <button key={d.name} type="button"
                                     onClick={() => { onChange(d.name); setOpen(false); }}
-                                    className={`w-full text-left px-3 py-2 text-xs font-bold hover:bg-[#FF6B35]/10 ${d.name === value ? 'text-[#FF6B35]' : ''}`}>
+                                    className={`w-full text-left px-3 py-2 text-xs font-bold hover:bg-primary/10 ${d.name === value ? 'text-primary' : ''}`}>
                                     {d.name} <span className="text-gray-400">· RM {d.price.toFixed(2)}</span>
                                     {d.retired && <span className="text-amber-500"> · 暂别</span>}
                                     {d.note && <span className="text-gray-400"> · {d.note}</span>}

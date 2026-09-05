@@ -173,14 +173,14 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
             )}
             <div id="feedback" className="lg:col-span-12 mt-4 scroll-mt-32">
                 {/* Compact header — single row */}
-                <div className="bg-[#E3EADA] rounded-t-[32px] px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div className="bg-line rounded-t-[32px] px-6 md:px-8 py-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-white/60 flex items-center justify-center shrink-0">
-                            <MessageCircle size={18} className="text-[#1A2D23]" />
+                            <MessageCircle size={18} className="text-ink" />
                         </div>
                         <div>
-                            <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight">{t.heading}</h2>
-                            <p className="text-[13px] lg:text-base text-[#1A2D23]/65 font-medium leading-relaxed mt-0.5 lg:mt-2">
+                            <h2 className="text-[22px] lg:text-[40px] font-extrabold tracking-tight text-ink leading-tight">{t.heading}</h2>
+                            <p className="text-[13px] lg:text-base text-ink/65 font-medium leading-relaxed mt-0.5 lg:mt-2">
                                 {t.sub}
                             </p>
                         </div>
@@ -188,12 +188,12 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                 </div>
 
                 {/* Stats summary — sits between header and grid */}
-                <div className="bg-[#E3EADA] px-4 md:px-8 pb-4">
+                <div className="bg-line px-4 md:px-8 pb-4">
                     <div className="bg-white/55 backdrop-blur-sm rounded-2xl px-4 md:px-5 py-3.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 border border-white/70">
                         {/* 历史漂移：zh 是可点去 Google 的链接（评分 + 则数 + 外链图标），en 只有一个写死
                             「5.0 ★」的 span。C1 零 diff 合并两边原样保留，要不要让 /en 追平由老板定。 */}
                         {locale === 'en' ? (
-                            <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23]">
+                            <span className="inline-flex items-center gap-1 text-[14px] font-extrabold text-ink">
                                 Google <span className="text-amber-500">5.0 ★</span>
                             </span>
                         ) : (
@@ -202,22 +202,22 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                             target="_blank"
                             rel="noopener noreferrer"
                             title="在 Google 查看全部评价"
-                            className="group inline-flex items-center gap-1 text-[14px] font-extrabold text-[#1A2D23] rounded-md px-1 -mx-1 hover:text-[#FF6B35] transition-colors"
+                            className="group inline-flex items-center gap-1 text-[14px] font-extrabold text-ink rounded-md px-1 -mx-1 hover:text-primary transition-colors"
                         >
                             Google <span className="text-amber-500">{GOOGLE_RATING_VALUE} ★</span>
-                            <span className="text-[#1A2D23]/55 font-bold group-hover:text-[#FF6B35]/70">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
-                            <ExternalLink size={13} className="text-[#1A2D23]/40 group-hover:text-[#FF6B35] shrink-0" strokeWidth={2.5} />
+                            <span className="text-ink/55 font-bold group-hover:text-primary/70">（{GOOGLE_REVIEW_COUNT} 则评价）</span>
+                            <ExternalLink size={13} className="text-ink/40 group-hover:text-primary shrink-0" strokeWidth={2.5} />
                         </a>
                         )}
-                        <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[14px] font-extrabold text-[#1A2D23]">{allMessages.length}{t.reviewsCountSuffix}</span>
-                        <span className="text-[#1A2D23]/30 mx-1.5 hidden sm:inline">·</span>
-                        <span className="text-[13px] font-semibold text-[#1A2D23]/75">{t.statsFrom}</span>
+                        <span className="text-ink/30 mx-1.5 hidden sm:inline">·</span>
+                        <span className="text-[14px] font-extrabold text-ink">{allMessages.length}{t.reviewsCountSuffix}</span>
+                        <span className="text-ink/30 mx-1.5 hidden sm:inline">·</span>
+                        <span className="text-[13px] font-semibold text-ink/75">{t.statsFrom}</span>
                     </div>
                 </div>
 
                 {/* Reviews marquee — horizontal auto-scroll, hover to pause */}
-                <div className="bg-[#E3EADA] pb-10 md:pb-12 rounded-b-[32px]">
+                <div className="bg-line pb-10 md:pb-12 rounded-b-[32px]">
                     {loading ? (
                         // 骨架屏必须和加载完成后的跑马灯占同一个盒子：同样是「横向一行、
                         // 不换行、超出裁掉」，高度也一样。原来是 3 张竖着堆的卡片，手机上
@@ -228,7 +228,7 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                             <div className="flex gap-4 w-max">
                                 {Array.from({ length: 5 }).map((_, idx) => (
                                     <div key={idx} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col w-[280px] md:w-[320px] shrink-0">
-                                        <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3">
+                                        <div className="bg-paper p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3">
                                             <SkeletonBlock className="h-3.5 w-full mb-3" />
                                             <SkeletonBlock className="h-3.5 w-full mb-3" />
                                             <SkeletonBlock className="h-3.5 w-11/12 mb-3" />
@@ -247,8 +247,8 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                     ) : (
                         <div className="feedback-marquee group/marquee relative overflow-hidden">
                             {/* Edge fades */}
-                            <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-16 bg-gradient-to-r from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-16 bg-gradient-to-l from-[#E3EADA] to-transparent z-10" aria-hidden="true" />
+                            <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-16 bg-gradient-to-r from-line to-transparent z-10" aria-hidden="true" />
+                            <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-16 bg-gradient-to-l from-line to-transparent z-10" aria-hidden="true" />
 
                             <div
                                 className="feedback-marquee-track flex gap-4 w-max"
@@ -263,8 +263,8 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                                     const cardInner = (
                                         <>
                                             {/* Quote bubble */}
-                                            <div className="bg-[#FDFBF7] p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-[#FDFBF7] before:rotate-45">
-                                                <p className="text-[#1A2D23] font-medium leading-relaxed text-sm line-clamp-5">
+                                            <div className="bg-paper p-4 rounded-tl-xl rounded-tr-xl rounded-br-xl mb-3 relative before:absolute before:-left-2 before:top-4 before:w-4 before:h-4 before:bg-paper before:rotate-45">
+                                                <p className="text-ink font-medium leading-relaxed text-sm line-clamp-5">
                                                     &ldquo;{msg.text}&rdquo;
                                                 </p>
                                                 {isLong && (
@@ -278,10 +278,10 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                                                     {msg.isGoogle && (
                                                         <span role="img" aria-label={t.fiveStars} className="text-amber-400 text-xs shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                                     )}
-                                                    <span className="text-xs font-bold text-[#1A2D23]/75 truncate">— {msg.name}</span>
+                                                    <span className="text-xs font-bold text-ink/75 truncate">— {msg.name}</span>
                                                 </div>
                                                 {msg.time && (
-                                                    <span className="text-xs text-[#1A2D23]/45 font-medium shrink-0">{msg.time}</span>
+                                                    <span className="text-xs text-ink/45 font-medium shrink-0">{msg.time}</span>
                                                 )}
                                             </div>
                                         </>
@@ -328,15 +328,15 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                             href={GOOGLE_REVIEWS_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-[#FDFBF7] text-[#1A2D23] text-sm font-bold rounded-full border border-[#1A2D23]/15 shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-paper text-ink text-sm font-bold rounded-full border border-ink/15 shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                         >
                             <span className="text-amber-500">★</span> 在 Google 查看全部评价
-                            <ExternalLink size={14} className="text-[#1A2D23]/45" strokeWidth={2.5} />
+                            <ExternalLink size={14} className="text-ink/45" strokeWidth={2.5} />
                         </a>
                         )}
                         <button
                             onClick={() => { setFeedbackMessage(null); setIsFeedbackModalOpen(true); }}
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-ink hover:bg-[#2A3D33] text-white text-sm font-bold rounded-full transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] active:brightness-95"
                         >
                             <Plus size={16} />{t.leaveReview}
                         </button>
@@ -347,28 +347,28 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
             {/* Full review reader modal — opened by tapping a long review card */}
             {selectedReview && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={() => setSelectedReview(null)}></div>
+                    <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={() => setSelectedReview(null)}></div>
                     <div
                         ref={readerPanelRef}
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="feedback-reader-title"
-                        className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                        className="bg-paper rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
                     >
                         <div className="p-6 md:p-8 max-h-[80vh] overflow-y-auto">
-                            <button type="button" onClick={() => setSelectedReview(null)} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button type="button" onClick={() => setSelectedReview(null)} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-ink border border-line hover:bg-line transition-colors">
                                 <X size={20} />
                             </button>
                             <div className="flex items-center gap-2 mb-4 pr-12">
                                 {selectedReview.isGoogle && (
                                     <span role="img" aria-label={t.fiveStars} className="text-amber-400 text-sm shrink-0" title="Google Review">⭐⭐⭐⭐⭐</span>
                                 )}
-                                <span id="feedback-reader-title" className="text-sm font-black text-[#1A2D23]">{selectedReview.name}</span>
+                                <span id="feedback-reader-title" className="text-sm font-black text-ink">{selectedReview.name}</span>
                                 {selectedReview.time && (
-                                    <span className="text-xs text-[#1A2D23]/45 font-medium">· {selectedReview.time}</span>
+                                    <span className="text-xs text-ink/45 font-medium">· {selectedReview.time}</span>
                                 )}
                             </div>
-                            <p className="text-[#1A2D23] font-medium leading-relaxed text-[15px] whitespace-pre-line">
+                            <p className="text-ink font-medium leading-relaxed text-[15px] whitespace-pre-line">
                                 &ldquo;{selectedReview.text}&rdquo;
                             </p>
                         </div>
@@ -379,20 +379,20 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
             {/* Feedback Modal */}
             {isFeedbackModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-[#1A2D23]/40 backdrop-blur-sm" onClick={closeFeedbackModal}></div>
+                    <div className="absolute inset-0 bg-ink/40 backdrop-blur-sm" onClick={closeFeedbackModal}></div>
                     <div
                         ref={formPanelRef}
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="feedback-form-title"
-                        className="bg-[#FDFBF7] rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+                        className="bg-paper rounded-[32px] w-full max-w-md relative z-10 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
                     >
-                        <div className="p-6 md:p-8 border-b border-[#E3EADA]">
-                            <button type="button" onClick={closeFeedbackModal} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#1A2D23] border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                        <div className="p-6 md:p-8 border-b border-line">
+                            <button type="button" onClick={closeFeedbackModal} aria-label={t.close} className="absolute right-6 top-6 w-10 h-10 bg-white rounded-full flex items-center justify-center text-ink border border-line hover:bg-line transition-colors">
                                 <X size={20} />
                             </button>
-                            <h3 id="feedback-form-title" className="text-2xl font-black text-[#1A2D23] pr-12">{t.formTitle}</h3>
-                            <p className="text-sm font-medium text-[#1A2D23]/60 mt-2">{t.formSub}</p>
+                            <h3 id="feedback-form-title" className="text-2xl font-black text-ink pr-12">{t.formTitle}</h3>
+                            <p className="text-sm font-medium text-ink/60 mt-2">{t.formSub}</p>
                         </div>
                         <div className="p-6 md:p-8 bg-white">
                             <form onSubmit={handleFeedbackSubmit} className="space-y-4">
@@ -403,7 +403,7 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                                         value={feedbackName}
                                         onChange={e => setFeedbackName(e.target.value)}
                                         placeholder={t.namePlaceholder}
-                                        className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium"
+                                        className="w-full px-4 py-3 bg-paper border border-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
                                         required
                                     />
                                 </div>
@@ -414,7 +414,7 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                                         onChange={e => setFeedbackText(e.target.value)}
                                         placeholder={t.textPlaceholder}
                                         rows={4}
-                                        className="w-full px-4 py-3 bg-[#FDFBF7] border border-[#E3EADA] rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#FF6B35]/20 focus:border-[#FF6B35] font-medium resize-none"
+                                        className="w-full px-4 py-3 bg-paper border border-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium resize-none"
                                         required
                                     ></textarea>
                                 </div>
@@ -434,7 +434,7 @@ export default function FeedbackSection({ locale = 'zh' }: { locale?: Locale }) 
                                     </div>
                                 )}
                                 {/* 成功后弹窗还会停 2.5 秒，此时禁用按钮防止重复提交（alert 时代靠阻塞天然挡住） */}
-                                <button disabled={feedbackSubmitting || feedbackMessage?.type === 'success'} type="submit" className="w-full py-4 mt-2 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
+                                <button disabled={feedbackSubmitting || feedbackMessage?.type === 'success'} type="submit" className="w-full py-4 mt-2 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
                                     {feedbackSubmitting ? t.submitting : t.submit}
                                 </button>
                             </form>

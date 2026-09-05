@@ -30,11 +30,11 @@ export default class ErrorBoundary extends React.Component<Props, State> {
             return this.props.fallback ?? (
                 <div className="flex flex-col items-center justify-center py-20 text-center px-4">
                     <p className="text-4xl mb-4">😵</p>
-                    <p className="font-bold text-[#1A2D23]">出了点问题</p>
+                    <p className="font-bold text-ink">出了点问题</p>
                     <p className="text-sm text-gray-400 mt-1">请刷新页面重试</p>
                     <button
                         onClick={() => this.setState({ hasError: false })}
-                        className="mt-4 px-4 py-2 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors"
+                        className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors"
                     >
                         重试
                     </button>

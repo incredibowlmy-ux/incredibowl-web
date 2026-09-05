@@ -218,14 +218,14 @@ export default function AuthProfileView({
         <div className="p-6 space-y-5">
             {/* Avatar + name */}
             <div className="text-center space-y-2">
-                <div className="relative w-16 h-16 mx-auto rounded-full bg-[#E3EADA] flex items-center justify-center overflow-hidden border-2 border-[#E3EADA]">
+                <div className="relative w-16 h-16 mx-auto rounded-full bg-line flex items-center justify-center overflow-hidden border-2 border-line">
                     {currentUser.photoURL ? (
                         <Image src={currentUser.photoURL} alt="Avatar" fill sizes="64px" className="object-cover" />
                     ) : (
-                        <UserIcon size={28} className="text-[#1A2D23]" />
+                        <UserIcon size={28} className="text-ink" />
                     )}
                 </div>
-                <h3 className="font-bold text-[#1A2D23] text-lg">
+                <h3 className="font-bold text-ink text-lg">
                     {currentUser.displayName
                         || (profileData?.displayName && profileData.displayName !== 'Guest' ? profileData.displayName : t.memberFallback)}
                 </h3>
@@ -234,15 +234,15 @@ export default function AuthProfileView({
 
             {/* 访客账号提示 + 绑定 Google 升级入口（仅匿名账号可见） */}
             {currentUser.isAnonymous && (
-                <div className="bg-[#FFF7ED] border border-[#FF6B35]/30 rounded-2xl p-4 space-y-2">
-                    <p className="text-xs font-bold text-[#1A2D23]">{t.guestBanner}</p>
+                <div className="bg-[#FFF7ED] border border-primary/30 rounded-2xl p-4 space-y-2">
+                    <p className="text-xs font-bold text-ink">{t.guestBanner}</p>
                     <p className="text-[11px] text-gray-500 leading-relaxed">
                         {t.guestBannerDesc}
                     </p>
                     <button
                         onClick={handleLinkGoogle}
                         disabled={linkingGoogle}
-                        className="w-full py-2.5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors disabled:opacity-50"
+                        className="w-full py-2.5 bg-ink text-white rounded-xl text-xs font-bold hover:bg-[#2A3D33] transition-colors disabled:opacity-50"
                     >
                         {linkingGoogle ? t.linking : t.linkCta}
                     </button>
@@ -263,7 +263,7 @@ export default function AuthProfileView({
 
             {/* Order summary (replaces the legacy points dashboard) */}
             {profileData === null ? (
-                <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 space-y-3">
+                <div className="bg-gradient-to-br from-ink to-[#2A3D33] rounded-2xl p-5 space-y-3">
                     <SkeletonBlock className="h-3 w-20 bg-white/20" />
                     <SkeletonBlock className="h-6 w-32 bg-white/20" />
                     <div className="flex gap-4 pt-3 border-t border-white/10">
@@ -272,7 +272,7 @@ export default function AuthProfileView({
                     </div>
                 </div>
             ) : (
-                <div className="bg-gradient-to-br from-[#1A2D23] to-[#2A3D33] rounded-2xl p-5 text-white">
+                <div className="bg-gradient-to-br from-ink to-[#2A3D33] rounded-2xl p-5 text-white">
                     <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">{t.orderSummary}</span>
                     </div>
@@ -299,7 +299,7 @@ export default function AuthProfileView({
                         </label>
                         <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
                             placeholder={t.guestNamePlaceholder} maxLength={30}
-                            className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors" />
+                            className="w-full mt-1 px-4 py-3 bg-white border-2 border-line rounded-xl text-sm outline-none focus:border-primary transition-colors" />
                     </div>
                 )}
                 <div>
@@ -308,7 +308,7 @@ export default function AuthProfileView({
                     </label>
                     {editingProfile ? (
                         <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.phonePlaceholder}
-                            className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors" required />
+                            className="w-full mt-1 px-4 py-3 bg-white border-2 border-line rounded-xl text-sm outline-none focus:border-primary transition-colors" required />
                     ) : (
                         <p className="mt-1 px-4 py-3 bg-white rounded-xl text-sm border border-gray-100">
                             {profileData?.phone || <span className="text-red-400 font-bold">{t.notFilled}</span>}
@@ -323,13 +323,13 @@ export default function AuthProfileView({
                         <>
                             <textarea value={address} onChange={(e) => { setAddress(e.target.value); setLocateNotice(''); }}
                                 placeholder={t.addressPlaceholder}
-                                rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" required />
+                                rows={2} className="w-full mt-1 px-4 py-3 bg-white border-2 border-line rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none" required />
                             {/* 手机上打完整地址是整条下单链路最痛的一步 —— 一键定位回填 */}
                             <button
                                 type="button"
                                 onClick={handleUseMyLocation}
                                 disabled={locating || geocoding}
-                                className="mt-2 w-full py-2.5 rounded-xl border-2 border-[#E3EADA] bg-white text-[#1A2D23] text-xs font-bold flex items-center justify-center gap-1.5 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="mt-2 w-full py-2.5 rounded-xl border-2 border-line bg-white text-ink text-xs font-bold flex items-center justify-center gap-1.5 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 {locating ? <><Loader2 size={13} className="animate-spin" /> {t.locating}</> : t.useMyLocation}
                             </button>
@@ -341,7 +341,7 @@ export default function AuthProfileView({
                             {!currentUser.isAnonymous && (
                                 <input type="text" value={addressLabel} onChange={(e) => setAddressLabel(e.target.value)}
                                     placeholder={t.labelPlaceholder} maxLength={12}
-                                    className="w-full mt-2 px-4 py-2 bg-white border-2 border-[#E3EADA] rounded-xl text-xs outline-none focus:border-[#FF6B35] transition-colors" />
+                                    className="w-full mt-2 px-4 py-2 bg-white border-2 border-line rounded-xl text-xs outline-none focus:border-primary transition-colors" />
                             )}
 
                             {geocodeError && (
@@ -443,7 +443,7 @@ export default function AuthProfileView({
                 {editingProfile ? (
                     <>
                         <button onClick={handleVerifyAndSave} disabled={loading || geocoding || !phone.trim() || !address.trim()}
-                            className="w-full py-3 bg-[#FF6B35] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#FF6B35]/20">
+                            className="w-full py-3 bg-primary text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20">
                             {geocoding ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                             {geocoding ? t.verifyingAddress : loading ? t.saving : needsReVerify ? t.verifyAndSave : t.saveProfile}
                         </button>
@@ -461,7 +461,7 @@ export default function AuthProfileView({
                     </>
                 ) : (
                     <button onClick={() => setEditingProfile(true)}
-                        className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#2A3D33] transition-all">
+                        className="w-full py-3 bg-ink text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:bg-[#2A3D33] transition-all">
                         {t.editProfile}
                     </button>
                 )}
@@ -471,10 +471,10 @@ export default function AuthProfileView({
                 </button>
             </div>
 
-            {message && <p className="text-center text-sm font-bold text-[#FF6B35]">{message}</p>}
+            {message && <p className="text-center text-sm font-bold text-primary">{message}</p>}
 
             <a href={isEn ? '/en/member' : '/member'} onClick={onClose}
-                className="w-full py-3 bg-gradient-to-r from-[#FF6B35] to-[#FF8F60] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:shadow-lg hover:shadow-[#FF6B35]/20 transition-all">
+                className="w-full py-3 bg-gradient-to-r from-primary to-[#FF8F60] text-white rounded-xl flex items-center justify-center gap-2 font-bold hover:shadow-lg hover:shadow-primary/20 transition-all">
                 <ShoppingBag size={16} /> {t.memberCentre}
             </a>
         </div>

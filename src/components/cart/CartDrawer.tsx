@@ -910,18 +910,18 @@ export default function CartDrawer({
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end">
-            <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={onClose} />
             <div
                 ref={panelRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="cart-drawer-title"
-                className="relative w-full max-w-md bg-[#FDFBF7] h-full shadow-2xl flex flex-col border-l border-[#E3EADA] animate-in slide-in-from-right duration-500"
+                className="relative w-full max-w-md bg-paper h-full shadow-2xl flex flex-col border-l border-line animate-in slide-in-from-right duration-500"
             >
 
                 {/* Header */}
-                <div className="p-6 bg-white border-b border-[#E3EADA] flex justify-between items-center">
-                    <h2 id="cart-drawer-title" className="text-xl font-black flex items-center gap-3 text-[#1A2D23]">
+                <div className="p-6 bg-white border-b border-line flex justify-between items-center">
+                    <h2 id="cart-drawer-title" className="text-xl font-black flex items-center gap-3 text-ink">
                         <ShoppingBag size={22} /> {t.title} ({cartCount})
                     </h2>
                     <button onClick={onClose} aria-label={t.closeCart} className="w-11 h-11 flex items-center justify-center hover:bg-gray-100 rounded-xl text-gray-400"><X size={22} /></button>
@@ -953,8 +953,8 @@ export default function CartDrawer({
                     )}
                     {/* Delivery address */}
                     {cart.length > 0 && !showDeliveryForm && (
-                        <div className="px-6 py-4 bg-[#1A2D23]/5 border-b border-[#E3EADA] shrink-0">
-                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-[#E3EADA]/50 text-xs font-bold text-[#1A2D23]">
+                        <div className="px-6 py-4 bg-ink/5 border-b border-line shrink-0">
+                            <p className="flex justify-between items-center bg-white p-2 rounded-lg border border-line/50 text-xs font-bold text-ink">
                                 <span className="text-gray-500 font-medium shrink-0">{t.deliveryAddress}</span>
                                 <span className="truncate ml-4 text-right">
                                     {userProfile?.address || <span className="text-red-500">{t.addressMissing}</span>}
@@ -962,7 +962,7 @@ export default function CartDrawer({
                             </p>
                             {currentUser && (
                                 <button type="button" onClick={() => setEditingDelivery(true)}
-                                    className="mt-1.5 text-[11px] font-bold text-[#FF6B35] hover:text-[#E95D31] transition-colors">
+                                    className="mt-1.5 text-[11px] font-bold text-primary hover:text-primary-dark transition-colors">
                                     {t.editDeliveryInfo} →
                                 </button>
                             )}
@@ -978,8 +978,8 @@ export default function CartDrawer({
                                                 onClick={() => handleSwitchAddress(entry)}
                                                 disabled={!!switchingAddress || isCurrent}
                                                 className={`min-h-[36px] px-3 py-1.5 rounded-full text-[12px] font-black border transition-all disabled:cursor-default ${isCurrent
-                                                    ? 'bg-[#FF6B35] text-white border-[#FF6B35]'
-                                                    : 'bg-white text-[#1A2D23] border-[#E3EADA] hover:border-[#FF6B35] disabled:opacity-50'}`}>
+                                                    ? 'bg-primary text-white border-primary'
+                                                    : 'bg-white text-ink border-line hover:border-primary disabled:opacity-50'}`}>
                                                 {switchingAddress === entry.id ? t.switching : (entry.label || `${(entry.address || '').slice(0, 14)}…`)}
                                             </button>
                                         );
@@ -1007,16 +1007,16 @@ export default function CartDrawer({
                     {/* Cart items */}
                     <div className="flex-1 p-6 space-y-4">
                         {cart.length === 0 ? (
-                            <div className="text-center py-20 text-[#1A2D23]">
+                            <div className="text-center py-20 text-ink">
                                 <div className="mb-6 flex flex-col items-center justify-center">
-                                    <div className="w-20 h-20 bg-[#FF6B35]/5 rounded-full flex items-center justify-center mb-4">
-                                        <Utensils className="w-10 h-10 text-[#FF6B35]/60" />
+                                    <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-4">
+                                        <Utensils className="w-10 h-10 text-primary/60" />
                                     </div>
                                     <p className="font-bold text-lg mb-2 text-[#3B2A1A]">{t.emptyTitle}</p>
                                     <p className="text-sm font-medium text-[#8B7355] max-w-[200px] leading-relaxed mx-auto">{t.emptySubtitle}</p>
                                 </div>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
-                                    className="px-8 py-3.5 bg-[#FF6B35] text-white text-base font-black rounded-2xl flex items-center justify-center gap-2 mx-auto hover:bg-[#E95D31] transition-all shadow-lg shadow-[#FF6B35]/20 hover:-translate-y-1 active:scale-95">
+                                    className="px-8 py-3.5 bg-primary text-white text-base font-black rounded-2xl flex items-center justify-center gap-2 mx-auto hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 hover:-translate-y-1 active:scale-95">
                                     <ShoppingBag size={18} /> {t.goPickFood}
                                 </button>
 
@@ -1027,18 +1027,18 @@ export default function CartDrawer({
                                         onClick={onClose}
                                         className="group block bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-2xl p-4 hover:shadow-lg transition-all relative overflow-hidden"
                                     >
-                                        <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#FF6B35]/10 rounded-full blur-2xl pointer-events-none" />
+                                        <div className="absolute -top-6 -right-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
                                         <div className="relative flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-[#FF6B35] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#FF6B35]/30">
+                                            <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md shadow-primary/30">
                                                 <Ticket size={20} />
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
-                                                <p className="text-xs font-black text-[#1A2D23]">{t.voucherCtaTitle}</p>
-                                                <p className="text-[10px] text-[#1A2D23]/60 font-bold leading-snug">
+                                                <p className="text-xs font-black text-ink">{t.voucherCtaTitle}</p>
+                                                <p className="text-[10px] text-ink/60 font-bold leading-snug">
                                                     {t.voucherCtaSub}
                                                 </p>
                                             </div>
-                                            <span className="text-xs font-black text-[#FF6B35] group-hover:translate-x-1 transition-transform">→</span>
+                                            <span className="text-xs font-black text-primary group-hover:translate-x-1 transition-transform">→</span>
                                         </div>
                                     </Link>
                                 </div>
@@ -1046,7 +1046,7 @@ export default function CartDrawer({
                         ) : (
                             <>
                                 <button onClick={() => { onClose(); setTimeout(() => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' }), 300); }}
-                                    className="flex items-center justify-end gap-1.5 w-full py-1.5 text-[#FF6B35] text-xs font-black hover:text-[#E95D31] transition-colors">
+                                    className="flex items-center justify-end gap-1.5 w-full py-1.5 text-primary text-xs font-black hover:text-primary-dark transition-colors">
                                     <Plus size={13} strokeWidth={2.5} /><span>{t.addMore}</span>
                                 </button>
 
@@ -1070,12 +1070,12 @@ export default function CartDrawer({
 
                                     return (
                                         <div key={key} className="space-y-3 mb-8">
-                                            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#FDFBF7] to-white rounded-lg border border-[#E3EADA]/50 shadow-sm overflow-hidden">
-                                                <div className="w-6 h-6 rounded-md bg-[#1A2D23]/5 flex items-center justify-center shrink-0">
-                                                    <Calendar size={14} className="text-[#1A2D23]" />
+                                            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-paper to-white rounded-lg border border-line/50 shadow-sm overflow-hidden">
+                                                <div className="w-6 h-6 rounded-md bg-ink/5 flex items-center justify-center shrink-0">
+                                                    <Calendar size={14} className="text-ink" />
                                                 </div>
-                                                <span className="text-sm font-black text-[#1A2D23] truncate">{group.date}</span>
-                                                <span className="text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-2 py-1 rounded-md font-bold shrink-0">
+                                                <span className="text-sm font-black text-ink truncate">{group.date}</span>
+                                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-md font-bold shrink-0">
                                                     {group.time.includes('Lunch') ? t.lunchBadge : t.dinnerBadge}
                                                 </span>
                                                 {dateBadge && <div className="ml-auto flex items-center">{dateBadge}</div>}
@@ -1095,7 +1095,7 @@ export default function CartDrawer({
                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.noteLabel}</label>
                                 <textarea value={orderNote} onChange={(e) => setOrderNote(e.target.value)}
                                     placeholder={t.notePlaceholder}
-                                    rows={2} className="w-full mt-1 px-4 py-3 bg-white border border-[#E3EADA] rounded-xl text-sm outline-none focus:border-[#FF6B35] transition-colors resize-none" />
+                                    rows={2} className="w-full mt-1 px-4 py-3 bg-white border border-line rounded-xl text-sm outline-none focus:border-primary transition-colors resize-none" />
                             </div>
                         )}
                     </div>
@@ -1105,7 +1105,7 @@ export default function CartDrawer({
                         below, which read as "two separate pieces" on mobile — boss
                         feedback 2026-07-05. Only the slim total+CTA bar stays fixed.) */}
                     {cart.length > 0 && (
-                        <div className="px-5 pt-4 pb-6 border-t border-dashed border-[#E3EADA] space-y-3">
+                        <div className="px-5 pt-4 pb-6 border-t border-dashed border-line space-y-3">
                             {/* Promo */}
                             <div className="space-y-2">
                                 <div className="flex gap-2">
@@ -1115,14 +1115,14 @@ export default function CartDrawer({
                                             onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
                                             placeholder={promoLockedByVouchers ? t.promoPlaceholderLocked : t.promoPlaceholder}
                                             disabled={promoApplied || promoLockedByVouchers}
-                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : promoLockedByVouchers ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`} />
+                                            className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : promoLockedByVouchers ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-paper border-line focus:border-primary'}`} />
                                     </div>
                                     {promoApplied ? (
                                         <button onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
                                             className="px-3 py-2.5 rounded-xl text-xs font-bold text-red-500 border border-red-200 hover:bg-red-50 transition-colors">{t.cancel}</button>
                                     ) : (
                                         <button onClick={handleApplyPromo} disabled={isCheckingPromo || promoLockedByVouchers}
-                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo || promoLockedByVouchers ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}>
+                                            className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo || promoLockedByVouchers ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-ink text-white hover:bg-[#2A3D33]'}`}>
                                             {isCheckingPromo ? t.checking : t.apply}
                                         </button>
                                     )}
@@ -1137,12 +1137,12 @@ export default function CartDrawer({
                                     <div className={`relative bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] border border-[#FFD6B0]/60 rounded-xl p-3 transition-opacity ${vouchersLockedByPromo ? 'opacity-50' : ''}`}>
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-2.5 min-w-0">
-                                                <div className="w-8 h-8 rounded-lg bg-[#FF6B35]/10 flex items-center justify-center shrink-0">
-                                                    <Ticket size={16} className="text-[#FF6B35]" />
+                                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                                    <Ticket size={16} className="text-primary" />
                                                 </div>
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-black text-[#1A2D23] truncate">{t.voucherRedeemTitle}</p>
-                                                    <p className="text-[10px] text-[#1A2D23]/50 font-bold truncate">
+                                                    <p className="text-xs font-black text-ink truncate">{t.voucherRedeemTitle}</p>
+                                                    <p className="text-[10px] text-ink/50 font-bold truncate">
                                                         {t.voucherRedeemSub(availableMealVouchers, maxRedeemable)}
                                                     </p>
                                                 </div>
@@ -1153,11 +1153,11 @@ export default function CartDrawer({
                                                     onClick={() => setMealVouchersUsed(Math.max(0, cappedMealVouchersUsed - 1))}
                                                     aria-label={t.voucherRedeemTitle + " −1"}
                                                     disabled={vouchersLockedByPromo || cappedMealVouchersUsed <= 0}
-                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-primary flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary hover:text-white transition-colors"
                                                 >
                                                     <Minus size={12} strokeWidth={3} />
                                                 </button>
-                                                <span className="w-7 text-center font-black text-base text-[#1A2D23]">
+                                                <span className="w-7 text-center font-black text-base text-ink">
                                                     {cappedMealVouchersUsed}
                                                 </span>
                                                 <button
@@ -1165,7 +1165,7 @@ export default function CartDrawer({
                                                     onClick={() => setMealVouchersUsed(Math.min(maxRedeemable, cappedMealVouchersUsed + 1))}
                                                     aria-label={t.voucherRedeemTitle + " +1"}
                                                     disabled={vouchersLockedByPromo || cappedMealVouchersUsed >= maxRedeemable}
-                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-[#FF6B35] flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                                    className="w-10 h-10 rounded-lg bg-white border border-[#FFD6B0] text-primary flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-primary hover:text-white transition-colors"
                                                 >
                                                     <Plus size={12} strokeWidth={3} />
                                                 </button>
@@ -1192,9 +1192,9 @@ export default function CartDrawer({
                                 <Link
                                     href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
                                     onClick={onClose}
-                                    className="group flex items-center gap-1.5 px-1 text-[11px] font-bold text-[#1A2D23]/50 hover:text-[#FF6B35] transition-colors"
+                                    className="group flex items-center gap-1.5 px-1 text-[11px] font-bold text-ink/50 hover:text-primary transition-colors"
                                 >
-                                    <Ticket size={12} className="text-[#FF6B35]/70 shrink-0" />
+                                    <Ticket size={12} className="text-primary/70 shrink-0" />
                                     <span>{t.voucherUpsell} <span className="inline-block group-hover:translate-x-0.5 transition-transform">→</span></span>
                                 </Link>
                             )}
@@ -1209,7 +1209,7 @@ export default function CartDrawer({
                                     {cappedMealVouchersUsed > 0 && (
                                         <div className="flex justify-between text-xs">
                                             <span className="text-gray-500 flex items-center gap-1">
-                                                <Ticket size={11} className="text-[#FF6B35]" />
+                                                <Ticket size={11} className="text-primary" />
                                                 {t.voucherDeduct(cappedMealVouchersUsed)}
                                             </span>
                                             <span className="text-green-600 font-bold">- RM {mealVoucherDiscount.toFixed(2)}</span>
@@ -1218,7 +1218,7 @@ export default function CartDrawer({
                                     {addonCreditDiscount > 0 && (
                                         <div className="flex justify-between text-xs">
                                             <span className="text-gray-500 flex items-center gap-1">
-                                                <Ticket size={11} className="text-[#FF6B35]" />
+                                                <Ticket size={11} className="text-primary" />
                                                 {t.addonCreditDeduct(addonCreditLineNames)}
                                                 <span className="text-gray-400">{t.addonCreditRemaining(addonCreditsRemainingAfter)}</span>
                                             </span>
@@ -1263,7 +1263,7 @@ export default function CartDrawer({
                                     {!isMultiDelivery && shortfallToFreeDelivery > 0 && (
                                         <div className="px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-md">
                                             <p className="text-[11px] font-bold text-amber-700">
-                                                💡 {t.stillNeed} <span className="text-[#FF6B35]">RM {shortfallToFreeDelivery.toFixed(2)}</span>
+                                                💡 {t.stillNeed} <span className="text-primary">RM {shortfallToFreeDelivery.toFixed(2)}</span>
                                                 {/* thresholdForDistance() is null only past 7.5km (far tier, flat
                                                     RM 18). That tier can't reach here — freeDeliveryShortfall()
                                                     returns 0 for it, so this whole block is gated off. The ??
@@ -1292,7 +1292,7 @@ export default function CartDrawer({
 
                                     {paymentMethod === 'fpx' && (
                                         <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
-                                            <p className="text-xs text-[#FF6B35] font-bold">{t.securePayment}</p>
+                                            <p className="text-xs text-primary font-bold">{t.securePayment}</p>
                                             <p className="text-[11px] text-gray-500 mt-0.5">{t.fpxRedirectNote}</p>
                                         </div>
                                     )}
@@ -1319,16 +1319,16 @@ export default function CartDrawer({
                     (when any) + total + CTA. pb covers the iPhone home-indicator
                     safe area so the button never sits under the gesture bar. */}
                 {cart.length > 0 && (
-                    <div className="shrink-0 bg-white border-t border-[#E3EADA] px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(0,0,0,0.06)] space-y-2.5">
+                    <div className="shrink-0 bg-white border-t border-line px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-10px_30px_rgba(0,0,0,0.06)] space-y-2.5">
                         {!currentUser && (
                             <div className="space-y-1.5">
                                 {/* 访客为主 CTA（转化优先），登录为次选 —— 强制注册是
                                     弃单头号原因，手机+地址反正配送必须要。 */}
                                 <button onClick={handleGuestCheckout} disabled={guestLoading}
-                                    className="w-full py-3 bg-[#1A2D23] text-white rounded-xl flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#2A3D33] transition-colors disabled:opacity-60">
+                                    className="w-full py-3 bg-ink text-white rounded-xl flex items-center justify-center gap-2 font-bold text-sm hover:bg-[#2A3D33] transition-colors disabled:opacity-60">
                                     ⚡ {guestLoading ? t.guestEntering : t.guestCheckout}
                                 </button>
-                                <button onClick={onAuthOpen} className="w-full py-2 text-[#1A2D23]/60 hover:text-[#1A2D23] rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-colors">
+                                <button onClick={onAuthOpen} className="w-full py-2 text-ink/60 hover:text-ink rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-colors">
                                     {t.haveAccount}
                                 </button>
                             </div>
@@ -1353,10 +1353,10 @@ export default function CartDrawer({
                                     <>
                                         <div className="flex items-center gap-2 bg-white border border-red-200 rounded-lg px-2.5 py-1.5">
                                             <span className="text-[10px] font-medium text-gray-400 shrink-0">{t.paymentIdLabel}</span>
-                                            <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23]">{checkoutError.paymentId}</code>
+                                            <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-ink">{checkoutError.paymentId}</code>
                                             <button type="button"
                                                 onClick={() => { navigator.clipboard?.writeText(checkoutError.paymentId!).then(() => { setCopiedId(true); setTimeout(() => setCopiedId(false), 2000); }).catch(() => {}); }}
-                                                className="shrink-0 min-h-[36px] px-3 rounded-md bg-[#1A2D23] text-white text-[11px] font-bold">
+                                                className="shrink-0 min-h-[36px] px-3 rounded-md bg-ink text-white text-[11px] font-bold">
                                                 {copiedId ? t.copied : t.copyId}
                                             </button>
                                         </div>
@@ -1376,12 +1376,12 @@ export default function CartDrawer({
                             <div className="grid grid-cols-2 gap-3" role="group" aria-label={t.paymentLabel}>
                                 <button onClick={() => { setPaymentMethod('qr'); setTimeout(() => qrBlockRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120); }}
                                     aria-pressed={paymentMethod === 'qr'}
-                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-500'}`}>
+                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'qr' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-500'}`}>
                                     <Phone size={14} /> DuitNow / QR
                                 </button>
                                 <button onClick={() => setPaymentMethod('fpx')}
                                     aria-pressed={paymentMethod === 'fpx'}
-                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]' : 'border-gray-200 text-gray-500'}`}>
+                                    className={`min-h-[44px] py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${paymentMethod === 'fpx' ? 'border-primary bg-primary/5 text-primary' : 'border-gray-200 text-gray-500'}`}>
                                     <CreditCard size={14} /> FPX / {locale === 'en' ? 'Card' : '银行卡'}
                                 </button>
                             </div>
@@ -1392,14 +1392,14 @@ export default function CartDrawer({
                                 {(promoApplied || cappedMealVouchersUsed > 0 || addonCreditDiscount > 0) && (
                                     <span className="text-sm text-gray-400 line-through mr-2">RM {cartTotal.toFixed(2)}</span>
                                 )}
-                                <span className="text-2xl font-black text-[#FF6B35]">RM {finalTotal.toFixed(2)}</span>
+                                <span className="text-2xl font-black text-primary">RM {finalTotal.toFixed(2)}</span>
                             </div>
                         </div>
                         {/* 还缺什么，写出来。以前 CTA 只是灰着，缺项的判据在
                             disabled= 和 className= 里各抄了一遍、文案是四层三元 ——
                             客人只能自己猜是哪一项没填。 */}
                         {checkoutBlockers.length > 0 && currentUser && (
-                            <p className="text-[12px] font-medium text-[#1A2D23]/55 text-center">
+                            <p className="text-[12px] font-medium text-ink/55 text-center">
                                 {t.missingPrefix}{checkoutBlockers.join(' · ')}
                             </p>
                         )}
@@ -1407,7 +1407,7 @@ export default function CartDrawer({
                             disabled={checkoutDisabled}
                             className={`w-full py-3.5 rounded-xl font-bold text-base transition-all shadow-xl flex items-center justify-center gap-2.5 ${checkoutDisabled
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                : 'btn-primary shadow-[#FF6B35]/20'}`}>
+                                : 'btn-primary shadow-primary/20'}`}>
                             <CheckCircle size={20} />
                             {openingPayment ? t.openingPayment : submitting ? t.submitting : t.confirmOrder}
                         </button>

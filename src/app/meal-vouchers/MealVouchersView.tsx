@@ -307,21 +307,21 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     const SeoIntro = () => (
         <section className="max-w-2xl mx-auto px-6 pt-10 pb-2">
             <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#FF6B35] flex items-center justify-center text-white shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center text-white shrink-0">
                     <Ticket size={24} />
                 </div>
-                <h1 className="text-2xl md:text-3xl font-black text-[#1A2D23] leading-tight">{t.seoHeading}</h1>
+                <h1 className="text-2xl md:text-3xl font-black text-ink leading-tight">{t.seoHeading}</h1>
             </div>
-            <p className="text-[15px] md:text-base text-[#1A2D23]/75 leading-relaxed mb-4">{t.seoLead}</p>
+            <p className="text-[15px] md:text-base text-ink/75 leading-relaxed mb-4">{t.seoLead}</p>
             <ul className="space-y-2 mb-4">
                 {t.seoPoints.map((p, i) => (
-                    <li key={i} className="flex items-start gap-2 text-[14px] md:text-[15px] text-[#1A2D23]/80">
-                        <CheckCircle size={18} className="text-[#FF6B35] shrink-0 mt-0.5" />
+                    <li key={i} className="flex items-start gap-2 text-[14px] md:text-[15px] text-ink/80">
+                        <CheckCircle size={18} className="text-primary shrink-0 mt-0.5" />
                         <span>{p}</span>
                     </li>
                 ))}
             </ul>
-            <p className="text-[14px] text-[#1A2D23]/70 leading-relaxed">{t.seoHow}</p>
+            <p className="text-[14px] text-ink/70 leading-relaxed">{t.seoHow}</p>
         </section>
     );
 
@@ -347,13 +347,13 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
             }
         };
         return (
-            <div className="min-h-screen bg-[#FDFBF7] py-10">
+            <div className="min-h-screen bg-paper py-10">
                 <SeoIntro />
                 <div className="max-w-2xl mx-auto px-6 mt-4">
-                    <div className="bg-white rounded-2xl border border-[#E3EADA] p-6 text-center space-y-4">
+                    <div className="bg-white rounded-2xl border border-line p-6 text-center space-y-4">
                         <p className="text-gray-500 text-sm">{isGuest ? t.guestUpgradeHint : t.loginRequired}</p>
                         {isGuest ? (
-                            <button onClick={handleGuestUpgrade} className="inline-flex items-center gap-2 px-6 py-3 bg-[#1A2D23] text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
+                            <button onClick={handleGuestUpgrade} className="inline-flex items-center gap-2 px-6 py-3 bg-ink text-white rounded-xl font-bold hover:bg-[#2A3D33] transition-colors">
                                 {t.guestUpgradeButton}
                             </button>
                         ) : (
@@ -362,11 +362,11 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                     原来只给「返回首页登录」等于把想买券的人赶走。 */}
                                 <button
                                     onClick={() => setAuthOpen(true)}
-                                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] transition-colors"
+                                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-colors"
                                 >
                                     {t.signInHere}
                                 </button>
-                                <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-[#1A2D23]/60 rounded-xl font-bold text-sm hover:text-[#1A2D23] transition-colors">
+                                <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-ink/60 rounded-xl font-bold text-sm hover:text-ink transition-colors">
                                     <ArrowLeft size={16} /> {t.loginReturnHome}
                                 </Link>
                                 {authOpen && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} locale={locale} />}
@@ -397,10 +397,10 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
     if (!authChecked) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] py-10">
+            <div className="min-h-screen bg-paper py-10">
                 <SeoIntro />
                 <div className="flex items-center justify-center py-10">
-                    <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full"></div>
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
                 </div>
             </div>
         );
@@ -408,14 +408,14 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
     if (successPurchaseId) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-white rounded-[32px] p-8 shadow-2xl border border-[#E3EADA] text-center space-y-5">
+            <div className="min-h-screen bg-paper flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-[32px] p-8 shadow-2xl border border-line text-center space-y-5">
                     {pendingReview ? (
                         <>
                             <div className="w-20 h-20 mx-auto bg-amber-50 rounded-full flex items-center justify-center">
                                 <Clock className="w-10 h-10 text-amber-600" />
                             </div>
-                            <h2 className="text-2xl font-black text-[#1A2D23]">{t.pendingReviewTitle}</h2>
+                            <h2 className="text-2xl font-black text-ink">{t.pendingReviewTitle}</h2>
                             <p className="text-sm text-gray-500 leading-relaxed">
                                 {t.pendingReviewBody1}<br />
                                 {t.pendingReviewBody2(voucherCount, purchasedValidityDays)}
@@ -426,24 +426,24 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                             <div className="w-20 h-20 mx-auto bg-green-50 rounded-full flex items-center justify-center">
                                 <CheckCircle className="w-10 h-10 text-green-600" />
                             </div>
-                            <h2 className="text-2xl font-black text-[#1A2D23]">{t.successTitle}</h2>
+                            <h2 className="text-2xl font-black text-ink">{t.successTitle}</h2>
                             <p className="text-sm text-gray-500 leading-relaxed">
                                 {t.successBody(voucherCount, purchasedValidityDays)}
                             </p>
                         </>
                     )}
 
-                    <div className="bg-[#FDFBF7] rounded-2xl p-4 text-left text-xs text-gray-500 space-y-1.5 border border-[#E3EADA]">
-                        <p>{t.orderIdLabel}<span className="font-mono text-[#1A2D23]">{successPurchaseId.slice(-8).toUpperCase()}</span></p>
-                        <p>{t.voucherCountLabel}<span className="font-bold text-[#1A2D23]">{voucherCount}</span></p>
-                        <p>{t.validityLabel}<span className="font-bold text-[#1A2D23]">{t.validityDays(purchasedValidityDays)}</span></p>
+                    <div className="bg-paper rounded-2xl p-4 text-left text-xs text-gray-500 space-y-1.5 border border-line">
+                        <p>{t.orderIdLabel}<span className="font-mono text-ink">{successPurchaseId.slice(-8).toUpperCase()}</span></p>
+                        <p>{t.voucherCountLabel}<span className="font-bold text-ink">{voucherCount}</span></p>
+                        <p>{t.validityLabel}<span className="font-bold text-ink">{t.validityDays(purchasedValidityDays)}</span></p>
                     </div>
 
                     <div className="flex gap-3">
-                        <Link href={memberHref} className="flex-1 py-3 bg-[#1A2D23] text-white rounded-xl font-bold text-sm hover:bg-[#2A3D33] transition-colors">
+                        <Link href={memberHref} className="flex-1 py-3 bg-ink text-white rounded-xl font-bold text-sm hover:bg-[#2A3D33] transition-colors">
                             {t.viewWallet}
                         </Link>
-                        <Link href={homeHref} className="flex-1 py-3 bg-[#FF6B35] text-white rounded-xl font-bold text-sm hover:bg-[#E95D31] transition-colors">
+                        <Link href={homeHref} className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-dark transition-colors">
                             {t.goOrder}
                         </Link>
                     </div>
@@ -453,9 +453,9 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
     }
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7]">
+        <div className="min-h-screen bg-paper">
             {/* Header */}
-            <header className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] text-white pt-8 pb-12 px-4 shadow-2xl shadow-[#1A2D23]/10">
+            <header className="bg-gradient-to-br from-ink via-[#21352A] to-[#12221A] text-white pt-8 pb-12 px-4 shadow-2xl shadow-ink/10">
                 <div className="max-w-2xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
                         <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-2xl border border-white/10 text-white/90 text-sm font-bold transition-all active:scale-95">
@@ -464,7 +464,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                         <LanguageSwitcher current={locale} />
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-[#FF6B35] flex items-center justify-center shadow-xl shadow-[#FF6B35]/30">
+                        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-xl shadow-primary/30">
                             <Ticket size={32} />
                         </div>
                         <div>
@@ -474,17 +474,17 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                     </div>
                     <div className="mt-6 grid grid-cols-3 gap-2">
                         <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <ShieldCheck size={16} className="text-[#FF6B35] mb-1" />
+                            <ShieldCheck size={16} className="text-primary mb-1" />
                             <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{t.badgeAnyDishLabel}</p>
                             <p className="text-xs font-bold text-white">{t.badgeAnyDishValue}</p>
                         </div>
                         <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <Calendar size={16} className="text-[#FF6B35] mb-1" />
+                            <Calendar size={16} className="text-primary mb-1" />
                             <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{t.badgeValidityLabel}</p>
                             <p className="text-xs font-bold text-white">{t.badgeValidityValue}</p>
                         </div>
                         <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 border border-white/10">
-                            <Sparkles size={16} className="text-[#FF6B35] mb-1" />
+                            <Sparkles size={16} className="text-primary mb-1" />
                             <p className="text-[10px] text-white/60 font-bold uppercase tracking-wider">{t.badgeSavingsLabel}</p>
                             <p className="text-xs font-bold text-white">{t.badgeSavingsValue(formatPercent(BEST_SAVINGS_PERCENT))}</p>
                         </div>
@@ -506,21 +506,21 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 onClick={() => setSelectedBundleId(bundle.id)}
                                 className={`w-full text-left bg-white rounded-3xl p-5 border-2 transition-all shadow-lg ${
                                     isSelected
-                                        ? 'border-[#FF6B35] shadow-[#FF6B35]/15 scale-[1.01]'
-                                        : 'border-[#E3EADA] hover:border-[#FF6B35]/40'
+                                        ? 'border-primary shadow-primary/15 scale-[1.01]'
+                                        : 'border-line hover:border-primary/40'
                                 }`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-colors shrink-0 ${
-                                        isSelected ? 'bg-[#FF6B35] text-white' : 'bg-[#FDFBF7] text-[#1A2D23]'
+                                        isSelected ? 'bg-primary text-white' : 'bg-paper text-ink'
                                     }`}>
                                         <Ticket size={28} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-0.5">
-                                            <h3 className="text-lg font-black text-[#1A2D23]">{localiseBundleLabel(bundle)}</h3>
+                                            <h3 className="text-lg font-black text-ink">{localiseBundleLabel(bundle)}</h3>
                                             {highlight && (
-                                                <span className="px-2 py-0.5 bg-[#FF6B35]/10 text-[#FF6B35] text-[10px] font-black rounded-full uppercase tracking-wider">
+                                                <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-black rounded-full uppercase tracking-wider">
                                                     {highlight}
                                                 </span>
                                             )}
@@ -538,7 +538,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                         </p>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-2xl font-black text-[#FF6B35]">
+                                        <p className="text-2xl font-black text-primary">
                                             RM {bundle.price.toFixed(2)}
                                         </p>
                                         {/* 原来这里有一条划掉的面值（RM 370）。已移除：面值口径
@@ -560,11 +560,11 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                         const redeem = REDEEM_SAVINGS.get(selectedBundle.id)!;
                         return (
                             <div className="bg-[#FFF3E0]/70 border border-[#FFD6B0]/70 rounded-2xl px-4 py-3.5">
-                                <p className="text-[13px] font-black text-[#1A2D23] flex items-center gap-1.5">
-                                    <Ticket size={14} className="text-[#FF6B35] shrink-0" />
+                                <p className="text-[13px] font-black text-ink flex items-center gap-1.5">
+                                    <Ticket size={14} className="text-primary shrink-0" />
                                     {t.voucherValueNoteTitle}
                                 </p>
-                                <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
+                                <p className="text-[12px] text-ink/70 font-medium leading-relaxed mt-1">
                                     {t.voucherValueNote(
                                         bestVoucherValue.toFixed(2),
                                         selectedBundle.pricePerVoucher.toFixed(2),
@@ -573,11 +573,11 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                     )}
                                 </p>
                                 {redeem.total > 0 && (
-                                    <p className="text-[12px] text-[#1A2D23]/70 font-medium leading-relaxed mt-1">
+                                    <p className="text-[12px] text-ink/70 font-medium leading-relaxed mt-1">
                                         {t.voucherValueNoteTotal(selectedBundle.voucherCount, redeem.total.toFixed(2))}
                                     </p>
                                 )}
-                                <p className="text-[11px] text-[#1A2D23]/50 font-medium leading-relaxed mt-1">
+                                <p className="text-[11px] text-ink/50 font-medium leading-relaxed mt-1">
                                     {t.voucherValueNoteTopUp}
                                 </p>
                             </div>
@@ -586,9 +586,9 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                 </section>
 
                 {/* Promo code */}
-                <section className="bg-white rounded-2xl p-5 shadow-md border border-[#E3EADA] space-y-2">
-                    <h4 className="text-sm font-black text-[#1A2D23] flex items-center gap-2">
-                        <Tag size={14} className="text-[#FF6B35]" /> {t.promoTitle}
+                <section className="bg-white rounded-2xl p-5 shadow-md border border-line space-y-2">
+                    <h4 className="text-sm font-black text-ink flex items-center gap-2">
+                        <Tag size={14} className="text-primary" /> {t.promoTitle}
                     </h4>
                     <div className="flex gap-2">
                         <div className="flex-1 relative">
@@ -599,7 +599,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 onChange={(e) => { setPromoCode(e.target.value); setPromoError(''); }}
                                 placeholder={t.promoPlaceholder}
                                 disabled={promoApplied}
-                                className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-[#FDFBF7] border-[#E3EADA] focus:border-[#FF6B35]'}`}
+                                className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-sm font-medium outline-none transition-colors ${promoApplied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-paper border-line focus:border-primary'}`}
                             />
                         </div>
                         {promoApplied ? (
@@ -615,7 +615,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 type="button"
                                 onClick={handleApplyPromo}
                                 disabled={isCheckingPromo}
-                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'}`}
+                                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${isCheckingPromo ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-ink text-white hover:bg-[#2A3D33]'}`}
                             >
                                 {isCheckingPromo ? t.promoVerifying : t.promoApply}
                             </button>
@@ -629,7 +629,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                     )}
 
                     {/* Price summary */}
-                    <div className="mt-3 pt-3 border-t border-[#E3EADA] space-y-1 text-xs">
+                    <div className="mt-3 pt-3 border-t border-line space-y-1 text-xs">
                         <div className="flex justify-between text-gray-500">
                             <span>{t.summaryPrice}</span>
                             <span className={promoApplied ? 'line-through' : ''}>RM {selectedBundle.price.toFixed(2)}</span>
@@ -640,48 +640,48 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 <span>− RM {cappedPromoDiscount.toFixed(2)}</span>
                             </div>
                         )}
-                        <div className="flex justify-between font-black text-[#1A2D23] text-sm pt-1">
+                        <div className="flex justify-between font-black text-ink text-sm pt-1">
                             <span>{t.summaryTotal}</span>
-                            <span className="text-[#FF6B35]">RM {finalPrice.toFixed(2)}</span>
+                            <span className="text-primary">RM {finalPrice.toFixed(2)}</span>
                         </div>
                     </div>
                 </section>
 
                 {/* Rules */}
-                <section className="bg-white/60 rounded-2xl p-5 border border-[#E3EADA]">
-                    <h4 className="text-sm font-black text-[#1A2D23] mb-3 flex items-center gap-2">
-                        <Sparkles size={14} className="text-[#FF6B35]" /> {t.rulesTitle}
+                <section className="bg-white/60 rounded-2xl p-5 border border-line">
+                    <h4 className="text-sm font-black text-ink mb-3 flex items-center gap-2">
+                        <Sparkles size={14} className="text-primary" /> {t.rulesTitle}
                     </h4>
                     <ul className="space-y-2 text-xs text-gray-600 leading-relaxed">
                         <li className="flex items-start gap-2">
-                            <span className="text-[#FF6B35] mt-0.5">•</span>
+                            <span className="text-primary mt-0.5">•</span>
                             <span>{t.rule1}</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-[#FF6B35] mt-0.5">•</span>
+                            <span className="text-primary mt-0.5">•</span>
                             <span>{t.rule2}</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-[#FF6B35] mt-0.5">•</span>
+                            <span className="text-primary mt-0.5">•</span>
                             <span>{t.rule3}</span>
                         </li>
                         <li className="flex items-start gap-2">
-                            <span className="text-[#FF6B35] mt-0.5">•</span>
+                            <span className="text-primary mt-0.5">•</span>
                             <span>{t.rule4}</span>
                         </li>
                     </ul>
                 </section>
 
                 {/* Payment selector */}
-                <section className="bg-white rounded-2xl p-5 shadow-md border border-[#E3EADA] space-y-4">
+                <section className="bg-white rounded-2xl p-5 shadow-md border border-line space-y-4">
                     <div>
-                        <h4 className="text-sm font-black text-[#1A2D23] mb-3">{t.chooseMethod}</h4>
+                        <h4 className="text-sm font-black text-ink mb-3">{t.chooseMethod}</h4>
                         <div className="grid grid-cols-2 gap-3">
                             <button
                                 onClick={() => setPaymentMethod('qr')}
                                 className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${
                                     paymentMethod === 'qr'
-                                        ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]'
+                                        ? 'border-primary bg-primary/5 text-primary'
                                         : 'border-gray-200 text-gray-400'
                                 }`}
                             >
@@ -691,7 +691,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                 onClick={() => setPaymentMethod('fpx')}
                                 className={`py-3 rounded-xl border-2 font-bold text-xs flex justify-center items-center gap-2 transition-all ${
                                     paymentMethod === 'fpx'
-                                        ? 'border-[#FF6B35] bg-[#FF6B35]/5 text-[#FF6B35]'
+                                        ? 'border-primary bg-primary/5 text-primary'
                                         : 'border-gray-200 text-gray-400'
                                 }`}
                             >
@@ -702,12 +702,12 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
                     {paymentMethod === 'qr' && (
                         <div className="space-y-2 animate-in fade-in duration-300">
-                            <div className="bg-white rounded-xl border border-[#E3EADA] p-2 max-w-[200px] mx-auto shadow-sm">
+                            <div className="bg-white rounded-xl border border-line p-2 max-w-[200px] mx-auto shadow-sm">
                                 <Image src="/duitnow_qr.png" alt="DuitNow QR - INCREDIBOWL SERVICES" width={400} height={550} className="w-full h-auto rounded-lg" />
                             </div>
-                            <div className="bg-[#F5F3EF] rounded-lg px-3 py-2 text-[10px] text-[#1A2D23]/60 space-y-0.5">
-                                <p>{t.qrMerchantLabel}<strong className="text-[#1A2D23]">INCREDIBOWL SERVICES</strong></p>
-                                <p>{t.qrAmountLabel}<strong className="text-[#1A2D23]">RM {finalPrice.toFixed(2)}</strong>{promoApplied && <span className="text-green-600">{t.qrAmountDiscountSuffix(cappedPromoDiscount.toFixed(2))}</span>}</p>
+                            <div className="bg-[#F5F3EF] rounded-lg px-3 py-2 text-[10px] text-ink/60 space-y-0.5">
+                                <p>{t.qrMerchantLabel}<strong className="text-ink">INCREDIBOWL SERVICES</strong></p>
+                                <p>{t.qrAmountLabel}<strong className="text-ink">RM {finalPrice.toFixed(2)}</strong>{promoApplied && <span className="text-green-600">{t.qrAmountDiscountSuffix(cappedPromoDiscount.toFixed(2))}</span>}</p>
                                 <p>{t.qrReviewNotice}</p>
                             </div>
                             {receiptUploaded && receiptUrl ? (
@@ -724,11 +724,11 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                                     </label>
                                 </div>
                             ) : (
-                                <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${uploading ? 'bg-orange-50 border-orange-200' : 'bg-[#FDFBF7] border-[#E3EADA] hover:border-[#FF6B35]'}`}>
+                                <label className={`w-full py-2.5 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors text-sm ${uploading ? 'bg-orange-50 border-orange-200' : 'bg-paper border-line hover:border-primary'}`}>
                                     {uploading ? (
-                                        <><Loader2 size={16} className="text-[#FF6B35] animate-spin" /><span className="font-bold text-[#FF6B35] text-xs">{t.receiptUploading}</span></>
+                                        <><Loader2 size={16} className="text-primary animate-spin" /><span className="font-bold text-primary text-xs">{t.receiptUploading}</span></>
                                     ) : (
-                                        <><Plus size={16} className="text-[#FF6B35]" /><span className="font-bold text-[#FF6B35] text-xs">{t.receiptUpload}</span></>
+                                        <><Plus size={16} className="text-primary" /><span className="font-bold text-primary text-xs">{t.receiptUpload}</span></>
                                     )}
                                     <input type="file" accept="image/*" className="hidden" onChange={handleUpload} disabled={uploading} />
                                 </label>
@@ -738,7 +738,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
 
                     {paymentMethod === 'fpx' && (
                         <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 animate-in fade-in duration-300">
-                            <p className="text-xs text-[#FF6B35] font-bold">{t.fpxSecureTitle}</p>
+                            <p className="text-xs text-primary font-bold">{t.fpxSecureTitle}</p>
                             <p className="text-[11px] text-gray-500 mt-0.5">{t.fpxBlurb(selectedBundle.voucherCount)}</p>
                         </div>
                     )}
@@ -759,7 +759,7 @@ export default function MealVouchersView({ locale }: { locale: Locale }) {
                     className={`w-full py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 transition-all shadow-xl ${
                         submitting || !paymentMethod || (paymentMethod === 'qr' && !receiptUploaded)
                             ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                            : 'bg-[#FF6B35] text-white hover:bg-[#E95D31] shadow-[#FF6B35]/20'
+                            : 'bg-primary text-white hover:bg-primary-dark shadow-primary/20'
                     }`}
                 >
                     {submitting ? (

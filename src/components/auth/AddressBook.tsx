@@ -135,7 +135,7 @@ export default function AddressBook({
             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
                 <span className="flex items-center gap-1"><MapPin size={10} /> {t.title(savedAddresses.length)}</span>
                 {savedAddresses.length < MAX_SAVED_ADDRESSES ? (
-                    <button onClick={onAddNew} className="flex items-center gap-0.5 text-[#FF6B35] font-black hover:underline">
+                    <button onClick={onAddNew} className="flex items-center gap-0.5 text-primary font-black hover:underline">
                         <Plus size={10} /> {t.addNew}
                     </button>
                 ) : (
@@ -161,21 +161,21 @@ export default function AddressBook({
                             : tierFromDistance(entry.distanceKm);
                     return (
                         <div key={entry.id}
-                            className={`px-3 py-2.5 bg-white rounded-xl border flex items-center gap-2 text-xs ${isCurrent ? 'border-[#FF6B35] ring-1 ring-[#FF6B35]/30' : 'border-gray-100'}`}>
+                            className={`px-3 py-2.5 bg-white rounded-xl border flex items-center gap-2 text-xs ${isCurrent ? 'border-primary ring-1 ring-primary/30' : 'border-gray-100'}`}>
                             <div className="flex-1 min-w-0">
-                                <p className="font-bold text-[#1A2D23] truncate">
-                                    {entry.label && <span className="mr-1.5 px-1.5 py-0.5 bg-[#E3EADA] rounded text-[10px]">{entry.label}</span>}
+                                <p className="font-bold text-ink truncate">
+                                    {entry.label && <span className="mr-1.5 px-1.5 py-0.5 bg-line rounded text-[10px]">{entry.label}</span>}
                                     {entry.address}
                                 </p>
                                 <p className="text-[10px] text-gray-400 mt-0.5">{tierLabel(tier)} · {entry.distanceKm}km</p>
                             </div>
                             {isCurrent ? (
-                                <span className="shrink-0 flex items-center gap-1 text-[#FF6B35] font-black text-[10px]">
+                                <span className="shrink-0 flex items-center gap-1 text-primary font-black text-[10px]">
                                     <CheckCircle size={12} /> {t.current}
                                 </span>
                             ) : (
                                 <button onClick={() => handleSelect(entry)} disabled={!!busyId}
-                                    className="shrink-0 px-2.5 py-1.5 bg-[#1A2D23] text-white rounded-lg font-black text-[10px] hover:bg-[#2A3D33] transition-all disabled:opacity-50">
+                                    className="shrink-0 px-2.5 py-1.5 bg-ink text-white rounded-lg font-black text-[10px] hover:bg-[#2A3D33] transition-all disabled:opacity-50">
                                     {busy ? <Loader2 size={12} className="animate-spin" /> : t.use}
                                 </button>
                             )}

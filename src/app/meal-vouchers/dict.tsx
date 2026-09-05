@@ -199,9 +199,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         summaryTotal: '实付',
 
         rulesTitle: '使用规则',
-        rule1: <><strong className="text-[#1A2D23]">1 张餐券 = 1 份主餐</strong>（RM 16.90–19.90 全额抵；超过 RM 19.90 的主餐用券后补差价，券抵 RM 19.90；多张券同用优先抵最贵的，最划算）</>,
-        rule2: <><strong className="text-[#1A2D23]">加购项（饮料、加料、蛋等）</strong>不在抵扣范围内，需现金支付</>,
-        rule3: <>有效期按组合：<strong className="text-[#1A2D23]">5 / 10 张装 30 天，20 张装 60 天</strong>，过期归零；不可叠加 RM 折扣券（推荐券 / 积分券）</>,
+        rule1: <><strong className="text-ink">1 张餐券 = 1 份主餐</strong>（RM 16.90–19.90 全额抵；超过 RM 19.90 的主餐用券后补差价，券抵 RM 19.90；多张券同用优先抵最贵的，最划算）</>,
+        rule2: <><strong className="text-ink">加购项（饮料、加料、蛋等）</strong>不在抵扣范围内，需现金支付</>,
+        rule3: <>有效期按组合：<strong className="text-ink">5 / 10 张装 30 天，20 张装 60 天</strong>，过期归零；不可叠加 RM 折扣券（推荐券 / 积分券）</>,
         rule4: '预付现金购买，不支持现金退款',
 
         chooseMethod: '选择付款方式',
@@ -240,9 +240,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
 
         pendingReviewTitle: '付款已收到，等待核对',
         pendingReviewBody1: '我们会在 24 小时内核对你的付款截图。',
-        pendingReviewBody2: (n, days) => <>核对通过后，<span className="text-[#FF6B35] font-bold">{n} 张餐券</span>即刻到账，{days} 天有效。</>,
+        pendingReviewBody2: (n, days) => <>核对通过后，<span className="text-primary font-bold">{n} 张餐券</span>即刻到账，{days} 天有效。</>,
         successTitle: '购买成功 🎉',
-        successBody: (n, days) => <><span className="text-[#FF6B35] font-bold text-xl">{n} 张餐券</span>已到账，可在结账时一键抵扣主餐。<br />有效期：{days} 天</>,
+        successBody: (n, days) => <><span className="text-primary font-bold text-xl">{n} 张餐券</span>已到账，可在结账时一键抵扣主餐。<br />有效期：{days} 天</>,
         orderIdLabel: '📌 订单号：',
         voucherCountLabel: '🎟️ 张数：',
         validityLabel: '⏰ 有效期：',
@@ -309,9 +309,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         summaryTotal: 'You pay',
 
         rulesTitle: 'How it works',
-        rule1: <><strong className="text-[#1A2D23]">1 voucher = 1 main dish</strong> (RM 16.90–19.90 fully covered; premium mains above RM 19.90 use one voucher plus a small top-up for the difference; multiple vouchers cover the priciest mains first)</>,
-        rule2: <><strong className="text-[#1A2D23]">Add-ons (drinks, extra sides, eggs, etc.)</strong> are not covered and require cash payment</>,
-        rule3: <>Validity depends on bundle: <strong className="text-[#1A2D23]">5 / 10 packs are valid 30 days, 20-pack is valid 60 days</strong>. Expired vouchers are forfeited. Cannot stack with RM promo codes (referral / points)</>,
+        rule1: <><strong className="text-ink">1 voucher = 1 main dish</strong> (RM 16.90–19.90 fully covered; premium mains above RM 19.90 use one voucher plus a small top-up for the difference; multiple vouchers cover the priciest mains first)</>,
+        rule2: <><strong className="text-ink">Add-ons (drinks, extra sides, eggs, etc.)</strong> are not covered and require cash payment</>,
+        rule3: <>Validity depends on bundle: <strong className="text-ink">5 / 10 packs are valid 30 days, 20-pack is valid 60 days</strong>. Expired vouchers are forfeited. Cannot stack with RM promo codes (referral / points)</>,
         rule4: 'Prepaid in cash, no cash refunds',
 
         chooseMethod: 'Choose payment method',
@@ -350,9 +350,9 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
 
         pendingReviewTitle: 'Payment received — pending review',
         pendingReviewBody1: 'We will verify your receipt within 24 hours.',
-        pendingReviewBody2: (n, days) => <>Once verified, <span className="text-[#FF6B35] font-bold">{n} vouchers</span> will be credited and valid for {days} days.</>,
+        pendingReviewBody2: (n, days) => <>Once verified, <span className="text-primary font-bold">{n} vouchers</span> will be credited and valid for {days} days.</>,
         successTitle: 'Purchase successful 🎉',
-        successBody: (n, days) => <><span className="text-[#FF6B35] font-bold text-xl">{n} vouchers</span> credited to your wallet. Redeem at checkout with one tap.<br />Validity: {days} days</>,
+        successBody: (n, days) => <><span className="text-primary font-bold text-xl">{n} vouchers</span> credited to your wallet. Redeem at checkout with one tap.<br />Validity: {days} days</>,
         orderIdLabel: '📌 Order ID: ',
         voucherCountLabel: '🎟️ Vouchers: ',
         validityLabel: '⏰ Validity: ',

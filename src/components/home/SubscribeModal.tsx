@@ -143,14 +143,14 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
             />
 
             {/* Card */}
-            <div className="relative w-full max-w-sm bg-[#FDFBF7] rounded-[28px] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 zoom-in-95 duration-300">
+            <div className="relative w-full max-w-sm bg-paper rounded-[28px] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 zoom-in-95 duration-300">
                 <button
                     type="button"
                     onClick={dismiss}
                     aria-label={t.close}
                     className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-sm border border-gray-100 transition-colors"
                 >
-                    <X size={18} className="text-[#1A2D23]/70" strokeWidth={2.5} />
+                    <X size={18} className="text-ink/70" strokeWidth={2.5} />
                 </button>
 
                 {/* Hero photo */}
@@ -165,7 +165,7 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
                     {/* Soft fade for legibility */}
                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/35 to-transparent" />
                     {/* Voucher badge */}
-                    <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF6B35] text-white text-xs font-black shadow-lg">
+                    <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-black shadow-lg">
                         <Gift size={13} strokeWidth={2.5} />
                         <span>{t.badge}</span>
                     </div>
@@ -175,11 +175,11 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
                 <div className="p-6">
                     <h3
                         id={titleId}
-                        className="text-xl font-black text-[#1A2D23] leading-tight mb-2"
+                        className="text-xl font-black text-ink leading-tight mb-2"
                     >
                         {t.title}
                     </h3>
-                    <p className="text-sm text-[#1A2D23]/70 leading-relaxed mb-4">
+                    <p className="text-sm text-ink/70 leading-relaxed mb-4">
                         {t.body}
                     </p>
 
@@ -190,7 +190,7 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
                         <button
                             type="button"
                             onClick={goOrder}
-                            className="flex flex-col items-center justify-center gap-0.5 w-full py-3 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-2xl font-black text-base shadow-lg shadow-[#FF6B35]/30 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-out"
+                            className="flex flex-col items-center justify-center gap-0.5 w-full py-3 bg-primary hover:bg-primary-dark text-white rounded-2xl font-black text-base shadow-lg shadow-primary/30 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-out"
                         >
                             <span className="flex items-center gap-1.5"><Check size={17} strokeWidth={3} />{t.claimedTitle}</span>
                             <span className="text-[11px] font-bold text-white/80">{t.claimedSubBefore}{FIRST_ORDER_PROMO_CODE}{t.claimedSubAfter}</span>
@@ -199,21 +199,21 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
                         <button
                             type="button"
                             onClick={claim}
-                            className="flex items-center justify-center gap-2 w-full py-3.5 bg-[#FF6B35] hover:bg-[#E95D31] text-white rounded-2xl font-black text-base shadow-lg shadow-[#FF6B35]/30 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-out"
+                            className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary hover:bg-primary-dark text-white rounded-2xl font-black text-base shadow-lg shadow-primary/30 active:scale-[0.97] transition-[transform,background-color] duration-150 ease-out"
                         >
                             <Gift size={18} strokeWidth={2.5} />
                             <span>{t.claimBefore}{FIRST_ORDER_PROMO_RM}{t.claimAfter}</span>
                         </button>
                     )}
 
-                    <p className="text-[11px] text-center text-[#1A2D23]/40 font-bold my-3">{t.or}</p>
+                    <p className="text-[11px] text-center text-ink/40 font-bold my-3">{t.or}</p>
 
                     <a
                         href={waUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={dismiss}
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border-2 border-[#25D366]/40 hover:border-[#25D366] text-[#1A2D23] rounded-2xl font-bold text-sm active:scale-[0.97] transition-[transform,border-color] duration-150 ease-out"
+                        className="flex items-center justify-center gap-2 w-full py-3 bg-white border-2 border-[#25D366]/40 hover:border-[#25D366] text-ink rounded-2xl font-bold text-sm active:scale-[0.97] transition-[transform,border-color] duration-150 ease-out"
                     >
                         <svg viewBox="0 0 32 32" className="w-5 h-5 fill-white shrink-0" aria-hidden="true">
                             <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.472 1.977 1.017 2.78 1.23 1.82 2.638 3.41 4.673 4.34.616.287 2.035.888 2.722.888.817 0 2.15-.515 2.49-1.318.158-.386.216-.815.216-1.231 0-.817-.27-.99-.974-1.318-.388-.198-1.005-.43-1.477-.687zM16.205 28.997c-2.262 0-4.49-.617-6.418-1.792l-.46-.273-4.762 1.247 1.273-4.633-.302-.476a12.652 12.652 0 0 1-1.946-6.747c0-7 5.674-12.673 12.673-12.673 3.387 0 6.57 1.32 8.96 3.71a12.595 12.595 0 0 1 3.7 8.97c0 7.001-5.778 12.667-12.776 12.667zm10.79-23.461A14.864 14.864 0 0 0 16.207 1.205C7.965 1.205 1.252 7.918 1.236 16.16c0 2.64.69 5.215 2 7.49l-2.131 7.79 7.97-2.09a15.122 15.122 0 0 0 7.122 1.817h.014c8.244 0 15.07-6.713 15.07-14.957 0-3.998-1.65-7.752-4.487-10.575z" />
@@ -224,7 +224,7 @@ export default function SubscribeModal({ locale }: { locale: Locale }) {
                     <button
                         type="button"
                         onClick={dismiss}
-                        className="block mx-auto mt-3 text-xs text-[#1A2D23]/50 hover:text-[#1A2D23]/80 transition-colors"
+                        className="block mx-auto mt-3 text-xs text-ink/50 hover:text-ink/80 transition-colors"
                     >
                         {t.later}
                     </button>

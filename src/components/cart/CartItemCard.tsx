@@ -23,11 +23,11 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
         // 控件** —— 读屏会念两遍，手指点在卡片任何位置都会开编辑弹窗（想点删除、
         // 想选文字都会误触）。删掉隐形那层，只留可见按钮。
         <div
-            className="bg-white rounded-[24px] p-4 border border-[#E3EADA]/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group"
+            className="bg-white rounded-[24px] p-4 border border-line/80 shadow-sm flex flex-col animate-in slide-in-from-bottom duration-300 relative group"
             style={{ animationDelay: `${animationDelay}ms` }}
         >
             <div className="flex gap-4 items-center relative z-20">
-                <div className="w-16 h-16 rounded-2xl bg-[#FDFBF7] flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-[#E3EADA]/30">
+                <div className="w-16 h-16 rounded-2xl bg-paper flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-line/30">
                     {item.dish.image?.startsWith('/') ? (
                         // sizes 必填：容器固定 64px，不给的话 next/image 按最大宽取图。
                         <Image src={item.dish.image} alt={item.dish.name} fill sizes="64px" className="object-cover" />
@@ -35,10 +35,10 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
                     <div className="flex flex-col">
-                        <h4 className="font-bold text-[#1A2D23] text-[15px] leading-snug truncate">
+                        <h4 className="font-bold text-ink text-[15px] leading-snug truncate">
                             {displayName}
                             {item.dishQty > 1 && (
-                                <span className="ml-2 text-[10px] bg-[#FF6B35]/10 text-[#FF6B35] px-1.5 py-0.5 rounded-md font-medium inline-block relative -top-0.5">
+                                <span className="ml-2 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-medium inline-block relative -top-0.5">
                                     x{item.dishQty}
                                 </span>
                             )}
@@ -55,7 +55,7 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                             </p>
                         )}
                     </div>
-                    <p className="text-[#FF6B35] font-black text-lg mt-1 relative z-20 w-fit">
+                    <p className="text-primary font-black text-lg mt-1 relative z-20 w-fit">
                         RM {(item.price * item.quantity).toFixed(2)}
                     </p>
                 </div>

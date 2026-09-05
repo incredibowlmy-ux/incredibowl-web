@@ -48,7 +48,7 @@ export default function SoldOutNotice({ locale = 'zh' }: { locale?: 'zh' | 'en' 
     const resume = holiday.length ? nextOpenDayAfter(holiday[holiday.length - 1]) : '';
 
     return (
-        <div className="mx-3 lg:mx-2 mb-4 rounded-xl border border-[#FF6B35]/30 bg-[#FFF4EC] px-4 py-3 flex items-start gap-2">
+        <div className="mx-3 lg:mx-2 mb-4 rounded-xl border border-primary/30 bg-[#FFF4EC] px-4 py-3 flex items-start gap-2">
             <span className="text-lg leading-none" aria-hidden>📢</span>
             <div className="text-[13px] leading-relaxed text-[#9A3412] font-semibold space-y-1">
                 {holiday.length > 0 && (

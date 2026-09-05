@@ -16,7 +16,7 @@ export default function HeroTrustStrip({ locale = 'zh' }: { locale?: Locale }) {
                 type="button"
                 onClick={scrollToFeedback}
                 aria-label={t.ariaLabel}
-                className="w-full bg-white/70 backdrop-blur rounded-2xl border border-[#E3EADA] px-4 md:px-6 py-3 md:py-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 hover:bg-white/90 hover:border-[#FF6B35]/30 transition-[background-color,border-color] duration-150 ease-out group"
+                className="w-full bg-white/70 backdrop-blur rounded-2xl border border-line px-4 md:px-6 py-3 md:py-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 hover:bg-white/90 hover:border-primary/30 transition-[background-color,border-color] duration-150 ease-out group"
             >
                 {/* 5 stars + score */}
                 <div className="flex items-center gap-1.5">
@@ -25,13 +25,13 @@ export default function HeroTrustStrip({ locale = 'zh' }: { locale?: Locale }) {
                             <Star key={i} size={14} className="text-amber-400 fill-amber-400" strokeWidth={0} />
                         ))}
                     </span>
-                    <span className="text-[13px] font-black text-[#1A2D23] leading-none">5.0</span>
+                    <span className="text-[13px] font-black text-ink leading-none">5.0</span>
                 </div>
 
-                <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
+                <span className="hidden sm:inline w-px h-4 bg-ink/15" aria-hidden="true" />
 
                 {/* Google reviews count + small G logo */}
-                <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#1A2D23]/80">
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink/80">
                     <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A10.99 10.99 0 0 0 12 23z" fill="#34A853"/>
@@ -42,21 +42,21 @@ export default function HeroTrustStrip({ locale = 'zh' }: { locale?: Locale }) {
                     <span>{GOOGLE_REVIEW_COUNT}{t.googleReviewsSuffix}</span>
                 </span>
 
-                <span className="hidden sm:inline w-px h-4 bg-[#1A2D23]/15" aria-hidden="true" />
+                <span className="hidden sm:inline w-px h-4 bg-ink/15" aria-hidden="true" />
 
                 {/* Coverage areas — plain line on mobile, pill chips on desktop
                     (real text either way, doubles as GEO keywords) */}
-                <span className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#1A2D23]/75">
+                <span className="lg:hidden inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink/75">
                     <span>{COVERAGE_AREAS_TEXT} <span className="opacity-70">{t.neighbours}</span></span>
                 </span>
                 <span className="hidden lg:inline-flex items-center flex-wrap justify-center gap-1.5">
                     {COVERAGE_AREAS.map((area) => (
-                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E3EADA]/60 text-[12px] font-bold text-[#1A2D23]/80">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" aria-hidden="true" />
+                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-line/60 text-[12px] font-bold text-ink/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden="true" />
                             {area}
                         </span>
                     ))}
-                    <span className="ml-1 text-[13px] font-semibold text-[#1A2D23]/60">{t.neighbours}</span>
+                    <span className="ml-1 text-[13px] font-semibold text-ink/60">{t.neighbours}</span>
                 </span>
             </button>
         </div>

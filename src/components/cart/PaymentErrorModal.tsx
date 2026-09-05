@@ -55,17 +55,17 @@ export default function PaymentErrorModal({
                 <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <AlertCircle size={36} className="text-red-500" />
                 </div>
-                <h3 id="payment-error-title" className="text-xl font-black text-[#1A2D23] mb-2">{msg}</h3>
+                <h3 id="payment-error-title" className="text-xl font-black text-ink mb-2">{msg}</h3>
                 {error.paymentId ? (
                     <>
                         <p className="text-xs text-gray-500 leading-relaxed mb-3">{t.maybeCharged}</p>
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
                             <span className="text-[10px] font-medium text-gray-400 shrink-0">{t.paymentIdLabel}</span>
-                            <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-[#1A2D23] text-left">{error.paymentId}</code>
+                            <code className="flex-1 min-w-0 truncate text-[11px] font-bold text-ink text-left">{error.paymentId}</code>
                             <button
                                 type="button"
                                 onClick={() => { navigator.clipboard?.writeText(error.paymentId!).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {}); }}
-                                className="shrink-0 min-h-[36px] px-3 rounded-lg bg-[#1A2D23] text-white text-[11px] font-bold"
+                                className="shrink-0 min-h-[36px] px-3 rounded-lg bg-ink text-white text-[11px] font-bold"
                             >
                                 {copied ? t.copied : t.copy}
                             </button>
@@ -81,7 +81,7 @@ export default function PaymentErrorModal({
                 ) : (
                     <p className="text-xs text-gray-500 leading-relaxed">{t.notCharged}</p>
                 )}
-                <button onClick={onClose} className="mt-4 min-h-[44px] px-6 py-2.5 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">{t.close}</button>
+                <button onClick={onClose} className="mt-4 min-h-[44px] px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors">{t.close}</button>
             </div>
         </div>
     );

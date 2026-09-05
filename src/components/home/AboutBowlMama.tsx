@@ -13,15 +13,15 @@ const BODY: Record<Locale, React.ReactNode> = {
                 碗妈的厨房，是从一个家开始的。
             </p>
             <p>
-                我住在 Pearl Point 隔壁的 <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>，
-                每天凌晨 <span className="font-bold text-[#FF6B35]">6 点</span>去巴刹挑食材 ——
+                我住在 Pearl Point 隔壁的 <span className="font-semibold text-ink">Pearl Suria Residence</span>，
+                每天凌晨 <span className="font-bold text-primary">6 点</span>去巴刹挑食材 ——
                 新鲜的鱼、当天的肉、还在滴水的蔬菜。
             </p>
             <p>
                 回家亲手煮、亲手装盒。<br />
-                装好之后，通过 <span className="font-semibold text-[#1A2D23]">Grab delivery</span> 送到你家门口。
+                装好之后，通过 <span className="font-semibold text-ink">Grab delivery</span> 送到你家门口。
             </p>
-            <p className="font-bold text-[#1A2D23]">
+            <p className="font-bold text-ink">
                 这不是开店面的零售生意，<br />
                 是一个邻居为你做的午餐和晚餐。
             </p>
@@ -31,7 +31,7 @@ const BODY: Record<Locale, React.ReactNode> = {
             </p>
             <p>
                 如果你也想念家里的味道，<br />
-                <span className="font-semibold text-[#1A2D23]">网页下单</span>或 <span className="font-semibold text-[#1A2D23]">WhatsApp</span> 告诉我都可以。
+                <span className="font-semibold text-ink">网页下单</span>或 <span className="font-semibold text-ink">WhatsApp</span> 告诉我都可以。
             </p>
         </>
     ),
@@ -41,15 +41,15 @@ const BODY: Record<Locale, React.ReactNode> = {
                 It all started in a home kitchen.
             </p>
             <p>
-                I live in <span className="font-semibold text-[#1A2D23]">Pearl Suria Residence</span>, right next door to Pearl Point.
-                Every morning at <span className="font-bold text-[#FF6B35]">6 AM</span> I&apos;m at the wet market &mdash;
+                I live in <span className="font-semibold text-ink">Pearl Suria Residence</span>, right next door to Pearl Point.
+                Every morning at <span className="font-bold text-primary">6 AM</span> I&apos;m at the wet market &mdash;
                 picking the freshest fish, the day&apos;s meat, and vegetables still cool from the morning rinse.
             </p>
             <p>
                 Everything is cooked at home and packed by hand.<br />
-                From my door, <span className="font-semibold text-[#1A2D23]">Grab</span> takes it straight to yours.
+                From my door, <span className="font-semibold text-ink">Grab</span> takes it straight to yours.
             </p>
-            <p className="font-bold text-[#1A2D23]">
+            <p className="font-bold text-ink">
                 This isn&apos;t a restaurant. No shopfront, no dine-in &mdash;<br />
                 just a neighbour cooking lunch and dinner for you.
             </p>
@@ -58,7 +58,7 @@ const BODY: Record<Locale, React.ReactNode> = {
                 But every box you open was cooked and packed by one person, in one kitchen, that same morning.
             </p>
             <p>
-                Miss the taste of home? <span className="font-semibold text-[#1A2D23]">Order on the website</span> or drop me a message on <span className="font-semibold text-[#1A2D23]">WhatsApp</span> &mdash; whichever&apos;s easier.
+                Miss the taste of home? <span className="font-semibold text-ink">Order on the website</span> or drop me a message on <span className="font-semibold text-ink">WhatsApp</span> &mdash; whichever&apos;s easier.
             </p>
         </>
     ),
@@ -74,11 +74,11 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
             aria-labelledby="about-heading"
             className="lg:col-span-12 mt-4 scroll-mt-32"
         >
-            <div className="relative bg-gradient-to-br from-[#FFF8F0] via-[#FDFBF7] to-[#FFF1E5] rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden">
+            <div className="relative bg-gradient-to-br from-[#FFF8F0] via-paper to-[#FFF1E5] rounded-[32px] border border-primary/15 shadow-sm overflow-hidden">
                 {/* Decorative quote mark */}
                 <div
                     aria-hidden="true"
-                    className="absolute top-4 right-6 lg:top-6 lg:right-10 select-none pointer-events-none font-serif text-[120px] lg:text-[200px] leading-none text-[#FF6B35]/10"
+                    className="absolute top-4 right-6 lg:top-6 lg:right-10 select-none pointer-events-none font-serif text-[120px] lg:text-[200px] leading-none text-primary/10"
                 >
                     &ldquo;
                 </div>
@@ -86,13 +86,13 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                 <div className="relative px-6 md:px-10 lg:px-14 py-10 md:py-12 lg:py-16">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-6 lg:mb-8">
-                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-[#FF6B35]/12 flex items-center justify-center shrink-0">
-                            <Home size={20} className="text-[#FF6B35] lg:hidden" strokeWidth={2.5} />
-                            <Home size={24} className="text-[#FF6B35] hidden lg:block" strokeWidth={2.5} />
+                        <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-primary/12 flex items-center justify-center shrink-0">
+                            <Home size={20} className="text-primary lg:hidden" strokeWidth={2.5} />
+                            <Home size={24} className="text-primary hidden lg:block" strokeWidth={2.5} />
                         </div>
                         <h2
                             id="about-heading"
-                            className="text-[26px] md:text-[32px] lg:text-[40px] font-extrabold tracking-tight text-[#1A2D23] leading-tight"
+                            className="text-[26px] md:text-[32px] lg:text-[40px] font-extrabold tracking-tight text-ink leading-tight"
                         >
                             {t.heading}
                         </h2>
@@ -101,12 +101,12 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                     {/* Desktop: 2-col grid for body + photo. Mobile: text first, photo below. */}
                     <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-10 xl:gap-14 lg:items-start">
                         {/* Body — storytelling, generous spacing */}
-                        <div className={`max-w-[640px] lg:max-w-none space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[17px] ${bodyLeading} text-[#1A2D23]/85 font-medium`}>
+                        <div className={`max-w-[640px] lg:max-w-none space-y-5 lg:space-y-6 text-[15px] md:text-[17px] lg:text-[17px] ${bodyLeading} text-ink/85 font-medium`}>
                             {BODY[locale]}
 
                             {/* Signature */}
-                            <div className="!mt-8 lg:!mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[17px] font-bold text-[#1A2D23]">
-                                <span className="text-[#FF6B35]">{t.signatureDash}</span>
+                            <div className="!mt-8 lg:!mt-10 flex items-center gap-2 text-[15px] md:text-[17px] lg:text-[17px] font-bold text-ink">
+                                <span className="text-primary">{t.signatureDash}</span>
                                 <span>{t.signatureName}</span>
                             </div>
                         </div>
@@ -114,7 +114,7 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                         {/* Photo: pasar evidence — real shot of veggies + price boards
                             Mobile: stacked below text; Desktop: column on the right. */}
                         <figure className="mt-8 lg:mt-0">
-                            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md border border-[#FF6B35]/10">
+                            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden shadow-md border border-primary/10">
                                 <Image
                                     src="/pasar-bowlmama.jpg"
                                     alt={t.photoAlt}
@@ -124,7 +124,7 @@ export default function AboutBowlMama({ locale = 'zh' }: { locale?: Locale }) {
                                     className="object-cover"
                                 />
                             </div>
-                            <figcaption className="mt-2 text-[12px] lg:text-[13px] text-[#1A2D23]/55 italic text-center">
+                            <figcaption className="mt-2 text-[12px] lg:text-[13px] text-ink/55 italic text-center">
                                 {t.photoCaption}
                             </figcaption>
                         </figure>

@@ -93,7 +93,7 @@ export default function WhatsAppStickyBar({ locale = 'zh' }: { locale?: Locale }
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[70] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-4 md:pb-[calc(1rem+env(safe-area-inset-bottom))] pointer-events-none animate-in slide-in-from-bottom-4 fade-in duration-300 lg:left-auto lg:right-6 lg:bottom-6 lg:px-0 lg:pb-0 lg:w-[380px]">
-            <div className="pointer-events-auto max-w-md mx-auto lg:mx-0 lg:max-w-none bg-[#1A2D23] text-white rounded-2xl shadow-2xl shadow-black/40 backdrop-blur flex items-center gap-2.5 pl-3 pr-2 py-2 ring-1 ring-white/5">
+            <div className="pointer-events-auto max-w-md mx-auto lg:mx-0 lg:max-w-none bg-ink text-white rounded-2xl shadow-2xl shadow-black/40 backdrop-blur flex items-center gap-2.5 pl-3 pr-2 py-2 ring-1 ring-white/5">
                 {/* WhatsApp 降为次选：只剩这个绿色圆钮。主行动是站内领码。 */}
                 <a
                     href={waUrl}
@@ -120,7 +120,7 @@ export default function WhatsAppStickyBar({ locale = 'zh' }: { locale?: Locale }
                     <button
                         type="button"
                         onClick={goOrder}
-                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
+                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-primary/30 active:scale-95 transition-[transform,background-color] duration-150"
                     >
                         {t.order}
                     </button>
@@ -128,7 +128,7 @@ export default function WhatsAppStickyBar({ locale = 'zh' }: { locale?: Locale }
                     <button
                         type="button"
                         onClick={claim}
-                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-[#FF6B35]/30 active:scale-95 transition-[transform,background-color] duration-150"
+                        className="shrink-0 px-3.5 py-2 btn-primary text-[12px] font-black shadow-md shadow-primary/30 active:scale-95 transition-[transform,background-color] duration-150"
                     >
                         {t.claim}
                     </button>

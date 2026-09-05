@@ -42,17 +42,17 @@ export default function PageShell({ locale, children }: PageShellProps) {
 
     return (
         <>
-            <header className="bg-[#FDFBF7] border-b border-[#E3EADA]">
+            <header className="bg-paper border-b border-line">
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
                     <Link href={home} aria-label={homeLabel} className="group flex items-center gap-3 min-w-0">
-                        <span className="w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-full bg-white border-2 border-[#E3EADA] shadow-sm flex items-center justify-center overflow-hidden">
+                        <span className="w-11 h-11 md:w-12 md:h-12 shrink-0 rounded-full bg-white border-2 border-line shadow-sm flex items-center justify-center overflow-hidden">
                             <Image src="/logo.webp" alt="" width={96} height={96} className="scale-110" />
                         </span>
                         <span className="min-w-0 leading-none">
-                            <span className="block truncate text-lg md:text-xl font-bold tracking-tight text-[#1A2D23] group-hover:text-[#FF6B35] transition-colors">
+                            <span className="block truncate text-lg md:text-xl font-bold tracking-tight text-ink group-hover:text-primary transition-colors">
                                 {wordmark}
                             </span>
-                            <span className="mt-1 block text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-[#FF6B35]">
+                            <span className="mt-1 block text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-primary">
                                 Incredibowl.my
                             </span>
                         </span>

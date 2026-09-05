@@ -123,7 +123,7 @@ export default function EditCustomerModal({ user, token, onClose, onSaved }: Edi
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between rounded-t-2xl">
                     <div>
-                        <h2 className="text-lg font-black text-[#1A2D23]">编辑客户</h2>
+                        <h2 className="text-lg font-black text-ink">编辑客户</h2>
                         <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[300px]">{user.email || user.id}</p>
                     </div>
                     <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -170,7 +170,7 @@ export default function EditCustomerModal({ user, token, onClose, onSaved }: Edi
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="例：补偿订单延误 / 推荐人奖励 / 数据更正"
-                            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF6B35] resize-none"
+                            className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
                             rows={2}
                         />
                         <p className="text-[10px] text-gray-400 mt-1">写入审计日志，方便日后追溯</p>
@@ -195,7 +195,7 @@ export default function EditCustomerModal({ user, token, onClose, onSaved }: Edi
                     <button
                         onClick={handleSave}
                         disabled={saving || hasNumError}
-                        className="px-4 py-2 bg-[#FF6B35] hover:bg-[#E95D31] disabled:bg-gray-300 text-white text-sm font-bold rounded-lg flex items-center gap-2"
+                        className="px-4 py-2 bg-primary hover:bg-primary-dark disabled:bg-gray-300 text-white text-sm font-bold rounded-lg flex items-center gap-2"
                     >
                         {saving ? <><Loader2 size={14} className="animate-spin" /> 保存中</> : <><Save size={14} /> 保存</>}
                     </button>
@@ -221,7 +221,7 @@ function FieldText({ label, value, onChange, placeholder, textarea }: {
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
                     rows={2}
-                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF6B35] resize-none"
+                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
                 />
             ) : (
                 <input
@@ -229,7 +229,7 @@ function FieldText({ label, value, onChange, placeholder, textarea }: {
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF6B35]"
+                    className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 />
             )}
         </div>
@@ -251,14 +251,14 @@ function FieldNum({ label, currentValue, state, onChange, resolved }: {
                     <button
                         type="button"
                         onClick={() => onChange({ ...state, mode: 'set' })}
-                        className={`px-2 py-0.5 rounded ${state.mode === 'set' ? 'bg-white text-[#1A2D23] shadow-sm' : 'text-gray-500'}`}
+                        className={`px-2 py-0.5 rounded ${state.mode === 'set' ? 'bg-white text-ink shadow-sm' : 'text-gray-500'}`}
                     >
                         设定
                     </button>
                     <button
                         type="button"
                         onClick={() => onChange({ ...state, mode: 'delta' })}
-                        className={`px-2 py-0.5 rounded ${state.mode === 'delta' ? 'bg-white text-[#1A2D23] shadow-sm' : 'text-gray-500'}`}
+                        className={`px-2 py-0.5 rounded ${state.mode === 'delta' ? 'bg-white text-ink shadow-sm' : 'text-gray-500'}`}
                     >
                         +/-
                     </button>
@@ -276,7 +276,7 @@ function FieldNum({ label, currentValue, state, onChange, resolved }: {
                             : onChange({ ...state, deltaValue: e.target.value })
                     }
                     placeholder={state.mode === 'set' ? `当前: ${currentValue}` : '+10 或 -5'}
-                    className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#FF6B35] ${
+                    className={`flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary ${
                         resolved.error ? 'border-red-300' : 'border-gray-200'
                     }`}
                 />
@@ -284,7 +284,7 @@ function FieldNum({ label, currentValue, state, onChange, resolved }: {
                     {resolved.error
                         ? <span className="text-red-500">{resolved.error}</span>
                         : resolved.changed
-                            ? <span className="text-[#FF6B35]">→ {resolved.value}</span>
+                            ? <span className="text-primary">→ {resolved.value}</span>
                             : <span>当前 {currentValue}</span>}
                 </span>
             </div>

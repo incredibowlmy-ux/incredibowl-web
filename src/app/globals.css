@@ -27,6 +27,12 @@
   --color-rooster: var(--rooster);
   --color-twine: var(--twine);
 
+  /* 2026-09-05 T1：全站硬编码色迁 token。值与原 [#hex] 逐字节相同，只是有了名字。
+     ink = 深绿墨色（主文字）、paper = 米白纸底、line = 浅绿线/边框。 */
+  --color-ink: #1A2D23;
+  --color-paper: #FDFBF7;
+  --color-line: #E3EADA;
+
   --color-incredibowl-primary: var(--primary);
   --color-incredibowl-secondary: var(--secondary);
   --color-incredibowl-accent: var(--accent);

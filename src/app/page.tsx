@@ -346,7 +346,7 @@ export default function V4BentoLayout() {
     const cartCount = calcCartCount(cart);
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans">
+        <div className="min-h-screen bg-paper text-ink font-sans">
             <NavBar
                 currentUser={currentUser}
                 cartCount={cartCount}

@@ -11,52 +11,52 @@ export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
     // 历史漂移：EN 版运费表宽 280px、ZH 260px。C1 零 diff 合并原样保留；统不统一由老板定。
     const tierListMaxW = locale === 'en' ? 'max-w-[280px]' : 'max-w-[260px]';
     return (
-        <footer className="pt-20 pb-32 md:pb-36 bg-white border-t border-[#E3EADA]">
+        <footer className="pt-20 pb-32 md:pb-36 bg-white border-t border-line">
             <div className="max-w-7xl mx-auto px-6 text-center space-y-12">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-8 border-b border-gray-100 pb-12">
                     <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-white border-2 border-[#E3EADA] flex items-center justify-center overflow-hidden shadow-sm">
+                        <div className="w-16 h-16 rounded-full bg-white border-2 border-line flex items-center justify-center overflow-hidden shadow-sm">
                             <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                         </div>
                         <div className="text-left">
-                            <span className="text-xl font-black tracking-tight uppercase text-[#1A2D23] leading-none">Incredibowl.my</span>
-                            <p className="text-[13px] font-bold text-[#FF6B35] tracking-widest uppercase mt-1">Cook with Mum&apos;s Sincere Heart</p>
+                            <span className="text-xl font-black tracking-tight uppercase text-ink leading-none">Incredibowl.my</span>
+                            <p className="text-[13px] font-bold text-primary tracking-widest uppercase mt-1">Cook with Mum&apos;s Sincere Heart</p>
                         </div>
                     </div>
-                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 md:gap-x-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 md:gap-x-8 text-ink/60 font-bold text-xs uppercase tracking-widest">
                         {/* 2026-09-05：页脚原来只有 Blog + 法务三条，而 Catering 还
                             `hidden lg:inline` —— 手机上整站唯一的导航（NavBar 的锚点）
                             也是 lg 才有，等于餐券包 / 会员中心 / 到会在移动端完全无入口。
                             EN 版当时连 Blog 链接都没有，/en/blog 是孤儿页（在 sitemap 里、
                             哪里都没链到）。 */}
-                        <Link href={t.links.menu} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.dailyMenu}</Link>
-                        <Link href={t.links.vouchers} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.mealVouchers}</Link>
-                        <Link href={t.links.member} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.member}</Link>
-                        <Link href={t.links.blog} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Blog</Link>
-                        <Link href={t.links.catering} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.catering}</Link>
-                        <Link href={t.links.privacy} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
-                        <Link href={t.links.terms} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
-                        <Link href={t.links.refund} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>
+                        <Link href={t.links.menu} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">{t.dailyMenu}</Link>
+                        <Link href={t.links.vouchers} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">{t.mealVouchers}</Link>
+                        <Link href={t.links.member} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">{t.member}</Link>
+                        <Link href={t.links.blog} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">Blog</Link>
+                        <Link href={t.links.catering} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">{t.catering}</Link>
+                        <Link href={t.links.privacy} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">Privacy Policy</Link>
+                        <Link href={t.links.terms} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">Terms of Service</Link>
+                        <Link href={t.links.refund} className="inline-flex items-center min-h-[36px] px-1 hover:text-primary transition-colors">Refund & Cancellation</Link>
                     </div>
                 </div>
 
                 {/* Mobile: existing centered stack (preserved) */}
-                <div className="grid md:grid-cols-1 gap-6 text-[#1A2D23] lg:hidden">
+                <div className="grid md:grid-cols-1 gap-6 text-ink lg:hidden">
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide">{t.contactUs}</p>
                         <div className="flex flex-col items-center gap-2.5 max-w-xs mx-auto">
                             <a
                                 href="https://wa.me/60103370197"
-                                className="w-full min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors active:scale-[0.98]"
+                                className="w-full min-h-[44px] flex items-center gap-3 px-5 bg-paper hover:bg-[#FFF3E0] border border-line rounded-xl text-ink font-bold text-sm transition-colors active:scale-[0.98]"
                             >
-                                <Phone size={16} className="text-[#FF6B35] shrink-0" />
+                                <Phone size={16} className="text-primary shrink-0" />
                                 <span>010-337 0197</span>
                             </a>
                             <a
                                 href="mailto:hello@incredibowl.my"
-                                className="w-full min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors active:scale-[0.98]"
+                                className="w-full min-h-[44px] flex items-center gap-3 px-5 bg-paper hover:bg-[#FFF3E0] border border-line rounded-xl text-ink font-bold text-sm transition-colors active:scale-[0.98]"
                             >
-                                <Mail size={16} className="text-[#FF6B35] shrink-0" />
+                                <Mail size={16} className="text-primary shrink-0" />
                                 <span>hello@incredibowl.my</span>
                             </a>
                         </div>
@@ -71,40 +71,40 @@ export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
                                 <Image src="/xhs-logo.png" alt="Xiaohongshu" width={40} height={40} className="w-[40px] h-[40px] object-contain" />
                             </a>
                         </div>
-                        <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-[#E3EADA]/50 pt-10 w-full max-w-3xl mx-auto">
+                        <div className="mt-12 flex flex-col items-center justify-center gap-6 border-t border-line/50 pt-10 w-full max-w-3xl mx-auto">
                             {/* Brand Trust Signals */}
-                            <div className="flex justify-center flex-wrap gap-4 md:gap-10 text-[#1A2D23]/70 font-bold text-[11px] md:text-xs uppercase tracking-[0.2em] items-center">
+                            <div className="flex justify-center flex-wrap gap-4 md:gap-10 text-ink/70 font-bold text-[11px] md:text-xs uppercase tracking-[0.2em] items-center">
                                 <span className="flex items-center gap-1.5"><Leaf size={14} className="text-[#2D5F3E]" /> No MSG</span>
                                 <span className="opacity-20 hidden md:block">•</span>
-                                <span className="flex items-center gap-1.5"><Sun size={14} className="text-[#FF6B35]" /> Daily Fresh</span>
+                                <span className="flex items-center gap-1.5"><Sun size={14} className="text-primary" /> Daily Fresh</span>
                                 <span className="opacity-20 hidden md:block">•</span>
                                 <span className="flex items-center gap-1.5"><Heart size={14} className="text-[#C76F40]" /> Mum&apos;s Recipe</span>
                             </div>
 
                             {/* Location/Community */}
                             <div className="text-center mt-2">
-                                <p className="text-xs text-[#1A2D23]/55 uppercase tracking-[0.2em] font-bold mb-2 flex justify-center items-center gap-1.5">
-                                    <MapPin size={12} className="text-[#FF6B35]" />{t.servingAround}
+                                <p className="text-xs text-ink/55 uppercase tracking-[0.2em] font-bold mb-2 flex justify-center items-center gap-1.5">
+                                    <MapPin size={12} className="text-primary" />{t.servingAround}
                                 </p>
                                 <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
                                     {COVERAGE_AREAS.map((area) => (
-                                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FDFBF7] border border-[#E3EADA] text-[12px] font-semibold text-[#1A2D23]/75">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" />
+                                        <span key={area} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-paper border border-line text-[12px] font-semibold text-ink/75">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                             {area}
                                         </span>
                                     ))}
                                 </div>
-                                <ul className={`text-[12px] text-[#1A2D23]/65 mt-3 mx-auto ${tierListMaxW} space-y-1`}>
+                                <ul className={`text-[12px] text-ink/65 mt-3 mx-auto ${tierListMaxW} space-y-1`}>
                                     {DELIVERY_TIER_COPY.map((tier) => (
                                         <li key={t.tierRange(tier)} className="flex justify-between gap-3">
-                                            <span className="font-semibold text-[#1A2D23]/80">{t.tierRange(tier)}</span>
+                                            <span className="font-semibold text-ink/80">{t.tierRange(tier)}</span>
                                             <span><span className="font-bold">RM {tier.fee}</span> · {t.tierFreeOver(tier)}</span>
                                         </li>
                                     ))}
                                     {/* 7.5km+ now appears as the last row of the tier list itself
                                         (RM 18 flat) — the old "not delivered" note was removed
                                         rather than reworded, to avoid saying it twice. */}
-                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">{t.beyondShort}</li>
+                                    <li className="text-[11px] text-ink/40 italic text-center pt-1">{t.beyondShort}</li>
                                 </ul>
                             </div>
                         </div>
@@ -112,23 +112,23 @@ export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
                 </div>
 
                 {/* Desktop: 3-col grid */}
-                <div className="hidden lg:grid lg:grid-cols-3 lg:gap-12 lg:text-left text-[#1A2D23]">
+                <div className="hidden lg:grid lg:grid-cols-3 lg:gap-12 lg:text-left text-ink">
                     {/* Col 1: Contact + Social */}
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide">{t.contactUs}</p>
                         <div className="flex flex-col gap-2.5">
                             <a
                                 href="https://wa.me/60103370197"
-                                className="min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors"
+                                className="min-h-[44px] flex items-center gap-3 px-5 bg-paper hover:bg-[#FFF3E0] border border-line rounded-xl text-ink font-bold text-sm transition-colors"
                             >
-                                <Phone size={16} className="text-[#FF6B35] shrink-0" />
+                                <Phone size={16} className="text-primary shrink-0" />
                                 <span>010-337 0197</span>
                             </a>
                             <a
                                 href="mailto:hello@incredibowl.my"
-                                className="min-h-[44px] flex items-center gap-3 px-5 bg-[#FDFBF7] hover:bg-[#FFF3E0] border border-[#E3EADA] rounded-xl text-[#1A2D23] font-bold text-sm transition-colors"
+                                className="min-h-[44px] flex items-center gap-3 px-5 bg-paper hover:bg-[#FFF3E0] border border-line rounded-xl text-ink font-bold text-sm transition-colors"
                             >
-                                <Mail size={16} className="text-[#FF6B35] shrink-0" />
+                                <Mail size={16} className="text-primary shrink-0" />
                                 <span>hello@incredibowl.my</span>
                             </a>
                         </div>
@@ -148,25 +148,25 @@ export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
                     {/* Col 2: Coverage */}
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide flex items-center gap-2">
-                            <MapPin size={16} className="text-[#FF6B35]" />
+                            <MapPin size={16} className="text-primary" />
                             {t.coverageHeading}
                         </p>
                         <div className="flex flex-wrap gap-2">
                             {COVERAGE_AREAS.map((area) => (
-                                <span key={area} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FDFBF7] border border-[#E3EADA] text-[13px] font-semibold text-[#1A2D23]/75">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B35] shrink-0" />
+                                <span key={area} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-paper border border-line text-[13px] font-semibold text-ink/75">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                     {area}
                                 </span>
                             ))}
                         </div>
-                        <ul className={`text-[13px] text-[#1A2D23]/65 space-y-1 ${tierListMaxW}`}>
+                        <ul className={`text-[13px] text-ink/65 space-y-1 ${tierListMaxW}`}>
                             {DELIVERY_TIER_COPY.map((tier) => (
                                 <li key={t.tierRange(tier)} className="flex justify-between gap-3">
-                                    <span className="font-semibold text-[#1A2D23]/80">{t.tierRange(tier)}</span>
+                                    <span className="font-semibold text-ink/80">{t.tierRange(tier)}</span>
                                     <span><span className="font-bold">RM {tier.fee}</span> · {t.tierFreeOver(tier)}</span>
                                 </li>
                             ))}
-                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">{t.beyondShort}</li>
+                            <li className="text-[12px] text-ink/55 italic pt-1">{t.beyondShort}</li>
                         </ul>
                     </div>
 
@@ -174,15 +174,15 @@ export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide">{t.promiseHeading}</p>
                         <div className="space-y-3">
-                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
+                            <p className="flex items-center gap-2.5 text-[14px] text-ink/75 font-semibold">
                                 <Leaf size={16} className="text-[#2D5F3E] shrink-0" />
                                 {t.noMsg}
                             </p>
-                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
-                                <Sun size={16} className="text-[#FF6B35] shrink-0" />
+                            <p className="flex items-center gap-2.5 text-[14px] text-ink/75 font-semibold">
+                                <Sun size={16} className="text-primary shrink-0" />
                                 {t.dailyFresh}
                             </p>
-                            <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
+                            <p className="flex items-center gap-2.5 text-[14px] text-ink/75 font-semibold">
                                 <Heart size={16} className="text-[#C76F40] shrink-0" />
                                 {t.mumsRecipe}
                             </p>

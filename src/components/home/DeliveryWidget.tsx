@@ -68,16 +68,16 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
             {/* Mobile keeps the stacked strips; desktop (full-width row since the
                 promo banner moved below the menu) splits into checker-left /
                 info-right so neither side stretches into dead space. */}
-            <div className="bg-white rounded-[32px] border border-[#FF6B35]/15 shadow-sm overflow-hidden lg:grid lg:grid-cols-12">
+            <div className="bg-white rounded-[32px] border border-primary/15 shadow-sm overflow-hidden lg:grid lg:grid-cols-12">
                 {/* Hero strip: address checker — the headline action */}
                 <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8 lg:col-span-6 lg:flex lg:flex-col lg:justify-center">
                     <div className="flex items-center gap-2.5 mb-1.5">
-                        <MapPin size={18} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                        <h2 id={headingId} className="text-[18px] md:text-[22px] lg:text-[28px] font-extrabold text-[#1A2D23] leading-tight">
+                        <MapPin size={18} className="text-primary shrink-0" strokeWidth={2.5} />
+                        <h2 id={headingId} className="text-[18px] md:text-[22px] lg:text-[28px] font-extrabold text-ink leading-tight">
                             {t.heading}
                         </h2>
                     </div>
-                    <p className="text-[13px] md:text-[14px] text-[#1A2D23]/65 mb-4">
+                    <p className="text-[13px] md:text-[14px] text-ink/65 mb-4">
                         {t.sub}
                     </p>
 
@@ -91,7 +91,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                                 onChange={(e) => setAddress(e.target.value)}
                                 placeholder={t.placeholder}
                                 aria-label={t.addressAria}
-                                className="w-full px-4 py-3 pr-10 text-[14px] bg-white border border-[#FF6B35]/20 rounded-xl focus:outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 placeholder:text-gray-400 shadow-sm"
+                                className="w-full px-4 py-3 pr-10 text-[14px] bg-white border border-primary/20 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 placeholder:text-gray-400 shadow-sm"
                             />
                             {address && !loading && (
                                 <button
@@ -107,7 +107,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                         <button
                             type="submit"
                             disabled={loading || !address.trim()}
-                            className="inline-flex items-center justify-center gap-2 px-6 py-3 btn-primary disabled:bg-gray-300 disabled:cursor-not-allowed text-[14px] transition-colors active:scale-[0.97] shadow-md shadow-[#FF6B35]/20"
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3 btn-primary disabled:bg-gray-300 disabled:cursor-not-allowed text-[14px] transition-colors active:scale-[0.97] shadow-md shadow-primary/20"
                         >
                             {loading ? (
                                 <>
@@ -132,7 +132,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                     )}
 
                     {result && result.tier === 'near' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFF3E0] border border-[#FF6B35]/25">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFF3E0] border border-primary/25">
                             <p className="text-[14px] font-extrabold text-[#C84518] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
@@ -147,7 +147,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                     )}
 
                     {result && result.tier === 'mid' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-primary/40">
                             <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
@@ -164,7 +164,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                     {/* Far (7.5km+): flat fee, no threshold — say so plainly rather
                         than showing a "spend RM X" nudge that will never pay off. */}
                     {result && result.tier === 'far' && (
-                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
+                        <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-primary/40">
                             <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
                                 {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
@@ -200,7 +200,7 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                     WhatsApp fallback CTA removed — the checker's outside-zone result
                     already surfaces a WhatsApp link, and the floating button +
                     sticky bar cover the rest. */}
-                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-[#FF6B35]/10 lg:content-center lg:gap-8">
+                <div className="px-6 md:px-10 py-6 md:py-7 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-start lg:col-span-6 lg:border-l lg:border-primary/10 lg:content-center lg:gap-8">
                     {/* Tier table */}
                     <div>
                         <button
@@ -209,20 +209,20 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
                             aria-expanded={feesOpen}
                             className="w-full min-h-[40px] flex items-center gap-2 text-left lg:min-h-0 lg:pointer-events-none"
                         >
-                            <span className="text-[13px] font-extrabold text-[#1A2D23]">{t.feeTable}</span>
-                            <span className="ml-auto text-[12px] font-bold text-[#FF6B35] lg:hidden">{feesOpen ? t.hideFees : t.showFees}</span>
+                            <span className="text-[13px] font-extrabold text-ink">{t.feeTable}</span>
+                            <span className="ml-auto text-[12px] font-bold text-primary lg:hidden">{feesOpen ? t.hideFees : t.showFees}</span>
                         </button>
-                        <p className={`text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5 ${feesOpen ? '' : 'hidden'} lg:block`}>{t.distanceBasis}</p>
+                        <p className={`text-[11px] lg:text-[12px] text-ink/50 mt-0.5 mb-2.5 ${feesOpen ? '' : 'hidden'} lg:block`}>{t.distanceBasis}</p>
                         <ul className={`space-y-1.5 lg:space-y-2 text-[13px] leading-snug ${feesOpen ? '' : 'hidden'} lg:block`}>
                             {DELIVERY_TIER_COPY.map((tier, i) => (
-                                <li key={t.tierRange(tier)} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
-                                    <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.tierRange(tier)}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {tier.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-[#9A3412]' : 'text-[#FF6B35]'}`}>{t.tierFreeOver(tier)}</span></span>
+                                <li key={t.tierRange(tier)} className="flex justify-between items-center gap-2 lg:bg-paper lg:border lg:border-line/70 lg:rounded-xl lg:px-3.5 lg:py-2">
+                                    <span className="text-ink/70"><span className="font-semibold text-ink">{t.tierRange(tier)}</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {tier.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-[#9A3412]' : 'text-primary'}`}>{t.tierFreeOver(tier)}</span></span>
                                 </li>
                             ))}
                             {/* Far bands as one compact row — four extra table rows
                                 would swamp this card on mobile. */}
-                            <li className="pt-1.5 text-[11px] lg:text-[12px] text-[#1A2D23]/55 leading-snug border-t border-[#E3EADA]/70 lg:border-0">
+                            <li className="pt-1.5 text-[11px] lg:text-[12px] text-ink/55 leading-snug border-t border-line/70 lg:border-0">
                                 {t.beyondNote}
                             </li>
                         </ul>
@@ -230,20 +230,20 @@ export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
 
                     {/* Cutoff + windows */}
                     <div>
-                        <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">{t.cutoffHeading}</p>
+                        <p className="text-[13px] font-extrabold text-ink mb-2.5">{t.cutoffHeading}</p>
                         <div className="space-y-2.5">
                             <div className="flex items-start gap-2">
-                                <Clock size={15} className="text-[#FF6B35] mt-0.5 shrink-0" strokeWidth={2.5} />
+                                <Clock size={15} className="text-primary mt-0.5 shrink-0" strokeWidth={2.5} />
                                 <div>
-                                    <p className="text-[13px] font-bold text-[#1A2D23]">{t.cutoffTitle}</p>
-                                    <p className="text-[12px] text-[#1A2D23]/60 mt-0.5">{t.cutoffSub}</p>
+                                    <p className="text-[13px] font-bold text-ink">{t.cutoffTitle}</p>
+                                    <p className="text-[12px] text-ink/60 mt-0.5">{t.cutoffSub}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-2">
-                                <Truck size={15} className="text-[#FF6B35] mt-0.5 shrink-0" strokeWidth={2.5} />
+                                <Truck size={15} className="text-primary mt-0.5 shrink-0" strokeWidth={2.5} />
                                 <div>
-                                    <p className="text-[13px] font-bold text-[#1A2D23]">{t.windowsTitle}</p>
-                                    <p className="text-[12px] text-[#1A2D23]/60 mt-0.5">11AM–1PM · 5PM–8PM</p>
+                                    <p className="text-[13px] font-bold text-ink">{t.windowsTitle}</p>
+                                    <p className="text-[12px] text-ink/60 mt-0.5">11AM–1PM · 5PM–8PM</p>
                                 </div>
                             </div>
                         </div>

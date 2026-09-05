@@ -323,20 +323,20 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
     if (authChecked && !currentUser) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center p-4">
+            <div className="min-h-screen bg-paper flex items-center justify-center p-4">
                 <div className="text-center space-y-4 max-w-sm">
                     <div className="text-6xl">🔐</div>
-                    <h1 className="text-2xl font-black text-[#1A2D23]">{t.memberCenter}</h1>
+                    <h1 className="text-2xl font-black text-ink">{t.memberCenter}</h1>
                     <p className="text-gray-500 text-sm">{t.pleaseLoginFirst}</p>
                     {/* 2026-09-05：主行动改成**页内登录**。原来只有「返回首页登录」——
                         人被赶回首页自己找入口，登录完还得再走回来。 */}
                     <button
                         onClick={() => setAuthOpen(true)}
-                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-[#FF6B35] text-white rounded-xl font-bold hover:bg-[#E95D31] transition-colors"
+                        className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-white rounded-xl font-bold hover:bg-primary-dark transition-colors"
                     >
                         {t.signInHere}
                     </button>
-                    <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-[#1A2D23]/60 rounded-xl font-bold text-sm hover:text-[#1A2D23] transition-colors">
+                    <Link href={homeHref} className="inline-flex items-center gap-2 px-4 py-2 text-ink/60 rounded-xl font-bold text-sm hover:text-ink transition-colors">
                         <ArrowLeft size={16} /> {t.loginReturnHome}
                     </Link>
                     {authOpen && <AuthModal isOpen={authOpen} onClose={() => setAuthOpen(false)} locale={locale} />}
@@ -347,8 +347,8 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
     if (!authChecked || loading) {
         return (
-            <div className="min-h-screen bg-[#FDFBF7] flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-[#FF6B35] border-t-transparent rounded-full"></div>
+            <div className="min-h-screen bg-paper flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
             </div>
         );
     }
@@ -431,16 +431,16 @@ export default function MemberView({ locale }: { locale: Locale }) {
     };
 
     return (
-        <div className="min-h-screen bg-[#FDFBF7] relative overflow-hidden">
+        <div className="min-h-screen bg-paper relative overflow-hidden">
             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-40 -left-20 w-72 h-72 bg-[#FF6B35]/5 rounded-full blur-[100px]" />
-                <div className="absolute bottom-40 -right-20 w-96 h-96 bg-[#1A2D23]/5 rounded-full blur-[120px]" />
+                <div className="absolute top-40 -left-20 w-72 h-72 bg-primary/5 rounded-full blur-[100px]" />
+                <div className="absolute bottom-40 -right-20 w-96 h-96 bg-ink/5 rounded-full blur-[120px]" />
             </div>
             {/* Header */}
-            <header className="bg-gradient-to-br from-[#1A2D23] via-[#21352A] to-[#12221A] text-white pb-28 pt-8 px-4 relative overflow-hidden shadow-2xl shadow-[#1A2D23]/10">
+            <header className="bg-gradient-to-br from-ink via-[#21352A] to-[#12221A] text-white pb-28 pt-8 px-4 relative overflow-hidden shadow-2xl shadow-ink/10">
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B35]/20 rounded-full blur-[80px] mix-blend-screen" />
-                    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#E3EADA]/10 rounded-full blur-[60px] mix-blend-screen" />
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] mix-blend-screen" />
+                    <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-line/10 rounded-full blur-[60px] mix-blend-screen" />
                     <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.8)_1px,transparent_1px)] bg-[length:24px_24px]"></div>
                 </div>
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -466,7 +466,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                            <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-[#FF6B35] to-[#FF8F60] p-1.5 shadow-2xl rotate-3">
+                            <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-primary to-[#FF8F60] p-1.5 shadow-2xl rotate-3">
                                 <div className="w-full h-full rounded-[24px] bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center overflow-hidden -rotate-3">
                                     {currentUser?.photoURL ? (
                                         <Image src={currentUser.photoURL} alt="avatar" width={80} height={80} className="object-cover" />
@@ -498,25 +498,25 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-4 gap-3">
                     <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
-                        <ShoppingBag size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{profileData?.totalOrders || 0}</p>
+                        <ShoppingBag size={18} className="mx-auto mb-1 text-primary" />
+                        <p className="text-base sm:text-xl font-black text-ink">{profileData?.totalOrders || 0}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsTotalOrders}</p>
                     </div>
                     <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
-                        <Wallet size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-base sm:text-xl font-black text-[#1A2D23] whitespace-nowrap">
+                        <Wallet size={18} className="mx-auto mb-1 text-primary" />
+                        <p className="text-base sm:text-xl font-black text-ink whitespace-nowrap">
                             <span className="text-[9px] sm:text-xs font-bold align-text-top mr-0.5 opacity-70">RM</span>{(profileData?.totalSpent || 0).toFixed(0)}
                         </p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsTotalSpent}</p>
                     </div>
                     <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
-                        <Star size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{favDish ? favDish[1] : 0}</p>
+                        <Star size={18} className="mx-auto mb-1 text-primary" />
+                        <p className="text-base sm:text-xl font-black text-ink">{favDish ? favDish[1] : 0}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsFavCount}</p>
                     </div>
                     <div className="bg-white/80 backdrop-blur-xl rounded-[24px] p-3 sm:p-4 text-center shadow-lg shadow-black/5 border border-white">
-                        <Calendar size={18} className="mx-auto mb-1 text-[#FF6B35]" />
-                        <p className="text-base sm:text-xl font-black text-[#1A2D23]">{memberDays}</p>
+                        <Calendar size={18} className="mx-auto mb-1 text-primary" />
+                        <p className="text-base sm:text-xl font-black text-ink">{memberDays}</p>
                         <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{t.statsDaysJoined}</p>
                     </div>
                 </div>
@@ -533,7 +533,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         )}
                         <div className="min-w-0">
                             <p className="text-[10px] font-bold text-[#E65100] uppercase tracking-wider">{t.favDishLabel}</p>
-                            <p className="font-black text-[#1A2D23] truncate">{itemName(favDishItem) || favDish[0]}</p>
+                            <p className="font-black text-ink truncate">{itemName(favDishItem) || favDish[0]}</p>
                             <p className="text-xs text-[#E65100]/60">{t.favDishOrderCount(favDish[1])}</p>
                         </div>
                     </div>
@@ -557,7 +557,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 {/* Order History */}
                 <div className="bg-white/80 backdrop-blur-xl rounded-[32px] shadow-lg shadow-black/5 border border-white overflow-hidden">
                     <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white/50">
-                        <h2 className="font-black text-[#1A2D23] flex items-center gap-2">
+                        <h2 className="font-black text-ink flex items-center gap-2">
                             <ShoppingBag size={18} /> {t.orderHistory}
                         </h2>
                         <span className="text-xs text-gray-400 font-bold">{t.orderCountSuffix(orders.length)}</span>
@@ -567,7 +567,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                         <div className="text-center py-16 text-gray-300">
                             <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
                             <p className="font-bold text-sm">{t.noOrders}</p>
-                            <Link href={homeHref} className="inline-flex items-center gap-2 mt-4 px-5 py-2 bg-[#FF6B35] text-white rounded-xl text-sm font-bold hover:bg-[#E95D31] transition-colors">
+                            <Link href={homeHref} className="inline-flex items-center gap-2 mt-4 px-5 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary-dark transition-colors">
                                 {t.goOrder}
                             </Link>
                         </div>
@@ -609,18 +609,18 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                             <StIcon size={9} /> {st.label}
                                                         </span>
                                                     </div>
-                                                    <p className="font-bold text-[#1A2D23] text-sm truncate">
+                                                    <p className="font-bold text-ink text-sm truncate">
                                                         {mainDish} {itemCount > 1 && <span className="text-gray-400 font-normal">{t.orderItemSuffix(itemCount)}</span>}
                                                     </p>
                                                     <p className="text-[10px] text-gray-400 mt-0.5">📅 {order.deliveryDate}</p>
                                                 </div>
                                                 </button>
                                                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                                    <p className="font-black text-[#FF6B35]">RM {(order.total || 0).toFixed(2)}</p>
+                                                    <p className="font-black text-primary">RM {(order.total || 0).toFixed(2)}</p>
                                                     <button
                                                         type="button"
                                                         onClick={() => handleReorder(order)}
-                                                        className="min-h-[36px] px-3.5 bg-[#FF6B35] text-white rounded-lg text-[12px] font-bold flex items-center gap-1 hover:bg-[#E95D31] transition-colors shadow-sm"
+                                                        className="min-h-[36px] px-3.5 bg-primary text-white rounded-lg text-[12px] font-bold flex items-center gap-1 hover:bg-primary-dark transition-colors shadow-sm"
                                                     >
                                                         <RefreshCw size={12} /> {t.reorder}
                                                     </button>
@@ -642,7 +642,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                                         <span>📍 {order.userAddress?.slice(0, 30)}{order.userAddress?.length > 30 ? '...' : ''}</span>
                                                     </div>
                                                     {order.note && (
-                                                        <p className="text-[10px] text-[#FF6B35] font-bold">📝 {order.note}</p>
+                                                        <p className="text-[10px] text-primary font-bold">📝 {order.note}</p>
                                                     )}
                                                 </div>
                                             )}
@@ -678,17 +678,17 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
                 {/* Meal Voucher Wallet */}
                 <div className="bg-gradient-to-br from-[#FFF3E0] via-white to-[#FFE9D5] rounded-[32px] p-6 shadow-md border border-[#FFD6B0]/60 relative overflow-hidden">
-                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#FF6B35]/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#FFD54F]/15 rounded-full blur-2xl pointer-events-none" />
 
                     <div className="relative">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-black text-lg text-[#1A2D23] flex items-center gap-2">
-                                <Ticket size={18} className="text-[#FF6B35]" />
+                            <h3 className="font-black text-lg text-ink flex items-center gap-2">
+                                <Ticket size={18} className="text-primary" />
                                 {t.mealVoucherWallet}
                             </h3>
                             {mealVoucherInfo && mealVoucherInfo.availableCount > 0 && (
-                                <span className="text-[10px] text-[#1A2D23]/50 font-bold">{t.mealVouchersAvailable(mealVoucherInfo.availableCount)}</span>
+                                <span className="text-[10px] text-ink/50 font-bold">{t.mealVouchersAvailable(mealVoucherInfo.availableCount)}</span>
                             )}
                         </div>
 
@@ -698,24 +698,24 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             </div>
                         ) : voucherLoad === 'error' ? (
                             <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
-                                <p className="text-sm text-[#1A2D23]/70 font-bold mb-3">{t.voucherLoadFailed}</p>
+                                <p className="text-sm text-ink/70 font-bold mb-3">{t.voucherLoadFailed}</p>
                                 <button
                                     type="button"
                                     onClick={() => { if (currentUser) { setVoucherLoad('loading'); loadMealVouchers(currentUser); } }}
-                                    className="inline-flex items-center gap-2 min-h-[40px] px-5 bg-[#1A2D23] text-white rounded-xl text-xs font-bold"
+                                    className="inline-flex items-center gap-2 min-h-[40px] px-5 bg-ink text-white rounded-xl text-xs font-bold"
                                 >
                                     {t.retry}
                                 </button>
                             </div>
                         ) : !mealVoucherInfo || mealVoucherInfo.availableCount === 0 ? (
                             <div className="bg-white/70 backdrop-blur-md border border-dashed border-[#FFD6B0] rounded-2xl px-4 py-5 text-center">
-                                <p className="text-sm text-[#1A2D23]/70 font-bold mb-1">{t.noMealVouchers}</p>
-                                <p className="text-[11px] text-[#1A2D23]/50 leading-relaxed mb-4">
+                                <p className="text-sm text-ink/70 font-bold mb-1">{t.noMealVouchers}</p>
+                                <p className="text-[11px] text-ink/50 leading-relaxed mb-4">
                                     {t.mealVoucherTagline}
                                 </p>
                                 <Link
                                     href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#FF6B35] text-white rounded-xl text-xs font-bold hover:bg-[#E95D31] transition-colors shadow-md shadow-[#FF6B35]/20"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-colors shadow-md shadow-primary/20"
                                 >
                                     <Ticket size={14} /> {t.buyMealVoucher}
                                 </Link>
@@ -725,16 +725,16 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                 <div className="bg-white/80 backdrop-blur-md rounded-2xl p-5 border border-white shadow-sm">
                                     <div className="flex items-baseline justify-between">
                                         <div>
-                                            <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">{t.availableMealVouchers}</p>
-                                            <p className="text-3xl font-black text-[#FF6B35] leading-none mt-1">{mealVoucherInfo.availableCount}</p>
-                                            <p className="text-[10px] text-[#1A2D23]/40 mt-1">{t.voucherEqualsMeal}</p>
+                                            <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">{t.availableMealVouchers}</p>
+                                            <p className="text-3xl font-black text-primary leading-none mt-1">{mealVoucherInfo.availableCount}</p>
+                                            <p className="text-[10px] text-ink/40 mt-1">{t.voucherEqualsMeal}</p>
                                         </div>
                                         {mealVoucherInfo.soonestDaysLeft !== null && (
                                             <div className="text-right">
-                                                <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">{t.soonestExpiry}</p>
-                                                <p className="text-xl font-black text-[#1A2D23] mt-1">
+                                                <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">{t.soonestExpiry}</p>
+                                                <p className="text-xl font-black text-ink mt-1">
                                                     {mealVoucherInfo.soonestDaysLeft}
-                                                    <span className="text-xs font-bold text-[#1A2D23]/50 ml-1">{t.daysUnit}</span>
+                                                    <span className="text-xs font-bold text-ink/50 ml-1">{t.daysUnit}</span>
                                                 </p>
                                                 {mealVoucherInfo.soonestDaysLeft <= 7 && (
                                                     <p className="text-[10px] text-red-500 font-bold mt-0.5">{t.expiringSoon}</p>
@@ -751,7 +751,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
 
                                 <Link
                                     href={locale === 'en' ? '/en/meal-vouchers' : '/meal-vouchers'}
-                                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-[#FF6B35] text-[#FF6B35] rounded-xl text-xs font-bold hover:bg-[#FF6B35] hover:text-white transition-colors"
+                                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-primary text-primary rounded-xl text-xs font-bold hover:bg-primary hover:text-white transition-colors"
                                 >
                                     <Plus size={14} strokeWidth={3} /> {t.buyMore}
                                 </Link>
@@ -762,16 +762,16 @@ export default function MemberView({ locale }: { locale: Locale }) {
                             (standalone top-ups exist), auto-applied at checkout */}
                         {mealVoucherInfo && mealVoucherInfo.addonCredits.length > 0 && (
                             <div className="mt-3 bg-white/80 backdrop-blur-md rounded-2xl p-4 border border-white shadow-sm">
-                                <p className="text-[10px] font-bold text-[#1A2D23]/50 uppercase tracking-wider">{t.addonCreditsTitle}</p>
+                                <p className="text-[10px] font-bold text-ink/50 uppercase tracking-wider">{t.addonCreditsTitle}</p>
                                 <div className="mt-2 space-y-1.5">
                                     {mealVoucherInfo.addonCredits.map(c => (
                                         <div key={c.addonId} className="flex justify-between items-center text-xs">
-                                            <span className="text-[#1A2D23]/70 font-bold">{c.addonName}</span>
-                                            <span className="text-[#FF6B35] font-black">× {c.remaining}</span>
+                                            <span className="text-ink/70 font-bold">{c.addonName}</span>
+                                            <span className="text-primary font-black">× {c.remaining}</span>
                                         </div>
                                     ))}
                                 </div>
-                                <p className="text-[10px] text-[#1A2D23]/40 mt-2 flex items-center gap-1.5">
+                                <p className="text-[10px] text-ink/40 mt-2 flex items-center gap-1.5">
                                     <Sparkles size={10} className="shrink-0" /> {t.addonCreditsAutoHint}
                                     {(() => {
                                         let min: number | null = null;
@@ -791,13 +791,13 @@ export default function MemberView({ locale }: { locale: Locale }) {
                 {/* Edit Profile Modal */}
                 {isEditing && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-[#1A2D23]/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => !saving && setIsEditing(false)} />
+                        <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => !saving && setIsEditing(false)} />
                         <div className="relative w-full max-w-sm bg-white rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                            <div className="bg-[#1A2D23] p-6 text-white text-center relative">
+                            <div className="bg-ink p-6 text-white text-center relative">
                                 <div className="absolute top-6 right-6">
                                     <button onClick={() => setIsEditing(false)} className="text-white/40 hover:text-white"><X size={20} /></button>
                                 </div>
-                                <div className="w-16 h-16 bg-[#FF6B35] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#FF6B35]/20">
+                                <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
                                     <Settings size={32} className="text-white" />
                                 </div>
                                 <h3 className="text-xl font-black">{t.updateProfile}</h3>
@@ -814,7 +814,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                             placeholder={t.placeholderName}
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium"
                                         />
                                     </div>
                                     <div>
@@ -826,7 +826,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                             value={editPhone}
                                             onChange={(e) => setEditPhone(e.target.value)}
                                             placeholder={t.placeholderPhone}
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium"
                                         />
                                     </div>
                                     <div>
@@ -838,7 +838,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                             onChange={(e) => { setEditAddress(e.target.value); setLocateNotice(''); }}
                                             placeholder={t.placeholderAddress}
                                             rows={3}
-                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-[#FF6B35] focus:bg-white transition-all font-medium resize-none"
+                                            className="w-full px-5 py-4 bg-gray-50 border-2 border-gray-100 rounded-2xl text-sm outline-none focus:border-primary focus:bg-white transition-all font-medium resize-none"
                                         />
 
                                         {/* 一键定位回填 —— 手机上免去拇指打完整地址 */}
@@ -846,7 +846,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                             type="button"
                                             onClick={handleUseMyLocation}
                                             disabled={locating || geocoding}
-                                            className="mt-2 w-full py-2.5 rounded-xl border-2 border-gray-100 bg-white text-[#1A2D23] text-sm font-bold flex items-center justify-center gap-2 hover:border-[#FF6B35] hover:text-[#FF6B35] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            className="mt-2 w-full py-2.5 rounded-xl border-2 border-gray-100 bg-white text-ink text-sm font-bold flex items-center justify-center gap-2 hover:border-primary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         >
                                             {locating ? <><Loader2 size={14} className="animate-spin" /> {t.locating}</> : t.useMyLocation}
                                         </button>
@@ -863,7 +863,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                             className={`mt-2 w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
                                                 geocoding || !editAddress.trim()
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                    : 'bg-[#1A2D23] text-white hover:bg-[#2A3D33]'
+                                                    : 'bg-ink text-white hover:bg-[#2A3D33]'
                                             }`}
                                         >
                                             {geocoding ? <><Loader2 size={14} className="animate-spin" /> {t.verifying}</> : t.verifyAddressBtn}
@@ -921,7 +921,7 @@ export default function MemberView({ locale }: { locale: Locale }) {
                                 <button
                                     onClick={handleUpdateProfile}
                                     disabled={saving || needsGeocode}
-                                    className="w-full py-4 bg-[#FF6B35] text-white rounded-[20px] font-black shadow-lg shadow-[#FF6B35]/20 hover:bg-[#E95D31] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="w-full py-4 bg-primary text-white rounded-[20px] font-black shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

@@ -64,9 +64,9 @@ export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
                 aria-label={current === 'zh' ? '切换语言 / Switch language' : 'Switch language / 切换语言'}
                 aria-expanded={open}
                 aria-haspopup="menu"
-                className="p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow,background-color] duration-150 ease-out"
+                className="p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-ink/20 transition-[border-color,box-shadow,background-color] duration-150 ease-out"
             >
-                <Globe className="w-5 h-5 md:w-[22px] md:h-[22px] text-[#1A2D23]/75" strokeWidth={2} />
+                <Globe className="w-5 h-5 md:w-[22px] md:h-[22px] text-ink/75" strokeWidth={2} />
             </button>
             {open && (
                 <div
@@ -78,19 +78,19 @@ export default function LanguageSwitcher({ current }: LanguageSwitcherProps) {
                         href={zhHref}
                         role="menuitem"
                         onClick={() => setOpen(false)}
-                        className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[#1A2D23] hover:bg-[#FDFBF7] transition-colors ${current === 'zh' ? 'bg-[#FFF3E0]/40' : ''}`}
+                        className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-ink hover:bg-paper transition-colors ${current === 'zh' ? 'bg-[#FFF3E0]/40' : ''}`}
                     >
                         <span>中文</span>
-                        {current === 'zh' && <Check size={14} className="text-[#FF6B35]" strokeWidth={3} aria-label="current" />}
+                        {current === 'zh' && <Check size={14} className="text-primary" strokeWidth={3} aria-label="current" />}
                     </Link>
                     <Link
                         href={enHref}
                         role="menuitem"
                         onClick={() => setOpen(false)}
-                        className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[#1A2D23] hover:bg-[#FDFBF7] transition-colors border-t border-gray-100 ${current === 'en' ? 'bg-[#FFF3E0]/40' : ''}`}
+                        className={`flex items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-ink hover:bg-paper transition-colors border-t border-gray-100 ${current === 'en' ? 'bg-[#FFF3E0]/40' : ''}`}
                     >
                         <span>English</span>
-                        {current === 'en' && <Check size={14} className="text-[#FF6B35]" strokeWidth={3} aria-label="current" />}
+                        {current === 'en' && <Check size={14} className="text-primary" strokeWidth={3} aria-label="current" />}
                     </Link>
                 </div>
             )}
