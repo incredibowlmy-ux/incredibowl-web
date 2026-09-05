@@ -78,10 +78,20 @@ export async function POST(request: NextRequest) {
 
         // Bind the Razorpay order to our order docs — confirm-order requires the
         // signed razorpayOrderId to MATCH this binding (no cross-order replay).
+        //
+        // 🔒 2026-09-05: razorpayOrderId 以前是**无条件覆盖**的单值字段。两个标签页
+        // 各结一次账，后一次会把前一次的绑定冲掉；顾客回来付掉第一笔 → confirm-order
+        // 403、webhook 查不到、1h 后被扫成 cancelled = 收了钱订单没了，零告警。
+        // 现在改成累加数组：所有在途绑定都留着，任一匹配即算数（见 lib/razorpayBinding）。
+        // 单值字段保留为「最近一次绑定」，老订单只有它，判定函数两者都认。
         const { FieldValue } = await import('firebase-admin/firestore');
         const batch = db.batch();
         for (const ref of refs) {
-            batch.update(ref, { razorpayOrderId: order.id, updatedAt: FieldValue.serverTimestamp() });
+            batch.update(ref, {
+                razorpayOrderId: order.id,
+                razorpayOrderIds: FieldValue.arrayUnion(order.id),
+                updatedAt: FieldValue.serverTimestamp(),
+            });
         }
         await batch.commit();
 

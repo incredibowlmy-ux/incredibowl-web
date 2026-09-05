@@ -87,7 +87,12 @@ export async function POST(req: Request) {
       const pd = paymentData || {};
       if (pd.razorpayOrderId && pd.razorpayPaymentId && pd.razorpaySignature
           && isValidRazorpaySignature(pd.razorpayOrderId, pd.razorpayPaymentId, pd.razorpaySignature)) {
-        authorized = gateOrders.every(o => o.razorpayOrderId === pd.razorpayOrderId);
+        // 2026-09-05：从 `o.razorpayOrderId === pd.razorpayOrderId` 改成认
+        // razorpayOrderIds 数组里的**任一**在途绑定 —— 双标签页结账时后一次
+        // create-order 会覆盖单值字段，顾客付掉前一笔就再也确认不了（收了钱
+        // 订单没了）。跨订单重放依然挡得住，见 lib/razorpayBinding 的说明。
+        const { allBoundTo } = await import('@/lib/razorpayBinding');
+        authorized = allBoundTo(gateOrders, pd.razorpayOrderId);
       }
       // Path B — voucher fully covered the bill: no cash due, owner confirms.
       if (!authorized && isOwnerOfAll) {

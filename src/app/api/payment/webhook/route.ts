@@ -148,18 +148,42 @@ async function handleFoodOrderFallback(
   orderId: string,
   paymentId: string | undefined,
 ) {
-  const ordersQ = await db.collection('orders')
-    .where('razorpayOrderId', '==', orderId)
-    .get();
+  // 2026-09-05：以前只查单值 razorpayOrderId。双标签页结账时后一次 create-order
+  // 会把前一次的绑定冲掉，顾客付掉前一笔 → 这里查不到 → 静默 200 → 1h 后订单被
+  // 扫成 cancelled，钱收了订单没了。现在先查累加数组，再退回老字段（老单没有
+  // 数组），按 doc id 去重。
+  const [byArray, byLegacy] = await Promise.all([
+    db.collection('orders').where('razorpayOrderIds', 'array-contains', orderId).get(),
+    db.collection('orders').where('razorpayOrderId', '==', orderId).get(),
+  ]);
+  const orderDocs = [...byArray.docs, ...byLegacy.docs]
+    .filter((d, i, arr) => arr.findIndex(x => x.id === d.id) === i);
 
-  if (ordersQ.empty) {
-    return NextResponse.json({ ok: true, note: 'no matching purchase or order' }, { status: 200 });
+  if (orderDocs.length === 0) {
+    // 钱进来了但对不上任何订单/餐券购买 —— 这是**最后一道网**，绝不能再静默 200
+    // 吞掉。落一条 unmatchedPayments 记录，daily-check 的 C13 每天扫它。
+    console.error(
+      `[webhook] ⚠️ UNMATCHED PAYMENT — razorpayOrderId=${orderId} paymentId=${paymentId || '(none)'} ` +
+      '对不上任何 mealVoucherPurchases 或 orders，钱可能已经收了。',
+    );
+    try {
+      await db.collection('unmatchedPayments').doc(paymentId || orderId).set({
+        razorpayOrderId: orderId,
+        razorpayPaymentId: paymentId || '',
+        eventType: type,
+        receivedAt: new Date(),
+        needsReview: true,
+      }, { merge: true });
+    } catch (e) {
+      console.error('[webhook] failed to record unmatched payment:', e);
+    }
+    return NextResponse.json({ ok: true, note: 'no matching purchase or order', unmatched: true }, { status: 200 });
   }
 
   // Money arrived but the stale-FPX sweep already cancelled the order (payment
   // event came >1h late). Do NOT auto-revive — the 06:00 cutoff may have
   // passed and the kitchen never planned this meal. Flag for a human instead.
-  const lateCancelled = ordersQ.docs.filter(d => d.data().status === 'cancelled');
+  const lateCancelled = orderDocs.filter(d => d.data().status === 'cancelled');
   for (const d of lateCancelled) {
     await d.ref.update({
       latePaymentCaptured: true,
@@ -172,7 +196,7 @@ async function handleFoodOrderFallback(
     );
   }
 
-  const pendingIds = ordersQ.docs.filter(d => d.data().status === 'pending').map(d => d.id);
+  const pendingIds = orderDocs.filter(d => d.data().status === 'pending').map(d => d.id);
   if (pendingIds.length === 0 || !paymentId) {
     return NextResponse.json({
       ok: true,
