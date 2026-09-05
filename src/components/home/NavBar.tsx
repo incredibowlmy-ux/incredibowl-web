@@ -184,13 +184,13 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
             <div
                 id="mobile-nav-panel"
                 ref={navPanelRef}
-                className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl overflow-hidden"
+                className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl"
             >
-                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">每日菜单</a>
-                <Link href="/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">餐券预付包</Link>
-                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">邻居好评</a>
-                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">联系碗妈</a>
-                {currentUser && <Link href="/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">会员中心</Link>}
+                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">每日菜单</a>
+                <Link href="/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">餐券预付包</Link>
+                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">邻居好评</a>
+                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">联系碗妈</a>
+                {currentUser && <Link href="/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">会员中心</Link>}
                 <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
                     <span className="text-[13px] font-bold text-[#1A2D23]/60">语言 / Language</span>
                     <span className="ml-auto"><LanguageSwitcher current="zh" /></span>

@@ -17,7 +17,12 @@ import { NextResponse } from 'next/server';
  * 不会在首屏开长连接。
  */
 
-export const revalidate = 600;
+// 2026-09-05 审后改：原来是 `export const revalidate = 600`（ISR）。GET 不读 request，
+// Next 会在 **next build 时**执行一次并把结果当静态快照 —— 构建环境拿不到 Firebase
+// Admin 凭据时（本地 worktree 实测就是这样）快照是空列表，且照样缓存 10 分钟。
+// 改成运行时动态 + 只靠下面的 Cache-Control 让 CDN 缓存：数据一样是 10 分钟一刷，
+// 但构建期不再碰 Firestore，出错也不会被烤进产物里。
+export const dynamic = "force-dynamic";
 
 export interface FeedbackDTO {
     id: string;
@@ -54,6 +59,10 @@ export async function GET() {
     } catch (err) {
         console.error('[api/feedbacks] failed:', err);
         // 首页的评价区拿不到数据只是少一块社会证明，不该让页面报错。
-        return NextResponse.json({ items: [], error: 'unavailable' }, { status: 200 });
+        // 503 + no-store：客户端把非 2xx 当空数组，CDN 不会把这次失败缓存 10 分钟。
+        return NextResponse.json({ items: [], error: 'unavailable' }, {
+            status: 503,
+            headers: { 'Cache-Control': 'no-store' },
+        });
     }
 }

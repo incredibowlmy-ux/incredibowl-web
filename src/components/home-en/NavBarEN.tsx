@@ -178,13 +178,13 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
                 <div
                     id="mobile-nav-panel"
                     ref={navPanelRef}
-                    className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl overflow-hidden"
+                    className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl"
                 >
-                    <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Daily Menu</a>
-                    <Link href="/en/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Meal Vouchers</Link>
-                    <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Neighbour Reviews</a>
-                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Contact BowlMama</a>
-                    {currentUser && <Link href="/en/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Member</Link>}
+                    <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Daily Menu</a>
+                    <Link href="/en/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Meal Vouchers</Link>
+                    <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Neighbour Reviews</a>
+                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Contact BowlMama</a>
+                    {currentUser && <Link href="/en/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">Member</Link>}
                     <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
                         <span className="text-[13px] font-bold text-[#1A2D23]/60">Language / 语言</span>
                         <span className="ml-auto"><LanguageSwitcher current="en" /></span>

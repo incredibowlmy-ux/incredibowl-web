@@ -92,7 +92,11 @@ const LANDING_DISHES: MenuItem[] = LANDING_DISH_IDS
     .filter((d): d is MenuItem => !!d && !d.retired && !d.hidden);
 
 /** Hero 的「RM xx 起」同样现算，不再手写一个会过期的数字。 */
-const MIN_PRICE_TEXT = Math.min(...LANDING_DISHES.map((d) => d.price)).toFixed(2);
+const MIN_PRICE_TEXT = (LANDING_DISHES.length
+    ? Math.min(...LANDING_DISHES.map((d) => d.price))
+    // 三道都下架时别渲染「RM Infinity 起」：退回整份菜单里可点的最低价。
+    : Math.min(...weeklyMenu.filter((d) => !d.retired && !d.hidden).map((d) => d.price))
+).toFixed(2);
 
 /**
  * 卡片左上角那个手写小徽章。
@@ -106,18 +110,38 @@ const MIN_PRICE_TEXT = Math.min(...LANDING_DISHES.map((d) => d.price)).toFixed(2
  * Chicken Leg"，英文版写的是 "Angelica Steamed Whole Chicken Leg"，同一道菜
  * 在两个 locale 上报了两个 content_name。改吃 weeklyMenu.nameEn 之后统一了。
  */
-const DISH_HOOKS: Record<number, { zh: string; en: string }> = {
-    2: { zh: "碗妈拿手菜", en: "BowlMama's signature" },
-    1: { zh: "阿嫲手艺", en: "Grandma's recipe" },
-    11: { zh: "入门首选", en: "Easy starter" },
+const DISH_HOOKS: Record<number, {
+    zh: string;
+    en: string;
+    /** 卡片三个标签：旧页面上老板定稿的营销文案，逐字保留；没登记的菜退回 weeklyMenu.tags。 */
+    tags: { zh: string[]; en: string[] };
+    /** Meta Pixel Lead 的 content_name。只在旧上报值 ≠ weeklyMenu.nameEn 时登记，锁住历史归因。 */
+    pixelName?: string;
+}> = {
+    2: {
+        zh: "碗妈拿手菜", en: "BowlMama's signature",
+        tags: { zh: ["当归补血", "高蛋白 45g+", "暖身滋补"], en: ["Angelica blood tonic", "45g+ protein", "Warming"] },
+    },
+    1: {
+        zh: "阿嫲手艺", en: "Grandma's recipe",
+        tags: { zh: ["高蛋白 48g+", "广式经典", "酱香入骨"], en: ["48g+ protein", "Cantonese classic", "Soy-infused"] },
+    },
+    11: {
+        zh: "入门首选", en: "Easy starter",
+        tags: { zh: ["高蛋白 25g+", "纳豆激酶", "拉丝拌饭魂"], en: ["25g+ protein", "Nattokinase", "Stringy & soulful"] },
+        pixelName: "Natto Tsukimi Seaweed Rice",
+    },
 };
+
+/** Pixel Lead 用的菜名：登记过旧值的用旧值，其余用 weeklyMenu.nameEn。 */
+const pixelDishName = (d: MenuItem) => DISH_HOOKS[d.id]?.pixelName ?? d.nameEn;
 
 const dishName = (d: MenuItem, locale: Locale) => (locale === "en" ? d.nameEn : d.name);
 /** 卡片副标题：显示「另一种语言」的菜名（中文版给英文名，英文版给中文名）。 */
 const dishSubName = (d: MenuItem, locale: Locale) => (locale === "en" ? d.name : d.nameEn);
 /** 卡片只放得下三个标签 —— 取 weeklyMenu 里的前三个，不另编。 */
 const dishTags = (d: MenuItem, locale: Locale) =>
-    ((locale === "en" ? d.tagsEn : d.tags) ?? d.tags).slice(0, 3);
+    DISH_HOOKS[d.id]?.tags[locale] ?? ((locale === "en" ? d.tagsEn : d.tags) ?? d.tags).slice(0, 3);
 
 // 2026-07-29: 'outside' now means past the 25km ceiling (was 7.5km).
 // 7.5–25km gets the banded 'far' quote instead of a refusal.
@@ -663,7 +687,7 @@ export default function OrderClient({ locale = "zh" }: Props) {
                                             href={wa(t.dishWa(name, price))}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            onClick={() => fireLead(`dish_${d.nameEn}`, d.price)}
+                                            onClick={() => fireLead(`dish_${pixelDishName(d)}`, d.price)}
                                             className="block mt-4 bg-[#25D366] hover:bg-[#20BE5A] text-white text-center py-3.5 rounded-xl font-black text-sm lg:text-base shadow-md transition-all active:scale-[0.98]"
                                         >
                                             {t.dishCta}

@@ -196,7 +196,7 @@ export const MEMBER_DICT: Record<Locale, MemberDictShape> = {
     },
     en: {
         memberCenter: 'Member Center',
-        pleaseLoginFirst: 'Please sign in from the homepage first.',
+        pleaseLoginFirst: 'Sign in to see your orders, vouchers and address book',
         loginReturnHome: 'Back to homepage',
         signInHere: 'Sign in',
         voucherLoadFailed: "Couldn't load your voucher balance",
