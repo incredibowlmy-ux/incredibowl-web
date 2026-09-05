@@ -25,12 +25,18 @@ export function useModalA11y({
   onClose,
   panelRef,
   closeOnEscape = true,
+  trapFocus = true,
 }: {
   open: boolean;
   onClose: () => void;
   panelRef: React.RefObject<HTMLElement | null>;
   /** 极少数弹窗不该被 Escape 关掉（例如支付进行中）。默认可以。 */
   closeOnEscape?: boolean;
+  /**
+   * 非模态面板（例如汉堡导航下拉）传 false：面板外还有它自己的开关按钮，
+   * 把焦点关在面板里会让键盘用户 Tab 永远到不了那个 X。Escape / 滚动锁 / 焦点归还照旧。
+   */
+  trapFocus?: boolean;
 }) {
   // onClose 每次渲染都是新函数；放进 ref 才不会让 effect 反复重挂、
   // 也不用逼调用方去 useCallback。
@@ -64,7 +70,7 @@ export function useModalA11y({
         onCloseRef.current();
         return;
       }
-      if (e.key !== 'Tab') return;
+      if (e.key !== 'Tab' || !trapFocus) return;
       const panel = panelRef.current;
       if (!panel) return;
       const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
@@ -96,7 +102,7 @@ export function useModalA11y({
       // 焦点还回去，否则关掉弹窗后 Tab 从页面开头重来
       previouslyFocused?.focus?.({ preventScroll: true });
     };
-  }, [open, closeOnEscape, panelRef]);
+  }, [open, closeOnEscape, trapFocus, panelRef]);
 }
 
 const FOCUSABLE = [

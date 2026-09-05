@@ -30,7 +30,8 @@ export default function NavBarEN({ currentUser, cartCount, cartTotal, onCartOpen
     }, []);
     // 面板的 Escape / 焦点陷阱（背景滚动锁对下拉式导航也合适：
     // 它是覆盖在内容之上的临时层）。
-    useModalA11y({ open: navOpen, onClose: () => setNavOpen(false), panelRef: navPanelRef });
+    // trapFocus:false —— 汉堡 / X 按钮在面板外，关进去键盘就永远到不了 X（2026-09-05 审查）。
+    useModalA11y({ open: navOpen, onClose: () => setNavOpen(false), panelRef: navPanelRef, trapFocus: false });
 
     return (
         <>

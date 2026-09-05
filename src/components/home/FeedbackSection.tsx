@@ -275,18 +275,26 @@ export default function FeedbackSection() {
                                         </>
                                     );
                                     // 长评价整张卡可点开全文：原来是挂 onClick 的 <div>，
-                                    // 键盘 Tab 根本走不到，只有鼠标能用 → 换成真正的 <button>。
+                                    // 键盘 Tab 根本走不到。09-05 一度换成 <button>，但 cardInner
+                                    // 里有 <div>/<p> 这类块级元素，<button> 按规范只能装 phrasing
+                                    // content —— 改成 role="button" 的 div，键盘 Enter / 空格照样触发。
                                     return isLong ? (
-                                        <button
+                                        <div
                                             key={idx}
-                                            type="button"
+                                            role="button"
                                             aria-hidden={isClone}
-                                            tabIndex={isClone ? -1 : undefined}
+                                            tabIndex={isClone ? -1 : 0}
                                             onClick={() => setSelectedReview(msg)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setSelectedReview(msg);
+                                                }
+                                            }}
                                             className={cardClass}
                                         >
                                             {cardInner}
-                                        </button>
+                                        </div>
                                     ) : (
                                         <div key={idx} aria-hidden={isClone} className={cardClass}>
                                             {cardInner}
