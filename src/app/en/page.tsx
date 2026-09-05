@@ -11,17 +11,17 @@ const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: 
 const CartSuccess = dynamic(() => import('@/components/cart/CartSuccess'), { ssr: false });
 const PaymentErrorModal = dynamic(() => import('@/components/cart/PaymentErrorModal'), { ssr: false });
 const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), { ssr: false });
-const SubscribeModalEN = dynamic(() => import('@/components/home-en/SubscribeModalEN'), { ssr: false });
+const SubscribeModal = dynamic(() => import('@/components/home/SubscribeModal'), { ssr: false });
 const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
 
 import NavBar from '@/components/home/NavBar';
-import HeroSectionEN from '@/components/home-en/HeroSectionEN';
+import HeroSection from '@/components/home/HeroSection';
 import FaqHeroStrip from '@/components/home/FaqHeroStrip';
 import CutoffBanner from '@/components/home/CutoffBanner';
 import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
 import DeliveryWidget from '@/components/home/DeliveryWidget';
-import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
+import MenuCarousel from '@/components/home/MenuCarousel';
 import AboutBowlMama from '@/components/home/AboutBowlMama';
 import FaqSection from '@/components/home/FaqSection';
 import FeedbackSection from '@/components/home/FeedbackSection';
@@ -320,7 +320,7 @@ export default function EnglishHome() {
             <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner locale="en" />
-                    <HeroSectionEN />
+                    <HeroSection locale="en" />
                     {/* Desktop declutter mirrors the ZH homepage: trust strip moves
                         down to sit right before the menu (social proof at the decision
                         point), FAQ teaser hidden at lg, promo banner re-rendered after
@@ -333,7 +333,7 @@ export default function EnglishHome() {
                         <HeroTrustStrip locale="en" />
                     </div>
                     <ErrorBoundary>
-                        <MenuCarouselEN menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
+                        <MenuCarousel locale="en" menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
                     {/* 2026-09-05: on mobile the promo banner and FAQ teaser move BELOW
                         the menu. Measured on the ZH twin: tapping the hero CTA landed the
@@ -364,7 +364,7 @@ export default function EnglishHome() {
 
             <WhatsAppFloat locale="en" />
             <WhatsAppStickyBar locale="en" />
-            <SubscribeModalEN />
+            <SubscribeModal locale="en" />
 
             {isCartOpen && (
             <ErrorBoundary>

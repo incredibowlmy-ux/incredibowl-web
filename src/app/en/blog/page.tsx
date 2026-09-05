@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
-import SetHtmlLang from "@/components/home-en/SetHtmlLang";
+import SetHtmlLang from "@/components/home/SetHtmlLang";
 import PageShell from "@/components/layout/PageShell";
 
 // 英文版 blog index：posts 数组独立在本文件（excerptEn 只在这里维护，

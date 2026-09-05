@@ -358,7 +358,7 @@ export default function V4BentoLayout() {
             <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 auto-rows-min">
                     <CutoffBanner />
-                    <HeroSection />
+                    <HeroSection locale="zh" />
                     {/* Desktop declutters the above-the-fold stack: the trust strip
                         moves down to sit right before the menu (social proof at the
                         decision point), the FAQ teaser lives in the FAQ section, and
@@ -373,7 +373,7 @@ export default function V4BentoLayout() {
                         <HeroTrustStrip />
                     </div>
                     <ErrorBoundary>
-                        <MenuCarousel menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
+                        <MenuCarousel locale="zh" menuDates={menuDates} onOpenAddOn={openAddOnModal} dishStock={dishStock} />
                     </ErrorBoundary>
                     {/* 2026-09-05：移动端把「感恩折扣」和 FAQ 引导条挪到菜单**之后**。
                         实测点 Hero 主按钮后菜单标题落在 scrollY≈2575（第 4 屏）——
@@ -402,7 +402,7 @@ export default function V4BentoLayout() {
 
             <WhatsAppFloat />
             <WhatsAppStickyBar />
-            <SubscribeModal />
+            <SubscribeModal locale="zh" />
 
             {isCartOpen && (
             <ErrorBoundary>

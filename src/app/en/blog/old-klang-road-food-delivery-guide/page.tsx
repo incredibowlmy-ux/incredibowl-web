@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import SetHtmlLang from "@/components/home-en/SetHtmlLang";
+import SetHtmlLang from "@/components/home/SetHtmlLang";
 import {
   DELIVERY_PROSE_EN,
   DELIVERY_PROSE_SHORT_EN,

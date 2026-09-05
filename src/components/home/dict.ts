@@ -230,6 +230,84 @@ interface FeedbackSectionDict {
     submitError: string;
 }
 
+interface HeroSectionDict {
+    /** 定位胶囊两个 span：主句 + 中点后的副句 */
+    locationBadge: string;
+    locationSub: string;
+    /** 跟在 `{GOOGLE_REVIEW_COUNT}` 后面的那半句（保持独立子节点，见文件头） */
+    reviewsSuffix: string;
+    /** 主 CTA 按钮里的文字；zh 原来是「中文 + 桌面才显示的英文小字」两个 span，en 只有一个 span——
+     *  结构差异留在组件里按 locale 切，这里只放字符串。 */
+    primaryCta: string;
+    whatsappHref: string;
+    whatsappCta: string;
+    voucherCta: string;
+    /** 明日特餐卡的小标题（<p uppercase>）：zh 原来是 `{labelZh ?? '明日特餐'}` 一个子节点，
+     *  en 原来是 `{labelEn 改写 ?? "Tomorrow"} pick` 两个子节点——两种表达式留在组件里按 locale 切。 */
+    seeSpecial: string;
+}
+
+interface SubscribeModalDict {
+    /** WhatsApp 预填句（末尾 🍱 是来源暗号，见组件注释） */
+    prefilled: string;
+    close: string;
+    photoAlt: string;
+    badge: string;
+    title: string;
+    body: string;
+    /** 跟在 <Check /> 后面、带前导空格——原文「图标 + 同行文本」是一个文本子节点 */
+    claimedTitle: string;
+    /** `{claimedSubBefore}{FIRST_ORDER_PROMO_CODE}{claimedSubAfter}`（三个子节点，见文件头） */
+    claimedSubBefore: string;
+    claimedSubAfter: string;
+    /** `{claimBefore}{FIRST_ORDER_PROMO_RM}{claimAfter}` */
+    claimBefore: string;
+    claimAfter: string;
+    or: string;
+    whatsappCta: string;
+    later: string;
+}
+
+interface MenuCarouselDict {
+    /** 周几短标签（下标 = getDay()） */
+    wdLabel: string[];
+    upNext: string;
+    tomorrowTag: string;
+    soldOut: string;
+    stockLeft: (n: number) => string;
+    /** 手机卡片被禁用时的兜底字：zh 原来是 `dInfo?.reasonShort ?? '已截单'`，en 原来写死 'Closed'
+     *  ——组件里按 locale 决定要不要先取 reasonShort，这里只放兜底字符串。 */
+    closed: string;
+    orderTomorrow: string;
+    addToOrder: string;
+    closedToday: string;
+    /** 日期头分隔符：zh topTag 是 "6月30日 周一 · Mon" 按 ' ' 切，en 是 "Jun 30 · Mon" 按 ' · ' 切 */
+    dayDateSubSep: string;
+    whatsappHref: string;
+    nextWeekEyebrow: string;
+    nextWeekQuestion: string;
+    nextWeekEyebrowDesktop: string;
+    /** 桌面 CTA 两行：`{nextWeekLine1}<br /><b>{nextWeekLine2}</b>` */
+    nextWeekLine1: string;
+    nextWeekLine2: string;
+    /** 跟在 <Phone /> 后面、带前导空格 */
+    notifyMe: string;
+    heading: string;
+    subMobile: string;
+    subDesktop: string;
+    dailyHeading: string;
+    retiredTitle: string;
+    /** `{retiredCountBefore}{groups.retired.length}{retiredCountAfter}`（三个子节点） */
+    retiredCountBefore: string;
+    retiredCountAfter: string;
+    collapse: string;
+    expand: string;
+    voucherTitle: string;
+    voucherSub: string;
+    /** 后面紧跟 `<span className="hidden lg:inline"> →</span>` */
+    voucherCta: string;
+}
+
 export interface HomeDict {
     faqHeroStrip: FaqHeroStripDict;
     heroTrustStrip: HeroTrustStripDict;
@@ -243,6 +321,9 @@ export interface HomeDict {
     aboutBowlMama: AboutBowlMamaDict;
     faqSection: FaqSectionDict;
     feedbackSection: FeedbackSectionDict;
+    heroSection: HeroSectionDict;
+    subscribeModal: SubscribeModalDict;
+    menuCarousel: MenuCarouselDict;
 }
 
 const ZH_WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -446,6 +527,63 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             submitSuccess: '留言提交成功！感谢您的真实反馈。',
             submitError: '提交失败，请重试。',
         },
+        heroSection: {
+            locationBadge: 'Old Klang Road 邻里私房菜',
+            locationSub: 'Pearl Point Home Kitchen',
+            reviewsSuffix: '+ 邻居好评',
+            primaryCta: '看明天可以吃什么',
+            whatsappHref: 'https://wa.me/60103370197?text=Hi%20%E7%A2%97%E5%A6%88%EF%BC%81%E6%88%91%E6%83%B3%E4%BA%86%E8%A7%A3%E4%B8%80%E4%B8%8B%E4%BB%8A%E5%A4%A9%E7%9A%84%E8%8F%9C%E5%8D%95%E3%80%82',
+            whatsappCta: 'WhatsApp 问碗妈',
+            voucherCta: '先囤券更划算',
+            seeSpecial: '查看明日特餐',
+        },
+        subscribeModal: {
+            prefilled: 'Hi 碗妈！我从网站加入，想拿首单 RM 5 voucher，之后有新 Promo 可以通知我 🙏 🍱',
+            close: '关闭',
+            photoAlt: '碗妈每天新鲜手作',
+            badge: '首单立减 RM 5',
+            title: '首单立减 RM 5 · 现在就能用',
+            body: '点一下就领，结账时自动帮你用上，不用等回复。Pearl Point / OUG / Citizen 1 & 2 邻居都在吃。',
+            claimedTitle: ' 已领取，去点菜',
+            claimedSubBefore: '优惠码 ',
+            claimedSubAfter: ' · 结账自动套用',
+            claimBefore: '领取 RM ',
+            claimAfter: ' 首单折扣',
+            or: '或者',
+            whatsappCta: '加 WhatsApp 收新菜通知',
+            later: '下次再说',
+        },
+        menuCarousel: {
+            wdLabel: ['周日', '周一', '周二', '周三', '周四', '周五', '周六'],
+            upNext: '✨ 下一餐',
+            tomorrowTag: '✨ 明天',
+            soldOut: '售罄',
+            stockLeft: (n) => `仅剩 ${n} 份`,
+            closed: '已截单',
+            orderTomorrow: '加入明天',
+            addToOrder: '加入预订',
+            closedToday: '今日已截单',
+            dayDateSubSep: ' ',
+            whatsappHref: 'https://wa.me/60103370197?text=Hi%20BowlMama!%20%E6%83%B3%E7%AC%AC%E4%B8%80%E6%97%B6%E9%97%B4%E6%94%B6%E5%88%B0%E4%B8%8B%E5%91%A8%E8%8F%9C%E5%8D%95%E6%9B%B4%E6%96%B0%EF%BC%8C%E5%8F%AF%E4%BB%A5%E9%80%9A%E7%9F%A5%E6%88%91%E5%90%97%EF%BC%9F',
+            nextWeekEyebrow: '下周预告',
+            nextWeekQuestion: '想第一时间收到下周菜单？',
+            nextWeekEyebrowDesktop: '✨ 下周预告',
+            nextWeekLine1: '碗妈每周更新菜单',
+            nextWeekLine2: '想第一时间收到通知？',
+            notifyMe: ' WhatsApp 通知我',
+            heading: '每日精选 / Weekly Rotation',
+            subMobile: '一菜一天 · 碗妈每周为你换一轮，常驻菜天天都有',
+            subDesktop: '一菜一天，周一到周五每天一道特餐 · 常驻菜天天供应，碗妈每周更新',
+            dailyHeading: '⭐ 常驻 · 天天都有',
+            retiredTitle: '🕰 往期人气菜 · 敬请期待',
+            retiredCountBefore: '（',
+            retiredCountAfter: ' 道）',
+            collapse: '收起 ▲',
+            expand: '展开看看 ▼',
+            voucherTitle: '餐券预付包 · 一次买，慢慢吃',
+            voucherSub: '任意主菜都能兑 · 20 张装单券低至 RM 17.50 · 30 / 60 天有效',
+            voucherCta: '去看餐券包',
+        },
     },
     en: {
         faqHeroStrip: {
@@ -637,6 +775,63 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             submit: 'Submit review',
             submitSuccess: 'Submitted! Thank you for the honest review.',
             submitError: 'Submit failed. Please try again.',
+        },
+        heroSection: {
+            locationBadge: 'Old Klang Road home kitchen',
+            locationSub: 'Pearl Point',
+            reviewsSuffix: '+ neighbours love it',
+            primaryCta: "See Tomorrow's Menu",
+            whatsappHref: 'https://wa.me/60103370197?text=Hi%20BowlMama!%20I%27d%20like%20to%20see%20today%27s%20menu.',
+            whatsappCta: 'Ask BowlMama on WhatsApp',
+            voucherCta: 'Meal vouchers — from RM 17.50 a meal',
+            seeSpecial: "See tomorrow's special",
+        },
+        subscribeModal: {
+            prefilled: "Hi BowlMama! I'd like to claim the RM 5 first-order voucher — please ping me when you have new promos or new dishes. Thanks! 🍱",
+            close: 'Close',
+            photoAlt: "BowlMama's daily home-cooked dish",
+            badge: 'RM 5 off your first order',
+            title: 'RM 5 off your first order — claim it right here',
+            body: 'One tap to claim; we apply it automatically at checkout — no waiting for a reply. Pearl Point / OUG / Citizen 1 & 2 neighbours are already eating.',
+            claimedTitle: ' Claimed — go pick a dish',
+            claimedSubBefore: 'Code ',
+            claimedSubAfter: ' · applied at checkout',
+            claimBefore: 'Claim RM ',
+            claimAfter: ' off',
+            or: 'or',
+            whatsappCta: 'Add WhatsApp for new-dish alerts',
+            later: 'Maybe later',
+        },
+        menuCarousel: {
+            wdLabel: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            upNext: '✨ Up next',
+            tomorrowTag: '✨ Tomorrow',
+            soldOut: 'Sold out',
+            stockLeft: (n) => `${n} left`,
+            closed: 'Closed',
+            orderTomorrow: 'Order tmrw',
+            addToOrder: 'Add to order',
+            closedToday: 'Closed for today',
+            dayDateSubSep: ' · ',
+            whatsappHref: 'https://wa.me/60103370197?text=Hi%20BowlMama!%20I%27d%20like%20to%20be%20notified%20when%20next%20week%27s%20menu%20is%20updated.%20Could%20you%20let%20me%20know%3F',
+            nextWeekEyebrow: 'Next Week',
+            nextWeekQuestion: 'Get a heads-up when next week’s menu drops?',
+            nextWeekEyebrowDesktop: '✨ NEXT WEEK',
+            nextWeekLine1: 'BowlMama refreshes the menu weekly.',
+            nextWeekLine2: 'Want to be notified?',
+            notifyMe: ' Notify me on WhatsApp',
+            heading: 'Daily Picks · Weekly Rotation',
+            subMobile: 'A different special each weekday — plus daily dishes, always available. BowlMama refreshes weekly.',
+            subDesktop: 'One special per weekday, Mon–Fri — daily dishes available every day. BowlMama refreshes the menu weekly.',
+            dailyHeading: '⭐ Daily · Always available',
+            retiredTitle: '🕰 Past favourites · Back soon',
+            retiredCountBefore: '(',
+            retiredCountAfter: ')',
+            collapse: 'Hide ▲',
+            expand: 'Take a look ▼',
+            voucherTitle: 'Meal Voucher Bundles · Buy once, eat anytime',
+            voucherSub: 'Any main dish · 20-pack from RM 17.50 a voucher · Valid 30 / 60 days',
+            voucherCta: 'View bundles',
         },
     },
 };

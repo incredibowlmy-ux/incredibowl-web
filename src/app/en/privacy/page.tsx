@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import React from 'react';
 import Link from 'next/link';
-import SetHtmlLang from '@/components/home-en/SetHtmlLang';
+import SetHtmlLang from '@/components/home/SetHtmlLang';
 import PageShell from '@/components/layout/PageShell';
 
 // 英文版隐私政策：内容 = /privacy 中英对照页的英文半，无新增主张。

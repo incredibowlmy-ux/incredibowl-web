@@ -9,7 +9,7 @@ import {
   TIER_MID,
   COVERAGE_AREAS,
 } from "@/lib/deliveryCopy";
-import SetHtmlLang from "@/components/home-en/SetHtmlLang";
+import SetHtmlLang from "@/components/home/SetHtmlLang";
 import PageShell from "@/components/layout/PageShell";
 
 // 英文版博文：与 ZH 版 src/app/blog/healthy-food-delivery-pearl-point 同源，

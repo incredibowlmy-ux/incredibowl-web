@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import { TIER_INNER, TIER_OUTER, TIER_MID, DELIVERY_TIER_COPY_FAR } from '@/lib/deliveryCopy';
 import { MID_RADIUS_KM, MAX_DELIVERY_KM } from '@/lib/deliveryUtils';
-import SetHtmlLang from '@/components/home-en/SetHtmlLang';
+import SetHtmlLang from '@/components/home/SetHtmlLang';
 import PageShell from '@/components/layout/PageShell';
 
 // 英文版服务条款：内容 = /terms 中英对照页的英文半，条款事实（截单时间、

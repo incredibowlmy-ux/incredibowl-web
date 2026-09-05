@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { tierProseEn, TIER_INNER, TIER_OUTER, COVERAGE_AREAS } from "@/lib/deliveryCopy";
-import SetHtmlLang from "@/components/home-en/SetHtmlLang";
+import SetHtmlLang from "@/components/home/SetHtmlLang";
 import PageShell from "@/components/layout/PageShell";
 
 export const metadata: Metadata = {
