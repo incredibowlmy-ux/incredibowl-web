@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle, Ticket } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 import { CART_DICT } from './dict';
+import type { CartBundle } from '@/types';
 
 interface CartSuccessProps {
     // Snapshot taken at submit time — the live cart is cleared the moment
     // the order succeeds, so this screen must not read from it.
-    orderSuccess: { id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[] };
+    orderSuccess: { id: string; items: CartBundle[]; total: number; trackInfo?: { token: string; date: string; time: string }[] };
     userProfile?: any;
     /**
      * FPX 回跳成功（2026-09-05 F3）：银行跳回来时购物车早已清空，只有下单前存在
@@ -105,7 +106,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
     const isGroup = id.startsWith('GRP');
     const displayId = isGroup ? id : id.slice(-6).toUpperCase();
     // 渲染层菜名：EN 显示 nameEn 兜底 name；订单 payload 早已提交，不受影响。
-    const dishName = (item: any) => (locale === 'en'
+    const dishName = (item: CartBundle) => (locale === 'en'
         ? (item.dish?.nameEn || item.dish?.name || '')
         : (item.dish?.name || ''));
 
@@ -128,7 +129,7 @@ export default function CartSuccess({ orderSuccess, userProfile, onDone, locale 
         : [
             t.waIntro,
             t.waOrderNo(isGroup, displayId),
-            ...items.map((item: any) =>
+            ...items.map((item) =>
                 t.waItem(dishName(item), (item.dishQty || 1) * (item.quantity || 1), item.selectedDate || t.dateTbdWa, t.mealWord(item.selectedTime))),
             `💰 RM ${total.toFixed(2)}`,
             ...trackLines,

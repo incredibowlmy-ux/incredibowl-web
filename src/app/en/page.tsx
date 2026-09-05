@@ -43,7 +43,10 @@ export default function EnglishHome() {
     const [isAddOnOpen, setIsAddOnOpen] = useState(false);
     const [selectedDish, setSelectedDish] = useState<MenuItem | null>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [editConfig, setEditConfig] = useState<any>(null);
+    const [editConfig, setEditConfig] = useState<{
+        cartItemId: string; quantities: Record<string, number>; dishQty: number;
+        note: string; selectedDate: string; selectedTime: string;
+    } | null>(null);
     const [minDate, setMinDate] = useState<string>('');
     const [menuDates, setMenuDates] = useState<Record<number, MenuDateInfo>>({});
     const [fpxSuccess, setFpxSuccess] = useState<{
@@ -295,7 +298,7 @@ export default function EnglishHome() {
         setSelectedDish(bundle.dish);
         const initQuantities: Record<string, number> = {};
         bundle.addOns.forEach(a => { initQuantities[a.item.id] = a.quantity; });
-        setEditConfig({ cartItemId: bundle.cartItemId, quantities: initQuantities, dishQty: bundle.dishQty, note: bundle.note, selectedDate: bundle.selectedDate, selectedTime: bundle.selectedTime });
+        setEditConfig({ cartItemId: bundle.cartItemId, quantities: initQuantities, dishQty: bundle.dishQty, note: bundle.note ?? '', selectedDate: bundle.selectedDate, selectedTime: bundle.selectedTime });
         setIsCartOpen(false);
         setIsAddOnOpen(true);
     };

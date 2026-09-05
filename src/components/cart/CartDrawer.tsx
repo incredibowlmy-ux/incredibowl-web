@@ -28,6 +28,24 @@ import { useModalA11y } from '@/components/ui/useModalA11y';
 import CartDeliveryInfo from './CartDeliveryInfo';
 import QRPaymentSection from './QRPaymentSection';
 import { CART_DICT } from './dict';
+import type { CartBundle } from '@/types';
+import type { SavedAddress } from '@/lib/auth';
+import type { Locale } from '@/lib/locale';
+
+interface CartDrawerProps {
+    isOpen: boolean;
+    onClose: () => void;
+    cart: CartBundle[];
+    removeFromCart: (cartItemId: string) => void;
+    cartTotal: number;
+    cartCount: number;
+    onAuthOpen: () => void;
+    onClearCart: () => void;
+    onEditItem?: (item: CartBundle) => void;
+    locale?: Locale;
+    /** 三个宿主都传了它，但抽屉里从来没用过（数量改动走 onEditItem 的弹窗）。留可选位不逼调用方改。 */
+    updateQuantity?: (cartItemId: string, delta: number) => void;
+}
 
 export default function CartDrawer({
     isOpen,
@@ -40,7 +58,7 @@ export default function CartDrawer({
     onClearCart,
     onEditItem,
     locale = 'zh'
-}: any) {
+}: CartDrawerProps) {
     // 渲染层文案字典（zh 值与旧字面量逐字一致）。订单 payload 永远不经过它。
     const t = CART_DICT[(locale === 'en' ? 'en' : 'zh') as 'zh' | 'en'].drawer;
     // Auth + profile (address/phone) come from the app-wide AuthProvider, which
@@ -102,7 +120,7 @@ export default function CartDrawer({
             setGuestLoading(false);
         }
     };
-    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: any[]; total: number; trackInfo?: { token: string; date: string; time: string }[]; voucherUsed?: boolean } | null>(null);
+    const [orderSuccess, setOrderSuccess] = useState<{ id: string; items: CartBundle[]; total: number; trackInfo?: { token: string; date: string; time: string }[]; voucherUsed?: boolean } | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoApplied, setPromoApplied] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -123,9 +141,9 @@ export default function CartDrawer({
     // savedAddresses 来自 users/{uid}（AuthProvider 提供），每条自带 geocode
     // 数据包；切换只是把那条复制成顶层「当前地址」，运费推导（distanceKm/
     // deliveryZone 都读 userProfile）随 refreshProfile 自动更新。
-    const savedAddresses: any[] = Array.isArray(userProfile?.savedAddresses) ? userProfile.savedAddresses : [];
+    const savedAddresses: SavedAddress[] = Array.isArray(userProfile?.savedAddresses) ? userProfile.savedAddresses : [];
     const [switchingAddress, setSwitchingAddress] = useState('');   // 切换中的条目 id
-    const handleSwitchAddress = async (entry: any) => {
+    const handleSwitchAddress = async (entry: SavedAddress) => {
         if (switchingAddress || !currentUser) return;
         setSwitchingAddress(entry.id);
         try {
@@ -179,9 +197,9 @@ export default function CartDrawer({
     useEffect(() => {
         if (!isOpen) return;
         const menuById = new Map(weeklyMenu.map(d => [d.id, d]));
-        const dateStale: any[] = [];
-        const unavailable: any[] = [];
-        for (const item of cart as any[]) {
+        const dateStale: CartBundle[] = [];
+        const unavailable: CartBundle[] = [];
+        for (const item of cart) {
             if (!isOrderDateValid(item.selectedDate).ok) { dateStale.push(item); continue; }
             // 时段也可能后来关掉（例：改成只送午餐的日子），与日期同一类处理。
             if (!isSlotOrderableOn(item.selectedDate, item.selectedTime).ok) { dateStale.push(item); continue; }
@@ -193,7 +211,7 @@ export default function CartDrawer({
             setStaleNotice('');
             return;
         }
-        [...dateStale, ...unavailable].forEach((item: any) => removeFromCart(item.cartItemId));
+        [...dateStale, ...unavailable].forEach((item) => removeFromCart(item.cartItemId));
         // 重置结账状态：优惠券可能已过期/被用掉，支付方式也要重选。
         setPromoCode('');
         setPromoApplied(false);
@@ -216,7 +234,7 @@ export default function CartDrawer({
     // Each serving's voucher VALUE = unit price minus any per-dish top-up (e.g.
     // premium salmon: one voucher covers RM 19.90, customer still pays RM 4 cash).
     // Best deal first → cover the highest-VALUE servings. Mirrored server-side.
-    const mainDishVoucherValues: number[] = cart.flatMap((bundle: any) => {
+    const mainDishVoucherValues: number[] = cart.flatMap((bundle) => {
         const unitPrice = getDishPrice(bundle?.dish?.price ?? 0);
         const value = dishVoucherValue(unitPrice, bundle?.dish ?? {});
         const totalUnits = (bundle?.dishQty || 1) * (bundle?.quantity || 1);
@@ -240,13 +258,13 @@ export default function CartDrawer({
     // recomputes with its own balances and reconciles our number ±0.02.
     // Credits stack with meal vouchers AND promo codes.
     const addonCreditPlan = planAddonCreditDeduction(
-        cart.map((bundle: any) => ({
+        cart.map((bundle) => ({
             groupKey: `${bundle.selectedDate || '未定'}|${bundle.selectedTime || 'Lunch'}`,
             voucherValue: dishVoucherValue(getDishPrice(bundle?.dish?.price ?? 0), bundle?.dish ?? {}),
             topUpAddonId: bundle?.dish?.topUpAddonId,
             topUpRM: bundle?.dish?.voucherTopUp ?? 0,
             units: (bundle?.dishQty || 1) * (bundle?.quantity || 1),
-            addOns: (bundle?.addOns || []).map((a: any) => ({
+            addOns: (bundle?.addOns || []).map((a) => ({
                 id: a.item?.id || '',
                 totalQty: (a.quantity || 0) * (bundle?.quantity || 1),
             })),
@@ -263,8 +281,8 @@ export default function CartDrawer({
         let name = addonCredits.find(c => c.addonId === l.addonId)?.addonName || l.addonId;
         if (locale === 'en') {
             for (const b of cart) {
-                const hit = (b.addOns || []).find((a: any) => a.item?.id === l.addonId && a.item?.nameEn);
-                if (hit) { name = hit.item.nameEn; break; }
+                const hit = (b.addOns || []).find((a) => a.item?.id === l.addonId && a.item?.nameEn);
+                if (hit?.item.nameEn) { name = hit.item.nameEn; break; }
             }
         }
         return `${name} ×${l.count}`;
@@ -574,10 +592,10 @@ export default function CartDrawer({
 
     /** Submit order via server-side API for price validation */
     const submitOrderViaAPI = async (overridePaymentMethod?: 'qr' | 'fpx' | 'voucher') => {
-        const cartBundles = cart.map((item: any) => ({
+        const cartBundles = cart.map((item) => ({
             dishId: item.dish.id,
             dishQty: item.dishQty,
-            addOns: (item.addOns || []).map((a: any) => ({
+            addOns: (item.addOns || []).map((a) => ({
                 id: a.item.id,
                 name: a.item.name,
                 nameEn: a.item.nameEn || '',
@@ -679,7 +697,7 @@ export default function CartDrawer({
         if (!isValidMyPhone(userProfile.phone)) {
             setCheckoutError({ msg: t.invalidPhone }); scrollToDeliveryForm(); return;
         }
-        if (cart.length > 0 && cart.some((item: any) => !item.selectedDate)) {
+        if (cart.length > 0 && cart.some((item) => !item.selectedDate)) {
             setCheckoutError({ msg: t.missingDate }); return;
         }
 
@@ -756,8 +774,8 @@ export default function CartDrawer({
                 // Cart entries are CartBundle — the dish name lives on it.dish,
                 // not on the bundle itself (was it.name → "undefined" in the
                 // post-FPX success modal / WhatsApp prefill).
-                items: cart.map((it: any) => {
-                    const sel = (it.addOns || []).filter((a: any) => a?.item?.name);
+                items: cart.map((it) => {
+                    const sel = (it.addOns || []).filter((a) => a?.item?.name);
                     // 份数 = dishQty × quantity，加料 = quantity × bundle 数 —
                     // 与 /api/submit-order 写进 Firestore 的 items[].quantity 一致
                     // （只读 it.quantity 会把「1 个 bundle 点 5 份」显示成 ×1）。
@@ -768,8 +786,8 @@ export default function CartDrawer({
                         nameEn: it.dish?.nameEn || it.dish?.name || '',
                         qty: (it.dishQty || 1) * bundles,
                         date: it.selectedDate || '',
-                        addOns: sel.map((a: any) => `${a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
-                        addOnsEn: sel.map((a: any) => `${a.item.nameEn || a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
+                        addOns: sel.map((a) => `${a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
+                        addOnsEn: sel.map((a) => `${a.item.nameEn || a.item.name}${aQty(a) > 1 ? `×${aQty(a)}` : ''}`),
                     };
                 }),
                 total: finalTotal,
@@ -953,7 +971,7 @@ export default function CartDrawer({
                                 refreshProfile 后运费/免运门槛自动按新距离重算。 */}
                             {savedAddresses.length >= 2 && !currentUser?.isAnonymous && (
                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {savedAddresses.map((entry: any) => {
+                                    {savedAddresses.map((entry) => {
                                         const isCurrent = (entry?.address || '').trim() === (userProfile?.address || '').trim();
                                         return (
                                             <button key={entry.id}
@@ -1032,12 +1050,12 @@ export default function CartDrawer({
                                     <Plus size={13} strokeWidth={2.5} /><span>{t.addMore}</span>
                                 </button>
 
-                                {Object.entries(cart.reduce((acc: any, item: any) => {
+                                {Object.entries(cart.reduce<Record<string, { date: string; time: string; items: CartBundle[] }>>((acc, item) => {
                                     const key = `${item.selectedDate || t.dateTbd}|${item.selectedTime || 'Lunch'}`;
                                     if (!acc[key]) acc[key] = { date: item.selectedDate || t.dateTbd, time: item.selectedTime || 'Lunch', items: [] };
                                     acc[key].items.push(item);
                                     return acc;
-                                }, {})).sort().map(([key, group]: any) => {
+                                }, {})).sort().map(([key, group]) => {
                                     const d = new Date();
                                     const ymdToday = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                                     const dTom = new Date(); dTom.setDate(dTom.getDate() + 1);
@@ -1062,7 +1080,7 @@ export default function CartDrawer({
                                                 </span>
                                                 {dateBadge && <div className="ml-auto flex items-center">{dateBadge}</div>}
                                             </div>
-                                            {group.items.map((item: any, i: number) => (
+                                            {group.items.map((item, i) => (
                                                 <CartItemCard key={item.cartItemId} item={item} onRemove={removeFromCart} onEdit={onEditItem} animationDelay={i * 50} locale={locale} />
                                             ))}
                                         </div>

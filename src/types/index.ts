@@ -39,7 +39,8 @@ export interface AppUser {
 
 // A single add-on selection inside a CartBundle
 export interface AddOnSelection {
-    item: { id: string; name: string; nameEn?: string; price: number };
+    // image 是 AddOnModal 的 AddOnItem 带进来的（submit-order payload 会原样带上）
+    item: { id: string; name: string; nameEn?: string; price: number; image?: string };
     quantity: number;
 }
 
