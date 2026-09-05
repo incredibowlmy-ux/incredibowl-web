@@ -93,9 +93,9 @@ export async function GET(req: NextRequest) {
       `manual_${localDigits}`,
     ])).slice(0, 10); // Firestore in 查询上限，实际最多 3 个
 
-    // ── 并行查：订单 / 餐券 / 加料 credit ──────────────
+    // ── 并行查：订单 / 餐券 / 加料 credit / 碗妈对话档案（waLeads）──
     const now = Date.now();
-    const [ordersQ, vouchersQ, addonCredits] = await Promise.all([
+    const [ordersQ, vouchersQ, addonCredits, leadSnap] = await Promise.all([
       // 等值查询不需要复合索引；单客户订单量小，内存排序即可
       db.collection('orders').where('userId', 'in', uidCandidates).limit(300).get(),
       userSnap
@@ -107,7 +107,14 @@ export async function GET(req: NextRequest) {
       userSnap
         ? import('@/lib/addonCreditUtils').then(m => m.getAvailableAddonCredits(db, uid)).catch(() => [])
         : Promise.resolve([]),
+      // v4：对话记录 + 客户备注 + 人工接管状态都在 waLeads/{国际格式号码}
+      db.collection('waLeads').doc(phoneDigits).get().catch(() => null),
     ]);
+    const lead = (leadSnap && leadSnap.exists ? leadSnap.data() : {}) as Record<string, any>;
+    const { renderTurnsBlock, renderProfileBlock } = await import('@/lib/waWebhook');
+    const recentTurnsBlock = renderTurnsBlock(lead.turns, now, 12);
+    const profileBlock = renderProfileBlock(lead.profile);
+    const humanUntil = Number(lead.humanUntil) || 0;
 
     // 餐券：available + 未过期（过期靠读取时过滤，库里没有 cron 翻状态）
     let voucherCount = 0;
@@ -231,6 +238,9 @@ export async function GET(req: NextRequest) {
         lines.push(`- 上次点过：${recent.map(r => `${dateZh(r.deliveryDate)} ${r.items}`).join('；')}`);
       }
     }
+    // 客户备注紧跟档案（同属「关于这个人」的信息）；对话记录单独一个字段，
+    // 由 n8n Context Builder 放到提示词里它该在的位置。
+    if (profileBlock) lines.push(profileBlock);
 
     return NextResponse.json({
       found,
@@ -238,6 +248,11 @@ export async function GET(req: NextRequest) {
         name, isMember: !!userSnap, addressText, hasVerifiedCoords,
         totalOrders, totalSpent: Number(totalSpent.toFixed(2)),
       },
+      waProfile: (lead.profile && typeof lead.profile === 'object') ? lead.profile : {},
+      recentTurns: Array.isArray(lead.turns) ? lead.turns.slice(-12) : [],
+      recentTurnsBlock,
+      human: humanUntil > now,
+      humanUntil,
       vouchers: { available: voucherCount, soonestExpiry: soonestExpiryMs ? ymdKL(soonestExpiryMs) : null },
       addonCredits: (addonCredits as any[]).map(c => ({ addonId: c.addonId, name: c.addonName, remaining: c.remaining })),
       activeOrders: active,
@@ -252,6 +267,7 @@ export async function GET(req: NextRequest) {
       found: false,
       error: err?.message || 'lookup failed',
       contextBlock: '【客户档案】查询暂时失败 —— 不要假设客户身份，正常接待即可。',
+      recentTurnsBlock: '【最近对话】（记录暂时读不到 —— 按客户这条消息本身回答，别假装记得之前聊过什么）',
     }, { status: 200 });
   }
 }

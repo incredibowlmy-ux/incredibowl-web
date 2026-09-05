@@ -2453,6 +2453,20 @@
     </div>
 
     <!-- ═══════════════ ORDER DETAIL MODAL（查客户/最近订单点行进入）═══════════════ -->
+    <!-- ═══════════════ 碗妈 WhatsApp 对话面板（chatbot v4：记忆 / 人工接管 / 备注）═══════════════ -->
+    <div id="waLeadModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width:640px">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">🤖 碗妈对话</div>
+                    <div class="modal-subtitle" id="waLeadSub">—</div>
+                </div>
+                <button class="modal-close" id="closeWaLeadBtn" type="button">&times;</button>
+            </div>
+            <div class="modal-body" id="waLeadBody" style="font-size:13px">加载中…</div>
+        </div>
+    </div>
+
     <div id="orderDetailModal" class="modal-backdrop hidden">
         <div class="modal" style="max-width:560px">
             <div class="modal-header">
@@ -7406,6 +7420,7 @@ incredibowl.my`,
                                     <td><div style="display:flex;gap:4px">
                                         <button class="btn ghost sm lead-promo-btn" data-phone="${l.phoneNorm}" data-msg-count="${l.msgCount}" title="发促销文案（消息≤2 用①冷线索，>2 用②温线索）">促销</button>
                                         <button class="btn ghost sm lead-chat-btn" data-phone="${l.phone}" data-phone-norm="${l.phoneNorm}" title="跳到此客户的对话历史">对话</button>
+                                        <button class="btn ghost sm wa-lead-btn" data-phone="${l.phone}" title="碗妈 bot 的记忆 / 备注 / 人工接管">🤖</button>
                                     </div></td>
                                 </tr>
                             `;
@@ -8537,6 +8552,146 @@ incredibowl.my`,
             if (!btn) return;
             jumpToChatForPhone(btn.dataset.phone, btn.dataset.phoneNorm);
         });
+
+        // ═══════════════════════════════════════════════════════════════
+        //   碗妈 WhatsApp 对话面板（chatbot v4）
+        //   数据全在 Firestore waLeads/{国际格式号码}，经 /api/admin/wa-lead 读写：
+        //   最近 30 条对话（bot 的记忆）、客户备注（bot 或老板写）、人工接管开关、追单状态。
+        //   「接管」= bot 对这个号码闭嘴 N 分钟，客户消息原文转到老板 WhatsApp。
+        // ═══════════════════════════════════════════════════════════════
+        const WA_PROFILE_LABEL = { nickname: '称呼', dropoff: '交接方式', allergy: '忌口/过敏', preferredMeal: '习惯时段', tag: '标签', note: '备注' };
+        let waLeadCurrentPhone = '';
+
+        function waFmtTs(ms) {
+            if (!ms) return '—';
+            const d = new Date(ms);
+            return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+        function waRoleLabel(role) {
+            return role === 'in' ? '客户' : role === 'boss' ? '老板' : role === 'nudge' ? '追单' : role === 'sys' ? '系统' : '碗妈';
+        }
+        function waRoleColor(role) {
+            return role === 'in' ? 'var(--text)' : role === 'boss' ? 'var(--accent, #C9985C)' : role === 'sys' ? 'var(--text-muted)' : 'var(--success, #4caf50)';
+        }
+
+        async function openWaLeadPanel(phone) {
+            waLeadCurrentPhone = phone;
+            $('#waLeadSub').textContent = phone;
+            $('#waLeadBody').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">加载中…</div>';
+            $('#waLeadModal').classList.remove('hidden');
+            await refreshWaLeadPanel();
+        }
+        function closeWaLeadPanel() { $('#waLeadModal').classList.add('hidden'); }
+
+        async function refreshWaLeadPanel() {
+            const phone = waLeadCurrentPhone;
+            let d;
+            try {
+                d = await callAdminAPI('/api/admin/wa-lead', { op: 'get', phone });
+            } catch (err) {
+                $('#waLeadBody').innerHTML = `<div style="color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
+                return;
+            }
+            if (!d.found) {
+                $('#waLeadBody').innerHTML = '<div style="padding:16px;color:var(--text-muted)">这个号码还没有碗妈 v4 的记录（v4 上线后第一次来消息才会建档）。</div>';
+                return;
+            }
+            const p = d.profile || {};
+            const profileRows = Object.entries(WA_PROFILE_LABEL).map(([k, label]) => {
+                let v = k === 'tag' ? (p.tags || []).join('、') : k === 'note' ? (p.notes || []).join('；') : (p[k] || '');
+                if (k === 'preferredMeal' && v) v = v === 'dinner' ? '晚餐' : '午餐';
+                return v ? `<div><span style="color:var(--text-muted)">${label}：</span>${escapeHtml(String(v))}</div>` : '';
+            }).filter(Boolean).join('') || '<div style="color:var(--text-muted)">（还没有备注）</div>';
+            const turns = (d.turns || []).slice(-30);
+            const turnsHtml = turns.length
+                ? turns.map(t => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border)">
+                        <div style="flex:0 0 68px;color:var(--text-muted);font-size:11px">${waFmtTs(t.ts)}</div>
+                        <div style="flex:0 0 36px;font-weight:600;font-size:11px;color:${waRoleColor(t.role)}">${waRoleLabel(t.role)}</div>
+                        <div style="flex:1;white-space:pre-wrap;word-break:break-word">${escapeHtml(String(t.text || ''))}</div>
+                    </div>`).join('')
+                : '<div style="color:var(--text-muted)">（没有对话记录）</div>';
+            const humanLine = d.human
+                ? `<span style="color:var(--danger);font-weight:600">🙋 人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}（${escapeHtml(d.humanBy || '')}）`
+                : '<span style="color:var(--success, #4caf50);font-weight:600">🤖 bot 接待中</span>';
+            const nudgeLine = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭（不再追）'
+                : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ' · 无排程'}${d.clicked ? ' · 点过链接' : ''}`;
+            $('#waLeadBody').innerHTML = `
+                <div style="padding:12px 14px;background:var(--bg-subtle);border-radius:10px;margin-bottom:10px">
+                    <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+                        <div>
+                            <div style="font-size:15px;font-weight:700">${escapeHtml(d.name || '（无名字）')} <span style="font-weight:400;color:var(--text-muted);font-size:12px">${escapeHtml(d.lang || '')} · ${escapeHtml(d.intent || '')}</span></div>
+                            <div style="margin-top:4px">${humanLine}</div>
+                            <div style="margin-top:2px;color:var(--text-muted);font-size:12px">追单：${nudgeLine} · 最近消息 ${waFmtTs(d.lastMsgMs)}</div>
+                        </div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                            ${d.human
+                                ? '<button class="btn sm wa-lead-act" data-op="release">🤖 释放给 bot</button>'
+                                : '<button class="btn sm wa-lead-act" data-op="human" data-minutes="120">🙋 接管 2 小时</button><button class="btn ghost sm wa-lead-act" data-op="human" data-minutes="720">接管 12 小时</button>'}
+                            ${d.status !== 'closed' && d.status !== 'ordered' ? '<button class="btn ghost sm wa-lead-act" data-op="close" title="停止对这个号码的自动追单">停止追单</button>' : ''}
+                        </div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                    <div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px">
+                        <div style="font-weight:600;margin-bottom:6px">📝 客户备注（bot 也会读）</div>
+                        <div style="display:flex;flex-direction:column;gap:3px;font-size:12px">${profileRows}</div>
+                    </div>
+                    <div style="padding:10px 12px;border:1px solid var(--border);border-radius:10px">
+                        <div style="font-weight:600;margin-bottom:6px">加一条备注</div>
+                        <div style="display:flex;flex-direction:column;gap:6px">
+                            <select id="waNoteKey" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px">
+                                ${Object.entries(WA_PROFILE_LABEL).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}
+                            </select>
+                            <input id="waNoteValue" type="text" placeholder="例：放 guard house / 阿 May / 花生过敏" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px" />
+                            <button class="btn sm" id="waNoteSave">保存备注</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-weight:600;margin-bottom:4px">💬 最近对话（bot 的记忆，最多 30 条）</div>
+                <div style="max-height:320px;overflow-y:auto;padding:4px 2px">${turnsHtml}</div>
+            `;
+        }
+
+        document.addEventListener('click', async (e) => {
+            const open = e.target.closest('.wa-lead-btn');
+            if (open) { openWaLeadPanel(open.dataset.phone); return; }
+            if (e.target.id === 'closeWaLeadBtn' || e.target === $('#waLeadModal')) { closeWaLeadPanel(); return; }
+            const act = e.target.closest('.wa-lead-act');
+            if (act && waLeadCurrentPhone) {
+                const op = act.dataset.op;
+                if (op === 'close' && !confirm('停止对这个号码的自动追单？（客户再来消息会重新开始）')) return;
+                act.disabled = true;
+                try {
+                    await callAdminAPI('/api/admin/wa-lead', { op, phone: waLeadCurrentPhone, minutes: Number(act.dataset.minutes) || undefined });
+                    toast(op === 'human' ? 'bot 已静音，客户消息会原文转到你的 WhatsApp' : op === 'release' ? 'bot 已恢复' : '已停止追单', 'success');
+                    await refreshWaLeadPanel();
+                } catch (err) {
+                    toast('操作失败：' + err.message, 'error');
+                    act.disabled = false;
+                }
+                return;
+            }
+            if (e.target.id === 'waNoteSave' && waLeadCurrentPhone) {
+                const key = $('#waNoteKey').value;
+                const value = $('#waNoteValue').value.trim();
+                if (!value) { toast('备注不能为空', 'error'); return; }
+                e.target.disabled = true;
+                try {
+                    await callAdminAPI('/api/admin/wa-lead', { op: 'note', phone: waLeadCurrentPhone, key, value });
+                    toast('备注已保存，碗妈下次对话就会用上', 'success');
+                    await refreshWaLeadPanel();
+                } catch (err) {
+                    toast('保存失败：' + err.message, 'error');
+                    e.target.disabled = false;
+                }
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !$('#waLeadModal').classList.contains('hidden')) {
+                closeWaLeadPanel();
+                e.stopImmediatePropagation();
+            }
+        }, true);
 
         // Centralized launcher — guards against unconfigured promo before opening WA.
         function launchPromo(category, phoneNorm, ctx = {}) {
@@ -14821,7 +14976,7 @@ incredibowl.my`,
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
                         <div style="flex:1;min-width:0">
                             <div style="font-size:18px;font-weight:700;color:var(--text)">${escapeHtml(p.name)}</div>
-                            <div style="font-size:13px;color:var(--text-muted);margin-top:2px">📞 ${escapeHtml(p.phone || '—')}</div>
+                            <div style="font-size:13px;color:var(--text-muted);margin-top:2px">📞 ${escapeHtml(p.phone || '—')}${p.phone ? ` <button class="btn ghost sm wa-lead-btn" data-phone="${escapeHtml(p.phone)}" title="碗妈 bot 的记忆 / 备注 / 人工接管" style="margin-left:6px">🤖 碗妈</button>` : ''}</div>
                             ${p.userDoc?.email ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">✉️ ${escapeHtml(p.userDoc.email)}</div>` : ''}
                             ${addressHtml}
                         </div>

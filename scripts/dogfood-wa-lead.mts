@@ -51,12 +51,18 @@ console.log('\n=== 2. 静默时段保护（22:00–09:00 不发）===');
   check('21:59 边界仍算正常', fmt(shiftOutOfQuietHours(myt('2026-08-17', 21, 59))) === '2026-08-17 21:59');
 }
 
-console.log('\n=== 3. 第 1 次追单 = 客户消息 +35 分钟 ===');
+console.log('\n=== 3. 第 1 次追单 = 客户消息 +60 分钟（老板 2026-09-06 定，原 35 分钟）===');
 {
   const t = myt('2026-08-17', 14, 0);
   const n1 = computeNextNudge({ lastMsgMs: t, nudgeCount: 0 });
-  check('14:00 来消息 → 14:35 追', fmt(n1) === '2026-08-17 14:35', fmt(n1));
-  check('延迟常量就是 35 分钟', NUDGE1_DELAY_MS === 35 * 60 * 1000);
+  check('14:00 来消息 → 15:00 追', fmt(n1) === '2026-08-17 15:00', fmt(n1));
+  check('延迟常量就是 60 分钟', NUDGE1_DELAY_MS === 60 * 60 * 1000);
+
+  // 20:30 来的客户：+1h = 21:30 仍是正常时段 → 照追；21:30 来的：+1h = 22:30 进静默 → 次日 09:00
+  const n2030 = computeNextNudge({ lastMsgMs: myt('2026-08-17', 20, 30), nudgeCount: 0 });
+  check('20:30 来消息 → 21:30 追（未进静默）', fmt(n2030) === '2026-08-17 21:30', fmt(n2030));
+  const n2130 = computeNextNudge({ lastMsgMs: myt('2026-08-17', 21, 30), nudgeCount: 0 });
+  check('21:30 来消息 → 次日 09:00（22:30 落在静默时段）', fmt(n2130) === '2026-08-18 09:00', fmt(n2130));
 
   const late = myt('2026-08-17', 23, 40);
   check('23:40 来消息 → 次日 09:00（不半夜发）',
@@ -72,13 +78,13 @@ console.log('\n=== 3. 第 1 次追单 = 客户消息 +35 分钟 ===');
 console.log('\n=== 4. 第 2 次追单 = 21:00（⛔ 老板否决 05:15）===');
 {
   const t = myt('2026-08-17', 14, 0);
-  const n2 = computeNextNudge({ lastMsgMs: t, nudgeCount: 1, lastNudgeMs: myt('2026-08-17', 14, 35) });
+  const n2 = computeNextNudge({ lastMsgMs: t, nudgeCount: 1, lastNudgeMs: myt('2026-08-17', 15, 0) });
   check('14:00 的客户 → 当晚 21:00 追第二次', fmt(n2) === '2026-08-17 21:00', fmt(n2));
   check('第二次绝不落在凌晨 05:15', n2 !== null && mytHour(n2) === NUDGE2_HOUR, fmt(n2));
 
-  // 傍晚来的客户：19:35 刚追过，21:00 只隔 1h25m → 顺延，且顺延后超窗就放弃
+  // 傍晚来的客户：20:00 刚追过，21:00 只隔 1h → 顺延，且顺延后超窗就放弃
   const eve = myt('2026-08-17', 19, 0);
-  const n2eve = computeNextNudge({ lastMsgMs: eve, nudgeCount: 1, lastNudgeMs: myt('2026-08-17', 19, 35) });
+  const n2eve = computeNextNudge({ lastMsgMs: eve, nudgeCount: 1, lastNudgeMs: myt('2026-08-17', 20, 0) });
   check('19:00 的客户不会在 21:00 被连着戳（间隔<3h → 顺延后超窗 → 不追）',
     n2eve === null, fmt(n2eve));
 

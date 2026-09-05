@@ -3,6 +3,7 @@ import { weeklyMenu, MenuItem, dishVoucherValue } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { dishRecipes } from '@/data/dishIngredients';
 import { COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import { PAYMENT_METHODS, PAYMENT_METHODS_EN, PAYMENT_TEXT_ZH, PAYMENT_TEXT_EN } from '@/lib/paymentCopy';
 import {
   MEAL_VOUCHER_BUNDLES, FACE_VALUE_RM, bundleRedeemSavings, formatPercent,
 } from '@/data/mealVoucherConfig';
@@ -297,6 +298,11 @@ export async function GET(req: NextRequest) {
       coverage_text: COVERAGE_AREAS.join(' · '),
       // 成分问答的数据边界，跟着数据一起走
       ingredients_note: INGREDIENTS_NOTE,
+      // 付款方式（v4：之前只活在 v1 提示词里，v3 漏了；现在单一来源 src/lib/paymentCopy.ts）
+      payment_methods: PAYMENT_METHODS,
+      payment_methods_en: PAYMENT_METHODS_EN,
+      payment_text: PAYMENT_TEXT_ZH,
+      payment_text_en: PAYMENT_TEXT_EN,
       // 包伙食
       meal_packages: {
         name: '包伙食（餐券预付包）',

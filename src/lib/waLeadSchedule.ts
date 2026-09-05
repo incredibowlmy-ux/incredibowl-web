@@ -4,8 +4,8 @@
  * 为什么单独抽一个文件：追单时点是**唯一**会直接骚扰到客户的逻辑，算错的代价
  * 是凌晨给人发广告。它必须能在不碰 Firestore、不碰 n8n 的前提下被反复验证。
  *
- * 老板 2026-08-16 定的规矩：
- *   · 第 1 次：客户最后一条消息 + 35 分钟
+ * 老板 2026-08-16 定的规矩（2026-09-06 把第 1 次从 35 分钟改成 1 小时）：
+ *   · 第 1 次：客户最后一条消息 + 60 分钟（无成交、无回应才追；点了链接没付款仍追）
  *   · 第 2 次：**当晚 21:00**（⛔ 明确否决了 05:15「截单前提醒」——太早、扰民）
  *   · 每个 lead 最多 2 次，客户一下单/明确拒绝立刻停
  *
@@ -21,8 +21,8 @@ export const MYT_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 /** Meta 客服窗口：客户最后一条消息起 24 小时内可自由发消息。 */
 export const WINDOW_MS = 24 * 60 * 60 * 1000;
-/** 第 1 次追单延迟。 */
-export const NUDGE1_DELAY_MS = 35 * 60 * 1000;
+/** 第 1 次追单延迟（老板 2026-09-06 定：1 小时）。 */
+export const NUDGE1_DELAY_MS = 60 * 60 * 1000;
 /** 静默时段 [22:00, 09:00) —— 落在里面的第 1 次追单顺延到 09:00。 */
 export const QUIET_FROM_H = 22;
 export const QUIET_TO_H = 9;
@@ -83,7 +83,7 @@ export function computeNextNudge({ lastMsgMs, nudgeCount, lastNudgeMs = 0 }: Nud
 
   const windowEnd = lastMsgMs + WINDOW_MS;
 
-  // ── 第 1 次：+35 分钟，避开静默时段 ──────────────────
+  // ── 第 1 次：+60 分钟，避开静默时段 ──────────────────
   if (nudgeCount === 0) {
     const t = shiftOutOfQuietHours(lastMsgMs + NUDGE1_DELAY_MS);
     return t <= windowEnd ? t : null;

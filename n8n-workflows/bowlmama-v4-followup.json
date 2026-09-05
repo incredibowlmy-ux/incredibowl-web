@@ -1,0 +1,252 @@
+{
+  "name": "Bowlmama v4 — 自动追单（每 15 分钟）",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -600,
+        0
+      ],
+      "id": "v3f-cron",
+      "name": "Every 15 min"
+    },
+    {
+      "parameters": {
+        "url": "https://www.incredibowl.my/api/n8n/lead?action=due",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -380,
+        0
+      ],
+      "id": "v3f-due",
+      "name": "Fetch Due Leads",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "ew3zAX6xWGWOdrGO",
+          "name": "Incredibowl N8N API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================\n// 追单文案。两次，内容必须不一样 —— 同一句话发第二遍就是骚扰。\n//   第 1 次（客户消息 +60 分钟，老板 09-06 定）：轻推，给链接 + 「回 1 我帮你落单」\n//   第 2 次（当晚 21:00）：换角度，强调「今晚订，明天中午准时到」\n// 时点全部由服务端 /api/n8n/lead 算好（含静默时段保护和 24h 窗口判断），\n// 这里只负责把字写好 —— 排程逻辑有 37 条断言在 scripts/dogfood-wa-lead.mts。\n// ============================\n\nconst out = [];\nfor (const item of $input.all()) {\n  const leads = item.json.leads || [];\n  for (const l of leads) {\n    const zh = l.lang !== 'en';\n    const token = l.clickToken ? ('&lead=' + l.clickToken) : '';\n    const url = (zh ? 'https://www.incredibowl.my/o?ref=wa' : 'https://www.incredibowl.my/en/o?ref=wa') + token;\n    const first = l.nudgeIndex === 1;\n    let text;\n\n    if (l.intent === 'catering') {\n      text = zh\n        ? (first\n          ? '亲，刚才的团餐碗妈这边随时可以帮你排 😊 把「哪天几点 + 几位 + 送到哪」告诉碗妈，马上给你报价 ❤️'\n          : '晚上好～团餐那边还需要碗妈帮忙吗？档期先到先排，定下来碗妈就帮你锁住 ❤️')\n        : (first\n          ? 'Hi! BowlMama can still take your group order 😊 Just tell me the day + time, how many people, and the address — quote comes right back ❤️'\n          : 'Evening! Still need BowlMama for the group order? Slots go first-come — say the word and I will lock yours ❤️');\n    } else {\n      text = zh\n        ? (first\n          ? '亲，一个小时前你问的那几道还在哦 😊 点这里 30 秒就能下单 👇\\n' + url + '\\n\\n不想点链接也行，回「1」碗妈直接帮你落单 ❤️'\n          : '晚上好呀～今晚订，明天中午就准时送到你手上 🍲\\n' + url + '\\n\\n（每天早上 6 点截单，别错过咯 ❤️）')\n        : (first\n          ? 'Hi! The dishes you asked about an hour ago are still available 😊 Tap here, 30 seconds to order 👇\\n' + url + '\\n\\nDon\\'t like links? Just reply \"1\" and BowlMama will place it for you ❤️'\n          : 'Evening! Order tonight and it arrives right on time tomorrow lunch 🍲\\n' + url + '\\n\\n(Orders close 6:00 AM — don\\'t miss it ❤️)');\n    }\n    out.push({ json: { phone: l.phone, text, nudgeIndex: l.nudgeIndex, lang: l.lang, intent: l.intent } });\n  }\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "v3f-build",
+      "name": "Build Nudge"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1019276584602589",
+        "recipientPhoneNumber": "={{ $json.phone }}",
+        "textBody": "={{ $json.text }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        60,
+        0
+      ],
+      "id": "v3f-send",
+      "name": "Send Nudge",
+      "webhookId": "b2f1e7a0-v3send-4a00-9c00-bowlmamav300",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "r40sSPxInxCOtHWS",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.incredibowl.my/api/n8n/lead",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: 'reply', role: 'nudge', phone: $('Build Nudge').item.json.phone, text: $('Build Nudge').item.json.text }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        0
+      ],
+      "id": "v4f-log",
+      "name": "Log Reply · 追单",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "ew3zAX6xWGWOdrGO",
+          "name": "Incredibowl N8N API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v4f-if-first-c1",
+              "leftValue": "={{ $('Build Nudge').item.json.nudgeIndex === 1 && $('Build Nudge').item.json.intent !== 'catering' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        0
+      ],
+      "id": "v4f-if-first",
+      "name": "第 1 次追单?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/1019276584602589/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $('Build Nudge').item.json.phone, type: 'interactive', interactive: { type: 'button', body: { text: $('Build Nudge').item.json.lang === 'en' ? 'How can BowlMama help?' : '要碗妈怎么帮你？' }, action: { buttons: ($('Build Nudge').item.json.lang === 'en' ? [['btn_order_help','Order for me ✍️'],['lead_close','Not today 🙏']] : [['btn_order_help','帮我直接落单 ✍️'],['lead_close','先不用了 🙏']]).map(b => ({ type: 'reply', reply: { id: b[0], title: b[1] } })) } } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        -80
+      ],
+      "id": "v4f-btn",
+      "name": "Send Nudge Buttons",
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "r40sSPxInxCOtHWS",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 15 min": {
+      "main": [
+        [
+          {
+            "node": "Fetch Due Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Due Leads": {
+      "main": [
+        [
+          {
+            "node": "Build Nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Nudge": {
+      "main": [
+        [
+          {
+            "node": "Send Nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Nudge": {
+      "main": [
+        [
+          {
+            "node": "Log Reply · 追单",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Reply · 追单": {
+      "main": [
+        [
+          {
+            "node": "第 1 次追单?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "第 1 次追单?": {
+      "main": [
+        [
+          {
+            "node": "Send Nudge Buttons",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

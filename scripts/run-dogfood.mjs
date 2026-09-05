@@ -61,6 +61,7 @@ const SKIP = {
   'dogfood-web-addon-credits.mjs': '要 Firebase Admin 凭据',
   // ── 需要本地服务 ────────────────────────────────────────────────
   'dogfood-n8n-v3-scripts.mjs': '要本地 n8n 在 127.0.0.1:4007',
+  'dogfood-n8n-v4-scripts.mjs': '要本地 next start 在 127.0.0.1:4007（喂真实 API 跑 Code 节点）',
 };
 
 const args = process.argv.slice(2);

@@ -7,7 +7,10 @@ let bad = 0;
 const ok = (m) => console.log('  ✅ ' + m);
 const no = (m) => { bad++; console.log('  ❌ ' + m); };
 
-for (const f of ['bowlmama-v3-main.json','bowlmama-v3-followup.json','bowlmama-v3-error.json']) {
+// 跑法：node scripts/verify-n8n-v3.mjs        → 查 v3 三件
+//       node scripts/verify-n8n-v3.mjs v4     → 查 v4 三件
+const VER = process.argv[2] === 'v4' ? 'v4' : 'v3';
+for (const f of [`bowlmama-${VER}-main.json`,`bowlmama-${VER}-followup.json`,`bowlmama-${VER}-error.json`]) {
   const wf = JSON.parse(readFileSync(join(DIR,f),'utf8'));
   console.log(`\n== ${f} (${wf.nodes.length} 节点) ==`);
 

@@ -5,23 +5,32 @@ import {
   MAX_NUDGES,
   WINDOW_MS,
 } from '@/lib/waLeadSchedule';
+import { appendTurn, mergeProfileFact, type TurnRole } from '@/lib/waWebhook';
 
 /**
- * /api/n8n/lead —— 碗妈 bot 的 lead 状态机。
+ * /api/n8n/lead —— 碗妈 bot 的 lead 状态机（v4：+ 对话记录 / 人工接管 / 客户备注 / 警报映射）。
  *
  * 为什么要有这个：v2 的「客户聊完就消失」全靠老板人肉跟进，因为对话状态只活在
- * AI 的 memory buffer 里，没有任何东西能在客户沉默 35 分钟后醒过来。追单必须有
- * 一份**可查询、可排程**的状态，这就是它。
+ * AI 的 memory buffer 里，没有任何东西能在客户沉默后醒过来。追单必须有一份
+ * **可查询、可排程**的状态，这就是它。v4 又把「AI 的记忆」也搬进同一份文档：
+ * n8n 的 Window Buffer Memory 只活在进程内存里，n8n 一重启、跨天换 key 就全忘。
  *
  * 集合 `waLeads`，doc id = 纯数字手机号（天然幂等，n8n 拿 msg.from 直接就能查）。
+ * 集合 `waAlerts`，doc id = 发给老板的那条 WhatsApp 消息 id（老板引用回复时反查客户）。
  *
  * POST { action }：
- *   touch    客户来消息 → upsert + 刷新 24h 窗口锚点 + 重算下次追单
+ *   touch    客户来消息 → upsert + 刷新 24h 窗口锚点 + 重算下次追单（入站 turn 由 relay 写）
+ *   reply    bot / 老板 / 追单 发出了一条 → 记 turn（role: out | boss | nudge）
+ *   human    人工接管 minutes 分钟（默认 120，上限 720）→ AI 静音、追单暂停
+ *   release  解除人工接管
+ *   note     bot 或 dashboard 记客户备注（key 白名单见 waWebhook.PROFILE_KEYS）
+ *   alert    发给老板的警报消息 id ↔ 客户号码（取代 Google Sheet 的「报警消息ID」列）
  *   ordered  已成交 → 关闭，停止一切追单
  *   close    客户明确拒绝 / 转人工 → 关闭
  * GET：
  *   ?action=due   到点该追的 lead（**claim-on-read**：读到即计数，见下）
- *   ?phone=60…    读单个 lead（n8n 决定走哪套剧本时用）
+ *   ?phone=60…    读单个 lead（含 profile / turns / human 状态）
+ *   ?alert=<id>   按警报消息 id 反查客户
  *
  * ⚠️ claim-on-read 是刻意的「至多一次」语义：GET due 的那一刻就把 nudgeCount+1、
  * 重排下一次。若 n8n 随后发送失败，这一次追单就永久丢了 —— 这是对的。反过来做
@@ -40,6 +49,7 @@ async function getDb() {
 }
 
 const COL = 'waLeads';
+const ALERTS = 'waAlerts';
 /** 一次 cron 最多认领多少条，防止某次积压把 WhatsApp 打成刷屏。 */
 const DUE_LIMIT = 30;
 /** 刚发过追单的 lead 在这个时间内不再认领（防 cron 重叠执行）。 */
@@ -48,6 +58,9 @@ const RECLAIM_GUARD_MS = 10 * 60 * 1000;
 const PENDING_MAX = 10;
 /** 单条消息进缓冲时的长度上限。 */
 const PENDING_TEXT_MAX = 500;
+/** 人工接管默认 / 上限时长。 */
+const HUMAN_DEFAULT_MIN = 120;
+const HUMAN_MAX_MIN = 720;
 
 type Lang = 'zh' | 'en';
 type Intent = 'retail' | 'catering';
@@ -73,7 +86,8 @@ function digitsOf(v: unknown): string {
 }
 
 /** 对外暴露给 n8n 的形状（刻意不回传全部内部字段）。 */
-function publicLead(id: string, d: Record<string, any>) {
+function publicLead(id: string, d: Record<string, any>, now = Date.now()) {
+  const humanUntil = Number(d.humanUntil) || 0;
   return {
     phone: d.phone || id,
     lang: (d.lang === 'en' ? 'en' : 'zh') as Lang,
@@ -86,6 +100,11 @@ function publicLead(id: string, d: Record<string, any>) {
     clicked: !!d.clickedAtMs,
     lastMsgMs: Number(d.lastMsgMs) || 0,
     firstSeenMs: Number(d.firstSeenMs) || 0,
+    human: humanUntil > now,
+    humanUntil,
+    humanBy: String(d.humanBy || ''),
+    profile: (d.profile && typeof d.profile === 'object') ? d.profile : {},
+    nextNudgeMs: Number(d.nextNudgeMs) || 0,
   };
 }
 
@@ -103,6 +122,22 @@ export async function GET(req: NextRequest) {
     const db = await getDb();
     const now = Date.now();
 
+    // ── 警报 id → 客户（老板引用回复时反查）────────────────
+    const alertId = String(url.searchParams.get('alert') || '').trim();
+    if (alertId) {
+      const snap = await db.collection(ALERTS).doc(alertId).get();
+      if (!snap.exists) return NextResponse.json({ found: false }, { headers: { 'Cache-Control': 'no-store' } });
+      const a = snap.data() as Record<string, any>;
+      return NextResponse.json({
+        found: true,
+        alertId,
+        phone: String(a.phone || ''),
+        customerMsg: String(a.customerMsg || ''),
+        kind: String(a.kind || ''),
+        ts: Number(a.ts) || 0,
+      }, { headers: { 'Cache-Control': 'no-store' } });
+    }
+
     // ── 单个 lead（可同时当「防抖闸门」用）─────────────────
     //
     // 带 sinceTs 时顺便回答一个问题：**「我是不是这个客户最新的一条消息？」**
@@ -110,8 +145,6 @@ export async function GET(req: NextRequest) {
     // 得到 isLatest=true 继续往下走，前两条静默退出 —— 客户只会收到一条回复。
     //
     // ⚠️ 判定和取合并文本必须在**同一次调用**里做完（服务端原子完成）。
-    // 早先想过「读的时候就清空缓冲」，但那样先到的失败者会把缓冲吃掉再退出，
-    // 真正的胜出者反而拿不到前几条 —— 只有确认自己是最新的那一次才允许消费。
     if (action !== 'due') {
       const phone = digitsOf(url.searchParams.get('phone'));
       if (!phone) return NextResponse.json({ error: '缺 phone' }, { status: 400 });
@@ -140,17 +173,19 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      const turns = Array.isArray(d.turns) ? d.turns.slice(-30) : [];
       return NextResponse.json({
         found: true,
         isLatest,
         mergedText,
-        lead: publicLead(snap.id, d),
+        lead: publicLead(snap.id, d, now),
+        turns,
       }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     // ── 到点该追的 lead（claim-on-read）────────────────────
     // 只用 nextNudgeMs 一个字段做范围查询（单字段索引自动存在，不需要建复合索引）；
-    // status / 窗口 / 冷却全部在内存里过滤 —— 待追 lead 的量级是几十，不是几万。
+    // status / 窗口 / 冷却 / 人工接管全部在内存里过滤 —— 待追 lead 的量级是几十，不是几万。
     const q = await db.collection(COL)
       .where('nextNudgeMs', '>', 0)
       .where('nextNudgeMs', '<=', now)
@@ -160,6 +195,7 @@ export async function GET(req: NextRequest) {
 
     const claimed: any[] = [];
     const batch = db.batch();
+    let writes = 0;
 
     for (const doc of q.docs) {
       if (claimed.length >= DUE_LIMIT) break;
@@ -171,14 +207,16 @@ export async function GET(req: NextRequest) {
 
       // 已成交 / 已关闭 / 追满 → 清掉排程，永不再扫到
       if (status === 'ordered' || status === 'closed' || nudgeCount >= MAX_NUDGES) {
-        batch.update(doc.ref, { nextNudgeMs: 0 });
+        batch.update(doc.ref, { nextNudgeMs: 0 }); writes++;
         continue;
       }
       // 超出 24h 客服窗口 → 放弃（第一阶段不上 template）
       if (!isWithinWindow(lastMsgMs, now)) {
-        batch.update(doc.ref, { nextNudgeMs: 0, windowExpiredAtMs: now });
+        batch.update(doc.ref, { nextNudgeMs: 0, windowExpiredAtMs: now }); writes++;
         continue;
       }
+      // 老板正亲自在聊 → 机器别插嘴。排程不动，人工结束后下一轮 cron 再来
+      if ((Number(d.humanUntil) || 0) > now) continue;
       // cron 重叠执行的保护
       if (lastNudgeMs > 0 && now - lastNudgeMs < RECLAIM_GUARD_MS) continue;
 
@@ -189,11 +227,11 @@ export async function GET(req: NextRequest) {
         lastNudgeMs: now,
         nextNudgeMs: following ?? 0,
         updatedAtMs: now,
-      });
-      claimed.push({ ...publicLead(doc.id, d), nudgeIndex: nextCount });
+      }); writes++;
+      claimed.push({ ...publicLead(doc.id, d, now), nudgeIndex: nextCount });
     }
 
-    if (q.docs.length) await batch.commit();
+    if (writes) await batch.commit();
     return NextResponse.json({ now, count: claimed.length, leads: claimed }, {
       headers: { 'Cache-Control': 'no-store' },
     });
@@ -227,6 +265,20 @@ export async function POST(req: NextRequest) {
     const db = await getDb();
     const ref = db.collection(COL).doc(phone);
     const now = Date.now();
+
+    // ── 警报映射（老板引用回复靠它反查客户）───────────────
+    if (action === 'alert') {
+      const alertId = String(body?.alertMsgId || '').trim();
+      if (!alertId || alertId === 'unknown') return NextResponse.json({ ok: false, error: '缺 alertMsgId' }, { status: 200 });
+      await db.collection(ALERTS).doc(alertId).set({
+        phone,
+        customerMsg: String(body?.customerMsg || '').slice(0, 1000),
+        kind: String(body?.kind || 'escalate').slice(0, 40),
+        ts: now,
+      });
+      return NextResponse.json({ ok: true, alertId });
+    }
+
     const snap = await ref.get();
     const prev = (snap.exists ? snap.data() : {}) as Record<string, any>;
 
@@ -244,6 +296,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, status: action === 'ordered' ? 'ordered' : 'closed' });
     }
 
+    // ── 出站对话记录 ─────────────────────────────────────
+    if (action === 'reply') {
+      const roleRaw = String(body?.role || 'out');
+      const role: TurnRole = (['out', 'boss', 'nudge', 'sys'] as string[]).includes(roleRaw) ? roleRaw as TurnRole : 'out';
+      const text = String(body?.text || '');
+      if (!text.trim()) return NextResponse.json({ ok: false, error: '空文本' }, { status: 200 });
+      await ref.set({ phone, turns: appendTurn(prev.turns, role, text, now), updatedAtMs: now }, { merge: true });
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── 人工接管 / 解除 ──────────────────────────────────
+    if (action === 'human') {
+      const minutes = Math.min(HUMAN_MAX_MIN, Math.max(1, Number(body?.minutes) || HUMAN_DEFAULT_MIN));
+      const humanUntil = now + minutes * 60 * 1000;
+      await ref.set({
+        phone,
+        humanUntil,
+        humanBy: String(body?.by || 'boss_reply').slice(0, 40),
+        humanSetAtMs: now,
+        updatedAtMs: now,
+        turns: appendTurn(prev.turns, 'sys', `老板接管 ${minutes} 分钟，bot 静音`, now),
+      }, { merge: true });
+      return NextResponse.json({ ok: true, humanUntil, minutes });
+    }
+    if (action === 'release') {
+      const wasHuman = (Number(prev.humanUntil) || 0) > now;
+      await ref.set({
+        phone,
+        humanUntil: wasHuman ? now - 1 : (Number(prev.humanUntil) || 0),
+        humanReleasedAtMs: now,
+        updatedAtMs: now,
+        ...(wasHuman ? { turns: appendTurn(prev.turns, 'sys', '老板释放，bot 恢复', now) } : {}),
+      }, { merge: true });
+      return NextResponse.json({ ok: true, wasHuman });
+    }
+
+    // ── 客户备注（白名单 key）────────────────────────────
+    if (action === 'note') {
+      const key = String(body?.key || '').trim();
+      const merged = mergeProfileFact(prev.profile, key, body?.value);
+      if (!merged) {
+        return NextResponse.json({ ok: false, error: `不接受的 key 或空值：${key}` }, { status: 200 });
+      }
+      await ref.set({ phone, profile: merged, profileUpdatedAtMs: now, updatedAtMs: now }, { merge: true });
+      return NextResponse.json({ ok: true, profile: merged });
+    }
+
     if (action !== 'touch') {
       return NextResponse.json({ error: `未知 action: ${action}` }, { status: 400 });
     }
@@ -253,6 +352,7 @@ export async function POST(req: NextRequest) {
     const prevStatus: Status = prev.status || 'engaged';
     // 新一轮对话 = 距上次消息超过 24h（窗口已断）或上一轮已经收尾。
     // 只有新一轮才重置追单额度，避免同一个客户被连着几天反复追。
+    // ⚠️ turns / profile 不随 session 重置 —— 记忆跨天保留，这正是 v4 与 buffer memory 的区别。
     const newSession = !snap.exists
       || prevStatus === 'ordered'
       || prevStatus === 'closed'
@@ -263,8 +363,6 @@ export async function POST(req: NextRequest) {
     const nextNudgeMs = computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
 
     // 未处理消息缓冲：客户连发的每一条都进来，等胜出的那次执行一并取走。
-    // 这是 v2「Google Sheet 合并多条」的替代品 —— 少一张表、少四个节点，
-    // 但保住了那个真正重要的行为：**AI 看到的是客户说的全部，不是最后一句。**
     const prevPending: { ts: number; text: string }[] = Array.isArray(prev.pending) ? prev.pending : [];
     const incoming = String(body?.text || '').trim().slice(0, PENDING_TEXT_MAX);
     const pending = (newSession ? [] : prevPending)
@@ -297,11 +395,14 @@ export async function POST(req: NextRequest) {
 
     await ref.set(patch, { merge: true });
 
+    const humanUntil = Number(prev.humanUntil) || 0;
     return NextResponse.json({
       ok: true,
       newSession,
       nextNudgeMs,
-      lead: publicLead(phone, { ...prev, ...patch }),
+      human: humanUntil > now,
+      humanEndedRecently: humanUntil > 0 && humanUntil <= now && now - humanUntil < 6 * 60 * 60 * 1000,
+      lead: publicLead(phone, { ...prev, ...patch }, now),
     });
   } catch (err: any) {
     console.error('[n8n/lead] POST failed:', err);
