@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { MapPin, Search, Loader2, Clock, Truck, AlertTriangle } from 'lucide-react';
-import { DELIVERY_TIER_COPY, DISTANCE_BASIS_ZH, freeOverPhraseZh, BEYOND_DELIVERY_NOTE_ZH } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY } from '@/lib/deliveryCopy';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
 // 2026-07-29: 'outside' now means past the 25km ceiling (was 7.5km). Between
 // 7.5 and 25km customers get the banded 'far' tier instead of a refusal.
@@ -18,9 +20,12 @@ interface Result {
     formattedAddress?: string;
 }
 
-const WHATSAPP_URL = "https://wa.me/60103370197?text=Hi%20%E7%A2%97%E5%A6%88%EF%BC%8C%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80%E5%9C%A8%20%EF%BC%9A";
+// WhatsApp 预填文案（已 URL 编码）在 dict.ts 的 deliveryWidget.whatsAppUrl。
 
-export default function DeliveryWidget() {
+export default function DeliveryWidget({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].deliveryWidget;
+    // 两个首页各自的 heading id（EN 历史上带 -en 后缀），aria-labelledby 跟着走。
+    const headingId = locale === 'en' ? 'delivery-heading-en' : 'delivery-heading';
     const [address, setAddress] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<Result | null>(null);
@@ -44,12 +49,12 @@ export default function DeliveryWidget() {
             });
             const data = await res.json();
             if (!res.ok) {
-                setError(data.error || '查询失败，请重试');
+                setError(data.error || t.lookupFailed);
                 return;
             }
             setResult(data);
         } catch {
-            setError('网络异常，请稍后重试');
+            setError(t.networkError);
         } finally {
             setLoading(false);
         }
@@ -57,7 +62,7 @@ export default function DeliveryWidget() {
 
     return (
         <section
-            aria-labelledby="delivery-heading"
+            aria-labelledby={headingId}
             className="lg:col-span-12 mt-4"
         >
             {/* Mobile keeps the stacked strips; desktop (full-width row since the
@@ -68,12 +73,12 @@ export default function DeliveryWidget() {
                 <div className="bg-gradient-to-br from-[#FFF8F0] via-[#FFF1E5] to-[#FFE6D0] px-6 md:px-10 py-6 md:py-8 lg:col-span-6 lg:flex lg:flex-col lg:justify-center">
                     <div className="flex items-center gap-2.5 mb-1.5">
                         <MapPin size={18} className="text-[#FF6B35] shrink-0" strokeWidth={2.5} />
-                        <h2 id="delivery-heading" className="text-[18px] md:text-[22px] lg:text-[26px] font-extrabold text-[#1A2D23] leading-tight">
-                            我家能送吗？
+                        <h2 id={headingId} className="text-[18px] md:text-[22px] lg:text-[26px] font-extrabold text-[#1A2D23] leading-tight">
+                            {t.heading}
                         </h2>
                     </div>
                     <p className="text-[13px] md:text-[14px] text-[#1A2D23]/65 mb-4">
-                        30 秒查一下你属于哪个配送区
+                        {t.sub}
                     </p>
 
                     <form onSubmit={check} className="flex flex-col sm:flex-row gap-2.5 max-w-xl">
@@ -84,15 +89,15 @@ export default function DeliveryWidget() {
                                 autoComplete="street-address"
                                 value={address}
                                 onChange={(e) => setAddress(e.target.value)}
-                                placeholder="例: Pearl Suria, OUG Parklane, 58200..."
-                                aria-label="输入你的地址或邮编"
+                                placeholder={t.placeholder}
+                                aria-label={t.addressAria}
                                 className="w-full px-4 py-3 pr-10 text-[14px] bg-white border border-[#FF6B35]/20 rounded-xl focus:outline-none focus:border-[#FF6B35] focus:ring-2 focus:ring-[#FF6B35]/20 placeholder:text-gray-400 shadow-sm"
                             />
                             {address && !loading && (
                                 <button
                                     type="button"
                                     onClick={() => { setAddress(''); setResult(null); setError(''); }}
-                                    aria-label="清空"
+                                    aria-label={t.clearAria}
                                     className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
                                 >
                                     ✕
@@ -107,12 +112,12 @@ export default function DeliveryWidget() {
                             {loading ? (
                                 <>
                                     <Loader2 size={16} className="animate-spin" strokeWidth={2.5} />
-                                    查询中
+                                    {t.checking}
                                 </>
                             ) : (
                                 <>
                                     <Search size={16} strokeWidth={2.75} />
-                                    查一下
+                                    {t.check}
                                 </>
                             )}
                         </button>
@@ -130,10 +135,10 @@ export default function DeliveryWidget() {
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFF3E0] border border-[#FF6B35]/25">
                             <p className="text-[14px] font-extrabold text-[#C84518] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
-                                配送费 RM {result.fee} · 离碗妈 {result.distanceKm} km
+                                {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
                             </p>
                             <p className="text-[12px] text-[#C84518]/85 mt-1">
-                                满 <span className="font-bold">RM {result.threshold}</span> 即享 <span className="font-bold">免运</span>
+                                {t.nearBefore}<span className="font-bold">RM {result.threshold}{t.thresholdPlus}</span>{t.nearMid}<span className="font-bold">{t.nearFree}</span>
                             </p>
                             {result.formattedAddress && (
                                 <p className="text-[11px] text-[#C84518]/60 mt-1 truncate">{result.formattedAddress}</p>
@@ -145,10 +150,10 @@ export default function DeliveryWidget() {
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
                             <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
-                                配送费 RM {result.fee} · 离碗妈 {result.distanceKm} km
+                                {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
                             </p>
                             <p className="text-[12px] text-[#9A3412]/85 mt-1">
-                                满 <span className="font-bold">RM {result.threshold}</span> 配送费降至 <span className="font-bold">RM {result.feeAtThreshold}</span>
+                                {t.midBefore}<span className="font-bold">RM {result.threshold}{t.thresholdPlus}</span>{t.midMid}<span className="font-bold">RM {result.feeAtThreshold}</span>
                             </p>
                             {result.formattedAddress && (
                                 <p className="text-[11px] text-[#9A3412]/60 mt-1 truncate">{result.formattedAddress}</p>
@@ -162,10 +167,10 @@ export default function DeliveryWidget() {
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-[#FFE4D6] border border-[#FF6B35]/40">
                             <p className="text-[14px] font-extrabold text-[#9A3412] flex items-center gap-1.5">
                                 <Truck size={16} strokeWidth={2.5} />
-                                配送费 RM {result.fee} · 离碗妈 {result.distanceKm} km
+                                {t.feeBefore}{result.fee}{t.feeMid}{result.distanceKm}{t.feeAfter}
                             </p>
                             <p className="text-[12px] text-[#9A3412]/85 mt-1">
-                                远距离由 <span className="font-bold">Grab</span> 配送，运费固定 <span className="font-bold">RM {result.fee}</span>，不设免运门槛
+                                {t.farBefore}<span className="font-bold">Grab</span>{t.farMid}<span className="font-bold">RM {result.fee}</span>{t.farAfter}
                             </p>
                             {result.formattedAddress && (
                                 <p className="text-[11px] text-[#9A3412]/60 mt-1 truncate">{result.formattedAddress}</p>
@@ -177,15 +182,15 @@ export default function DeliveryWidget() {
                     {result && result.tier === 'outside' && (
                         <div className="mt-3 max-w-xl p-3 rounded-xl bg-gray-50 border border-gray-200">
                             <p className="text-[14px] font-extrabold text-gray-700">
-                                抱歉，你的地址离碗妈 {result.distanceKm} km，超出 25km 配送范围
+                                {t.outsideBefore}{result.distanceKm}{t.outsideAfter}
                             </p>
                             <a
-                                href={WHATSAPP_URL + encodeURIComponent(address)}
+                                href={t.whatsAppUrl + encodeURIComponent(address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 mt-2 text-[12px] font-bold text-green-700 hover:text-green-800"
                             >
-                                公司团餐？WhatsApp 问问看 →
+                                {t.cateringCta}
                             </a>
                         </div>
                     )}
@@ -204,40 +209,40 @@ export default function DeliveryWidget() {
                             aria-expanded={feesOpen}
                             className="w-full min-h-[40px] flex items-center gap-2 text-left lg:min-h-0 lg:pointer-events-none"
                         >
-                            <span className="text-[13px] font-extrabold text-[#1A2D23]">配送费一览</span>
-                            <span className="ml-auto text-[12px] font-bold text-[#FF6B35] lg:hidden">{feesOpen ? '收起 ▴' : '查看 ▾'}</span>
+                            <span className="text-[13px] font-extrabold text-[#1A2D23]">{t.feeTable}</span>
+                            <span className="ml-auto text-[12px] font-bold text-[#FF6B35] lg:hidden">{feesOpen ? t.hideFees : t.showFees}</span>
                         </button>
-                        <p className={`text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5 ${feesOpen ? '' : 'hidden'} lg:block`}>{DISTANCE_BASIS_ZH}</p>
+                        <p className={`text-[11px] lg:text-[12px] text-[#1A2D23]/50 mt-0.5 mb-2.5 ${feesOpen ? '' : 'hidden'} lg:block`}>{t.distanceBasis}</p>
                         <ul className={`space-y-1.5 lg:space-y-2 text-[13px] leading-snug ${feesOpen ? '' : 'hidden'} lg:block`}>
-                            {DELIVERY_TIER_COPY.map((t, i) => (
-                                <li key={t.rangeZh} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
-                                    <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.rangeZh}</span></span>
-                                    <span className="text-right"><span className="font-bold text-gray-700">RM {t.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-[#9A3412]' : 'text-[#FF6B35]'}`}>{freeOverPhraseZh(t)}</span></span>
+                            {DELIVERY_TIER_COPY.map((tier, i) => (
+                                <li key={t.tierRange(tier)} className="flex justify-between items-center gap-2 lg:bg-[#FDFBF7] lg:border lg:border-[#E3EADA]/70 lg:rounded-xl lg:px-3.5 lg:py-2">
+                                    <span className="text-[#1A2D23]/70"><span className="font-semibold text-[#1A2D23]">{t.tierRange(tier)}</span></span>
+                                    <span className="text-right"><span className="font-bold text-gray-700">RM {tier.fee}</span><br /><span className={`text-[11px] lg:text-[12px] font-bold ${i === DELIVERY_TIER_COPY.length - 1 ? 'text-[#9A3412]' : 'text-[#FF6B35]'}`}>{t.tierFreeOver(tier)}</span></span>
                                 </li>
                             ))}
                             {/* Far bands as one compact row — four extra table rows
                                 would swamp this card on mobile. */}
                             <li className="pt-1.5 text-[11px] lg:text-[12px] text-[#1A2D23]/55 leading-snug border-t border-[#E3EADA]/70 lg:border-0">
-                                {BEYOND_DELIVERY_NOTE_ZH}
+                                {t.beyondNote}
                             </li>
                         </ul>
                     </div>
 
                     {/* Cutoff + windows */}
                     <div>
-                        <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">截单与配送时段</p>
+                        <p className="text-[13px] font-extrabold text-[#1A2D23] mb-2.5">{t.cutoffHeading}</p>
                         <div className="space-y-2.5">
                             <div className="flex items-start gap-2">
                                 <Clock size={15} className="text-[#FF6B35] mt-0.5 shrink-0" strokeWidth={2.5} />
                                 <div>
-                                    <p className="text-[13px] font-bold text-[#1A2D23]">每天 06:00 截单</p>
-                                    <p className="text-[12px] text-[#1A2D23]/60 mt-0.5">06:00 前下单当日配送</p>
+                                    <p className="text-[13px] font-bold text-[#1A2D23]">{t.cutoffTitle}</p>
+                                    <p className="text-[12px] text-[#1A2D23]/60 mt-0.5">{t.cutoffSub}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-2">
                                 <Truck size={15} className="text-[#FF6B35] mt-0.5 shrink-0" strokeWidth={2.5} />
                                 <div>
-                                    <p className="text-[13px] font-bold text-[#1A2D23]">配送时段</p>
+                                    <p className="text-[13px] font-bold text-[#1A2D23]">{t.windowsTitle}</p>
                                     <p className="text-[12px] text-[#1A2D23]/60 mt-0.5">11AM–1PM · 5PM–8PM</p>
                                 </div>
                             </div>

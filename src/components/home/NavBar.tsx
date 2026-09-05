@@ -7,7 +7,8 @@ import { ShoppingBag, User, ChevronRight, Menu, X } from 'lucide-react';
 import { User as FirebaseUser } from 'firebase/auth';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useModalA11y } from '@/components/ui/useModalA11y';
-import { DELIVERY_SUMMARY_ZH } from '@/lib/deliveryCopy';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
 interface NavBarProps {
     currentUser: FirebaseUser | null;
@@ -15,9 +16,41 @@ interface NavBarProps {
     cartTotal: number;
     onCartOpen: () => void;
     onAuthOpen: () => void;
+    locale?: Locale;
 }
 
-export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, onAuthOpen }: NavBarProps) {
+// ⚠️ 历史漂移（C1 合并时原样保留，两边预渲染 HTML 零变化）：原 NavBarEN 没跟上 ZH 的几次
+// 桌面 / 移动微调——顶栏滚动隐藏、<nav> 的 top / padding、logo 尺寸、44px 点击区、按钮
+// p-3 / p-2.5、marquee keyframe 名带 -en 后缀。要不要让 /en 追平 ZH 由老板决定；追平时
+// 删掉 en 那一组即可。
+const LAYOUT = {
+    zh: {
+        topBar: (scrolled: boolean) => `fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center transition-transform duration-300 ease-out ${scrolled ? '-translate-y-full' : 'translate-y-0'}`,
+        keyframes: 'marquee-horizontal',
+        marqueeClass: 'animate-marquee-mobile',
+        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[top,background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out ${scrolled ? 'top-0 bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-2' : 'top-[28px] sm:top-[30px] bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-4'}`,
+        logo: 'w-14 h-14 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300',
+        mobileAvatarLink: 'md:hidden flex items-center justify-center min-w-[44px] min-h-[44px]',
+        mobileLoginBtn: 'md:hidden p-3 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors',
+        cartFilled: 'relative inline-flex items-center gap-2 p-3 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
+        cartEmpty: 'relative p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out',
+    },
+    en: {
+        topBar: () => 'fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center',
+        keyframes: 'marquee-horizontal-en',
+        marqueeClass: 'animate-marquee-mobile-en',
+        nav: (scrolled: boolean) => `fixed w-full z-50 transition-[background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out top-[28px] sm:top-[30px] ${scrolled ? 'bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-3' : 'bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-6'}`,
+        logo: 'w-16 h-16 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300',
+        mobileAvatarLink: 'md:hidden',
+        mobileLoginBtn: 'md:hidden p-2.5 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors',
+        cartFilled: 'relative inline-flex items-center gap-2 p-2.5 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]',
+        cartEmpty: 'relative p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out',
+    },
+} as const;
+
+export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, onAuthOpen, locale = 'zh' }: NavBarProps) {
+    const t = HOME_DICT[locale].navBar;
+    const L = LAYOUT[locale];
     const [scrolled, setScrolled] = useState(false);
     // H4：<lg 的导航。原来四个锚点都是 hidden lg:flex，手机上零导航。
     const [navOpen, setNavOpen] = useState(false);
@@ -33,51 +66,56 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
     // trapFocus:false —— 汉堡 / X 按钮在面板外，关进去键盘就永远到不了 X（2026-09-05 审查）。
     useModalA11y({ open: navOpen, onClose: () => setNavOpen(false), panelRef: navPanelRef, trapFocus: false });
 
+    // 手机跑马灯的一句：zh 与桌面同句（带 | 分隔 span）；en 历史上是另一句短文案直接拼运费摘要。
+    const marquee = locale === 'en'
+        ? <>{t.marqueeNotice}{t.deliverySummary}</>
+        : <>{t.topNotice}<span className="opacity-50 mx-1">|</span> {t.deliverySummary}</>;
+
     return (
         <>
-            <div className={`fixed top-0 w-full z-[60] bg-[#FF6B35] text-white overflow-hidden shadow-md h-[28px] sm:h-[30px] flex items-center transition-transform duration-300 ease-out ${scrolled ? '-translate-y-full' : 'translate-y-0'}`}>
+            <div className={L.topBar(scrolled)}>
                 <style dangerouslySetInnerHTML={{
                     __html: `
-                    @keyframes marquee-horizontal {
+                    @keyframes ${L.keyframes} {
                         0% { transform: translateX(0); }
                         100% { transform: translateX(-50%); }
                     }
-                    .animate-marquee-mobile {
-                        animation: marquee-horizontal 35s linear infinite;
+                    .${L.marqueeClass} {
+                        animation: ${L.keyframes} 35s linear infinite;
                         display: flex;
                         width: max-content;
                     }
                 `}} />
-                
+
                 {/* Desktop Version */}
                 <div className="hidden sm:flex w-full justify-center px-3">
                     <p className="text-xs lg:text-[13px] font-medium tracking-wide truncate">
-                        温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
+                        {t.topNotice}<span className="opacity-50 mx-1">|</span> {t.deliverySummary}
                     </p>
                 </div>
 
                 {/* Mobile Marquee Version (Larger font, animated) */}
                 <div className="sm:hidden w-full overflow-hidden whitespace-nowrap flex items-center">
-                    <div className="animate-marquee-mobile flex shrink-0 items-center">
+                    <div className={`${L.marqueeClass} flex shrink-0 items-center`}>
                         <span className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
+                            {marquee}
                         </span>
                         {/* Duplicate for seamless infinite loop — aria-hidden 否则读屏把同一句念两遍 */}
                         <span aria-hidden="true" className="text-[12px] font-bold tracking-wide px-10 leading-none inline-block">
-                            温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） <span className="opacity-50 mx-1">|</span> {DELIVERY_SUMMARY_ZH}
+                            {marquee}
                         </span>
                     </div>
                 </div>
             </div>
-            <nav className={`fixed w-full z-50 transition-[top,background-color,backdrop-filter,box-shadow,border-color,padding] duration-300 ease-out ${scrolled ? 'top-0 bg-[#FDFBF7]/95 backdrop-blur-md shadow-md border-b border-[#E3EADA]/60 py-2' : 'top-[28px] sm:top-[30px] bg-gradient-to-b from-[#FDFBF7]/80 to-transparent py-4'}`}>
+            <nav className={L.nav(scrolled)}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 flex justify-between items-center">
                 <div className="flex items-center gap-3 md:gap-4">
-                    <div className="w-14 h-14 md:w-[72px] md:h-[72px] rounded-full bg-white flex items-center justify-center shadow-lg overflow-hidden border-2 border-[#E3EADA] hover:scale-105 transition-transform duration-300">
+                    <div className={L.logo}>
                         <Image src="/logo.webp" alt="Incredibowl Logo" width={192} height={192} className="scale-110" />
                     </div>
                     <div>
                         {/* Brand name — semantically a link/label, not the page H1 (page H1 lives in Hero) */}
-                        <Link href="/" aria-label="Incredibowl 碗妈的厨房 首页" className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">碗妈的厨房</Link>
+                        <Link href={t.homeHref} aria-label={t.homeAriaLabel} className="block text-2xl md:text-[28px] font-black tracking-tight text-[#1A2D23] hover:text-[#FF6B35] transition-colors">{t.brandName}</Link>
                         <div className="flex items-center gap-2">
                             <span className="h-[1px] w-3 bg-[#FF6B35]"></span>
                             <p className="text-[11px] md:text-xs font-bold uppercase tracking-widest text-[#FF6B35]">Incredibowl.my</p>
@@ -87,45 +125,45 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
 
                 {/* Desktop-only quick nav anchors (hidden on mobile/tablet) */}
                 <nav className="hidden lg:flex items-center gap-8 text-sm font-bold text-[#1A2D23]/75">
-                    <a href="#menu" className="hover:text-[#FF6B35] transition-colors">每日菜单</a>
-                    <Link href="/meal-vouchers" className="hover:text-[#FF6B35] transition-colors">餐券预付包</Link>
-                    <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">邻居好评</a>
-                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">联系碗妈</a>
+                    <a href="#menu" className="hover:text-[#FF6B35] transition-colors">{t.dailyMenu}</a>
+                    <Link href={t.vouchersHref} className="hover:text-[#FF6B35] transition-colors">{t.mealVouchers}</Link>
+                    <a href="#feedback" className="hover:text-[#FF6B35] transition-colors">{t.reviews}</a>
+                    <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" className="hover:text-[#FF6B35] transition-colors">{t.contact}</a>
                 </nav>
 
                 <div className="flex items-center gap-2 md:gap-3">
                     {currentUser ? (
                         <>
                             {/* Mobile: avatar only — brand-orange letter on transparent ring */}
-                            <a href="/member" aria-label="进入会员中心" className="md:hidden flex items-center justify-center min-w-[44px] min-h-[44px]">
+                            <a href={t.memberHref} aria-label={t.memberAria} className={L.mobileAvatarLink}>
                                 <div className="relative w-10 h-10 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm ring-2 ring-white">
                                     {(currentUser.displayName || 'U')[0].toUpperCase()}
                                 </div>
                             </a>
                             {/* Desktop: brand-orange avatar + name + thin chevron, transparent pill */}
                             <a
-                                href="/member"
-                                title="进入会员中心 · 查看订单与 voucher"
-                                aria-label="进入会员中心"
+                                href={t.memberHref}
+                                title={t.memberTitle}
+                                aria-label={t.memberAria}
                                 className="hidden md:flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full border border-[#1A2D23]/10 hover:bg-[#FDFBF7] hover:border-[#1A2D23]/25 transition-[background-color,border-color] duration-150 ease-out group"
                             >
                                 <div className="relative w-8 h-8 rounded-full bg-[#FF6B35] flex items-center justify-center text-white font-black text-sm shadow-sm">
                                     {(currentUser.displayName || 'U')[0].toUpperCase()}
                                 </div>
-                                <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || '会员中心'}</span>
+                                <span className="text-xs font-bold text-[#1A2D23] max-w-[100px] truncate">{currentUser.displayName || t.member}</span>
                                 <ChevronRight size={12} className="text-[#1A2D23]/30 group-hover:text-[#FF6B35] group-hover:translate-x-0.5 transition-[transform,color] duration-150 ease-out" strokeWidth={2} />
                             </a>
                         </>
                     ) : (
                         <>
                             {/* Mobile: icon-only login button */}
-                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="md:hidden p-3 bg-[#E3EADA]/60 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={onAuthOpen} aria-label={t.signInMobileAria} className={L.mobileLoginBtn}>
                                 <User size={18} className="text-[#1A2D23]" />
                             </button>
                             {/* Desktop: full login button */}
-                            <button onClick={onAuthOpen} aria-label="登录 / 邻里会员" className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
+                            <button onClick={onAuthOpen} aria-label={t.signInDesktopAria} className="hidden md:flex items-center gap-3 px-4 py-2.5 bg-[#E3EADA]/50 rounded-full border border-[#E3EADA] hover:bg-[#E3EADA] transition-colors">
                                 <User size={16} className="text-[#1A2D23]" />
-                                <span className="text-xs font-bold text-[#1A2D23]">登录 / 邻里会员</span>
+                                <span className="text-xs font-bold text-[#1A2D23]">{t.signInLabel}</span>
                             </button>
                         </>
                     )}
@@ -138,7 +176,7 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
 
                         onClick={() => setNavOpen(v => !v)}
 
-                        aria-label={navOpen ? '关闭菜单' : '打开菜单'}
+                        aria-label={navOpen ? t.closeMenu : t.openMenu}
 
                         aria-expanded={navOpen}
 
@@ -153,14 +191,14 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                     </button>
 
 
-                    <div className="hidden lg:block"><LanguageSwitcher current="zh" /></div>
+                    <div className="hidden lg:block"><LanguageSwitcher current={locale} /></div>
 
                     {cartCount > 0 ? (
                         /* With items — dark-green pill always; price text only shows on md+ */
                         <button
                             onClick={onCartOpen}
-                            aria-label={`打开购物车（${cartCount} 件 · RM ${cartTotal.toFixed(2)}）`}
-                            className="relative inline-flex items-center gap-2 p-3 md:pl-3 md:pr-4 md:py-3 bg-[#1A2D23] hover:bg-[#243A2D] text-white rounded-xl md:rounded-2xl shadow-sm transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
+                            aria-label={t.cartAria(cartCount, cartTotal.toFixed(2))}
+                            className={L.cartFilled}
                         >
                             <ShoppingBag className="w-5 h-5 md:w-[18px] md:h-[18px] shrink-0" strokeWidth={2} />
                             <span className="hidden md:inline font-black tabular-nums text-sm whitespace-nowrap">RM {cartTotal.toFixed(2)}</span>
@@ -172,8 +210,8 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                         /* Empty cart — minimal icon */
                         <button
                             onClick={onCartOpen}
-                            aria-label="打开购物车"
-                            className="relative p-3 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm border border-gray-100 hover:border-[#1A2D23]/20 transition-[border-color,box-shadow] duration-150 ease-out"
+                            aria-label={t.cartEmptyAria}
+                            className={L.cartEmpty}
                         >
                             <ShoppingBag className="w-5 h-5 md:w-6 md:h-6 text-[#1A2D23]" />
                         </button>
@@ -187,14 +225,14 @@ export default function NavBar({ currentUser, cartCount, cartTotal, onCartOpen, 
                 ref={navPanelRef}
                 className="lg:hidden mx-4 mt-2 bg-white rounded-2xl border border-[#E3EADA] shadow-xl"
             >
-                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">每日菜单</a>
-                <Link href="/meal-vouchers" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">餐券预付包</Link>
-                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">邻居好评</a>
-                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">联系碗妈</a>
-                {currentUser && <Link href="/member" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">会员中心</Link>}
+                <a href="#menu" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.dailyMenu}</a>
+                <Link href={t.vouchersHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.mealVouchers}</Link>
+                <a href="#feedback" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.panelReviews}</a>
+                <a href="https://wa.me/60103370197" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.contact}</a>
+                {currentUser && <Link href={t.memberHref} onClick={() => setNavOpen(false)} className="block w-full min-h-[48px] first:rounded-t-2xl flex items-center px-5 text-[15px] font-bold text-[#1A2D23] hover:bg-[#FDFBF7] border-b border-[#E3EADA]/50 last:border-0">{t.member}</Link>}
                 <div className="flex items-center gap-3 px-5 py-3 border-t border-[#E3EADA]/50">
-                    <span className="text-[13px] font-bold text-[#1A2D23]/60">语言 / Language</span>
-                    <span className="ml-auto"><LanguageSwitcher current="zh" /></span>
+                    <span className="text-[13px] font-bold text-[#1A2D23]/60">{t.languageLabel}</span>
+                    <span className="ml-auto"><LanguageSwitcher current={locale} /></span>
                 </div>
             </div>
         )}

@@ -14,18 +14,18 @@ const WhatsAppFloat = dynamic(() => import('@/components/home/WhatsAppFloat'), {
 const SubscribeModalEN = dynamic(() => import('@/components/home-en/SubscribeModalEN'), { ssr: false });
 const WhatsAppStickyBar = dynamic(() => import('@/components/home/WhatsAppStickyBar'), { ssr: false });
 
-import NavBarEN from '@/components/home-en/NavBarEN';
+import NavBar from '@/components/home/NavBar';
 import HeroSectionEN from '@/components/home-en/HeroSectionEN';
 import FaqHeroStrip from '@/components/home/FaqHeroStrip';
 import CutoffBanner from '@/components/home/CutoffBanner';
 import HeroTrustStrip from '@/components/home/HeroTrustStrip';
 import PromoBanner from '@/components/home/PromoBanner';
-import DeliveryWidgetEN from '@/components/home-en/DeliveryWidgetEN';
+import DeliveryWidget from '@/components/home/DeliveryWidget';
 import MenuCarouselEN from '@/components/home-en/MenuCarouselEN';
 import AboutBowlMamaEN from '@/components/home-en/AboutBowlMamaEN';
 import FaqSectionEN from '@/components/home-en/FaqSectionEN';
 import FeedbackSectionEN from '@/components/home-en/FeedbackSectionEN';
-import FooterEN from '@/components/home-en/FooterEN';
+import Footer from '@/components/home/Footer';
 
 import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
 import { AddOnSelection, CartBundle } from '@/types';
@@ -308,12 +308,13 @@ export default function EnglishHome() {
 
     return (
         <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] font-sans" lang="en-MY">
-            <NavBarEN
+            <NavBar
                 currentUser={currentUser}
                 cartCount={cartCount}
                 cartTotal={cartTotal}
                 onCartOpen={() => setIsCartOpen(true)}
                 onAuthOpen={() => setIsAuthOpen(true)}
+                locale="en"
             />
 
             <main id="main" className="pt-32 pb-32 px-4 max-w-7xl lg:max-w-screen-2xl mx-auto">
@@ -327,7 +328,7 @@ export default function EnglishHome() {
                     <div className="contents lg:hidden">
                         <HeroTrustStrip locale="en" />
                     </div>
-                    <DeliveryWidgetEN />
+                    <DeliveryWidget locale="en" />
                     <div className="hidden lg:contents">
                         <HeroTrustStrip locale="en" />
                     </div>
@@ -359,7 +360,7 @@ export default function EnglishHome() {
                 </div>
             </main>
 
-            <FooterEN />
+            <Footer locale="en" />
 
             <WhatsAppFloat locale="en" />
             <WhatsAppStickyBar locale="en" />

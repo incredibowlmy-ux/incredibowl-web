@@ -3,7 +3,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import LanguageSwitcher from '@/components/home/LanguageSwitcher';
 import Footer from '@/components/home/Footer';
-import FooterEN from '@/components/home-en/FooterEN';
 
 /**
  * 站内二级页的外壳（catering / blog / 法务三页）。
@@ -16,7 +15,7 @@ import FooterEN from '@/components/home-en/FooterEN';
  * 不复刻首页 NavBar：那个组件要 currentUser / cartCount / onCartOpen 等一整套购物车
  * 状态，二级页没有也不该有。
  *
- * 本组件是 **server component**：`LanguageSwitcher` / `Footer` / `FooterEN` 都能直接
+ * 本组件是 **server component**：`LanguageSwitcher` / `Footer` 都能直接
  * 作为子组件引入（客户端组件由 App Router 自己划边界，无需在这里加 "use client"）。
  */
 
@@ -66,7 +65,7 @@ export default function PageShell({ locale, children }: PageShellProps) {
                 键盘用户按下「跳到主内容」是空跳。 */}
             <main id="main">{children}</main>
 
-            {locale === 'zh' ? <Footer /> : <FooterEN />}
+            <Footer locale={locale} />
         </>
     );
 }

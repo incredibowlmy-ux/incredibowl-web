@@ -5,6 +5,14 @@
 // ⚠️ 相邻文本节点：像 `{COUNT}+ Google 评价` 这种「表达式 + 文本」在 SSR 会插 `<!-- -->`，
 //    搬进字典时必须保持两个子节点（`{COUNT}{t.suffix}`），不能合并成一个字符串。
 import type { Locale } from '@/lib/locale';
+import {
+    DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN,
+    DISTANCE_BASIS_ZH, DISTANCE_BASIS_EN,
+    BEYOND_DELIVERY_NOTE_ZH, BEYOND_DELIVERY_NOTE_EN,
+    BEYOND_DELIVERY_SHORT_ZH, BEYOND_DELIVERY_SHORT_EN,
+    freeOverPhraseZh, freeOverPhraseEn,
+    type DeliveryTierCopy,
+} from '@/lib/deliveryCopy';
 
 interface FaqHeroStripDict {
     ariaLabel: string;
@@ -83,6 +91,104 @@ interface WhatsAppStickyBarDict {
     close: string;
 }
 
+interface FooterDict {
+    /** 页脚导航的 href：/ 与 /en 两套路径（menu 是 `/#menu` vs `/en#menu`，不是简单加前缀） */
+    links: { menu: string; vouchers: string; member: string; blog: string; catering: string; privacy: string; terms: string; refund: string };
+    dailyMenu: string;
+    mealVouchers: string;
+    member: string;
+    catering: string;
+    contactUs: string;
+    /** 紧跟在 <MapPin /> 后面、带前导空格——原文「图标 + 同行文本」是一个文本子节点 */
+    servingAround: string;
+    tierRange: (t: DeliveryTierCopy) => string;
+    tierFreeOver: (t: DeliveryTierCopy) => string;
+    beyondShort: string;
+    coverageHeading: string;
+    promiseHeading: string;
+    noMsg: string;
+    dailyFresh: string;
+    mumsRecipe: string;
+    copyright: string;
+}
+
+interface NavBarDict {
+    /** 顶栏整句，带尾随空格——后面紧跟 <span>|</span>（原文是一个文本子节点） */
+    topNotice: string;
+    /** 手机跑马灯：en 是另一句短文案直接拼运费摘要（没有 | 分隔 span）；zh 与桌面同句、走 topNotice */
+    marqueeNotice: string;
+    deliverySummary: string;
+    homeHref: string;
+    homeAriaLabel: string;
+    brandName: string;
+    dailyMenu: string;
+    vouchersHref: string;
+    mealVouchers: string;
+    /** 桌面锚点行的「好评」（en: Reviews）与手机面板里的（en: Neighbour Reviews）历史上不同 */
+    reviews: string;
+    panelReviews: string;
+    contact: string;
+    memberHref: string;
+    memberAria: string;
+    memberTitle: string;
+    member: string;
+    /** 登录按钮 aria：en 版手机 / 桌面两个不同，zh 版三处同一句 */
+    signInMobileAria: string;
+    signInDesktopAria: string;
+    signInLabel: string;
+    openMenu: string;
+    closeMenu: string;
+    cartAria: (count: number, total: string) => string;
+    cartEmptyAria: string;
+    languageLabel: string;
+}
+
+interface DeliveryWidgetDict {
+    /** WhatsApp 预填（已 URL 编码），后面直接拼 encodeURIComponent(address) */
+    whatsAppUrl: string;
+    lookupFailed: string;
+    networkError: string;
+    heading: string;
+    sub: string;
+    placeholder: string;
+    addressAria: string;
+    clearAria: string;
+    checking: string;
+    check: string;
+    /** `{feeBefore}{fee}{feeMid}{km}{feeAfter}` */
+    feeBefore: string;
+    feeMid: string;
+    feeAfter: string;
+    /** `{nearBefore}<b>RM {threshold}{thresholdPlus}</b>{nearMid}<b>{nearFree}</b>`；zh 的 thresholdPlus 是空串 */
+    nearBefore: string;
+    thresholdPlus: string;
+    nearMid: string;
+    nearFree: string;
+    /** `{midBefore}<b>RM {threshold}{thresholdPlus}</b>{midMid}<b>RM {feeAtThreshold}</b>` */
+    midBefore: string;
+    midMid: string;
+    /** `{farBefore}<b>Grab</b>{farMid}<b>RM {fee}</b>{farAfter}` */
+    farBefore: string;
+    farMid: string;
+    farAfter: string;
+    /** `{outsideBefore}{km}{outsideAfter}` */
+    outsideBefore: string;
+    outsideAfter: string;
+    cateringCta: string;
+    feeTable: string;
+    hideFees: string;
+    showFees: string;
+    distanceBasis: string;
+    tierRange: (t: DeliveryTierCopy) => string;
+    /** ⚠️ en 版 widget 的免运短语（`RM 20+ → free`）与 Footer 的 freeOverPhraseEn 不同——历史如此，原样保留 */
+    tierFreeOver: (t: DeliveryTierCopy) => string;
+    beyondNote: string;
+    cutoffHeading: string;
+    cutoffTitle: string;
+    cutoffSub: string;
+    windowsTitle: string;
+}
+
 export interface HomeDict {
     faqHeroStrip: FaqHeroStripDict;
     heroTrustStrip: HeroTrustStripDict;
@@ -90,6 +196,9 @@ export interface HomeDict {
     promoBanner: PromoBannerDict;
     whatsAppFloat: WhatsAppFloatDict;
     whatsAppStickyBar: WhatsAppStickyBarDict;
+    footer: FooterDict;
+    navBar: NavBarDict;
+    deliveryWidget: DeliveryWidgetDict;
 }
 
 const ZH_WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
@@ -171,6 +280,88 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             claim: '领取',
             close: '关闭',
         },
+        footer: {
+            links: { menu: '/#menu', vouchers: '/meal-vouchers', member: '/member', blog: '/blog', catering: '/catering', privacy: '/privacy', terms: '/terms', refund: '/refund' },
+            dailyMenu: '每日菜单',
+            mealVouchers: '餐券预付包',
+            member: '会员中心',
+            catering: 'Catering 到会',
+            contactUs: 'Contact Us / 联系我们',
+            servingAround: ' Serving Our Neighbours Around',
+            tierRange: (t) => t.rangeZh,
+            tierFreeOver: freeOverPhraseZh,
+            beyondShort: BEYOND_DELIVERY_SHORT_ZH,
+            coverageHeading: '服务范围 / Coverage',
+            promiseHeading: '品质承诺 / Our Promise',
+            noMsg: 'No MSG · 不加味精',
+            dailyFresh: 'Daily Fresh · 每日新鲜采购',
+            mumsRecipe: "Mum's Recipe · 妈妈的味道",
+            copyright: '© 2026 Incredibowl. 家的味道，每天新鲜采购。',
+        },
+        navBar: {
+            topNotice: '温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） ',
+            marqueeNotice: '温馨提示：每天早上 06:00 截单（06:00 前下单 当日配送） ',
+            deliverySummary: DELIVERY_SUMMARY_ZH,
+            homeHref: '/',
+            homeAriaLabel: 'Incredibowl 碗妈的厨房 首页',
+            brandName: '碗妈的厨房',
+            dailyMenu: '每日菜单',
+            vouchersHref: '/meal-vouchers',
+            mealVouchers: '餐券预付包',
+            reviews: '邻居好评',
+            panelReviews: '邻居好评',
+            contact: '联系碗妈',
+            memberHref: '/member',
+            memberAria: '进入会员中心',
+            memberTitle: '进入会员中心 · 查看订单与 voucher',
+            member: '会员中心',
+            signInMobileAria: '登录 / 邻里会员',
+            signInDesktopAria: '登录 / 邻里会员',
+            signInLabel: '登录 / 邻里会员',
+            openMenu: '打开菜单',
+            closeMenu: '关闭菜单',
+            cartAria: (count, total) => `打开购物车（${count} 件 · RM ${total}）`,
+            cartEmptyAria: '打开购物车',
+            languageLabel: '语言 / Language',
+        },
+        deliveryWidget: {
+            whatsAppUrl: "https://wa.me/60103370197?text=Hi%20%E7%A2%97%E5%A6%88%EF%BC%8C%E6%88%91%E7%9A%84%E5%9C%B0%E5%9D%80%E5%9C%A8%20%EF%BC%9A",
+            lookupFailed: '查询失败，请重试',
+            networkError: '网络异常，请稍后重试',
+            heading: '我家能送吗？',
+            sub: '30 秒查一下你属于哪个配送区',
+            placeholder: '例: Pearl Suria, OUG Parklane, 58200...',
+            addressAria: '输入你的地址或邮编',
+            clearAria: '清空',
+            checking: '查询中',
+            check: '查一下',
+            feeBefore: '配送费 RM ',
+            feeMid: ' · 离碗妈 ',
+            feeAfter: ' km',
+            nearBefore: '满 ',
+            thresholdPlus: '',
+            nearMid: ' 即享 ',
+            nearFree: '免运',
+            midBefore: '满 ',
+            midMid: ' 配送费降至 ',
+            farBefore: '远距离由 ',
+            farMid: ' 配送，运费固定 ',
+            farAfter: '，不设免运门槛',
+            outsideBefore: '抱歉，你的地址离碗妈 ',
+            outsideAfter: ' km，超出 25km 配送范围',
+            cateringCta: '公司团餐？WhatsApp 问问看 →',
+            feeTable: '配送费一览',
+            hideFees: '收起 ▴',
+            showFees: '查看 ▾',
+            distanceBasis: DISTANCE_BASIS_ZH,
+            tierRange: (t) => t.rangeZh,
+            tierFreeOver: freeOverPhraseZh,
+            beyondNote: BEYOND_DELIVERY_NOTE_ZH,
+            cutoffHeading: '截单与配送时段',
+            cutoffTitle: '每天 06:00 截单',
+            cutoffSub: '06:00 前下单当日配送',
+            windowsTitle: '配送时段',
+        },
     },
     en: {
         faqHeroStrip: {
@@ -240,6 +431,88 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             order: 'Order',
             claim: 'Claim',
             close: 'Close',
+        },
+        footer: {
+            links: { menu: '/en#menu', vouchers: '/en/meal-vouchers', member: '/en/member', blog: '/en/blog', catering: '/en/catering', privacy: '/en/privacy', terms: '/en/terms', refund: '/en/refund' },
+            dailyMenu: 'Daily Menu',
+            mealVouchers: 'Meal Vouchers',
+            member: 'Member',
+            catering: 'Catering',
+            contactUs: 'Contact us',
+            servingAround: ' Serving our neighbours around',
+            tierRange: (t) => t.rangeEn,
+            tierFreeOver: freeOverPhraseEn,
+            beyondShort: BEYOND_DELIVERY_SHORT_EN,
+            coverageHeading: 'Coverage area',
+            promiseHeading: 'Our promise',
+            noMsg: 'No MSG',
+            dailyFresh: 'Daily fresh from the wet market',
+            mumsRecipe: "Mum's recipe, mum's heart",
+            copyright: '© 2026 Incredibowl. Home-cooked taste, sourced fresh daily.',
+        },
+        navBar: {
+            topNotice: 'Heads up: orders close 06:00 daily (place before 06:00 for same-day delivery) ',
+            marqueeNotice: 'Orders close 06:00 · ',
+            deliverySummary: DELIVERY_SUMMARY_EN,
+            homeHref: '/en',
+            homeAriaLabel: 'Incredibowl BowlMama Kitchen home',
+            brandName: "BowlMama's Kitchen",
+            dailyMenu: 'Daily Menu',
+            vouchersHref: '/en/meal-vouchers',
+            mealVouchers: 'Meal Vouchers',
+            reviews: 'Reviews',
+            panelReviews: 'Neighbour Reviews',
+            contact: 'Contact BowlMama',
+            memberHref: '/en/member',
+            memberAria: 'Open member centre',
+            memberTitle: 'Member centre · orders & vouchers',
+            member: 'Member',
+            signInMobileAria: 'Sign in',
+            signInDesktopAria: 'Sign in / Neighbourhood member',
+            signInLabel: 'Sign in / Member',
+            openMenu: 'Open menu',
+            closeMenu: 'Close menu',
+            cartAria: (count, total) => `Open cart (${count} items · RM ${total})`,
+            cartEmptyAria: 'Open cart',
+            languageLabel: 'Language / 语言',
+        },
+        deliveryWidget: {
+            whatsAppUrl: "https://wa.me/60103370197?text=Hi%20BowlMama%2C%20my%20address%20is%3A%20",
+            lookupFailed: 'Lookup failed, please try again',
+            networkError: 'Network error, please try again later',
+            heading: 'Can we deliver to you?',
+            sub: '30-second check — see your delivery zone',
+            placeholder: 'e.g. Pearl Suria, OUG Parklane, 58200...',
+            addressAria: 'Enter your address or postcode',
+            clearAria: 'Clear',
+            checking: 'Checking',
+            check: 'Check',
+            feeBefore: 'Delivery fee RM ',
+            feeMid: ' · ',
+            feeAfter: ' km away',
+            nearBefore: 'Spend ',
+            thresholdPlus: '+',
+            nearMid: " and it's ",
+            nearFree: 'free',
+            midBefore: 'Spend ',
+            midMid: ' and the fee drops to ',
+            farBefore: 'Long-distance orders are delivered by ',
+            farMid: ' at a flat ',
+            farAfter: ' — no free-delivery threshold',
+            outsideBefore: "Sorry, you're ",
+            outsideAfter: ' km away — beyond our 25km delivery range',
+            cateringCta: 'Catering order? WhatsApp us →',
+            feeTable: 'Delivery fee at a glance',
+            hideFees: 'Hide ▴',
+            showFees: 'View ▾',
+            distanceBasis: DISTANCE_BASIS_EN,
+            tierRange: (t) => t.rangeEn,
+            tierFreeOver: (t) => (t.freeOver === null ? freeOverPhraseEn(t) : `RM ${t.freeOver}+ → free`),
+            beyondNote: BEYOND_DELIVERY_NOTE_EN,
+            cutoffHeading: 'Cutoff & delivery windows',
+            cutoffTitle: 'Orders close 06:00 daily',
+            cutoffSub: 'Order before 06:00 for same-day delivery',
+            windowsTitle: 'Delivery windows',
         },
     },
 };

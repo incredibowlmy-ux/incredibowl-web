@@ -2,9 +2,14 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Phone, Mail, Leaf, Sun, Heart, MapPin, ShieldCheck } from 'lucide-react';
-import { DELIVERY_TIER_COPY, COVERAGE_AREAS, freeOverPhraseZh, BEYOND_DELIVERY_SHORT_ZH } from '@/lib/deliveryCopy';
+import { DELIVERY_TIER_COPY, COVERAGE_AREAS } from '@/lib/deliveryCopy';
+import type { Locale } from '@/lib/locale';
+import { HOME_DICT } from './dict';
 
-export default function Footer() {
+export default function Footer({ locale = 'zh' }: { locale?: Locale }) {
+    const t = HOME_DICT[locale].footer;
+    // 历史漂移：EN 版运费表宽 280px、ZH 260px。C1 零 diff 合并原样保留；统不统一由老板定。
+    const tierListMaxW = locale === 'en' ? 'max-w-[280px]' : 'max-w-[260px]';
     return (
         <footer className="pt-20 pb-32 md:pb-36 bg-white border-t border-[#E3EADA]">
             <div className="max-w-7xl mx-auto px-6 text-center space-y-12">
@@ -21,22 +26,24 @@ export default function Footer() {
                     <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 md:gap-x-8 text-[#1A2D23]/60 font-bold text-xs uppercase tracking-widest">
                         {/* 2026-09-05：页脚原来只有 Blog + 法务三条，而 Catering 还
                             `hidden lg:inline` —— 手机上整站唯一的导航（NavBar 的锚点）
-                            也是 lg 才有，等于餐券包 / 会员中心 / 到会在移动端完全无入口。 */}
-                        <Link href="/#menu" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">每日菜单</Link>
-                        <Link href="/meal-vouchers" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">餐券预付包</Link>
-                        <Link href="/member" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">会员中心</Link>
-                        <Link href="/blog" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Blog</Link>
-                        <Link href="/catering" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Catering 到会</Link>
-                        <Link href="/privacy" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
-                        <Link href="/terms" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
-                        <Link href="/refund" className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>
+                            也是 lg 才有，等于餐券包 / 会员中心 / 到会在移动端完全无入口。
+                            EN 版当时连 Blog 链接都没有，/en/blog 是孤儿页（在 sitemap 里、
+                            哪里都没链到）。 */}
+                        <Link href={t.links.menu} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.dailyMenu}</Link>
+                        <Link href={t.links.vouchers} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.mealVouchers}</Link>
+                        <Link href={t.links.member} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.member}</Link>
+                        <Link href={t.links.blog} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Blog</Link>
+                        <Link href={t.links.catering} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">{t.catering}</Link>
+                        <Link href={t.links.privacy} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Privacy Policy</Link>
+                        <Link href={t.links.terms} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Terms of Service</Link>
+                        <Link href={t.links.refund} className="inline-flex items-center min-h-[36px] px-1 hover:text-[#FF6B35] transition-colors">Refund & Cancellation</Link>
                     </div>
                 </div>
 
                 {/* Mobile: existing centered stack (preserved) */}
                 <div className="grid md:grid-cols-1 gap-6 text-[#1A2D23] lg:hidden">
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
+                        <p className="text-base font-bold tracking-wide">{t.contactUs}</p>
                         <div className="flex flex-col items-center gap-2.5 max-w-xs mx-auto">
                             <a
                                 href="https://wa.me/60103370197"
@@ -77,7 +84,7 @@ export default function Footer() {
                             {/* Location/Community */}
                             <div className="text-center mt-2">
                                 <p className="text-xs text-[#1A2D23]/55 uppercase tracking-[0.2em] font-bold mb-2 flex justify-center items-center gap-1.5">
-                                    <MapPin size={12} className="text-[#FF6B35]" /> Serving Our Neighbours Around
+                                    <MapPin size={12} className="text-[#FF6B35]" />{t.servingAround}
                                 </p>
                                 <div className="flex flex-wrap justify-center gap-1.5 mt-0.5">
                                     {COVERAGE_AREAS.map((area) => (
@@ -87,17 +94,17 @@ export default function Footer() {
                                         </span>
                                     ))}
                                 </div>
-                                <ul className="text-[12px] text-[#1A2D23]/65 mt-3 mx-auto max-w-[260px] space-y-1">
-                                    {DELIVERY_TIER_COPY.map((t) => (
-                                        <li key={t.rangeZh} className="flex justify-between gap-3">
-                                            <span className="font-semibold text-[#1A2D23]/80">{t.rangeZh}</span>
-                                            <span><span className="font-bold">RM {t.fee}</span> · {freeOverPhraseZh(t)}</span>
+                                <ul className={`text-[12px] text-[#1A2D23]/65 mt-3 mx-auto ${tierListMaxW} space-y-1`}>
+                                    {DELIVERY_TIER_COPY.map((tier) => (
+                                        <li key={t.tierRange(tier)} className="flex justify-between gap-3">
+                                            <span className="font-semibold text-[#1A2D23]/80">{t.tierRange(tier)}</span>
+                                            <span><span className="font-bold">RM {tier.fee}</span> · {t.tierFreeOver(tier)}</span>
                                         </li>
                                     ))}
                                     {/* 7.5km+ now appears as the last row of the tier list itself
                                         (RM 18 flat) — the old "not delivered" note was removed
                                         rather than reworded, to avoid saying it twice. */}
-                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">{BEYOND_DELIVERY_SHORT_ZH}</li>
+                                    <li className="text-[11px] text-[#1A2D23]/40 italic text-center pt-1">{t.beyondShort}</li>
                                 </ul>
                             </div>
                         </div>
@@ -108,7 +115,7 @@ export default function Footer() {
                 <div className="hidden lg:grid lg:grid-cols-3 lg:gap-12 lg:text-left text-[#1A2D23]">
                     {/* Col 1: Contact + Social */}
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">Contact Us / 联系我们</p>
+                        <p className="text-base font-bold tracking-wide">{t.contactUs}</p>
                         <div className="flex flex-col gap-2.5">
                             <a
                                 href="https://wa.me/60103370197"
@@ -142,7 +149,7 @@ export default function Footer() {
                     <div className="space-y-4">
                         <p className="text-base font-bold tracking-wide flex items-center gap-2">
                             <MapPin size={16} className="text-[#FF6B35]" />
-                            服务范围 / Coverage
+                            {t.coverageHeading}
                         </p>
                         <div className="flex flex-wrap gap-2">
                             {COVERAGE_AREAS.map((area) => (
@@ -152,38 +159,38 @@ export default function Footer() {
                                 </span>
                             ))}
                         </div>
-                        <ul className="text-[13px] text-[#1A2D23]/65 space-y-1 max-w-[260px]">
-                            {DELIVERY_TIER_COPY.map((t) => (
-                                <li key={t.rangeZh} className="flex justify-between gap-3">
-                                    <span className="font-semibold text-[#1A2D23]/80">{t.rangeZh}</span>
-                                    <span><span className="font-bold">RM {t.fee}</span> · {freeOverPhraseZh(t)}</span>
+                        <ul className={`text-[13px] text-[#1A2D23]/65 space-y-1 ${tierListMaxW}`}>
+                            {DELIVERY_TIER_COPY.map((tier) => (
+                                <li key={t.tierRange(tier)} className="flex justify-between gap-3">
+                                    <span className="font-semibold text-[#1A2D23]/80">{t.tierRange(tier)}</span>
+                                    <span><span className="font-bold">RM {tier.fee}</span> · {t.tierFreeOver(tier)}</span>
                                 </li>
                             ))}
-                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">{BEYOND_DELIVERY_SHORT_ZH}</li>
+                            <li className="text-[12px] text-[#1A2D23]/55 italic pt-1">{t.beyondShort}</li>
                         </ul>
                     </div>
 
                     {/* Col 3: Brand Promise */}
                     <div className="space-y-4">
-                        <p className="text-base font-bold tracking-wide">品质承诺 / Our Promise</p>
+                        <p className="text-base font-bold tracking-wide">{t.promiseHeading}</p>
                         <div className="space-y-3">
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Leaf size={16} className="text-[#2D5F3E] shrink-0" />
-                                No MSG · 不加味精
+                                {t.noMsg}
                             </p>
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Sun size={16} className="text-[#FF6B35] shrink-0" />
-                                Daily Fresh · 每日新鲜采购
+                                {t.dailyFresh}
                             </p>
                             <p className="flex items-center gap-2.5 text-[14px] text-[#1A2D23]/75 font-semibold">
                                 <Heart size={16} className="text-[#C76F40] shrink-0" />
-                                Mum&apos;s Recipe · 妈妈的味道
+                                {t.mumsRecipe}
                             </p>
                         </div>
                     </div>
                 </div>
                 <div className="flex flex-col items-center gap-1.5 text-gray-500 text-xs font-medium tracking-wide text-center leading-relaxed">
-                    <p>&copy; 2026 Incredibowl. 家的味道，每天新鲜采购。</p>
+                    <p>{t.copyright}</p>
                     <p className="text-gray-400 max-w-prose">
                         <ShieldCheck size={12} className="inline align-[-2px] text-[#C9A24E] mr-1 shrink-0" strokeWidth={2.5} aria-hidden="true" />
                         Operated by Incredibowl Services 202603047882 (SA0649425-V)
