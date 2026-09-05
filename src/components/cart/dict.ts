@@ -113,6 +113,16 @@ interface CartDrawerDict {
     /** 正在开支付页（Razorpay 弹窗打开前的网络往返，以前这段按钮是可再点的）。 */
     openingPayment: string;
     choosePayment: string;
+    /** 结账缺项清单：「还差：送达地址 · 支付方式」。以前按钮只是灰着，不说缺什么。 */
+    missingPrefix: string;
+    missingAddress: string;
+    missingPhone: string;
+    missingPayment: string;
+    missingReceipt: string;
+    paymentLabel: string;
+    /** 优惠码默认折叠成一行链接，别占着结账路径上的一屏。 */
+    havePromo: string;
+    closeCart: string;
     uploadFirst: string;
     confirmOrder: string;
     razorpayDescription: string;
@@ -301,9 +311,17 @@ export const CART_DICT: Record<Locale, CartDict> = {
             submitting: '提交中...',
             openingPayment: '正在打开支付页…',
             choosePayment: '请先选择付款方式 👆',
-            uploadFirst: '请先上传转账截图 👆',
+            missingPrefix: '还差：',
+            missingAddress: '送达地址',
+            missingPhone: '手机号码',
+            missingPayment: '支付方式',
+            missingReceipt: '付款截图',
+            paymentLabel: '支付方式',
+            havePromo: '有优惠码？',
+            closeCart: '关闭购物车',
+            uploadFirst: '请先上传付款截图 👆',
             confirmOrder: '确认下单 →',
-            razorpayDescription: '餐点预订',
+            razorpayDescription: 'Incredibowl 订单',
             guestUnavailable: '访客模式暂时不可用，请用 Google 登录下单（一样很快）',
             promoInvalid: '优惠码无效',
             promoCheckFailed: '验证失败，请稍后再试',
@@ -312,7 +330,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             paymentDismissed: '付款未完成，订单还没建立。可以重新选择支付方式再试一次。',
             uploadImageOnly: '请上传图片文件（JPG / PNG）',
             uploadTooLarge: (mb) => `图片太大（${mb}MB），请压缩后上传，最大 5MB`,
-            loginBeforeUpload: '请先登录再上传付款凭证',
+            loginBeforeUpload: '请先登录再上传付款截图',
             uploadFailedRetry: '上传失败，请重试',
             uploadUnauthorized: '上传被拒绝（Storage 权限规则未授权）。请联系客服并截图发 WhatsApp。',
             uploadCancelled: '上传被取消，请重试',
@@ -342,8 +360,8 @@ export const CART_DICT: Record<Locale, CartDict> = {
             groupSplitNote: '你的订单已按送达日期自动拆分方便碗妈备餐',
             deliveryPlan: '📅 配送安排：',
             multiDay: '多日配送 (已各自独立建单)',
-            lunchEmoji: '🌞午餐',
-            dinnerEmoji: '🌙晚餐',
+            lunchEmoji: '🌞 午餐',
+            dinnerEmoji: '🌙 晚餐',
             dateTbd: '未定',
             addressLabel: '📍 地址：',
             amountLabel: '💰 金额：',
@@ -472,9 +490,17 @@ export const CART_DICT: Record<Locale, CartDict> = {
             submitting: 'Submitting...',
             openingPayment: 'Opening payment page…',
             choosePayment: 'Choose a payment method first 👆',
+            missingPrefix: 'Still needed: ',
+            missingAddress: 'delivery address',
+            missingPhone: 'phone number',
+            missingPayment: 'payment method',
+            missingReceipt: 'payment screenshot',
+            paymentLabel: 'Payment method',
+            havePromo: 'Have a promo code?',
+            closeCart: 'Close cart',
             uploadFirst: 'Upload your payment screenshot first 👆',
             confirmOrder: 'Place order →',
-            razorpayDescription: 'Meal order',
+            razorpayDescription: 'Incredibowl order',
             guestUnavailable: 'Guest mode is temporarily unavailable — please sign in with Google (just as fast)',
             promoInvalid: 'Invalid promo code',
             promoCheckFailed: 'Verification failed, please try again later',

@@ -216,7 +216,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         fpxBlurb: (n) => `点击「立即购买」后将跳转至 Curlec 支付页面，付款成功后 ${n} 张餐券即刻到账`,
         uploadInvalidType: '请上传图片文件（JPG / PNG）',
         uploadTooLarge: (mb) => `图片太大（${mb}MB），请压缩后上传，最大 5MB`,
-        uploadRequiresLogin: '请先登录再上传付款凭证',
+        uploadRequiresLogin: '请先登录再上传付款截图',
         uploadGenericError: '上传失败，请重试',
         uploadUnauthorized: '上传被拒绝（Storage 权限规则未授权）。请刷新页面重试，仍失败请 WhatsApp 010-337 0197',
         uploadCanceled: '上传被取消，请重试',
@@ -236,7 +236,7 @@ export const MEAL_VOUCHERS_DICT: Record<Locale, MealVouchersDictShape> = {
         razorpayDescription: (n, days) => `${n} 张餐券（${days} 天有效）`,
 
         pendingReviewTitle: '付款已收到，等待核对',
-        pendingReviewBody1: '我们会在 24 小时内核对你的付款凭证。',
+        pendingReviewBody1: '我们会在 24 小时内核对你的付款截图。',
         pendingReviewBody2: (n, days) => <>核对通过后，<span className="text-[#FF6B35] font-bold">{n} 张餐券</span>即刻到账，{days} 天有效。</>,
         successTitle: '购买成功 🎉',
         successBody: (n, days) => <><span className="text-[#FF6B35] font-bold text-xl">{n} 张餐券</span>已到账，可在结账时一键抵扣主餐。<br />有效期：{days} 天</>,

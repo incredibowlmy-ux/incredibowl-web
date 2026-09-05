@@ -61,7 +61,7 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
                 </div>
                 <button onClick={() => onRemove(item.cartItemId)}
                     aria-label={t.removeItem(displayName)}
-                    className="w-9 h-9 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute -top-1 -right-1 z-20">
+                    className="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors absolute -top-1 -right-1 z-20">
                     <Trash2 size={16} />
                 </button>
             </div>
@@ -69,7 +69,7 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
             {onEdit && (
                 <div className="mt-2.5 flex justify-end px-1 relative z-20">
                     <button onClick={() => onEdit(item)}
-                        className="min-h-[36px] px-3.5 bg-gray-50 text-gray-500 text-[12px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-all border border-gray-100">
+                        className="min-h-[40px] px-4 bg-gray-50 text-gray-500 text-[12px] font-bold rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-all border border-gray-100">
                         {t.edit}
                     </button>
                 </div>
