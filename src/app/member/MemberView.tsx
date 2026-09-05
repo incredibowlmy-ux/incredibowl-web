@@ -285,45 +285,28 @@ export default function MemberView({ locale }: { locale: Locale }) {
         try {
             const { updateUserProfile } = await import('@/lib/auth');
             const { updateProfile } = await import('firebase/auth');
-            const { serverTimestamp } = await import('firebase/firestore');
 
             await updateProfile(currentUser, { displayName: editName });
 
-            const updateData: any = {
-                displayName: editName,
-                phone: editPhone,
-                address: editAddress,
-            };
             if (geocodeResult) {
-                updateData.addressLat = geocodeResult.lat;
-                updateData.addressLng = geocodeResult.lng;
-                updateData.addressDistanceKm = geocodeResult.distanceKm;
-                updateData.deliveryZone = geocodeResult.zone;
-                updateData.addressFormatted = geocodeResult.formattedAddress;
-                updateData.addressVerifiedAt = serverTimestamp();
-                updateData.addressVerifiedText = editAddress.trim();
-            }
-            await updateUserProfile(currentUser.uid, updateData);
-
-            // 新验证的地址顺手收编进地址簿（≤5 条；满了不打断保存）。
-            // 匿名访客不建地址簿。
-            if (geocodeResult && !currentUser.isAnonymous) {
-                try {
-                    const { upsertSavedAddress } = await import('@/lib/auth');
-                    await upsertSavedAddress(currentUser.uid, {
-                        label: '',
-                        address: editAddress.trim(),
-                        lat: geocodeResult.lat,
-                        lng: geocodeResult.lng,
-                        distanceKm: geocodeResult.distanceKm,
-                        zone: geocodeResult.zone,
-                        formatted: geocodeResult.formattedAddress,
-                        verifiedText: editAddress.trim(),
-                        verifiedAtMs: Date.now(),
-                    });
-                } catch (e) {
-                    console.warn('[member] 地址簿同步失败（当前地址已保存）', e);
-                }
+                // 🔒 2026-09-05（A2）：地址相关字段一律走 saveDeliveryProfile →
+                // /api/save-address 由服务端重新 geocode 后落库（含 phone、地址簿收编）。
+                // 以前这里自己拼了一份 updateUserProfile 写 lat / distanceKm / zone，
+                // 和 lib/deliveryProfile 是两份真相，也是客户端自写距离的入口之一。
+                const { saveDeliveryProfile } = await import('@/lib/deliveryProfile');
+                await saveDeliveryProfile({
+                    uid: currentUser.uid,
+                    isAnonymous: currentUser.isAnonymous,
+                    phone: editPhone,
+                    address: editAddress,
+                    geocode: geocodeResult,
+                    guestName: currentUser.isAnonymous ? editName : undefined,
+                });
+                await updateUserProfile(currentUser.uid, { displayName: editName });
+            } else {
+                // 地址没动（needsGeocode 为 false）：只改称呼和手机，不碰地址字段 ——
+                // rules 收紧后客户端写 address 会被拒。
+                await updateUserProfile(currentUser.uid, { displayName: editName, phone: editPhone });
             }
 
             // 重拉权威 profile 而不是手动拼本地 state —— 手动拼漏掉

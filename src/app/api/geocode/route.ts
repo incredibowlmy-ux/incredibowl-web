@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-    distanceFromPearlPointKm,
-    zoneFromDistance,
-    isBeyondServiceRange,
-    MAX_DELIVERY_KM,
-} from '@/lib/deliveryUtils';
 import { checkBurst, checkDailyQuota, getClientIp } from '@/lib/rateLimit';
+import { geocodeForward } from '@/lib/geocodeServer';
 
 /**
  * POST /api/geocode
@@ -124,24 +119,26 @@ export async function POST(req: NextRequest) {
         }
     }
 
-    // Bias results toward Malaysia (region=my, components=country:MY) AND a
-    // ~10km bounding box around Pearl Point, so Google prefers nearby matches
-    // over distant same-named places. Bounds is a soft bias, not a hard limit.
-    const params = reverseLat !== null
-        // Reverse geocode（GPS → 地址串）。bounds/components 是正向查询才有意义的
-        // 偏置参数，反查带上会被忽略甚至报 INVALID_REQUEST，所以这里只给 latlng。
-        ? new URLSearchParams({
-            latlng: `${reverseLat},${reverseLng}`,
-            region: 'my',
-            key: apiKey,
-        })
-        : new URLSearchParams({
-            address,
-            region: 'my',
-            components: 'country:MY',
-            bounds: '3.04,101.62|3.13,101.72',
-            key: apiKey,
-        });
+    // 正向查询（地址串 → 坐标 / 距离 / 分区）：2026-09-05 起与 /api/save-address 共用
+    // lib/geocodeServer.geocodeForward（Google 调用 + 25km 拒绝 + 结果整形只留一份）。
+    // 这个接口对正向查询只做**预览**，不落库；落库在 /api/save-address。
+    if (reverseLat === null) {
+        const outcome = await geocodeForward(address, apiKey);
+        if (!outcome.ok) {
+            const { ok: _ok, status, ...rest } = outcome;
+            void _ok;
+            return NextResponse.json(rest, { status });
+        }
+        return NextResponse.json(outcome.result);
+    }
+
+    // 反查（GPS → 地址串）。bounds/components 是正向查询才有意义的偏置参数，
+    // 反查带上会被忽略甚至报 INVALID_REQUEST，所以这里只给 latlng。
+    const params = new URLSearchParams({
+        latlng: `${reverseLat},${reverseLng}`,
+        region: 'my',
+        key: apiKey,
+    });
 
     let googleData: {
         status: string;
@@ -194,36 +191,7 @@ export async function POST(req: NextRequest) {
     }
 
     const top = googleData.results[0];
-
-    // 反查模式到此为止：只把地址串还给前端填进输入框，不算距离、不返回坐标。
+    // 反查到此为止：只把地址串还给前端填进输入框，不算距离、不返回坐标。
     // 客户确认/微调后再走正常的 address 路径，由服务端权威解析一次。
-    if (reverseLat !== null) {
-        return NextResponse.json({ formattedAddress: top.formatted_address, reverse: true });
-    }
-
-    const { lat, lng } = top.geometry.location;
-    const distanceKm = distanceFromPearlPointKm(lat, lng);
-
-    // 25km 服务上限（老板 2026-07-29 定）。这道校验是新加的 —— 在此之前
-    // 这个接口对任何距离都照存不误，全站文案却写着「7.5km 以外暂不配送」，
-    // 所以远距离地址一路存进个人资料再结账，只是被错算成 mid 档收 RM 12。
-    // 拒在这里 = 地址根本存不进档案，下单链路自然进不去。
-    if (isBeyondServiceRange(distanceKm)) {
-        return NextResponse.json({
-            error: `这个地址离厨房 ${distanceKm.toFixed(1)}km，超出 ${MAX_DELIVERY_KM}km 配送范围。公司团餐可 WhatsApp 碗妈单独询价。`,
-            distanceKm: Number(distanceKm.toFixed(2)),
-            beyondRange: true,
-        }, { status: 422 });
-    }
-
-    const zone = zoneFromDistance(distanceKm);
-
-    return NextResponse.json({
-        lat,
-        lng,
-        distanceKm: Number(distanceKm.toFixed(2)),
-        zone,
-        formattedAddress: top.formatted_address,
-        partialMatch: !!top.partial_match,
-    });
+    return NextResponse.json({ formattedAddress: top.formatted_address, reverse: true });
 }

@@ -18,17 +18,19 @@ service cloud.firestore {
 
     // 客户能改的字段（敏感字段如 points/totalSpent/vouchersUsed/
     // referralBonusAwarded/referredBy/referralCode 只能服务端写）
-    // ⚠️ 已知残余风险：deliveryZone / addressDistanceKm / addressVerified*
-    // 由客户端地理编码流程写入（MemberView/AuthModal → lib/auth.ts），恶意
-    // 客户可自写骗免运费。根治需把地址验证挪服务端 API（安全计划阶段 2.5），
-    // 规则层暂无法收紧否则打断正常改地址流程。
+    // 🔒 2026-09-05（安全计划 A2）：address / addressLat / addressLng /
+    // addressDistanceKm / deliveryZone / addressFormatted / addressVerifiedAt /
+    // addressVerifiedText 已从白名单删除。这些字段现在只由 /api/save-address
+    // （Admin SDK，服务端自己 geocode）写入；/api/submit-order 按它们算运费。
+    // 以前客户端可写 = 控制台一句 updateDoc 就能永久免运费。
+    // ⚠️ 部署顺序：先上带 /api/save-address 的代码，再发布这版规则；反过来会让
+    //    旧前端保存地址时被拒。
+    // savedAddresses 保留客户端可写：它只是候选清单，不参与运费；选用时会再过一次
+    // /api/save-address 由服务端重算。
     function userSafeFields() {
       return [
         'uid', 'email', 'displayName', 'photoURL',
         'phone', 'phoneNormalized',
-        'address', 'addressLat', 'addressLng', 'addressDistanceKm',
-        'deliveryZone', 'addressFormatted',
-        'addressVerifiedAt', 'addressVerifiedText',
         'savedAddresses',
         'createdAt', 'lastLoginAt', 'updatedAt'
       ];

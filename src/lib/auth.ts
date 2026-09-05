@@ -226,16 +226,11 @@ export const removeSavedAddress = async (uid: string, id: string): Promise<void>
 // 选用地址簿里的一条：整包复制到顶层「当前配送地址」字段。verifiedAt 保留
 // 原始验证时间（不是选用时间），verifiedText 原样带上以通过服务端防换址比对。
 export const selectSavedAddress = async (uid: string, entry: SavedAddress): Promise<void> => {
-    await updateUserProfile(uid, {
-        address: entry.address,
-        addressLat: entry.lat,
-        addressLng: entry.lng,
-        addressDistanceKm: entry.distanceKm,
-        deliveryZone: entry.zone,
-        addressFormatted: entry.formatted,
-        addressVerifiedAt: entry.verifiedAtMs ? Timestamp.fromMillis(entry.verifiedAtMs) : serverTimestamp(),
-        addressVerifiedText: entry.verifiedText || entry.address.trim(),
-    });
+    // 🔒 2026-09-05（A2）：以前直接把地址簿条目里的 lat / distanceKm / zone 抄进
+    // user doc —— 而 savedAddresses 是客户端可写的，等于换个字段名照样能自写距离。
+    // 现在只把**地址串**交给服务端，由它重新 geocode 再落库；条目里的坐标只当预览。
+    const { saveAddressViaApi } = await import('./deliveryProfile');
+    await saveAddressViaApi(uid, { address: entry.address.trim() });
 };
 
 // Get user profile from Firestore
