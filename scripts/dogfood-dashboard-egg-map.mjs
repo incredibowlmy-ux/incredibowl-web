@@ -15,7 +15,10 @@
  */
 import fs from 'node:fs'; import vm from 'node:vm';
 
-const SRC = process.env.DASH || 'C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html';
+const DESKTOP = 'C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html';
+// 2026-09-05：CI（或任何没有 Desktop 源文件的机器）退回仓库里的派生副本 —— 内容一致，
+// 只多两行 noindex meta。CI 第一次跑就是在这里 ENOENT 红掉的。
+const SRC = process.env.DASH || (fs.existsSync(DESKTOP) ? DESKTOP : 'public/dashboard-h7x2q9.html');
 const HTML = fs.readFileSync(SRC, 'utf-8').split('\n');
 const at = (re, from = 0) => { for (let i = from; i < HTML.length; i++) if (re.test(HTML[i])) return i + 1; throw new Error(`dashboard 里找不到 ${re}`); };
 const slice = (a, b) => HTML.slice(a - 1, b).join('\n');

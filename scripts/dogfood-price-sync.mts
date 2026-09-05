@@ -13,8 +13,11 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const DESKTOP = 'C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html';
+// 2026-09-05：CI（或任何没有 Desktop 源文件的机器）退回仓库里的派生副本 public/。
+// 这个测试只关心「守门人抓得到、改得对」，喂哪份 dashboard 都成立。
 const SRC = process.env.DASHBOARD_SRC
-  || 'C:/Users/User/Desktop/Incredibowl Services/incredibowl-dashboard.html';
+  || (fs.existsSync(DESKTOP) ? DESKTOP : path.join(repoRoot, 'public', 'dashboard-h7x2q9.html'));
 const SCRIPT = path.join(repoRoot, 'scripts', 'sync-dashboard-prices.mts');
 
 let pass = 0, fail = 0;
