@@ -1,0 +1,37 @@
+#!/bin/sh
+# push 前的本地闸门：typecheck + lint。
+#
+# 「push 前必须先验证」一直是靠自觉，2026-09-05 把它变成机器挡。
+# 不跑 dogfood / build：pre-push 要快（几秒），dogfood 交给 CI。
+#
+# 启用（每个克隆做一次）：
+#   git config core.hooksPath .githooks
+# 临时跳过（确定要跳时）：
+#   git push --no-verify
+#
+# ⚠️ 这个钩子挡不住「夹带别人的 commit」——push 前照旧要单独跑一次
+#    `git log origin/main..main` 并亲眼读完输出。
+
+set -e
+
+if [ ! -d node_modules ]; then
+  echo "pre-push: 没有 node_modules，跳过检查（先跑 npm install）"
+  exit 0
+fi
+
+echo "pre-push: typecheck…"
+# tsconfig 的 include 里有 .next/types/**，切过分支之后那里可能残留指向已经不
+# 存在的文件的引用（TS2307 Cannot find module '../../src/app/.../layout.js'）。
+# 这不是你的代码有问题 —— 报这个错就 rm -rf .next 再跑。CI 是全新 checkout，
+# 没有 .next，不会遇到。
+if ! npm run typecheck; then
+  echo ""
+  echo "pre-push: typecheck 失败。若报的是 .next/types 里 Cannot find module，"
+  echo "          先 rm -rf .next 再试（切分支残留，不是真错）。"
+  exit 1
+fi
+
+echo "pre-push: lint（只卡 error）…"
+npx eslint src --quiet
+
+echo "pre-push: OK"

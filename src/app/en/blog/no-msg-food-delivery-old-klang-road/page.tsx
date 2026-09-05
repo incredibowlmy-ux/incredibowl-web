@@ -169,7 +169,7 @@ export default function NoMsgFoodDeliveryOldKlangRoadEN() {
 
         <div className="prose prose-lg max-w-none space-y-6 leading-relaxed text-[#1A2D23]/85 text-[16px] md:text-[17px]">
           <p>
-            If you've ever ordered delivery around <strong>Old Klang Road</strong>, <strong>Pearl Point</strong> or <strong>OUG</strong>, you might know the feeling: an hour after a fried rice or fast-food lunch, your mouth goes dry, you keep reaching for water, and your head feels a little foggy. Many local families put this down to <strong>MSG</strong>.
+            If you&apos;ve ever ordered delivery around <strong>Old Klang Road</strong>, <strong>Pearl Point</strong> or <strong>OUG</strong>, you might know the feeling: an hour after a fried rice or fast-food lunch, your mouth goes dry, you keep reaching for water, and your head feels a little foggy. Many local families put this down to <strong>MSG</strong>.
           </p>
           <p>
             The trouble is that almost every restaurant out there uses MSG to boost umami, and menus rarely say so. This piece walks through how to find genuinely MSG-free home-cooked delivery around Old Klang Road.
@@ -192,14 +192,14 @@ export default function NoMsgFoodDeliveryOldKlangRoadEN() {
             <li><strong>Does it state &ldquo;no MSG&rdquo; in black and white?</strong> The more specific, the more reliable.</li>
             <li><strong>Is it transparent about where ingredients come from?</strong> &ldquo;Bought fresh from the wet market each morning&rdquo; is far more credible than a vague &ldquo;selected ingredients&rdquo;.</li>
             <li><strong>Does the menu change daily / weekly?</strong> A fixed roster of dozens of dishes available anytime usually means frozen, pre-made central-kitchen food.</li>
-            <li><strong>Are they open to feedback about how you feel?</strong> A kitchen that says &ldquo;if you don't feel great after eating, tell us and we'll review it&rdquo; usually has nothing to hide.</li>
+            <li><strong>Are they open to feedback about how you feel?</strong> A kitchen that says &ldquo;if you don&apos;t feel great after eating, tell us and we&apos;ll review it&rdquo; usually has nothing to hide.</li>
           </ul>
 
           <h2 className="text-2xl md:text-3xl font-black mt-12 mb-4 text-[#1A2D23]">
             3. How Incredibowl does it
           </h2>
           <p>
-            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link> (BowlMama's kitchen) is a home kitchen based at Pearl Point, focused on <strong>MSG-free home-cooked food</strong>:
+            <Link href="/en" className="text-[#FF6B35] font-bold hover:underline">Incredibowl</Link> (BowlMama&apos;s kitchen) is a home kitchen based at Pearl Point, focused on <strong>MSG-free home-cooked food</strong>:
           </p>
           <ul className="list-disc pl-6 space-y-2">
             <li>Every dish is <strong>MSG-free</strong>, seasoned with natural ingredients like angelica root, ginger, scallion and Shaoxing wine;</li>
@@ -228,10 +228,10 @@ export default function NoMsgFoodDeliveryOldKlangRoadEN() {
             </div>
             <div>
               <h3 className="font-black text-lg mb-1">Q: Is it really MSG-free? How can I be sure?</h3>
-              <p>Yes — every dish is cooked with no MSG. Check three things: whether it clearly states &ldquo;no MSG&rdquo;, whether it's transparent about ingredient sourcing, and how you feel after eating. We buy fresh from the wet market and cook the same day — feedback is always welcome.</p>
+              <p>Yes — every dish is cooked with no MSG. Check three things: whether it clearly states &ldquo;no MSG&rdquo;, whether it&apos;s transparent about ingredient sourcing, and how you feel after eating. We buy fresh from the wet market and cook the same day — feedback is always welcome.</p>
             </div>
             <div>
-              <h3 className="font-black text-lg mb-1">Q: What's the coverage and delivery fee?</h3>
+              <h3 className="font-black text-lg mb-1">Q: What&apos;s the coverage and delivery fee?</h3>
               <p>From Pearl Point: {tierProseEn(TIER_INNER)}, {tierProseEn(TIER_OUTER)}, {tierProseEn(TIER_MID)}. After you register and enter your address, the system automatically checks the distance and fee.</p>
             </div>
           </div>

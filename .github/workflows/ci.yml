@@ -1,0 +1,45 @@
+name: ci
+
+# 这个仓库以前没有任何 CI：验证全靠人记得手跑 tsc 和 scripts/ 里的 dogfood。
+# 2026-09-05 建这个流水线时立刻抓到一条已经红了不知道多久的断言
+# （dogfood-new-customer-gift，备餐输出格式在 6423a0e 改过、断言没跟上）。
+#
+# 故意**不跑 next build**：build 要 NEXT_PUBLIC_FIREBASE_* 一堆环境变量，而
+# Vercel 每次 push 本来就在构建 —— 那边构建失败就是构建这道门槛。这里只做
+# 不需要任何密钥的检查，所以仓库不必往 Actions 里放 secret。
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# 同一分支连推两次时，掐掉上一次没跑完的
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # 类型：本地一直是 npx tsc --noEmit，现在有 npm run typecheck 了
+      - name: typecheck
+        run: npm run typecheck
+
+      # 只卡 error，warning（主要是 no-explicit-any）不挡路
+      - name: lint
+        run: npx eslint src --quiet
+
+      # scripts/ 在 tsconfig 的 exclude 里，tsc 碰不到，只有跑起来才知道
+      - name: dogfood
+        run: npm run dogfood
