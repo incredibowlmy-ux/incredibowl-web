@@ -1129,6 +1129,11 @@ export default function CartDrawer({
                                 </div>
                                 {promoError && <p className="text-[10px] text-red-500 font-medium pl-1">{promoError}</p>}
                                 {promoApplied && <p className="text-[10px] text-green-600 font-bold pl-1 flex items-center gap-1"><CheckCircle size={12} /> {t.promoSaved(promoDiscount.toFixed(2))}</p>}
+                                {/* 首单码已预填、但套用要等到有身份（访客/登录）之后 —— 这段空窗客户只看到
+                                    一个没生效的码和原价，会以为「说好的 RM5 呢」（2026-09-07 WhatsApp 客户实测）。 */}
+                                {!promoApplied && !currentUser && !!promoCode && promoCode === readPendingPromo() && (
+                                    <p className="text-[10px] text-green-600 font-medium pl-1">{t.promoPendingHint}</p>
+                                )}
                             </div>
 
                             {/* Meal Voucher (餐券) — only show if user has any in wallet */}

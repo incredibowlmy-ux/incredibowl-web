@@ -44,6 +44,8 @@ interface CartDrawerDict {
     checking: string;
     apply: string;
     promoSaved: (amt: string) => string;
+    /** 首单码已预填但还没身份 → 告诉客户「继续就自动生效」，别让他以为没优惠 */
+    promoPendingHint: string;
     voucherRedeemTitle: string;
     voucherRedeemSub: (available: number, max: number) => string;
     voucherRedeemed: (n: number, amt: string) => string;
@@ -277,6 +279,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             checking: '验证中…',
             apply: '使用',
             promoSaved: (amt) => `已减免 RM ${amt}`,
+            promoPendingHint: '新客首单立减 RM 5 已备好，点下方「访客快速下单」或登录后自动扣',
             voucherRedeemTitle: '用餐券抵扣',
             voucherRedeemSub: (available, max) => `共 ${available} 张可用 · 最多抵 ${max} 份主餐`,
             voucherRedeemed: (n, amt) => `已抵 ${n} 份主餐 · 减 RM ${amt}`,
@@ -482,6 +485,7 @@ export const CART_DICT: Record<Locale, CartDict> = {
             checking: 'Checking…',
             apply: 'Apply',
             promoSaved: (amt) => `RM ${amt} off applied`,
+            promoPendingHint: 'RM 5 first-order discount is ready — it applies automatically once you tap Guest checkout or log in below',
             voucherRedeemTitle: 'Redeem meal vouchers',
             voucherRedeemSub: (available, max) => `${available} available · covers up to ${max} main dish(es)`,
             voucherRedeemed: (n, amt) => `${n} main dish(es) covered · − RM ${amt}`,
