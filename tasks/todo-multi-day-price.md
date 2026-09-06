@@ -14,7 +14,7 @@
 - [x] `tsc --noEmit` 0 错
 - [x] eslint 三个文件 0 error（17 warning 全为既有 `any`）
 - [x] `scripts/_dogfood-price-override.mts`：覆盖 / 等于目录价 / 负数 / 未填 四种情况，ON 与 OFF 两种模式 originalTotal 与 listPrice 逐项对上 → PASS
-- [ ] `next build`（见会话结论）
+- [x] `next build` 通过（worktree 内真 npm install 后跑）
 - [ ] 线上 /admin/multi-day 实际点一遍（需老板 Google 登录，本地没做）
 
 ## 未做（按要求只动主菜价）
