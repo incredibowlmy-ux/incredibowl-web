@@ -19,6 +19,7 @@ const KNOWN_CREDS = new Set([
   'G1eKfCxWLU9x0zyF',  // Google Sheets account
   'kPDcMzsEk1cRmG33',  // Google Gemini(PaLM) Api account 2
   'ew3zAX6xWGWOdrGO',  // Incredibowl N8N API Key (bearer)
+  'XAgrsT1ATqotRlfm',  // WA relay inbound (v4)（header auth：Webhook + 两个 AI 工具节点，09-06 线上建）
 ]);
 const PLACEHOLDER = 'REPLACE_AFTER_IMPORT';
 

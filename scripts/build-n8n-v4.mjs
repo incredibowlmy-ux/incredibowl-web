@@ -32,7 +32,8 @@ const v3e = JSON.parse(readFileSync(join(DIR, 'bowlmama-v3-error.json'), 'utf8')
 const SITE = 'https://www.incredibowl.my';
 const CRED_WA = { whatsAppApi: { id: 'r40sSPxInxCOtHWS', name: 'WhatsApp account' } };
 const CRED_BEARER = { httpBearerAuth: { id: 'ew3zAX6xWGWOdrGO', name: 'Incredibowl N8N API Key' } };
-const CRED_INBOUND = { httpHeaderAuth: { id: 'REPLACE_AFTER_IMPORT', name: 'WA relay inbound（导入后手动选）' } };
+// 09-06 已在线上建好的 Header Auth 凭据（值 = `Bearer <N8N_INBOUND_SECRET>`）。Webhook 节点和两个 AI 工具节点共用。
+const CRED_INBOUND = { httpHeaderAuth: { id: 'XAgrsT1ATqotRlfm', name: 'WA relay inbound (v4)' } };
 const BOSS_PHONE = '60165014501';
 const WA_PHONE_ID = '1019276584602589';
 const GRAPH = `https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`;
@@ -486,6 +487,18 @@ nodes.push({
   type: '@n8n/n8n-nodes-langchain.toolHttpRequest', typeVersion: 1.1, position: [-1280, -640],
   id: 'v4-tool-remember', name: 'remember_customer_fact', credentials: CRED_BEARER,
 });
+
+// ── AI 工具节点不支持 Bearer 凭据（09-07 上线首晚实测 `The type httpBearerAuth is not supported`，
+//    AI Agent 初始化即炸）→ 一律改 Header Auth，复用 relay 那把凭据；网站 lead/capacity 两接口对应也认它。
+for (const n of nodes) {
+  if (n.type === '@n8n/n8n-nodes-langchain.toolHttpRequest' && n.parameters?.genericAuthType === 'httpBearerAuth') {
+    n.parameters.genericAuthType = 'httpHeaderAuth';
+    n.credentials = { ...CRED_INBOUND };
+  }
+}
+if (nodes.some(n => n.type === '@n8n/n8n-nodes-langchain.toolHttpRequest' && n.credentials?.httpBearerAuth)) {
+  throw new Error('仍有 AI 工具节点用 Bearer 凭据');
+}
 
 // ── Sheet 日志：全部 continueRegularOutput（保留两周作对照，之后另开 PR 删）──
 for (const n of nodes) {

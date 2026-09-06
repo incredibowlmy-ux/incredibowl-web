@@ -66,14 +66,10 @@ type Lang = 'zh' | 'en';
 type Intent = 'retail' | 'catering';
 type Status = 'engaged' | 'clicked' | 'ordered' | 'closed';
 
+/** N8N_API_KEY 或 N8N_INBOUND_SECRET 任一即可（AI 工具节点只能用后者，见 src/lib/n8nAuth.ts）。 */
 async function authOk(req: NextRequest): Promise<boolean> {
-  const expected = process.env.N8N_API_KEY;
-  if (!expected) return false;
-  const supplied = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
-  const { timingSafeEqual } = await import('node:crypto');
-  const a = Buffer.from(expected);
-  const b = Buffer.from(supplied);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const { n8nBearerOk } = await import('@/lib/n8nAuth');
+  return n8nBearerOk(req.headers);
 }
 
 function randomToken(): string {

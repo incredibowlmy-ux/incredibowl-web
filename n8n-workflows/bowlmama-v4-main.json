@@ -32,8 +32,8 @@
       "webhookId": "b2f1e7a0-1111-4a00-9c00-bowlmamav200",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "REPLACE_AFTER_IMPORT",
-          "name": "WA relay inbound（导入后手动选）"
+          "id": "XAgrsT1ATqotRlfm",
+          "name": "WA relay inbound (v4)"
         }
       }
     },
@@ -1956,7 +1956,7 @@
         "toolDescription": "查询某一天厨房还能接几份（团餐报价前必须先查）。输入 date=YYYY-MM-DD。返回 booked/remaining/canQuote/reason，canQuote=false 就不要当场承诺。",
         "url": "https://www.incredibowl.my/api/n8n/capacity",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth",
+        "genericAuthType": "httpHeaderAuth",
         "sendQuery": true,
         "parametersQuery": {
           "values": [
@@ -1977,9 +1977,9 @@
       "id": "v3-tool-capacity",
       "name": "check_capacity",
       "credentials": {
-        "httpBearerAuth": {
-          "id": "ew3zAX6xWGWOdrGO",
-          "name": "Incredibowl N8N API Key"
+        "httpHeaderAuth": {
+          "id": "XAgrsT1ATqotRlfm",
+          "name": "WA relay inbound (v4)"
         }
       }
     },
@@ -2613,7 +2613,7 @@
         "method": "POST",
         "url": "https://www.incredibowl.my/api/n8n/lead",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "keypair",
         "parametersBody": {
@@ -2649,9 +2649,9 @@
       "id": "v4-tool-remember",
       "name": "remember_customer_fact",
       "credentials": {
-        "httpBearerAuth": {
-          "id": "ew3zAX6xWGWOdrGO",
-          "name": "Incredibowl N8N API Key"
+        "httpHeaderAuth": {
+          "id": "XAgrsT1ATqotRlfm",
+          "name": "WA relay inbound (v4)"
         }
       }
     }

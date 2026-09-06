@@ -49,15 +49,12 @@ function todayKL(): string {
 }
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.N8N_API_KEY;
-  if (!expected) {
+  if (!process.env.N8N_API_KEY && !process.env.N8N_INBOUND_SECRET) {
     return NextResponse.json({ error: 'N8N_API_KEY not configured on server' }, { status: 500 });
   }
-  const supplied = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
-  const { timingSafeEqual } = await import('node:crypto');
-  const a = Buffer.from(expected);
-  const b = Buffer.from(supplied);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+  // AI 工具节点（check_capacity）只能带 N8N_INBOUND_SECRET，见 src/lib/n8nAuth.ts
+  const { n8nBearerOk } = await import('@/lib/n8nAuth');
+  if (!n8nBearerOk(req.headers)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
