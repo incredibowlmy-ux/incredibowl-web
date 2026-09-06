@@ -7,6 +7,7 @@ import { dishRecipes, addOnRecipes } from '../src/data/dishIngredients';
 import {
     ALL_RECIPE_INGREDIENTS, categorizeIngredient, CATEGORY_ORDER, categoryRank,
 } from '../src/data/ingredientCatalog';
+import { PACKAGING_ITEMS } from '../src/data/packaging';
 
 let pass = 0, fail = 0;
 const ok = (cond: boolean, msg: string) => {
@@ -19,7 +20,8 @@ for (const r of dishRecipes) for (const l of r.ingredients) fromRecipes.add(l.na
 for (const lines of Object.values(addOnRecipes)) for (const l of lines) fromRecipes.add(l.name);
 const catalogNames = new Set(ALL_RECIPE_INGREDIENTS.map(i => i.name));
 for (const n of fromRecipes) ok(catalogNames.has(n), `配方食材「${n}」不在 ALL_RECIPE_INGREDIENTS`);
-ok(catalogNames.size === fromRecipes.size, `数量对不上：目录 ${catalogNames.size} vs 配方 ${fromRecipes.size}`);
+for (const p of PACKAGING_ITEMS) ok(catalogNames.has(p.name), `打包耗材「${p.name}」不在 ALL_RECIPE_INGREDIENTS`);
+ok(catalogNames.size === fromRecipes.size + PACKAGING_ITEMS.length, `数量对不上：目录 ${catalogNames.size} vs 配方 ${fromRecipes.size} + 包装 ${PACKAGING_ITEMS.length}`);
 
 // ── 2. 每个食材都有单位（未建档的靠它才能 g→kg 换算）──
 for (const i of ALL_RECIPE_INGREDIENTS) ok(!!i.unit, `「${i.name}」没有单位`);

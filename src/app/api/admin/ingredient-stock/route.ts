@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyAdminEmail, adminJson, corsPreflight } from '@/lib/adminApi';
-import { aggregateIngredients, type PrepOrder } from '@/lib/prepIngredients';
+import { aggregateStockNeeds, type PrepOrder } from '@/lib/prepIngredients';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
 
 /**
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         const orders = snap.docs
           .filter(d => (d.data() as PrepOrder).status !== 'cancelled')
           .map(d => ({ ...(d.data() as PrepOrder), isNewCustomer: giftIds.has(d.id) }));
-        const { lines } = aggregateIngredients(orders);
+        const lines = aggregateStockNeeds(orders);
         for (const l of lines) needed.set(l.name, (needed.get(l.name) || 0) + l.qty);
         const { collectUnrecipedLabels } = await import('@/lib/prepIngredients');
         unreciped = collectUnrecipedLabels(orders);
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
 
       const unitByName = new Map<string, string>();
       const neededByDate = dates.map(dt => {
-        const { lines } = aggregateIngredients(byDate.get(dt) || []);
+        const lines = aggregateStockNeeds(byDate.get(dt) || []);
         const mp = new Map<string, number>();
         for (const l of lines) { mp.set(l.name, (mp.get(l.name) || 0) + l.qty); if (!unitByName.has(l.name)) unitByName.set(l.name, l.unit); }
         return mp;

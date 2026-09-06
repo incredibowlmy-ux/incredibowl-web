@@ -20,11 +20,12 @@
  *     must never be able to fail an order.
  *
  * Ingredient need + this deduction share the SAME aggregation as the daily
- * prep list (aggregateIngredients), so what's subtracted == what's cooked.
+ * prep list (aggregateIngredients), so what's subtracted == what's cooked —
+ * plus packaging bowls (packagingLines) via aggregateStockNeeds.
  */
 import type { Firestore } from 'firebase-admin/firestore';
 import { FieldValue } from 'firebase-admin/firestore';
-import { aggregateIngredients, type PrepOrderItem } from './prepIngredients';
+import { aggregateStockNeeds, type PrepOrderItem } from './prepIngredients';
 
 export interface IngredientStockItem {
   name: string;
@@ -282,7 +283,7 @@ async function applyOrderMovement(
   ctx?: { orderId?: string; source?: string },
 ): Promise<IngredientMovementResult> {
   try {
-    const { lines } = aggregateIngredients([{ items }]);
+    const lines = aggregateStockNeeds([{ items }]);
     if (!lines.length) return { ok: true, touched: 0 };
 
     // Merge by name (doc id is name only) so a batch never writes the same doc

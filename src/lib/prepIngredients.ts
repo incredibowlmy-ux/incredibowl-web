@@ -14,6 +14,7 @@ import {
   NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, expandComboLabel,
 } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
+import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL } from '@/data/packaging';
 
 export interface PrepOrderItemAddOn {
   id?: string;
@@ -124,6 +125,52 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
   }
   const lines = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'));
   return { lines, text: lines.length === 0 ? '无' : lines.map(l => `${l.name} ${formatQty(l.qty, l.unit)}`).join('；') };
+}
+
+// ─── 打包碗（库存层专用，备餐单/Telegram 不显示）─────────────────────
+/**
+ * 一批订单要用几个碗。规则见 src/data/packaging.ts。
+ * 主菜行（非「↳」）每份 1 个 1000ml；蒜蓉西兰花炒蛋——单点、或套餐拆开后含它——
+ * 每份 1 个 750ml。两种加料落库形态都收（网页 ↳ 行 / 手动嵌套 addOns），
+ * 与 aggregateIngredients 同一套 label 解析（resolveAddOnAlias + expandComboLabel）。
+ */
+export function packagingLines(orders: PrepOrder[]): Line[] {
+  let big = 0, small = 0;
+  const bowls750ForLabel = (raw: string, id?: string): number => {
+    if (id === 'broccoli-egg') return 1;
+    const label = resolveAddOnAlias(raw);
+    if (label === BOWL_750_ADDON_LABEL) return 1;
+    return (expandComboLabel(label) || []).filter(c => c === BOWL_750_ADDON_LABEL).length;
+  };
+  for (const o of orders) {
+    for (const it of o.items || []) {
+      const qty = it.quantity || 0;
+      if (qty <= 0) continue;
+      if (isAddOnItem(it.name)) {
+        small += bowls750ForLabel(stripAddOnPrefix(it.name)) * qty;
+      } else {
+        big += qty;
+        for (const a of it.addOns || []) {
+          const aQty = a.quantity || 0;
+          if (aQty <= 0) continue;
+          small += bowls750ForLabel(a.label || a.name || '', a.id) * aQty;
+        }
+      }
+    }
+  }
+  const lines: Line[] = [];
+  if (big > 0) lines.push({ name: BOWL_1000, qty: big, unit: '个' });
+  if (small > 0) lines.push({ name: BOWL_750, qty: small, unit: '个' });
+  return lines;
+}
+
+/**
+ * 库存层口径 = 食材（aggregateIngredients）+ 打包碗（packagingLines）。
+ * consume / release / 盘点表「所需」/ 燃尽矩阵四处都走这里，扣的和显示的永远同一个数。
+ * 备餐单和 Telegram 简报仍用 aggregateIngredients —— 厨房不需要看到碗。
+ */
+export function aggregateStockNeeds(orders: PrepOrder[]): Line[] {
+  return [...aggregateIngredients(orders).lines, ...packagingLines(orders)];
 }
 
 /**

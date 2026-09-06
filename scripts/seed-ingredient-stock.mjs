@@ -16,6 +16,7 @@
 import admin from 'firebase-admin';
 import fs from 'node:fs';
 import { dishRecipes, addOnRecipes } from '../src/data/dishIngredients.ts';
+import { PACKAGING_ITEMS } from '../src/data/packaging.ts';
 
 const KEY = 'C:/Users/User/Desktop/Incredibowl Services/Firebase/incredibowl-1eedd-firebase-adminsdk-fbsvc-f78b077e14.json';
 const APPLY = process.argv.includes('--apply');
@@ -35,6 +36,7 @@ const addLine = (l) => {
 };
 for (const r of dishRecipes) (r.ingredients || []).forEach(addLine);
 for (const lines of Object.values(addOnRecipes)) (lines || []).forEach(addLine);
+PACKAGING_ITEMS.forEach(addLine); // 打包碗也建档（2026-09-06）
 
 console.log(`配方里共 ${master.size} 种原料：`);
 for (const [name, unit] of [...master].sort((a, b) => a[0].localeCompare(b[0], 'zh'))) {

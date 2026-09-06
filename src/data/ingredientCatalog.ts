@@ -16,8 +16,9 @@
  */
 
 import { dishRecipes, addOnRecipes } from './dishIngredients';
+import { PACKAGING_ITEMS } from './packaging';
 
-export type IngredientCategory = '肉类' | '海鲜' | '蛋类' | '蔬菜' | '米·主食' | '调味·干货' | '其他';
+export type IngredientCategory = '肉类' | '海鲜' | '蛋类' | '蔬菜' | '米·主食' | '调味·干货' | '包装' | '其他';
 
 /** 显示顺序 + 图标 —— dashboard 按这个顺序排组。 */
 export const CATEGORY_ORDER: { key: IngredientCategory; icon: string }[] = [
@@ -27,6 +28,7 @@ export const CATEGORY_ORDER: { key: IngredientCategory; icon: string }[] = [
   { key: '蔬菜', icon: '🥬' },
   { key: '米·主食', icon: '🍚' },
   { key: '调味·干货', icon: '🫙' },
+  { key: '包装', icon: '🥡' },
   { key: '其他', icon: '📦' },
 ];
 
@@ -68,6 +70,8 @@ const EXPLICIT_CATEGORY: Record<string, IngredientCategory> = {
   '酱油': '调味·干货', 'sambal': '调味·干货', '咖喱块': '调味·干货',
   '海苔': '调味·干货', '纳豆': '调味·干货', '当归': '调味·干货',
   '黑橄榄': '调味·干货',
+  // ── 包装 ──（碗不是配方食材，见 src/data/packaging.ts）
+  '1000ml 打包碗': '包装', '750ml 打包碗': '包装',
 };
 
 /**
@@ -107,7 +111,7 @@ export interface CatalogIngredient {
 }
 
 /**
- * 配方里用到的全部食材（主菜 + 加料，去重）。
+ * 配方里用到的全部食材（主菜 + 加料，去重）+ 打包碗（PACKAGING_ITEMS）。
  * 派生自 dishRecipes / addOnRecipes —— 加新菜或新加料时只要在
  * dishIngredients.ts 写配方，这里自动多出来，盘点表也跟着有。
  */
@@ -119,6 +123,8 @@ export const ALL_RECIPE_INGREDIENTS: CatalogIngredient[] = (() => {
   for (const lines of Object.values(addOnRecipes)) {
     for (const l of lines) if (!byName.has(l.name)) byName.set(l.name, l.unit);
   }
+  // 打包碗：不在配方里，但要跟食材一起盘点/扣减（2026-09-06）。
+  for (const p of PACKAGING_ITEMS) if (!byName.has(p.name)) byName.set(p.name, p.unit);
   return [...byName.entries()]
     .map(([name, unit]) => ({ name, unit, category: categorizeIngredient(name) }))
     .sort((a, b) => a.name.localeCompare(b.name, 'zh'));
