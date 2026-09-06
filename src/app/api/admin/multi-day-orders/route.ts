@@ -20,6 +20,8 @@ import {
  * 只是去掉全部餐券字段：total = originalTotal（菜金全额现金）。
  *
  * confirm 不信客户端价格 —— 菜价一律按 weeklyMenu 现价重算（与 preview 同源）。
+ * 例外：items[].price 是 admin 亲手填的主菜特批价（allowPriceOverride 只在本 route
+ * 打开），与目录价不同时按填的数收，订单 items 上留 listPrice 目录价 + 预览警告。
  * 幂等：batchTag 由 preview 下发（multi-<时间戳>），confirm 查重拒绝双击重复建单。
  *
  * 2026-08-01：buildPlan / userId 归属 / 落库循环抽到 src/lib/manualOrderCore.ts，
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
   if (errs.length) return adminJson({ error: errs.join('；') }, 400);
 
   const deliveryFee = Number(customer.deliveryFeePerDelivery) || 0;
-  const { days, errors } = buildPlan(rawDays, deliveryFee);
+  const { days, errors } = buildPlan(rawDays, deliveryFee, { allowPriceOverride: true });
   if (errors.length) return adminJson({ error: errors.join('；') }, 400);
   if (days.length === 0) return adminJson({ error: '没有可用的天' }, 400);
 

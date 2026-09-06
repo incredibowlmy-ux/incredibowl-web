@@ -18,9 +18,19 @@ export const PAYMENT_METHODS = ['cash', 'qr', 'fpx', 'card', 'ewallet'] as const
 
 export interface PlannedItem {
   name: string;
-  price: number;
+  price: number;         // 实收单价（特批时 = 老板填的数）
+  /** 目录价 —— 只在 price 被特批覆盖时才写，报表/回看能分辨这单是特价 */
+  listPrice?: number;
   quantity: number;
   addOns: { id?: string; label: string; price: number; quantity: number }[];
+}
+
+export interface BuildPlanOpts {
+  /**
+   * 允许 items[].price 覆盖目录价（主菜特批价）。只有 dashboard 多日单显式打开
+   * （admin 亲手填）；wa-order 走默认 false —— AI 报的价一律不信，永远按目录价。
+   */
+  allowPriceOverride?: boolean;
 }
 
 export interface PlannedDay {
@@ -41,7 +51,11 @@ export function todayKL(): string {
 }
 
 /** 按提交的天数 + 当前菜单目录推演。preview 与 confirm 共用。 */
-export function buildPlan(rawDays: any[], deliveryFeePerDelivery: number): { days: PlannedDay[]; errors: string[] } {
+export function buildPlan(
+  rawDays: any[],
+  deliveryFeePerDelivery: number,
+  opts: BuildPlanOpts = {},
+): { days: PlannedDay[]; errors: string[] } {
   const errors: string[] = [];
   const days: PlannedDay[] = [];
   const today = todayKL();
@@ -91,8 +105,24 @@ export function buildPlan(rawDays: any[], deliveryFeePerDelivery: number): { day
       }));
       const addOnSum = addOns.reduce((s: number, a: any) => s + a.price * a.quantity, 0);
 
-      items.push({ name: dish.name, price: dish.price, quantity: qty, addOns });
-      originalTotal += dish.price * qty + addOnSum;
+      // 主菜特批价：与目录价不同才算覆盖，留 listPrice + 警告（预览里一眼看出这单是特价）。
+      // 无效值（非数字/负数）不悄悄吞掉 —— 回落目录价并警告，免得老板以为改成功了。
+      let price = dish.price;
+      let listPrice: number | undefined;
+      if (opts.allowPriceOverride && raw?.price !== undefined && raw?.price !== null && raw?.price !== '') {
+        const p = Number(raw.price);
+        if (!Number.isFinite(p) || p < 0) {
+          warnings.push(`「${dish.name}」单价「${raw.price}」无效，已按目录价 RM ${dish.price.toFixed(2)}`);
+        } else if (Math.abs(p - dish.price) > 0.001) {
+          price = round2(p);
+          listPrice = dish.price;
+          warnings.push(`「${dish.name}」特批价 RM ${price.toFixed(2)}（目录价 RM ${dish.price.toFixed(2)}）`);
+        }
+      }
+
+      // listPrice 用条件展开：Firestore 默认拒绝 undefined 字段值
+      items.push({ name: dish.name, price, quantity: qty, addOns, ...(listPrice !== undefined ? { listPrice } : {}) });
+      originalTotal += price * qty + addOnSum;
     }
 
     if (items.length === 0 && !blocked) { errors.push(`${date} 没有任何主菜`); continue; }

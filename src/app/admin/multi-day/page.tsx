@@ -15,6 +15,7 @@ import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 import DishPicker, { defaultDishForWeekday } from '@/components/admin/DishPicker';
+import { weeklyMenu } from '@/data/weeklyMenu';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     LogOut, CalendarDays, Loader2, CalendarCheck,
@@ -27,7 +28,8 @@ const WD_CN = ['日', '一', '二', '三', '四', '五', '六'];
 
 interface OrderOption { address: string; fee: number; zone: '' | 'within2km' | 'outside2km'; distanceKm: number; note: string; lastDate: string }
 interface Customer { userId: string; name: string; phone: string; address: string; deliveryDistanceKm: number; orderOptions?: OrderOption[] }
-interface PlanItem { dishName: string; qty: number; addOns: { label: string; price: number; quantity: number }[] }
+/** price：主菜特批价；undefined = 按目录价（服务端 buildPlan 现查 weeklyMenu）。换菜时清掉。 */
+interface PlanItem { dishName: string; qty: number; price?: number; addOns: { label: string; price: number; quantity: number }[] }
 interface DayEntry { date: string; meal: 'lunch' | 'dinner'; time: string; items: PlanItem[] }
 type PaymentMethod = 'cash' | 'qr' | 'fpx' | 'card' | 'ewallet';
 // 与 dashboard 手动录单同一套值，报表按这些值分桶
@@ -325,11 +327,28 @@ export default function MultiDayAdmin() {
                                 {day.items.map((it, i) => {
                                     const addonOptions = DISH_ADDONS_BY_NAME[it.dishName] ?? DEFAULT_ADDON_OPTIONS;
                                     const setItem = (patch: Partial<PlanItem>) => { const items = [...day.items]; items[i] = { ...it, ...patch }; setDay(idx, { ...day, items }); };
+                                    // 特批价：与 subscriptions 加料特批同一套视觉 —— 和目录价不一致整个框转琥珀色，
+                                    // 免得改完自己都忘了这单是特价。换菜时 price 清空回目录价。
+                                    const catalogPrice = weeklyMenu.find(d => d.name === it.dishName)?.price;
+                                    const customPrice = it.price !== undefined && catalogPrice !== undefined && Math.abs(it.price - catalogPrice) > 0.001;
                                     return (
                                         <div key={i} className="space-y-1.5">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name })} weekday={weekdayOf(day.date)} />
+                                                <DishPicker value={it.dishName} onChange={name => setItem({ dishName: name, price: undefined })} weekday={weekdayOf(day.date)} />
                                                 <input type="number" min={1} value={it.qty} onChange={e => setItem({ qty: Number(e.target.value) || 1 })} className="w-14 px-2 py-1 border rounded-lg text-xs font-bold" />
+                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg border text-[11px] font-bold ${customPrice ? 'bg-amber-50 border-amber-400' : 'border-gray-200'}`}>
+                                                    <span className="text-gray-400">RM</span>
+                                                    <input type="number" min={0} step={0.1}
+                                                        value={it.price ?? catalogPrice ?? 0}
+                                                        title={customPrice ? `特批价（目录价 RM ${catalogPrice!.toFixed(2)}）` : '改这里可以给客户特批价'}
+                                                        onChange={e => setItem({ price: Math.max(0, Number(e.target.value) || 0) })}
+                                                        className={`w-16 px-1 py-0.5 border rounded text-[11px] text-center ${customPrice ? 'border-amber-400 text-amber-700 bg-white' : ''}`} />
+                                                    {customPrice && (
+                                                        <button type="button" onClick={() => setItem({ price: undefined })}
+                                                            title={`恢复目录价 RM ${catalogPrice!.toFixed(2)}`}
+                                                            className="text-amber-600 hover:text-amber-800">特批 ↺</button>
+                                                    )}
+                                                </span>
                                                 {/* 加料选择 — 与 dashboard 手动录单同一张表（gen-dish-addon-map 生成） */}
                                                 <select value="" onChange={e => {
                                                     const opt = addonOptions.find(o => o.id === e.target.value);
@@ -401,7 +420,7 @@ export default function MultiDayAdmin() {
                             {preview.days.map((d: any, i: number) => (
                                 <div key={i} className={`text-xs font-bold flex flex-wrap gap-x-2 items-baseline px-3 py-2 rounded-lg ${d.blocked ? 'bg-red-50 text-red-500 line-through' : 'bg-[#F5F3EF]'}`}>
                                     <span className="text-gray-400">{d.date} 周{WD_CN[d.weekday]} {d.meal === 'dinner' ? '晚' : '午'} {d.time}</span>
-                                    <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
+                                    <span>{d.items.map((it: any) => `${it.name}×${it.quantity}${it.listPrice !== undefined ? `@RM${Number(it.price).toFixed(2)}` : ''}${it.addOns.length ? `（+${it.addOns.map((a: any) => a.label).join('+')}）` : ''}`).join('、')}</span>
                                     <span className="text-[#FF6B35]">RM {d.cashDue.toFixed(2)}</span>
                                     {d.warnings.map((w: string, wi: number) => <span key={wi} className="text-amber-600">⚠ {w}</span>)}
                                 </div>
