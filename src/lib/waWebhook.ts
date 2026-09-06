@@ -20,7 +20,8 @@ export const RATE_LIMIT_PER_HOUR = 30;
 /** seenMsgIds 保留多少个最近 message id 做去重。Meta 重试通常在几分钟内，50 个足够。 */
 export const SEEN_IDS_MAX = 50;
 /** 对话记录（turns）每个客户最多保留多少条。 */
-export const TURNS_MAX = 30;
+/** 30 → 200（2026-09-07 收件箱要看完整线程；600 字 × 200 = 120KB，远低于 Firestore 1MB；提示词只取最近 12 条）。 */
+export const TURNS_MAX = 200;
 /** 单条 turn 文本上限。 */
 export const TURN_TEXT_MAX = 600;
 

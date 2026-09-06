@@ -658,6 +658,59 @@
         .section-head h3 { font-size: 16px; font-weight: 700; color: var(--text); }
         .section-head .section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+        /* ═══════ 碗妈收件箱（WATI 式三栏）═══════ */
+        .inbox-nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; line-height: 14px; }
+        .inbox-wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr) 280px; gap: 12px; height: calc(100vh - 150px); min-height: 520px; }
+        .inbox-left, .inbox-main, .inbox-right { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .inbox-tools { padding: 10px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+        .inbox-tools input[type=search] { width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; }
+        .inbox-seg { flex-wrap: wrap; }
+        .inbox-seg button { font-size: 11px; padding: 4px 8px; }
+        .inbox-list { flex: 1; overflow-y: auto; }
+        .inbox-row { display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; align-items: flex-start; }
+        .inbox-row:hover { background: var(--bg-subtle); }
+        .inbox-row.active { background: var(--accent-soft); }
+        .inbox-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: 0 0 36px; color: var(--text-muted); }
+        .inbox-row.unread .inbox-avatar { background: var(--accent-soft); color: var(--accent); }
+        .inbox-row-main { flex: 1; min-width: 0; }
+        .inbox-row-top { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+        .inbox-row-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inbox-row-time { font-size: 11px; color: var(--text-muted); flex: 0 0 auto; }
+        .inbox-row-preview { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+        .inbox-row.unread .inbox-row-preview { color: var(--text); font-weight: 500; }
+        .inbox-row-chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+        .inbox-chip { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--bg-subtle); color: var(--text-muted); white-space: nowrap; }
+        .inbox-chip.human { background: var(--danger-soft); color: var(--danger); }
+        .inbox-chip.ok { background: var(--success-soft); color: var(--success); }
+        .inbox-chip.warn { background: rgba(245,158,11,0.14); color: #B45309; }
+        .inbox-unread { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 18px; text-align: center; }
+        .inbox-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .inbox-head-name { font-weight: 700; font-size: 15px; }
+        .inbox-head-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .inbox-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .inbox-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
+        .inbox-day { align-self: center; font-size: 11px; color: var(--text-muted); background: var(--bg-elev); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; margin: 8px 0 4px; }
+        .inbox-bubble { max-width: 72%; padding: 8px 11px; border-radius: 14px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; position: relative; }
+        .inbox-bubble .t { display: block; font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right; }
+        .inbox-bubble.in { align-self: flex-start; background: var(--bg-elev); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+        .inbox-bubble.out { align-self: flex-end; background: #DCF3E6; border-bottom-right-radius: 4px; }
+        .inbox-bubble.nudge { align-self: flex-end; background: #EEF8F1; border: 1px dashed #9AD0AF; border-bottom-right-radius: 4px; }
+        .inbox-bubble.boss { align-self: flex-end; background: #F6E7CF; border-bottom-right-radius: 4px; }
+        .inbox-bubble.sys { align-self: center; max-width: 90%; background: transparent; color: var(--text-muted); font-size: 11px; padding: 2px 8px; }
+        .inbox-bubble .who { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; }
+        .inbox-composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+        .inbox-composer textarea { width: 100%; min-height: 64px; max-height: 160px; resize: vertical; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; font-family: inherit; }
+        .inbox-composer-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .inbox-composer-row select { flex: 1; min-width: 160px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 12px; }
+        .inbox-window { font-size: 11px; color: var(--text-muted); }
+        .inbox-window.closed { color: var(--danger); font-weight: 600; }
+        .inbox-right { padding: 12px; overflow-y: auto; gap: 12px; font-size: 12px; }
+        .inbox-section-title { font-weight: 700; font-size: 12px; margin-bottom: 6px; }
+        .inbox-kv { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+        .inbox-kv span:first-child { color: var(--text-muted); }
+        .inbox-thread-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; }
+        @media (max-width: 1180px) { .inbox-wrap { grid-template-columns: 260px minmax(0, 1fr); } .inbox-right { grid-column: 1 / -1; height: 260px; } .inbox-wrap { height: auto; } .inbox-left, .inbox-main { height: calc(100vh - 460px); min-height: 420px; } }
+
         /* ═══════ MODAL ═══════ */
         .modal-backdrop {
             position: fixed;
@@ -1250,6 +1303,10 @@
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     <span>客户对话</span>
                 </button>
+                <button class="nav-item" data-page="inbox">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+                    <span>碗妈收件箱</span><span class="inbox-nav-badge" id="inboxNavBadge" hidden>0</span>
+                </button>
                 <button class="nav-item" data-page="leads">
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                     <span>潜在客户</span>
@@ -1706,6 +1763,48 @@
                             </div>
                         </div>
                         <div id="customersTable" class="table-wrap"></div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ INBOX PAGE（碗妈收件箱 · WATI 式）═══════════════ -->
+                <div class="page" id="page-inbox">
+                    <div class="inbox-wrap">
+                        <aside class="inbox-left">
+                            <div class="inbox-tools">
+                                <input type="search" id="inboxSearch" placeholder="搜号码 / 名字 / 最后一句…">
+                                <div class="seg inbox-seg" id="inboxFilter">
+                                    <button class="active" data-f="all">全部</button>
+                                    <button data-f="unread">未读 <span id="inboxUnreadCount"></span></button>
+                                    <button data-f="human">🙋 人工中</button>
+                                    <button data-f="bot">🤖 bot</button>
+                                    <button data-f="ordered">已成交</button>
+                                    <button data-f="closed">已关闭</button>
+                                </div>
+                            </div>
+                            <div id="inboxList" class="inbox-list"><div class="inbox-thread-empty">加载中…</div></div>
+                        </aside>
+                        <section class="inbox-main">
+                            <div id="inboxHead" class="inbox-head" hidden></div>
+                            <div id="inboxMsgs" class="inbox-msgs" hidden></div>
+                            <div id="inboxEmpty" class="inbox-thread-empty">← 左边选一个对话</div>
+                            <div id="inboxComposer" class="inbox-composer" hidden>
+                                <div class="inbox-composer-row">
+                                    <select id="inboxQr"><option value="">⚡ 快捷回复…</option></select>
+                                    <button class="btn ghost sm" id="inboxQrEditBtn" title="编辑快捷回复（每行一条）">✎</button>
+                                    <span class="inbox-window" id="inboxWindow"></span>
+                                </div>
+                                <div id="inboxQrEditor" hidden>
+                                    <textarea id="inboxQrText" placeholder="每行一条快捷回复"></textarea>
+                                    <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存快捷回复</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
+                                </div>
+                                <textarea id="inboxText" placeholder="回复客户…（Ctrl+Enter 发送）从这里回复后 bot 会自动闭嘴 2 小时"></textarea>
+                                <div class="inbox-composer-row" style="justify-content:space-between">
+                                    <span id="inboxSendHint" class="inbox-window"></span>
+                                    <button class="btn sm" id="inboxSend">发送 ➤</button>
+                                </div>
+                            </div>
+                        </section>
+                        <aside class="inbox-right" id="inboxProfile"><div class="inbox-thread-empty">客户档案</div></aside>
                     </div>
                 </div>
 
@@ -8455,6 +8554,7 @@ incredibowl.my`,
             recon:     { title: '现金对账', sub: '按日应收 vs 实收 · 直收与 Razorpay 分开对' },
             customers: { title: '客户列表', sub: '同电话归并 · 流失警报 · 完整列表' },
             chat:      { title: '客户对话', sub: 'WhatsApp 对话历史（来自 Google Sheets）' },
+            inbox:     { title: '碗妈收件箱', sub: 'WhatsApp 对话 · 直接回复 · 接管 / 释放 bot · 客户档案（WATI 式）' },
             leads:     { title: '潜在客户', sub: 'WA 聊过但没下单的人 · 跟进转化用' },
             calculator:{ title: '订单计算器', sub: '查现有订单净利 · 或手动加菜模拟一单' },
             inventory: { title: '库存',     sub: '按菜可售份数 · 食材原料盘点' },
@@ -8478,6 +8578,9 @@ incredibowl.my`,
             if (page === 'leads' && !state_leads.loaded) {
                 loadLeadsData();
             }
+
+            // 碗妈收件箱：进页开轮询，离页停（别让后台 tab 每 20 秒打一次 API）
+            if (typeof inboxStart === 'function') { if (page === 'inbox') inboxStart(); else inboxStop(); }
 
             // Re-populate promo dropdowns each time settings opens (menu / vouchers may change)
             if (page === 'settings' && typeof refreshPromoLookups === 'function') {
@@ -8654,7 +8757,8 @@ incredibowl.my`,
 
         document.addEventListener('click', async (e) => {
             const open = e.target.closest('.wa-lead-btn');
-            if (open) { openWaLeadPanel(open.dataset.phone); return; }
+            // 🤖 按钮：直接跳进收件箱对应线程（老弹窗保留作 fallback，收件箱未就绪时用）
+            if (open) { if (typeof inboxJump === 'function') inboxJump(open.dataset.phone); else openWaLeadPanel(open.dataset.phone); return; }
             if (e.target.id === 'closeWaLeadBtn' || e.target === $('#waLeadModal')) { closeWaLeadPanel(); return; }
             const act = e.target.closest('.wa-lead-act');
             if (act && waLeadCurrentPhone) {
@@ -8692,6 +8796,293 @@ incredibowl.my`,
                 e.stopImmediatePropagation();
             }
         }, true);
+
+        // ═══════════════════════════════════════════════════════════════
+        //   碗妈收件箱（WATI 式三栏）—— 2026-09-07
+        //   左：对话列表（未读 / 筛选 / 搜索）  中：线程气泡 + 回复框  右：客户档案 + bot 备注
+        //   数据：/api/admin/wa-lead op=list / get / read / send / human / release / note / close
+        //   「从收件箱回复」= 网站直接打 Meta Cloud API 发文本，并自动接管 2 小时（bot 闭嘴），
+        //   等同 WATI 的 assign to me。需要 Vercel 配 WA_ACCESS_TOKEN；没配时其它功能照常。
+        // ═══════════════════════════════════════════════════════════════
+        const INBOX_LIST_MS = 20000, INBOX_THREAD_MS = 10000;
+        const INBOX_QR_KEY = 'incredibowl_inbox_quick_replies';
+        const INBOX_QR_DEFAULT = [
+            '收到，马上帮你安排 🙂',
+            '今天午餐 11:00–13:00、晚餐 17:30–20:00 送达，请问要哪一餐？',
+            '下单链接 https://www.incredibowl.my/o?ref=wa ，30 秒搞定，新客首单立减 RM5 结账自动扣。',
+            '付款可以 TnG / DuitNow / FPX / 信用卡，暂不支持 COD 哦。',
+            '好的，那先不打扰你啦，想吃的时候随时找碗妈 ❤️',
+        ];
+        const inbox = { rows: [], filter: 'all', q: '', phone: '', detail: null, listTimer: null, threadTimer: null, sendConfigured: null, stickBottom: true };
+
+        const inboxIntl = (raw) => { let d = String(raw || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '60' + d.slice(1); return d; };
+        function inboxQuickReplies() { try { const v = JSON.parse(localStorage.getItem(INBOX_QR_KEY) || 'null'); if (Array.isArray(v) && v.length) return v; } catch { /* noop */ } return INBOX_QR_DEFAULT.slice(); }
+        function inboxRel(ms) {
+            if (!ms) return '';
+            const m = Math.floor((Date.now() - ms) / 60000);
+            if (m < 1) return '刚刚'; if (m < 60) return `${m} 分钟前`;
+            const h = Math.floor(m / 60); if (h < 24) return `${h} 小时前`;
+            const d = new Date(ms); return `${d.getMonth() + 1}/${d.getDate()}`;
+        }
+        function inboxDayLabel(ms) {
+            const d = new Date(ms); const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+            const diff = Math.round((new Date(ms).setHours(0, 0, 0, 0) - t0) / 86400000);
+            const wd = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+            return `${diff === 0 ? '今天 ' : diff === -1 ? '昨天 ' : ''}${d.getMonth() + 1}月${d.getDate()}日（周${wd}）`;
+        }
+        const inboxHm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+        function inboxStatusChips(r) {
+            const c = [];
+            if (r.human) c.push('<span class="inbox-chip human">🙋 人工中</span>');
+            else if (r.status === 'ordered') c.push('<span class="inbox-chip ok">已成交</span>');
+            else if (r.status === 'closed') c.push('<span class="inbox-chip">已关闭</span>');
+            else c.push('<span class="inbox-chip ok">🤖 bot</span>');
+            if (r.clicked) c.push('<span class="inbox-chip">🔗 点过链接</span>');
+            if (r.nudgeCount) c.push(`<span class="inbox-chip">追单 ${r.nudgeCount}</span>`);
+            if (r.windowRemainingMs <= 0 && r.status !== 'ordered') c.push('<span class="inbox-chip warn">24h 已过</span>');
+            (r.tags || []).slice(0, 2).forEach(t => c.push(`<span class="inbox-chip">${escapeHtml(t)}</span>`));
+            return c.join('');
+        }
+
+        async function inboxStart() {
+            if (inbox.listTimer) return;
+            await inboxRefreshList();
+            inbox.listTimer = setInterval(inboxRefreshList, INBOX_LIST_MS);
+            if (inbox.phone) inboxStartThreadTimer();
+        }
+        function inboxStop() {
+            clearInterval(inbox.listTimer); clearInterval(inbox.threadTimer);
+            inbox.listTimer = inbox.threadTimer = null;
+        }
+        function inboxStartThreadTimer() {
+            clearInterval(inbox.threadTimer);
+            inbox.threadTimer = setInterval(() => { if (inbox.phone) inboxRefreshThread(true); }, INBOX_THREAD_MS);
+        }
+
+        async function inboxRefreshList() {
+            try {
+                const d = await callAdminAPI('/api/admin/wa-lead', { op: 'list' });
+                inbox.rows = d.rows || [];
+                inbox.sendConfigured = !!d.sendConfigured;
+            } catch (err) {
+                $('#inboxList').innerHTML = `<div style="padding:14px;color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
+                return;
+            }
+            renderInboxList();
+        }
+
+        function renderInboxList() {
+            const q = inbox.q.trim().toLowerCase();
+            const f = inbox.filter;
+            const rows = inbox.rows.filter(r => {
+                if (f === 'unread' && !r.unread) return false;
+                if (f === 'human' && !r.human) return false;
+                if (f === 'bot' && (r.human || r.status === 'ordered' || r.status === 'closed')) return false;
+                if (f === 'ordered' && r.status !== 'ordered') return false;
+                if (f === 'closed' && r.status !== 'closed') return false;
+                if (q && !(r.phone.includes(q) || (r.name || '').toLowerCase().includes(q) || (r.lastMsg?.text || '').toLowerCase().includes(q))) return false;
+                return true;
+            });
+            const totalUnread = inbox.rows.reduce((s, r) => s + (r.unread || 0), 0);
+            $('#inboxUnreadCount').textContent = totalUnread ? `(${totalUnread})` : '';
+            const nb = $('#inboxNavBadge'); if (nb) { nb.textContent = totalUnread; nb.hidden = !totalUnread; }
+            if (!rows.length) { $('#inboxList').innerHTML = '<div class="inbox-thread-empty" style="padding:30px">没有匹配的对话</div>'; return; }
+            $('#inboxList').innerHTML = rows.map(r => {
+                const nm = r.name || r.phone;
+                const initial = (r.name || '#').trim().charAt(0).toUpperCase();
+                const who = r.lastMsg ? (r.lastMsg.role === 'in' ? '' : r.lastMsg.role === 'boss' ? '你：' : r.lastMsg.role === 'sys' ? '· ' : '碗妈：') : '';
+                return `<div class="inbox-row${r.unread ? ' unread' : ''}${r.phone === inbox.phone ? ' active' : ''}" data-phone="${r.phone}">
+                    <div class="inbox-avatar">${escapeHtml(initial)}</div>
+                    <div class="inbox-row-main">
+                        <div class="inbox-row-top"><span class="inbox-row-name">${escapeHtml(nm)}</span><span class="inbox-row-time">${inboxRel(r.lastMsgMs)}</span></div>
+                        <div class="inbox-row-preview">${escapeHtml(who + (r.lastMsg?.text || ''))}</div>
+                        <div class="inbox-row-chips">${inboxStatusChips(r)}${r.unread ? `<span class="inbox-unread" style="margin-left:auto">${r.unread}</span>` : ''}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function openInboxThread(phoneRaw) {
+            const phone = inboxIntl(phoneRaw);
+            if (!phone) return;
+            inbox.phone = phone; inbox.stickBottom = true;
+            $('#inboxEmpty').hidden = true; $('#inboxHead').hidden = false; $('#inboxMsgs').hidden = false; $('#inboxComposer').hidden = false;
+            $('#inboxMsgs').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
+            $$('.inbox-row').forEach(el => el.classList.toggle('active', el.dataset.phone === phone));
+            await inboxRefreshThread(false);
+            inboxStartThreadTimer();
+        }
+        function inboxJump(phoneRaw) { switchPage('inbox'); openInboxThread(phoneRaw); }
+
+        async function inboxRefreshThread(silent) {
+            const phone = inbox.phone;
+            let d;
+            try { d = await callAdminAPI('/api/admin/wa-lead', { op: 'get', phone }); }
+            catch (err) { if (!silent) $('#inboxMsgs').innerHTML = `<div style="color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`; return; }
+            if (inbox.phone !== phone) return;   // 用户已切到别的线程
+            const prevCount = inbox.detail?.turns?.length || 0;
+            inbox.detail = d;
+            renderInboxHead(d); renderInboxMsgs(d, prevCount); renderInboxComposer(d); renderInboxProfile(d);
+            // 标已读：有新的客户消息才写，避免每 10 秒白打一次
+            const unreadIn = (d.turns || []).some(t => t.role === 'in' && t.ts > (d.bossReadAtMs || 0));
+            if (unreadIn) {
+                callAdminAPI('/api/admin/wa-lead', { op: 'read', phone }).then(() => {
+                    const row = inbox.rows.find(r => r.phone === phone); if (row) { row.unread = 0; renderInboxList(); }
+                }).catch(() => { /* 下次刷新会再试 */ });
+            }
+        }
+
+        function renderInboxHead(d) {
+            const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600">🙋 人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600">🤖 bot 接待中</span>';
+            const nudge = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
+            $('#inboxHead').innerHTML = `
+                <div style="min-width:0">
+                    <div class="inbox-head-name">${escapeHtml(d.name || '（无名字）')} <span style="font-weight:400;color:var(--text-muted);font-size:12px">${escapeHtml(d.phone)}${d.lang ? ' · ' + escapeHtml(d.lang) : ''}</span></div>
+                    <div class="inbox-head-sub">${humanLine} · ${nudge}</div>
+                </div>
+                <div class="inbox-head-actions">
+                    ${d.human
+                        ? '<button class="btn sm inbox-act" data-op="release">🤖 释放给 bot</button>'
+                        : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">🙋 接管 2h</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">到明早</button>'}
+                    ${d.status !== 'closed' && d.status !== 'ordered' ? '<button class="btn ghost sm inbox-act" data-op="close" title="停止对这个号码的自动追单">停止追单</button>' : ''}
+                    <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">📱 WhatsApp</a>
+                </div>`;
+        }
+
+        function renderInboxMsgs(d, prevCount) {
+            const box = $('#inboxMsgs');
+            const turns = d.turns || [];
+            if (!turns.length) { box.innerHTML = '<div class="inbox-thread-empty">（没有对话记录）</div>'; return; }
+            const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+            let lastDay = '';
+            const who = { in: '', out: '碗妈', boss: '你', nudge: '自动追单', sys: '' };
+            box.innerHTML = turns.map(t => {
+                const day = inboxDayLabel(t.ts);
+                const sep = day !== lastDay ? `<div class="inbox-day">${day}</div>` : '';
+                lastDay = day;
+                const role = ['in', 'out', 'boss', 'nudge', 'sys'].includes(t.role) ? t.role : 'sys';
+                if (role === 'sys') return `${sep}<div class="inbox-bubble sys">${escapeHtml(t.text)} · ${inboxHm(t.ts)}</div>`;
+                return `${sep}<div class="inbox-bubble ${role}">${who[role] ? `<span class="who">${who[role]}</span>` : ''}${escapeHtml(t.text)}<span class="t">${inboxHm(t.ts)}</span></div>`;
+            }).join('');
+            if (inbox.stickBottom || nearBottom || turns.length !== prevCount) box.scrollTop = box.scrollHeight;
+            inbox.stickBottom = false;
+        }
+
+        function renderInboxComposer(d) {
+            const win = $('#inboxWindow'), hint = $('#inboxSendHint'), btn = $('#inboxSend'), ta = $('#inboxText');
+            const rem = d.windowRemainingMs || 0;
+            if (rem > 0) { const h = Math.floor(rem / 3600000), m = Math.floor((rem % 3600000) / 60000); win.textContent = `24h 窗口开着 · 还剩 ${h}h${m}m`; win.className = 'inbox-window'; }
+            else { win.textContent = '24h 窗口已过 · 只能你手机直接发'; win.className = 'inbox-window closed'; }
+            const canSend = d.sendConfigured && rem > 0 && d.status !== 'closed';
+            btn.disabled = !canSend; ta.disabled = !canSend;
+            hint.textContent = !d.sendConfigured ? '⚠️ Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）' : rem <= 0 ? '' : d.status === 'closed' ? '已关闭的对话不发' : '发送后 bot 自动闭嘴 2 小时';
+            const sel = $('#inboxQr');
+            const cur = sel.value;
+            sel.innerHTML = '<option value="">⚡ 快捷回复…</option>' + inboxQuickReplies().map((q, i) => `<option value="${i}">${escapeHtml(q.slice(0, 60))}</option>`).join('');
+            sel.value = cur && sel.querySelector(`option[value="${cur}"]`) ? cur : '';
+        }
+
+        function renderInboxProfile(d) {
+            const phoneNorm = normalizePhone(d.phone);
+            const user = phoneNorm ? state.users.find(u => normalizePhone(u.phone) === phoneNorm) : null;
+            const orders = phoneNorm ? paidOrders().filter(o => normalizePhone(o.userPhone) === phoneNorm) : [];
+            const spent = orders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
+            const lastOrder = orders.map(o => tsToDate(o.createdAt)).filter(Boolean).sort((a, b) => b - a)[0];
+            const addr = user?.deliveryProfile?.addressText || user?.address || user?.addressText || orders[0]?.deliveryAddress || orders[0]?.userAddress || '';
+            const p = d.profile || {};
+            const profileRows = Object.entries(WA_PROFILE_LABEL).map(([k, label]) => {
+                let v = k === 'tag' ? (p.tags || []).join('、') : k === 'note' ? (p.notes || []).join('；') : (p[k] || '');
+                if (k === 'preferredMeal' && v) v = v === 'dinner' ? '晚餐' : '午餐';
+                return v ? `<div class="inbox-kv"><span>${label}</span><span style="text-align:right">${escapeHtml(String(v))}</span></div>` : '';
+            }).filter(Boolean).join('') || '<div style="color:var(--text-muted)">（还没有备注）</div>';
+            $('#inboxProfile').innerHTML = `
+                <div>
+                    <div class="inbox-section-title">👤 客户</div>
+                    <div class="inbox-kv"><span>名字</span><span>${escapeHtml(user?.displayName || d.name || '—')}</span></div>
+                    <div class="inbox-kv"><span>电话</span><span>${escapeHtml(d.phone)}</span></div>
+                    <div class="inbox-kv"><span>账号</span><span>${user ? (user.email ? escapeHtml(user.email) : '会员') : '未注册 / 访客'}</span></div>
+                    <div class="inbox-kv"><span>已付订单</span><span>${orders.length} 单 · RM${spent.toFixed(0)}</span></div>
+                    <div class="inbox-kv"><span>最近下单</span><span>${lastOrder ? `${lastOrder.getMonth() + 1}/${lastOrder.getDate()}` : '—'}</span></div>
+                    ${addr ? `<div class="inbox-kv"><span>地址</span><span style="text-align:right">${escapeHtml(String(addr)).slice(0, 80)}</span></div>` : ''}
+                    <div class="inbox-kv"><span>Lead 状态</span><span>${escapeHtml(d.status || '—')}${d.clicked ? ' · 点过链接' : ''}</span></div>
+                </div>
+                <div>
+                    <div class="inbox-section-title">📝 bot 记住的（碗妈答话会用）</div>
+                    ${profileRows}
+                    <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+                        <select id="inboxNoteKey" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px">
+                            ${Object.entries(WA_PROFILE_LABEL).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}
+                        </select>
+                        <input id="inboxNoteValue" type="text" placeholder="例：放 guard house / 阿 May / 花生过敏" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px">
+                        <button class="btn sm" id="inboxNoteSave">保存备注</button>
+                    </div>
+                </div>
+                <div style="color:var(--text-muted);font-size:11px">线程保留最近 200 条；更早的在「客户对话」页（Google Sheet 全量）。</div>`;
+        }
+
+        async function inboxSend() {
+            const ta = $('#inboxText'), btn = $('#inboxSend');
+            const text = ta.value.trim();
+            if (!text || !inbox.phone) return;
+            btn.disabled = true; ta.disabled = true;
+            try {
+                const r = await callAdminAPI('/api/admin/wa-lead', { op: 'send', phone: inbox.phone, text });
+                if (!r.ok) { toast(r.error || '发送失败', 'error'); btn.disabled = false; ta.disabled = false; return; }
+                ta.value = '';
+                toast('已发送 · bot 已静音 2 小时', 'success');
+                inbox.stickBottom = true;
+                await inboxRefreshThread(true);
+                inboxRefreshList();
+            } catch (err) {
+                toast('发送失败：' + err.message, 'error'); btn.disabled = false; ta.disabled = false;
+            }
+        }
+
+        document.addEventListener('click', async (e) => {
+            const row = e.target.closest('.inbox-row');
+            if (row) { openInboxThread(row.dataset.phone); return; }
+            const fb = e.target.closest('#inboxFilter button');
+            if (fb) { $$('#inboxFilter button').forEach(b => b.classList.toggle('active', b === fb)); inbox.filter = fb.dataset.f; renderInboxList(); return; }
+            if (e.target.id === 'inboxSend') { inboxSend(); return; }
+            if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
+            if (e.target.id === 'inboxQrCancel') { $('#inboxQrEditor').hidden = true; return; }
+            if (e.target.id === 'inboxQrSave') {
+                const arr = $('#inboxQrText').value.split('\n').map(s => s.trim()).filter(Boolean);
+                try { localStorage.setItem(INBOX_QR_KEY, JSON.stringify(arr)); } catch { /* noop */ }
+                $('#inboxQrEditor').hidden = true; if (inbox.detail) renderInboxComposer(inbox.detail); toast('快捷回复已保存', 'success'); return;
+            }
+            const act = e.target.closest('.inbox-act');
+            if (act && inbox.phone) {
+                const op = act.dataset.op;
+                if (op === 'close' && !confirm('停止对这个号码的自动追单？（客户再来消息会重新开始）')) return;
+                act.disabled = true;
+                try {
+                    await callAdminAPI('/api/admin/wa-lead', { op, phone: inbox.phone, minutes: Number(act.dataset.minutes) || undefined });
+                    toast(op === 'human' ? 'bot 已静音，客户消息会原文转到你的 WhatsApp' : op === 'release' ? 'bot 已恢复' : '已停止追单', 'success');
+                    await inboxRefreshThread(true); inboxRefreshList();
+                } catch (err) { toast('操作失败：' + err.message, 'error'); act.disabled = false; }
+                return;
+            }
+            if (e.target.id === 'inboxNoteSave' && inbox.phone) {
+                const key = $('#inboxNoteKey').value, value = $('#inboxNoteValue').value.trim();
+                if (!value) { toast('备注不能为空', 'error'); return; }
+                e.target.disabled = true;
+                try { await callAdminAPI('/api/admin/wa-lead', { op: 'note', phone: inbox.phone, key, value }); toast('备注已保存，碗妈下次对话就会用上', 'success'); await inboxRefreshThread(true); }
+                catch (err) { toast('保存失败：' + err.message, 'error'); e.target.disabled = false; }
+            }
+        });
+        document.addEventListener('change', (e) => {
+            if (e.target.id === 'inboxQr' && e.target.value !== '') {
+                const q = inboxQuickReplies()[Number(e.target.value)] || '';
+                const ta = $('#inboxText'); ta.value = ta.value ? ta.value.replace(/\s*$/, '') + '\n' + q : q; ta.focus(); e.target.value = '';
+            }
+        });
+        document.addEventListener('input', (e) => {
+            if (e.target.id === 'inboxSearch') { inbox.q = e.target.value; renderInboxList(); }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.target.id === 'inboxText' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); inboxSend(); }
+        });
 
         // Centralized launcher — guards against unconfigured promo before opening WA.
         function launchPromo(category, phoneNorm, ctx = {}) {
