@@ -3,7 +3,7 @@
  * 跑法：npx tsx scripts/dogfood-packaging.mts
  */
 import { packagingLines, aggregateStockNeeds, aggregateIngredients } from '../src/lib/prepIngredients';
-import { BOWL_1000, BOWL_750 } from '../src/data/packaging';
+import { BOWL_1000, BOWL_750, PAPER_BAG } from '../src/data/packaging';
 
 let pass = 0, fail = 0;
 const ok = (cond: boolean, msg: string) => { if (cond) pass++; else { fail++; console.log(`  ✗ ${msg}`); } };
@@ -47,7 +47,17 @@ ok(packagingLines([{ items: [{ name: 'x', quantity: 0 }] }]).length === 0, '0 �
 ok(!aggregateIngredients(web).lines.some(l => l.name.includes('打包碗')), 'aggregateIngredients 不应含碗');
 const needs = aggregateStockNeeds(web);
 ok(needs.some(l => l.name === BOWL_1000) && needs.some(l => l.name === BOWL_750), 'aggregateStockNeeds 应含两种碗');
-ok(needs.length === aggregateIngredients(web).lines.length + 2, 'aggregateStockNeeds 行数 = 食材 + 2');
+ok(needs.length === aggregateIngredients(web).lines.length + 3, 'aggregateStockNeeds 行数 = 食材 + 3');
+
+// 纸袋：按单 ceil(碗数/4)，至少 1
+ok(count(web, PAPER_BAG) === 1, `网页单 4 碗应 1 袋，得 ${count(web, PAPER_BAG)}`);        // 2+2 = 4 碗
+ok(count(manual, PAPER_BAG) === 2, `手动单 8 碗应 2 袋，得 ${count(manual, PAPER_BAG)}`);   // 4+4 = 8 碗
+ok(count(none, PAPER_BAG) === 1, `1 碗应 1 袋，得 ${count(none, PAPER_BAG)}`);
+const nine = [{ items: [{ name: '猪扒饭', quantity: 9 }] }];
+ok(count(nine, PAPER_BAG) === 3, `9 碗应 3 袋，得 ${count(nine, PAPER_BAG)}`);
+const two = [{ items: [{ name: '猪扒饭', quantity: 5 }] }, { items: [{ name: '猪扒饭', quantity: 1 }] }];
+ok(count(two, PAPER_BAG) === 3, `两单 5+1 碗应 2+1=3 袋，得 ${count(two, PAPER_BAG)}`);
+ok(count([{ items: [{ name: 'x', quantity: 0 }] }], PAPER_BAG) === 0, '空单不算袋');
 
 console.log(`\n=== ${pass} 通过 / ${fail} 失败 ===`);
 process.exit(fail > 0 ? 1 : 0);

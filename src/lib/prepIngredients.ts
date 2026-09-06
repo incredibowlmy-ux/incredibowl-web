@@ -14,7 +14,7 @@ import {
   NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, expandComboLabel,
 } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
-import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL } from '@/data/packaging';
+import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL, PAPER_BAG, BOWLS_PER_BAG } from '@/data/packaging';
 
 export interface PrepOrderItemAddOn {
   id?: string;
@@ -131,11 +131,11 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
 /**
  * 一批订单要用几个碗。规则见 src/data/packaging.ts。
  * 主菜行（非「↳」）每份 1 个 1000ml；蒜蓉西兰花炒蛋——单点、或套餐拆开后含它——
- * 每份 1 个 750ml。两种加料落库形态都收（网页 ↳ 行 / 手动嵌套 addOns），
+ * 每份 1 个 750ml。纸袋按**单**算：ceil(该单碗数 / 4)，至少 1 个。两种加料落库形态都收（网页 ↳ 行 / 手动嵌套 addOns），
  * 与 aggregateIngredients 同一套 label 解析（resolveAddOnAlias + expandComboLabel）。
  */
 export function packagingLines(orders: PrepOrder[]): Line[] {
-  let big = 0, small = 0;
+  let big = 0, small = 0, bags = 0;
   const bowls750ForLabel = (raw: string, id?: string): number => {
     if (id === 'broccoli-egg') return 1;
     const label = resolveAddOnAlias(raw);
@@ -143,24 +143,29 @@ export function packagingLines(orders: PrepOrder[]): Line[] {
     return (expandComboLabel(label) || []).filter(c => c === BOWL_750_ADDON_LABEL).length;
   };
   for (const o of orders) {
+    let oBig = 0, oSmall = 0;
     for (const it of o.items || []) {
       const qty = it.quantity || 0;
       if (qty <= 0) continue;
       if (isAddOnItem(it.name)) {
-        small += bowls750ForLabel(stripAddOnPrefix(it.name)) * qty;
+        oSmall += bowls750ForLabel(stripAddOnPrefix(it.name)) * qty;
       } else {
-        big += qty;
+        oBig += qty;
         for (const a of it.addOns || []) {
           const aQty = a.quantity || 0;
           if (aQty <= 0) continue;
-          small += bowls750ForLabel(a.label || a.name || '', a.id) * aQty;
+          oSmall += bowls750ForLabel(a.label || a.name || '', a.id) * aQty;
         }
       }
     }
+    big += oBig; small += oSmall;
+    // 空单（没有任何有效行）不算袋；有东西就至少 1 袋
+    if (oBig + oSmall > 0) bags += Math.max(1, Math.ceil((oBig + oSmall) / BOWLS_PER_BAG));
   }
   const lines: Line[] = [];
   if (big > 0) lines.push({ name: BOWL_1000, qty: big, unit: '个' });
   if (small > 0) lines.push({ name: BOWL_750, qty: small, unit: '个' });
+  if (bags > 0) lines.push({ name: PAPER_BAG, qty: bags, unit: '个' });
   return lines;
 }
 

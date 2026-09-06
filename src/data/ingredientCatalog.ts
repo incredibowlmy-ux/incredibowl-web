@@ -71,7 +71,7 @@ const EXPLICIT_CATEGORY: Record<string, IngredientCategory> = {
   '海苔': '调味·干货', '纳豆': '调味·干货', '当归': '调味·干货',
   '黑橄榄': '调味·干货',
   // ── 包装 ──（碗不是配方食材，见 src/data/packaging.ts）
-  '1000ml 打包碗': '包装', '750ml 打包碗': '包装',
+  '1000ml 打包碗': '包装', '750ml 打包碗': '包装', '纸袋': '包装',
 };
 
 /**
