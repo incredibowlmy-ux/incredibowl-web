@@ -33,7 +33,7 @@ import dynamic from 'next/dynamic';
 import { Plus, Minus, X, ShoppingBag, Loader2 } from 'lucide-react';
 import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
 import { isDinnerClosedOn } from '@/data/blockedDates';
-import { computeMenuDates, type MenuDateInfo } from '@/lib/dateUtils';
+import { computeMenuDates, formatYMD, type MenuDateInfo } from '@/lib/dateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { useCartStore } from '@/store/cartStore';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
@@ -78,7 +78,11 @@ const DICT = {
     unavailable: '这道菜今天不可点，帮你换成最近可点的日子了',
     missing: (names: string) => `不好意思，${names} 这天没排哦～下面是可以点的 👇`,
     missingUnnamed: '不好意思，这道菜这天没排哦～下面是可以点的 👇',
-    multiDate: (n: number) => `分 ${n} 天送达（每道菜按它能做的日子排）`,
+    multiDate: (n: number) => `这几道菜不在同一天做，会分 ${n} 天送达 —— 每道菜都在它的日子当天现做`,
+    todayChip: '今天送',
+    dayChip: (d: string) => `${d} 送 · 当天现做`,
+    groupHeader: (d: string, today: boolean) => (today ? `${d} 送达` : `${d} 送达 · 当天现做`),
+    pickHint: '碗妈每天只做当天排的菜，按送达日挑：',
   },
   en: {
     brand: "BowlMama's Kitchen",
@@ -98,7 +102,11 @@ const DICT = {
     unavailable: 'That dish is not available today — moved to its next available date',
     missing: (names: string) => `Sorry, ${names} isn't on the menu that day. Here's what's available 👇`,
     missingUnnamed: "Sorry, that dish isn't on the menu that day. Here's what's available 👇",
-    multiDate: (n: number) => `Delivered across ${n} days (each dish on the day it's cooked)`,
+    multiDate: (n: number) => `These dishes are cooked on ${n} different days, so they arrive separately — each one fresh on its own day`,
+    todayChip: 'Delivered today',
+    dayChip: (d: string) => `${d} · cooked fresh that day`,
+    groupHeader: (d: string, today: boolean) => (today ? `Delivery ${d}` : `Delivery ${d} · cooked fresh that day`),
+    pickHint: 'BowlMama only cooks what is scheduled for the day. Pick by delivery day:',
   },
 } as const;
 
@@ -322,15 +330,51 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     [multiDate, cartDates.length, activeDate, fmtDate, t],
   );
 
+  // ── 「为什么这道菜是别的日子送」——老板 2026-09-07 看桌面版时的第一反应 ──
+  // 碗妈每天只做当天排的菜（周三特餐就是周三）。之前选菜列表不带日期，客户
+  // 加了一道周三的菜才在购物车里看到橙色日期，像是被塞了一个没解释的条件。
+  // 现在：选菜列表按送达日分组、每组一个日期标题；购物车每道菜永远带日期徽章。
+  const todayYmd = useMemo(() => formatYMD(new Date()), []);
+  const dayGroups = useMemo(() => {
+    const byDate = new Map<string, MenuItem[]>();
+    for (const d of orderable) {
+      const ymd = dates[d.id]?.actualDate;
+      if (!ymd) continue;
+      if (!byDate.has(ymd)) byDate.set(ymd, []);
+      byDate.get(ymd)!.push(d);
+    }
+    return Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [orderable, dates]);
+  const cartSorted = useMemo(
+    () => [...cart].sort((a, b) => (a.selectedDate || '').localeCompare(b.selectedDate || '')),
+    [cart],
+  );
+  const DateChip = ({ ymd }: { ymd: string }) => {
+    const isToday = ymd === todayYmd;
+    return (
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
+        isToday ? 'bg-[#EAF5EE] text-[#3B7A57]' : 'bg-[#FFF4E5] text-[#B4661E]'}`}>
+        {isToday ? t.todayChip : t.dayChip(fmtDate(ymd))}
+      </span>
+    );
+  };
+
   return (
+    // 桌面端：整页收成手机宽的一栏居中（之前卡片横拉满屏，2000px 宽的白条像没做完）。
+    // 移动端零变化 —— max-w-lg 在手机上就是全宽。
     <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] flex flex-col">
       {/* ── 头部：极简，不放导航（这一页只有一个出口：结账）── */}
-      <header className="px-5 pt-6 pb-4">
-        <p className="text-[15px] font-bold tracking-tight">{t.brand} 🍲</p>
-        <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t.tagline}</p>
+      <header className="w-full max-w-lg mx-auto px-5 pt-6 pb-4 flex items-center gap-3">
+        <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
+          <Image src="/logo.webp" alt="" fill sizes="44px" className="object-cover" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[15px] font-bold tracking-tight">{t.brand} 🍲</p>
+          <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t.tagline}</p>
+        </div>
       </header>
 
-      <main className="flex-1 px-5 pb-40">
+      <main className="flex-1 w-full max-w-lg mx-auto px-5 pb-40">
         {/* 配送日 + 午/晚 */}
         <div className="mb-4">
           {dateLabel && (
@@ -366,7 +410,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         {/* 购物车内容 */}
         {ready && cart.length > 0 && (
           <ul className="space-y-3">
-            {cart.map(b => (
+            {cartSorted.map(b => (
               <li key={b.cartItemId} className="flex gap-3 bg-white rounded-2xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
                 <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
                   <DishThumb dish={b.dish} size="80px" />
@@ -375,11 +419,9 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                   <p className="text-[14px] font-semibold leading-snug truncate">
                     {locale === 'en' ? b.dish?.nameEn : b.dish?.name}
                   </p>
-                  <p className="text-[13px] text-[#8A8A8A] mt-0.5">
-                    RM{getDishPrice(b.dish?.price ?? 0).toFixed(2)}
-                    {multiDate && b.selectedDate && (
-                      <span className="ml-2 text-[#B4661E]">{fmtDate(b.selectedDate)}</span>
-                    )}
+                  <p className="text-[13px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
+                    <span>RM{getDishPrice(b.dish?.price ?? 0).toFixed(2)}</span>
+                    {b.selectedDate && <DateChip ymd={b.selectedDate} />}
                   </p>
                   <div className="flex items-center gap-3 mt-2">
                     <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)}
@@ -405,24 +447,32 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         {/* 空车 / 加菜：直接铺当天可点的菜，不用再跳首页 */}
         {ready && (cart.length === 0 || showPicker) && (
           <div className={cart.length === 0 ? '' : 'mt-4'}>
-            {cart.length === 0 && <p className="text-[13px] text-[#6B6B6B] mb-3">{t.empty}</p>}
-            <ul className="space-y-2">
-              {orderable.map(d => (
-                <li key={d.id}>
-                  <button type="button" onClick={() => addDish(d)}
-                    className="w-full flex gap-3 items-center bg-white rounded-2xl p-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] active:scale-[0.99] transition">
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
-                      <DishThumb dish={d} size="56px" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold truncate">{locale === 'en' ? d.nameEn : d.name}</p>
-                      <p className="text-[13px] text-[#8A8A8A]">RM{getDishPrice(d.price).toFixed(2)}</p>
-                    </div>
-                    <Plus className="w-4 h-4 text-[#B4661E]" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {cart.length === 0 && <p className="text-[13px] text-[#6B6B6B] mb-1">{t.empty}</p>}
+            <p className="text-[12px] text-[#8A8A8A] mb-3">{t.pickHint}</p>
+            {dayGroups.map(([ymd, dishes]) => (
+              <section key={ymd} className="mb-4">
+                <h2 className={`text-[12px] font-bold mb-2 ${ymd === todayYmd ? 'text-[#3B7A57]' : 'text-[#B4661E]'}`}>
+                  {t.groupHeader(fmtDate(ymd), ymd === todayYmd)}
+                </h2>
+                <ul className="space-y-2">
+                  {dishes.map(d => (
+                    <li key={d.id}>
+                      <button type="button" onClick={() => addDish(d)}
+                        className="w-full flex gap-3 items-center bg-white rounded-2xl p-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] active:scale-[0.99] transition">
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
+                          <DishThumb dish={d} size="56px" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-semibold truncate">{locale === 'en' ? d.nameEn : d.name}</p>
+                          <p className="text-[13px] text-[#8A8A8A]">RM{getDishPrice(d.price).toFixed(2)}</p>
+                        </div>
+                        <Plus className="w-4 h-4 text-[#B4661E]" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         )}
 

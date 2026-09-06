@@ -323,3 +323,18 @@ Meta ──POST──▶ Vercel /api/wa/webhook ──▶ n8n whatsapp-receive�
 ## 七、v4 已上线（2026-09-06 ~21:0x，老板亲跑 `_cutover-v4.mjs go`）
 
 五步全 ok：Meta callback → `https://www.incredibowl.my/api/wa/webhook`；v1 off；v4 主流程 + 追单 ON published（主流程 activeVersionId 85337c0f…）。21:12 API 复核一致。三个 v4 workflow 尚无执行记录（切换后还没有客户消息）。待：真机 smoke 14 条、老板删 n8n API key、Reset App Secret 后更新 Vercel。回滚：`node scripts/_cutover-v4.mjs rollback`。
+
+## 八、上线首晚热修：AI 工具节点不支持 Bearer（2026-09-07 02:16 首次报警）
+
+- 现象：执行 7527/7529（60165119118 点「Order now」「Delivery fee」按钮）→ AI Agent `Error in sub-node remember_customer_fact: The type httpBearerAuth is not supported`。开场白 + 三按钮那条分支正常；**凡进 AI 的消息全失败**。
+- 根因：`@n8n/n8n-nodes-langchain.toolHttpRequest` 只支持 Header/Basic/Query/Custom 等，不支持 httpBearerAuth；`remember_customer_fact`（v4 新加）与 `check_capacity`（v3 带来、从未真机跑过）都中招。验证脚本查不出（它不知道节点类型支持哪些凭据）。
+- 修法：网站 lead/capacity 接受 `N8N_INBOUND_SECRET` 作第二把 Bearer（`src/lib/n8nAuth.ts`），两个工具节点改 Header Auth 复用 `XAgrsT1ATqotRlfm`。不需要任何人翻 N8N_API_KEY 的值（Vercel sensitive 读不回、n8n 凭据也读不回）。
+- 部署顺序：网站先上（否则工具调用 401）→ 老板跑 `node scripts/_fix-v4-tool-auth.mjs go`（脚本先用 relay 钥匙探 capacity，401 就拒绝继续）→ 重发一条「hi」点按钮验证。
+- 教训：给 AI 工具节点配凭据前，先确认该节点类型支持的 genericAuthType 列表；上线前至少让一条消息真正走到 AI Agent（这次 dogfood 只跑了 Code 节点）。
+
+## 九、上线首日两处落地体验修补（2026-09-07 凌晨，老板真机反馈）
+
+- [x] **「说好的 RM5 呢」**：/o 预填 FIRST5 后，购物车要等有身份（访客快速下单 / 登录）才自动套用；在那之前客户只看到码和原价。加一行绿字说明「点访客下单或登录后自动扣」。不改套用时机、不改服务端判定。`fix/first5-pending-hint` 57485c4。
+  - 查证：FIRST5 有效（剩 39 次、11-01 到期）；客户 60165119118 两个账号同手机号（hotmail 1 单、gmail 0 单），首单判定与手机查重都放行，不是被拒。
+- [x] **「为什么这道菜是别的日子送」+ 桌面端难看**：/o 选菜列表按送达日分组（今天绿 / 其它日橙 + 当天现做）；购物车每道菜永远带日期徽章并按日期排序；多日文案改成解释原因；整页 `max-w-lg mx-auto` 居中 + 头部 logo。移动端布局零变化。
+  - 老板截图里的周三猪扒不是链接塞的（链接无菜品参数），是他电脑上 zustand 持久化购物车的残留；新客手机上是空车 + 分组列表。
