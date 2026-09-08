@@ -155,6 +155,8 @@ function needWaba() {
     console.error("   $env:WA_WABA_ID='<id>'");
     process.exit(1);
   }
+  // 老板的 shell 会话跨好几轮对话，上一轮设的 env 不会自己消失 —— 每次都把实际生效的值打出来
+  console.log(`  WABA = ${WABA_ID}（${process.env.WA_WABA_ID ? '来自 $env:WA_WABA_ID' : '脚本默认值'}${WABA_ID === '1092790916611496' ? '  ⚠️ 这是沙盒！先清掉 $env:WA_WABA_ID' : ''}）`);
   return WABA_ID;
 }
 
