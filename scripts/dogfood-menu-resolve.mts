@@ -132,6 +132,15 @@ console.log('9b. 排定生效：到点前用现行，到点后自动换');
     setRuntimeData(data);
 }
 
+console.log('9c. 推荐加料覆盖（加料曝光实验）');
+{
+    const id = wkA.days[1][0];
+    const m = buildMenu(wkA, { overrides: { [String(id)]: { recommendedAddOns: ['sunny-egg', 'onsen-egg', 'extra-rice', 'brown-rice'] } } });
+    ok(m.find(d => d.id === id)!.recommendedAddOns!.join() === 'sunny-egg,onsen-egg,extra-rice', '覆盖进 MenuItem，最多 3 个');
+    ok(m.find(d => d.id === wkA.days[1][1])!.recommendedAddOns === undefined, '没覆盖的菜没有该字段');
+    ok(weeklyMenu.find(d => d.id === id)!.recommendedAddOns === undefined, '快照 weeklyMenu 未被污染');
+}
+
 console.log('10. 回到 snapshot');
 setRuntimeData(EMPTY_RUNTIME);
 ok(menuForDate('2026-09-08') === weeklyMenu, '恢复快照');

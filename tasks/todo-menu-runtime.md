@@ -77,11 +77,19 @@ Firestore 成为菜单唯一来源；代码里的 weeklyMenu.ts / blockedDates.t
 - 排定生效挂在 menuWeeks 文档 `scheduled` 字段，saveDay 用 merge 不会误删；服务端 30s 缓存 + 缓存 key 带「到点指纹」。
 
 # 第三期（2026-09-08 老板「do it」）：回头率 / 自动起稿 / 流失预警 / 加料曝光实验
-- [ ] P6a submit-order 加料行写 addOnId（向后兼容）
-- [ ] P6b MenuItem/DishOverride 加 recommendedAddOns + recommendedSince；setDish 支持；/api/menu 带出
-- [ ] P6c AddOnModal「常一起点」badge + 置顶
-- [ ] P1 分析页：30 天回头率 / 再点率两列 + 留客榜 + 基准线
-- [ ] P6d 分析页：每菜最常一起点前三加料 + 「推送推荐到网站」+ 推送前后渗透率对比
-- [ ] P5 分析页：客户预警三名单（上周活跃本周没来 / 高价值沉默 / 持券静默或将过期）+ wa.me + 档案抽屉
-- [ ] P2 排期页：✨ 自动起稿（规则透明、每道菜一句理由，只生成草稿）
+- [x] P6a submit-order 加料行写 addOnId（向后兼容）
+- [x] P6b MenuItem/DishOverride 加 recommendedAddOns + recommendedSince；setDish 支持；/api/menu 带出
+- [x] P6c AddOnModal「常一起点」badge + 置顶
+- [x] P1 分析页：30 天回头率 / 再点率两列 + 留客榜 + 基准线
+- [x] P6d 分析页：每菜最常一起点前三加料 + 「推送推荐到网站」+ 推送前后渗透率对比
+- [x] P5 分析页：客户预警三名单（上周活跃本周没来 / 高价值沉默 / 持券静默或将过期）+ wa.me + 档案抽屉
+- [x] P2 排期页：✨ 自动起稿（规则透明、每道菜一句理由，只生成草稿）
 - [ ] 验证：tsc / build / dogfood / vm 测 / 本地 next start；sync:dashboard；commit
+
+## 第三期 Review
+- 回头率只算 D 距今 ≥30 天的记录；客户识别复用 dashboard `customerKey`（电话优先）。
+- 加料归因只归因**单菜订单**（同 weekly-sales-snapshot 口径），多菜单进 unattributed；优先读 `addOnId`，旧单走 label 表。
+- 客户预警三名单口径 = weekly-customer-analysis（A）/ four-week-retro（B，价值门槛 RM80 改按近 28 天）/ weekly-report-build（C 持券静默 >14 天或 ≤14 天到期）；dashboard 留存页/客户页的两套旧定义未动。
+- 自动起稿只生成草稿；候选用尽（有图的非常驻菜不够 10 道）后面的天留空由老板补。副菜挑选带「同蛋白 −0.3」。
+- 推送推荐写 `menuCatalog.recommendedAddOns` + `recommendedSince`；AddOnModal 置顶 + 标签；实验读数 = 推送前 8 周 vs 推送后（按 createdAt）。
+- 验证：tsc 过；vm 测第三期 30 条 + 第二期 30 条全过；`node --check` 过；sync:dashboard 已回灌；build / 全量 dogfood 结果见 commit 后补记。
