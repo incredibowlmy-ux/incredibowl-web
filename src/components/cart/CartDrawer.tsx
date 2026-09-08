@@ -17,7 +17,9 @@ import {
 } from '@/lib/deliveryUtils';
 import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
-import { dishVoucherValue, weeklyMenu } from '@/data/weeklyMenu';
+import { dishVoucherValue } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { planAddonCreditDeduction } from '@/lib/addonCreditMath';
 import { readPendingPromo, clearPendingPromo } from '@/lib/firstOrderPromo';
 import { readOrderAttribution } from '@/lib/orderAttribution';
@@ -194,16 +196,16 @@ export default function CartDrawer({
     //
     // ⚠️ 必须用 id 回 weeklyMenu 现查：item.dish 是加入购物车那天写进
     // localStorage 的快照，里面的 retired/weekday 是旧值，信它等于没查。
+    const { version: menuVersion } = useMenuRuntime();
     useEffect(() => {
         if (!isOpen) return;
-        const menuById = new Map(weeklyMenu.map(d => [d.id, d]));
         const dateStale: CartBundle[] = [];
         const unavailable: CartBundle[] = [];
         for (const item of cart) {
             if (!isOrderDateValid(item.selectedDate).ok) { dateStale.push(item); continue; }
             // 时段也可能后来关掉（例：改成只送午餐的日子），与日期同一类处理。
             if (!isSlotOrderableOn(item.selectedDate, item.selectedTime).ok) { dateStale.push(item); continue; }
-            const live = menuById.get(item.dish?.id);
+            const live = menuForDate(item.selectedDate).find(d => d.id === item.dish?.id);
             // 菜已从目录整个删掉 → 同样清掉，否则结账时才报「菜品不存在」
             if (!live || !isDishOrderableOn(live, item.selectedDate).ok) unavailable.push(item);
         }
@@ -225,7 +227,7 @@ export default function CartDrawer({
         if (dateStale.length) notices.push(t.staleRemoved(dateStale.length));
         if (unavailable.length) notices.push(t.unavailableRemoved(unavailable.length));
         setStaleNotice(notices.join('；'));
-    }, [isOpen, cart, removeFromCart]);
+    }, [isOpen, cart, removeFromCart, menuVersion]);
 
     // ── Meal voucher math ──────────────────────────────────────
     // Each main dish serving in the cart = one redeemable "slot".

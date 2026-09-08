@@ -8,6 +8,7 @@ import {
     nextOpenDayAfter,
     type Closure,
 } from '@/data/blockedDates';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 
 const WD_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const WD_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -33,13 +34,14 @@ const joinDates = (list: string[], locale: 'zh' | 'en') =>
  * home page. Auto-hides once the dates have passed.
  */
 export default function SoldOutNotice({ locale = 'zh' }: { locale?: 'zh' | 'en' }) {
+    const { version: menuVersion } = useMenuRuntime();
     const [closures, setClosures] = useState<Closure[]>([]);
     const [lunchOnly, setLunchOnly] = useState<string[]>([]);
     useEffect(() => {
         const today = todayInMY();
         setClosures(upcomingClosures(today));
         setLunchOnly(upcomingDinnerClosedDates(today));
-    }, []);
+    }, [menuVersion]);
 
     const soldOut = closures.filter(c => c.reason === 'soldout').map(c => c.date);
     const holiday = closures.filter(c => c.reason === 'holiday').map(c => c.date);

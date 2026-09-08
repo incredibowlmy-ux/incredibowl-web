@@ -19,7 +19,8 @@
 
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { getDishPrice } from '@/data/promoConfig';
-import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
+import type { MenuItem } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
 import type { CartBundle } from '@/types';
 
 /** 一条被改过价的购物车项（金额 = 该项小计，不是单价）。 */
@@ -41,14 +42,19 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  */
 export function repriceCart(
     cart: CartBundle[],
-    menu: MenuItem[] = weeklyMenu,
+    menu?: MenuItem[],
 ): { cart: CartBundle[]; changes: RepriceChange[] } {
-    const byId = new Map(menu.map(d => [d.id, d]));
+    // 不传 menu → 每项按自己的送达日期取所属周的菜单（老板可提前排下周，
+    // 同一道菜两周价格/排期可能不同）。
+    const byId = menu ? new Map(menu.map(d => [d.id, d])) : null;
+    const lookup = (b: CartBundle) => byId
+        ? byId.get(b?.dish?.id)
+        : menuForDate(String(b?.selectedDate || '')).find(d => d.id === b?.dish?.id);
     const changes: RepriceChange[] = [];
     let dirty = false;
 
     const next = (cart || []).map(bundle => {
-        const live = byId.get(bundle?.dish?.id);
+        const live = lookup(bundle);
         if (!live) return bundle;
 
         const addOns = (bundle.addOns || []).map(a => {

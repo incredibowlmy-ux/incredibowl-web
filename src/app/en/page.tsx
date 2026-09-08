@@ -27,7 +27,8 @@ import FaqSection from '@/components/home/FaqSection';
 import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
 
-import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
+import { MenuItem } from '@/data/weeklyMenu';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
@@ -56,6 +57,8 @@ export default function EnglishHome() {
         trackInfo?: { token: string; date: string; time: string }[];
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
+    // 运行时菜单（Firestore 排期）；version 变了日期表要重算。
+    const { menu: liveMenu, version: menuVersion } = useMenuRuntime();
     // FPX failure modal replacing three alert() calls — mirrors src/app/page.tsx.
     // The customer has just come back from their bank app; a system dialog
     // stamped with the domain, whose payment ID they cannot even select to copy,
@@ -237,10 +240,10 @@ export default function EnglishHome() {
     }, []);
 
     useEffect(() => {
-        const { menuDates: dates, minDate: min } = computeMenuDates(weeklyMenu, 'en');
+        const { menuDates: dates, minDate: min } = computeMenuDates(liveMenu, 'en');
         setMenuDates(dates);
         setMinDate(min);
-    }, []);
+    }, [liveMenu, menuVersion]);
 
     // Deep-link: ?prefill=tomorrow → auto-open AddOn modal for the next
     // upcoming special. Used by retargeting ads on the EN locale.

@@ -28,6 +28,9 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 import { useCartStore } from '@/store/cartStore';
 import { weeklyMenu } from '@/data/weeklyMenu';
 import { computeMenuDates } from '@/lib/dateUtils';
+import { currentMenu } from '@/lib/menuResolve';
+import { isDateClosed } from '@/data/blockedDates';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 
 // Legacy dish-name → image map. Only used as fallback for orders placed
 // BEFORE submit-order started persisting `item.image` on the order doc.
@@ -381,13 +384,14 @@ export default function MemberView({ locale }: { locale: Locale }) {
     // Items that no longer exist on the menu (rotated out / paused / past
     // cutoff) can't self-serve, so they fall back to the old WhatsApp flow.
     const handleReorder = (order: any) => {
-        const { menuDates } = computeMenuDates(weeklyMenu, locale);
+        const liveMenu = currentMenu(Date.now(), isDateClosed);
+        const { menuDates } = computeMenuDates(liveMenu, locale);
         const { addBundle } = useCartStore.getState();
         const added: string[] = [];
         const skipped: string[] = [];
 
         (order.items || []).forEach((item: any, i: number) => {
-            const dish = weeklyMenu.find(d =>
+            const dish = liveMenu.find(d =>
                 !d.hidden && !d.retired && (d.name === item.name || (item.nameEn && d.nameEn === item.nameEn))
             );
             const dInfo = dish ? menuDates[dish.id] : undefined;

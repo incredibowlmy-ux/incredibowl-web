@@ -15,7 +15,7 @@ import { User } from 'firebase/auth';
 import { onAuthChange, signInWithGoogle, logout } from '@/lib/auth';
 import { DISH_ADDONS_BY_NAME, DEFAULT_ADDON_OPTIONS } from '@/data/dishAddonMap.generated';
 import DishPicker, { defaultDishForWeekday } from '@/components/admin/DishPicker';
-import { weeklyMenu } from '@/data/weeklyMenu';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import {
     ArrowLeft, Plus, Trash2, RefreshCw, Copy, CheckCircle, AlertTriangle,
     LogOut, CalendarDays, Loader2, CalendarCheck,
@@ -80,6 +80,7 @@ const EMPTY_FORM: Form = {
 };
 
 export default function MultiDayAdmin() {
+    const { menu: weeklyMenu } = useMenuRuntime();
     const [user, setUser] = useState<User | null>(null);
     const [authChecked, setAuthChecked] = useState(false);
     const [customers, setCustomers] = useState<Customer[]>([]);

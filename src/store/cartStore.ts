@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartBundle } from '@/types';
 import { repriceCart, type RepriceChange } from '@/lib/cartRepricing';
+import { subscribeRuntime } from '@/lib/menuRuntimeStore';
 
 interface CartStore {
     cart: CartBundle[];
@@ -67,3 +68,11 @@ export const useCartStore = create<CartStore>()(
         }
     )
 );
+
+// 运行时菜单（Firestore 排期 / 价格覆盖）比 localStorage rehydrate 晚到 ——
+// 到位那一刻再按它刷一次购物车，否则旧价会一路带到 /api/submit-order 被拒。
+subscribeRuntime(() => {
+    const s = useCartStore.getState();
+    const { cart, changes } = repriceCart(s.cart || []);
+    if (cart !== s.cart) useCartStore.setState({ cart, repriced: [...(s.repriced || []), ...changes] });
+});

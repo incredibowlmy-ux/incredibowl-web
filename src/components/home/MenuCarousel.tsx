@@ -4,7 +4,8 @@ import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBag, Sparkles, Phone, Ticket } from 'lucide-react';
-import { weeklyMenu, MenuItem, dishImageAlt } from '@/data/weeklyMenu';
+import { MenuItem, dishImageAlt } from '@/data/weeklyMenu';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
 import SoldOutNotice from '@/components/home/SoldOutNotice';
@@ -21,6 +22,8 @@ interface MenuCarouselProps {
 
 export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock = {} }: MenuCarouselProps) {
     const t = HOME_DICT[locale].menuCarousel;
+    // 运行时菜单：SSR/hydration 时 = 代码快照（预渲染 HTML 不变），fetch 回来后重算。
+    const { menu: weeklyMenu, version: menuVersion } = useMenuRuntime();
     const WD_LABEL = t.wdLabel;
     // `ready` === the date layer has landed (page.tsx / en/page.tsx computes it in an effect).
     // It gates ONLY date-derived values — never the cards themselves.
@@ -31,7 +34,7 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
 
     // Date-dependent → stays behind `ready`. Computing this during render would
     // bake the build-day special into the statically prerendered HTML.
-    const tomorrowsId = useMemo(() => (ready ? computeNextSpecial().dish.id : null), [ready]);
+    const tomorrowsId = useMemo(() => (ready ? computeNextSpecial().dish.id : null), [ready, menuVersion]);
 
     // Group into the weekly-rotation story: Mon→Fri specials (one band per day),
     // then always-available 常驻, then retired/paused at the very bottom.
@@ -62,7 +65,7 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             .filter(g => g.dishes.length > 0);
         const retired = weeklyMenu.filter(d => d.retired);
         return { daily, days, retired };
-    }, []);
+    }, [weeklyMenu]);
 
     // ── Section header (spans the full row in both grids) ──
     const sectionHeader = (key: string, title: string, dateSub: string | null, highlight: boolean, size: 'sm' | 'lg', badgeNum?: number) => (

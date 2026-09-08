@@ -31,7 +31,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Plus, Minus, X, ShoppingBag, Loader2 } from 'lucide-react';
-import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
+import { type MenuItem } from '@/data/weeklyMenu';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { isDinnerClosedOn } from '@/data/blockedDates';
 import { computeMenuDates, formatYMD, type MenuDateInfo } from '@/lib/dateUtils';
 import { getDishPrice } from '@/data/promoConfig';
@@ -161,15 +162,16 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const [promoOn, setPromoOn] = useState(false);
 
   // 日期表：哪道菜哪天能点，全站唯一口径（首页 / 会员页复购用的是同一个函数）
+  const { menu: weeklyMenu, version: menuVersion } = useMenuRuntime();
   const [dates, setDates] = useState<Record<number, MenuDateInfo>>({});
   useEffect(() => {
     const { menuDates } = computeMenuDates(weeklyMenu, locale);
     setDates(menuDates);
-  }, [locale]);
+  }, [locale, weeklyMenu, menuVersion]);
 
   const orderable = useMemo(
     () => weeklyMenu.filter(d => !d.retired && !d.hidden && dates[d.id] && !dates[d.id].disabled),
-    [dates],
+    [dates, weeklyMenu],
   );
 
   const bundleFor = useCallback((dish: MenuItem, qty: number, date: string, time: string, seq: number) => ({

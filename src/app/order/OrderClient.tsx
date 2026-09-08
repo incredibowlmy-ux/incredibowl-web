@@ -31,7 +31,9 @@ import {
 } from "lucide-react";
 import { DELIVERY_PROSE_SHORT_ZH, DELIVERY_PROSE_SHORT_EN } from "@/lib/deliveryCopy";
 import type { Locale } from "@/lib/locale";
-import { weeklyMenu, type MenuItem } from "@/data/weeklyMenu";
+import { type MenuItem } from "@/data/weeklyMenu";
+import { useMemo } from "react";
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 
 const WA = "60103370197";
 
@@ -87,16 +89,20 @@ const wa = (msg: string) =>
  */
 const LANDING_DISH_IDS = [2, 1, 11] as const;
 
-const LANDING_DISHES: MenuItem[] = LANDING_DISH_IDS
-    .map((id) => weeklyMenu.find((d) => d.id === id))
-    .filter((d): d is MenuItem => !!d && !d.retired && !d.hidden);
+function landingDishes(weeklyMenu: MenuItem[]): MenuItem[] {
+    return LANDING_DISH_IDS
+        .map((id) => weeklyMenu.find((d) => d.id === id))
+        .filter((d): d is MenuItem => !!d && !d.retired && !d.hidden);
+}
 
 /** Hero 的「RM xx 起」同样现算，不再手写一个会过期的数字。 */
-const MIN_PRICE_TEXT = (LANDING_DISHES.length
-    ? Math.min(...LANDING_DISHES.map((d) => d.price))
-    // 三道都下架时别渲染「RM Infinity 起」：退回整份菜单里可点的最低价。
-    : Math.min(...weeklyMenu.filter((d) => !d.retired && !d.hidden).map((d) => d.price))
-).toFixed(2);
+function minPriceText(weeklyMenu: MenuItem[], LANDING_DISHES: MenuItem[]): string {
+    return (LANDING_DISHES.length
+        ? Math.min(...LANDING_DISHES.map((d) => d.price))
+        // 三道都下架时别渲染「RM Infinity 起」：退回整份菜单里可点的最低价。
+        : Math.min(...weeklyMenu.filter((d) => !d.retired && !d.hidden).map((d) => d.price))
+    ).toFixed(2);
+}
 
 /**
  * 卡片左上角那个手写小徽章。
@@ -376,6 +382,9 @@ interface Props {
 }
 
 export default function OrderClient({ locale = "zh" }: Props) {
+    const { menu: liveMenu } = useMenuRuntime();
+    const LANDING_DISHES = useMemo(() => landingDishes(liveMenu), [liveMenu]);
+    const MIN_PRICE_TEXT = useMemo(() => minPriceText(liveMenu, LANDING_DISHES), [liveMenu, LANDING_DISHES]);
     const t = DICT[locale];
     const [address, setAddress] = useState("");
     const [checking, setChecking] = useState(false);

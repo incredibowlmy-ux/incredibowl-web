@@ -1,5 +1,6 @@
-import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
+import type { MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import { currentMenu } from '@/lib/menuResolve';
 
 export interface NextSpecial {
     dish: MenuItem;
@@ -28,6 +29,8 @@ export function computeNextSpecial(): NextSpecial {
     const MYT_OFFSET_MS = 8 * 60 * 60 * 1000;
     const now = new Date(Date.now() + MYT_OFFSET_MS);
     const isPastCutoff = now.getUTCHours() >= 6;
+    // 运行时菜单（Firestore 排期；没读到就是代码快照）。
+    const weeklyMenu = currentMenu(Date.now(), isDateClosed);
 
     const next = new Date(now);
     next.setUTCDate(now.getUTCDate() + (isPastCutoff ? 1 : 0));

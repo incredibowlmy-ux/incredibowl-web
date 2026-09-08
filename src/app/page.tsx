@@ -24,7 +24,8 @@ import AboutBowlMama from '@/components/home/AboutBowlMama';
 import FaqSection from '@/components/home/FaqSection';
 import FeedbackSection from '@/components/home/FeedbackSection';
 import Footer from '@/components/home/Footer';
-import { weeklyMenu, MenuItem } from '@/data/weeklyMenu';
+import { MenuItem } from '@/data/weeklyMenu';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { AddOnSelection, CartBundle } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { MenuDateInfo, computeMenuDates } from '@/lib/dateUtils';
@@ -53,6 +54,8 @@ export default function V4BentoLayout() {
         trackInfo?: { token: string; date: string; time: string }[];
     } | null>(null);
     const [dishStock, setDishStock] = useState<Record<string, number>>({});
+    // 运行时菜单（Firestore 排期）；version 变了日期表要重算。
+    const { menu: liveMenu, version: menuVersion } = useMenuRuntime();
     // FPX 回跳失败的页内弹窗，取代 alert()。
     //
     // 这三条是全站最伤的 alert：客户刚从银行 App 转完钱、心里最紧张的那一秒，
@@ -266,10 +269,10 @@ export default function V4BentoLayout() {
     }, []);
 
     useEffect(() => {
-        const { menuDates: dates, minDate: min } = computeMenuDates(weeklyMenu);
+        const { menuDates: dates, minDate: min } = computeMenuDates(liveMenu);
         setMenuDates(dates);
         setMinDate(min);
-    }, []);
+    }, [liveMenu, menuVersion]);
 
     // Deep-link: ?prefill=tomorrow → auto-open AddOn modal for the next
     // upcoming special. Used by retargeting ads ("Tomorrow's menu: X") so a

@@ -16,7 +16,10 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { weeklyMenu } from '@/data/weeklyMenu';
+import type { MenuItem } from '@/data/weeklyMenu';
+import { currentMenu } from '@/lib/menuResolve';
+import { isDateClosed } from '@/data/blockedDates';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { servesOnWeekday } from '@/lib/cartDateUtils';
 
 const WD_CN: Record<number, string> = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五' };
@@ -34,7 +37,7 @@ interface PickerDish { name: string; price: number; retired: boolean; note?: str
 interface PickerGroup { label: string; highlight?: boolean; dishes: PickerDish[] }
 
 /** 分组：无 weekday = 原来的固定顺序；有 weekday = 当天供应的置顶。 */
-function buildGroups(weekday?: number): PickerGroup[] {
+function buildGroups(weekday: number | undefined, weeklyMenu: MenuItem[]): PickerGroup[] {
     const live = weeklyMenu.filter(d => !d.hidden);
 
     if (!weekday || !WD_CN[weekday]) {
@@ -81,6 +84,7 @@ function buildGroups(weekday?: number): PickerGroup[] {
 
 /** 那天的主打菜（WEEKLY_SCHEDULE 该天第一道）；没有就退回第一道常驻菜。 */
 export function defaultDishForWeekday(weekday?: number): string {
+    const weeklyMenu = currentMenu(Date.now(), isDateClosed);
     if (weekday && WD_CN[weekday]) {
         const primary = weeklyMenu.find(
             d => !d.hidden && !d.retired && d.weekday === weekday && d.isPrimary);
@@ -100,7 +104,8 @@ export default function DishPicker({ value, onChange, weekday }: {
 }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
-    const allGroups = useMemo(() => buildGroups(weekday), [weekday]);
+    const { menu: liveMenu } = useMenuRuntime();
+    const allGroups = useMemo(() => buildGroups(weekday, liveMenu), [weekday, liveMenu]);
     const q = query.trim().toLowerCase();
     const groups = allGroups
         .map(g => ({ ...g, dishes: q ? g.dishes.filter(d => d.name.toLowerCase().includes(q)) : g.dishes }))

@@ -12,6 +12,7 @@ import { getPromoDiscount } from '@/data/promoConfig';
 // 酱油鸡 (id 1) every Monday. Share the lib version so the two never drift again.
 import { computeNextSpecial, type NextSpecial } from '@/lib/nextSpecial';
 import { GOOGLE_REVIEW_COUNT } from '@/data/googleReviews';
+import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import type { Locale } from '@/lib/locale';
 import { HOME_DICT } from './dict';
 
@@ -34,10 +35,11 @@ export default function HeroSection({ locale }: { locale: Locale }) {
     // special into the static HTML and mismatch on hydration the next day. The
     // stable LCP anchor is instead the date-independent hero backdrop below.
     const [nextSpecial, setNextSpecial] = useState<NextSpecial | null>(null);
+    const { version: menuVersion } = useMenuRuntime();
 
     useEffect(() => {
         setNextSpecial(computeNextSpecial());
-    }, []);
+    }, [menuVersion]);
 
     const scrollToMenu = () => document.getElementById('menu')?.scrollIntoView({ behavior: 'smooth' });
 
