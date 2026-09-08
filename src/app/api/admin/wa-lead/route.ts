@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { appendTurn, mergeProfileFact, PROFILE_KEYS, type TurnExtra } from '@/lib/waWebhook';
 import {
   isConfigured as waConfigured, lastInboundTs, sendText, sendMedia, sendInteractive,
-  markRead, windowRemainingMs,
+  markRead, sendTemplate, windowRemainingMs,
   type SendResult, type SendInteractiveSpec,
 } from '@/lib/waSend';
 
@@ -13,7 +13,12 @@ import {
  *   { op: 'list' }                              收件箱列表：全部 waLeads 按最近消息倒序，带未读数 / 24h 窗口
  *   { op: 'get',     phone }                    读 waLeads/{phone}：档案、全部 turns、人工接管状态、追单排程
  *   { op: 'read',    phone }                    老板看过了 → bossReadAtMs = now（未读归零）
- *   { op: 'send',    phone, text, minutes? }    从收件箱直接回客户（Meta Cloud API）→ 记 turn(boss) → 自动接管
+ *   { op: 'assets' }                            本周菜品图清单（发图下拉用）
+ *   { op: 'templates' }                         已过审模板清单（窗口外回复用，缓存 10 分钟）
+ *   { op: 'send',    phone, text, minutes?,
+ *            media? / interactive? / template?, replyTo? }
+ *                                               从收件箱回客户：文本 / 图片文件 / 按钮列表 / 模板
+ *                                               → 记 turn(boss，带 wamid) → 自动接管
  *   { op: 'human',   phone, minutes? }          老板接管（bot 静音）
  *   { op: 'release', phone }                    释放
  *   { op: 'note',    phone, key, value }        记备注（key 白名单同 bot）
@@ -70,6 +75,53 @@ function toIntl(raw: unknown): string {
   return d;
 }
 
+/**
+ * 已过审模板清单。缓存 10 分钟：老板在窗口外每开一个线程都会问一次，
+ * 而模板几天才变一回，没必要每次都打 Meta。
+ */
+interface TemplateRow { name: string; lang: string; bodyText: string; paramCount: number }
+let tplCache: { at: number; rows: TemplateRow[]; error?: string } | null = null;
+const TPL_TTL_MS = 10 * 60 * 1000;
+
+async function listTemplates(): Promise<{ templates: TemplateRow[]; configured: boolean; error?: string }> {
+  const waba = process.env.WA_WABA_ID;
+  const token = process.env.WA_ACCESS_TOKEN;
+  if (!waba || !token) {
+    return { templates: [], configured: false, error: !token ? 'WA_ACCESS_TOKEN 未配置' : 'WA_WABA_ID 未配置：跑 node scripts/wa-templates.mjs waba 拿 id 再加进 Vercel' };
+  }
+  if (tplCache && Date.now() - tplCache.at < TPL_TTL_MS) {
+    return { templates: tplCache.rows, configured: true, ...(tplCache.error ? { error: tplCache.error } : {}) };
+  }
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v20.0/${waba}/message_templates?fields=name,status,language,components&limit=100`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    const j: any = await res.json().catch(() => ({}));
+    if (!res.ok || j?.error) throw new Error(j?.error?.message || `HTTP ${res.status}`);
+    const rows: TemplateRow[] = (j.data || [])
+      .filter((t: any) => t.status === 'APPROVED')
+      .map((t: any) => {
+        const body = (t.components || []).find((c: any) => c.type === 'BODY');
+        const text = String(body?.text || '');
+        // {{1}} {{2}} … 的最大编号 = 要填几个参数
+        const nums = [...text.matchAll(/\{\{(\d+)\}\}/g)].map(m => Number(m[1]));
+        return { name: String(t.name), lang: String(t.language), bodyText: text, paramCount: nums.length ? Math.max(...nums) : 0 };
+      });
+    tplCache = { at: Date.now(), rows };
+    return { templates: rows, configured: true };
+  } catch (e: any) {
+    const error = `读模板失败：${String(e?.message || e).slice(0, 160)}`;
+    tplCache = { at: Date.now(), rows: [], error };
+    return { templates: [], configured: true, error };
+  }
+}
+
+/** 把 {{1}} {{2}} 换成实际参数，用于记进对话记录（客户看到的就是这个）。 */
+export function fillTemplate(bodyText: string, params: string[]): string {
+  return String(bodyText || '').replace(/\{\{(\d+)\}\}/g, (_m, n) => String(params[Number(n) - 1] ?? `{{${n}}}`));
+}
+
 export async function POST(req: NextRequest) {
   const admin = await verifyAdmin(req);
   if (!admin) return corsify(NextResponse.json({ error: '未授权访问' }, { status: 403 }));
@@ -80,11 +132,16 @@ export async function POST(req: NextRequest) {
   }
   const op = String(body?.op || 'get').toLowerCase();
   const phone = toIntl(body?.phone);
-  if (op !== 'list' && op !== 'assets' && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
+  if (!['list', 'assets', 'templates'].includes(op) && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
 
   try {
     const db = await getDb();
     const now = Date.now();
+
+    // ── 已过审的模板清单：窗口外回复用 ────────────────────────────────
+    if (op === 'templates') {
+      return corsify(NextResponse.json(await listTemplates(), { headers: { 'Cache-Control': 'no-store' } }));
+    }
 
     // ── 菜品图清单：收件箱的「📎 发图」下拉用 ──────────────────────────
     // 为什么放服务端：dashboard 的 state.menu 是它自己那套 id，没有图片字段，
@@ -151,21 +208,34 @@ export async function POST(req: NextRequest) {
       const mediaIn = (body?.media && typeof body.media === 'object') ? body.media : null;
       const interIn = (body?.interactive && typeof body.interactive === 'object') ? body.interactive : null;
       const replyTo = body?.replyTo ? String(body.replyTo).slice(0, 200) : undefined;
-      if (mediaIn && interIn) return corsify(NextResponse.json({ ok: false, error: '媒体和交互消息不能一起发' }, { status: 400 }));
-      if (!text && !mediaIn && !interIn) return corsify(NextResponse.json({ ok: false, error: '空文本' }, { status: 400 }));
+      const tplIn = (body?.template && typeof body.template === 'object') ? body.template : null;
+      if ([mediaIn, interIn, tplIn].filter(Boolean).length > 1) return corsify(NextResponse.json({ ok: false, error: '媒体 / 交互 / 模板只能选一种' }, { status: 400 }));
+      if (!text && !mediaIn && !interIn && !tplIn) return corsify(NextResponse.json({ ok: false, error: '空文本' }, { status: 400 }));
       if (!waConfigured()) return corsify(NextResponse.json({ ok: false, configured: false, error: 'WA_ACCESS_TOKEN 未配置：Vercel 加上 Meta 永久 token 后才能从这里回复' }, { status: 200 }));
+      // 模板是窗口外唯一的路，所以窗口判定只挡自由文本类
       const remain = windowRemainingMs(d.turns, now);
-      if (remain <= 0) {
+      if (remain <= 0 && !tplIn) {
         const lastIn = lastInboundTs(d.turns);
         return corsify(NextResponse.json({ ok: false, configured: true, windowClosed: true,
-          error: lastIn ? `24 小时窗口已过（客户最后一条 ${new Date(lastIn + 8 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} MYT）。窗口外只能发 Meta 审核过的模板，这里暂不支持；请用你手机直接发。` : '这个号码还没有客户消息，Meta 不允许主动发自由文本。' }, { status: 200 }));
+          error: lastIn ? `24 小时窗口已过（客户最后一条 ${new Date(lastIn + 8 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} MYT）。窗口外只能发 Meta 审核过的模板 —— 在下面选一个模板发。` : '这个号码还没有客户消息，Meta 不允许主动发自由文本。' }, { status: 200 }));
       }
 
       // 三种消息共用同一条落库路径：发出去 → 记 turn（带 wamid，回执才对得上）→ 自动接管
       let sent: SendResult;
       let turnText: string;
       const extra: TurnExtra = {};
-      if (mediaIn) {
+      if (tplIn) {
+        const tplName = String(tplIn.name || '');
+        const params = (Array.isArray(tplIn.params) ? tplIn.params : []).map((p: unknown) => String(p ?? '').trim());
+        const known = (await listTemplates()).templates.find(t => t.name === tplName && t.lang === String(tplIn.lang || t.lang));
+        if (!known) return corsify(NextResponse.json({ ok: false, error: `模板 ${tplName} 不在已过审清单里` }, { status: 400 }));
+        if (params.filter(Boolean).length < known.paramCount) {
+          return corsify(NextResponse.json({ ok: false, error: `这个模板要填 ${known.paramCount} 个变量` }, { status: 400 }));
+        }
+        sent = await sendTemplate(phone, tplName, known.lang, params.slice(0, known.paramCount));
+        // 记进对话记录的是「客户实际看到的那句」，不是带 {{1}} 的原文
+        turnText = fillTemplate(known.bodyText, params);
+      } else if (mediaIn) {
         const kind = String(mediaIn.kind || 'image');
         if (kind !== 'image' && kind !== 'document') return corsify(NextResponse.json({ ok: false, error: '只支持 image / document' }, { status: 400 }));
         const caption = String(mediaIn.caption || text || '').trim();
