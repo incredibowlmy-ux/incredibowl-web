@@ -16,6 +16,10 @@ import { MENU_COLLECTIONS } from '@/lib/menuRuntime.server';
 
 const COMMIT = process.argv.includes('--commit');
 const FORCE = process.argv.includes('--force');
+// --week-only：只写那一周的排期文档，不碰 menuClosures（老板在 dashboard 设的停业日不被快照压掉）。
+// 「老板在聊天里发菜单 → 我改 weeklyMenu.ts 三表 → 推上线」走的就是这条：
+//   npx tsx scripts/menu-seed-firestore.mts --commit --force --week 2026-09-14 --week-only
+const WEEK_ONLY = process.argv.includes('--week-only');
 const weekArg = process.argv[process.argv.indexOf('--week') + 1];
 const KEY = 'C:/Users/User/Desktop/Incredibowl Services/Firebase/incredibowl-1eedd-firebase-adminsdk-fbsvc-f78b077e14.json';
 
@@ -62,8 +66,10 @@ batch.set(db.collection(MENU_COLLECTIONS.weeks).doc(monday), {
     paused: MENU_SNAPSHOT_WEEK.paused,
     updatedAt: now, updatedBy: 'menu-seed-firestore',
 });
-for (const [date, doc] of Object.entries(closures)) {
-    batch.set(db.collection(MENU_COLLECTIONS.closures).doc(date), { ...doc, updatedAt: now, updatedBy: 'menu-seed-firestore' });
+if (!WEEK_ONLY) {
+    for (const [date, doc] of Object.entries(closures)) {
+        batch.set(db.collection(MENU_COLLECTIONS.closures).doc(date), { ...doc, updatedAt: now, updatedBy: 'menu-seed-firestore' });
+    }
 }
 await batch.commit();
-console.log('✓ 已写入。');
+console.log(`✓ 已写入${WEEK_ONLY ? '（只写周文档，停业日未动）' : ''}。网站约 1 分钟内生效。`);
