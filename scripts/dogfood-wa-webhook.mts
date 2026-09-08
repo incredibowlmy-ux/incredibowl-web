@@ -12,6 +12,8 @@ import {
   verifyMetaSignature, splitInbound, buildSinglePayload, decideInbound, mytHourKey,
   appendTurn, describeInboundForTurn, renderTurnsBlock, relativeTime,
   mergeProfileFact, renderProfileBlock, parseBossCommand,
+  applyStatus, splitStatuses, splitTemplateEvents, describeSendError,
+  mediaOfInbound, replyToOfInbound,
   RATE_LIMIT_PER_HOUR, SEEN_IDS_MAX, TURNS_MAX, SILENT_TYPES,
 } from '@/lib/waWebhook';
 
@@ -169,6 +171,95 @@ console.log('\n=== 6. 老板指令 ===');
   check('本地格式 0123456789 → 拒（必须 60 开头）', parseBossCommand('#pause 0123456789') === null);
   check('普通文字 → null', parseBossCommand('今天菜单发我') === null && parseBossCommand('') === null);
   check('#pause 没号码 → null', parseBossCommand('#pause') === null);
+}
+
+// ────────────────────────────────────────────────────────────
+console.log('\n【A0/A1】turn 扩展字段 · 出站回执 · 模板事件');
+{
+  const T = 1_757_100_000_000;
+  // ── extra 字段 ──────────────────────────────────────────
+  const withId = appendTurn([], 'out', 'hi', T, { msgId: 'wamid.A' });
+  check('appendTurn extra 收下 msgId', withId[0].msgId === 'wamid.A');
+  check('没给 extra 时不写 undefined 键（Firestore 拒收 undefined）',
+    !('status' in appendTurn([], 'out', 'x', T)[0]) && !('media' in appendTurn([], 'out', 'x', T)[0]));
+  const med = appendTurn([], 'in', '[图片]', T, { media: { kind: 'image', id: 'MID1', mime: 'image/jpeg' } });
+  check('appendTurn 收下 media', med[0].media?.kind === 'image' && med[0].media?.id === 'MID1');
+  check('media kind 不在白名单 → 整个 media 丢掉',
+    appendTurn([], 'in', 'x', T, { media: { kind: 'gif' as any } }).at(-1)!.media === undefined);
+  check('extra 里的野字段被丢弃',
+    (appendTurn([], 'out', 'x', T, { foo: 'bar' } as any).at(-1) as any).foo === undefined);
+  // ── 清洗历史数组时保留扩展字段（回归：写新消息会洗掉老回执）──
+  const grown = appendTurn(withId, 'in', '收到', T + 10);
+  check('追加新 turn 后老 turn 的 msgId 还在', grown[0].msgId === 'wamid.A');
+  const readOld = appendTurn([{ role: 'out', text: 'hi', ts: T, msgId: 'wamid.A', status: 'read', statusAtMs: T + 5 }], 'in', 'ok', T + 9);
+  check('追加新 turn 后老 turn 的 status 还在', readOld[0].status === 'read' && readOld[0].statusAtMs === T + 5);
+  check('非法 status 被洗掉',
+    appendTurn([{ role: 'out', text: 'hi', ts: T, status: 'weird' }], 'in', 'ok', T)[0].status === undefined);
+  // ── applyStatus 单调 ────────────────────────────────────
+  const base = appendTurn([], 'out', 'hi', T, { msgId: 'wamid.A' });
+  const sent = applyStatus(base, 'wamid.A', 'sent', undefined, T + 1);
+  const deliv = applyStatus(sent, 'wamid.A', 'delivered', undefined, T + 2);
+  const read = applyStatus(deliv, 'wamid.A', 'read', undefined, T + 3);
+  check('sent → delivered → read 逐级前进', sent[0].status === 'sent' && deliv[0].status === 'delivered' && read[0].status === 'read');
+  check('read 之后再来 delivered 不倒退，且返回原引用', applyStatus(read, 'wamid.A', 'delivered', undefined, T + 4) === read);
+  check('同一状态重复到达 → 原引用（Meta 会重发回执）', applyStatus(read, 'wamid.A', 'read', undefined, T + 5) === read);
+  const failed = applyStatus(read, 'wamid.A', 'failed', '131047 窗口已过', T + 6);
+  check('failed 可以覆盖 read 并记 err', failed[0].status === 'failed' && failed[0].err === '131047 窗口已过');
+  check('failed 之后不再被 read 覆盖', applyStatus(failed, 'wamid.A', 'read', undefined, T + 7) === failed);
+  check('msgId 找不到 → 原引用', applyStatus(read, 'wamid.NOPE', 'read', undefined, T + 8) === read);
+  check('空 msgId / 非法 status → 原引用',
+    applyStatus(read, '', 'read', undefined, T) === read && applyStatus(read, 'wamid.A', 'clicked', undefined, T) === read);
+  check('applyStatus 不改入参', base[0].status === undefined);
+  const two = applyStatus(appendTurn(base, 'out', '第二条', T + 20, { msgId: 'wamid.B' }), 'wamid.B', 'read', undefined, T + 21);
+  check('多条 turn 时只动对应 msgId 那条', two[1].status === 'read' && two[0].status === undefined);
+  check('statusAtMs 记下回执时间', read[0].statusAtMs === T + 3);
+  // ── splitStatuses ──────────────────────────────────────
+  const stPayload = {
+    object: 'whatsapp_business_account',
+    entry: [{ id: 'E1', changes: [{ field: 'messages', value: {
+      messaging_product: 'whatsapp', metadata: {},
+      statuses: [
+        { id: 'wamid.A', status: 'delivered', timestamp: '1757100000', recipient_id: '60165119118' },
+        { id: 'wamid.B', status: 'failed', timestamp: '1757100005', recipient_id: '+60 12-345 6789',
+          errors: [{ code: 131047, title: 'Re-engagement message', error_data: { details: 'Message failed to send because more than 24 hours have passed' } }] },
+      ],
+    } }] }],
+  };
+  const evs = splitStatuses(stPayload);
+  check('splitStatuses 拆出 2 条', evs.length === 2);
+  check('recipient 归一成纯数字', evs[1].recipient === '60123456789');
+  check('时间戳秒 → 毫秒', evs[0].ts === 1757100000000);
+  check('errors 拆出 code/title/details', evs[1].errCode === 131047 && /Re-engagement/.test(evs[1].errTitle || '') && /24 hours/.test(evs[1].errDetails || ''));
+  check('没有 errors 的不带 errCode', evs[0].errCode === undefined);
+  check('messages-only 事件 → 0 条回执', splitStatuses(payload([msg('60123456789')])).length === 0);
+  check('statuses 事件 → splitInbound 仍是 0 条（进站与回执两条路）', splitInbound(stPayload).length === 0);
+  check('非法 status 值被跳过',
+    splitStatuses({ object: 'whatsapp_business_account', entry: [{ changes: [{ field: 'messages', value: { statuses: [{ id: 'x', status: 'deleted', recipient_id: '60111' }] } }] }] }).length === 0);
+  check('缺 id 或 recipient 被跳过',
+    splitStatuses({ object: 'whatsapp_business_account', entry: [{ changes: [{ field: 'messages', value: { statuses: [{ status: 'read', recipient_id: '60111' }, { id: 'x', status: 'read' }] } }] }] }).length === 0);
+  check('非 whatsapp 对象 → 空', splitStatuses({ object: 'page', entry: [] }).length === 0);
+  // ── describeSendError ──────────────────────────────────
+  check('131047 翻成人话', /24 小时窗口已过/.test(describeSendError({ errCode: 131047 })));
+  check('未知码回落到 title', describeSendError({ errCode: 999999, errTitle: 'Weird thing' }) === '999999 Weird thing');
+  check('什么都没有 → 未知错误', describeSendError({}) === '未知错误');
+  check('describeSendError 截断到 120 字', describeSendError({ errCode: 131047, errDetails: 'x'.repeat(400) }).length <= 120);
+  // ── splitTemplateEvents ────────────────────────────────
+  const tpl = { object: 'whatsapp_business_account', entry: [{ changes: [{ field: 'message_template_status_update', value: {
+    event: 'APPROVED', message_template_id: 1, message_template_name: 'weekly_menu_v1', message_template_language: 'en', reason: 'NONE',
+  } }] }] };
+  const tevs = splitTemplateEvents(tpl);
+  check('splitTemplateEvents 拆出模板审核结果', tevs.length === 1 && tevs[0].name === 'weekly_menu_v1' && tevs[0].event === 'APPROVED');
+  check('模板事件不会被当成进站消息或回执', splitInbound(tpl).length === 0 && splitStatuses(tpl).length === 0);
+  check('messages 事件 → 0 条模板事件', splitTemplateEvents(payload([msg('60123456789')])).length === 0);
+  // ── 入站媒体 / 引用 ────────────────────────────────────
+  check('mediaOfInbound 认图片',
+    mediaOfInbound({ type: 'image', image: { id: 'MID9', mime_type: 'image/jpeg' } })?.id === 'MID9');
+  check('mediaOfInbound 认文件名',
+    mediaOfInbound({ type: 'document', document: { id: 'D1', filename: 'menu.pdf' } })?.filename === 'menu.pdf');
+  check('纯文字没有 media', mediaOfInbound({ type: 'text', text: { body: 'hi' } }) === undefined);
+  check('贴纸不算 media（在 SILENT_TYPES 里）', mediaOfInbound({ type: 'sticker', sticker: { id: 'S1' } }) === undefined);
+  check('replyToOfInbound 取 context.id', replyToOfInbound({ context: { id: 'wamid.Q' } }) === 'wamid.Q');
+  check('没 context → undefined', replyToOfInbound({ type: 'text' }) === undefined);
 }
 
 console.log(`\n${'─'.repeat(52)}`);

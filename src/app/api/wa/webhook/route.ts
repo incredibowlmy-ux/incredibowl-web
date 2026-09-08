@@ -2,9 +2,12 @@ import { NextRequest, NextResponse, after } from 'next/server';
 import {
   verifyMetaSignature, splitInbound, buildSinglePayload, decideInbound,
   appendTurn, describeInboundForTurn, SILENT_TYPES,
-  type InboundMessage, type RelayFlags,
+  splitStatuses, splitTemplateEvents, applyStatus, describeSendError,
+  mediaOfInbound, replyToOfInbound,
+  type InboundMessage, type RelayFlags, type StatusEvent,
 } from '@/lib/waWebhook';
 import { sendTelegramAlert } from '@/lib/telegramAlert';
+import { markRead } from '@/lib/waSend';
 
 /**
  * /api/wa/webhook —— Meta WhatsApp webhook 的进入层（v4 relay）。
@@ -79,8 +82,12 @@ export async function POST(req: NextRequest) {
   }
 
   const inbound = splitInbound(payload);
-  // statuses / 空事件：200 结束，不打 n8n（顺便消掉 Guard 节点那些红色执行）
-  if (!inbound.length) return NextResponse.json({ ok: true, forwarded: 0 });
+  const statuses = splitStatuses(payload);
+  const templateEvents = splitTemplateEvents(payload);
+  // 空事件：200 结束，不打 n8n（顺便消掉 Guard 节点那些红色执行）
+  if (!inbound.length && !statuses.length && !templateEvents.length) {
+    return NextResponse.json({ ok: true, forwarded: 0 });
+  }
 
   after(async () => {
     for (const im of inbound) {
@@ -93,9 +100,56 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+    // 出站回执：只更新 turns 上的状态，不碰 n8n。失败的另外报警。
+    for (const ev of statuses) {
+      try {
+        await handleStatus(ev);
+      } catch (e: any) {
+        // 回执丢一条不影响客户，不值得再报一次警，记日志即可
+        console.error('[wa/webhook] handleStatus failed:', ev.msgId, e?.message || e);
+      }
+    }
+    for (const te of templateEvents) {
+      await sendTelegramAlert(
+        `📄 WhatsApp 模板审核：${te.name}（${te.language}）→ ${te.event}${te.reason && te.reason !== 'NONE' ? `\n原因：${te.reason}` : ''}`,
+        { key: `tpl:${te.name}:${te.event}` },
+      );
+    }
   });
 
-  return NextResponse.json({ ok: true, forwarded: inbound.length });
+  return NextResponse.json({ ok: true, forwarded: inbound.length, statuses: statuses.length });
+}
+
+/**
+ * 一条出站回执落到对应 turn 上。
+ * applyStatus 找不到 msgId 或状态倒退时返回同一个数组引用 → 不写库（Meta 会重复推同一条回执）。
+ */
+async function handleStatus(ev: StatusEvent): Promise<void> {
+  const bossPhone = (process.env.WA_BOSS_PHONE || BOSS_PHONE_DEFAULT).replace(/\D/g, '');
+  if (ev.recipient === bossPhone) return; // 发给老板的求救/警报不进客户线程
+
+  const now = Date.now();
+  const err = ev.status === 'failed' ? describeSendError(ev) : undefined;
+  const db = await getDb();
+  const ref = db.collection(COL).doc(ev.recipient);
+
+  const changed = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) return false;
+    const prev = (snap.data() || {}) as Record<string, any>;
+    const next = applyStatus(prev.turns, ev.msgId, ev.status, err, ev.ts || now);
+    if (next === prev.turns) return false;
+    tx.set(ref, { turns: next, updatedAtMs: now }, { merge: true });
+    return true;
+  });
+
+  if (ev.status === 'failed') {
+    // 发送失败是唯一「客户以为收到了、其实没有」的情况，必须吵醒老板
+    await sendTelegramAlert(
+      `🚨 WhatsApp 消息没发出去！\n号码：${ev.recipient}\n原因：${err}\nmsg.id：${ev.msgId}${changed ? '' : '\n（这条消息不在对话记录里，可能是 n8n 发的）'}`,
+      { key: `wafail:${ev.recipient}` },
+    );
+  }
 }
 
 async function handleOne(im: InboundMessage): Promise<void> {
@@ -116,7 +170,13 @@ async function handleOne(im: InboundMessage): Promise<void> {
     const patch: Record<string, unknown> = { ...d.patch, phone: im.from, lastInboundAtMs: now };
     // 入站对话记录：唯一写入点在这里（n8n 侧不再写 in turn）。老板 / 静默类型不记。
     if (!isBoss && !silent && !d.throttled) {
-      patch.turns = appendTurn(prev.turns, 'in', describeInboundForTurn(im.message), now);
+      const media = mediaOfInbound(im.message);
+      const replyTo = replyToOfInbound(im.message);
+      patch.turns = appendTurn(prev.turns, 'in', describeInboundForTurn(im.message), now, {
+        ...(im.msgId ? { msgId: im.msgId } : {}),
+        ...(media ? { media } : {}),
+        ...(replyTo ? { replyTo } : {}),
+      });
     }
     tx.set(ref, patch, { merge: true });
     return d;
@@ -136,6 +196,13 @@ async function handleOne(im: InboundMessage): Promise<void> {
   }
   if (decision.throttleNotify) {
     await sendTelegramAlert(`⚠️ 号码 ${im.from} 一小时内超过上限，bot 已停止回复该号码到本小时结束。最近一条：${describeInboundForTurn(im.message).slice(0, 120)}`, { key: `throttle:${im.from}` });
+  }
+
+  // 标已读 + 「正在输入…」：只在 bot 真的要答话时做。
+  // 人工接管中刻意不标 —— 让客户看到的双灰勾诚实反映「老板还没看」，
+  // 而不是让 bot 替老板装作已读。不 await：礼貌动作不该拖慢转发。
+  if (!decision.human) {
+    void markRead(im.msgId, { typing: true });
   }
 
   const flags: RelayFlags = {

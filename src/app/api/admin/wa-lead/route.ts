@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { appendTurn, mergeProfileFact, PROFILE_KEYS } from '@/lib/waWebhook';
-import { isConfigured as waConfigured, lastInboundTs, sendText, windowRemainingMs } from '@/lib/waSend';
+import { appendTurn, mergeProfileFact, PROFILE_KEYS, type TurnExtra } from '@/lib/waWebhook';
+import {
+  isConfigured as waConfigured, lastInboundTs, sendText, sendMedia, sendInteractive,
+  markRead, windowRemainingMs,
+  type SendResult, type SendInteractiveSpec,
+} from '@/lib/waSend';
 
 /**
  * POST /api/admin/wa-lead —— dashboard 的「碗妈对话」面板 + 「碗妈收件箱」（WATI 式）后端。
@@ -76,11 +80,26 @@ export async function POST(req: NextRequest) {
   }
   const op = String(body?.op || 'get').toLowerCase();
   const phone = toIntl(body?.phone);
-  if (op !== 'list' && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
+  if (op !== 'list' && op !== 'assets' && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
 
   try {
     const db = await getDb();
     const now = Date.now();
+
+    // ── 菜品图清单：收件箱的「📎 发图」下拉用 ──────────────────────────
+    // 为什么放服务端：dashboard 的 state.menu 是它自己那套 id，没有图片字段，
+    // 而 Meta 图片消息不收 webp —— 唯一正确的来源是 weeklyMenu.ts 的 image
+    // 换成 /meta-jpg/ 的 jpg 副本（与 /api/meta/product-feed 同一条规则）。
+    if (op === 'assets') {
+      const { weeklyMenu } = await import('@/data/weeklyMenu');
+      const dishes = weeklyMenu
+        .filter(d => !d.hidden && !d.retired && d.image.startsWith('/') && d.image.endsWith('.webp'))
+        .map(d => ({
+          name: `${d.name} ${d.nameEn}`.trim(),
+          url: `https://www.incredibowl.my/meta-jpg/${d.image.slice(1).replace(/\.webp$/, '.jpg')}`,
+        }));
+      return corsify(NextResponse.json({ dishes }, { headers: { 'Cache-Control': 'no-store' } }));
+    }
 
     // ── 收件箱列表：一次读全集合（waLeads 量级是几百，不分页）────────────
     if (op === 'list') {
@@ -118,12 +137,22 @@ export async function POST(req: NextRequest) {
 
     if (op === 'read') {
       await ref.set({ phone, bossReadAtMs: now }, { merge: true });
-      return corsify(NextResponse.json({ ok: true }));
+      // 顺手把客户那边的灰勾变蓝：老板真的在收件箱看到了，就该显示已读。
+      // 只标最近一条未读入站（Meta 会连带把它之前的一起标掉），失败不影响本次操作。
+      const turns: any[] = Array.isArray(d.turns) ? d.turns : [];
+      const readAt = Number(d.bossReadAtMs) || 0;
+      const lastUnread = turns.filter(t => t && t.role === 'in' && t.msgId && Number(t.ts) > readAt).pop();
+      if (lastUnread) await markRead(String(lastUnread.msgId));
+      return corsify(NextResponse.json({ ok: true, marked: !!lastUnread }));
     }
 
     if (op === 'send') {
       const text = String(body?.text || '').trim();
-      if (!text) return corsify(NextResponse.json({ ok: false, error: '空文本' }, { status: 400 }));
+      const mediaIn = (body?.media && typeof body.media === 'object') ? body.media : null;
+      const interIn = (body?.interactive && typeof body.interactive === 'object') ? body.interactive : null;
+      const replyTo = body?.replyTo ? String(body.replyTo).slice(0, 200) : undefined;
+      if (mediaIn && interIn) return corsify(NextResponse.json({ ok: false, error: '媒体和交互消息不能一起发' }, { status: 400 }));
+      if (!text && !mediaIn && !interIn) return corsify(NextResponse.json({ ok: false, error: '空文本' }, { status: 400 }));
       if (!waConfigured()) return corsify(NextResponse.json({ ok: false, configured: false, error: 'WA_ACCESS_TOKEN 未配置：Vercel 加上 Meta 永久 token 后才能从这里回复' }, { status: 200 }));
       const remain = windowRemainingMs(d.turns, now);
       if (remain <= 0) {
@@ -131,12 +160,43 @@ export async function POST(req: NextRequest) {
         return corsify(NextResponse.json({ ok: false, configured: true, windowClosed: true,
           error: lastIn ? `24 小时窗口已过（客户最后一条 ${new Date(lastIn + 8 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} MYT）。窗口外只能发 Meta 审核过的模板，这里暂不支持；请用你手机直接发。` : '这个号码还没有客户消息，Meta 不允许主动发自由文本。' }, { status: 200 }));
       }
-      const sent = await sendText(phone, text);
+
+      // 三种消息共用同一条落库路径：发出去 → 记 turn（带 wamid，回执才对得上）→ 自动接管
+      let sent: SendResult;
+      let turnText: string;
+      const extra: TurnExtra = {};
+      if (mediaIn) {
+        const kind = String(mediaIn.kind || 'image');
+        if (kind !== 'image' && kind !== 'document') return corsify(NextResponse.json({ ok: false, error: '只支持 image / document' }, { status: 400 }));
+        const caption = String(mediaIn.caption || text || '').trim();
+        const filename = mediaIn.filename ? String(mediaIn.filename) : undefined;
+        sent = await sendMedia(phone, { kind, link: String(mediaIn.link || ''), caption, filename, replyTo });
+        turnText = kind === 'image' ? `[图片]${caption ? ' ' + caption : ''}` : `[文件]${filename ? ' ' + filename : ''}${caption ? ' ' + caption : ''}`;
+        extra.media = { kind, link: String(mediaIn.link || ''), ...(filename ? { filename } : {}) };
+      } else if (interIn) {
+        const spec: SendInteractiveSpec = {
+          body: String(interIn.body || text || ''),
+          ...(Array.isArray(interIn.buttons) ? { buttons: interIn.buttons } : {}),
+          ...(interIn.list ? { list: interIn.list } : {}),
+          replyTo,
+        };
+        sent = await sendInteractive(phone, spec);
+        const labels = Array.isArray(interIn.buttons)
+          ? interIn.buttons.map((b: any) => String(b?.title || '')).filter(Boolean)
+          : (interIn.list?.rows || []).map((r: any) => String(r?.title || '')).filter(Boolean);
+        turnText = `${spec.body}\n〔${Array.isArray(interIn.buttons) ? '按钮' : '列表'}：${labels.join('｜')}〕`;
+      } else {
+        sent = await sendText(phone, text, { replyTo });
+        turnText = text;
+      }
       if (!sent.ok) return corsify(NextResponse.json({ ok: false, configured: sent.configured, error: sent.error }, { status: 200 }));
+
+      if (sent.msgId) extra.msgId = sent.msgId;
+      if (replyTo) extra.replyTo = replyTo;
       // 像 WATI 的「assign to me」：从收件箱回了话，bot 就闭嘴，不然客户下一句被 AI 抢答
       const minutes = Math.min(720, Math.max(1, Number(body?.minutes) || 120));
       const wasHuman = (Number(d.humanUntil) || 0) > now;
-      let turns = appendTurn(d.turns, 'boss', text, now);
+      let turns = appendTurn(d.turns, 'boss', turnText, now, { ...extra, status: 'sent', statusAtMs: now });
       if (!wasHuman) turns = appendTurn(turns, 'sys', `老板从收件箱回复，接管 ${minutes} 分钟，bot 静音`, now + 1);
       await ref.set({
         phone, turns, lastMsgMs: now, bossReadAtMs: now, updatedAtMs: now,

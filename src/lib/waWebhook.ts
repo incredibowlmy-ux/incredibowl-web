@@ -91,6 +91,96 @@ export function splitInbound(payload: any): InboundMessage[] {
   return out;
 }
 
+// ────────────────────────────────────────────────────────────
+// 出站回执（statuses）与模板审核事件
+// ────────────────────────────────────────────────────────────
+export interface StatusEvent {
+  /** 收件人号码（纯数字）。 */
+  recipient: string;
+  /** 出站消息的 wamid。 */
+  msgId: string;
+  status: TurnStatus;
+  ts: number;
+  errCode?: number;
+  errTitle?: string;
+  errDetails?: string;
+}
+
+/**
+ * 从 webhook payload 里拆出出站回执。
+ * v4 上线时这一整类事件是被 splitInbound 直接丢掉的 —— 收件箱因此没有任何送达/已读信号，
+ * 更糟的是**发送失败也静默**（Meta 只在 statuses 里报 failed，发送 API 那一刻是 200）。
+ */
+export function splitStatuses(payload: any): StatusEvent[] {
+  const out: StatusEvent[] = [];
+  if (!payload || payload.object !== 'whatsapp_business_account') return out;
+  const entries: any[] = Array.isArray(payload.entry) ? payload.entry : [];
+  for (const entry of entries) {
+    const changes: any[] = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const ch of changes) {
+      if (ch?.field && ch.field !== 'messages') continue;
+      const sts: any[] = Array.isArray(ch?.value?.statuses) ? ch.value.statuses : [];
+      for (const s of sts) {
+        const status = String(s?.status || '');
+        const msgId = String(s?.id || '');
+        const recipient = String(s?.recipient_id || '').replace(/\D/g, '');
+        if (!msgId || !recipient || !(TURN_STATUSES as readonly string[]).includes(status)) continue;
+        const e = Array.isArray(s?.errors) ? s.errors[0] : null;
+        const ev: StatusEvent = { recipient, msgId, status: status as TurnStatus, ts: (Number(s?.timestamp) || 0) * 1000 };
+        if (e) {
+          if (Number(e.code)) ev.errCode = Number(e.code);
+          if (e.title) ev.errTitle = String(e.title).slice(0, 160);
+          if (e.error_data?.details) ev.errDetails = String(e.error_data.details).slice(0, 200);
+        }
+        out.push(ev);
+      }
+    }
+  }
+  return out;
+}
+
+/** Meta 常见发送失败码 → 人话。查不到的原样回 title。 */
+export function describeSendError(ev: Pick<StatusEvent, 'errCode' | 'errTitle' | 'errDetails'>): string {
+  const known: Record<number, string> = {
+    131047: '24 小时窗口已过，只能发模板',
+    131026: '对方不是 WhatsApp 用户或没法收（可能拉黑了）',
+    131049: 'Meta 限流：为了健康度暂时不投递这条营销消息',
+    130472: '对方在 Meta 的实验分组里，这条不投递',
+    131000: 'Meta 内部错误，可重试',
+    131053: '媒体上传失败（链接不可达或格式不支持）',
+    132000: '模板参数数量对不上',
+    132001: '模板不存在或语言不对',
+    132015: '模板被停用',
+    133010: '号码没注册到 Cloud API',
+  };
+  const base = (ev.errCode && known[ev.errCode]) || ev.errTitle || '未知错误';
+  const code = ev.errCode ? `${ev.errCode} ` : '';
+  return `${code}${base}${ev.errDetails ? ` — ${ev.errDetails}` : ''}`.slice(0, 120);
+}
+
+export interface TemplateEvent { name: string; event: string; reason: string; language: string }
+
+/** 模板审核结果事件（field = message_template_status_update）。 */
+export function splitTemplateEvents(payload: any): TemplateEvent[] {
+  const out: TemplateEvent[] = [];
+  if (!payload || payload.object !== 'whatsapp_business_account') return out;
+  const entries: any[] = Array.isArray(payload.entry) ? payload.entry : [];
+  for (const entry of entries) {
+    const changes: any[] = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const ch of changes) {
+      if (ch?.field !== 'message_template_status_update') continue;
+      const v = ch?.value || {};
+      out.push({
+        name: String(v.message_template_name || ''),
+        event: String(v.event || ''),
+        reason: String(v.reason || ''),
+        language: String(v.message_template_language || ''),
+      });
+    }
+  }
+  return out;
+}
+
 export interface RelayFlags {
   relay: 'v4';
   receivedAtMs: number;
@@ -191,21 +281,100 @@ export function decideInbound(
 // ────────────────────────────────────────────────────────────
 // 对话记录（turns）
 // ────────────────────────────────────────────────────────────
-export type TurnRole = 'in' | 'out' | 'boss' | 'nudge' | 'sys';
-export interface Turn { role: TurnRole; text: string; ts: number }
+export const TURN_ROLES = ['in', 'out', 'boss', 'nudge', 'sys'] as const;
+export type TurnRole = typeof TURN_ROLES[number];
 
-/** 追加一条 turn，超长截断、超量只留最近 TURNS_MAX 条。返回新数组（不改入参）。 */
-export function appendTurn(prev: unknown, role: TurnRole, text: string, ts: number): Turn[] {
+export const MEDIA_KINDS = ['image', 'document', 'audio', 'video'] as const;
+export type MediaKind = typeof MEDIA_KINDS[number];
+export interface TurnMedia { kind: MediaKind; id?: string; link?: string; mime?: string; filename?: string }
+
+/** Meta 的出站回执状态。排序见 STATUS_RANK —— 只能往前走，不能倒退。 */
+export const TURN_STATUSES = ['sent', 'delivered', 'read', 'failed'] as const;
+export type TurnStatus = typeof TURN_STATUSES[number];
+const STATUS_RANK: Record<TurnStatus, number> = { sent: 1, delivered: 2, read: 3, failed: 4 };
+
+export interface Turn {
+  role: TurnRole;
+  text: string;
+  ts: number;
+  /** Meta 的 wamid：出站是发送响应里的 id，入站是 msg.id。回执靠它对上号。 */
+  msgId?: string;
+  /** 只有出站 turn 有：sent → delivered → read，或 failed。 */
+  status?: TurnStatus;
+  statusAtMs?: number;
+  /** failed 时 Meta 给的原因（已转成人话，≤120 字）。 */
+  err?: string;
+  media?: TurnMedia;
+  /** 引用回复：被引用那条的 wamid。 */
+  replyTo?: string;
+}
+
+/** appendTurn 的第 5 个参数：只有这些 key 会被收下，其余一律丢弃。 */
+export interface TurnExtra { msgId?: string; status?: TurnStatus; statusAtMs?: number; err?: string; media?: TurnMedia; replyTo?: string }
+
+function cleanMedia(m: unknown): TurnMedia | undefined {
+  if (!m || typeof m !== 'object') return undefined;
+  const x = m as Record<string, unknown>;
+  const kind = String(x.kind || '');
+  if (!(MEDIA_KINDS as readonly string[]).includes(kind)) return undefined;
+  const out: TurnMedia = { kind: kind as MediaKind };
+  // Firestore 拒收 undefined —— 所有可选字段都只在有值时才写进对象。
+  if (x.id) out.id = String(x.id).slice(0, 200);
+  if (x.link) out.link = String(x.link).slice(0, 600);
+  if (x.mime) out.mime = String(x.mime).slice(0, 100);
+  if (x.filename) out.filename = String(x.filename).slice(0, 120);
+  return out;
+}
+
+/** 把任意来源的一条 turn 洗成合法形状（丢 undefined、截断、白名单 role/status）。 */
+function cleanTurn(t: any): Turn {
+  const out: Turn = {
+    role: ((TURN_ROLES as readonly string[]).includes(t.role) ? t.role : 'sys') as TurnRole,
+    text: String(t.text).slice(0, TURN_TEXT_MAX),
+    ts: Number(t.ts) || 0,
+  };
+  if (t.msgId) out.msgId = String(t.msgId).slice(0, 200);
+  if ((TURN_STATUSES as readonly string[]).includes(t.status)) out.status = t.status as TurnStatus;
+  if (Number(t.statusAtMs)) out.statusAtMs = Number(t.statusAtMs);
+  if (t.err) out.err = String(t.err).slice(0, 120);
+  const media = cleanMedia(t.media);
+  if (media) out.media = media;
+  if (t.replyTo) out.replyTo = String(t.replyTo).slice(0, 200);
+  return out;
+}
+
+/**
+ * 追加一条 turn，超长截断、超量只留最近 TURNS_MAX 条。返回新数组（不改入参）。
+ * `extra` 里的 msgId / media / replyTo 等可选字段会被保留 —— 清洗历史数组时也保留，
+ * 否则每写一条新消息就会把老消息的回执状态洗掉。
+ */
+export function appendTurn(prev: unknown, role: TurnRole, text: string, ts: number, extra?: TurnExtra): Turn[] {
   const base: Turn[] = Array.isArray(prev)
-    ? prev.filter((t: any) => t && typeof t.text === 'string').map((t: any) => ({
-        role: (['in', 'out', 'boss', 'nudge', 'sys'].includes(t.role) ? t.role : 'sys') as TurnRole,
-        text: String(t.text).slice(0, TURN_TEXT_MAX),
-        ts: Number(t.ts) || 0,
-      }))
+    ? prev.filter((t: any) => t && typeof t.text === 'string').map(cleanTurn)
     : [];
   const clean = String(text || '').trim().slice(0, TURN_TEXT_MAX);
   if (!clean) return base.slice(-TURNS_MAX);
-  return [...base, { role, text: clean, ts }].slice(-TURNS_MAX);
+  const next = cleanTurn({ ...(extra || {}), role, text: clean, ts });
+  return [...base, next].slice(-TURNS_MAX);
+}
+
+/**
+ * 把一条回执盖到对应的 turn 上。找不到 msgId 或状态会倒退 → **返回原数组引用**
+ * （调用方靠 `next === prev` 判断「不用写库」，省掉 Meta 重发回执带来的无谓写入）。
+ */
+export function applyStatus(turns: unknown, msgId: string, status: string, err: string | undefined, now: number): Turn[] {
+  const arr = Array.isArray(turns) ? turns as Turn[] : [];
+  if (!msgId || !(TURN_STATUSES as readonly string[]).includes(status)) return arr;
+  const next = status as TurnStatus;
+  const idx = arr.map((t, i) => (t && t.msgId === msgId ? i : -1)).filter(i => i >= 0).pop();
+  if (idx === undefined) return arr;
+  const cur = arr[idx];
+  const curRank = cur.status ? STATUS_RANK[cur.status] : 0;
+  if (STATUS_RANK[next] <= curRank) return arr;
+  const patched = cleanTurn({ ...cur, status: next, statusAtMs: now, ...(err ? { err: String(err) } : {}) });
+  const out = arr.map(cleanTurn);
+  out[idx] = patched;
+  return out;
 }
 
 /** 入站消息 → 记进 turns 的一行文字（非文字类型给一个可读占位）。 */
@@ -227,6 +396,21 @@ export function describeInboundForTurn(msg: Record<string, any>): string {
     case 'contacts': return '[名片]';
     default: return `[${type || '未知类型'}]`;
   }
+}
+
+/** 入站消息里的媒体（有就返回，没有返回 undefined）。id 之后用 /api/admin/wa-media 换真文件。 */
+export function mediaOfInbound(msg: Record<string, any>): TurnMedia | undefined {
+  const type = String(msg?.type || '');
+  if (!(MEDIA_KINDS as readonly string[]).includes(type)) return undefined;
+  const m = msg?.[type];
+  if (!m || typeof m !== 'object') return undefined;
+  return cleanMedia({ kind: type, id: m.id, mime: m.mime_type, filename: m.filename });
+}
+
+/** 入站消息引用了哪条（客户长按回复）。没有返回 undefined。 */
+export function replyToOfInbound(msg: Record<string, any>): string | undefined {
+  const id = msg?.context?.id;
+  return id ? String(id).slice(0, 200) : undefined;
 }
 
 /** 这些类型不值得记进对话记录，也不转发给 n8n 做任何回复。 */

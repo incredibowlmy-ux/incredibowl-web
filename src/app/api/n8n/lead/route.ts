@@ -298,8 +298,12 @@ export async function POST(req: NextRequest) {
       const role: TurnRole = (['out', 'boss', 'nudge', 'sys'] as string[]).includes(roleRaw) ? roleRaw as TurnRole : 'out';
       const text = String(body?.text || '');
       if (!text.trim()) return NextResponse.json({ ok: false, error: '空文本' }, { status: 200 });
-      await ref.set({ phone, turns: appendTurn(prev.turns, role, text, now), updatedAtMs: now }, { merge: true });
-      return NextResponse.json({ ok: true });
+      // msgId 可选：n8n 的 Send 节点把 Graph 回的 wamid 带过来，收件箱才能显示送达/已读勾。
+      // 没带也照旧记 turn —— 少一个勾比丢一条对话记录轻得多。
+      const msgId = String(body?.msgId || '').trim();
+      const extra = msgId ? { msgId, status: 'sent' as const, statusAtMs: now } : undefined;
+      await ref.set({ phone, turns: appendTurn(prev.turns, role, text, now, extra), updatedAtMs: now }, { merge: true });
+      return NextResponse.json({ ok: true, logged: msgId || null });
     }
 
     // ── 人工接管 / 解除 ──────────────────────────────────
