@@ -1,10 +1,11 @@
 import { NextRequest } from 'next/server';
 import { verifyAdminEmail, adminJson, corsPreflight } from '@/lib/adminApi';
 import {
-    buildMenu, DISH_CATALOG_ALL, type MenuWeek,
+    buildMenu, DISH_CATALOG_ALL, MENU_SNAPSHOT_WEEK, type MenuWeek,
 } from '@/data/weeklyMenu';
 import { isDishOrderableOn } from '@/lib/cartDateUtils';
-import { mondayOf, weekDocFor } from '@/lib/menuResolve';
+import { isDateClosed } from '@/data/blockedDates';
+import { mondayOf, weekDocFor, currentMenu } from '@/lib/menuResolve';
 import type { MenuWeekDoc, ClosureDoc } from '@/lib/menuRuntimeStore';
 
 /**
@@ -49,6 +50,37 @@ function validateWeek(week: MenuWeek, overrides: Record<string, { price?: number
     } catch (e) {
         return e instanceof Error ? e.message.replace(/^\[weeklyMenu\]\s*/, '') : '排期不合法';
     }
+}
+
+/** weeklyMenu 的 day label（'Mon / 周一' | 'Daily / 常驻' …）→ dashboard `menu.day`。 */
+function dashDay(label: string): string {
+    const m = /^(Mon|Tue|Wed|Thu|Fri|Daily)\b/.exec(label);
+    return m ? m[1] : '其他';
+}
+
+/**
+ * 把「现在」合成周的排期镜像进 dashboard 的 `menu` 集合（手动加单下拉按 day 分组、
+ * offMenuThisWeek = 本周暂别）。只更新已存在且名字对得上的文档，绝不碰 price /
+ * active / costPrice（与 scripts/sync-menu-to-firestore.mts 同规则，这里是自动版）。
+ */
+async function mirrorDashboardMenu(db: FirebaseFirestore.Firestore, serverTimestamp: () => unknown): Promise<void> {
+    const menu = currentMenu(Date.now(), isDateClosed);
+    const snap = await db.collection('menu').get();
+    const existing = new Map(snap.docs.map(d => [d.id, d.data() as { name?: string; day?: string; offMenuThisWeek?: boolean }]));
+    const batch = db.batch();
+    let n = 0;
+    for (const d of menu) {
+        if (d.day.startsWith('Unscheduled')) continue;
+        const dashId = String(WEBAPP_TO_DASH[d.id] ?? d.id);
+        const cur = existing.get(dashId);
+        if (!cur || (cur.name && cur.name !== d.name)) continue;
+        const day = dashDay(d.day);
+        const off = !!d.retired;
+        if (cur.day === day && !!cur.offMenuThisWeek === off) continue;
+        batch.set(db.collection('menu').doc(dashId), { day, offMenuThisWeek: off, updatedAt: serverTimestamp() }, { merge: true });
+        n++;
+    }
+    if (n) await batch.commit();
 }
 
 interface Conflict { date: string; dish: string; orders: { id: string; userName: string; qty: number }[] }
@@ -100,25 +132,30 @@ export async function POST(req: NextRequest) {
         const db = getAdminDb();
         const data = await loadMenuRuntime({ force: action === 'get' });
 
+        const catalogView = (rt: typeof data) => DISH_CATALOG_ALL.map(d => {
+            const o = rt.catalog[String(d.id)] ?? {};
+            return {
+                id: d.id, dashId: WEBAPP_TO_DASH[d.id] ?? d.id,
+                name: d.name, nameEn: d.nameEn, image: d.image,
+                basePrice: d.price, price: o.price ?? d.price,
+                hidden: o.hidden ?? !!d.hidden, baseHidden: !!d.hidden,
+                voucherTopUp: d.voucherTopUp ?? 0,
+                availableWeekdays: d.availableWeekdays ?? null,
+            };
+        });
+
         const respondState = async (extra: Record<string, unknown> = {}) => {
             invalidateMenuRuntime();
             const fresh = await loadMenuRuntime({ force: true });
-            return adminJson({ ok: true, runtime: fresh, ...extra });
+            // dashboard 手动加单下拉靠 menu.day 分组 —— 保存后顺手镜像，失败不影响主流程。
+            try { await mirrorDashboardMenu(db, () => FieldValue.serverTimestamp()); }
+            catch (e) { console.warn('[admin/menu-config] mirror menu.day failed:', e); }
+            return adminJson({ ok: true, runtime: fresh, catalog: catalogView(fresh), ...extra });
         };
 
         switch (action) {
             case 'get': {
-                const catalog = DISH_CATALOG_ALL.map(d => {
-                    const o = data.catalog[String(d.id)] ?? {};
-                    return {
-                        id: d.id, name: d.name, nameEn: d.nameEn, image: d.image,
-                        basePrice: d.price, price: o.price ?? d.price,
-                        hidden: o.hidden ?? !!d.hidden, baseHidden: !!d.hidden,
-                        voucherTopUp: d.voucherTopUp ?? 0,
-                        availableWeekdays: d.availableWeekdays ?? null,
-                    };
-                });
-                return adminJson({ ok: true, runtime: data, catalog });
+                return adminJson({ ok: true, runtime: data, catalog: catalogView(data), snapshotWeek: MENU_SNAPSHOT_WEEK });
             }
 
             case 'conflicts':

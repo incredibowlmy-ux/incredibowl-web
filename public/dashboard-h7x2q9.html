@@ -1328,6 +1328,10 @@
                     <span>装碗打包</span>
                 </button>
 
+                <button class="nav-item" data-page="menu">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+                    <span>菜单排期</span>
+                </button>
                 <button class="nav-item" data-page="settings">
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span>设置</span>
@@ -2277,6 +2281,9 @@
 
                 </div>
 
+                <div class="page" id="page-menu">
+                    <div id="msRoot">加载中…</div>
+                </div>
                 <div class="page" id="page-packing">
                     <div class="card">
                         <div class="card-header">
@@ -4198,9 +4205,9 @@ incredibowl.my`,
                         && Number(item.voucherTopUp) !== seedEntry.voucherTopUp) {
                         updates.voucherTopUp = seedEntry.voucherTopUp;
                     }
-                    if (seedEntry.day && seedEntry.day !== item.day) {
-                        updates.day = seedEntry.day;
-                    }
+                    // 2026-09-08 起 `day` 不再从 SEED 回写：排期的权威是 Firestore menuWeeks
+                    // （dashboard「菜单排期」页写入，/api/admin/menu-config 保存后镜像到 menu.day）。
+                    // SEED 的 day 只剩 _dishGroupsByDay 的最后兜底。
                     if (Object.keys(updates).length === 0) continue;
                     try {
                         await setDoc(doc(db, 'menu', String(item.id)),
@@ -8558,6 +8565,7 @@ incredibowl.my`,
             leads:     { title: '潜在客户', sub: 'WA 聊过但没下单的人 · 跟进转化用' },
             calculator:{ title: '订单计算器', sub: '查现有订单净利 · 或手动加菜模拟一单' },
             inventory: { title: '库存',     sub: '按菜可售份数 · 食材原料盘点' },
+            menu:      { title: '菜单排期', sub: '每周换菜 · 主打 · 常驻 / 暂别 · 价格 · 停业日（保存即生效）' },
             packing:   { title: '装碗打包', sub: '今日订单按饭型分组 · 逐碗核对不装错' },
             settings:  { title: '设置',     sub: '菜单管理 · 固定成本 · 营销开支' },
         };
@@ -8593,6 +8601,7 @@ incredibowl.my`,
             }
 
             // Initialize inventory (stock count) on first open
+            if (page === 'menu' && typeof initMenuSchedule === 'function') initMenuSchedule();
             if (page === 'inventory' && typeof initInventory === 'function') {
                 initInventory();
             }
@@ -9251,7 +9260,7 @@ incredibowl.my`,
                     wds.forEach(d => (groups[d] || groups['其他']).push({ ...m, _dayNote: note, _limited: true }));
                     return;
                 }
-                const day = DISH_SEED_DAY_BY_ID[String(m.id)] || m.day || '其他';
+                const day = m.day || DISH_SEED_DAY_BY_ID[String(m.id)] || '其他';
                 (groups[day] || groups['其他']).push(m);
             });
             DISH_DAY_ORDER.forEach(d => {
@@ -15720,6 +15729,372 @@ incredibowl.my`,
             } catch (err) {
                 toast('调整失败：' + err.message, 'error');
                 btn.disabled = false;
+            }
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════
+        //   MENU SCHEDULE（菜单排期）—— 每周换菜 / hero / 常驻 / 暂别 / 价格 / 停业日
+        //   后端：POST /api/admin/menu-config（get / saveWeek / saveDay / setDish /
+        //   setClosure / deleteClosure）。Firestore menuWeeks / menuCatalog /
+        //   menuClosures 是网站运行时的权威源；保存后网站约 1 分钟内生效。
+        //   限量（按菜可售份数）沿用「库存」页，这里只放入口。
+        // ═══════════════════════════════════════════════════════════════
+        const MS = {
+            loaded: false, loading: false,
+            runtime: null,      // { source, weeks, catalog, closures }
+            catalog: [],        // [{ id, dashId, name, nameEn, basePrice, price, hidden, ... }]
+            snapshotWeek: null, // 代码快照周（Firestore 没 seed 时的起点）
+            offset: 0,          // 0 本周 / 1 下周 / 2 下下周
+            draft: null,        // 正在编辑的周 { days:{1..5:[]}, daily:[], paused:[] }
+            draftMonday: '',
+            dirty: false,
+            conflicts: [],
+            lastSaved: null,
+        };
+        const MS_WD_CN = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五' };
+        const msEsc = s => escapeHtml(String(s ?? ''));
+
+        /** 周一日期（周六/日算下一周，与网站 mondayOf 同口径）+ offset 周。 */
+        function msMonday(offset) {
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            const dow = t.getDay();
+            const delta = dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow;
+            t.setDate(t.getDate() + delta + 7 * (offset || 0));
+            return ymdKey(t);
+        }
+        function msAddDays(ymd, n) {
+            const [y, m, d] = ymd.split('-').map(Number);
+            const t = new Date(y, m - 1, d + n);
+            return ymdKey(t);
+        }
+        function msFmt(ymd) {
+            const [, m, d] = ymd.split('-').map(Number);
+            return `${m}/${d}`;
+        }
+        function msDish(id) { return MS.catalog.find(c => c.id === Number(id)); }
+        function msName(id) { const c = msDish(id); return c ? c.name : `#${id}`; }
+        function msCloneWeek(w) {
+            return {
+                days: Object.fromEntries([1, 2, 3, 4, 5].map(wd => [wd, [...((w && w.days && (w.days[wd] || w.days[String(wd)])) || [])].map(Number)])),
+                daily: [...((w && w.daily) || [])].map(Number),
+                paused: [...((w && w.paused) || [])].map(Number),
+            };
+        }
+        /** 某周一对应的排期：精确 → 沿用更早一周 → 代码快照。 */
+        function msWeekFor(monday) {
+            const weeks = (MS.runtime && MS.runtime.weeks) || {};
+            if (weeks[monday]) return { week: weeks[monday], state: 'exact', from: monday };
+            const earlier = Object.keys(weeks).filter(k => k < monday).sort().pop();
+            if (earlier) return { week: weeks[earlier], state: 'inherited', from: earlier };
+            return { week: MS.snapshotWeek || { days: {}, daily: [], paused: [] }, state: 'snapshot', from: '' };
+        }
+        function msLoadDraft() {
+            MS.draftMonday = msMonday(MS.offset);
+            const { week } = msWeekFor(MS.draftMonday);
+            MS.draft = msCloneWeek(week);
+            MS.dirty = false;
+        }
+        function msAllLists() {
+            const d = MS.draft;
+            return [
+                ...[1, 2, 3, 4, 5].map(wd => ({ key: String(wd), list: d.days[wd] })),
+                { key: 'daily', list: d.daily },
+                { key: 'paused', list: d.paused },
+            ];
+        }
+        function msListOf(key) {
+            return key === 'daily' ? MS.draft.daily : key === 'paused' ? MS.draft.paused : MS.draft.days[Number(key)];
+        }
+        /** 把一道菜放进某列（同时从其它列移走 —— 一道菜只能在一个位置）。 */
+        function msPlace(id, key, index) {
+            id = Number(id);
+            for (const { list } of msAllLists()) {
+                const i = list.indexOf(id);
+                if (i >= 0) list.splice(i, 1);
+            }
+            const target = msListOf(key);
+            if (index === undefined || index < 0 || index > target.length) target.push(id);
+            else target.splice(index, 0, id);
+            MS.dirty = true;
+        }
+        function msRemove(id) {
+            id = Number(id);
+            for (const { list } of msAllLists()) {
+                const i = list.indexOf(id);
+                if (i >= 0) { list.splice(i, 1); MS.dirty = true; }
+            }
+        }
+        function msMove(key, id, dir) {
+            const list = msListOf(key);
+            const i = list.indexOf(Number(id));
+            const j = i + dir;
+            if (i < 0 || j < 0 || j >= list.length) return;
+            [list[i], list[j]] = [list[j], list[i]];
+            MS.dirty = true;
+        }
+        function msUnscheduled() {
+            const used = new Set(msAllLists().flatMap(x => x.list));
+            return MS.catalog.filter(c => !used.has(c.id));
+        }
+
+        async function msFetch(body) {
+            return callAdminAPI('/api/admin/menu-config', body);
+        }
+        async function msLoad() {
+            if (MS.loading) return;
+            MS.loading = true;
+            try {
+                const res = await msFetch({ action: 'get' });
+                MS.runtime = res.runtime;
+                MS.catalog = res.catalog || [];
+                MS.snapshotWeek = res.snapshotWeek || null;
+                MS.loaded = true;
+                msLoadDraft();
+                MS.conflicts = [];
+            } catch (e) {
+                toast('读取菜单排期失败：' + e.message, 'error');
+            } finally {
+                MS.loading = false;
+                msRender();
+            }
+        }
+        function initMenuSchedule() {
+            const root = document.getElementById('msRoot');
+            if (!root) return;
+            if (!root.dataset.wired) {
+                root.dataset.wired = '1';
+                root.addEventListener('click', msOnClick);
+                root.addEventListener('change', msOnChange);
+            }
+            if (!MS.loaded) msLoad(); else msRender();
+        }
+
+        // ── 渲染 ──────────────────────────────────────────────────────
+        function msRender() {
+            const root = document.getElementById('msRoot');
+            if (!root) return;
+            if (!MS.loaded) { root.innerHTML = '<div class="card"><div class="card-content">加载中…</div></div>'; return; }
+            const monday = MS.draftMonday;
+            const info = msWeekFor(monday);
+            const src = MS.runtime && MS.runtime.source;
+            const statusPill = info.state === 'exact'
+                ? `<span class="pill ok">已排期${info.week.updatedAt ? ' · ' + msEsc(String(info.week.updatedAt).slice(0, 16).replace('T', ' ')) : ''}</span>`
+                : info.state === 'inherited'
+                    ? `<span class="pill warn">沿用 ${msEsc(info.from)} 那周的排期 · 保存后独立</span>`
+                    : `<span class="pill muted">代码快照（Firestore 还没有排期，保存即建）</span>`;
+            const tabs = [0, 1, 2].map(o => {
+                const m = msMonday(o);
+                const label = o === 0 ? '本周' : o === 1 ? '下周' : '下下周';
+                const has = MS.runtime && MS.runtime.weeks && MS.runtime.weeks[m];
+                return `<button class="btn ${o === MS.offset ? '' : 'ghost'} sm" data-act="week" data-offset="${o}">${label} ${msFmt(m)}${has ? ' ●' : ''}</button>`;
+            }).join(' ');
+
+            const colCard = (key, title, sub, list, opts = {}) => {
+                const rows = list.map((id, i) => {
+                    const c = msDish(id) || { name: `#${id}`, price: 0 };
+                    const hero = opts.hero && i === 0;
+                    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:${hero ? 'rgba(255,184,0,.12)' : 'var(--bg-elev)'};margin-bottom:4px">
+                        <span style="flex:1;font-weight:600;font-size:12.5px">${hero ? '⭐ ' : ''}${msEsc(c.name)} <span class="mono" style="opacity:.6;font-size:11px">RM ${Number(c.price).toFixed(2)}</span></span>
+                        ${opts.hero && i > 0 ? `<button class="btn ghost sm" title="设为主打" data-act="hero" data-key="${key}" data-id="${id}">⭐</button>` : ''}
+                        <button class="btn ghost sm" title="上移" data-act="up" data-key="${key}" data-id="${id}" ${i === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="btn ghost sm" title="下移" data-act="down" data-key="${key}" data-id="${id}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="btn ghost sm" title="移出（变成未排期/下架）" data-act="remove" data-id="${id}">✕</button>
+                    </div>`;
+                }).join('') || '<div style="opacity:.5;font-size:12px;padding:6px 8px">（空）</div>';
+                const options = MS.catalog
+                    .filter(c => !list.includes(c.id) && !(c.hidden && key !== 'paused'))
+                    .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+                    .map(c => `<option value="${c.id}">${msEsc(c.name)}${c.hidden ? '（未上架）' : ''}</option>`).join('');
+                return `<div class="card" style="margin:0">
+                    <div class="card-header"><div><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div>
+                        ${opts.saveDay ? `<button class="btn ghost sm" data-act="saveDay" data-key="${key}">只保存${title}</button>` : ''}</div>
+                    <div class="card-content">
+                        ${rows}
+                        <div style="display:flex;gap:6px;margin-top:6px">
+                            <select data-role="add-select" data-key="${key}" style="flex:1;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);font-size:12px"><option value="">+ 加一道菜…</option>${options}</select>
+                        </div>
+                    </div>
+                </div>`;
+            };
+
+            const dayCards = [1, 2, 3, 4, 5].map(wd =>
+                colCard(String(wd), MS_WD_CN[wd], msFmt(msAddDays(monday, wd - 1)) + ' · 第一道 = 主打', MS.draft.days[wd], { hero: true, saveDay: true })).join('');
+            const dailyCard = colCard('daily', '常驻', '每个营业日都卖', MS.draft.daily);
+            const pausedCard = colCard('paused', '暂别', '网站灰显可见不可点', MS.draft.paused);
+            const pool = msUnscheduled();
+            const poolCard = `<div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">未排期</div><div class="card-sub">不在任何列 = 网站不显示（dashboard 仍可见）</div></div></div>
+                <div class="card-content">${pool.length ? pool.map(c => `<span class="pill muted" style="margin:2px">${msEsc(c.name)}${c.hidden ? ' · 未上架' : ''}</span>`).join('') : '<span style="opacity:.5;font-size:12px">（无）</span>'}</div></div>`;
+
+            const conflictsCard = MS.conflicts.length ? `<div class="card" style="border-color:#e0a800;background:rgba(255,184,0,.06)">
+                <div class="card-header"><div><div class="card-title">⚠ 已有订单点了被撤的菜（已保存，请自行处理）</div><div class="card-sub">这些单在新排期下该日不供应这道菜 —— 联系客户改菜或改期</div></div></div>
+                <div class="card-content"><ul style="margin:0;padding-left:18px;font-size:12.5px">${MS.conflicts.map(c =>
+                    `<li><b>${msEsc(c.date)}</b> ${msEsc(c.dish)}：${c.orders.map(o => `${msEsc(o.userName)}×${o.qty}`).join('、')}</li>`).join('')}</ul></div></div>` : '';
+
+            // 价格 / 上架
+            const priceRows = [...MS.catalog].sort((a, b) => a.id - b.id).map(c => `
+                <tr data-id="${c.id}">
+                    <td>${msEsc(c.name)}<div style="opacity:.55;font-size:11px">${msEsc(c.nameEn)}</div></td>
+                    <td class="r mono">${Number(c.basePrice).toFixed(2)}</td>
+                    <td class="r"><input type="number" step="0.10" min="0" data-role="price" value="${Number(c.price).toFixed(2)}" style="width:84px;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);text-align:right"></td>
+                    <td style="text-align:center"><input type="checkbox" data-role="hidden" ${c.hidden ? 'checked' : ''} title="未上架：网站完全不显示"></td>
+                    <td class="r"><button class="btn ghost sm" data-act="savePrice" data-id="${c.id}">保存</button></td>
+                </tr>`).join('');
+            const priceCard = `<div class="card collapsible collapsed" data-collapsible>
+                <div class="card-header"><div><div class="card-title">菜品价格 / 上架</div><div class="card-sub">改价立刻生效于网站 + 手动加单下拉；「基准价」是代码里的值，跑 menu:snapshot 后会追平</div></div>
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+                <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>菜</th><th class="r">基准价</th><th class="r">现价 RM</th><th>未上架</th><th></th></tr></thead><tbody>${priceRows}</tbody></table></div></div></div>`;
+
+            // 停业日
+            const today = ymdKey(new Date());
+            const closures = Object.entries((MS.runtime && MS.runtime.closures) || {}).filter(([d]) => d >= today).sort();
+            const cloRows = closures.map(([d, c]) => {
+                const kind = c.closed ? (c.reason === 'holiday' ? '整天 · 放假' : '整天 · 售罄/临时停') : c.dinnerClosed ? '只关晚市' : '';
+                const blocked = (c.blockedDishIds || []).map(msName).join('、');
+                return `<tr><td class="mono">${msEsc(d)}</td><td>${kind}${blocked ? (kind ? ' · ' : '') + '停售：' + msEsc(blocked) : ''}</td>
+                    <td class="r"><button class="btn ghost sm" data-act="delClosure" data-date="${d}">删除</button></td></tr>`;
+            }).join('') || '<tr><td colspan="3" style="opacity:.5">（无）</td></tr>';
+            const dishOpts = MS.catalog.filter(c => !c.hidden).sort((a, b) => a.name.localeCompare(b.name, 'zh')).map(c => `<option value="${c.id}">${msEsc(c.name)}</option>`).join('');
+            const closureCard = `<div class="card collapsible collapsed" data-collapsible>
+                <div class="card-header"><div><div class="card-title">停业日 / 单菜停售</div><div class="card-sub">整天停：菜单顺延到下一个营业日、当天不能下单；只关晚市：午餐照送；单菜停售：那天只停这道菜</div></div>
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+                <div class="card-content">
+                    <div class="table-wrap"><table class="dt"><thead><tr><th>日期</th><th>类型</th><th></th></tr></thead><tbody>${cloRows}</tbody></table></div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px">
+                        <input type="date" id="msCloDate" min="${today}" style="padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev)">
+                        <select id="msCloKind" style="padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev)">
+                            <option value="soldout">整天 · 售罄/临时停</option>
+                            <option value="holiday">整天 · 放假</option>
+                            <option value="dinner">只关晚市</option>
+                            <option value="dish">单菜停售</option>
+                        </select>
+                        <select id="msCloDish" style="padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);display:none">${dishOpts}</select>
+                        <button class="btn sm" data-act="saveClosure">加入</button>
+                    </div>
+                </div></div>`;
+
+            root.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''}</div></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                            ${tabs}
+                            <button class="btn ghost sm" data-act="copyPrev" title="把上一周的排期抄过来当草稿">复制上周</button>
+                            <button class="btn ghost sm" data-act="reset" ${MS.dirty ? '' : 'disabled'}>撤销改动</button>
+                            <button class="btn ghost sm" data-act="refresh">↻ 刷新</button>
+                            <button class="btn sm" data-act="saveWeek">保存整周</button>
+                        </div>
+                    </div>
+                    <div class="card-content" style="font-size:12px;opacity:.75">
+                        一道菜只能在一个位置：加进某列会自动从别的列移走。⭐ = 当天主打（首页 hero）。保存后网站约 1 分钟内生效；旧页面提交的单会被服务端按新菜单拒收并提示刷新。
+                        限量请到 <a href="#" data-act="gotoInventory">库存页</a> 设置。
+                    </div>
+                </div>
+                ${conflictsCard}
+                <div class="grid-3" style="gap:10px;margin-top:10px">${dayCards}${dailyCard}${pausedCard}${poolCard}</div>
+                <div style="height:10px"></div>
+                ${priceCard}
+                ${closureCard}`;
+        }
+
+        // ── 事件 ──────────────────────────────────────────────────────
+        function msWeekPayload() {
+            return {
+                days: Object.fromEntries([1, 2, 3, 4, 5].map(wd => [String(wd), MS.draft.days[wd]])),
+                daily: MS.draft.daily, paused: MS.draft.paused,
+            };
+        }
+        async function msApply(body, okMsg) {
+            try {
+                const res = await msFetch(body);
+                MS.runtime = res.runtime || MS.runtime;
+                if (res.catalog) MS.catalog = res.catalog;
+                MS.conflicts = res.conflicts || [];
+                if (body.action === 'saveWeek' || body.action === 'saveDay') { msLoadDraft(); }
+                toast(okMsg + (MS.conflicts.length ? `（⚠ ${MS.conflicts.length} 处撞到已有订单，见黄框）` : ''), MS.conflicts.length ? 'warn' : 'success');
+                msRender();
+                return true;
+            } catch (e) {
+                toast('保存失败：' + e.message, 'error');
+                return false;
+            }
+        }
+        function msOnChange(ev) {
+            const t = ev.target;
+            if (t.dataset.role === 'add-select' && t.value) {
+                msPlace(t.value, t.dataset.key);
+                msRender();
+                return;
+            }
+            if (t.id === 'msCloKind') {
+                const dish = document.getElementById('msCloDish');
+                if (dish) dish.style.display = t.value === 'dish' ? '' : 'none';
+            }
+        }
+        async function msOnClick(ev) {
+            const btn = ev.target.closest('[data-act]');
+            if (!btn) return;
+            const act = btn.dataset.act;
+            if (act === 'gotoInventory') { ev.preventDefault(); switchPage('inventory'); return; }
+            if (act === 'week') {
+                const o = Number(btn.dataset.offset);
+                if (o === MS.offset) return;
+                if (MS.dirty && !confirm('当前周有未保存改动，切换会丢掉。继续？')) return;
+                MS.offset = o; msLoadDraft(); MS.conflicts = []; msRender(); return;
+            }
+            if (act === 'refresh') { if (MS.dirty && !confirm('有未保存改动，刷新会丢掉。继续？')) return; MS.loaded = false; await msLoad(); return; }
+            if (act === 'reset') { msLoadDraft(); msRender(); return; }
+            if (act === 'copyPrev') {
+                const prev = msWeekFor(msAddDays(MS.draftMonday, -7));
+                MS.draft = msCloneWeek(prev.week); MS.dirty = true; msRender(); return;
+            }
+            if (act === 'hero') { msPlace(btn.dataset.id, btn.dataset.key, 0); msRender(); return; }
+            if (act === 'up') { msMove(btn.dataset.key, btn.dataset.id, -1); msRender(); return; }
+            if (act === 'down') { msMove(btn.dataset.key, btn.dataset.id, 1); msRender(); return; }
+            if (act === 'remove') { msRemove(btn.dataset.id); msRender(); return; }
+            if (act === 'saveWeek') {
+                btn.disabled = true;
+                await msApply({ action: 'saveWeek', monday: MS.draftMonday, week: msWeekPayload() }, `已保存 ${MS.draftMonday} 整周排期`);
+                btn.disabled = false; return;
+            }
+            if (act === 'saveDay') {
+                const wd = Number(btn.dataset.key);
+                btn.disabled = true;
+                await msApply({ action: 'saveDay', monday: MS.draftMonday, weekday: wd, ids: MS.draft.days[wd] }, `已保存 ${MS_WD_CN[wd]}（${msFmt(msAddDays(MS.draftMonday, wd - 1))}）`);
+                btn.disabled = false; return;
+            }
+            if (act === 'savePrice') {
+                const tr = btn.closest('tr');
+                const price = Number(tr.querySelector('[data-role=price]').value);
+                const hidden = tr.querySelector('[data-role=hidden]').checked;
+                if (!(price > 0)) { toast('价格必须大于 0', 'error'); return; }
+                btn.disabled = true;
+                await msApply({ action: 'setDish', id: Number(btn.dataset.id), price, hidden }, `已保存「${msName(btn.dataset.id)}」RM ${price.toFixed(2)}${hidden ? ' · 未上架' : ''}`);
+                btn.disabled = false; return;
+            }
+            if (act === 'saveClosure') {
+                const date = document.getElementById('msCloDate').value;
+                const kind = document.getElementById('msCloKind').value;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { toast('请选日期', 'error'); return; }
+                const body = { action: 'setClosure', date };
+                if (kind === 'soldout' || kind === 'holiday') { body.closed = true; body.reason = kind; }
+                else if (kind === 'dinner') body.dinnerClosed = true;
+                else {
+                    const dishId = Number(document.getElementById('msCloDish').value);
+                    const cur = (MS.runtime.closures || {})[date] || {};
+                    body.blockedDishIds = [...new Set([...(cur.blockedDishIds || []), dishId])];
+                    if (cur.closed) { body.closed = true; body.reason = cur.reason; }
+                    if (cur.dinnerClosed) body.dinnerClosed = true;
+                }
+                btn.disabled = true;
+                await msApply(body, `已加入 ${date}`);
+                btn.disabled = false; return;
+            }
+            if (act === 'delClosure') {
+                const date = btn.dataset.date;
+                if (!confirm(`删除 ${date} 的停业/停售设置？`)) return;
+                await msApply({ action: 'deleteClosure', date }, `已删除 ${date}`);
+                return;
             }
         }
 
