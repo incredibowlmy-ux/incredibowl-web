@@ -150,7 +150,14 @@ async function waba() {
     }
   }
   if (!found) {
-    console.log('  一个都没找到。可能 token 权限缺 whatsapp_business_management，或 business id 不对。');
+    console.log('  一个都没找到。');
+    console.log('  ⚠️ 若报 403 (#200) Requires business_management —— 那是**另一个**权限，');
+    console.log('     跟 whatsapp_business_management 不是同一个，列 business 下的账号才需要它。');
+    console.log('  不用为它重新生成 token，直接去后台抄 id 更快：');
+    console.log('     developers.facebook.com → 你的 App（Incredibowl）→ WhatsApp → API Setup');
+    console.log('     那页上「WhatsApp Business Account ID」就是，然后：');
+    console.log("     $env:WA_WABA_ID='<那个 id>'");
+    console.log('     node scripts/wa-templates.mjs list   ← 用它验证 id 对不对');
   } else {
     console.log('\n下一步：');
     console.log("  $env:WA_WABA_ID='<上面的 id>'");

@@ -99,8 +99,10 @@ async function show() {
 
   console.log('\n═══ 会话组件（冰破 / 指令）═══');
   try {
-    const a = await get(`${PHONE_ID}/conversational_automation`, 'enable_welcome_message,prompts,commands');
-    const d = a.conversational_automation || a;
+    // 读是号码上的一个**字段**（?fields=conversational_automation），写才是 edge。
+    // 当成 edge 读会回 400 (#100) Tried accessing nonexisting field —— 2026-09-09 实测。
+    const a = await get(PHONE_ID, 'conversational_automation');
+    const d = a.conversational_automation || {};
     console.log(`  欢迎消息    ${d.enable_welcome_message ? '开' : '关'}`);
     console.log(`  冰破问句    ${(d.prompts || []).length ? JSON.stringify(d.prompts) : '（无）'}`);
     console.log(`  指令        ${(d.commands || []).map(c => '/' + c.command_name).join(' ') || '（无）'}`);
