@@ -226,6 +226,61 @@ async function check() {
   console.log('');
 }
 
+/**
+ * 提交模板报「WhatsApp accounts cannot be used with this API」时跑这个。
+ * 那句话不是在说 id 错（沙盒和正式都一样报），而是 token / App / WABA 三者的关系不对。
+ * 把能读的全打出来，别再猜。
+ */
+async function diag() {
+  const id = needWaba();
+  console.log('\n═══ 1. token 是什么 ═══');
+  try {
+    const d = (await api(`debug_token?input_token=${encodeURIComponent(TOKEN)}`)).data || {};
+    console.log(`  type        ${d.type || '—'}   ← 应该是 SYSTEM_USER；USER = 你从 API Setup 页复制的临时 token`);
+    console.log(`  app         ${d.application || '—'} (${d.app_id || '—'})   ← 应该是 Incredibowl (2144351003028721)`);
+    console.log(`  expires     ${d.expires_at ? new Date(d.expires_at * 1000).toISOString() : d.expires_at === 0 ? '永不过期' : '—'}`);
+    console.log(`  scopes      ${(d.scopes || []).join(', ') || '—'}`);
+    for (const g of d.granular_scopes || []) console.log(`  granular    ${g.scope} → ${(g.target_ids || []).join(',') || '（不限）'}`);
+  } catch (e) { console.log('  ❌ debug_token 读不到：' + e.message); }
+
+  console.log('\n═══ 2. WABA 本身 ═══');
+  try {
+    const w = await api(`${id}?fields=id,name,account_review_status,ownership_type,on_behalf_of_business_info,owner_business_info,is_enabled_for_insights,message_template_namespace`);
+    console.log(`  name                ${w.name}`);
+    console.log(`  review              ${w.account_review_status || '—'}`);
+    console.log(`  ownership_type      ${w.ownership_type || '—'}   ← ON_BEHALF_OF = 由服务商（BSP）代管，自己的 App 建不了模板`);
+    console.log(`  on_behalf_of        ${w.on_behalf_of_business_info ? JSON.stringify(w.on_behalf_of_business_info) : '（无）'}`);
+    console.log(`  owner business      ${w.owner_business_info?.name || '—'} (${w.owner_business_info?.id || '—'})`);
+    console.log(`  namespace           ${w.message_template_namespace || '—'}`);
+  } catch (e) { console.log('  ❌ ' + e.message); }
+
+  console.log('\n═══ 3. 哪些 App 订阅了这个 WABA ═══');
+  try {
+    const s = await api(`${id}/subscribed_apps`);
+    const apps = s.data || [];
+    console.log(apps.length ? apps.map(a => `  ${a.whatsapp_business_api_data?.name || '?'} (${a.whatsapp_business_api_data?.id || '?'})`).join('\n') : '  （没有任何 App 订阅 —— 这就是问题）');
+  } catch (e) { console.log('  ❌ ' + e.message); }
+
+  console.log('\n═══ 4. 同一把 token 能不能读模板清单 ═══');
+  try {
+    const r = await api(`${id}/message_templates?fields=name,status&limit=3`);
+    console.log(`  ✅ 能读，共 ${(r.data || []).length} 个（前 3）：${(r.data || []).map(t => t.name).join(', ') || '（空）'}`);
+  } catch (e) { console.log('  ❌ 读不到：' + e.message); }
+
+  console.log('\n═══ 5. 试建一个最小模板（dry-run 不写；加 --apply 真试）═══');
+  const probe = { name: 'diag_probe_delete_me', language: 'en', category: 'UTILITY',
+    components: [{ type: 'BODY', text: 'Hi {{1}}, this is a probe.', example: { body_text: [['Ebby']] } }] };
+  if (!APPLY) { console.log('  （dry-run）'); }
+  else {
+    try {
+      const r = await api(`${id}/message_templates`, { method: 'POST', body: probe });
+      console.log(`  ✅ 建成了 id=${r.id} —— 那问题出在正式模板的内容上，不是账号`);
+      await api(`${id}/message_templates?name=diag_probe_delete_me`, { method: 'DELETE' }).catch(() => {});
+    } catch (e) { console.log('  ❌ ' + e.message); }
+  }
+  console.log('');
+}
+
 async function list() {
   const id = needWaba();
   const r = await api(`${id}/message_templates?fields=name,status,category,language,rejected_reason,quality_score&limit=100`);
@@ -274,11 +329,12 @@ async function del() {
   console.log(`✅ 已删除 ${arg}`);
 }
 
-const table = { waba, check, list, submit, delete: del };
+const table = { waba, check, diag, list, submit, delete: del };
 if (!table[cmd]) {
   console.log('用法：node scripts/wa-templates.mjs <waba|list|submit|delete> [名字] [--apply]');
   console.log('  waba    找出 WABA id（第一步）');
-  console.log('  check   确认 WA_WABA_ID 到底是不是 WABA（提交报 400 时先跑这个）');
+  console.log('  check   确认 WA_WABA_ID 到底是不是 WABA');
+  console.log('  diag    提交报「WhatsApp accounts cannot be used with this API」时跑：token/App/WABA 关系全打出来');
   console.log('  list    列出所有模板和审核状态');
   console.log('  submit  提交模板审核：' + Object.keys(TEMPLATES).join(' / ') + ' / all');
   console.log('  delete  删除一个模板');
