@@ -114,11 +114,24 @@ const TEMPLATES = {
 
 // ──────────────────────────────────────────────────────────────
 
-async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(`${GRAPH}/${path}`, {
+/**
+ * form=true 时用 x-www-form-urlencoded（对象/数组字段 JSON 字符串化）—— Graph 的老式写法；
+ * version 覆盖默认版本（v20.0 是 2024 年的，可能已下线）。
+ */
+async function api(path, { method = 'GET', body, form = false, version } = {}) {
+  const base = version ? `https://graph.facebook.com/${version}` : GRAPH;
+  let payload;
+  if (body && form) {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(body)) p.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+    payload = p.toString();
+  } else if (body) {
+    payload = JSON.stringify(body);
+  }
+  const res = await fetch(`${base}/${path}`, {
     method,
-    headers: { Authorization: `Bearer ${TOKEN}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-    ...(body ? { body: JSON.stringify(body) } : {}),
+    headers: { Authorization: `Bearer ${TOKEN}`, ...(body ? { 'Content-Type': form ? 'application/x-www-form-urlencoded' : 'application/json' } : {}) },
+    ...(payload ? { body: payload } : {}),
   });
   const j = await res.json().catch(() => ({}));
   if (!res.ok || j.error) {
@@ -270,13 +283,22 @@ async function diag() {
   console.log('\n═══ 5. 试建一个最小模板（dry-run 不写；加 --apply 真试）═══');
   const probe = { name: 'diag_probe_delete_me', language: 'en', category: 'UTILITY',
     components: [{ type: 'BODY', text: 'Hi {{1}}, this is a probe.', example: { body_text: [['Ebby']] } }] };
-  if (!APPLY) { console.log('  （dry-run）'); }
-  else {
+  if (!APPLY) { console.log('  （dry-run）'); console.log(''); return; }
+  // 同一个请求换三种「写法」各试一次：JSON@v20 / form@v20 / JSON@最新版。
+  // 哪一种成功，submit 就改用哪一种 —— 比继续猜账号问题便宜得多。
+  const variants = [
+    { label: 'JSON  @ v20.0', opts: {} },
+    { label: 'form  @ v20.0', opts: { form: true } },
+    { label: 'JSON  @ v23.0', opts: { version: 'v23.0' } },
+    { label: 'form  @ v23.0', opts: { form: true, version: 'v23.0' } },
+  ];
+  for (const v of variants) {
     try {
-      const r = await api(`${id}/message_templates`, { method: 'POST', body: probe });
-      console.log(`  ✅ 建成了 id=${r.id} —— 那问题出在正式模板的内容上，不是账号`);
-      await api(`${id}/message_templates?name=diag_probe_delete_me`, { method: 'DELETE' }).catch(() => {});
-    } catch (e) { console.log('  ❌ ' + e.message); }
+      const r = await api(`${id}/message_templates`, { method: 'POST', body: probe, ...v.opts });
+      console.log(`  ✅ ${v.label} 建成了 id=${r.id}  ← 把这行告诉 Claude，submit 会改成这种写法`);
+      await api(`${id}/message_templates?name=diag_probe_delete_me`, { method: 'DELETE', ...v.opts }).catch(() => {});
+      break;
+    } catch (e) { console.log(`  ❌ ${v.label}：${e.message}`); }
   }
   console.log('');
 }
