@@ -149,8 +149,37 @@ async function waba() {
       console.log(`  （${edge} 读不到：${e.message}）`);
     }
   }
+  // 第二条路：让 token 自己招供。debug_token 的 granular_scopes 里
+  // whatsapp_business_management 的 target_ids 就是这把 token 能管的全部 WABA ——
+  // 不需要 business_management 权限。2026-09-09 老板抄到沙盒 WABA 后加的。
   if (!found) {
-    console.log('  一个都没找到。');
+    console.log('  business 边读不到，改问 token 自己能管哪些 WABA…\n');
+    try {
+      const d = await api(`debug_token?input_token=${encodeURIComponent(TOKEN)}`);
+      const scopes = d.data?.granular_scopes || [];
+      const ids = new Set();
+      for (const s of scopes) {
+        if (/^whatsapp_business/.test(s.scope)) for (const t of s.target_ids || []) ids.add(String(t));
+      }
+      for (const id of ids) {
+        try {
+          const w = await api(`${id}?fields=name`);
+          const p = await api(`${id}/phone_numbers?fields=display_phone_number,verified_name`);
+          const phones = (p.data || []).map(x => x.display_phone_number).join('、') || '（无号码）';
+          const isTest = /test/i.test(w.name || '') || /^\+1 555/.test(phones);
+          console.log(`  ${isTest ? '🧪 沙盒' : '✅ 正式'}  id=${id}  name=${w.name || '—'}  号码：${phones}`);
+          if (!isTest) found = true;
+        } catch (e) {
+          console.log(`  ?  id=${id}（读不到：${e.message}）`);
+        }
+      }
+      if (!ids.size) console.log('  token 的 granular_scopes 里没有 WhatsApp 资产 —— 系统用户没被分配 WABA。');
+    } catch (e) {
+      console.log('  debug_token 也读不到：' + e.message);
+    }
+  }
+  if (!found) {
+    console.log('  正式 WABA 没找到。');
     console.log('  ⚠️ 若报 403 (#200) Requires business_management —— 那是**另一个**权限，');
     console.log('     跟 whatsapp_business_management 不是同一个，列 business 下的账号才需要它。');
     console.log('  不用为它重新生成 token，直接去后台抄 id 更快：');
