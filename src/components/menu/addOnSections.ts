@@ -97,6 +97,8 @@ export interface DishItem {
     desc: string;
     /** Daily dish restricted to these weekdays (0=Sun…6=Sat); date picker rejects others. */
     availableWeekdays?: number[];
+    /** 「常一起点」推荐加料 id（运行时来自 Firestore menuCatalog，见 weeklyMenu.MenuItem）。 */
+    recommendedAddOns?: string[];
 }
 
 /** 专属套餐区：AddOnSection 多两段说明文案（渲染层按 extraDesc / extraDescEn 取）。 */

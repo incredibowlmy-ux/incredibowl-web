@@ -73,6 +73,12 @@ export interface MenuItem {
      * `/xxx.webp` image.
      */
     hidden?: boolean;
+    /**
+     * 「常一起点」推荐加料（addOnsConfig 的 id）。运行时来源 = Firestore
+     * menuCatalog/{id}.recommendedAddOns，由 dashboard 菜品分析页按同单数据推送。
+     * 加料弹窗把它们置顶并打标签；不改价、不加分区。
+     */
+    recommendedAddOns?: string[];
 }
 
 /**
@@ -538,6 +544,7 @@ export interface MenuWeek {
 export interface DishOverride {
     price?: number;
     hidden?: boolean;
+    recommendedAddOns?: string[];
 }
 
 export const DISH_CATALOG_ALL: readonly DishData[] = DISH_CATALOG;
@@ -577,6 +584,9 @@ export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem
         if (typeof o.price === 'number' && Number.isFinite(o.price) && o.price > 0) merged.price = o.price;
         if (typeof o.hidden === 'boolean') {
             if (o.hidden) merged.hidden = true; else delete merged.hidden;
+        }
+        if (Array.isArray(o.recommendedAddOns) && o.recommendedAddOns.length) {
+            merged.recommendedAddOns = o.recommendedAddOns.filter(x => typeof x === 'string' && x).slice(0, 3);
         }
         return [d.id, merged];
     }));

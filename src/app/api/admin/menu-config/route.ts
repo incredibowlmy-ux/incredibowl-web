@@ -8,6 +8,7 @@ import { isDateClosed } from '@/data/blockedDates';
 import { mondayOf, weekDocFor, currentMenu } from '@/lib/menuResolve';
 import type { MenuWeekDoc, ClosureDoc } from '@/lib/menuRuntimeStore';
 import { buildBroadcast } from '@/lib/menuBroadcast';
+import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { getRecipeForDish } from '@/data/dishIngredients';
 import { categorizeIngredient, getConversionFor } from '@/data/ingredientCatalog';
 
@@ -158,6 +159,7 @@ export async function POST(req: NextRequest) {
                 name: d.name, nameEn: d.nameEn, image: d.image,
                 basePrice: d.price, price: o.price ?? d.price,
                 hidden: o.hidden ?? !!d.hidden, baseHidden: !!d.hidden,
+                recommendedAddOns: o.recommendedAddOns ?? [], recommendedSince: o.recommendedSince ?? null,
                 voucherTopUp: d.voucherTopUp ?? 0,
                 availableWeekdays: d.availableWeekdays ?? null,
             };
@@ -323,6 +325,16 @@ export async function POST(req: NextRequest) {
                     patch.price = Math.round(price * 100) / 100;
                 }
                 if (body.hidden !== undefined) patch.hidden = !!body.hidden;
+                if (body.recommendedAddOns !== undefined) {
+                    // 「常一起点」推荐：只收 addOnsConfig 认得的 id，≤3 个；空数组 = 撤掉推荐。
+                    const ids = Array.isArray(body.recommendedAddOns)
+                        ? (body.recommendedAddOns as unknown[]).filter((x): x is string => typeof x === 'string' && x in ADD_ON_PRICES).slice(0, 3)
+                        : [];
+                    const prev = data.catalog[String(id)]?.recommendedAddOns ?? [];
+                    patch.recommendedAddOns = ids;
+                    if (ids.length === 0) patch.recommendedSince = FieldValue.delete();
+                    else if (ids.join() !== prev.join() || !data.catalog[String(id)]?.recommendedSince) patch.recommendedSince = FieldValue.serverTimestamp();
+                }
                 await db.collection(MENU_COLLECTIONS.catalog).doc(String(id)).set(patch, { merge: true });
                 // 镜像到 dashboard 的 menu 集合（手动加单下拉读它；两套 id 历史遗留）。
                 if (typeof patch.price === 'number') {

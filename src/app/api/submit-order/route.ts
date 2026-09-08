@@ -548,6 +548,10 @@ export async function POST(req: Request) {
                 price: a.price,
                 quantity: a.quantity * (vb.quantity || 1),
                 image: a.image || '',
+                // 2026-09-08：结构化 id 一起落库。以前只有中文 label，加料改名 / 改克数
+                // 就得在 dashboard 的别名表补 legacy key，否则历史归因断裂。向后兼容：
+                // 读的一方优先看 addOnId，没有再走 label 表。
+                addOnId: String(a.id || ''),
               });
             }
           }

@@ -16062,6 +16062,7 @@ incredibowl.my`,
             MS.draft = msCloneWeek(pend || msWeekFor(MS.draftMonday).week);
             MS.draftFromScheduled = !!pend;
             MS.dirty = false;
+            MS.draftReasons = null;
             MS.broadcast = ''; MS.forecast = null;
         }
         function msAllLists() {
@@ -16200,6 +16201,7 @@ incredibowl.my`,
                         <span style="flex:1;min-width:0">
                             <div style="font-weight:600;font-size:12.5px">${hero ? '⭐ ' : ''}${msEsc(c.name)} <span class="mono" style="opacity:.6;font-size:11px">RM ${Number(c.price).toFixed(2)}</span>${hero && noImg ? ' <span class="pill warn" title="主打没有实拍图，保存会被拒">⚠ 无图</span>' : ''}</div>
                             <div style="font-size:10.5px;opacity:.6">${msEsc(msStatText(c))}</div>
+                            ${MS.draftReasons && MS.draftReasons[id] ? `<div style="font-size:10.5px;color:var(--accent)">${msEsc(MS.draftReasons[id])}</div>` : ''}
                         </span>
                         ${opts.hero && i > 0 ? `<button class="btn ghost sm" title="设为主打" data-act="hero" data-key="${key}" data-id="${id}">⭐</button>` : ''}
                         <button class="btn ghost sm" title="上移" data-act="up" data-key="${key}" data-id="${id}" ${i === 0 ? 'disabled' : ''}>↑</button>
@@ -16310,6 +16312,7 @@ incredibowl.my`,
                         <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                             ${tabs}
+                            <button class="btn ghost sm" data-act="autoDraft" title="按销量 / 回头率 / 轮换间隔 / 配对打分自动排一版草稿，每道菜带理由，你改完再保存">✨ 自动起稿</button>
                             <button class="btn ghost sm" data-act="copyPrev" title="把上一周的排期抄过来当草稿">复制上周</button>
                             <button class="btn ghost sm" data-act="reset" ${MS.dirty ? '' : 'disabled'}>撤销改动</button>
                             <button class="btn ghost sm" data-act="refresh">↻ 刷新</button>
@@ -16390,7 +16393,12 @@ incredibowl.my`,
             if (act === 'loadScheduled') { if (MS.dirty && !confirm('有未保存改动，载入排定内容会丢掉。继续？')) return; msLoadDraft(true); msRender(); return; }
             if (act === 'copyPrev') {
                 const prev = msWeekFor(msAddDays(MS.draftMonday, -7));
-                MS.draft = msCloneWeek(prev.week); MS.dirty = true; msRender(); return;
+                MS.draft = msCloneWeek(prev.week); MS.draftReasons = null; MS.dirty = true; msRender(); return;
+            }
+            if (act === 'autoDraft') {
+                if (MS.dirty && !confirm('有未保存改动，自动起稿会覆盖当前草稿。继续？')) return;
+                try { msAutoDraft(); } catch (e) { toast('起稿失败：' + e.message, 'error'); }
+                msRender(); return;
             }
             if (act === 'hero') { msPlace(btn.dataset.id, btn.dataset.key, 0); msRender(); return; }
             if (act === 'up') { msMove(btn.dataset.key, btn.dataset.id, -1); msRender(); return; }
@@ -16483,6 +16491,107 @@ incredibowl.my`,
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //   AUTO DRAFT（✨ 自动起稿）—— 规则透明、每道菜一句理由、只生成草稿不写库
+        //   评分（0~1）：销量 0.35 + 回头率 0.25 + 轮换间隔 0.30 + 最旺周几匹配 0.10；
+        //   上周排过 −0.35（常驻除外）；主打必须有实拍图；
+        //   副菜再加：同天搭档历史 vs 日均（±0.3）+ 同单配对转化（≤0.3）− 同蛋白 0.3。
+        // ═══════════════════════════════════════════════════════════════
+        const AD_PROTEIN = [
+            ['三文鱼|鳗鱼|鱼|salmon|unagi|fish', '鱼'], ['虾|prawn|shrimp', '虾'], ['牛|beef|wagyu', '牛'],
+            ['猪|花肉|排骨|猪扒|pork|belly|rib', '猪'], ['鸡|chicken', '鸡'], ['纳豆|natto|蛋|egg', '蛋/素'],
+        ];
+        function adProtein(c) {
+            const s = `${c.name} ${c.nameEn || ''}`.toLowerCase();
+            for (const [re, fam] of AD_PROTEIN) if (new RegExp(re, 'i').test(s)) return fam;
+            return '其他';
+        }
+        function adWeeksSince(ymd, monday) {
+            if (!ymd) return null;
+            return Math.max(0, Math.floor(daDaysBetweenYmd(ymd, monday) / 7));
+        }
+
+        function msAutoDraft() {
+            const monday = MS.draftMonday;
+            const valid = daValidOrders(daAddDaysYmd(ymdKey(new Date()), -84), ymdKey(new Date()));
+            const r = daAnalyze(valid, daDailyNames());
+            const ret = daRetention(daValidOrders('', ymdKey(new Date())));
+            const st = msStatsMap();
+            const prevWeek = msWeekFor(daAddDaysYmd(monday, -7)).week;
+            const prevIds = new Set([...(prevWeek.daily || []), ...[1, 2, 3, 4, 5].flatMap(wd => (prevWeek.days || {})[wd] || (prevWeek.days || {})[String(wd)] || [])].map(Number));
+            const daily = [...MS.draft.daily];
+            const pool = MS.catalog.filter(c => !c.hidden && !daily.includes(c.id));
+            const byName = new Map(r.dishes.map(s => [s.name, s]));
+            const maxPerDay = Math.max(0.1, ...r.dishes.map(s => s.perDay));
+            const retVals = [...ret.perDish.values()].filter(x => x.n >= 10).map(x => x.returned / x.n);
+            const retMax = Math.max(0.01, ...retVals), retMin = Math.min(1, ...retVals);
+
+            const info = new Map();
+            for (const c of pool) {
+                const n = canonicalDishName(c.name);
+                const s = byName.get(n);
+                const rx = ret.perDish.get(n);
+                const last = st.last.get(n) || '';
+                const weeks = adWeeksSince(last, monday);
+                const sales = s ? s.perDay / maxPerDay : 0;
+                const retRate = rx && rx.n >= 10 ? rx.returned / rx.n : null;
+                const retScore = retRate === null ? 0.5 : (retMax > retMin ? (retRate - retMin) / (retMax - retMin) : 0.5);
+                const gap = weeks === null ? 0.6 : Math.min(weeks, 8) / 8;
+                const inPrev = prevIds.has(c.id);
+                const base = 0.35 * sales + 0.25 * retScore + 0.30 * gap - (inPrev ? 0.35 : 0);
+                info.set(c.id, { c, s, retRate, weeks, last, sales, gap, inPrev, base, protein: adProtein(c), hasImg: (c.image || '').startsWith('/') });
+            }
+            const dayPairScore = (a, b) => {
+                const dp = r.dayPairs.find(p => (p.a === a && p.b === b) || (p.a === b && p.b === a));
+                const co = r.coPairs.find(p => (p.a === a && p.b === b) || (p.a === b && p.b === a));
+                return (dp ? Math.max(-0.3, Math.min(0.3, dp.vsAvg)) : 0) + (co ? Math.min(0.3, co.rate * 0.3) : 0);
+            };
+            const why = (x, wd, extra = '') => {
+                const bits = [];
+                bits.push(x.s ? `近12周 ${(x.s.perDay).toFixed(1)} 份/天` : '近12周没卖');
+                if (x.retRate !== null) bits.push(`回头率 ${Math.round(x.retRate * 100)}%`);
+                bits.push(x.weeks === null ? '从未卖过' : x.weeks === 0 ? '上周刚卖' : `隔了 ${x.weeks} 周`);
+                if (x.s && x.s.bestWd === wd) bits.push(`周${DA_WD[wd]}最旺`);
+                if (extra) bits.push(extra);
+                return bits.join(' · ');
+            };
+
+            const used = new Set();
+            const days = {};
+            const reasons = {};
+            for (const wd of [1, 2, 3, 4, 5]) {
+                const cands = [...info.values()].filter(x => !used.has(x.c.id));
+                const heroC = cands.filter(x => x.hasImg)
+                    .map(x => ({ x, sc: x.base + (x.s && x.s.bestWd === wd ? 0.10 : 0) }))
+                    .sort((a, b) => b.sc - a.sc)[0];
+                if (!heroC) { days[wd] = []; continue; }
+                const hero = heroC.x;
+                used.add(hero.c.id);
+                reasons[hero.c.id] = '⭐ ' + why(hero, wd);
+                const heroName = canonicalDishName(hero.c.name);
+                const secC = [...info.values()].filter(x => !used.has(x.c.id))
+                    .map(x => {
+                        const pair = dayPairScore(heroName, canonicalDishName(x.c.name));
+                        const same = x.protein === hero.protein ? 0.3 : 0;
+                        return { x, sc: x.base + pair - same, pair, same };
+                    })
+                    .sort((a, b) => b.sc - a.sc)[0];
+                if (secC) {
+                    used.add(secC.x.c.id);
+                    const pairTxt = secC.pair > 0.05 ? `与主打同天/同单表现好(+${secC.pair.toFixed(2)})` : secC.pair < -0.05 ? `配对偏弱(${secC.pair.toFixed(2)})` : '';
+                    reasons[secC.x.c.id] = why(secC.x, wd, [secC.same ? `⚠ 与主打同为${secC.x.protein}` : `与主打不同蛋白（${secC.x.protein}）`, pairTxt].filter(Boolean).join(' · '));
+                    days[wd] = [hero.c.id, secC.x.c.id];
+                } else days[wd] = [hero.c.id];
+            }
+            // 没选上的：原本暂别的继续暂别；上周卖过但这周没排的 → 暂别（网站灰显，客人知道它还会回来）
+            const prevPaused = new Set(MS.draft.paused);
+            const paused = pool.filter(c => !used.has(c.id) && (prevPaused.has(c.id) || prevIds.has(c.id))).map(c => c.id);
+            MS.draft = { days, daily, paused };
+            MS.draftReasons = reasons;
+            MS.dirty = true;
+            const skipped = pool.filter(c => !(c.image || '').startsWith('/')).map(c => c.name);
+            toast(`已生成草稿：按销量/回头率/轮换间隔/配对打分。${skipped.length ? `无图不能当主打：${skipped.join('、')}` : ''}`, 'success');
+        }
 
         // ═══════════════════════════════════════════════════════════════
         //   DISH ANALYTICS（菜品分析）—— 畅销榜 / 周几表现 / 配对好坏 / 菜单工程四象限
@@ -16688,9 +16797,15 @@ incredibowl.my`,
                 root.dataset.wired = '1';
                 root.addEventListener('click', ev => {
                     const b = ev.target.closest('[data-da-range]');
-                    if (b) { DA.rangeWeeks = Number(b.dataset.daRange); daRender(); }
+                    if (b) { DA.rangeWeeks = Number(b.dataset.daRange); daRender(); return; }
+                    const push = ev.target.closest('[data-da-push]');
+                    if (push) { push.disabled = true; daPushRecommend(push.dataset.daPush, push.dataset.ids ? push.dataset.ids.split(',') : []); return; }
+                    const cust = ev.target.closest('a[data-cust-key]');
+                    if (cust) { ev.preventDefault(); if (typeof openCustomerProfileByKey === 'function') openCustomerProfileByKey(cust.dataset.custKey); return; }
                 });
             }
+            // 加料实验 / 推送需要菜品目录（排期页的 MS.catalog）；没载入就先拉一次再重画。
+            if (!MS.loaded && !MS.loading) { msLoad().then(() => daRender()); }
             daRender();
         }
         function daRender() {
@@ -16748,7 +16863,8 @@ incredibowl.my`,
                         <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>配对</th><th class="r">共同天</th><th class="r">机会</th><th class="r">同单</th><th class="r">转化</th><th class="r">同单均值</th></tr></thead><tbody>${goodCo.map(coRow).join('') || '<tr><td colspan="6" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
                     <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">同一张单一起点 · 最弱</div><div class="card-sub">机会多却几乎不同单 → 排菜单时拆开不同天</div></div></div>
                         <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>配对</th><th class="r">共同天</th><th class="r">机会</th><th class="r">同单</th><th class="r">转化</th><th class="r">同单均值</th></tr></thead><tbody>${badCo.map(coRow).join('') || '<tr><td colspan="6" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
-                </div>`;
+                </div>
+                ${(() => { try { return daExtraCards(r); } catch (e) { console.warn('[dishAnalytics] extra cards', e); return ''; } })()}`;
 
             // 图
             try {
@@ -16769,6 +16885,245 @@ incredibowl.my`,
                         label: { show: true, position: 'top', formatter: p => p.data.name.slice(0, 6), fontSize: 10, color: COLOR.textSec },
                         markLine: { silent: true, symbol: 'none', lineStyle: { type: 'dashed', color: COLOR.textMuted }, data: [{ xAxis: r.popLine }, ...(r.avgMargin === null ? [] : [{ yAxis: r.avgMargin }])] } }] });
             } catch (e) { console.warn('[dishAnalytics] chart', e); }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //   DISH ANALYTICS · 第三期：按菜回头率 / 加料曝光实验 / 客户预警
+        // ═══════════════════════════════════════════════════════════════
+        const DA_RETENTION_DAYS = 30;
+        const daDaysBetweenYmd = (a, b) => Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+        const daAddDaysYmd = (ymd, n) => { const [y, m, d] = ymd.split('-').map(Number); return ymdKey(new Date(y, m - 1, d + n)); };
+        const daCustKey = o => (typeof customerKey === 'function' ? customerKey(o) : ('u:' + (o.userId || o.userPhone || 'unknown')));
+        const daMainDishesOf = o => {
+            const out = new Map();
+            for (const it of (o.items || [])) {
+                const raw = String(it?.name || '').trim();
+                if (!raw || raw.startsWith('↳')) continue;
+                const n = canonicalDishName(raw);
+                if (!findMenuByName(n)) continue;
+                out.set(n, (out.get(n) || 0) + Math.max(1, Math.floor(Number(it.quantity) || 1)));
+            }
+            return out;
+        };
+
+        /**
+         * 按菜回头率：客户在日期 D 点了菜 X → 之后 30 天内有没有再下单（任何菜）= 回头；
+         * 再点 X = 再点。只算 D 距今 ≥30 天的记录（新单还没到期不算流失）。
+         * 返回 Map(菜名 → {n, returned, reordered}) + 全店基准。
+         */
+        function daRetention(orders) {
+            const today = ymdKey(new Date());
+            const cutoff = daAddDaysYmd(today, -DA_RETENTION_DAYS);
+            const byCust = new Map();
+            for (const o of orders) {
+                const key = daCustKey(o);
+                if (!key || key === 'u:unknown') continue;
+                const dishes = daMainDishesOf(o);
+                if (!dishes.size) continue;
+                if (!byCust.has(key)) byCust.set(key, []);
+                byCust.get(key).push({ date: o.deliveryDate, dishes });
+            }
+            const perDish = new Map();
+            let baseN = 0, baseRet = 0;
+            for (const list of byCust.values()) {
+                list.sort((a, b) => a.date.localeCompare(b.date));
+                for (let i = 0; i < list.length; i++) {
+                    const cur = list[i];
+                    if (cur.date > cutoff) continue;
+                    const end = daAddDaysYmd(cur.date, DA_RETENTION_DAYS);
+                    const later = list.filter(x => x.date > cur.date && x.date <= end);
+                    const returned = later.length > 0;
+                    baseN++; if (returned) baseRet++;
+                    for (const name of cur.dishes.keys()) {
+                        const s = perDish.get(name) || { n: 0, returned: 0, reordered: 0 };
+                        s.n++;
+                        if (returned) s.returned++;
+                        if (later.some(x => x.dishes.has(name))) s.reordered++;
+                        perDish.set(name, s);
+                    }
+                }
+            }
+            return { perDish, baseline: baseN ? baseRet / baseN : null, baseN };
+        }
+
+        /**
+         * 加料归因：每道菜 → 加料渗透率 / 每份加料 RM / 最常一起点的加料（按 id）。
+         * 读 normalizeOrderItems（↳ 行折回 addOns，优先 addOnId，没有走 label 表）。
+         * 可按 sinceMs 分推送前 / 后（按下单时间 createdAt）。
+         */
+        function daAddonAttach(orders, opts = {}) {
+            const per = new Map(); // dish -> {servings, orders, attachOrders, addonRev, byId: Map(id -> {count, rev, label})}
+            for (const o of orders) {
+                if (opts.beforeMs !== undefined && daTs(o.createdAt) >= opts.beforeMs) continue;
+                if (opts.afterMs !== undefined && daTs(o.createdAt) < opts.afterMs) continue;
+                let items;
+                try { items = normalizeOrderItems(o); } catch { items = o.items || []; }
+                const mains = items.filter(it => { const n = String(it?.name || '').trim(); return n && !n.startsWith('↳') && findMenuByName(canonicalDishName(n)); });
+                if (mains.length !== 1 && !opts.allowMulti) {
+                    // 多菜单加料归因不到具体菜（同 weekly-sales-snapshot 口径：只归因单菜订单）
+                    for (const it of mains) { const name = canonicalDishName(String(it.name).trim()); const s = per.get(name) || { servings: 0, orders: 0, attachOrders: 0, addonRev: 0, byId: new Map(), unattributed: 0 }; s.servings += Math.max(1, Number(it.quantity) || 1); s.orders++; s.unattributed++; per.set(name, s); }
+                    continue;
+                }
+                for (const it of mains) {
+                    const name = canonicalDishName(String(it.name).trim());
+                    const s = per.get(name) || { servings: 0, orders: 0, attachOrders: 0, addonRev: 0, byId: new Map(), unattributed: 0 };
+                    const qty = Math.max(1, Number(it.quantity) || 1);
+                    s.servings += qty; s.orders++;
+                    const addOns = (it.addOns || []).filter(a => a && (a.id || a.label));
+                    if (addOns.length) s.attachOrders++;
+                    for (const a of addOns) {
+                        const id = a.addOnId || a.id || a.label;
+                        const rev = (Number(a.price) || 0) * (Number(a.quantity) || 1);
+                        s.addonRev += rev;
+                        const x = s.byId.get(id) || { id, label: a.label || id, count: 0, rev: 0 };
+                        x.count += 1; x.rev += rev; s.byId.set(id, x);
+                    }
+                    per.set(name, s);
+                }
+            }
+            for (const s of per.values()) {
+                s.attachRate = s.orders ? s.attachOrders / s.orders : 0;
+                s.revPerServing = s.servings ? s.addonRev / s.servings : 0;
+                s.top = [...s.byId.values()].filter(x => /^[a-z0-9-]+$/i.test(String(x.id))).sort((a, b) => b.count - a.count || b.rev - a.rev).slice(0, 3);
+            }
+            return per;
+        }
+
+        /** 客户预警三名单。 */
+        function daChurnLists(orders) {
+            const today = ymdKey(new Date());
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            const thisMon = ymdKey(new Date(t.getFullYear(), t.getMonth(), t.getDate() - ((t.getDay() + 6) % 7)));
+            const lastMon = daAddDaysYmd(thisMon, -7), lastSun = daAddDaysYmd(thisMon, -1);
+            const d28 = daAddDaysYmd(today, -28);
+            const cust = new Map();
+            const uidToKey = new Map();
+            for (const o of orders) {
+                const key = daCustKey(o);
+                if (!key || key === 'u:unknown') continue;
+                if (o.userId) uidToKey.set(o.userId, key);
+                const c = cust.get(key) || { key, name: '', phone: '', value: 0, value28: 0, orders: 0, last: '', first: '', lastWeek: false, thisWeek: false };
+                const v = (Number(o.total) || 0) + (Number(o.mealVouchersUsed) || 0) * DA_VOUCHER_FACE;
+                c.value += v; c.orders++;
+                if (o.deliveryDate >= d28) c.value28 += v;
+                if (!c.last || o.deliveryDate > c.last) { c.last = o.deliveryDate; c.name = o.userName || c.name; c.phone = o.userPhone || c.phone; }
+                if (!c.first || o.deliveryDate < c.first) c.first = o.deliveryDate;
+                if (!c.name && o.userName) c.name = o.userName;
+                if (!c.phone && o.userPhone) c.phone = o.userPhone;
+                if (o.deliveryDate >= lastMon && o.deliveryDate <= lastSun) c.lastWeek = true;
+                if (o.deliveryDate >= thisMon && o.deliveryDate <= today) c.thisWeek = true;
+                cust.set(key, c);
+            }
+            const withDays = c => ({ ...c, days: c.last ? daDaysBetweenYmd(c.last, today) : null });
+            const A = [...cust.values()].filter(c => c.lastWeek && !c.thisWeek).map(withDays).sort((a, b) => b.value - a.value);
+            const B = [...cust.values()].filter(c => c.value28 >= 80 && c.last && daDaysBetweenYmd(c.last, today) >= 14).map(withDays).sort((a, b) => b.value28 - a.value28);
+            // C：持券静默 / 券将过期（state.mealVouchers 按 userId 现算）
+            const nowMs = Date.now();
+            const holders = new Map();
+            for (const v of (state.mealVouchers || [])) {
+                if (v.status !== 'available') continue;
+                const exp = daTs(v.expiresAt);
+                if (exp && exp <= nowMs) continue;
+                const key = uidToKey.get(v.userId) || ('u:' + v.userId);
+                const h = holders.get(key) || { key, count: 0, nearestExp: null, userId: v.userId };
+                h.count++; if (exp && (!h.nearestExp || exp < h.nearestExp)) h.nearestExp = exp;
+                holders.set(key, h);
+            }
+            const C = [];
+            for (const h of holders.values()) {
+                const c = cust.get(h.key);
+                const days = c && c.last ? daDaysBetweenYmd(c.last, today) : null;
+                const expDays = h.nearestExp ? Math.ceil((h.nearestExp - nowMs) / 86400000) : null;
+                const silent = days === null || days > 14;
+                const expiring = expDays !== null && expDays <= 14;
+                if (!silent && !expiring) continue;
+                const u = (state.users || []).find(x => x.id === h.userId) || {};
+                C.push({ key: h.key, name: (c && c.name) || u.displayName || '（未知）', phone: (c && c.phone) || u.phone || '', value: c ? c.value : 0, last: c ? c.last : '', days, vouchers: h.count, expDays, silent, expiring });
+            }
+            C.sort((a, b) => (a.expDays ?? 999) - (b.expDays ?? 999) || b.vouchers - a.vouchers);
+            return { A, B, C, thisMon, lastMon, lastSun };
+        }
+
+        const daWaLink = (phone, name, days) => {
+            const p = normalizePhone(phone);
+            if (!p || p.length < 7) return '';
+            const msg = `嗨 ${name || ''}！很久没看到你的订单啦${days ? ` (${days} 天)` : ''}🍱 这周菜单已经更新，看看有没有想吃的 👉 https://incredibowl.my`;
+            return `https://wa.me/60${p}?text=${encodeURIComponent(msg)}`;
+        };
+
+        /** 分析页第三期卡片（回头率榜 / 加料实验 / 客户预警）的 HTML。 */
+        function daExtraCards(r) {
+            const valid = daValidOrders('', ymdKey(new Date()));
+            const fmtPct = n => n === null || n === undefined ? '—' : `${Math.round(n * 100)}%`;
+            // ── 回头率
+            const ret = daRetention(valid);
+            r.retention = ret;
+            for (const s of r.dishes) {
+                const x = ret.perDish.get(s.name);
+                s.retN = x ? x.n : 0; s.retRate = x && x.n ? x.returned / x.n : null; s.reRate = x && x.n ? x.reordered / x.n : null;
+            }
+            const retRows = r.dishes.filter(s => s.retN >= 10).sort((a, b) => b.retRate - a.retRate);
+            const retRow = s => `<tr><td>${daEsc(s.name)}</td><td class="r mono">${s.retN}</td><td class="r mono"><b>${fmtPct(s.retRate)}</b></td><td class="r mono">${fmtPct(s.reRate)}</td><td class="r mono ${ret.baseline !== null && s.retRate >= ret.baseline ? 'pos' : 'neg'}">${ret.baseline === null ? '—' : `${s.retRate >= ret.baseline ? '+' : ''}${Math.round((s.retRate - ret.baseline) * 100)}pt`}</td></tr>`;
+            const retCard = `<div class="grid-2" style="gap:10px;margin-top:10px">
+                <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">留客菜 · 回头率最高</div><div class="card-sub">点过这道菜的客户 30 天内再下单的比例（样本 ≥10 次）· 全店基准 ${fmtPct(ret.baseline)}（${ret.baseN} 次）</div></div></div>
+                    <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>菜</th><th class="r">样本</th><th class="r">30天回头</th><th class="r">再点同菜</th><th class="r">vs 基准</th></tr></thead><tbody>${retRows.slice(0, 8).map(retRow).join('') || '<tr><td colspan="5" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+                <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">留客菜 · 回头率最低</div><div class="card-sub">卖得多但客人吃完不回来的菜，别当主打</div></div></div>
+                    <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>菜</th><th class="r">样本</th><th class="r">30天回头</th><th class="r">再点同菜</th><th class="r">vs 基准</th></tr></thead><tbody>${[...retRows].reverse().slice(0, 8).map(retRow).join('') || '<tr><td colspan="5" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+            </div>`;
+
+            // ── 加料曝光实验
+            const attach = daAddonAttach(valid.filter(o => o.deliveryDate >= (r.since || '0000')));
+            const catByName = new Map((MS.catalog || []).map(c => [canonicalDishName(c.name), c]));
+            const addonLabel = id => { const a = (state.addons || []).find(x => String(x.id) === String(id)); return a ? (a.name || a.label || id) : id; };
+            const expRows = r.dishes.map(s => {
+                const a = attach.get(s.name);
+                const c = catByName.get(s.name);
+                if (!a || !c) return '';
+                const top = a.top.map(x => `${daEsc(addonLabel(x.id))}×${x.count}`).join(' / ') || '—';
+                const pushed = (c.recommendedAddOns || []);
+                let exp = '';
+                if (pushed.length && c.recommendedSince) {
+                    const sinceMs = Date.parse(c.recommendedSince);
+                    const pre = daAddonAttach(valid.filter(o => daTs(o.createdAt) >= sinceMs - 56 * 86400000), { beforeMs: sinceMs }).get(s.name);
+                    const post = daAddonAttach(valid, { afterMs: sinceMs }).get(s.name);
+                    const f = x => x ? `${fmtPct(x.attachRate)} · RM${x.revPerServing.toFixed(2)}/份（${x.orders} 单）` : '—';
+                    exp = `<div style="font-size:11px;margin-top:2px">推送前 8 周 ${f(pre)} → 推送后 ${f(post)}${pre && post && post.orders >= 10 ? ` <b class="${post.attachRate >= pre.attachRate ? 'pos' : 'neg'}">${post.attachRate >= pre.attachRate ? '↑' : '↓'} ${Math.round((post.attachRate - pre.attachRate) * 100)}pt</b>` : ' <span style="opacity:.6">（推送后样本未满 10 单）</span>'}</div>`;
+                }
+                return `<tr><td>${daEsc(s.name)}${pushed.length ? `<div style="font-size:11px;color:var(--accent)">已推送：${pushed.map(id => daEsc(addonLabel(id))).join(' / ')}${c.recommendedSince ? ` · ${daEsc(String(c.recommendedSince).slice(0, 10))}` : ''}</div>` : ''}${exp}</td>
+                    <td class="r mono">${a.orders}</td><td class="r mono">${fmtPct(a.attachRate)}</td><td class="r mono">${a.revPerServing.toFixed(2)}</td><td style="font-size:12px">${top}</td>
+                    <td class="r" style="white-space:nowrap">${a.top.length ? `<button class="btn ghost sm" data-da-push="${c.id}" data-ids="${a.top.map(x => x.id).join(',')}" title="把这几项在网站加料弹窗置顶并打「常一起点」标签">推送前${a.top.length}</button>` : ''}${pushed.length ? ` <button class="btn ghost sm" data-da-push="${c.id}" data-ids="">撤掉</button>` : ''}</td></tr>`;
+            }).join('');
+            const expCard = `<div class="card collapsible" data-collapsible style="margin-top:10px"><div class="card-header"><div><div class="card-title">加料曝光实验 · 每道菜最常一起点的加料</div><div class="card-sub">渗透 = 有加料的单 ÷ 该菜单菜订单（多菜单不归因）· 「推送」= 网站加料弹窗置顶 + 「常一起点」标签，不改价 · 推送后自动对比前 8 周渗透率</div></div>
+                <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+                <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>菜</th><th class="r">单</th><th class="r">渗透</th><th class="r">RM/份</th><th>最常一起点</th><th></th></tr></thead><tbody>${expRows || '<tr><td colspan="6" style="opacity:.5">排期页还没载入菜品目录，先打开一次「菜单排期」</td></tr>'}</tbody></table></div></div></div>`;
+
+            // ── 客户预警
+            const ch = daChurnLists(valid);
+            const custRow = (c, extra = '') => `<tr><td><a href="#" data-cust-key="${daEsc(c.key)}" style="font-weight:600">${daEsc(c.name || '（未知）')}</a><div class="mono" style="opacity:.6;font-size:11px">${daEsc(c.phone || '')}</div></td>
+                <td class="r mono">${Math.round(c.value)}</td><td class="mono">${daEsc(c.last || '—')}</td><td class="r mono">${c.days === null ? '—' : c.days}</td><td>${extra}</td>
+                <td class="r">${daWaLink(c.phone, c.name, c.days) ? `<a class="btn ghost sm" target="_blank" rel="noopener" href="${daWaLink(c.phone, c.name, c.days)}">WhatsApp</a>` : ''}</td></tr>`;
+            const head = extra => `<thead><tr><th>客户</th><th class="r">终身价值 RM</th><th>最后下单</th><th class="r">静默天</th><th>${extra}</th><th></th></tr></thead>`;
+            const churnCard = `<div class="card" style="margin-top:10px;border-color:${ch.A.length || ch.B.length ? '#e0a800' : 'var(--border)'}">
+                <div class="card-header"><div><div class="card-title">🚨 客户预警 · 今天该私讯谁</div><div class="card-sub">口径同周报脚本：A 上周（${daEsc(ch.lastMon)}~${daEsc(ch.lastSun)}）活跃、本周还没来 · B 近 4 周价值 ≥ RM80 且 ≥14 天没下单 · C 手上有券但静默 >14 天或券 14 天内到期 · 点名字开档案</div></div></div>
+                <div class="card-content">
+                    <div class="grid-2" style="gap:10px">
+                        <div><div style="font-weight:700;font-size:12.5px;margin-bottom:4px">A · 上周来、本周没来（${ch.A.length}）</div><div class="table-wrap"><table class="dt">${head('单数')}<tbody>${ch.A.slice(0, 15).map(c => custRow(c, `${c.orders} 单`)).join('') || '<tr><td colspan="6" style="opacity:.5">没有</td></tr>'}</tbody></table></div></div>
+                        <div><div style="font-weight:700;font-size:12.5px;margin-bottom:4px">B · 高价值沉默（${ch.B.length}）</div><div class="table-wrap"><table class="dt">${head('近4周 RM')}<tbody>${ch.B.slice(0, 15).map(c => custRow(c, `RM${Math.round(c.value28)}`)).join('') || '<tr><td colspan="6" style="opacity:.5">没有</td></tr>'}</tbody></table></div></div>
+                    </div>
+                    <div style="font-weight:700;font-size:12.5px;margin:10px 0 4px">C · 持券不来 / 券将过期（${ch.C.length}）</div>
+                    <div class="table-wrap"><table class="dt">${head('券')}<tbody>${ch.C.slice(0, 20).map(c => custRow(c, `${c.vouchers} 张${c.expDays !== null ? `，${c.expDays} 天后到期` : ''}${c.silent ? ' · 静默' : ''}`)).join('') || '<tr><td colspan="6" style="opacity:.5">没有</td></tr>'}</tbody></table></div>
+                </div></div>`;
+            return churnCard + retCard + expCard;
+        }
+
+        async function daPushRecommend(webappId, ids) {
+            try {
+                const res = await callAdminAPI('/api/admin/menu-config', { action: 'setDish', id: Number(webappId), recommendedAddOns: ids });
+                if (res.runtime) MS.runtime = res.runtime;
+                if (res.catalog) MS.catalog = res.catalog;
+                toast(ids.length ? '已推送到网站，加料弹窗约 1 分钟内生效' : '已撤掉推荐', 'success');
+                daRender();
+            } catch (e) { toast('推送失败：' + e.message, 'error'); }
         }
 
     </script>

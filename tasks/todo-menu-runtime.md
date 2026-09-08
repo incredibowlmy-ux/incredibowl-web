@@ -75,3 +75,13 @@ Firestore 成为菜单唯一来源；代码里的 weeklyMenu.ts / blockedDates.t
 - 食材预测的需求量由 dashboard 算（近 8 周每供应日均量，没卖过的用中位数）→ API 乘配方对照 ingredientStock；dashboard 里的 id 是 menu id，喂 API 前按菜名回 MS.catalog 换成网站 id（vm 测抓到的坑）。
 - Broadcast 的「新菜」= 上周文档没排过的菜 ∪ 从未卖过的菜；文案生成后老板仍可在 textarea 改。
 - 排定生效挂在 menuWeeks 文档 `scheduled` 字段，saveDay 用 merge 不会误删；服务端 30s 缓存 + 缓存 key 带「到点指纹」。
+
+# 第三期（2026-09-08 老板「do it」）：回头率 / 自动起稿 / 流失预警 / 加料曝光实验
+- [ ] P6a submit-order 加料行写 addOnId（向后兼容）
+- [ ] P6b MenuItem/DishOverride 加 recommendedAddOns + recommendedSince；setDish 支持；/api/menu 带出
+- [ ] P6c AddOnModal「常一起点」badge + 置顶
+- [ ] P1 分析页：30 天回头率 / 再点率两列 + 留客榜 + 基准线
+- [ ] P6d 分析页：每菜最常一起点前三加料 + 「推送推荐到网站」+ 推送前后渗透率对比
+- [ ] P5 分析页：客户预警三名单（上周活跃本周没来 / 高价值沉默 / 持券静默或将过期）+ wa.me + 档案抽屉
+- [ ] P2 排期页：✨ 自动起稿（规则透明、每道菜一句理由，只生成草稿）
+- [ ] 验证：tsc / build / dogfood / vm 测 / 本地 next start；sync:dashboard；commit

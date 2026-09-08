@@ -54,6 +54,13 @@ export function normalizeOverride(raw: Record<string, unknown> | undefined): Dis
     const o: DishOverrideDoc = {};
     if (typeof raw?.price === 'number' && Number.isFinite(raw.price) && raw.price > 0) o.price = raw.price;
     if (typeof raw?.hidden === 'boolean') o.hidden = raw.hidden;
+    if (Array.isArray(raw?.recommendedAddOns)) {
+        const ids = (raw.recommendedAddOns as unknown[]).filter((x): x is string => typeof x === 'string' && !!x).slice(0, 3);
+        if (ids.length) o.recommendedAddOns = ids;
+    }
+    const since = raw?.recommendedSince as { toDate?: () => Date } | string | undefined;
+    if (typeof since === 'string') o.recommendedSince = since;
+    else if (since && typeof since.toDate === 'function') o.recommendedSince = since.toDate().toISOString();
     return o;
 }
 

@@ -114,10 +114,22 @@ export default function AddOnModal({
     }, [dinnerClosed, selectedTime]);
 
     // Compute dynamic add-on sections based on the selected dish
+    // 「常一起点」推荐（dashboard 菜品分析按同单数据推送 → Firestore → 运行时菜单）：
+    // 只在各自分区内置顶 + 打标签，不新增分区、不改价。曝光实验的对照读数在 dashboard。
+    const recommended = React.useMemo(() => new Set(dish?.recommendedAddOns ?? []), [dish]);
     const activeAddOnSections = React.useMemo(() => {
         if (!dish) return addOnSections;
-        return buildAddOnSections(dish, addOnSections);
-    }, [dish, addOnSections]);
+        const sections = buildAddOnSections(dish, addOnSections);
+        if (!recommended.size) return sections;
+        return sections.map(sec => {
+            if (sec.items.some(it => it.category === 'combo')) return sec;
+            const rank = (id: string) => (recommended.has(id) ? 0 : 1);
+            const items = sec.items.map((it, i) => ({ it, i }))
+                .sort((a, b) => rank(a.it.id) - rank(b.it.id) || a.i - b.i)
+                .map(x => x.it);
+            return { ...sec, items };
+        });
+    }, [dish, addOnSections, recommended]);
 
     // Reset state when modal opens/dish changes
     useEffect(() => {
@@ -530,6 +542,11 @@ export default function AddOnModal({
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-bold text-[#3B2A1A] truncate">
                                                                 {isEn ? item.nameEn : item.name}
+                                                                {recommended.has(item.id) && (
+                                                                    <span className="ml-1.5 align-middle inline-block text-[10px] font-extrabold text-[#C76F40] bg-[#FFF3E0] border border-[#C76F40]/30 rounded-full px-1.5 py-[1px]">
+                                                                        {isEn ? 'Often paired' : '常一起点'}
+                                                                    </span>
+                                                                )}
                                                             </p>
                                                             <p className="text-[11px] lg:text-[12px] text-[#8B7355]">
                                                                 {isEn ? item.name : item.nameEn} · <span className="font-bold text-[#C76F40]">+RM {item.price.toFixed(2)}</span>

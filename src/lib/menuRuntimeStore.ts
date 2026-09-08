@@ -32,6 +32,10 @@ export interface MenuWeekDoc {
 export interface DishOverrideDoc {
     price?: number;
     hidden?: boolean;
+    /** 「常一起点」推荐加料 id（≤3）。 */
+    recommendedAddOns?: string[];
+    /** 推荐开始生效的 ISO 时间（分析页对比推送前后渗透率用）。 */
+    recommendedSince?: string;
 }
 export interface ClosureDoc {
     /** 整天停业。 */
