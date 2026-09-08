@@ -14,7 +14,9 @@
     "check:prices": "node scripts/sync-dashboard-prices.mts",
     "sync:prices": "node scripts/sync-dashboard-prices.mts --fix",
     "typecheck": "tsc --noEmit",
-    "dogfood": "node scripts/run-dogfood.mjs"
+    "dogfood": "node scripts/run-dogfood.mjs",
+    "menu:seed": "tsx scripts/menu-seed-firestore.mts",
+    "menu:snapshot": "tsx scripts/menu-snapshot.mts"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",

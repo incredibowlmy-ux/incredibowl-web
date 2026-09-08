@@ -523,7 +523,7 @@ const DISH_CATALOG: DishData[] = [
 //   读不到也退回它。`npm run menu:snapshot` 把 Firestore 反向写回这三张表。
 //   buildMenu() 是两边共用的同一套推导规则 —— 别在别处再写一份。
 // ═══════════════════════════════════════════════════════════════════
-const WEEKDAY_LABEL: Record<number, string> = {
+export const WEEKDAY_LABEL_OF: Record<number, string> = {
     1: 'Mon / 周一', 2: 'Tue / 周二', 3: 'Wed / 周三', 4: 'Thu / 周四', 5: 'Fri / 周五',
 };
 export const PAUSED_DAY_LABEL_DEFAULT = 'Paused / 暂别';
@@ -600,7 +600,7 @@ export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem
 
     for (const wdKey of Object.keys(week.days ?? {})) {
         const wd = Number(wdKey);
-        const label = WEEKDAY_LABEL[wd];
+        const label = WEEKDAY_LABEL_OF[wd];
         if (!label) { fail(`WEEKLY_SCHEDULE 含非法 weekday ${wd}（只允许 1–5）`); continue; }
         let placed = 0;
         for (const id of week.days[wd] ?? []) {
@@ -624,7 +624,9 @@ export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem
     for (const d of byId.values()) {
         if (seen.has(d.id)) continue;
         if (!d.hidden) {
-            fail(`菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
+            // strict（代码快照）：忘了排期要炸。运行时：老板从所有列表拿掉 = 下架，
+            // 合成周里「这轮不卖」也会走到这里，都是正常情况，不刷 warn。
+            if (strict) fail(`菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
             menu.push({ ...d, hidden: true, day: 'Unscheduled / 未排期' });
             continue;
         }
