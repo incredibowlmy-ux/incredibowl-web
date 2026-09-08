@@ -166,6 +166,30 @@ async function waba() {
   console.log('');
 }
 
+/** 这个 id 到底是不是 WABA？打印节点本身的字段：WABA 会有 name / namespace / 审核状态。 */
+async function check() {
+  const id = needWaba();
+  console.log(`\n查 ${id} 是什么东西…\n`);
+  try {
+    const w = await api(`${id}?fields=id,name,account_review_status,message_template_namespace,timezone_id,owner_business_info`);
+    console.log('  ✅ 这是一个 WhatsApp Business Account：');
+    console.log(`     name                 ${w.name || '—'}`);
+    console.log(`     account_review_status ${w.account_review_status || '—'}`);
+    console.log(`     template namespace   ${w.message_template_namespace || '—'}`);
+    console.log(`     owner business       ${w.owner_business_info?.name || '—'} (${w.owner_business_info?.id || '—'})`);
+  } catch (e) {
+    console.log('  ❌ 读不到 WABA 字段：' + e.message);
+    console.log('     → 这个 id 很可能不是 WABA。App ID 是 2144351003028721、号码 ID 是 1019276584602589，都不是。');
+  }
+  try {
+    const p = await api(`${id}/phone_numbers?fields=display_phone_number,verified_name`);
+    console.log(`  号码列表：${(p.data || []).map(x => `${x.display_phone_number}（${x.verified_name}）`).join('、') || '（空）'}`);
+  } catch (e) {
+    console.log('  （phone_numbers 读不到：' + e.message + '）');
+  }
+  console.log('');
+}
+
 async function list() {
   const id = needWaba();
   const r = await api(`${id}/message_templates?fields=name,status,category,language,rejected_reason,quality_score&limit=100`);
@@ -214,10 +238,11 @@ async function del() {
   console.log(`✅ 已删除 ${arg}`);
 }
 
-const table = { waba, list, submit, delete: del };
+const table = { waba, check, list, submit, delete: del };
 if (!table[cmd]) {
   console.log('用法：node scripts/wa-templates.mjs <waba|list|submit|delete> [名字] [--apply]');
   console.log('  waba    找出 WABA id（第一步）');
+  console.log('  check   确认 WA_WABA_ID 到底是不是 WABA（提交报 400 时先跑这个）');
   console.log('  list    列出所有模板和审核状态');
   console.log('  submit  提交模板审核：' + Object.keys(TEMPLATES).join(' / ') + ' / all');
   console.log('  delete  删除一个模板');
