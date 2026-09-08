@@ -53,3 +53,25 @@ Firestore 成为菜单唯一来源；代码里的 weeklyMenu.ts / blockedDates.t
 
 ## 不在本期（老板：主功能完成后再做）
 - 选菜显示近 4 周销量 / 上次出现周；食材够不够检查；broadcast 自动生成；排定生效时间；hero 无图校验；限量按日期
+
+# 第二期：优化 + 菜品分析（2026-09-08 老板「do all」）
+
+## 计划
+- [x] O1 菜品分析 API `POST /api/admin/dish-analytics`（口径沿用 pair-opportunity.mjs：cancelled/stale-FPX OUT、↳=加料、价值=现金+券×18.5）
+      每菜：份数/单数/价值/近4周/近8周/按周几分布/最佳周几/上次供应/毛利（menu.costPrice）；同单配对（共同天归一转化率）；同天搭档（当天两道特餐→当天碗数均值）
+- [x] O2 dashboard 新页「菜品分析」：畅销榜、周几热力表、配对好/坏榜、菜单工程四象限（人气×毛利）、时间范围切换
+- [x] O3 排期页选菜/行内显示「近4周 N 份 · 上次 M/D · 最佳周几」
+- [x] O4 食材检查：按近 8 周每供应日均量 × 配方 → 对照 ingredientStock → 保存前/按钮显示缺口（advisory）
+- [x] O5 broadcast 生成：按老板模板（英文主体+双语菜名），加料/运费从 addOnsConfig/deliveryCopy 单一来源，新菜=从未售出过
+- [x] O6 排定生效时间：menuWeeks.scheduled {at, week}，resolver 到点自动用；dashboard 保存时可填生效时间
+- [x] O7 hero 校验：主打必须有实拍图且未 hidden（API 400 + dashboard 提示）
+- [ ] 验证：tsc/build/dogfood/vm 测/本地 next start；sync:dashboard；commit
+- [x] 验证：tsc 过；menuResolve dogfood +4 条排定断言、broadcast dogfood 31 条、dashboard v2 vm 测 30 条全过；`node --check` 过；sync:dashboard 已回灌
+      （build / 全量 dogfood 结果见下方 Review 补充）
+
+## 第二期 Review
+- O1 菜品分析改在 **dashboard 浏览器内存**算（state.orders 是全量订单，helper 齐全），没建 API；口径与 weekly-sales-snapshot / pair-opportunity 脚本对齐。
+- 「同天搭档」是按当天实际售出最多的两道非常驻菜推断（历史排期没存档），报表上已注明。
+- 食材预测的需求量由 dashboard 算（近 8 周每供应日均量，没卖过的用中位数）→ API 乘配方对照 ingredientStock；dashboard 里的 id 是 menu id，喂 API 前按菜名回 MS.catalog 换成网站 id（vm 测抓到的坑）。
+- Broadcast 的「新菜」= 上周文档没排过的菜 ∪ 从未卖过的菜；文案生成后老板仍可在 textarea 改。
+- 排定生效挂在 menuWeeks 文档 `scheduled` 字段，saveDay 用 merge 不会误删；服务端 30s 缓存 + 缓存 key 带「到点指纹」。
