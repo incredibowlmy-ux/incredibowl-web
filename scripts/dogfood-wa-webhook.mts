@@ -13,7 +13,7 @@ import {
   appendTurn, describeInboundForTurn, renderTurnsBlock, relativeTime,
   mergeProfileFact, renderProfileBlock, parseBossCommand,
   applyStatus, splitStatuses, splitTemplateEvents, describeSendError,
-  mediaOfInbound, replyToOfInbound,
+  mediaOfInbound, replyToOfInbound, parseOptOut, optOutReply,
   RATE_LIMIT_PER_HOUR, SEEN_IDS_MAX, TURNS_MAX, SILENT_TYPES,
 } from '@/lib/waWebhook';
 
@@ -262,6 +262,20 @@ console.log('\n【A0/A1】turn 扩展字段 · 出站回执 · 模板事件');
   check('没 context → undefined', replyToOfInbound({ type: 'text' }) === undefined);
 }
 
+
+// ────────────────────────────────────────────────────────────
+console.log('\n【B3 前置】群发退订 STOP / START');
+{
+  check('STOP 退订', parseOptOut('STOP') === 'stop');
+  check('小写 stop / 带句号 / 带空格', parseOptOut('stop') === 'stop' && parseOptOut(' Stop. ') === 'stop');
+  check('unsubscribe / 退订 / 取消订阅', parseOptOut('unsubscribe') === 'stop' && parseOptOut('退订') === 'stop' && parseOptOut('取消订阅') === 'stop');
+  check('START / 订阅 → 重新订阅', parseOptOut('START') === 'start' && parseOptOut('订阅') === 'start');
+  check("整句里含 stop 不算退订（don't stop sending）", parseOptOut("don't stop sending") === null);
+  check('「停止发送」认，「停」不认', parseOptOut('停止发送') === 'stop' && parseOptOut('停') === null);
+  check('普通对话不误伤', parseOptOut('今天有什么菜') === null && parseOptOut('') === null && parseOptOut(undefined) === null);
+  check('退订回执双语且提到 START', /START/.test(optOutReply('stop')) && /退订/.test(optOutReply('stop')));
+  check('订阅回执提到 STOP', /STOP/.test(optOutReply('start')));
+}
 console.log(`\n${'─'.repeat(52)}`);
 console.log(`通过 ${pass} · 失败 ${fail}`);
 if (fail > 0) process.exit(1);

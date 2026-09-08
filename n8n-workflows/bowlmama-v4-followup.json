@@ -89,7 +89,7 @@
         "genericAuthType": "httpBearerAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ action: 'reply', role: 'nudge', phone: $('Build Nudge').item.json.phone, text: $('Build Nudge').item.json.text }) }}",
+        "jsonBody": "={{ JSON.stringify({ action: 'reply', role: 'nudge', phone: $('Build Nudge').item.json.phone, text: $('Build Nudge').item.json.text, msgId: $json.messages?.[0]?.id || '' }) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

@@ -3,11 +3,11 @@ import {
   verifyMetaSignature, splitInbound, buildSinglePayload, decideInbound,
   appendTurn, describeInboundForTurn, SILENT_TYPES,
   splitStatuses, splitTemplateEvents, applyStatus, describeSendError,
-  mediaOfInbound, replyToOfInbound,
+  mediaOfInbound, replyToOfInbound, parseOptOut, optOutReply,
   type InboundMessage, type RelayFlags, type StatusEvent,
 } from '@/lib/waWebhook';
 import { sendTelegramAlert } from '@/lib/telegramAlert';
-import { markRead } from '@/lib/waSend';
+import { markRead, sendText } from '@/lib/waSend';
 
 /**
  * /api/wa/webhook —— Meta WhatsApp webhook 的进入层（v4 relay）。
@@ -190,6 +190,28 @@ async function handleOne(im: InboundMessage): Promise<void> {
     console.log(`[wa/webhook] silent type ${im.type} from ${im.from} — not forwarded`);
     return;
   }
+  // 退订：营销模板里承诺了「Reply STOP」，这条承诺不能交给 AI 判断。
+  // 认到就当场处理完，不转 n8n（AI 不该对退订这件事发挥）。
+  const optOut = isBoss ? null : parseOptOut(describeInboundForTurn(im.message));
+  if (optOut) {
+    const db2 = await getDb();
+    const ref2 = db2.collection(COL).doc(im.from);
+    const reply = optOutReply(optOut);
+    const sent = await sendText(im.from, reply);
+    const snap2 = await ref2.get();
+    const prev2 = (snap2.exists ? snap2.data() : {}) as Record<string, any>;
+    await ref2.set({
+      phone: im.from,
+      optOut: optOut === 'stop',
+      optOutAtMs: now,
+      lastMsgMs: now,
+      updatedAtMs: now,
+      turns: appendTurn(prev2.turns, 'out', reply, now, sent.msgId ? { msgId: sent.msgId, status: 'sent', statusAtMs: now } : undefined),
+    }, { merge: true });
+    await sendTelegramAlert(`🔕 ${im.from} ${optOut === 'stop' ? '退订' : '重新订阅'}了每周菜单群发。`, { key: `optout:${im.from}` });
+    return;
+  }
+
   if (decision.throttled && !decision.throttleNotify) {
     console.log(`[wa/webhook] throttled ${im.from} — dropped (already notified this hour)`);
     return;

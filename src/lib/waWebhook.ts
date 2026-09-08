@@ -492,6 +492,33 @@ export function renderProfileBlock(profile: unknown): string {
 }
 
 // ────────────────────────────────────────────────────────────
+// 群发退订（STOP / START）
+// ────────────────────────────────────────────────────────────
+/**
+ * 客户回 STOP 退订群发、START 重新订阅。返回 null = 不是退订指令。
+ *
+ * 为什么必须在 relay 这一层认、而不是交给 AI 判断：营销模板正文里白纸黑字写着
+ * "Reply STOP anytime to unsubscribe"，这是对客户的承诺，也是 Meta 政策要求。
+ * 交给 AI 意味着某次它答歪了就等于失信 —— 这种事只能用确定性规则。
+ *
+ * 刻意只认「整条消息就是这个词」：客户说 "don't stop sending" 不该被退订。
+ */
+export function parseOptOut(text: unknown): 'stop' | 'start' | null {
+  const t = String(text || '').trim().toLowerCase().replace(/[.!。！]+$/, '');
+  if (!t) return null;
+  if (/^(stop|unsubscribe|退订|停止发送|取消订阅)$/.test(t)) return 'stop';
+  if (/^(start|subscribe|订阅|重新订阅)$/.test(t)) return 'start';
+  return null;
+}
+
+/** 退订/订阅的固定回执（双语一条，不走 AI）。 */
+export function optOutReply(kind: 'stop' | 'start'): string {
+  return kind === 'stop'
+    ? '已帮你退订每周菜单群发 ✅ 你随时可以回复 START 重新订阅。有需要下单还是可以直接找碗妈聊 😊\n\nYou\'ve been unsubscribed from our weekly menu broadcast. Reply START anytime to resubscribe.'
+    : '好的，已重新订阅每周菜单 🎉 每周会收到一次下周菜单。\n\nYou\'re subscribed to our weekly menu again. Reply STOP anytime to opt out.';
+}
+
+// ────────────────────────────────────────────────────────────
 // 老板指令（#pause / #resume / #status）
 // ────────────────────────────────────────────────────────────
 export interface BossCommand { cmd: 'pause' | 'resume' | 'status'; phone: string; minutes?: number }

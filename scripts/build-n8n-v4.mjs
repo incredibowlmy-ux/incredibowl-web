@@ -307,6 +307,14 @@ const SYSTEM_PROMPT = byName['AI Agent'].parameters.options.systemMessage
     `【付款方式】
 {{ $json.payment_block }}
 
+【客户打的斜杠指令】
+WhatsApp 的「指令」功能会让客户发出 /menu /order /fee /human 这样的纯文字。
+收到时按下面处理，别当成打错字，也别问「你是什么意思」：
+· /menu  → 直接报今天（或客户问的那天）的菜单
+· /order → 给下单链接，一句话说明 30 秒能下完
+· /fee   → 问他在哪一区，然后报运费和免运门槛
+· /human → 当作明确要求人工，走 [求救老板]
+
 【配送时段与方式】`,
   )
   .replace(
@@ -403,16 +411,16 @@ nodes.push(leadPost('Lead Alert · 定位', 'v4-alert-pin',
 
 // ── 出站对话记录（A1）──
 nodes.push(leadPost('Log Reply · AI', 'v4-log-ai',
-  `{ action: 'reply', role: 'out', phone: $('Post-process').first().json.phone, text: $('Post-process').first().json.reply }`,
+  `{ action: 'reply', role: 'out', phone: $('Post-process').first().json.phone, text: $('Post-process').first().json.reply, msgId: $json.messages?.[0]?.id || '' }`,
   [-260, -1160]));
 nodes.push(leadPost('Log Reply · 开场', 'v4-log-greet',
-  `{ action: 'reply', role: 'out', phone: $('Greeting Builder').first().json.phone, text: $('Greeting Builder').first().json.reply }`,
+  `{ action: 'reply', role: 'out', phone: $('Greeting Builder').first().json.phone, text: $('Greeting Builder').first().json.reply, msgId: $json.messages?.[0]?.id || '' }`,
   [-2460, -1160]));
 nodes.push(leadPost('Log Reply · 老板', 'v4-log-boss',
-  `{ action: 'reply', role: 'boss', phone: $('Parse Boss Intent').first().json.customerPhone, text: $('Extract Final Reply').first().json.text }`,
+  `{ action: 'reply', role: 'boss', phone: $('Parse Boss Intent').first().json.customerPhone, text: $('Extract Final Reply').first().json.text, msgId: $json.messages?.[0]?.id || '' }`,
   [-2160, -540]));
 nodes.push(leadPost('Log Reply · 定位', 'v4-log-pin',
-  `{ action: 'reply', role: 'out', phone: $('Pin Reply Builder').first().json.phone, text: $('Pin Reply Builder').first().json.reply }`,
+  `{ action: 'reply', role: 'out', phone: $('Pin Reply Builder').first().json.phone, text: $('Pin Reply Builder').first().json.reply, msgId: $json.messages?.[0]?.id || '' }`,
   [-3040, 40]));
 
 // ── 人工接管（A2）──
@@ -646,7 +654,7 @@ if (!NUDGE_CODE.includes('一个小时前')) throw new Error('Build Nudge 文案
 const fNodes = v3f.nodes.map(n => JSON.parse(JSON.stringify(n)));
 fNodes.find(n => n.name === 'Build Nudge').parameters.jsCode = NUDGE_CODE;
 fNodes.push(leadPost('Log Reply · 追单', 'v4f-log',
-  `{ action: 'reply', role: 'nudge', phone: $('Build Nudge').item.json.phone, text: $('Build Nudge').item.json.text }`,
+  `{ action: 'reply', role: 'nudge', phone: $('Build Nudge').item.json.phone, text: $('Build Nudge').item.json.text, msgId: $json.messages?.[0]?.id || '' }`,
   [280, 0]));
 fNodes.push(ifNode('第 1 次追单?', 'v4f-if-first', "={{ $('Build Nudge').item.json.nudgeIndex === 1 && $('Build Nudge').item.json.intent !== 'catering' }}", '', [500, 0]));
 fNodes.push(waButtons('Send Nudge Buttons', 'v4f-btn', "$('Build Nudge').item.json.phone", "'x'", [], [720, -80]));
