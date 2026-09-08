@@ -130,7 +130,7 @@ export function dishVoucherValue(unitPrice: number, dish: Pick<MenuItem, 'vouche
 //      /sesame_honey_chicken_chop.webp）。图不到位就 push = 线上破图。
 //   本周无限日菜，DAILY_DISHES 维持纯全周常驻两道。
 // ═══════════════════════════════════════════════════════════════════
-const WEEKLY_SCHEDULE: Record<number, number[]> = {
+export const WEEKLY_SCHEDULE: Record<number, number[]> = {
     1: [2, 1],    // 周一 9/7：当归蒸鸡全腿(主打·招牌菜)、酱油鸡全腿 —— 老板 09-04 指定不动
     2: [30, 20],  // 周二 9/8：白萝卜焖花肉(主打)、姜葱鱼片 —— 老板 09-04 指定不动
     3: [27, 4],   // 周三 9/9：甜酸洋葱猪扒(主打)、绍兴酒蒸花肉 —— 老板 09-04 指定不动
@@ -139,9 +139,9 @@ const WEEKLY_SCHEDULE: Record<number, number[]> = {
 };
 
 // 纳豆月见、马铃薯炖花肉片 —— 全周常驻，无限日菜（鳗鱼 08-31 起挪成周四单日特餐）。
-const DAILY_DISHES: number[] = [11, 13];
+export const DAILY_DISHES: number[] = [11, 13];
 
-const PAUSED_DISHES: { id: number; day: string }[] = [
+export const PAUSED_DISHES: { id: number; day: string }[] = [
     { id: 22, day: 'Daily / 常驻' },  // 参峇臭豆 暂别 2026-06-27
     { id: 5, day: 'Fri / 周五' },     // 葱香煎鸡汤 退役 2026-06-08
     { id: 24, day: 'Tue / 周二' },    // 澳洲和牛饼 暂别 2026-07-13
@@ -161,7 +161,7 @@ const PAUSED_DISHES: { id: number; day: string }[] = [
 //   加新菜：目录加一条（未排期前必须 hidden:true + emoji 占位图），
 //   要上线时把 id 排进 WEEKLY_SCHEDULE / DAILY_DISHES 并去掉 hidden。
 // ═══════════════════════════════════════════════════════════════════
-type DishData = Omit<MenuItem, 'day' | 'weekday' | 'isPrimary' | 'retired'>;
+export type DishData = Omit<MenuItem, 'day' | 'weekday' | 'isPrimary' | 'retired'>;
 
 const DISH_CATALOG: DishData[] = [
     {
@@ -516,56 +516,126 @@ const DISH_CATALOG: DishData[] = [
 // ═══════════════════════════════════════════════════════════════════
 //   推导层：排期表 × 菜目录 → weeklyMenu（形状与旧手写数组完全一致）。
 //   非法排期在模块加载即抛错 → `next build` 直接失败，绝不带病上线。
+//
+//   2026-09-08 起排期的**运行时**来源是 Firestore（menuWeeks / menuCatalog，
+//   由 dashboard「菜单排期」页写入，见 src/lib/menuResolve.ts）。上面三张表
+//   是「快照 + 兜底」：build 校验、预渲染 HTML、离线脚本都吃它；Firestore
+//   读不到也退回它。`npm run menu:snapshot` 把 Firestore 反向写回这三张表。
+//   buildMenu() 是两边共用的同一套推导规则 —— 别在别处再写一份。
 // ═══════════════════════════════════════════════════════════════════
 const WEEKDAY_LABEL: Record<number, string> = {
     1: 'Mon / 周一', 2: 'Tue / 周二', 3: 'Wed / 周三', 4: 'Thu / 周四', 5: 'Fri / 周五',
 };
+export const PAUSED_DAY_LABEL_DEFAULT = 'Paused / 暂别';
 
-function buildWeeklyMenu(): MenuItem[] {
-    const byId = new Map(DISH_CATALOG.map(d => [d.id, d]));
+/** 一周排期（与 Firestore `menuWeeks/{周一}` 文档同形状）。数组第一个 id = 当天 hero。 */
+export interface MenuWeek {
+    days: Record<number, number[]>;
+    daily: number[];
+    paused: number[];
+}
+/** 菜品运行时覆盖（Firestore `menuCatalog/{id}`）：只放会变的字段。 */
+export interface DishOverride {
+    price?: number;
+    hidden?: boolean;
+}
+
+export const DISH_CATALOG_ALL: readonly DishData[] = DISH_CATALOG;
+/** 快照周：代码里三张表的等价形式。 */
+export const MENU_SNAPSHOT_WEEK: MenuWeek = {
+    days: WEEKLY_SCHEDULE,
+    daily: DAILY_DISHES,
+    paused: PAUSED_DISHES.map(p => p.id),
+};
+/** 暂别菜保留原排期标签（只影响 SEO 分组）；运行时新暂别的菜没有标签就用默认值。 */
+export const PAUSED_DAY_LABELS: Record<number, string> = Object.fromEntries(
+    PAUSED_DISHES.map(p => [p.id, p.day]),
+);
+
+export interface BuildMenuOptions {
+    /**
+     * strict=true（build 快照）：任何非法排期直接 throw。
+     * strict=false（运行时）：非法条目跳过并 console.warn —— 老板在 dashboard
+     * 手滑不能把整站打挂，服务端兜底永远要能出一份菜单。
+     */
+    strict?: boolean;
+    overrides?: Record<string, DishOverride>;
+}
+
+export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem[] {
+    const strict = opts.strict ?? false;
+    const overrides = opts.overrides ?? {};
+    const fail = (msg: string): false => {
+        if (strict) throw new Error(`[weeklyMenu] ${msg}`);
+        console.warn(`[weeklyMenu] ${msg}`);
+        return false;
+    };
+    const byId = new Map<number, DishData>(DISH_CATALOG.map(d => {
+        const o = overrides[String(d.id)];
+        if (!o) return [d.id, d];
+        const merged: DishData = { ...d };
+        if (typeof o.price === 'number' && Number.isFinite(o.price) && o.price > 0) merged.price = o.price;
+        if (typeof o.hidden === 'boolean') {
+            if (o.hidden) merged.hidden = true; else delete merged.hidden;
+        }
+        return [d.id, merged];
+    }));
     const seen = new Set<number>();
-    const take = (id: number, where: string): DishData => {
+    const take = (id: number, where: string): DishData | null => {
         const d = byId.get(id);
-        if (!d) throw new Error(`[weeklyMenu] ${where} 引用了不存在的菜 id ${id}`);
-        if (seen.has(id)) throw new Error(`[weeklyMenu] 菜 id ${id}「${d.name}」被排进多个位置（${where}）`);
+        if (!d) { fail(`${where} 引用了不存在的菜 id ${id}`); return null; }
+        if (seen.has(id)) { fail(`菜 id ${id}「${d.name}」被排进多个位置（${where}）`); return null; }
         seen.add(id);
         return d;
     };
 
     const menu: MenuItem[] = [];
 
-    for (const id of DAILY_DISHES) {
+    for (const id of week.daily ?? []) {
         const d = take(id, 'DAILY_DISHES');
-        if (d.hidden) throw new Error(`[weeklyMenu] hidden 菜 id ${id}「${d.name}」不能排进 DAILY_DISHES`);
+        if (!d) continue;
+        if (d.hidden) { fail(`hidden 菜 id ${id}「${d.name}」不能排进 DAILY_DISHES`); continue; }
         menu.push({ ...d, day: 'Daily / 常驻' });
     }
 
-    for (const wd of Object.keys(WEEKLY_SCHEDULE).map(Number)) {
+    for (const wdKey of Object.keys(week.days ?? {})) {
+        const wd = Number(wdKey);
         const label = WEEKDAY_LABEL[wd];
-        if (!label) throw new Error(`[weeklyMenu] WEEKLY_SCHEDULE 含非法 weekday ${wd}（只允许 1–5）`);
-        WEEKLY_SCHEDULE[wd].forEach((id, i) => {
+        if (!label) { fail(`WEEKLY_SCHEDULE 含非法 weekday ${wd}（只允许 1–5）`); continue; }
+        let placed = 0;
+        for (const id of week.days[wd] ?? []) {
             const d = take(id, `WEEKLY_SCHEDULE[${wd}]`);
-            if (d.hidden) throw new Error(`[weeklyMenu] hidden 菜 id ${id}「${d.name}」不能排进 WEEKLY_SCHEDULE`);
-            menu.push({ ...d, day: label, weekday: wd, ...(i === 0 ? { isPrimary: true } : {}) });
-        });
+            if (!d) continue;
+            if (d.hidden) { fail(`hidden 菜 id ${id}「${d.name}」不能排进 WEEKLY_SCHEDULE`); continue; }
+            menu.push({ ...d, day: label, weekday: wd, ...(placed === 0 ? { isPrimary: true } : {}) });
+            placed++;
+        }
     }
 
-    for (const { id, day } of PAUSED_DISHES) {
+    for (const id of week.paused ?? []) {
         const d = take(id, 'PAUSED_DISHES');
-        menu.push({ ...d, day, retired: true });
+        if (!d) continue;
+        menu.push({ ...d, day: PAUSED_DAY_LABELS[id] ?? PAUSED_DAY_LABEL_DEFAULT, retired: true });
     }
 
     // 目录里没进任何排期的菜必须是 hidden（staged 未上线），否则视为忘了排期。
-    for (const d of DISH_CATALOG) {
+    // 运行时：老板把菜从所有列表拿掉又没设 hidden → 当作 hidden 处理（网站消失，
+    // dashboard 仍可见），不抛错。
+    for (const d of byId.values()) {
         if (seen.has(d.id)) continue;
-        if (!d.hidden) throw new Error(`[weeklyMenu] 菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
+        if (!d.hidden) {
+            fail(`菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
+            menu.push({ ...d, hidden: true, day: 'Unscheduled / 未排期' });
+            continue;
+        }
         menu.push({ ...d, day: 'Unscheduled / 未排期' });
     }
 
     return menu;
 }
 
-export const weeklyMenu: MenuItem[] = buildWeeklyMenu();
+/** 代码快照菜单（build-time 常量）。运行时菜单请走 src/lib/menuResolve.ts。 */
+export const weeklyMenu: MenuItem[] = buildMenu(MENU_SNAPSHOT_WEEK, { strict: true });
 
 /**
  * The dish shown in the Hero "Tomorrow's Special" card BEFORE the date-driven

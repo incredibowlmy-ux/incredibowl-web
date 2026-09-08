@@ -115,6 +115,7 @@ async function loadDraft(db: FirebaseFirestore.Firestore, phoneDigits: string, d
 }
 
 export async function POST(req: NextRequest) {
+  await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
   // ── Auth：本路由能建 confirmed 订单，比 /api/n8n/menu 更硬 ——
   // 只收 Authorization 头（?key= 会漏进访问/代理日志）+ 常数时间比较
   const expected = process.env.N8N_API_KEY;

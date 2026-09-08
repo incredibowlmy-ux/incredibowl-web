@@ -1,4 +1,11 @@
 // Per-dish dates that are explicitly stopped from sale (sold out / boss manual stop).
+//
+// 2026-09-08 起运行时权威是 Firestore `menuClosures/{ymd}`（dashboard「菜单排期」页写）。
+// 下面的常量是快照 + 兜底：store 没读到 Firestore 就用它们；读到了就只看 Firestore。
+import { getRuntimeData } from '@/lib/menuRuntimeStore';
+
+function rt() { const d = getRuntimeData(); return d.source === 'firestore' ? d.closures : null; }
+
 // Format: { dishId: ['YYYY-MM-DD', ...] }
 // dishId = `weeklyMenu` item `id` (a stable unique identifier; NOT the weekday —
 // the dish's serve-day now lives in MenuItem.weekday).
@@ -16,6 +23,8 @@ export const BLOCKED_DATES: Record<number, string[]> = {
 };
 
 export function isDishBlockedOn(dishId: number, ymd: string): boolean {
+    const r = rt();
+    if (r) return r[ymd]?.blockedDishIds?.includes(dishId) ?? false;
     return BLOCKED_DATES[dishId]?.includes(ymd) ?? false;
 }
 
@@ -52,32 +61,50 @@ export const DINNER_CLOSED_DATES: string[] = ['2026-08-28'];
 
 /** True if that date delivers lunch only (dinner slot closed). */
 export function isDinnerClosedOn(ymd: string): boolean {
+    const r = rt();
+    if (r) return !!r[ymd]?.dinnerClosed && !r[ymd]?.closed;
     return DINNER_CLOSED_DATES.includes(ymd);
 }
 
 /** True if the whole day is closed (sold out / boss stop). */
 export function isDateClosed(ymd: string): boolean {
+    const r = rt();
+    if (r) return !!r[ymd]?.closed;
     return CLOSED_DATES.includes(ymd);
+}
+
+/** 当前生效的整天停业清单（运行时优先）。 */
+export function activeClosures(): Closure[] {
+    const r = rt();
+    if (!r) return CLOSURES;
+    return Object.entries(r)
+        .filter(([, c]) => c.closed)
+        .map(([date, c]) => ({ date, reason: c.reason ?? 'soldout' }));
+}
+function activeDinnerClosed(): string[] {
+    const r = rt();
+    if (!r) return DINNER_CLOSED_DATES;
+    return Object.entries(r).filter(([, c]) => c.dinnerClosed && !c.closed).map(([d]) => d);
 }
 
 /** 停业原因，给「为什么这天不能选」的文案分流。没停业返回 null。 */
 export function closureReasonOn(ymd: string): ClosureReason | null {
-    return CLOSURES.find(c => c.date === ymd)?.reason ?? null;
+    return activeClosures().find(c => c.date === ymd)?.reason ?? null;
 }
 
 /** Upcoming closures (today or later) for the sold-out notice. Empty when none. */
 export function upcomingClosedDates(todayYmd: string): string[] {
-    return CLOSED_DATES.filter(d => d >= todayYmd).sort();
+    return activeClosures().map(c => c.date).filter(d => d >= todayYmd).sort();
 }
 
 /** Same, but keeping each closure's reason so the notice can word it correctly. */
 export function upcomingClosures(todayYmd: string): Closure[] {
-    return CLOSURES.filter(c => c.date >= todayYmd).sort((a, b) => a.date.localeCompare(b.date));
+    return activeClosures().filter(c => c.date >= todayYmd).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /** Upcoming lunch-only days (today or later). */
 export function upcomingDinnerClosedDates(todayYmd: string): string[] {
-    return DINNER_CLOSED_DATES.filter(d => d >= todayYmd).sort();
+    return activeDinnerClosed().filter(d => d >= todayYmd).sort();
 }
 
 /**

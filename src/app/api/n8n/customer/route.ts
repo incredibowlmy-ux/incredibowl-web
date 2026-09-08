@@ -177,7 +177,8 @@ export async function GET(req: NextRequest) {
       url: string; urlEn: string; summary: string; dropped: string[];
     } | null = null;
     if (lastOrder) {
-      const { weeklyMenu } = await import('@/data/weeklyMenu');
+      await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
+      const weeklyMenu = (await import('@/lib/menuResolve')).currentMenu();
       const picked: { dishId: number; name: string; qty: number }[] = [];
       const dropped: string[] = [];
       for (const it of lastOrder.rawItems) {

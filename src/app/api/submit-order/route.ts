@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDishPrice } from '@/data/promoConfig';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
-import { weeklyMenu, dishVoucherValue } from '@/data/weeklyMenu';
+import { dishVoucherValue } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
@@ -117,7 +118,10 @@ export async function POST(req: Request) {
     }
 
     // ── Build menu lookup ─────────────────────────────────────
-    const menuById = new Map(weeklyMenu.map(d => [d.id, d]));
+    // 运行时菜单：某个送达日期属于哪一周就用哪一周的排期（老板可提前排下周）。
+    // 读失败退回代码快照，永远有一份菜单可校验。
+    await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
+    const menuFor = (ymd: string) => new Map(menuForDate(ymd).map(d => [d.id, d]));
 
     /**
      * 🔒 2026-08-02：body 里的任何数量都当敌意输入。
@@ -142,7 +146,7 @@ export async function POST(req: Request) {
     const validatedBundles: any[] = [];
 
     for (const bundle of cartBundles) {
-      const dish = menuById.get(bundle.dishId);
+      const dish = menuFor(String(bundle.selectedDate || '')).get(bundle.dishId);
       if (!dish) {
         return NextResponse.json({ error: `菜品不存在: ID ${bundle.dishId}` }, { status: 400 });
       }

@@ -51,6 +51,7 @@ function whatsappText(name: string, days: PlannedDay[]): string {
 export async function OPTIONS() { return corsPreflight(); }
 
 export async function POST(req: NextRequest) {
+  await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
   const adminEmail = await verifyAdminEmail(req);
   if (!adminEmail) return adminJson({ error: '未授权' }, 401);
 

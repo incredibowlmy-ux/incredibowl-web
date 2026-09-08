@@ -8,6 +8,7 @@
  */
 
 import { weeklyMenu, type MenuItem } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 
 export const round2 = (n: number) => Number(n.toFixed(2));
@@ -82,7 +83,7 @@ export function buildPlan(
 
     for (const raw of entry?.items ?? []) {
       const qty = Math.max(1, Math.floor(Number(raw?.qty) || 1));
-      const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw?.dishName);
+      const dish: MenuItem | undefined = menuForDate(date).find(d => d.name === raw?.dishName);
       if (!dish) { warnings.push(`「${raw?.dishName ?? ''}」不在菜品目录`); blocked = true; continue; }
       if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
       if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);

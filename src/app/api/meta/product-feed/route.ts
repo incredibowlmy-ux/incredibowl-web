@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { weeklyMenu } from '@/data/weeklyMenu';
+import { currentMenu } from '@/lib/menuResolve';
 
 /**
  * GET /api/meta/product-feed
@@ -38,6 +38,8 @@ function csv(field: string): string {
 }
 
 export async function GET() {
+  await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
+  const weeklyMenu = currentMenu();
   const header = ['id', 'title', 'description', 'availability', 'condition', 'price', 'link', 'image_link', 'brand'];
 
   const rows = weeklyMenu

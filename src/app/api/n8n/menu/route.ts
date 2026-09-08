@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { weeklyMenu, MenuItem, dishVoucherValue } from '@/data/weeklyMenu';
+import { MenuItem, dishVoucherValue } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { dishRecipes } from '@/data/dishIngredients';
 import { COVERAGE_AREAS } from '@/lib/deliveryCopy';
@@ -133,6 +134,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // 运行时菜单 / 停业日（Firestore 权威，读失败退回代码快照）。
+  await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
+
   // ── Delivery date (mirrors computeNextSpecial: MYT wall-clock via +8h shift) ──
   const MYT_OFFSET_MS = 8 * 60 * 60 * 1000;
   const now = new Date(Date.now() + MYT_OFFSET_MS);
@@ -196,6 +200,7 @@ export async function GET(req: NextRequest) {
   const isSoldOut = (d: MenuItem) => remainingOf(d) === 0;
 
   // ── Orderable dishes on the delivery date ──
+  const weeklyMenu = menuForDate(deliveryDate);
   const live = weeklyMenu.filter(d => !d.retired && !d.hidden);
   const staples = live.filter(d =>
     d.day === 'Daily / 常驻'

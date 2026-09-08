@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { corsPreflight, adminJson, verifyAdminEmail } from '@/lib/adminApi';
 import { weeklyMenu, dishVoucherValue, type MenuItem } from '@/data/weeklyMenu';
+import { menuForDate } from '@/lib/menuResolve';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 import { getAvailableAddonCredits, claimAddonCredits } from '@/lib/addonCreditUtils';
@@ -90,7 +91,7 @@ function buildWeekPlan(sub: any, weekStart: string): { days: PlannedDay[]; warni
 
       for (const raw of entry.items ?? []) {
         const qty = Math.max(1, Math.floor(Number(raw.qty) || 1));
-        const dish: MenuItem | undefined = weeklyMenu.find(d => d.name === raw.dishName);
+        const dish: MenuItem | undefined = menuForDate(date).find(d => d.name === raw.dishName);
         if (!dish) { warnings.push(`「${raw.dishName}」不在菜品目录`); blocked = true; continue; }
         if (dish.retired) warnings.push(`「${dish.name}」已暂别菜单（仍可下，确认前想清楚）`);
         if (dish.hidden) warnings.push(`「${dish.name}」是 hidden 未上架菜`);
@@ -230,6 +231,7 @@ export async function OPTIONS() { return corsPreflight(); }
 export async function POST(req: NextRequest) {
   const adminEmail = await verifyAdminEmail(req);
   if (!adminEmail) return adminJson({ error: '未授权' }, 401);
+  await (await import('@/lib/menuRuntime.server')).loadMenuRuntime();
 
   const body = await req.json().catch(() => null);
   const action = body?.action;
