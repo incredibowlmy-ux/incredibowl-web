@@ -140,6 +140,15 @@ async function api(path, { method = 'GET', body, form = false, version } = {}) {
   return j;
 }
 
+/** 建模板的四种写法。2026-09-09 JSON@v20 在沙盒和正式都回「WhatsApp accounts cannot be used with this API」，所以轮着试。 */
+const POST_VARIANTS = [
+  { label: 'JSON  @ v20.0', opts: {} },
+  { label: 'form  @ v20.0', opts: { form: true } },
+  { label: 'JSON  @ v23.0', opts: { version: 'v23.0' } },
+  { label: 'form  @ v23.0', opts: { form: true, version: 'v23.0' } },
+];
+let workingVariant = null;
+
 function needWaba() {
   if (!WABA_ID) {
     console.error('❌ 没有 WA_WABA_ID。先跑 `node scripts/wa-templates.mjs waba` 拿 id，再：');
@@ -286,13 +295,7 @@ async function diag() {
   if (!APPLY) { console.log('  （dry-run）'); console.log(''); return; }
   // 同一个请求换三种「写法」各试一次：JSON@v20 / form@v20 / JSON@最新版。
   // 哪一种成功，submit 就改用哪一种 —— 比继续猜账号问题便宜得多。
-  const variants = [
-    { label: 'JSON  @ v20.0', opts: {} },
-    { label: 'form  @ v20.0', opts: { form: true } },
-    { label: 'JSON  @ v23.0', opts: { version: 'v23.0' } },
-    { label: 'form  @ v23.0', opts: { form: true, version: 'v23.0' } },
-  ];
-  for (const v of variants) {
+  for (const v of POST_VARIANTS) {
     try {
       const r = await api(`${id}/message_templates`, { method: 'POST', body: probe, ...v.opts });
       console.log(`  ✅ ${v.label} 建成了 id=${r.id}  ← 把这行告诉 Claude，submit 会改成这种写法`);
@@ -332,12 +335,21 @@ async function submit() {
       if (c.type === 'BUTTONS') console.log('  按钮：' + c.buttons.map(b => `[${b.text}] → ${b.url}`).join('  '));
     }
     if (!APPLY) { console.log('  （dry-run）'); continue; }
-    try {
-      const r = await api(`${id}/message_templates`, { method: 'POST', body: t });
-      console.log(`  ✅ 已提交，id=${r.id} status=${r.status || 'PENDING'}`);
-    } catch (e) {
-      console.log(`  ❌ 提交失败：${e.message}`);
+    // 四种写法轮着试（同 diag）；第一种成功的记住，后面的模板直接用它
+    const order = workingVariant ? [workingVariant, ...POST_VARIANTS.filter(v => v !== workingVariant)] : POST_VARIANTS;
+    let done = false;
+    for (const v of order) {
+      try {
+        const r = await api(`${id}/message_templates`, { method: 'POST', body: t, ...v.opts });
+        console.log(`  ✅ 已提交（${v.label}），id=${r.id} status=${r.status || 'PENDING'}`);
+        workingVariant = v; done = true; break;
+      } catch (e) {
+        // 「已存在」也算成功：重复跑不该报错
+        if (/already exists|duplicate/i.test(e.message)) { console.log(`  ✅ 已经在审核队列里了（${e.message.slice(0, 80)}）`); done = true; break; }
+        console.log(`  ❌ ${v.label}：${e.message}`);
+      }
     }
+    if (!done) console.log('  ❌ 四种写法都失败 —— 走 WhatsApp Manager 网页建（文案照上面）');
   }
   if (!APPLY) console.log('\n（确认文案没问题后加 --apply 真提交）');
   console.log('\n审核结果会自动推 Telegram；也可以随时跑 `list` 看。\n');
