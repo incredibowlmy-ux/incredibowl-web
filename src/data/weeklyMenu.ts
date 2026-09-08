@@ -566,6 +566,12 @@ export interface BuildMenuOptions {
      * 手滑不能把整站打挂，服务端兜底永远要能出一份菜单。
      */
     strict?: boolean;
+    /**
+     * 允许目录里的菜不在任何列表（= 下架/未排期，当 hidden 处理）而不报错。
+     * 代码快照必须 false（忘排期要炸）；dashboard 保存排期的校验要 true ——
+     * 老板把菜从所有列拿掉就是下架，不是忘了。
+     */
+    allowUnscheduled?: boolean;
     overrides?: Record<string, DishOverride>;
 }
 
@@ -636,7 +642,7 @@ export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem
         if (!d.hidden) {
             // strict（代码快照）：忘了排期要炸。运行时：老板从所有列表拿掉 = 下架，
             // 合成周里「这轮不卖」也会走到这里，都是正常情况，不刷 warn。
-            if (strict) fail(`菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
+            if (strict && !opts.allowUnscheduled) fail(`菜 id ${d.id}「${d.name}」不在任何排期列表里也没标 hidden — 是不是忘了排期？`);
             menu.push({ ...d, hidden: true, day: 'Unscheduled / 未排期' });
             continue;
         }

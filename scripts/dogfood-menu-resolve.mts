@@ -104,6 +104,11 @@ ok(bad.filter(d => d.day.startsWith('Unscheduled')).every(d => d.hidden), '没�
 let threw = false;
 try { buildMenu({ days: { 1: [999] }, daily: [], paused: [] }, { strict: true }); } catch { threw = true; }
 ok(threw, 'strict 模式仍然 throw');
+let threwUnsched = false;
+try { buildMenu({ days: { 1: [wkA.days[1][0]] }, daily: [], paused: [] }, { strict: true }); } catch { threwUnsched = true; }
+ok(threwUnsched, 'strict：目录里的菜没排期也没 hidden → throw（代码快照）');
+const lenient = buildMenu({ days: { 1: [wkA.days[1][0]] }, daily: [], paused: [] }, { strict: true, allowUnscheduled: true });
+ok(lenient.filter(d => d.day.startsWith('Unscheduled')).every(d => d.hidden) && lenient.some(d => d.id === wkA.days[1][0] && !d.hidden), 'strict+allowUnscheduled（dashboard 保存校验）：未排期的当 hidden，不 throw');
 
 console.log('9. repriceCart 按每项日期取所属周');
 const bundle = (dish: typeof dishA, selectedDate: string) => ({

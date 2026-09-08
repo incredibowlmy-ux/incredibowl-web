@@ -49,7 +49,8 @@ function parseWeek(raw: unknown): MenuWeek {
 /** 用 strict buildMenu 校验；返回错误文案或 null。 */
 function validateWeek(week: MenuWeek, overrides: Record<string, { price?: number; hidden?: boolean }>): string | null {
     try {
-        buildMenu(week, { strict: true, overrides });
+        // allowUnscheduled：老板从所有列拿掉一道菜 = 下架（网站消失、dashboard 仍可见），不是忘排期。
+        buildMenu(week, { strict: true, allowUnscheduled: true, overrides });
     } catch (e) {
         return e instanceof Error ? e.message.replace(/^\[weeklyMenu\]\s*/, '') : '排期不合法';
     }
