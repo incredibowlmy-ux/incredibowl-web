@@ -34,15 +34,27 @@ export function mondayOf(ymd: string): string {
 }
 
 /** 日期所属周的排期文档：精确命中 → 最近更早的一周 → 代码快照。 */
-export function weekDocFor(data: MenuRuntimeData, ymd: string): { monday: string; week: MenuWeek; inherited: boolean } {
+/** 排定生效到点了就用排定的那份（老板不用熬夜等低峰改菜单）。 */
+function effectiveWeek(doc: MenuWeek & { scheduled?: { at: string } & MenuWeek }, nowMs: number): MenuWeek {
+    const s = doc.scheduled;
+    if (s && Date.parse(s.at) <= nowMs) return { days: s.days, daily: s.daily, paused: s.paused };
+    return doc;
+}
+
+export function weekDocFor(data: MenuRuntimeData, ymd: string, nowMs = Date.now()): { monday: string; week: MenuWeek; inherited: boolean } {
     const monday = mondayOf(ymd);
     if (data.source === 'firestore') {
         const exact = data.weeks[monday];
-        if (exact) return { monday, week: exact, inherited: false };
+        if (exact) return { monday, week: effectiveWeek(exact, nowMs), inherited: false };
         const earlier = Object.keys(data.weeks).filter(k => k < monday).sort().pop();
-        if (earlier) return { monday, week: data.weeks[earlier], inherited: true };
+        if (earlier) return { monday, week: effectiveWeek(data.weeks[earlier], nowMs), inherited: true };
     }
     return { monday, week: MENU_SNAPSHOT_WEEK, inherited: true };
+}
+
+/** 缓存 key 里带「有没有排定已到点」的指纹，到点那刻自动失效。 */
+function scheduleStamp(data: MenuRuntimeData, nowMs: number): string {
+    return Object.values(data.weeks).map(w => (w.scheduled ? (Date.parse(w.scheduled.at) <= nowMs ? '1' : '0') : '')).join('');
 }
 
 const cache = new Map<string, MenuItem[]>();
@@ -58,8 +70,9 @@ function cached(key: string, make: () => MenuItem[]): MenuItem[] {
 /** 某个具体日期的完整菜单（严格单周）。下单校验 / 备餐都用它。 */
 export function menuForDate(ymd: string, data: MenuRuntimeData = getRuntimeData()): MenuItem[] {
     if (data.source !== 'firestore') return weeklyMenu;
-    const { monday, week } = weekDocFor(data, ymd);
-    return cached(`d:${getRuntimeVersion()}:${monday}`, () => buildMenu(week, { overrides: data.catalog }));
+    const now = Date.now();
+    const { monday, week } = weekDocFor(data, ymd, now);
+    return cached(`d:${getRuntimeVersion()}:${scheduleStamp(data, now)}:${monday}`, () => buildMenu(week, { overrides: data.catalog }));
 }
 
 /**
@@ -68,15 +81,16 @@ export function menuForDate(ymd: string, data: MenuRuntimeData = getRuntimeData(
  */
 export function menuForWeekdayDates(dates: Record<number, string>, data: MenuRuntimeData = getRuntimeData()): MenuItem[] {
     if (data.source !== 'firestore') return weeklyMenu;
-    const key = `w:${getRuntimeVersion()}:${[1, 2, 3, 4, 5].map(wd => dates[wd] ?? '').join(',')}`;
+    const now = Date.now();
+    const key = `w:${getRuntimeVersion()}:${scheduleStamp(data, now)}:${[1, 2, 3, 4, 5].map(wd => dates[wd] ?? '').join(',')}`;
     return cached(key, () => {
         const order = [1, 2, 3, 4, 5]
             .filter(wd => dates[wd])
             .sort((a, b) => dates[a].localeCompare(dates[b]));
         if (order.length === 0) {
-            return buildMenu(weekDocFor(data, ymdOfUTC(new Date())).week, { overrides: data.catalog });
+            return buildMenu(weekDocFor(data, ymdOfUTC(new Date()), now).week, { overrides: data.catalog });
         }
-        const base = weekDocFor(data, dates[order[0]]).week;
+        const base = weekDocFor(data, dates[order[0]], now).week;
         const seen = new Set<number>();
         const claim = (ids: number[]) => ids.filter(id => (seen.has(id) ? false : (seen.add(id), true)));
         const days: Record<number, number[]> = {};

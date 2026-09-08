@@ -7,6 +7,9 @@ import { isDishOrderableOn } from '@/lib/cartDateUtils';
 import { isDateClosed } from '@/data/blockedDates';
 import { mondayOf, weekDocFor, currentMenu } from '@/lib/menuResolve';
 import type { MenuWeekDoc, ClosureDoc } from '@/lib/menuRuntimeStore';
+import { buildBroadcast } from '@/lib/menuBroadcast';
+import { getRecipeForDish } from '@/data/dishIngredients';
+import { categorizeIngredient, getConversionFor } from '@/data/ingredientCatalog';
 
 /**
  * POST /api/admin/menu-config   (admin Bearer token; CORS '*' for the file:// dashboard)
@@ -46,11 +49,27 @@ function parseWeek(raw: unknown): MenuWeek {
 function validateWeek(week: MenuWeek, overrides: Record<string, { price?: number; hidden?: boolean }>): string | null {
     try {
         buildMenu(week, { strict: true, overrides });
-        return null;
     } catch (e) {
         return e instanceof Error ? e.message.replace(/^\[weeklyMenu\]\s*/, '') : '排期不合法';
     }
+    // hero 校验：每天第一道 = 首页 hero，必须有实拍图（emoji 占位图上 hero = 首页破图）。
+    for (const wd of [1, 2, 3, 4, 5]) {
+        const heroId = week.days[wd]?.[0];
+        if (heroId === undefined) continue;
+        const d = DISH_CATALOG_ALL.find(x => x.id === heroId);
+        if (d && !d.image.startsWith('/')) {
+            return `「${d.name}」还没有实拍图，不能当${['', '周一', '周二', '周三', '周四', '周五'][wd]}主打 —— 把它移到第二位或先补图`;
+        }
+    }
+    return null;
 }
+
+const parseScheduleAt = (v: unknown): string | null => {
+    if (typeof v !== 'string' || !v.trim()) return null;
+    const t = Date.parse(v);
+    if (Number.isNaN(t)) return null;
+    return new Date(t).toISOString();
+};
 
 /** weeklyMenu 的 day label（'Mon / 周一' | 'Daily / 常驻' …）→ dashboard `menu.day`。 */
 function dashDay(label: string): string {
@@ -167,12 +186,98 @@ export async function POST(req: NextRequest) {
                 if (err) return adminJson({ error: err }, 400);
                 const conflicts = await findConflicts(db, monday, week, data.catalog);
                 if (action === 'conflicts') return adminJson({ ok: true, monday, conflicts });
-                await db.collection(MENU_COLLECTIONS.weeks).doc(monday).set({
-                    days: Object.fromEntries(Object.entries(week.days).map(([k, v]) => [String(k), v])),
-                    daily: week.daily, paused: week.paused,
+                const daysOut = Object.fromEntries(Object.entries(week.days).map(([k, v]) => [String(k), v]));
+                const scheduleAt = parseScheduleAt(body.scheduleAt);
+                const ref = db.collection(MENU_COLLECTIONS.weeks).doc(monday);
+                if (scheduleAt && Date.parse(scheduleAt) > Date.now()) {
+                    // 排定生效：现行排期不动，把新排期挂在 scheduled 上，到点解析层自动换。
+                    // 文档不存在（沿用周）→ 先把现行内容物化，否则到点前这周会变空。
+                    const live = data.weeks[monday] ?? weekDocFor(data, monday).week;
+                    await ref.set({
+                        days: Object.fromEntries([1, 2, 3, 4, 5].map(wd => [String(wd), live.days?.[wd] ?? []])),
+                        daily: live.daily ?? [], paused: live.paused ?? [],
+                        scheduled: { at: scheduleAt, days: daysOut, daily: week.daily, paused: week.paused, updatedBy: email },
+                        updatedAt: FieldValue.serverTimestamp(), updatedBy: email,
+                    }, { merge: true });
+                    return respondState({ monday, conflicts, scheduledAt: scheduleAt });
+                }
+                await ref.set({
+                    days: daysOut, daily: week.daily, paused: week.paused,
+                    scheduled: FieldValue.delete(),
                     updatedAt: FieldValue.serverTimestamp(), updatedBy: email,
-                });
+                }, { merge: true });
                 return respondState({ monday, conflicts });
+            }
+
+            case 'broadcast': {
+                // 每周 WhatsApp 广播文案：排期 + 目录（含运行时价格）→ 老板定稿模板。
+                if (!isYmd(body.monday)) return adminJson({ error: 'monday 格式应为 YYYY-MM-DD' }, 400);
+                const monday = mondayOf(body.monday);
+                const week = body.week ? parseWeek(body.week) : weekDocFor(data, monday).week;
+                const prevMonday = (() => { const [y, m, d] = monday.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d - 7)).toISOString().slice(0, 10); })();
+                const prev = data.source === 'firestore' ? weekDocFor(data, prevMonday).week : null;
+                const menu = buildMenu(week, { overrides: data.catalog });
+                const text = buildBroadcast({
+                    monday, week, prevWeek: prev, menu,
+                    customerName: typeof body.customerName === 'string' ? body.customerName : undefined,
+                    forceNewIds: numArr(body.newIds),
+                });
+                return adminJson({ ok: true, monday, text });
+            }
+
+            case 'forecast': {
+                // 食材够不够：dashboard 给每道菜「每供应日预计份数」（按近几周销量算），
+                // 这里乘配方 × 供应天数，对照 ingredientStock 现有量。只提示不阻挡。
+                const week = parseWeek(body.week);
+                const demand = (body.demand ?? {}) as Record<string, unknown>;
+                const fallback = Number(body.fallbackPerDay) > 0 ? Number(body.fallbackPerDay) : 6;
+                const menu = buildMenu(week, { overrides: data.catalog });
+                const serveDays = new Map<number, number>();
+                for (const id of week.daily ?? []) serveDays.set(id, 5);
+                for (const wd of [1, 2, 3, 4, 5]) for (const id of week.days[wd] ?? []) serveDays.set(id, (serveDays.get(id) ?? 0) + 1);
+                const need = new Map<string, { unit: string; qty: number; from: Map<string, number> }>();
+                const noRecipe: string[] = [];
+                const perDish: { id: number; name: string; days: number; perDay: number; total: number }[] = [];
+                for (const [id, days] of serveDays) {
+                    const d = menu.find(x => x.id === id);
+                    if (!d || d.hidden) continue;
+                    const perDay = Number(demand[String(id)]) > 0 ? Number(demand[String(id)]) : fallback;
+                    const total = perDay * days;
+                    perDish.push({ id, name: d.name, days, perDay, total });
+                    const recipe = getRecipeForDish(d.name);
+                    if (!recipe) { noRecipe.push(d.name); continue; }
+                    for (const l of recipe.ingredients) {
+                        const cur = need.get(l.name) ?? { unit: l.unit, qty: 0, from: new Map() };
+                        cur.qty += l.qty * total;
+                        cur.from.set(d.name, (cur.from.get(d.name) ?? 0) + l.qty * total);
+                        need.set(l.name, cur);
+                    }
+                }
+                const { getAllIngredientStock } = await import('@/lib/ingredientStock');
+                const stock = await getAllIngredientStock(db);
+                const lines = [...need.entries()].map(([name, n]) => {
+                    const s = stock[name];
+                    const onHand = s ? s.onHand : null;
+                    const shortfall = onHand === null ? null : Math.max(0, n.qty - onHand);
+                    const conv = getConversionFor(name);
+                    return {
+                        name, unit: n.unit, category: categorizeIngredient(name),
+                        needed: Math.round(n.qty * 100) / 100, onHand, tracked: !!s,
+                        shortfall: shortfall === null ? null : Math.round(shortfall * 100) / 100,
+                        convertFrom: conv ? conv.from : null,
+                        from: [...n.from.entries()].sort((a, b) => b[1] - a[1]).map(([dish, q]) => ({ dish, qty: Math.round(q * 100) / 100 })),
+                    };
+                }).sort((a, b) => (b.shortfall ?? -1) - (a.shortfall ?? -1) || a.name.localeCompare(b.name, 'zh'));
+                return adminJson({ ok: true, perDish, lines, noRecipe, fallbackPerDay: fallback });
+            }
+
+            case 'cancelSchedule': {
+                if (!isYmd(body.monday)) return adminJson({ error: 'monday 格式应为 YYYY-MM-DD' }, 400);
+                const monday = mondayOf(body.monday);
+                await db.collection(MENU_COLLECTIONS.weeks).doc(monday).set(
+                    { scheduled: FieldValue.delete(), updatedAt: FieldValue.serverTimestamp(), updatedBy: email }, { merge: true },
+                );
+                return respondState({ monday });
             }
 
             case 'saveDay': {
@@ -198,11 +303,12 @@ export async function POST(req: NextRequest) {
                 const err = validateWeek(week, data.catalog);
                 if (err) return adminJson({ error: err }, 400);
                 const conflicts = await findConflicts(db, monday, week, data.catalog);
+                // merge：不碰挂在文档上的 scheduled（排定生效）。
                 await db.collection(MENU_COLLECTIONS.weeks).doc(monday).set({
                     days: Object.fromEntries(Object.entries(week.days).map(([k, v]) => [String(k), v])),
                     daily: week.daily, paused: week.paused,
                     updatedAt: FieldValue.serverTimestamp(), updatedBy: email,
-                });
+                }, { merge: true });
                 return respondState({ monday, conflicts });
             }
 

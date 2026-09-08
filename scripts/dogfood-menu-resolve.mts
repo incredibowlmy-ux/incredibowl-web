@@ -114,6 +114,24 @@ ok(priced.changes.length === 1 && Math.abs(priced.cart[0].price - 99.9) < 0.001,
 const cross = repriceCart([bundle(dishA, '2026-09-18')]);
 ok(cross.cart[0].dish.weekday === 5, '下周的单：dish 快照刷成下周的 weekday');
 
+console.log('9b. 排定生效：到点前用现行，到点后自动换');
+{
+    const heroNow = wkA.days[3][0], heroLater = wkA.days[3][1];
+    const at = new Date(Date.now() + 60_000).toISOString();
+    const withSched: MenuRuntimeData = {
+        ...data,
+        weeks: { ...data.weeks, '2026-09-07': { ...wkA, scheduled: { at, days: { ...wkA.days, 3: [heroLater, heroNow] }, daily: wkA.daily, paused: wkA.paused } } },
+    };
+    setRuntimeData(withSched);
+    ok(weekDocFor(withSched, '2026-09-09').week.days[3][0] === heroNow, '到点前：周三主打仍是现行');
+    ok(weekDocFor(withSched, '2026-09-09', Date.now() + 120_000).week.days[3][0] === heroLater, '到点后：周三主打换成排定的');
+    ok(menuForDate('2026-09-09').find(d => d.weekday === 3 && d.isPrimary)!.id === heroNow, 'menuForDate 到点前走现行');
+    const past: MenuRuntimeData = { ...withSched, weeks: { ...withSched.weeks, '2026-09-07': { ...withSched.weeks['2026-09-07'], scheduled: { ...withSched.weeks['2026-09-07'].scheduled!, at: new Date(Date.now() - 1000).toISOString() } } } };
+    setRuntimeData(past);
+    ok(menuForDate('2026-09-09').find(d => d.weekday === 3 && d.isPrimary)!.id === heroLater, '排定到点 → menuForDate 自动换');
+    setRuntimeData(data);
+}
+
 console.log('10. 回到 snapshot');
 setRuntimeData(EMPTY_RUNTIME);
 ok(menuForDate('2026-09-08') === weeklyMenu, '恢复快照');

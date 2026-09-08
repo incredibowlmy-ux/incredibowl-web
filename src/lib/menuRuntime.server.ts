@@ -36,6 +36,14 @@ export function normalizeWeekDoc(raw: Record<string, unknown> | undefined): Menu
     for (const wd of [1, 2, 3, 4, 5]) days[wd] = numArr(daysRaw[String(wd)] ?? daysRaw[wd]);
     const doc: MenuWeekDoc = { days, daily: numArr(raw?.daily), paused: numArr(raw?.paused) };
     if (typeof raw?.updatedBy === 'string') doc.updatedBy = raw.updatedBy;
+    const sch = raw?.scheduled as Record<string, unknown> | undefined;
+    if (sch && typeof sch.at === 'string' && !Number.isNaN(Date.parse(sch.at))) {
+        const sDaysRaw = (sch.days ?? {}) as Record<string, unknown>;
+        const sDays: Record<number, number[]> = {};
+        for (const wd of [1, 2, 3, 4, 5]) sDays[wd] = numArr(sDaysRaw[String(wd)] ?? sDaysRaw[wd]);
+        doc.scheduled = { at: sch.at, days: sDays, daily: numArr(sch.daily), paused: numArr(sch.paused) };
+        if (typeof sch.updatedBy === 'string') doc.scheduled.updatedBy = sch.updatedBy;
+    }
     const ua = raw?.updatedAt as { toDate?: () => Date } | string | undefined;
     if (typeof ua === 'string') doc.updatedAt = ua;
     else if (ua && typeof ua.toDate === 'function') doc.updatedAt = ua.toDate().toISOString();

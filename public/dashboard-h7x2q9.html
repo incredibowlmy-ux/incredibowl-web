@@ -698,6 +698,18 @@
         .inbox-bubble.boss { align-self: flex-end; background: #F6E7CF; border-bottom-right-radius: 4px; }
         .inbox-bubble.sys { align-self: center; max-width: 90%; background: transparent; color: var(--text-muted); font-size: 11px; padding: 2px 8px; }
         .inbox-bubble .who { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; }
+        .inbox-tick { margin-left: 5px; letter-spacing: -1px; }
+        .inbox-tick.read { color: #34b7f1; }
+        .inbox-tick.failed { color: var(--danger); letter-spacing: 0; }
+        .inbox-quote { border-left: 3px solid var(--border-strong); padding: 2px 0 2px 7px; margin-bottom: 5px; font-size: 11px; color: var(--text-muted); max-height: 34px; overflow: hidden; }
+        .inbox-media { display: block; max-width: 240px; max-height: 240px; border-radius: 8px; margin: 2px 0 4px; cursor: pointer; background: var(--bg-elev); }
+        .inbox-media-file { display: inline-block; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); margin: 2px 0 4px; }
+        .inbox-attach { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-elev); }
+        .inbox-attach input, .inbox-attach select { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 12px; font-family: inherit; }
+        .inbox-attach-title { font-size: 11px; font-weight: 700; color: var(--text-muted); }
+        .inbox-reply-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); background: var(--bg-elev); border-left: 3px solid var(--brand, #4a9); padding: 4px 8px; border-radius: 6px; }
+        .inbox-bubble .act { position: absolute; top: 2px; right: 6px; opacity: 0; font-size: 11px; cursor: pointer; color: var(--text-muted); }
+        .inbox-bubble:hover .act { opacity: 1; }
         .inbox-composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
         .inbox-composer textarea { width: 100%; min-height: 64px; max-height: 160px; resize: vertical; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; font-family: inherit; }
         .inbox-composer-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -1332,6 +1344,10 @@
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
                     <span>菜单排期</span>
                 </button>
+                <button class="nav-item" data-page="dishes">
+                    <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    <span>菜品分析</span>
+                </button>
                 <button class="nav-item" data-page="settings">
                     <svg class="nav-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span>设置</span>
@@ -1795,12 +1811,17 @@
                                 <div class="inbox-composer-row">
                                     <select id="inboxQr"><option value="">⚡ 快捷回复…</option></select>
                                     <button class="btn ghost sm" id="inboxQrEditBtn" title="编辑快捷回复（每行一条）">✎</button>
+                                    <button class="btn ghost sm inbox-mode" data-mode="media" title="发图片或文件">📎</button>
+                                    <button class="btn ghost sm inbox-mode" data-mode="buttons" title="发按钮（客户点一下就回）">🔘</button>
+                                    <button class="btn ghost sm inbox-mode" data-mode="list" title="发列表（最多 10 项）">📋</button>
                                     <span class="inbox-window" id="inboxWindow"></span>
                                 </div>
                                 <div id="inboxQrEditor" hidden>
                                     <textarea id="inboxQrText" placeholder="每行一条快捷回复"></textarea>
                                     <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存快捷回复</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
                                 </div>
+                                <div id="inboxReplyBar" class="inbox-reply-bar" hidden><span id="inboxReplyText" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn ghost sm" id="inboxReplyCancel">✕</button></div>
+                                <div id="inboxAttach" class="inbox-attach" hidden></div>
                                 <textarea id="inboxText" placeholder="回复客户…（Ctrl+Enter 发送）从这里回复后 bot 会自动闭嘴 2 小时"></textarea>
                                 <div class="inbox-composer-row" style="justify-content:space-between">
                                     <span id="inboxSendHint" class="inbox-window"></span>
@@ -2283,6 +2304,9 @@
 
                 <div class="page" id="page-menu">
                     <div id="msRoot">加载中…</div>
+                </div>
+                <div class="page" id="page-dishes">
+                    <div id="daRoot">加载中…</div>
                 </div>
                 <div class="page" id="page-packing">
                     <div class="card">
@@ -8566,6 +8590,7 @@ incredibowl.my`,
             calculator:{ title: '订单计算器', sub: '查现有订单净利 · 或手动加菜模拟一单' },
             inventory: { title: '库存',     sub: '按菜可售份数 · 食材原料盘点' },
             menu:      { title: '菜单排期', sub: '每周换菜 · 主打 · 常驻 / 暂别 · 价格 · 停业日（保存即生效）' },
+            dishes:    { title: '菜品分析', sub: '畅销榜 · 哪天最好卖 · 配对好坏 · 菜单工程四象限' },
             packing:   { title: '装碗打包', sub: '今日订单按饭型分组 · 逐碗核对不装错' },
             settings:  { title: '设置',     sub: '菜单管理 · 固定成本 · 营销开支' },
         };
@@ -8602,6 +8627,7 @@ incredibowl.my`,
 
             // Initialize inventory (stock count) on first open
             if (page === 'menu' && typeof initMenuSchedule === 'function') initMenuSchedule();
+            if (page === 'dishes' && typeof initDishAnalytics === 'function') initDishAnalytics();
             if (page === 'inventory' && typeof initInventory === 'function') {
                 initInventory();
             }
@@ -8822,7 +8848,95 @@ incredibowl.my`,
             '付款可以 TnG / DuitNow / FPX / 信用卡，暂不支持 COD 哦。',
             '好的，那先不打扰你啦，想吃的时候随时找碗妈 ❤️',
         ];
-        const inbox = { rows: [], filter: 'all', q: '', phone: '', detail: null, listTimer: null, threadTimer: null, sendConfigured: null, stickBottom: true };
+        const inbox = { rows: [], filter: 'all', q: '', phone: '', detail: null, listTimer: null, threadTimer: null, sendConfigured: null, stickBottom: true, mode: 'text', replyTo: null, replyText: '', tpl: '', tplParams: [] };
+        // 客户发来的图片要带 Authorization 才能取（Meta 媒体 URL 5 分钟过期且要 token），
+        // 所以 <img src> 用不了 —— fetch 成 blob 再挂上去，同一张只取一次。
+        const inboxMediaCache = new Map();
+        async function inboxLoadMedia(id, img) {
+            if (inboxMediaCache.has(id)) { img.src = inboxMediaCache.get(id); return; }
+            try {
+                const user = auth.currentUser;
+                if (!user) return;
+                const token = await user.getIdToken();
+                const res = await fetch(`${ADMIN_API_BASE}/api/admin/wa-media?id=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const url = URL.createObjectURL(await res.blob());
+                inboxMediaCache.set(id, url);
+                img.src = url;
+            } catch (err) {
+                img.replaceWith(Object.assign(document.createElement('div'), { className: 'inbox-media-file', textContent: '图片取不到：' + err.message }));
+            }
+        }
+        function inboxHydrateMedia() {
+            document.querySelectorAll('#inboxMsgs img[data-media-id]').forEach(img => {
+                const id = img.dataset.mediaId;
+                img.removeAttribute('data-media-id');
+                inboxLoadMedia(id, img);
+            });
+        }
+        // 本周菜品图（/meta-jpg/ 的 jpg —— Meta 图片消息不收站上默认的 webp）。
+        // dashboard 自己的 state.menu 没有图片字段，唯一正确来源是服务端的 weeklyMenu。
+        let inboxAssets = null;
+        async function inboxLoadAssets() {
+            if (inboxAssets) return;
+            inboxAssets = [];
+            try {
+                const r = await callAdminAPI('/api/admin/wa-lead', { op: 'assets' });
+                inboxAssets = r.dishes || [];
+                if (inbox.mode === 'media') renderInboxAttach();
+            } catch { /* 拿不到就只剩手填链接，不影响发送 */ }
+        }
+        const inboxDishAssets = () => inboxAssets || [];
+
+        // 已过审模板：窗口外唯一发得出去的东西（Meta 会拒一切自由文本，131047）。
+        // 服务端缓存 10 分钟，这里也只在第一次要用时拉一次。
+        let inboxTemplates = null;
+        async function inboxLoadTemplates() {
+            if (inboxTemplates) return;
+            inboxTemplates = { templates: [], loading: true };
+            try {
+                inboxTemplates = await callAdminAPI('/api/admin/wa-lead', { op: 'templates' });
+            } catch (err) {
+                inboxTemplates = { templates: [], error: err.message };
+            }
+            if (inbox.detail) renderInboxComposer(inbox.detail);
+        }
+
+        /** 窗口过期时的 composer：模板下拉 + 变量输入 + 预览。 */
+        function renderInboxTemplatePanel() {
+            const box = $('#inboxAttach');
+            box.hidden = false;
+            const st = inboxTemplates || {};
+            if (st.loading) { box.innerHTML = '<div class="inbox-attach-title">读取已过审模板…</div>'; return; }
+            if (st.error || !(st.templates || []).length) {
+                box.innerHTML = `<div class="inbox-attach-title">📄 窗口外只能发模板</div>
+                    <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(st.error || '还没有已过审的模板。跑 node scripts/wa-templates.mjs submit all --apply 提交，过审后这里就有了。')}</div>`;
+                return;
+            }
+            const cur = inbox.tpl || st.templates[0].name;
+            const t = st.templates.find(x => x.name === cur) || st.templates[0];
+            inbox.tpl = t.name;
+            const params = Array.from({ length: t.paramCount }, (_, i) => inbox.tplParams?.[i] || '');
+            box.innerHTML = `
+                <div class="inbox-attach-title">📄 24 小时窗口已过 —— 只能发 Meta 审核过的模板</div>
+                <select id="inboxTplName">${st.templates.map(x => `<option value="${escapeHtml(x.name)}"${x.name === t.name ? ' selected' : ''}>${escapeHtml(x.name)}（${escapeHtml(x.lang)}）</option>`).join('')}</select>
+                ${params.map((v, i) => `<input class="inbox-tpl-param" data-i="${i}" placeholder="变量 {{${i + 1}}}" value="${escapeHtml(v)}">`).join('')}
+                <div style="font-size:11px;color:var(--text-muted);white-space:pre-wrap;border-top:1px solid var(--border);padding-top:6px">${escapeHtml(inboxTplPreview(t, params))}</div>`;
+        }
+
+        function inboxTplPreview(t, params) {
+            return String(t.bodyText || '').replace(/\{\{(\d+)\}\}/g, (m, n) => params[Number(n) - 1] || m);
+        }
+
+        /** 出站气泡右下角的勾：Meta 回执 sent → delivered → read，失败标红。 */
+        function inboxTick(t) {
+            if (t.role === 'in' || t.role === 'sys') return '';
+            if (t.status === 'failed') return `<span class="inbox-tick failed" title="${escapeHtml(t.err || '发送失败')}">⚠ 未送达</span>`;
+            if (t.status === 'read') return '<span class="inbox-tick read" title="已读">✓✓</span>';
+            if (t.status === 'delivered') return '<span class="inbox-tick" title="已送达">✓✓</span>';
+            if (t.status === 'sent') return '<span class="inbox-tick" title="已发出">✓</span>';
+            return '';
+        }
 
         const inboxIntl = (raw) => { let d = String(raw || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '60' + d.slice(1); return d; };
         function inboxQuickReplies() { try { const v = JSON.parse(localStorage.getItem(INBOX_QR_KEY) || 'null'); if (Array.isArray(v) && v.length) return v; } catch { /* noop */ } return INBOX_QR_DEFAULT.slice(); }
@@ -8971,8 +9085,20 @@ incredibowl.my`,
                 lastDay = day;
                 const role = ['in', 'out', 'boss', 'nudge', 'sys'].includes(t.role) ? t.role : 'sys';
                 if (role === 'sys') return `${sep}<div class="inbox-bubble sys">${escapeHtml(t.text)} · ${inboxHm(t.ts)}</div>`;
-                return `${sep}<div class="inbox-bubble ${role}">${who[role] ? `<span class="who">${who[role]}</span>` : ''}${escapeHtml(t.text)}<span class="t">${inboxHm(t.ts)}</span></div>`;
+                // 引用回复：按 wamid 在本线程里找被引用的那条，找不到就不显示（可能超出 200 条）
+                const quoted = t.replyTo ? turns.find(x => x.msgId === t.replyTo) : null;
+                const quote = quoted ? `<div class="inbox-quote">${escapeHtml(quoted.text).slice(0, 90)}</div>` : '';
+                let media = '';
+                if (t.media && t.media.kind === 'image') {
+                    media = t.media.id ? `<img class="inbox-media" data-media-id="${escapeHtml(t.media.id)}" alt="图片">`
+                        : t.media.link ? `<img class="inbox-media" src="${escapeHtml(t.media.link)}" alt="图片">` : '';
+                } else if (t.media) {
+                    media = `<div class="inbox-media-file">📄 ${escapeHtml(t.media.filename || t.media.kind)}</div>`;
+                }
+                const act = t.msgId ? `<span class="act inbox-quote-btn" data-msgid="${escapeHtml(t.msgId)}" title="引用回复">↩</span>` : '';
+                return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${escapeHtml(t.text)}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
             }).join('');
+            inboxHydrateMedia();
             if (inbox.stickBottom || nearBottom || turns.length !== prevCount) box.scrollTop = box.scrollHeight;
             inbox.stickBottom = false;
         }
@@ -8982,13 +9108,61 @@ incredibowl.my`,
             const rem = d.windowRemainingMs || 0;
             if (rem > 0) { const h = Math.floor(rem / 3600000), m = Math.floor((rem % 3600000) / 60000); win.textContent = `24h 窗口开着 · 还剩 ${h}h${m}m`; win.className = 'inbox-window'; }
             else { win.textContent = '24h 窗口已过 · 只能你手机直接发'; win.className = 'inbox-window closed'; }
-            const canSend = d.sendConfigured && rem > 0 && d.status !== 'closed';
-            btn.disabled = !canSend; ta.disabled = !canSend;
-            hint.textContent = !d.sendConfigured ? '⚠️ Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）' : rem <= 0 ? '' : d.status === 'closed' ? '已关闭的对话不发' : '发送后 bot 自动闭嘴 2 小时';
+            // 窗口过了不再是死路：改用模板（Meta 唯一允许的窗口外消息）
+            const tplMode = rem <= 0 && d.sendConfigured && d.status !== 'closed';
+            if (tplMode) { inboxLoadTemplates(); inbox.mode = 'template'; }
+            else if (inbox.mode === 'template') inbox.mode = 'text';
+            const hasTpl = tplMode && !!(inboxTemplates?.templates || []).length;
+            const canSend = d.sendConfigured && d.status !== 'closed' && (rem > 0 || hasTpl);
+            btn.disabled = !canSend; ta.disabled = !canSend && !tplMode;
+            btn.textContent = tplMode ? '发模板 ➤' : '发送 ➤';
+            hint.textContent = !d.sendConfigured ? '⚠️ Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）'
+                : d.status === 'closed' ? '已关闭的对话不发'
+                : tplMode ? (hasTpl ? '模板消息按条计费，发出去就会重开 24 小时窗口' : '还没有已过审模板')
+                : '发送后 bot 自动闭嘴 2 小时';
             const sel = $('#inboxQr');
             const cur = sel.value;
             sel.innerHTML = '<option value="">⚡ 快捷回复…</option>' + inboxQuickReplies().map((q, i) => `<option value="${i}">${escapeHtml(q.slice(0, 60))}</option>`).join('');
             sel.value = cur && sel.querySelector(`option[value="${cur}"]`) ? cur : '';
+            [...$$('.inbox-mode')].forEach(b => b.classList.toggle('active', b.dataset.mode === inbox.mode));
+            renderInboxAttach();
+            const bar = $('#inboxReplyBar');
+            bar.hidden = !inbox.replyTo;
+            if (inbox.replyTo) $('#inboxReplyText').textContent = '↩ 引用：' + inbox.replyText.slice(0, 60);
+        }
+
+        /** 📎 / 🔘 / 📋 三个模式各自的输入面板。text 模式什么都不显示。 */
+        function renderInboxAttach() {
+            const box = $('#inboxAttach');
+            if (inbox.mode === 'template') { renderInboxTemplatePanel(); return; }
+            if (inbox.mode === 'text') { box.hidden = true; box.innerHTML = ''; return; }
+            box.hidden = false;
+            if (inbox.mode === 'media') {
+                // 菜品图走 /meta-jpg/（Meta 图片消息不收 webp，站上默认就是 webp）
+                const dishes = (typeof inboxDishAssets === 'function' ? inboxDishAssets() : []);
+                box.innerHTML = `
+                    <div class="inbox-attach-title">📎 发图片 / 文件（链接必须是公网 https）</div>
+                    ${dishes.length ? `<select id="inboxMediaPreset"><option value="">— 选本周菜品图 —</option>${dishes.map(d => `<option value="${escapeHtml(d.url)}">${escapeHtml(d.name)}</option>`).join('')}</select>` : ''}
+                    <input id="inboxMediaLink" type="url" placeholder="https://www.incredibowl.my/meta-jpg/chicken_chop.jpg">
+                    <div class="inbox-composer-row">
+                        <select id="inboxMediaKind" style="flex:0 0 auto"><option value="image">图片</option><option value="document">文件（PDF 等）</option></select>
+                        <input id="inboxMediaFilename" placeholder="文件名（只对文件有用）" style="flex:1">
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字会当作图片说明一起发。</div>`;
+            } else if (inbox.mode === 'buttons') {
+                box.innerHTML = `
+                    <div class="inbox-attach-title">🔘 按钮（最多 3 个，每个 ≤20 字；客户点一下就当文字回过来）</div>
+                    <input class="inbox-btn-title" placeholder="按钮 1，例：要加饭">
+                    <input class="inbox-btn-title" placeholder="按钮 2，例：不用了">
+                    <input class="inbox-btn-title" placeholder="按钮 3（可留空）">
+                    <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字 = 按钮上方的问题。</div>`;
+            } else {
+                box.innerHTML = `
+                    <div class="inbox-attach-title">📋 列表（最多 10 项，标题 ≤24 字；每行「标题 | 说明」）</div>
+                    <input id="inboxListButton" placeholder="打开按钮的文字，例：看菜单" value="选择">
+                    <textarea id="inboxListRows" style="min-height:80px" placeholder="香煎鸡扒 | RM12.90&#10;柠檬三文鱼 | RM15.90"></textarea>
+                    <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字 = 列表上方的说明。</div>`;
+            }
         }
 
         function renderInboxProfile(d) {
@@ -9029,15 +9203,66 @@ incredibowl.my`,
                 <div style="color:var(--text-muted);font-size:11px">线程保留最近 200 条；更早的在「客户对话」页（Google Sheet 全量）。</div>`;
         }
 
+        /** 把三个模式的输入拼成 /api/admin/wa-lead op=send 的 body。返回字符串 = 本地就能报的错。 */
+        function inboxSendBody(text) {
+            const base = { op: 'send', phone: inbox.phone, text };
+            if (inbox.replyTo) base.replyTo = inbox.replyTo;
+            if (inbox.mode === 'template') {
+                const t = (inboxTemplates?.templates || []).find(x => x.name === inbox.tpl);
+                if (!t) return '先选一个已过审的模板';
+                const params = [...$$('.inbox-tpl-param')].map(i => i.value.trim());
+                if (params.filter(Boolean).length < t.paramCount) return `这个模板要填 ${t.paramCount} 个变量`;
+                return { op: 'send', phone: inbox.phone, template: { name: t.name, lang: t.lang, params } };
+            }
+            if (inbox.mode === 'media') {
+                const link = ($('#inboxMediaLink')?.value || '').trim();
+                if (!link) return '要先填图片/文件链接';
+                if (!/^https:\/\//i.test(link)) return '链接必须是 https';
+                const kind = $('#inboxMediaKind')?.value === 'document' ? 'document' : 'image';
+                if (kind === 'image' && /\.webp(\?|$)/i.test(link)) return 'Meta 图片消息不收 webp，用 /meta-jpg/ 下的 jpg';
+                base.media = { kind, link, caption: text };
+                const fn = ($('#inboxMediaFilename')?.value || '').trim();
+                if (kind === 'document' && fn) base.media.filename = fn;
+                return base;
+            }
+            if (inbox.mode === 'buttons') {
+                if (!text) return '按钮消息要有正文（按钮上方的问题）';
+                const titles = [...$$('.inbox-btn-title')].map(i => i.value.trim()).filter(Boolean);
+                if (!titles.length) return '至少填一个按钮';
+                if (titles.some(t => t.length > 20)) return '按钮文字不能超过 20 字';
+                base.interactive = { body: text, buttons: titles.map((t, i) => ({ id: `ib_${i + 1}`, title: t })) };
+                return base;
+            }
+            if (inbox.mode === 'list') {
+                if (!text) return '列表消息要有正文（列表上方的说明）';
+                const rows = ($('#inboxListRows')?.value || '').split('\n').map(l => l.trim()).filter(Boolean).map((l, i) => {
+                    const [title, desc] = l.split('|').map(x => (x || '').trim());
+                    return { id: `ib_${i + 1}`, title, ...(desc ? { description: desc } : {}) };
+                });
+                if (!rows.length) return '至少填一项';
+                if (rows.length > 10) return '列表最多 10 项';
+                const bad = rows.find(r => !r.title || r.title.length > 24);
+                if (bad) return '列表项标题不能为空、也不能超过 24 字';
+                base.interactive = { body: text, list: { button: ($('#inboxListButton')?.value || '选择').trim(), rows } };
+                return base;
+            }
+            if (!text) return '空消息';
+            return base;
+        }
+
         async function inboxSend() {
             const ta = $('#inboxText'), btn = $('#inboxSend');
             const text = ta.value.trim();
-            if (!text || !inbox.phone) return;
+            if (!inbox.phone) return;
+            const body = inboxSendBody(text);
+            if (typeof body === 'string') { toast(body, 'error'); return; }
             btn.disabled = true; ta.disabled = true;
             try {
-                const r = await callAdminAPI('/api/admin/wa-lead', { op: 'send', phone: inbox.phone, text });
+                const r = await callAdminAPI('/api/admin/wa-lead', body);
                 if (!r.ok) { toast(r.error || '发送失败', 'error'); btn.disabled = false; ta.disabled = false; return; }
                 ta.value = '';
+                inbox.replyTo = null; inbox.replyText = '';
+                inbox.mode = 'text';
                 toast('已发送 · bot 已静音 2 小时', 'success');
                 inbox.stickBottom = true;
                 await inboxRefreshThread(true);
@@ -9053,6 +9278,32 @@ incredibowl.my`,
             const fb = e.target.closest('#inboxFilter button');
             if (fb) { $$('#inboxFilter button').forEach(b => b.classList.toggle('active', b === fb)); inbox.filter = fb.dataset.f; renderInboxList(); return; }
             if (e.target.id === 'inboxSend') { inboxSend(); return; }
+            const modeBtn = e.target.closest('.inbox-mode');
+            if (modeBtn) {
+                inbox.mode = inbox.mode === modeBtn.dataset.mode ? 'text' : modeBtn.dataset.mode;
+                [...$$('.inbox-mode')].forEach(b => b.classList.toggle('active', b.dataset.mode === inbox.mode));
+                if (inbox.mode === 'media') inboxLoadAssets();
+                renderInboxAttach();
+                return;
+            }
+            const quoteBtn = e.target.closest('.inbox-quote-btn');
+            if (quoteBtn) {
+                const t = (inbox.detail?.turns || []).find(x => x.msgId === quoteBtn.dataset.msgid);
+                inbox.replyTo = quoteBtn.dataset.msgid; inbox.replyText = t?.text || '';
+                $('#inboxReplyBar').hidden = false;
+                $('#inboxReplyText').textContent = '↩ 引用：' + inbox.replyText.slice(0, 60);
+                $('#inboxText').focus();
+                return;
+            }
+            if (e.target.id === 'inboxReplyCancel') {
+                inbox.replyTo = null; inbox.replyText = '';
+                $('#inboxReplyBar').hidden = true;
+                return;
+            }
+            if (e.target.classList?.contains('inbox-media')) {
+                if (e.target.src) window.open(e.target.src, '_blank');
+                return;
+            }
             if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
             if (e.target.id === 'inboxQrCancel') { $('#inboxQrEditor').hidden = true; return; }
             if (e.target.id === 'inboxQrSave') {
@@ -9081,7 +9332,16 @@ incredibowl.my`,
             }
         });
         document.addEventListener('change', (e) => {
-            if (e.target.id === 'inboxQr' && e.target.value !== '') {
+            if (e.target.id === 'inboxTplName') {
+                inbox.tpl = e.target.value; inbox.tplParams = [];
+                renderInboxTemplatePanel();
+                return;
+            }
+            if (e.target.id === 'inboxMediaPreset') {
+                if (e.target.value) $('#inboxMediaLink').value = e.target.value;
+                return;
+            }
+            if (e.target.id === 'inboxQr') {
                 const q = inboxQuickReplies()[Number(e.target.value)] || '';
                 const ta = $('#inboxText'); ta.value = ta.value ? ta.value.replace(/\s*$/, '') + '\n' + q : q; ta.focus(); e.target.value = '';
             }
@@ -15736,21 +15996,25 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   MENU SCHEDULE（菜单排期）—— 每周换菜 / hero / 常驻 / 暂别 / 价格 / 停业日
         //   后端：POST /api/admin/menu-config（get / saveWeek / saveDay / setDish /
-        //   setClosure / deleteClosure）。Firestore menuWeeks / menuCatalog /
-        //   menuClosures 是网站运行时的权威源；保存后网站约 1 分钟内生效。
-        //   限量（按菜可售份数）沿用「库存」页，这里只放入口。
+        //   setClosure / deleteClosure / cancelSchedule / broadcast / forecast）。
+        //   Firestore menuWeeks / menuCatalog / menuClosures 是网站运行时的权威源；
+        //   保存后网站约 1 分钟内生效。限量（按菜可售份数）沿用「库存」页，这里只放入口。
+        //   销量提示 / 食材预测的需求量来自下方 DISH ANALYTICS 模块（浏览器内存算）。
         // ═══════════════════════════════════════════════════════════════
         const MS = {
             loaded: false, loading: false,
             runtime: null,      // { source, weeks, catalog, closures }
-            catalog: [],        // [{ id, dashId, name, nameEn, basePrice, price, hidden, ... }]
+            catalog: [],        // [{ id, dashId, name, nameEn, image, basePrice, price, hidden, ... }]
             snapshotWeek: null, // 代码快照周（Firestore 没 seed 时的起点）
             offset: 0,          // 0 本周 / 1 下周 / 2 下下周
             draft: null,        // 正在编辑的周 { days:{1..5:[]}, daily:[], paused:[] }
             draftMonday: '',
+            draftFromScheduled: false,
             dirty: false,
             conflicts: [],
-            lastSaved: null,
+            broadcast: '',
+            forecast: null,
+            stats: null,        // { byName: Map, last: Map, ordersLen }
         };
         const MS_WD_CN = { 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五' };
         const msEsc = s => escapeHtml(String(s ?? ''));
@@ -15765,13 +16029,10 @@ incredibowl.my`,
         }
         function msAddDays(ymd, n) {
             const [y, m, d] = ymd.split('-').map(Number);
-            const t = new Date(y, m - 1, d + n);
-            return ymdKey(t);
+            return ymdKey(new Date(y, m - 1, d + n));
         }
-        function msFmt(ymd) {
-            const [, m, d] = ymd.split('-').map(Number);
-            return `${m}/${d}`;
-        }
+        function msFmt(ymd) { const [, m, d] = ymd.split('-').map(Number); return `${m}/${d}`; }
+        function msFmtAt(iso) { const d = new Date(iso); return Number.isNaN(d.getTime()) ? iso : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; }
         function msDish(id) { return MS.catalog.find(c => c.id === Number(id)); }
         function msName(id) { const c = msDish(id); return c ? c.name : `#${id}`; }
         function msCloneWeek(w) {
@@ -15789,11 +16050,19 @@ incredibowl.my`,
             if (earlier) return { week: weeks[earlier], state: 'inherited', from: earlier };
             return { week: MS.snapshotWeek || { days: {}, daily: [], paused: [] }, state: 'snapshot', from: '' };
         }
-        function msLoadDraft() {
+        /** 这周文档上挂着、还没到点的排定。 */
+        function msPending(monday) {
+            const doc = MS.runtime && MS.runtime.weeks && MS.runtime.weeks[monday];
+            const s = doc && doc.scheduled;
+            return s && Date.parse(s.at) > Date.now() ? s : null;
+        }
+        function msLoadDraft(fromScheduled = false) {
             MS.draftMonday = msMonday(MS.offset);
-            const { week } = msWeekFor(MS.draftMonday);
-            MS.draft = msCloneWeek(week);
+            const pend = fromScheduled ? msPending(MS.draftMonday) : null;
+            MS.draft = msCloneWeek(pend || msWeekFor(MS.draftMonday).week);
+            MS.draftFromScheduled = !!pend;
             MS.dirty = false;
+            MS.broadcast = ''; MS.forecast = null;
         }
         function msAllLists() {
             const d = MS.draft;
@@ -15837,10 +16106,38 @@ incredibowl.my`,
             const used = new Set(msAllLists().flatMap(x => x.list));
             return MS.catalog.filter(c => !used.has(c.id));
         }
-
-        async function msFetch(body) {
-            return callAdminAPI('/api/admin/menu-config', body);
+        /** 近 4 周销量 + 上次供应（一次扫描，按 render 缓存）。 */
+        function msStatsMap() {
+            const len = (state.orders || []).length;
+            if (MS.stats && MS.stats.ordersLen === len) return MS.stats;
+            const byName = new Map(), last = new Map();
+            try {
+                const { since, until } = daRange(4);
+                const r = daAnalyze(daValidOrders(since, until), daDailyNames());
+                for (const s of r.dishes) byName.set(s.name, s);
+                for (const o of daValidOrders('', until)) for (const it of (o.items || [])) {
+                    const raw = String(it?.name || '').trim();
+                    if (!raw || raw.startsWith('↳')) continue;
+                    const n = canonicalDishName(raw);
+                    if (!last.has(n) || o.deliveryDate > last.get(n)) last.set(n, o.deliveryDate);
+                }
+            } catch (e) { console.warn('[menuSchedule] stats', e); }
+            MS.stats = { byName, last, ordersLen: len };
+            return MS.stats;
         }
+        function msStatText(c) {
+            const st = msStatsMap();
+            const n = canonicalDishName(c.name);
+            const s = st.byName.get(n);
+            const last = st.last.get(n);
+            const parts = [];
+            parts.push(s ? `近4周 ${s.qty} 份` : '近4周 0 份');
+            if (s && s.bestWd) parts.push(`周${DA_WD[s.bestWd]}最旺`);
+            parts.push(last ? `上次 ${msFmt(last)}` : '从未卖过');
+            return parts.join(' · ');
+        }
+
+        async function msFetch(body) { return callAdminAPI('/api/admin/menu-config', body); }
         async function msLoad() {
             if (MS.loading) return;
             MS.loading = true;
@@ -15877,12 +16174,16 @@ incredibowl.my`,
             if (!MS.loaded) { root.innerHTML = '<div class="card"><div class="card-content">加载中…</div></div>'; return; }
             const monday = MS.draftMonday;
             const info = msWeekFor(monday);
+            const pending = msPending(monday);
             const src = MS.runtime && MS.runtime.source;
             const statusPill = info.state === 'exact'
                 ? `<span class="pill ok">已排期${info.week.updatedAt ? ' · ' + msEsc(String(info.week.updatedAt).slice(0, 16).replace('T', ' ')) : ''}</span>`
                 : info.state === 'inherited'
                     ? `<span class="pill warn">沿用 ${msEsc(info.from)} 那周的排期 · 保存后独立</span>`
                     : `<span class="pill muted">代码快照（Firestore 还没有排期，保存即建）</span>`;
+            const pendingPill = pending
+                ? `<span class="pill info">⏱ 已排定 ${msEsc(msFmtAt(pending.at))} 自动生效</span> <button class="btn ghost sm" data-act="loadScheduled">编辑排定内容</button> <button class="btn ghost sm" data-act="cancelSchedule">取消排定</button>`
+                : '';
             const tabs = [0, 1, 2].map(o => {
                 const m = msMonday(o);
                 const label = o === 0 ? '本周' : o === 1 ? '下周' : '下下周';
@@ -15892,27 +16193,33 @@ incredibowl.my`,
 
             const colCard = (key, title, sub, list, opts = {}) => {
                 const rows = list.map((id, i) => {
-                    const c = msDish(id) || { name: `#${id}`, price: 0 };
+                    const c = msDish(id) || { name: `#${id}`, price: 0, image: '' };
                     const hero = opts.hero && i === 0;
+                    const noImg = !(c.image || '').startsWith('/');
                     return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:${hero ? 'rgba(255,184,0,.12)' : 'var(--bg-elev)'};margin-bottom:4px">
-                        <span style="flex:1;font-weight:600;font-size:12.5px">${hero ? '⭐ ' : ''}${msEsc(c.name)} <span class="mono" style="opacity:.6;font-size:11px">RM ${Number(c.price).toFixed(2)}</span></span>
+                        <span style="flex:1;min-width:0">
+                            <div style="font-weight:600;font-size:12.5px">${hero ? '⭐ ' : ''}${msEsc(c.name)} <span class="mono" style="opacity:.6;font-size:11px">RM ${Number(c.price).toFixed(2)}</span>${hero && noImg ? ' <span class="pill warn" title="主打没有实拍图，保存会被拒">⚠ 无图</span>' : ''}</div>
+                            <div style="font-size:10.5px;opacity:.6">${msEsc(msStatText(c))}</div>
+                        </span>
                         ${opts.hero && i > 0 ? `<button class="btn ghost sm" title="设为主打" data-act="hero" data-key="${key}" data-id="${id}">⭐</button>` : ''}
                         <button class="btn ghost sm" title="上移" data-act="up" data-key="${key}" data-id="${id}" ${i === 0 ? 'disabled' : ''}>↑</button>
                         <button class="btn ghost sm" title="下移" data-act="down" data-key="${key}" data-id="${id}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
                         <button class="btn ghost sm" title="移出（变成未排期/下架）" data-act="remove" data-id="${id}">✕</button>
                     </div>`;
                 }).join('') || '<div style="opacity:.5;font-size:12px;padding:6px 8px">（空）</div>';
+                const st = msStatsMap();
                 const options = MS.catalog
                     .filter(c => !list.includes(c.id) && !(c.hidden && key !== 'paused'))
-                    .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
-                    .map(c => `<option value="${c.id}">${msEsc(c.name)}${c.hidden ? '（未上架）' : ''}</option>`).join('');
+                    .map(c => { const s = st.byName.get(canonicalDishName(c.name)); return { c, qty: s ? s.qty : 0 }; })
+                    .sort((a, b) => b.qty - a.qty || a.c.name.localeCompare(b.c.name, 'zh'))
+                    .map(({ c, qty }) => `<option value="${c.id}">${msEsc(c.name)}（近4周 ${qty} 份）${c.hidden ? '（未上架）' : ''}</option>`).join('');
                 return `<div class="card" style="margin:0">
                     <div class="card-header"><div><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div>
                         ${opts.saveDay ? `<button class="btn ghost sm" data-act="saveDay" data-key="${key}">只保存${title}</button>` : ''}</div>
                     <div class="card-content">
                         ${rows}
                         <div style="display:flex;gap:6px;margin-top:6px">
-                            <select data-role="add-select" data-key="${key}" style="flex:1;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);font-size:12px"><option value="">+ 加一道菜…</option>${options}</select>
+                            <select data-role="add-select" data-key="${key}" style="flex:1;padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);font-size:12px"><option value="">+ 加一道菜…（按近4周销量排）</option>${options}</select>
                         </div>
                     </div>
                 </div>`;
@@ -15924,12 +16231,36 @@ incredibowl.my`,
             const pausedCard = colCard('paused', '暂别', '网站灰显可见不可点', MS.draft.paused);
             const pool = msUnscheduled();
             const poolCard = `<div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">未排期</div><div class="card-sub">不在任何列 = 网站不显示（dashboard 仍可见）</div></div></div>
-                <div class="card-content">${pool.length ? pool.map(c => `<span class="pill muted" style="margin:2px">${msEsc(c.name)}${c.hidden ? ' · 未上架' : ''}</span>`).join('') : '<span style="opacity:.5;font-size:12px">（无）</span>'}</div></div>`;
+                <div class="card-content">${pool.length ? pool.map(c => `<span class="pill muted" style="margin:2px" title="${msEsc(msStatText(c))}">${msEsc(c.name)}${c.hidden ? ' · 未上架' : ''}</span>`).join('') : '<span style="opacity:.5;font-size:12px">（无）</span>'}</div></div>`;
 
             const conflictsCard = MS.conflicts.length ? `<div class="card" style="border-color:#e0a800;background:rgba(255,184,0,.06)">
                 <div class="card-header"><div><div class="card-title">⚠ 已有订单点了被撤的菜（已保存，请自行处理）</div><div class="card-sub">这些单在新排期下该日不供应这道菜 —— 联系客户改菜或改期</div></div></div>
                 <div class="card-content"><ul style="margin:0;padding-left:18px;font-size:12.5px">${MS.conflicts.map(c =>
                     `<li><b>${msEsc(c.date)}</b> ${msEsc(c.dish)}：${c.orders.map(o => `${msEsc(o.userName)}×${o.qty}`).join('、')}</li>`).join('')}</ul></div></div>` : '';
+
+            // 食材预测
+            let forecastCard = '';
+            if (MS.forecast) {
+                const f = MS.forecast;
+                const short = f.lines.filter(l => l.shortfall !== null && l.shortfall > 0);
+                const untracked = f.lines.filter(l => !l.tracked);
+                const row = l => `<tr><td>${msEsc(l.name)}<div style="opacity:.55;font-size:11px">${l.from.slice(0, 3).map(x => `${msEsc(x.dish)} ${x.qty}`).join(' · ')}</div></td><td>${msEsc(l.category)}</td>
+                    <td class="r mono">${l.needed} ${msEsc(l.unit)}</td><td class="r mono">${l.onHand === null ? '<span style="opacity:.5">未盘点</span>' : `${l.onHand} ${msEsc(l.unit)}`}</td>
+                    <td class="r mono ${l.shortfall > 0 ? 'neg' : 'pos'}">${l.shortfall === null ? '—' : l.shortfall > 0 ? `缺 ${l.shortfall}` : '够'}${l.convertFrom && l.shortfall > 0 ? `<div style="opacity:.6;font-size:11px">可由「${msEsc(l.convertFrom)}」加工</div>` : ''}</td></tr>`;
+                forecastCard = `<div class="card" style="border-color:${short.length ? '#e0a800' : 'var(--border)'}">
+                    <div class="card-header"><div><div class="card-title">🥬 食材够不够 · ${short.length ? `${short.length} 项不够` : '全部够'}</div>
+                        <div class="card-sub">预计份数 = 近 8 周该菜每供应日均量（没卖过的按全体中位数 ${f.fallbackPerDay} 份/天）× 供应天数；只提示不阻挡${f.noRecipe.length ? ` · ⚠ 没配方：${f.noRecipe.map(msEsc).join('、')}` : ''}</div></div>
+                        <button class="btn ghost sm" data-act="closeForecast">收起</button></div>
+                    <div class="card-content">
+                        <div style="font-size:12px;opacity:.75;margin-bottom:6px">预计：${f.perDish.map(p => `${msEsc(p.name)} ${p.perDay}×${p.days}天=${Math.round(p.total)}`).join(' · ')}</div>
+                        <div class="table-wrap"><table class="dt"><thead><tr><th>食材</th><th>类</th><th class="r">需要</th><th class="r">现有</th><th class="r">缺口</th></tr></thead>
+                        <tbody>${[...short, ...f.lines.filter(l => l.tracked && !(l.shortfall > 0)), ...untracked].map(row).join('')}</tbody></table></div>
+                    </div></div>`;
+            }
+            const broadcastCard = MS.broadcast ? `<div class="card">
+                <div class="card-header"><div><div class="card-title">📣 WhatsApp Broadcast 文案</div><div class="card-sub">按老板定稿模板生成 · {name} 会在群发工具里替换 · 新菜 = 上周没排过的菜，可自行删改</div></div>
+                    <div style="display:flex;gap:6px"><button class="btn sm" data-act="copyBroadcast">复制</button><button class="btn ghost sm" data-act="closeBroadcast">收起</button></div></div>
+                <div class="card-content"><textarea id="msBroadcastText" style="width:100%;min-height:360px;padding:10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);font:12.5px/1.5 inherit">${msEsc(MS.broadcast)}</textarea></div></div>` : '';
 
             // 价格 / 上架
             const priceRows = [...MS.catalog].sort((a, b) => a.id - b.id).map(c => `
@@ -15976,21 +16307,32 @@ incredibowl.my`,
             root.innerHTML = `
                 <div class="card">
                     <div class="card-header">
-                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''}</div></div>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                             ${tabs}
                             <button class="btn ghost sm" data-act="copyPrev" title="把上一周的排期抄过来当草稿">复制上周</button>
                             <button class="btn ghost sm" data-act="reset" ${MS.dirty ? '' : 'disabled'}>撤销改动</button>
                             <button class="btn ghost sm" data-act="refresh">↻ 刷新</button>
-                            <button class="btn sm" data-act="saveWeek">保存整周</button>
+                            <button class="btn ghost sm" data-act="forecast">🥬 检查食材</button>
+                            <button class="btn ghost sm" data-act="broadcast">📣 生成 Broadcast</button>
+                            <button class="btn ghost sm" data-act="gotoDishes">📊 菜品分析</button>
+                            <button class="btn sm" data-act="saveWeek">保存整周（立即生效）</button>
                         </div>
                     </div>
-                    <div class="card-content" style="font-size:12px;opacity:.75">
-                        一道菜只能在一个位置：加进某列会自动从别的列移走。⭐ = 当天主打（首页 hero）。保存后网站约 1 分钟内生效；旧页面提交的单会被服务端按新菜单拒收并提示刷新。
+                    <div class="card-content" style="font-size:12px;opacity:.85">
+                        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+                            <span>⏱ 或排定生效时间：</span>
+                            <input type="datetime-local" id="msScheduleAt" style="padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev)">
+                            <button class="btn ghost sm" data-act="saveScheduled">排定整周（到点自动换）</button>
+                            <span style="opacity:.7">现行排期照卖到那一刻；到点后 1 分钟内切换。</span>
+                        </div>
+                        一道菜只能在一个位置：加进某列会自动从别的列移走。⭐ = 当天主打（首页 hero，必须有实拍图）。旧页面提交的单会被服务端按新菜单拒收并提示刷新。
                         限量请到 <a href="#" data-act="gotoInventory">库存页</a> 设置。
                     </div>
                 </div>
                 ${conflictsCard}
+                ${forecastCard}
+                ${broadcastCard}
                 <div class="grid-3" style="gap:10px;margin-top:10px">${dayCards}${dailyCard}${pausedCard}${poolCard}</div>
                 <div style="height:10px"></div>
                 ${priceCard}
@@ -16010,13 +16352,13 @@ incredibowl.my`,
                 MS.runtime = res.runtime || MS.runtime;
                 if (res.catalog) MS.catalog = res.catalog;
                 MS.conflicts = res.conflicts || [];
-                if (body.action === 'saveWeek' || body.action === 'saveDay') { msLoadDraft(); }
+                if (['saveWeek', 'saveDay', 'cancelSchedule'].includes(body.action)) { msLoadDraft(); }
                 toast(okMsg + (MS.conflicts.length ? `（⚠ ${MS.conflicts.length} 处撞到已有订单，见黄框）` : ''), MS.conflicts.length ? 'warn' : 'success');
                 msRender();
-                return true;
+                return res;
             } catch (e) {
                 toast('保存失败：' + e.message, 'error');
-                return false;
+                return null;
             }
         }
         function msOnChange(ev) {
@@ -16036,14 +16378,16 @@ incredibowl.my`,
             if (!btn) return;
             const act = btn.dataset.act;
             if (act === 'gotoInventory') { ev.preventDefault(); switchPage('inventory'); return; }
+            if (act === 'gotoDishes') { switchPage('dishes'); return; }
             if (act === 'week') {
                 const o = Number(btn.dataset.offset);
                 if (o === MS.offset) return;
                 if (MS.dirty && !confirm('当前周有未保存改动，切换会丢掉。继续？')) return;
                 MS.offset = o; msLoadDraft(); MS.conflicts = []; msRender(); return;
             }
-            if (act === 'refresh') { if (MS.dirty && !confirm('有未保存改动，刷新会丢掉。继续？')) return; MS.loaded = false; await msLoad(); return; }
+            if (act === 'refresh') { if (MS.dirty && !confirm('有未保存改动，刷新会丢掉。继续？')) return; MS.loaded = false; MS.stats = null; await msLoad(); return; }
             if (act === 'reset') { msLoadDraft(); msRender(); return; }
+            if (act === 'loadScheduled') { if (MS.dirty && !confirm('有未保存改动，载入排定内容会丢掉。继续？')) return; msLoadDraft(true); msRender(); return; }
             if (act === 'copyPrev') {
                 const prev = msWeekFor(msAddDays(MS.draftMonday, -7));
                 MS.draft = msCloneWeek(prev.week); MS.dirty = true; msRender(); return;
@@ -16057,11 +16401,52 @@ incredibowl.my`,
                 await msApply({ action: 'saveWeek', monday: MS.draftMonday, week: msWeekPayload() }, `已保存 ${MS.draftMonday} 整周排期`);
                 btn.disabled = false; return;
             }
+            if (act === 'saveScheduled') {
+                const at = (document.getElementById('msScheduleAt') || {}).value;
+                if (!at) { toast('先选生效时间', 'error'); return; }
+                const atMs = new Date(at).getTime();
+                if (!(atMs > Date.now())) { toast('生效时间必须在未来', 'error'); return; }
+                btn.disabled = true;
+                await msApply({ action: 'saveWeek', monday: MS.draftMonday, week: msWeekPayload(), scheduleAt: new Date(atMs).toISOString() }, `已排定 ${msFmtAt(new Date(atMs).toISOString())} 自动生效`);
+                btn.disabled = false; return;
+            }
+            if (act === 'cancelSchedule') {
+                if (!confirm('取消这周的排定生效？现行排期保持不变。')) return;
+                await msApply({ action: 'cancelSchedule', monday: MS.draftMonday }, '已取消排定'); return;
+            }
             if (act === 'saveDay') {
                 const wd = Number(btn.dataset.key);
                 btn.disabled = true;
                 await msApply({ action: 'saveDay', monday: MS.draftMonday, weekday: wd, ids: MS.draft.days[wd] }, `已保存 ${MS_WD_CN[wd]}（${msFmt(msAddDays(MS.draftMonday, wd - 1))}）`);
                 btn.disabled = false; return;
+            }
+            if (act === 'broadcast') {
+                btn.disabled = true;
+                try {
+                    const st = msStatsMap();
+                    const neverSold = msAllLists().flatMap(x => x.list).filter(id => { const c = msDish(id); return c && !st.last.has(canonicalDishName(c.name)); });
+                    const res = await msFetch({ action: 'broadcast', monday: MS.draftMonday, week: msWeekPayload(), newIds: neverSold });
+                    MS.broadcast = res.text || '';
+                    toast('Broadcast 文案已生成，检查后复制', 'success');
+                } catch (e) { toast('生成失败：' + e.message, 'error'); }
+                btn.disabled = false; msRender(); return;
+            }
+            if (act === 'copyBroadcast') {
+                const ta = document.getElementById('msBroadcastText');
+                try { await navigator.clipboard.writeText(ta.value); toast('已复制', 'success'); }
+                catch { ta.select(); document.execCommand('copy'); toast('已复制', 'success'); }
+                return;
+            }
+            if (act === 'closeBroadcast') { MS.broadcast = ''; msRender(); return; }
+            if (act === 'closeForecast') { MS.forecast = null; msRender(); return; }
+            if (act === 'forecast') {
+                btn.disabled = true;
+                try {
+                    const { demand, median } = daDemandPerDay(8);
+                    MS.forecast = await msFetch({ action: 'forecast', week: msWeekPayload(), demand, fallbackPerDay: median });
+                    toast('食材检查完成', 'success');
+                } catch (e) { toast('检查失败：' + e.message, 'error'); }
+                btn.disabled = false; msRender(); return;
             }
             if (act === 'savePrice') {
                 const tr = btn.closest('tr');
@@ -16096,6 +16481,294 @@ incredibowl.my`,
                 await msApply({ action: 'deleteClosure', date }, `已删除 ${date}`);
                 return;
             }
+        }
+
+
+        // ═══════════════════════════════════════════════════════════════
+        //   DISH ANALYTICS（菜品分析）—— 畅销榜 / 周几表现 / 配对好坏 / 菜单工程四象限
+        //   口径与 scripts/weekly-sales-snapshot.mjs、pair-opportunity.mjs 对齐：
+        //   cancelled OUT、stale FPX pending OUT、按 deliveryDate；↳ 行 = 加料不算主菜；
+        //   价值 = 现金 total + 券 × 18.5；毛利用 menu.costPrice（0 = 未填，算不出）。
+        //   全在浏览器内存算（state.orders 是全量订单），不打 API。
+        // ═══════════════════════════════════════════════════════════════
+        const DA = { rangeWeeks: 8, result: null, dailyNames: new Set() };
+        const DA_VOUCHER_FACE = 18.5;
+        const DA_WD = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五' };
+        const daTs = ts => (ts && typeof ts.toDate === 'function') ? ts.toDate().getTime() : ((ts && (ts.seconds ?? ts._seconds)) || 0) * 1000;
+        const daWd = ymd => { const [y, m, d] = ymd.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)).getUTCDay(); };
+        const daEsc = s => escapeHtml(String(s ?? ''));
+
+        /** 口径过滤：取消 / 超时未付 FPX 排除，必须有送达日期。 */
+        function daValidOrders(since, until) {
+            const now = Date.now();
+            return (state.orders || []).filter(o =>
+                o.status !== 'cancelled'
+                && !(o.status === 'pending' && o.paymentMethod === 'fpx' && daTs(o.createdAt) < now - 10 * 60 * 1000)
+                && /^\d{4}-\d{2}-\d{2}$/.test(o.deliveryDate || '')
+                && (!since || o.deliveryDate >= since) && (!until || o.deliveryDate <= until));
+        }
+        /** 常驻菜名（从菜单排期运行时拿；没载入就用 MENU_SEED 的 Daily）。 */
+        function daDailyNames() {
+            const names = new Set();
+            if (MS.loaded && MS.runtime && MS.runtime.weeks) {
+                const wk = msWeekFor(msMonday(0)).week;
+                for (const id of wk.daily || []) { const c = msDish(id); if (c) names.add(canonicalDishName(c.name)); }
+            }
+            if (!names.size) for (const m of MENU_SEED) if (m.day === 'Daily') names.add(canonicalDishName(m.name));
+            return names;
+        }
+
+        function daAnalyze(orders, dailyNames) {
+            const dishes = new Map();      // name -> stat
+            const dayDish = new Map();     // date -> Map(name -> {orders, qty})
+            const dayBowls = new Map();    // date -> bowls
+            const pairCo = new Map();      // 'a|b' -> {orders, sumValue}
+            let totalQty = 0, totalMarginRM = 0, marginQty = 0;
+
+            for (const o of orders) {
+                const date = o.deliveryDate;
+                const wd = daWd(date);
+                const value = (Number(o.total) || 0) + (Number(o.mealVouchersUsed) || 0) * DA_VOUCHER_FACE;
+                const inOrder = new Map();  // name -> qty
+                for (const it of (o.items || [])) {
+                    const raw = String(it?.name || '').trim();
+                    if (!raw || raw.startsWith('↳')) continue;
+                    const name = canonicalDishName(raw);
+                    const menu = findMenuByName(name);
+                    if (!menu) continue;                       // 加料/套餐等非主菜行
+                    const qty = Math.max(1, Math.floor(Number(it.quantity) || 1));
+                    const price = Number(effectiveItemPrice(it)) || Number(menu.price) || 0;
+                    const cost = Number(menu.costPrice) || 0;
+                    let s = dishes.get(name);
+                    if (!s) {
+                        s = { name, id: menu.id, nameEn: menu.nameEn || '', qty: 0, orders: 0, revenueRM: 0, costRM: 0, costKnown: cost > 0,
+                              byWd: { 1: { qty: 0, days: new Set() }, 2: { qty: 0, days: new Set() }, 3: { qty: 0, days: new Set() }, 4: { qty: 0, days: new Set() }, 5: { qty: 0, days: new Set() } },
+                              dates: new Set(), lastDate: '', firstDate: '', solo: 0, paired: 0 };
+                        dishes.set(name, s);
+                    }
+                    s.qty += qty; s.revenueRM += price * qty; s.costRM += cost * qty;
+                    if (s.byWd[wd]) { s.byWd[wd].qty += qty; s.byWd[wd].days.add(date); }
+                    s.dates.add(date);
+                    if (!s.lastDate || date > s.lastDate) s.lastDate = date;
+                    if (!s.firstDate || date < s.firstDate) s.firstDate = date;
+                    inOrder.set(name, (inOrder.get(name) || 0) + qty);
+                    totalQty += qty;
+                    if (cost > 0) { totalMarginRM += (price - cost) * qty; marginQty += qty; }
+                }
+                if (!inOrder.size) continue;
+                let dm = dayDish.get(date);
+                if (!dm) { dm = new Map(); dayDish.set(date, dm); }
+                let bowls = 0;
+                for (const [name, qty] of inOrder) {
+                    const st = dishes.get(name); st.orders++;
+                    if (inOrder.size === 1) st.solo++; else st.paired++;
+                    const x = dm.get(name) || { orders: 0, qty: 0 };
+                    x.orders++; x.qty += qty; dm.set(name, x);
+                    bowls += qty;
+                }
+                dayBowls.set(date, (dayBowls.get(date) || 0) + bowls);
+                const names = [...inOrder.keys()].sort();
+                for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) {
+                    const k = `${names[i]}|${names[j]}`;
+                    const p = pairCo.get(k) || { orders: 0, sumValue: 0 };
+                    p.orders++; p.sumValue += value; pairCo.set(k, p);
+                }
+            }
+
+            // 每菜派生指标
+            const list = [...dishes.values()].map(s => {
+                const serveDays = s.dates.size;
+                const perDay = serveDays ? s.qty / serveDays : 0;
+                let bestWd = 0, bestAvg = 0;
+                const wdAvg = {};
+                for (const wd of [1, 2, 3, 4, 5]) {
+                    const b = s.byWd[wd];
+                    const avg = b.days.size ? b.qty / b.days.size : 0;
+                    wdAvg[wd] = { avg, days: b.days.size, qty: b.qty };
+                    if (b.days.size >= 1 && avg > bestAvg) { bestAvg = avg; bestWd = wd; }
+                }
+                const unitPrice = s.qty ? s.revenueRM / s.qty : 0;
+                const unitCost = s.qty && s.costKnown ? s.costRM / s.qty : null;
+                return { ...s, serveDays, perDay, bestWd, bestAvg, wdAvg, unitPrice, unitCost,
+                         marginRM: unitCost === null ? null : unitPrice - unitCost,
+                         marginPct: unitCost === null || !unitPrice ? null : (unitPrice - unitCost) / unitPrice };
+            }).sort((a, b) => b.qty - a.qty);
+
+            // 菜单工程四象限：人气 = 份额 vs 公平份额×0.7；毛利 = 单份毛利 vs 加权均值
+            const n = list.length || 1;
+            const popLine = (1 / n) * 0.7;
+            const avgMargin = marginQty ? totalMarginRM / marginQty : null;
+            for (const s of list) {
+                s.share = totalQty ? s.qty / totalQty : 0;
+                const hiPop = s.share >= popLine;
+                const hiMargin = avgMargin === null || s.marginRM === null ? null : s.marginRM >= avgMargin;
+                s.quadrant = hiMargin === null ? '—' : hiPop ? (hiMargin ? '⭐ 明星' : '🐴 耕马') : (hiMargin ? '🧩 谜题' : '🐕 冷门');
+            }
+
+            // 同单配对（共同天归一，pair-opportunity 口径）
+            const mains = list.filter(s => s.serveDays >= 4).map(s => s.name);
+            const coPairs = [];
+            for (let i = 0; i < mains.length; i++) for (let j = i + 1; j < mains.length; j++) {
+                const a = dishes.get(mains[i]), b = dishes.get(mains[j]);
+                const shared = [...a.dates].filter(d => b.dates.has(d));
+                if (shared.length < 2) continue;
+                let oppA = 0, oppB = 0;
+                for (const d of shared) { const dm = dayDish.get(d); oppA += (dm.get(a.name) || {}).orders || 0; oppB += (dm.get(b.name) || {}).orders || 0; }
+                const k = [a.name, b.name].sort().join('|');
+                const co = pairCo.get(k) || { orders: 0, sumValue: 0 };
+                const opp = Math.min(oppA, oppB);
+                coPairs.push({ a: a.name, b: b.name, sharedDays: shared.length, opp, co: co.orders, rate: opp ? co.orders / opp : 0, avgValue: co.orders ? co.sumValue / co.orders : 0 });
+            }
+            coPairs.sort((x, y) => y.rate - x.rate || y.co - x.co);
+
+            // 同天搭档：当天两道特餐（非常驻、当天卖得最多的两道）→ 当天碗数
+            const dayPairs = new Map();
+            const avgDayBowls = dayBowls.size ? [...dayBowls.values()].reduce((s, v) => s + v, 0) / dayBowls.size : 0;
+            for (const [date, dm] of dayDish) {
+                const specials = [...dm.entries()].filter(([name]) => !dailyNames.has(name)).sort((x, y) => y[1].qty - x[1].qty).slice(0, 2).map(([name]) => name);
+                if (specials.length < 2) continue;
+                const k = specials.sort().join('|');
+                const p = dayPairs.get(k) || { a: specials[0], b: specials[1], days: 0, bowls: 0 };
+                p.days++; p.bowls += dayBowls.get(date) || 0; dayPairs.set(k, p);
+            }
+            const dayPairList = [...dayPairs.values()].map(p => ({ ...p, avgBowls: p.bowls / p.days, vsAvg: avgDayBowls ? p.bowls / p.days / avgDayBowls - 1 : 0 }))
+                .filter(p => p.days >= 2).sort((x, y) => y.avgBowls - x.avgBowls);
+
+            return { dishes: list, coPairs, dayPairs: dayPairList, totalQty, orders: orders.length, days: dayBowls.size, avgDayBowls, avgMargin, popLine };
+        }
+
+        function daRange(weeks) {
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            const until = ymdKey(t);
+            if (!weeks) return { since: '', until };
+            const s = new Date(t); s.setDate(s.getDate() - weeks * 7);
+            return { since: ymdKey(s), until };
+        }
+        function daCompute() {
+            const { since, until } = daRange(DA.rangeWeeks);
+            DA.dailyNames = daDailyNames();
+            DA.result = daAnalyze(daValidOrders(since, until), DA.dailyNames);
+            DA.result.since = since; DA.result.until = until;
+            return DA.result;
+        }
+        /** 给排期页用：某道菜近 N 周的份数 / 上次供应 / 最佳周几。 */
+        function daDishStat(dishId, weeks = 4) {
+            const { since, until } = daRange(weeks);
+            const c = msDish(dishId);
+            if (!c) return null;
+            const name = canonicalDishName(c.name);
+            const r = daAnalyze(daValidOrders(since, until).filter(o => (o.items || []).some(it => canonicalDishName(String(it?.name || '').trim()) === name)), DA.dailyNames.size ? DA.dailyNames : daDailyNames());
+            const s = r.dishes.find(x => x.name === name);
+            const all = daValidOrders('', until);
+            let last = '';
+            for (const o of all) if ((o.items || []).some(it => canonicalDishName(String(it?.name || '').trim()) === name) && o.deliveryDate > last) last = o.deliveryDate;
+            return { qty: s ? s.qty : 0, serveDays: s ? s.serveDays : 0, perDay: s ? s.perDay : 0, bestWd: s ? s.bestWd : 0, last };
+        }
+        /** 给食材预测用：每道菜「每供应日」预计份数（近 8 周均值；没卖过的用全体中位数）。 */
+        function daDemandPerDay(weeks = 8) {
+            const { since, until } = daRange(weeks);
+            const r = daAnalyze(daValidOrders(since, until), daDailyNames());
+            // ⚠️ 分析里的 id 是 dashboard 的 menu id；API 要网站 id → 按菜名回 MS.catalog 查。
+            const demand = {};
+            const perDays = r.dishes.filter(s => s.serveDays >= 2).map(s => s.perDay).sort((a, b) => a - b);
+            const median = perDays.length ? perDays[Math.floor(perDays.length / 2)] : 6;
+            for (const s of r.dishes) {
+                if (s.serveDays < 2) continue;
+                const c = (MS.catalog || []).find(x => canonicalDishName(x.name) === s.name);
+                if (c) demand[String(c.id)] = Math.round(s.perDay * 10) / 10;
+            }
+            return { demand, median: Math.round(median * 10) / 10 };
+        }
+
+        // ── 页面 ──────────────────────────────────────────────────────
+        function initDishAnalytics() {
+            const root = document.getElementById('daRoot');
+            if (!root) return;
+            if (!root.dataset.wired) {
+                root.dataset.wired = '1';
+                root.addEventListener('click', ev => {
+                    const b = ev.target.closest('[data-da-range]');
+                    if (b) { DA.rangeWeeks = Number(b.dataset.daRange); daRender(); }
+                });
+            }
+            daRender();
+        }
+        function daRender() {
+            const root = document.getElementById('daRoot');
+            if (!root) return;
+            const r = daCompute();
+            const fmt1 = n => (Math.round(n * 10) / 10).toFixed(1);
+            const pct = n => n === null || n === undefined ? '—' : `${Math.round(n * 100)}%`;
+            const rangeBtns = [4, 8, 12, 0].map(w => `<button class="btn ${w === DA.rangeWeeks ? '' : 'ghost'} sm" data-da-range="${w}">${w ? `近 ${w} 周` : '全部'}</button>`).join(' ');
+
+            // 畅销榜
+            const dishRows = r.dishes.map((s, i) => `<tr>
+                <td>${i + 1}</td><td>${daEsc(s.name)}<div style="opacity:.55;font-size:11px">${daEsc(s.nameEn)}</div></td>
+                <td class="r mono">${s.qty}</td><td class="r mono">${s.orders}</td><td class="r mono">${s.serveDays}</td>
+                <td class="r mono">${fmt1(s.perDay)}</td><td>${s.bestWd ? `周${DA_WD[s.bestWd]}（${fmt1(s.bestAvg)}/天）` : '—'}</td>
+                <td class="r mono">${s.revenueRM.toFixed(0)}</td>
+                <td class="r mono">${s.marginRM === null ? '<span style="opacity:.5">未填成本</span>' : `${s.marginRM.toFixed(2)} (${pct(s.marginPct)})`}</td>
+                <td>${s.quadrant}</td><td class="mono">${daEsc(s.lastDate)}</td></tr>`).join('');
+
+            // 周几热力表：每菜 × 周一~五 的「每供应日均份数」
+            const maxAvg = Math.max(1, ...r.dishes.flatMap(s => [1, 2, 3, 4, 5].map(wd => s.wdAvg[wd].avg)));
+            const heat = v => v ? `background:rgba(201,152,92,${(0.12 + 0.6 * v / maxAvg).toFixed(2)})` : '';
+            const wdRows = r.dishes.filter(s => s.serveDays >= 2).map(s => `<tr><td>${daEsc(s.name)}</td>${[1, 2, 3, 4, 5].map(wd => {
+                const c = s.wdAvg[wd];
+                return `<td class="r mono" style="${heat(c.avg)}" title="${c.days} 天共 ${c.qty} 份">${c.days ? fmt1(c.avg) : '·'}</td>`;
+            }).join('')}</tr>`).join('');
+
+            // 配对
+            const goodCo = r.coPairs.filter(p => p.sharedDays >= 3 && p.opp >= 5).slice(0, 10);
+            const badCo = [...r.coPairs].filter(p => p.sharedDays >= 3 && p.opp >= 8).sort((x, y) => x.rate - y.rate).slice(0, 8);
+            const coRow = p => `<tr><td>${daEsc(p.a)} + ${daEsc(p.b)}</td><td class="r mono">${p.sharedDays}</td><td class="r mono">${p.opp}</td><td class="r mono">${p.co}</td><td class="r mono"><b>${pct(p.rate)}</b></td><td class="r mono">${p.avgValue ? p.avgValue.toFixed(0) : '—'}</td></tr>`;
+            const dayRow = p => `<tr><td>${daEsc(p.a)} + ${daEsc(p.b)}</td><td class="r mono">${p.days}</td><td class="r mono"><b>${fmt1(p.avgBowls)}</b></td><td class="r mono ${p.vsAvg >= 0 ? 'pos' : 'neg'}">${p.vsAvg >= 0 ? '+' : ''}${Math.round(p.vsAvg * 100)}%</td></tr>`;
+            const goodDay = r.dayPairs.slice(0, 10), badDay = [...r.dayPairs].reverse().slice(0, 8);
+
+            root.innerHTML = `
+                <div class="card"><div class="card-header"><div><div class="card-title">菜品分析</div>
+                    <div class="card-sub">按送达日期 ${r.since || '最早'} ~ ${r.until} · ${r.orders} 单 · ${r.totalQty} 碗 · ${r.days} 个营业日 · 日均 ${fmt1(r.avgDayBowls)} 碗${r.avgMargin === null ? ' · 成本价没填齐，毛利列为空' : ` · 平均单份毛利 RM${r.avgMargin.toFixed(2)}`}</div></div>
+                    <div style="display:flex;gap:6px">${rangeBtns}</div></div>
+                    <div class="card-content" style="font-size:12px;opacity:.75">口径：取消单与超时未付 FPX 不算；「份/天」= 份数 ÷ 该菜有人点的天数（近似供应天数）；四象限：人气 = 份额 ≥ 公平份额×0.7，毛利 = 单份毛利 ≥ 平均。⭐明星=多推、🐴耕马=卖得多但薄利（考虑调价/降本）、🧩谜题=利厚没人点（曝光/改名/换位）、🐕冷门=考虑暂别。</div></div>
+                <div class="grid-2" style="gap:10px;margin-top:10px">
+                    <div class="card" style="margin:0"><div class="card-header"><div class="card-title">份数 Top 12</div></div><div class="card-content"><div id="daTopChart" style="height:340px"></div></div></div>
+                    <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">菜单工程四象限</div><div class="card-sub">横轴人气（份额）· 纵轴单份毛利 RM · 点越大卖得越多</div></div></div><div class="card-content"><div id="daQuadChart" style="height:340px"></div></div></div>
+                </div>
+                <div class="card" style="margin-top:10px"><div class="card-header"><div><div class="card-title">畅销榜 · 全部菜</div><div class="card-sub">按份数降序 · 最佳周几 = 该菜在哪一天平均卖得最多</div></div></div>
+                    <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>#</th><th>菜</th><th class="r">份</th><th class="r">单</th><th class="r">供应天</th><th class="r">份/天</th><th>最佳周几</th><th class="r">收入 RM</th><th class="r">单份毛利</th><th>象限</th><th>上次</th></tr></thead><tbody>${dishRows}</tbody></table></div></div></div>
+                <div class="card collapsible" data-collapsible style="margin-top:10px"><div class="card-header"><div><div class="card-title">哪一天卖得最好 · 每供应日均份数</div><div class="card-sub">颜色越深越好卖 · 「·」= 那天没卖过 · 悬停看天数/份数</div></div>
+                    <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+                    <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>菜</th><th class="r">周一</th><th class="r">周二</th><th class="r">周三</th><th class="r">周四</th><th class="r">周五</th></tr></thead><tbody>${wdRows}</tbody></table></div></div></div>
+                <div class="grid-2" style="gap:10px;margin-top:10px">
+                    <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">同一天排在一起 · 卖得好</div><div class="card-sub">当天两道特餐 → 当天总碗数（≥2 天）</div></div></div>
+                        <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>搭档</th><th class="r">天数</th><th class="r">碗/天</th><th class="r">vs 日均</th></tr></thead><tbody>${goodDay.map(dayRow).join('') || '<tr><td colspan="4" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+                    <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">同一天排在一起 · 卖得差</div><div class="card-sub">互替型组合（同定位抢同一个胃）多在这里</div></div></div>
+                        <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>搭档</th><th class="r">天数</th><th class="r">碗/天</th><th class="r">vs 日均</th></tr></thead><tbody>${badDay.map(dayRow).join('') || '<tr><td colspan="4" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+                    <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">同一张单一起点 · 最强</div><div class="card-sub">转化 = 同单次数 ÷ 共同天里较少一方的单数（≥3 共同天、机会≥5）</div></div></div>
+                        <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>配对</th><th class="r">共同天</th><th class="r">机会</th><th class="r">同单</th><th class="r">转化</th><th class="r">同单均值</th></tr></thead><tbody>${goodCo.map(coRow).join('') || '<tr><td colspan="6" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+                    <div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">同一张单一起点 · 最弱</div><div class="card-sub">机会多却几乎不同单 → 排菜单时拆开不同天</div></div></div>
+                        <div class="card-content"><div class="table-wrap"><table class="dt"><thead><tr><th>配对</th><th class="r">共同天</th><th class="r">机会</th><th class="r">同单</th><th class="r">转化</th><th class="r">同单均值</th></tr></thead><tbody>${badCo.map(coRow).join('') || '<tr><td colspan="6" style="opacity:.5">样本不够</td></tr>'}</tbody></table></div></div></div>
+                </div>`;
+
+            // 图
+            try {
+                const top = r.dishes.slice(0, 12).reverse();
+                getChart('daTopChart').setOption({ ...echartsBase, grid: { left: 130, right: 30, top: 10, bottom: 24 },
+                    xAxis: { type: 'value', splitLine: { lineStyle: { color: COLOR.grid } } },
+                    yAxis: { type: 'category', data: top.map(s => s.name), axisLabel: { color: COLOR.textSec, fontSize: 11 } },
+                    series: [{ type: 'bar', data: top.map(s => s.qty), itemStyle: { color: COLOR.primary, borderRadius: [0, 6, 6, 0] }, label: { show: true, position: 'right', color: COLOR.textSec, fontSize: 11 } }] });
+                const pts = r.dishes.filter(s => s.marginRM !== null);
+                const maxQ = Math.max(1, ...pts.map(s => s.qty));
+                getChart('daQuadChart').setOption({ ...echartsBase, grid: { left: 50, right: 20, top: 20, bottom: 36 },
+                    tooltip: { ...(echartsBase.tooltip || {}), trigger: 'item', formatter: p => `${p.data.name}<br>份额 ${Math.round(p.data.value[0] * 1000) / 10}% · 单份毛利 RM${p.data.value[1].toFixed(2)} · ${p.data.qty} 份 · ${p.data.quadrant}` },
+                    xAxis: { name: '份额', type: 'value', axisLabel: { formatter: v => `${Math.round(v * 100)}%`, color: COLOR.textSec }, splitLine: { lineStyle: { color: COLOR.grid } } },
+                    yAxis: { name: '单份毛利', type: 'value', axisLabel: { color: COLOR.textSec }, splitLine: { lineStyle: { color: COLOR.grid } } },
+                    series: [{ type: 'scatter', symbolSize: d => 10 + 30 * Math.sqrt(d[2] / maxQ),
+                        data: pts.map(s => ({ name: s.name, value: [s.share, s.marginRM, s.qty], qty: s.qty, quadrant: s.quadrant,
+                            itemStyle: { color: s.quadrant.startsWith('⭐') ? COLOR.success : s.quadrant.startsWith('🐴') ? COLOR.warning : s.quadrant.startsWith('🧩') ? COLOR.info : COLOR.textMuted, opacity: .85 } })),
+                        label: { show: true, position: 'top', formatter: p => p.data.name.slice(0, 6), fontSize: 10, color: COLOR.textSec },
+                        markLine: { silent: true, symbol: 'none', lineStyle: { type: 'dashed', color: COLOR.textMuted }, data: [{ xAxis: r.popLine }, ...(r.avgMargin === null ? [] : [{ yAxis: r.avgMargin }])] } }] });
+            } catch (e) { console.warn('[dishAnalytics] chart', e); }
         }
 
     </script>

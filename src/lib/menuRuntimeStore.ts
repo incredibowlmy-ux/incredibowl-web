@@ -16,6 +16,18 @@ export interface MenuWeekDoc {
     paused: number[];
     updatedAt?: string;
     updatedBy?: string;
+    /**
+     * 排定生效：到 `at`（ISO）那一刻自动换成这份排期（老板不用熬夜等低峰）。
+     * 解析层 weekDocFor 到点后用它替换 days/daily/paused；文档本体保留旧排期
+     * 直到 dashboard 下次保存把它落成正式内容。
+     */
+    scheduled?: {
+        at: string;
+        days: Record<number, number[]>;
+        daily: number[];
+        paused: number[];
+        updatedBy?: string;
+    };
 }
 export interface DishOverrideDoc {
     price?: number;
