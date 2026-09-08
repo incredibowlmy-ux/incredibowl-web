@@ -281,7 +281,8 @@ export function decideInbound(
 // ────────────────────────────────────────────────────────────
 // 对话记录（turns）
 // ────────────────────────────────────────────────────────────
-export const TURN_ROLES = ['in', 'out', 'boss', 'nudge', 'sys'] as const;
+/** bc = 群发（每周菜单模板）；带 msgId 后回执会落回来，群发送达率/已读率就从这里算。 */
+export const TURN_ROLES = ['in', 'out', 'boss', 'nudge', 'sys', 'bc'] as const;
 export type TurnRole = typeof TURN_ROLES[number];
 
 export const MEDIA_KINDS = ['image', 'document', 'audio', 'video'] as const;
@@ -421,7 +422,7 @@ export function renderTurnsBlock(turns: unknown, now: number, limit = 12): strin
   const arr = Array.isArray(turns) ? (turns as Turn[]).slice(-limit) : [];
   if (!arr.length) return '【最近对话】（这是这个号码的第一次对话，没有历史记录）';
   const lines = arr.map(t => {
-    const who = t.role === 'in' ? '客户' : t.role === 'boss' ? '碗妈（老板亲自回）' : t.role === 'nudge' ? '碗妈（自动追单）' : t.role === 'sys' ? '系统' : '碗妈';
+    const who = t.role === 'in' ? '客户' : t.role === 'boss' ? '碗妈（老板亲自回）' : t.role === 'nudge' ? '碗妈（自动追单）' : t.role === 'bc' ? '碗妈（每周菜单群发）' : t.role === 'sys' ? '系统' : '碗妈';
     return `${relativeTime(t.ts, now)} ${who}：${t.text}`;
   });
   return ['【最近对话（服务端记录，可信；越下面越新）】', ...lines].join('\n');

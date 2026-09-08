@@ -324,6 +324,17 @@ export async function POST(req: Request) {
     if (receiptOrders.length > 0) {
       const { sendOrderReceiptEmails } = await import('@/lib/receiptEmail');
       await sendOrderReceiptEmails(receiptOrders);
+      // ── WhatsApp 订单确认（模板，WA_ORDER_CONFIRM=1 才发）────────
+      // 与收据邮件同一批「第一次确认」的单；同 groupId 只发一条。helper 自己吞错。
+      try {
+        const { sendOrderConfirmations, isOrderConfirmEnabled } = await import('@/lib/waOrderConfirm');
+        if (isOrderConfirmEnabled()) {
+          const r = await sendOrderConfirmations(db, receiptOrders);
+          console.log(`[confirm-order] WhatsApp 确认：发 ${r.sent} 跳 ${r.skipped}`);
+        }
+      } catch (e: any) {
+        console.warn('[confirm-order] WhatsApp 确认失败（不影响订单）:', String(e?.message || e).slice(0, 160));
+      }
     }
 
     return NextResponse.json({

@@ -34,6 +34,30 @@ export function dishEmoji(d: Pick<MenuItem, 'name' | 'nameEn'>): string {
     return '🍱';
 }
 
+/**
+ * weekly_menu_v1 模板的三个变量：{{1}} 名字、{{2}} 日期段、{{3}} 新菜一句。
+ * 模板正文是 Meta 审过的死文案，这里只产变量；新菜判定与 buildBroadcast 同一条规则。
+ * {{3}} 不能带换行（Meta 模板变量禁换行），也别太长（审核样例是一行）。
+ */
+export function broadcastTemplateParams(input: Pick<BroadcastInput, 'monday' | 'week' | 'prevWeek' | 'menu' | 'forceNewIds'> & { name: string }): [string, string, string] {
+    const { monday, week, prevWeek, menu, forceNewIds = [] } = input;
+    const byId = new Map(menu.map(d => [d.id, d]));
+    const ids = new Set<number>([...(week.daily ?? []), ...[1, 2, 3, 4, 5].flatMap(wd => week.days[wd] ?? [])]);
+    const prevIds = new Set<number>(prevWeek ? [...(prevWeek.daily ?? []), ...[1, 2, 3, 4, 5].flatMap(wd => prevWeek.days[wd] ?? [])] : []);
+    const newNames = [...ids]
+        .filter(id => forceNewIds.includes(id) || (prevWeek ? !prevIds.has(id) : false))
+        .map(id => byId.get(id)?.nameEn?.trim())
+        .filter((s): s is string => !!s);
+    const range = `${dMon(addDays(monday, 0))} – ${dMon(addDays(monday, 4))}`;
+    // 菜名本身可能含 &（Surf & Turf），连接词就用 and，免得读成三道菜
+    const joiner = newNames.some(n => n.includes('&')) ? ' and ' : ' & ';
+    let newLine: string;
+    if (!newNames.length) newLine = 'all your favourites are back';
+    else if (newNames.length <= 2) newLine = `new this week: ${newNames.join(joiner)}`;
+    else newLine = `new this week: ${newNames.slice(0, 2).join(', ')}${joiner}${newNames.length - 2} more`;
+    return [input.name.trim() || 'there', range, newLine.replace(/\s+/g, ' ').slice(0, 120)];
+}
+
 export interface BroadcastInput {
     monday: string;
     week: MenuWeek;
