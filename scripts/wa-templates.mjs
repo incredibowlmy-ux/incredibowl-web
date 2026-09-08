@@ -29,7 +29,8 @@ const GRAPH = 'https://graph.facebook.com/v20.0';
 const TOKEN = process.env.WA_ACCESS_TOKEN;
 /** Meta business：Incredibowl_MY（memory: project_meta_catalogue_feed）。 */
 const BUSINESS_ID = process.env.WA_BUSINESS_ID || '4383381675320005';
-const WABA_ID = process.env.WA_WABA_ID || '';
+/** 正式 WABA（2026-09-09 从 App → API Setup 确认；沙盒是 1092790916611496，别搞混）。 */
+const WABA_ID = process.env.WA_WABA_ID || '2664648817254746';
 
 const cmd = (process.argv[2] || '').toLowerCase();
 const arg = process.argv[3] || '';

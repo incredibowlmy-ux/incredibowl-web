@@ -84,7 +84,8 @@ let tplCache: { at: number; rows: TemplateRow[]; error?: string } | null = null;
 const TPL_TTL_MS = 10 * 60 * 1000;
 
 async function listTemplates(): Promise<{ templates: TemplateRow[]; configured: boolean; error?: string }> {
-  const waba = process.env.WA_WABA_ID;
+  // 正式 WABA 不是密钥，直接给默认值；沙盒 1092790916611496 上建不了模板
+  const waba = process.env.WA_WABA_ID || '2664648817254746';
   const token = process.env.WA_ACCESS_TOKEN;
   if (!waba || !token) {
     return { templates: [], configured: false, error: !token ? 'WA_ACCESS_TOKEN 未配置' : 'WA_WABA_ID 未配置：跑 node scripts/wa-templates.mjs waba 拿 id 再加进 Vercel' };
