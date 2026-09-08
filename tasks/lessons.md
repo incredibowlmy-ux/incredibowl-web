@@ -525,3 +525,20 @@ Git Bash（POSIX sh），`@` 对它只是普通字符，于是整段（含两个
 正文里出现独立一行 `'@` 就直接拒绝提交（`git rev-parse --git-path hooks/commit-msg`
 可看；hooks 不进版本库，换机器要重装）。教训升级：**同一个错误犯到第三次，
 就别再写第四条规则了，写一个会自己报警的钩子。**
+
+## 2026-09-09 — 「WhatsApp accounts cannot be used with this API」= 打到了沙盒 WABA；环境变量会盖过代码默认值
+
+**错误：** 建模板连报三轮 `400 Invalid parameter — WhatsApp accounts cannot be used with this API`，
+我先后怀疑 id 抄错、token 类型、App 订阅、JSON/form 编码、Graph 版本，加了 check / diag 子命令
+试了四种写法。真相：老板 shell 里 `$env:WA_WABA_ID` 还留着第一次抄到的**沙盒** WABA
+（1092790916611496，Test WhatsApp Business Account），盖过了我后来写进脚本的正式默认值
+（2664648817254746）。Meta 不允许用 API 在测试 WABA 上建模板，报的就是那句话。
+清掉环境变量后，最初的 JSON @ v20.0 一次就过。
+
+**规则：**
+1. 看到这句错，第一件事查 `GET /{id}?fields=name`——name 带 Test 就是沙盒，别往请求格式上想。
+2. 脚本里给了默认值的配置，跑之前先打印「实际生效的值 + 来自 env 还是默认」，
+   老板的 shell 会话跨好几轮对话，上一轮设的变量不会自己消失。
+3. App → API Setup 那页显示的 WABA id **跟着 From 下拉里选的号码走**，默认是 Test Number。
+4. 正式 WABA 2664648817254746 早就在 dogfood-wa-webhook 的样本 payload 里（entry.id 就是它），
+   以后要 id 先 grep 真实 webhook 样本。
