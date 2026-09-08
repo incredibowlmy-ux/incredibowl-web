@@ -91,12 +91,14 @@ async function mirrorDashboardMenu(db: FirebaseFirestore.Firestore, serverTimest
     const batch = db.batch();
     let n = 0;
     for (const d of menu) {
-        if (d.day.startsWith('Unscheduled')) continue;
         const dashId = String(WEBAPP_TO_DASH[d.id] ?? d.id);
         const cur = existing.get(dashId);
         if (!cur || (cur.name && cur.name !== d.name)) continue;
-        const day = dashDay(d.day);
-        const off = !!d.retired;
+        // 未排期（从所有列拿掉 / 只进目录未上架）→ '其他'；以前是 continue，旧 day 留着
+        // 就会继续挂在某天组里（09-09 老板撤掉两道周一菜后 dashboard 周一组变四道）。
+        const unscheduled = d.day.startsWith('Unscheduled');
+        const day = unscheduled ? '其他' : dashDay(d.day);
+        const off = !unscheduled && !!d.retired;
         if (cur.day === day && !!cur.offMenuThisWeek === off) continue;
         batch.set(db.collection('menu').doc(dashId), { day, offMenuThisWeek: off, updatedAt: serverTimestamp() }, { merge: true });
         n++;

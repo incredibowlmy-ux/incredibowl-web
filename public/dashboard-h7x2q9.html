@@ -695,6 +695,7 @@
         .inbox-bubble.in { align-self: flex-start; background: var(--bg-elev); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
         .inbox-bubble.out { align-self: flex-end; background: #DCF3E6; border-bottom-right-radius: 4px; }
         .inbox-bubble.nudge { align-self: flex-end; background: #EEF8F1; border: 1px dashed #9AD0AF; border-bottom-right-radius: 4px; }
+        .inbox-bubble.bc { align-self: flex-end; background: #EEF1F8; border: 1px dashed #9AAFD0; border-bottom-right-radius: 4px; }
         .inbox-bubble.boss { align-self: flex-end; background: #F6E7CF; border-bottom-right-radius: 4px; }
         .inbox-bubble.sys { align-self: center; max-width: 90%; background: transparent; color: var(--text-muted); font-size: 11px; padding: 2px 8px; }
         .inbox-bubble .who { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; }
@@ -3326,6 +3327,7 @@
         // ═══════════════════════════════════════════════════════════════
         const state = {
             orders: [],
+            menuWeeks: {},   // Firestore menuWeeks/{周一}：网站排期权威（手动单选菜按送达日取所属周）
             users: [],
             vouchers: [],
             mealVoucherPurchases: [],   // 餐券购买记录 — cash inflow / contract liability creation
@@ -4128,7 +4130,7 @@ incredibowl.my`,
                     failedReads.push(label);
                     return { docs: [], _err: e };
                 });
-                const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap, addonCreditsSnap] = await Promise.all([
+                const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap, addonCreditsSnap, menuWeeksSnap] = await Promise.all([
                     getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
                     getDocs(collection(db, 'users')),
                     softGet('优惠码', getDocs(collection(db, 'vouchers'))),
@@ -4141,6 +4143,7 @@ incredibowl.my`,
                     softGet('餐券购买', getDocs(collection(db, 'mealVoucherPurchases'))),
                     softGet('餐券', getDocs(collection(db, 'mealVouchers'))),
                     softGet('预付加料', getDocs(collection(db, 'mealVoucherAddonCredits'))),
+                    softGet('菜单排期', getDocs(collection(db, 'menuWeeks'))),
                 ]);
                 if (failedReads.length > 0) {
                     migrationErrors.push(`读取失败: ${failedReads.join(' / ')}（相关数据本次显示为空）`);
@@ -4158,6 +4161,8 @@ incredibowl.my`,
 
                 state.fixedCosts = {};
                 fixedSnap.docs.forEach(d => { state.fixedCosts[d.id] = d.data(); });
+
+                state.menuWeeks = Object.fromEntries((menuWeeksSnap.docs || []).map(d => [d.id, d.data()]));
 
                 // Load menu from Firestore, fall back to seed if empty
                 const menuReadFailed = !!menuSnap._err;
@@ -9013,7 +9018,7 @@ incredibowl.my`,
             $('#inboxList').innerHTML = rows.map(r => {
                 const nm = r.name || r.phone;
                 const initial = (r.name || '#').trim().charAt(0).toUpperCase();
-                const who = r.lastMsg ? (r.lastMsg.role === 'in' ? '' : r.lastMsg.role === 'boss' ? '你：' : r.lastMsg.role === 'sys' ? '· ' : '碗妈：') : '';
+                const who = r.lastMsg ? (r.lastMsg.role === 'in' ? '' : r.lastMsg.role === 'boss' ? '你：' : r.lastMsg.role === 'bc' ? '群发：' : r.lastMsg.role === 'sys' ? '· ' : '碗妈：') : '';
                 return `<div class="inbox-row${r.unread ? ' unread' : ''}${r.phone === inbox.phone ? ' active' : ''}" data-phone="${r.phone}">
                     <div class="inbox-avatar">${escapeHtml(initial)}</div>
                     <div class="inbox-row-main">
@@ -9078,12 +9083,12 @@ incredibowl.my`,
             if (!turns.length) { box.innerHTML = '<div class="inbox-thread-empty">（没有对话记录）</div>'; return; }
             const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
             let lastDay = '';
-            const who = { in: '', out: '碗妈', boss: '你', nudge: '自动追单', sys: '' };
+            const who = { in: '', out: '碗妈', boss: '你', nudge: '自动追单', bc: '每周菜单群发', sys: '' };
             box.innerHTML = turns.map(t => {
                 const day = inboxDayLabel(t.ts);
                 const sep = day !== lastDay ? `<div class="inbox-day">${day}</div>` : '';
                 lastDay = day;
-                const role = ['in', 'out', 'boss', 'nudge', 'sys'].includes(t.role) ? t.role : 'sys';
+                const role = ['in', 'out', 'boss', 'nudge', 'bc', 'sys'].includes(t.role) ? t.role : 'sys';
                 if (role === 'sys') return `${sep}<div class="inbox-bubble sys">${escapeHtml(t.text)} · ${inboxHm(t.ts)}</div>`;
                 // 引用回复：按 wamid 在本线程里找被引用的那条，找不到就不显示（可能超出 200 条）
                 const quoted = t.replyTo ? turns.find(x => x.msgId === t.replyTo) : null;
@@ -9504,10 +9509,60 @@ incredibowl.my`,
             if (!y || !m || !d) return DOW[new Date().getDay()];
             return DOW[new Date(y, m - 1, d).getDay()];
         }
-        function _dishGroupsByDay(menu) {
+        // ─── 运行时排期（menuWeeks）→ 选菜下拉按「送达日所属周」分组 ───
+        // 网站排期权威是 Firestore menuWeeks/{周一}（数组第一个 = 主打）；`menu.day` 只是
+        // API 保存后镜像的「现在这一轮」快照，表达不了「这周三 vs 下周一」两周并存，
+        // 所以手动单/计算器选菜一律先按日期取所属周，取不到（Firestore 没 seed）才退回 menu.day。
+        const WEBAPP_TO_DASH = { 1: 14, 2: 13, 4: 2, 13: 4, 14: 1 };  // 与 /api/admin/menu-config 同表；其余 id 两边相同
+        const RT_WD_KEY = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri' };
+        function mondayOfYmd(ymd) {
+            const [y, m, d] = String(ymd).split('-').map(Number);
+            const t = new Date(y, m - 1, d);
+            const dow = t.getDay();
+            t.setDate(t.getDate() + (dow === 0 ? 1 : dow === 6 ? 2 : 1 - dow));  // 周六/日算下一周（同网站 mondayOf）
+            return ymdKey(t);
+        }
+        /** 某送达日的排期文档：精确周 → 最近更早一周 → null。排定到点的用 scheduled。 */
+        function runtimeWeekForDate(ymd) {
+            const weeks = (typeof MS === 'object' && MS && MS.loaded && MS.runtime && MS.runtime.weeks) || state.menuWeeks || {};
+            const keys = Object.keys(weeks);
+            if (!keys.length || !ymd) return null;
+            const monday = mondayOfYmd(ymd);
+            const key = weeks[monday] ? monday : keys.filter(k => k < monday).sort().pop();
+            if (!key) return null;
+            const w = weeks[key];
+            const sch = w && w.scheduled;
+            return (sch && sch.at && Date.parse(sch.at) <= Date.now()) ? sch : w;
+        }
+        function _dishGroupsByDay(menu, dateYmd) {
             const dishes = (menu || []).filter(m =>
                 !String(m.id).startsWith('addon-') && m.active !== false);
             const groups = Object.fromEntries(DISH_DAY_ORDER.map(d => [d, []]));
+            const week = runtimeWeekForDate(dateYmd || ymdKey(new Date()));
+            if (week) {
+                const byDash = new Map(dishes.map(m => [String(m.id), m]));
+                const placed = new Set();
+                const put = (webId, g, extra) => {
+                    const m = byDash.get(String(WEBAPP_TO_DASH[webId] ?? webId));
+                    if (!m || placed.has(m.id)) return;
+                    placed.add(m.id);
+                    (groups[g] || groups['其他']).push(extra ? { ...m, ...extra } : m);
+                };
+                const days = week.days || {};
+                [1, 2, 3, 4, 5].forEach(wd => (days[wd] || days[String(wd)] || []).forEach((id, i) => put(id, RT_WD_KEY[wd], i === 0 ? { _hero: true } : null)));
+                (week.daily || []).forEach(id => {
+                    const wds = DISH_SEED_WEEKDAYS_BY_ID[String(WEBAPP_TO_DASH[id] ?? id)];
+                    if (!wds) return put(id, 'Daily');
+                    const m = byDash.get(String(WEBAPP_TO_DASH[id] ?? id));
+                    if (!m || placed.has(m.id)) return;
+                    placed.add(m.id);
+                    const note = `仅周${wds.map(d => DAY_SHORT_CN[d] || d).join('/')}供应`;
+                    wds.forEach(d => (groups[d] || groups['其他']).push({ ...m, _dayNote: note, _limited: true }));
+                });
+                (week.paused || []).forEach(id => put(id, 'PausedWeek'));
+                dishes.forEach(m => { if (!placed.has(m.id)) groups['其他'].push(m); });
+                return groups;  // 组内顺序 = 排期数组顺序（第一道主打），不按 seed 排
+            }
             dishes.forEach(m => {
                 // offMenuThisWeek（sync-menu 脚本写）胜出 → 本周暂别组（仍可选给 WA 加单）；
                 // 否则 SEED wins (源码是排期权威)，Firestore 仅给非 SEED 的新菜 fallback。
@@ -9530,8 +9585,8 @@ incredibowl.my`,
             });
             return groups;
         }
-        function _renderDishComboPanel(panel, query, hilightKey, hilightLabel) {
-            const groups = _dishGroupsByDay(state.menu);
+        function _renderDishComboPanel(panel, query, hilightKey, hilightLabel, dateYmd) {
+            const groups = _dishGroupsByDay(state.menu, dateYmd);
             const q = (query || '').trim().toLowerCase();
             const ordered = [hilightKey, ...DISH_DAY_ORDER.filter(d => d !== hilightKey)];
             const html = ordered.filter(d => groups[d] && groups[d].length).map(d => {
@@ -9550,7 +9605,7 @@ incredibowl.my`,
                     </div>
                     ${matches.map(m =>
                         `<div class="dish-combo-row" data-name="${escapeHtml(m.name)}" data-price="${m.price}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-top:1px solid var(--border)">
-                            <span style="color:var(--text)">${escapeHtml(m.name)}</span>
+                            <span style="color:var(--text)">${m._hero ? '⭐ ' : ''}${escapeHtml(m.name)}</span>
                             <span style="color:var(--text-muted);margin-left:6px;font-size:12px">· RM ${Number(m.price).toFixed(2)}</span>
                             ${m._dayNote ? `<span style="color:var(--warning);margin-left:6px;font-size:11px">${escapeHtml(m._dayNote)}</span>` : ''}
                         </div>`).join('')}
@@ -9570,13 +9625,13 @@ incredibowl.my`,
             function ctx() {
                 if (dateInputSel) {
                     const v = document.querySelector(dateInputSel)?.value;
-                    if (v) return { key: getWeekdayKeyFromDateStr(v), label: '送达日' };
+                    if (v) return { key: getWeekdayKeyFromDateStr(v), label: '送达日', date: v };
                 }
-                return { key: getWeekdayKeyFromDateStr(null), label: '今天' };
+                return { key: getWeekdayKeyFromDateStr(null), label: '今天', date: null };
             }
             function rerender() {
                 const c = ctx();
-                _renderDishComboPanel(panel, input.value, c.key, c.label);
+                _renderDishComboPanel(panel, input.value, c.key, c.label, c.date);
             }
             let blurTimer;
             input.addEventListener('focus', () => {
