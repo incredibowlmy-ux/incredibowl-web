@@ -173,7 +173,13 @@ async function waba() {
           console.log(`  ?  id=${id}（读不到：${e.message}）`);
         }
       }
-      if (!ids.size) console.log('  token 的 granular_scopes 里没有 WhatsApp 资产 —— 系统用户没被分配 WABA。');
+      if (!ids.size) {
+        const waScopes = scopes.filter(s => /^whatsapp_business/.test(s.scope)).map(s => s.scope);
+        console.log(waScopes.length
+          ? `  token 有 ${waScopes.join(' / ')}，但 Meta 没列 target_ids —— 通常表示不限资产（全部能管），API 列不出清单。`
+          : '  token 的 granular_scopes 里没有任何 whatsapp_business 权限。');
+        console.log('  → 去 Business Settings → 账户 → WhatsApp 账户 抄正式那个的 ID（名字不带 Test）。');
+      }
     } catch (e) {
       console.log('  debug_token 也读不到：' + e.message);
     }
