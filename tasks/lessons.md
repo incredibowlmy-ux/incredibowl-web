@@ -542,3 +542,11 @@ Git Bash（POSIX sh），`@` 对它只是普通字符，于是整段（含两个
 3. App → API Setup 那页显示的 WABA id **跟着 From 下拉里选的号码走**，默认是 Test Number。
 4. 正式 WABA 2664648817254746 早就在 dogfood-wa-webhook 的样本 payload 里（entry.id 就是它），
    以后要 id 先 grep 真实 webhook 样本。
+
+## 2026-09-09 — 线上 smoke 别用「无签名 POST」打 relay：它会给老板发警报
+
+**错误：** push 后 smoke 里故意 `curl -X POST /api/wa/webhook -d '{}'` 验证拒收，relay 按设计回 401
+并推 Telegram「收到签名不对的请求」，老板凌晨三点收到以为被攻击。
+
+**规则：** 验签路径的线上 smoke 只打 GET（错 verify_token → 403）；无签名 POST 的行为已由
+dogfood-wa-webhook 钉死，线上不用再证明一次。真要打，先跟老板说「接下来一分钟内的警报是我」。
