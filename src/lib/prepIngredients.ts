@@ -14,7 +14,7 @@ import {
   NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, expandComboLabel,
 } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
-import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL, PAPER_BAG, BOWLS_PER_BAG } from '@/data/packaging';
+import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL, PAPER_BAG, BOWLS_PER_BAG, CUTLERY_SET, FOOD_TRAY, TRAY_DISH_NAMES, TRAY_COMBO_RICE_LABEL } from '@/data/packaging';
 
 export interface PrepOrderItemAddOn {
   id?: string;
@@ -129,18 +129,25 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
 
 // ─── 打包碗（库存层专用，备餐单/Telegram 不显示）─────────────────────
 /**
- * 一批订单要用几个碗。规则见 src/data/packaging.ts。
- * 主菜行（非「↳」）每份 1 个 1000ml；蒜蓉西兰花炒蛋——单点、或套餐拆开后含它——
- * 每份 1 个 750ml。纸袋按**单**算：ceil(该单碗数 / 4)，至少 1 个。两种加料落库形态都收（网页 ↳ 行 / 手动嵌套 addOns），
+ * 一批订单要用几个碗/袋/餐具/餐盒。规则见 src/data/packaging.ts。
+ * 主菜行（非「↳」）每份 1 个 1000ml + 1 套餐具；蒜蓉西兰花炒蛋——单点、或套餐拆开后含它——
+ * 每份 1 个 750ml。纸袋按**单**算：ceil(该单碗数 / 4)，至少 1 个。
+ * 餐盒：TRAY_DISH_NAMES 里的主菜每份 1 个；套餐拆开后「西兰花炒蛋 + 加饭」同在的每套 1 个。
+ * 两种加料落库形态都收（网页 ↳ 行 / 手动嵌套 addOns），
  * 与 aggregateIngredients 同一套 label 解析（resolveAddOnAlias + expandComboLabel）。
  */
 export function packagingLines(orders: PrepOrder[]): Line[] {
-  let big = 0, small = 0, bags = 0;
+  let big = 0, small = 0, bags = 0, trays = 0;
   const bowls750ForLabel = (raw: string, id?: string): number => {
     if (id === 'broccoli-egg') return 1;
     const label = resolveAddOnAlias(raw);
     if (label === BOWL_750_ADDON_LABEL) return 1;
     return (expandComboLabel(label) || []).filter(c => c === BOWL_750_ADDON_LABEL).length;
+  };
+  // 餐盒只在「炒蛋 + 加饭」同一套里才用（下饭套家族）；单点炒蛋、柠香双蛋白套（无饭）不用
+  const traysForAddOn = (raw: string): number => {
+    const parts = expandComboLabel(resolveAddOnAlias(raw)) || [];
+    return parts.includes(BOWL_750_ADDON_LABEL) && parts.includes(TRAY_COMBO_RICE_LABEL) ? 1 : 0;
   };
   for (const o of orders) {
     let oBig = 0, oSmall = 0;
@@ -148,13 +155,18 @@ export function packagingLines(orders: PrepOrder[]): Line[] {
       const qty = it.quantity || 0;
       if (qty <= 0) continue;
       if (isAddOnItem(it.name)) {
-        oSmall += bowls750ForLabel(stripAddOnPrefix(it.name)) * qty;
+        const label = stripAddOnPrefix(it.name);
+        oSmall += bowls750ForLabel(label) * qty;
+        trays += traysForAddOn(label) * qty;
       } else {
         oBig += qty;
+        if (TRAY_DISH_NAMES.has(it.name)) trays += qty;
         for (const a of it.addOns || []) {
           const aQty = a.quantity || 0;
           if (aQty <= 0) continue;
-          oSmall += bowls750ForLabel(a.label || a.name || '', a.id) * aQty;
+          const label = a.label || a.name || '';
+          oSmall += bowls750ForLabel(label, a.id) * aQty;
+          trays += traysForAddOn(label) * aQty;
         }
       }
     }
@@ -166,6 +178,8 @@ export function packagingLines(orders: PrepOrder[]): Line[] {
   if (big > 0) lines.push({ name: BOWL_1000, qty: big, unit: '个' });
   if (small > 0) lines.push({ name: BOWL_750, qty: small, unit: '个' });
   if (bags > 0) lines.push({ name: PAPER_BAG, qty: bags, unit: '个' });
+  if (big > 0) lines.push({ name: CUTLERY_SET, qty: big, unit: '套' });   // 每份主菜 1 套
+  if (trays > 0) lines.push({ name: FOOD_TRAY, qty: trays, unit: '个' });
   return lines;
 }
 

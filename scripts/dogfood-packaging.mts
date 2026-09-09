@@ -3,7 +3,8 @@
  * 跑法：npx tsx scripts/dogfood-packaging.mts
  */
 import { packagingLines, aggregateStockNeeds, aggregateIngredients } from '../src/lib/prepIngredients';
-import { BOWL_1000, BOWL_750, PAPER_BAG } from '../src/data/packaging';
+import { BOWL_1000, BOWL_750, PAPER_BAG, CUTLERY_SET, FOOD_TRAY, TRAY_DISH_NAMES } from '../src/data/packaging';
+import { DISH_CATALOG_ALL } from '../src/data/weeklyMenu';
 
 let pass = 0, fail = 0;
 const ok = (cond: boolean, msg: string) => { if (cond) pass++; else { fail++; console.log(`  ✗ ${msg}`); } };
@@ -47,7 +48,29 @@ ok(packagingLines([{ items: [{ name: 'x', quantity: 0 }] }]).length === 0, '0 �
 ok(!aggregateIngredients(web).lines.some(l => l.name.includes('打包碗')), 'aggregateIngredients 不应含碗');
 const needs = aggregateStockNeeds(web);
 ok(needs.some(l => l.name === BOWL_1000) && needs.some(l => l.name === BOWL_750), 'aggregateStockNeeds 应含两种碗');
-ok(needs.length === aggregateIngredients(web).lines.length + 3, 'aggregateStockNeeds 行数 = 食材 + 3');
+ok(needs.length === aggregateIngredients(web).lines.length + 5, 'aggregateStockNeeds 行数 = 食材 + 5（两碗+袋+餐具+餐盒）');
+
+// 餐具套装 = 主菜份数（与 1000ml 同数）
+ok(count(web, CUTLERY_SET) === 2, `网页单餐具应 2，得 ${count(web, CUTLERY_SET)}`);
+ok(count(manual, CUTLERY_SET) === 4, `手动单餐具应 4，得 ${count(manual, CUTLERY_SET)}`);
+
+// 餐盒：TRAY_DISH_NAMES 主菜每份 1；「炒蛋+加饭」套餐每套 1；单点炒蛋 / 柠香双蛋白套（无饭）不用
+ok(count(web, FOOD_TRAY) === 1, `网页单餐盒应 1（假菜名 0 + 下饭王套 1），得 ${count(web, FOOD_TRAY)}`);
+ok(count(manual, FOOD_TRAY) === 1, `手动单餐盒应 1（「姜葱鱼片饭」是假名不在名单 0 + 姜葱下饭套 1；双蛋白套/单点炒蛋 0），得 ${count(manual, FOOD_TRAY)}`);
+ok(count(none, FOOD_TRAY) === 0, `猪扒饭+干饭套 餐盒应 0，得 ${count(none, FOOD_TRAY)}`);
+const trayMains = [{ items: [
+    { name: '家常日式咖喱饭', quantity: 2 },
+    { name: '豆酱焖排骨', quantity: 1, addOns: [{ id: 'broccoli-egg', label: '西兰花蛋', quantity: 1 }] },
+    { name: '澳洲和牛饼饭', quantity: 1 },
+    { name: '↳ 卤味下饭王套 (原价 RM 15.90)', quantity: 2 },
+] }];
+ok(count(trayMains, FOOD_TRAY) === 5, `咖喱 2 + 排骨 1 + 和牛 0 + 卤味套 2 = 5，得 ${count(trayMains, FOOD_TRAY)}`);
+ok(count(trayMains, CUTLERY_SET) === 4, `4 份主菜餐具应 4，得 ${count(trayMains, CUTLERY_SET)}`);
+
+// 餐盒名单每个名字都必须还在 weeklyMenu 里（改菜名会静默算 0）
+const menuNames = new Set(DISH_CATALOG_ALL.map(d => d.name));
+for (const n of TRAY_DISH_NAMES) ok(menuNames.has(n), `TRAY_DISH_NAMES「${n}」不在 weeklyMenu 里`);
+ok(TRAY_DISH_NAMES.size === 11, `餐盒名单应 11 道，得 ${TRAY_DISH_NAMES.size}`);
 
 // 纸袋：按单 ceil(碗数/4)，至少 1
 ok(count(web, PAPER_BAG) === 1, `网页单 4 碗应 1 袋，得 ${count(web, PAPER_BAG)}`);        // 2+2 = 4 碗

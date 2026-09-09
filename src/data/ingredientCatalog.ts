@@ -70,8 +70,8 @@ const EXPLICIT_CATEGORY: Record<string, IngredientCategory> = {
   '酱油': '调味·干货', 'sambal': '调味·干货', '咖喱块': '调味·干货',
   '海苔': '调味·干货', '纳豆': '调味·干货', '当归': '调味·干货',
   '黑橄榄': '调味·干货',
-  // ── 包装 ──（碗不是配方食材，见 src/data/packaging.ts）
-  '1000ml 打包碗': '包装', '750ml 打包碗': '包装', '纸袋': '包装',
+  // ── 包装 ──（碗/袋/餐具/餐盒不是配方食材，见 src/data/packaging.ts；名单从 PACKAGING_ITEMS 派生）
+  ...Object.fromEntries(PACKAGING_ITEMS.map(p => [p.name, '包装' as const])),
 };
 
 /**
