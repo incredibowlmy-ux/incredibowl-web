@@ -707,6 +707,10 @@
         .inbox-media { display: block; max-width: 240px; max-height: 240px; border-radius: 8px; margin: 2px 0 4px; cursor: pointer; background: var(--bg-elev); }
         .inbox-media-file { display: inline-block; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); margin: 2px 0 4px; }
         .inbox-attach { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-elev); }
+        .inbox-emoji { border: 1px solid var(--border); border-radius: 10px; padding: 6px 8px; background: var(--bg-elev); display: flex; flex-wrap: wrap; gap: 2px; }
+        .inbox-emoji .inbox-emoji-label { width: 100%; font-size: 11px; color: var(--text-muted); padding: 2px 4px 0; }
+        .inbox-emoji button { border: 0; background: transparent; font-size: 20px; line-height: 1; padding: 4px 5px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+        .inbox-emoji button:hover { background: var(--bg-subtle); }
         .inbox-attach input, .inbox-attach select { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 12px; font-family: inherit; }
         .inbox-attach-title { font-size: 11px; font-weight: 700; color: var(--text-muted); }
         .inbox-reply-bar { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); background: var(--bg-elev); border-left: 3px solid var(--brand, #4a9); padding: 4px 8px; border-radius: 6px; }
@@ -1816,8 +1820,10 @@
                                     <button class="btn ghost sm inbox-mode" data-mode="media" title="发图片或文件">📎</button>
                                     <button class="btn ghost sm inbox-mode" data-mode="buttons" title="发按钮（客户点一下就回）">🔘</button>
                                     <button class="btn ghost sm inbox-mode" data-mode="list" title="发列表（最多 10 项）">📋</button>
+                                    <button class="btn ghost sm" id="inboxEmojiBtn" title="插入 emoji">😊</button>
                                     <span class="inbox-window" id="inboxWindow"></span>
                                 </div>
+                                <div id="inboxEmoji" class="inbox-emoji" hidden></div>
                                 <div id="inboxQrEditor" hidden>
                                     <textarea id="inboxQrText" placeholder="每行一条快捷回复"></textarea>
                                     <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存快捷回复</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
@@ -8946,6 +8952,31 @@ incredibowl.my`,
 
         const inboxIntl = (raw) => { let d = String(raw || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '60' + d.slice(1); return d; };
         function inboxQuickReplies() { try { const v = JSON.parse(localStorage.getItem(INBOX_QR_KEY) || 'null'); if (Array.isArray(v) && v.length) return v; } catch { /* noop */ } return INBOX_QR_DEFAULT.slice(); }
+        // ── 回复框 emoji 面板：固定常用表 + 最近用过（localStorage，最多 16 个）──
+        const INBOX_EMOJI_KEY = 'incredibowl_inbox_emoji_recent';
+        const INBOX_EMOJI_SET = [
+            '🙂', '😊', '😄', '😁', '😉', '🥰', '😍', '🤗', '😅', '😂', '🤣', '😋', '🤤', '😌', '🙏', '👍',
+            '👌', '💪', '👏', '🙌', '❤️', '🧡', '💛', '💚', '💕', '💖', '✨', '🎉', '🔥', '⭐', '✅', '❌',
+            '⏰', '📅', '📍', '🚗', '🛵', '📦', '🥡', '🍱', '🍚', '🍗', '🍖', '🐟', '🥩', '🥚', '🥦', '🍲',
+            '🥣', '🍛', '🍜', '🍽️', '🥢', '💧', '🌶️', '🧄', '🍋', '🍯', '🥗', '🍵', '☕', '🎁', '💰', '🧾',
+        ];
+        function inboxEmojiRecent() { try { const v = JSON.parse(localStorage.getItem(INBOX_EMOJI_KEY) || 'null'); if (Array.isArray(v)) return v.filter(x => typeof x === 'string'); } catch { /* noop */ } return []; }
+        function renderInboxEmoji() {
+            const p = $('#inboxEmoji'); if (!p) return;
+            const btn = (e) => `<button type="button" data-e="${escapeHtml(e)}" title="${escapeHtml(e)}">${escapeHtml(e)}</button>`;
+            const recent = inboxEmojiRecent();
+            p.innerHTML = (recent.length ? `<span class="inbox-emoji-label">最近用过</span>${recent.map(btn).join('')}<span class="inbox-emoji-label">全部</span>` : '')
+                + INBOX_EMOJI_SET.map(btn).join('');
+        }
+        function inboxInsertEmoji(e) {
+            const ta = $('#inboxText'); if (!ta || !e) return;
+            const s = ta.selectionStart ?? ta.value.length, t = ta.selectionEnd ?? ta.value.length;
+            ta.value = ta.value.slice(0, s) + e + ta.value.slice(t);
+            ta.selectionStart = ta.selectionEnd = s + e.length;
+            ta.focus();
+            try { localStorage.setItem(INBOX_EMOJI_KEY, JSON.stringify([e, ...inboxEmojiRecent().filter(x => x !== e)].slice(0, 16))); } catch { /* noop */ }
+            renderInboxEmoji();
+        }
         function inboxRel(ms) {
             if (!ms) return '';
             const m = Math.floor((Date.now() - ms) / 60000);
@@ -9310,6 +9341,9 @@ incredibowl.my`,
                 if (e.target.src) window.open(e.target.src, '_blank');
                 return;
             }
+            if (e.target.id === 'inboxEmojiBtn') { const p = $('#inboxEmoji'); p.hidden = !p.hidden; if (!p.hidden) renderInboxEmoji(); return; }
+            const emojiBtn = e.target.closest('#inboxEmoji button');
+            if (emojiBtn) { inboxInsertEmoji(emojiBtn.dataset.e); return; }
             if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
             if (e.target.id === 'inboxQrCancel') { $('#inboxQrEditor').hidden = true; return; }
             if (e.target.id === 'inboxQrSave') {
