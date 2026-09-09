@@ -116,7 +116,7 @@ console.log('\n=== 4. 对话记录（turns）===');
   check(`单条截到 TURN_TEXT_MAX=${TURN_TEXT_MAX} 字`, appendTurn([], 'in', longText, 1)[0].text.length === TURN_TEXT_MAX);
   check('模板快捷回复（type=button）取按钮文字', describeInboundForTurn({ type: 'button', button: { text: 'STOP', payload: 'STOP' } }) === 'STOP');
   check('快捷回复 STOP 算退订', parseOptOut(describeInboundForTurn({ type: 'button', button: { text: 'STOP' } })) === 'stop');
-  check('快捷回复 Full menu 🍱 认得到', isFullMenuRequest(describeInboundForTurn({ type: 'button', button: { text: 'Full menu 🍱' } })));
+  check('快捷回复 Full menu 认得到（带不带 emoji 都认）', isFullMenuRequest(describeInboundForTurn({ type: 'button', button: { text: 'Full menu' } })) && isFullMenuRequest('Full menu 🍱'));
   check('客户自己打 full menu / See full menu please 也认', isFullMenuRequest('full menu') && isFullMenuRequest('See full menu please!') && isFullMenuRequest('完整菜单'));
   check('单独 menu / /menu / 长句不认（归 AI）', !isFullMenuRequest('menu') && !isFullMenuRequest('/menu') && !isFullMenuRequest('can i see full menu for next week'));
   const dirty = appendTurn([{ role: 'hacker', text: 'a', ts: 'z' }, { text: 5 }, null], 'in', 'ok', 9);

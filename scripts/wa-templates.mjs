@@ -87,7 +87,8 @@ const TEMPLATES = {
         buttons: [
           { type: 'URL', text: 'See menu & order', url: 'https://www.incredibowl.my/o?src=wa_weekly' },
           // 一点就开 24h 窗口 → webhook 直接回老板定稿的完整周报（免费）；见 route.ts replyFullMenu
-          { type: 'QUICK_REPLY', text: 'Full menu 🍱' },
+          // ⚠️ 按钮文字不能有 emoji / 变量 / 换行 / 粗体符号，Meta 直接 400（2026-09-10 踩过）
+          { type: 'QUICK_REPLY', text: 'Full menu' },
           { type: 'QUICK_REPLY', text: 'STOP' },
         ],
       },
@@ -349,6 +350,43 @@ async function list() {
   console.log('');
 }
 
+/**
+ * 提交前自查 Meta 的硬规矩 —— 能本地发现的就别浪费一次 400。
+ * 2026-09-10 踩过：按钮文字带 🍱，四种写法全被拒
+ * （Buttons can't have any variables, newlines, emojis or formatting characters）。
+ * 只查「会被直接拒收」的格式问题；审核口径（促销词、变量占比）机器判不了，仍靠人看。
+ */
+const EMOJI_RE = /[\p{Extended_Pictographic}️]/u;
+function lintTemplate(t) {
+  const out = [];
+  for (const c of t.components) {
+    if (c.type === 'HEADER' && c.format === 'TEXT') {
+      if ((c.text || '').length > 60) out.push(`HEADER 超 60 字（${c.text.length}）`);
+      if ((c.text || '').includes('\n')) out.push('HEADER 不能有换行');
+    }
+    if (c.type === 'BODY') {
+      const text = c.text || '';
+      if (text.length > 1024) out.push(`BODY 超 1024 字（${text.length}）`);
+      const nums = [...text.matchAll(/\{\{(\d+)\}\}/g)].map(m => Number(m[1]));
+      const want = nums.length ? Math.max(...nums) : 0;
+      const got = (c.example && c.example.body_text && c.example.body_text[0] || []).length;
+      if (want !== got) out.push(`BODY 有 ${want} 个变量，example 给了 ${got} 个`);
+      if (/^\s*\{\{/.test(text) || /\}\}\s*$/.test(text)) out.push('BODY 不能以变量开头或结尾');
+    }
+    if (c.type === 'FOOTER' && (c.text || '').length > 60) out.push(`FOOTER 超 60 字（${c.text.length}）`);
+    if (c.type === 'BUTTONS') {
+      for (const b of c.buttons || []) {
+        const bt = b.text || '';
+        if (EMOJI_RE.test(bt)) out.push(`按钮「${bt}」不能有 emoji`);
+        if (bt.includes('\n') || bt.includes('{{') || /[*_~`]/.test(bt)) out.push(`按钮「${bt}」不能有换行/变量/粗体符号`);
+        if (bt.length > 25) out.push(`按钮「${bt}」超 25 字（${bt.length}）`);
+        if (b.type === 'URL' && !/^https:\/\//.test(b.url || '')) out.push(`按钮「${bt}」的 url 必须是 https`);
+      }
+    }
+  }
+  return out;
+}
+
 async function submit() {
   const id = needWaba();
   const names = arg === 'all' ? Object.keys(TEMPLATES) : [arg];
@@ -363,8 +401,10 @@ async function submit() {
     console.log(`\n─── ${t.name}（${t.language} · ${t.category}）───`);
     for (const c of t.components) {
       if (c.type === 'BODY') console.log('  正文：' + c.text);
-      if (c.type === 'BUTTONS') console.log('  按钮：' + c.buttons.map(b => `[${b.text}] → ${b.url}`).join('  '));
+      if (c.type === 'BUTTONS') console.log('  按钮：' + c.buttons.map(b => `[${b.text}]${b.url ? ' → ' + b.url : ''}`).join('  '));
     }
+    const bad = lintTemplate(t);
+    if (bad.length) { bad.forEach(m => console.log('  ❌ ' + m)); console.log('  ⛔ 不提交 —— Meta 会直接 400，先改上面这几条'); continue; }
     if (!APPLY) { console.log('  （dry-run）'); continue; }
     // 四种写法轮着试（同 diag）；第一种成功的记住，后面的模板直接用它
     const order = workingVariant ? [workingVariant, ...POST_VARIANTS.filter(v => v !== workingVariant)] : POST_VARIANTS;

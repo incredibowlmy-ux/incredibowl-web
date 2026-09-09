@@ -550,3 +550,9 @@ Git Bash（POSIX sh），`@` 对它只是普通字符，于是整段（含两个
 
 **规则：** 验签路径的线上 smoke 只打 GET（错 verify_token → 403）；无签名 POST 的行为已由
 dogfood-wa-webhook 钉死，线上不用再证明一次。真要打，先跟老板说「接下来一分钟内的警报是我」。
+
+## 2026-09-10 · WhatsApp 模板按钮不能带 emoji
+**现象**：`submit weekly_menu_v2 --apply` 四种写法全 400 —— `Buttons can't have any variables, newlines, emojis or formatting characters`。按钮文案是 `Full menu 🍱`。
+**根因**：Meta 对 BUTTONS 的限制比 BODY 严得多。BODY 可以有 emoji / `*粗体*` / 换行；按钮**只能是纯文字**（≤25 字），变量、换行、emoji、`*_~\`` 一律拒。
+**改法**：按钮改 `Full menu`；`wa-templates.mjs` 加 `lintTemplate()`，提交前本地自查（HEADER≤60、BODY≤1024 且变量数与 example 对得上、不以变量开头结尾、FOOTER≤60、按钮无 emoji/变量/换行/粗体且 ≤25、URL 必须 https），不合规直接不发请求。
+**规则**：以后往模板加按钮，先跑一次 dry-run（`submit <name>` 不带 `--apply`）看有没有 ❌ 再 `--apply`。emoji 放 BODY 或 FOOTER，别放按钮。

@@ -57,7 +57,7 @@ function previewOf(tpl: string, p: [string, string, string]): string {
     `Our menu for *${p[1]}* is ready.`, `✨ ${p[2]}`, '',
     '🍱 Freshly cooked every morning', '🌿 No MSG · less oil · less salt', '🛵 Delivered to your door around Old Klang Road', '',
     'Order before *6:00 AM* for same-day delivery. We cook a limited number of meals each day, so early orders are safest.', '',
-    'Tap Full menu for daily dishes & prices', '[See menu & order]  [Full menu 🍱]  [STOP]',
+    'Tap Full menu for daily dishes & prices', '[See menu & order]  [Full menu]  [STOP]',
   ].join('\n');
 }
 
