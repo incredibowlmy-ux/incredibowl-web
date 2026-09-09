@@ -17,6 +17,7 @@ interface CartItemCardProps {
 export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 0, locale = 'zh' }: CartItemCardProps) {
     const t = CART_DICT[locale].itemCard;
     const displayName = locale === 'en' ? (item.dish.nameEn || item.dish.name) : item.dish.name;
+    const [imgBroken, setImgBroken] = React.useState(false);
     return (
         // 2026-09-05：这里原来还盖着一个铺满整卡的隐形 <button aria-label="Edit Item">
         // （两个语言都是写死英文），和下面那个可见的「修改」按钮是**同一个动作的两个
@@ -28,10 +29,14 @@ export default function CartItemCard({ item, onRemove, onEdit, animationDelay = 
         >
             <div className="flex gap-4 items-center relative z-20">
                 <div className="w-16 h-16 rounded-2xl bg-paper flex items-center justify-center text-3xl overflow-hidden relative shrink-0 shadow-inner border border-line/30">
-                    {item.dish.image?.startsWith('/') ? (
+                    {item.dish.image?.startsWith('/') && !imgBroken ? (
                         // sizes 必填：容器固定 64px，不给的话 next/image 按最大宽取图。
-                        <Image src={item.dish.image} alt={item.dish.name} fill sizes="64px" className="object-cover" />
-                    ) : item.dish.image}
+                        // 图 404 时（排期里的菜引用了还没上传的图）onError 回落到淡化 logo ——
+                        // 不加守卫会在购物车里露出一行 alt 文字挤破卡片（老板 2026-09-10 截图）。
+                        <Image src={item.dish.image} alt="" fill sizes="64px" className="object-cover" onError={() => setImgBroken(true)} />
+                    ) : item.dish.image && !item.dish.image.startsWith('/') ? item.dish.image : (
+                        <Image src="/logo.webp" alt="" width={32} height={32} className="opacity-60 object-contain" />
+                    )}
                 </div>
                 <div className="flex-1 min-w-0 pr-8">
                     <div className="flex flex-col">

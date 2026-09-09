@@ -1077,7 +1077,9 @@ export default function CartDrawer({
                                                     <Calendar size={14} className="text-ink" />
                                                 </div>
                                                 <span className="text-sm font-black text-ink truncate">{group.date}</span>
-                                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-md font-bold shrink-0">
+                                                {/* 午=日头黄、晚=夜色靛，与 /o 落地页同一套色（老板 09-10）：一单同天午晚都有时，两组一眼分得开 */}
+                                                <span className={`text-[10px] px-2 py-1 rounded-md font-bold shrink-0 ${
+                                                    group.time.includes('Lunch') ? 'bg-[#FFF1D6] text-[#A2700B]' : 'bg-[#E7E8F7] text-[#4A4A8C]'}`}>
                                                     {group.time.includes('Lunch') ? t.lunchBadge : t.dinnerBadge}
                                                 </span>
                                                 {dateBadge && <div className="ml-auto flex items-center">{dateBadge}</div>}
