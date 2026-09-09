@@ -8,7 +8,6 @@
  * 一个从 WhatsApp 点进来、只想订那一道菜的人全是干扰。
  *
  * 刻意的设计约束：
- *   · 一屏能看完 —— 菜 + 数量 + 午/晚 + 一个结账按钮，没有导航没有别的菜
  *   · **不重写结账**。地址、支付、访客下单、优惠码、运费全部交给已经在跑的
  *     CartDrawer + /api/submit-order。这一页只负责「把购物车填好、把抽屉打开」。
  *     支付链路是全站风险最高的地方，为了一个落地页去复制它是愚蠢的。
@@ -16,11 +15,15 @@
  *     那一单；而且 bot 先后发过两条不同链接时，追加会让客户不知不觉付两单的钱。
  *     想加菜直接在菜单上按 +，主动权留给客户。
  *
- * 2026-09-09 手机版重做（老板：「不体面、不专业」，客户九成用手机）：
- *   · 菜单**常驻可见**，每道菜卡片上直接 − n +，不再「加一道就把菜单收起来」
- *   · 已选的菜在菜单上方一张紧凑卡：菜名 × 份数 · 送达日 · 可删，多日送达说清楚
- *   · 大图（84px）、菜名 + 英文/一句描述、价格突出；没图/坏图回落到品牌占位，不再露 alt 字
- *   · 载入用骨架屏；底栏一个出口「去结账 · RM 合计」
+ * 2026-09-09 改成「先选送达日，再看那天的菜」（外卖预订 app 的标准结构）：
+ *   · 之前按「每道菜最近能点的那天」分组，常驻菜只出现在「明天」那组，客户以为
+ *     周五没纳豆 —— 老板一眼看出来。现在：横滑日期条（只列能点的日子）→ 那天的
+ *     ⭐ 当日精选 + 🍚 每天都有，每道菜卡片上直接 − n +
+ *   · 哪天有什么菜 = menuForDate + isDishOrderableOn，和结账 / submit-order 同一个
+ *     函数，不会「页面能点、下单被拒」
+ *   · 默认落点：群发链接（src=wa_weekly）→ 下周一；bot 单菜深链 → 那道菜的日子；
+ *     其余 → 最近能点的一天。日期条不点也能下单，不多一步
+ *   · 一单可跨天（CartDrawer 本来就分天送），已选卡上每道菜带送达日
  *
  * URL 参数（bot 拼，客户不会手输）：
  *   d=30            单道菜的 id
@@ -31,16 +34,19 @@
  *   promo=FIRST5    优惠码（默认就是 FIRST5，新客立减 RM5）
  *   ref=wa          归因来源
  *   lead=<token>    lead 点击回传用的不可枚举 token
+ *   src=wa_weekly   每周群发来的：默认落在下周一
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { Plus, Minus, X, ShoppingBag } from 'lucide-react';
 import { type MenuItem } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
-import { isDinnerClosedOn } from '@/data/blockedDates';
+import { menuForDate } from '@/lib/menuResolve';
+import { isDinnerClosedOn, isDateClosed } from '@/data/blockedDates';
 import { computeMenuDates, formatYMD, type MenuDateInfo } from '@/lib/dateUtils';
+import { isDishOrderableOn, todayInMY, past6AmCutoffMY, weekdayOfYMD } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { useCartStore } from '@/store/cartStore';
 import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
@@ -53,6 +59,8 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 
 const LUNCH = 'Lunch (11AM-1PM)';
 const DINNER = 'Dinner (5PM-8PM)';
+/** 日期条最多列几天（≈ 一周半的营业日，够群发「下周」落点又不至于滑不到头）。 */
+const MAX_DAYS = 8;
 
 // 只送午餐的日子（blockedDates.DINNER_CLOSED_DATES）按天回落到午餐。这一页
 // 的午/晚是整车开关，但每个 bundle 各带各的日期 —— 不按天判就会把晚市单塞进
@@ -71,53 +79,51 @@ const DICT = {
     brand: '碗妈的厨房',
     tagline: '每天巴刹现采，家的味道送到你楼下',
     chips: ['🌿 不放味精', '🍳 每天现做', '⏰ 早上 6 点截单'],
-    forDate: (d: string) => `${d} 送达`,
+    pickDay: '选送达日',
+    today: '今天',
+    tomorrow: '明天',
+    wd: (d: number) => `周${WD_ZH[d]}`,
     lunch: '午餐 11:00–13:00',
     dinner: '晚餐 17:30–20:00',
-    empty: '选一道今天想吃的 👇',
+    specials: (d: string) => `⭐ ${d}精选`,
+    daily: '🍚 每天都有',
+    noMenu: '这天碗妈还没排菜，先看看别的日子 👆',
     picked: '你的选择',
     promo: (rm: number) => `🎁 新朋友首单立减 RM${rm}，结账自动套用`,
     total: '合计',
     checkout: '去结账',
     portions: (n: number) => `${n} 份`,
-    soldOutNote: '（今日不可点）',
     cutoff: '每天早上 6 点截单 · 当天现做当天送',
     unavailable: '这道菜今天不可点，帮你换成最近可点的日子了',
     missing: (names: string) => `不好意思，${names} 这天没排哦～下面是可以点的 👇`,
     missingUnnamed: '不好意思，这道菜这天没排哦～下面是可以点的 👇',
-    multiDate: (n: number) => `这几道菜不在同一天做，会分 ${n} 天送达 —— 每道菜都在它的日子当天现做`,
-    todayChip: '今天送',
+    multiDate: (n: number) => `分 ${n} 天送达，每道菜都在它的日子当天现做`,
     dayChip: (d: string) => `${d} 送`,
-    groupHeader: (d: string) => d,
-    groupSub: (n: number) => `${n} 道 · 当天现做`,
-    pickHint: '碗妈每天只做当天排的菜，按送达日挑',
-    imgAlt: '菜品图片',
   },
   en: {
     brand: "BowlMama's Kitchen",
     tagline: 'Market-fresh every morning, home-cooked to your door',
     chips: ['🌿 No MSG', '🍳 Cooked daily', '⏰ Orders close 6 AM'],
-    forDate: (d: string) => `Delivery ${d}`,
+    pickDay: 'Delivery day',
+    today: 'Today',
+    tomorrow: 'Tmrw',
+    wd: (d: number) => WD_EN_SHORT[d],
     lunch: 'Lunch 11:00–13:00',
     dinner: 'Dinner 17:30–20:00',
-    empty: 'Pick what you feel like today 👇',
+    specials: (d: string) => `⭐ ${d} specials`,
+    daily: '🍚 Every day',
+    noMenu: 'Nothing scheduled for this day yet — try another day 👆',
     picked: 'Your picks',
     promo: (rm: number) => `🎁 RM${rm} off your first order — applied at checkout`,
     total: 'Total',
     checkout: 'Checkout',
     portions: (n: number) => `${n} ${n === 1 ? 'meal' : 'meals'}`,
-    soldOutNote: '(unavailable today)',
     cutoff: 'Orders close 6:00 AM daily · cooked fresh and delivered same day',
     unavailable: 'That dish is not available today — moved to its next available date',
     missing: (names: string) => `Sorry, ${names} isn't on the menu that day. Here's what's available 👇`,
     missingUnnamed: "Sorry, that dish isn't on the menu that day. Here's what's available 👇",
-    multiDate: (n: number) => `These dishes are cooked on ${n} different days, so they arrive separately — each one fresh on its own day`,
-    todayChip: 'Today',
+    multiDate: (n: number) => `Arrives on ${n} different days — each dish cooked fresh on its own day`,
     dayChip: (d: string) => d,
-    groupHeader: (d: string) => d,
-    groupSub: (n: number) => `${n} ${n === 1 ? 'dish' : 'dishes'} · cooked fresh that day`,
-    pickHint: 'BowlMama only cooks what is scheduled for the day. Pick by delivery day',
-    imgAlt: 'dish photo',
   },
 } as const;
 
@@ -129,7 +135,7 @@ interface Props { locale?: Locale }
  * ⚠️ weeklyMenu 的 `image` **不一定是路径** —— 这个仓库允许用 emoji 当占位图
  * （新菜还没拍照时就是这样）。直接丢给 next/image 会打出
  * `/_next/image?url=🍖` 然后 400。另外排期里的菜可能**引用了还没上传的图**
- * （2026-09-09 线上两道菜 404，卡片上露出一行 alt 字）—— onError 回落到品牌占位，
+ * （2026-09-09 线上两道菜 404，卡片上露出一行 alt 字）—— onError 回落到淡化 logo，
  * 客户永远看不到破图。
  */
 function DishThumb({ dish, size }: { dish?: { image?: string; name?: string } | null; size: string }) {
@@ -139,7 +145,6 @@ function DishThumb({ dish, size }: { dish?: { image?: string; name?: string } | 
   if (src.startsWith('/') && !broken) {
     return <Image src={src} alt="" fill sizes={size} className="object-cover" onError={() => setBroken(true)} />;
   }
-  // emoji 占位原样显示；路径坏了用淡化的 logo —— 比一个 emoji 更像「这家店的菜」，也不依赖手机有没有彩色 emoji 字体
   if (src && !src.startsWith('/')) {
     return <div className="w-full h-full flex items-center justify-center text-[28px] bg-gradient-to-br from-[#EEF3E6] to-[#E3EADA]" aria-hidden>{src}</div>;
   }
@@ -172,6 +177,31 @@ function parseRequestedItems(params: URLSearchParams): { id: number; qty: number
   return out;
 }
 
+const addDaysYmd = (ymd: string, n: number) => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+};
+
+/**
+ * 日期条：从「最近能点的一天」起，往后数 MAX_DAYS 个营业日（跳周末、跳停业日）。
+ * 「最近能点」= 06:00 截单前是今天，过了是明天 —— 和 isOrderDateValid 同一条线。
+ */
+function orderableDays(): string[] {
+  const start = addDaysYmd(todayInMY(), past6AmCutoffMY() ? 1 : 0);
+  const out: string[] = [];
+  for (let i = 0; i < 21 && out.length < MAX_DAYS; i++) {
+    const ymd = addDaysYmd(start, i);
+    const wd = weekdayOfYMD(ymd);
+    if (wd === 0 || wd === 6 || isDateClosed(ymd)) continue;
+    out.push(ymd);
+  }
+  return out;
+}
+
+/** 当日精选 = 这周排在这个 weekday 的菜 / 限日常驻菜；其余 = 每天都有。 */
+const isSpecial = (d: MenuItem) => typeof d.weekday === 'number' || !!(d.availableWeekdays && d.availableWeekdays.length);
+
 export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const t = DICT[locale];
   const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
@@ -182,19 +212,25 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const [meal, setMeal] = useState<'lunch' | 'dinner'>('lunch');
   const [notice, setNotice] = useState('');
   const [promoOn, setPromoOn] = useState(false);
+  const [day, setDay] = useState('');
 
-  // 日期表：哪道菜哪天能点，全站唯一口径（首页 / 会员页复购用的是同一个函数）
+  // 运行时排期（Firestore 权威）：version 变了日期表 / 每天的菜都重算
   const { menu: weeklyMenu, version: menuVersion } = useMenuRuntime();
+  const days = useMemo(() => orderableDays(), []);
   const [dates, setDates] = useState<Record<number, MenuDateInfo>>({});
   useEffect(() => {
     const { menuDates } = computeMenuDates(weeklyMenu, locale);
     setDates(menuDates);
   }, [locale, weeklyMenu, menuVersion]);
 
-  const orderable = useMemo(
-    () => weeklyMenu.filter(d => !d.retired && !d.hidden && dates[d.id] && !dates[d.id].disabled),
-    [dates, weeklyMenu],
-  );
+  /** 某天能点的菜（和结账 / submit-order 同一个判定）。 */
+  const dishesOn = useCallback((ymd: string) => {
+    void menuVersion; // 运行时数据更新时重算
+    return menuForDate(ymd).filter(d => !d.hidden && !d.retired && isDishOrderableOn(d, ymd).ok);
+  }, [menuVersion]);
+  const dayMenu = useMemo(() => (day ? dishesOn(day) : []), [day, dishesOn]);
+  const specials = dayMenu.filter(isSpecial);
+  const dailies = dayMenu.filter(d => !isSpecial(d));
 
   const bundleFor = useCallback((dish: MenuItem, qty: number, date: string, time: string, seq: number) => ({
     cartItemId: `${dish.id}-${Date.now()}-${seq}`,
@@ -208,9 +244,9 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     quantity: 1,
   }), []);
 
-  // ── 预填 + 归因 + 优惠码（只跑一次，靠 query 串做幂等）────────
+  // ── 预填 + 归因 + 优惠码 + 默认落点（只跑一次，靠 query 串做幂等）────────
   useEffect(() => {
-    if (Object.keys(dates).length === 0) return; // 等日期表算好，否则会填出 selectedDate:''
+    if (Object.keys(dates).length === 0 || !days.length) return; // 等日期表算好，否则会填出 selectedDate:''
     const params = new URLSearchParams(window.location.search);
     const search = window.location.search;
 
@@ -243,6 +279,15 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     const wantDinner = askedMeal === 'dinner';
     if (askedMeal === 'dinner' || askedMeal === 'lunch') setMeal(wantDinner ? 'dinner' : 'lunch');
 
+    // 默认落点：群发来的看下周一（列表里有才跳，没排下周就落最近一天）；带日期参数且能点就用它
+    let landing = days[0];
+    const askedDate = params.get('date') || '';
+    if (askedDate && days.includes(askedDate)) landing = askedDate;
+    else if ((params.get('src') || '').startsWith('wa_weekly')) {
+      const nextMon = days.find(d => weekdayOfYMD(d) === 1 && d > days[0]);
+      if (nextMon) landing = nextMon;
+    }
+
     if (wanted.length) {
       // 幂等：同一个链接刷新不重复填。换成别的链接（不同 query）会重新填。
       const guardKey = `incredibowl_o_prefilled:${search}`;
@@ -250,7 +295,6 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
       try { already = sessionStorage.getItem(guardKey) === '1'; } catch { /* 无痕模式 */ }
 
       if (!already) {
-        const askedDate = params.get('date') || '';
         let moved = false;
         const built: ReturnType<typeof bundleFor>[] = [];
         const missing: string[] = [];
@@ -278,16 +322,29 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         // 菜单上的 + 仍然可以自己加，主动权在客户手上。
         clearCart();
         built.forEach(b => addBundle(b));
+        // 深链的菜落在哪天，日期条就跳到哪天
+        if (built[0] && days.includes(built[0].selectedDate)) landing = built[0].selectedDate;
 
         if (missing.length) {
           const named = missing.filter(Boolean);
           setNotice(named.length ? t.missing(named.join('、')) : t.missingUnnamed);
         } else if (moved) setNotice(t.unavailable);
         try { sessionStorage.setItem(guardKey, '1'); } catch { /* 无痕模式：最多重复填一次 */ }
+      } else {
+        // 同一链接刷新：购物车已经是那一单，日期条照样跳到它的日子
+        const first = [...useCartStore.getState().cart].map(b => b.selectedDate).filter(d => days.includes(d)).sort()[0];
+        if (first) landing = first;
       }
     }
+    setDay(landing);
     setReady(true);
-  }, [dates, addBundle, clearCart, bundleFor, locale, t]);
+  }, [dates, days, addBundle, clearCart, bundleFor, locale, t, weeklyMenu]);
+
+  // 选中的日期 chip 滚进视野
+  const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  useEffect(() => {
+    chipRefs.current[day]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [day]);
 
   // 午/晚切换：整车统一（这一页刻意不支持一单里午晚混点 —— 那是首页的场景）
   const switchMeal = (next: 'lunch' | 'dinner') => {
@@ -296,26 +353,23 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
       updateBundle(b.cartItemId, { selectedTime: slotOn(b.selectedDate, next === 'dinner') }));
   };
 
-  /** 这道菜在购物车里对应的 bundle（同菜 + 它的可点日 + 当前午/晚）。 */
-  const bundleOf = useCallback((dish: MenuItem) => {
-    const info = dates[dish.id];
-    if (!info?.actualDate) return undefined;
-    const time = slotOn(info.actualDate, meal === 'dinner');
-    return cart.find(b => b.dish?.id === dish.id && b.selectedDate === info.actualDate && b.selectedTime === time);
-  }, [cart, dates, meal]);
+  /** 这道菜在「选中的那天 + 当前午/晚」对应的购物车 bundle。 */
+  const bundleOf = useCallback((dish: MenuItem, ymd: string) => {
+    const time = slotOn(ymd, meal === 'dinner');
+    return cart.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time);
+  }, [cart, meal]);
 
-  const addDish = (dish: MenuItem) => {
-    const info = dates[dish.id];
-    if (!info || info.disabled || !info.actualDate) return;
-    const time = slotOn(info.actualDate, meal === 'dinner');
-    const hit = bundleOf(dish);
+  const addDish = (dish: MenuItem, ymd: string) => {
+    if (!isDishOrderableOn(dish, ymd).ok) return;
+    const time = slotOn(ymd, meal === 'dinner');
+    const hit = bundleOf(dish, ymd);
     if (hit) {
       updateBundle(hit.cartItemId, {
         dishQty: (hit.dishQty || 1) + 1,
         price: getDishPrice(dish.price) * ((hit.dishQty || 1) + 1),
       });
     } else {
-      addBundle(bundleFor(dish, 1, info.actualDate, time, cart.length));
+      addBundle(bundleFor(dish, 1, ymd, time, cart.length));
     }
   };
 
@@ -329,71 +383,92 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
 
   const total = calcCartTotal(cart);
   const count = calcCartCount(cart);
+  const countOn = useCallback((ymd: string) => cart.filter(b => b.selectedDate === ymd).reduce((s, b) => s + (b.dishQty || 1), 0), [cart]);
 
-  // 「明天 8月17日（周一）」而不是裸 YYYY-MM-DD —— 6 点截单最容易让人误会的
-  // 就是「中午问，答案是明天」，日期必须一眼看懂。
+  const todayYmd = useMemo(() => formatYMD(new Date()), []);
+  const tomorrowYmd = useMemo(() => addDaysYmd(todayYmd, 1), [todayYmd]);
+  /** 「明天 9月10日（周四）」而不是裸 YYYY-MM-DD —— 6 点截单最容易让人误会的就是「中午问，答案是明天」。 */
   const fmtDate = useCallback((ymd: string) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '';
-    const d = new Date(`${ymd}T00:00:00`);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+    const wd = weekdayOfYMD(ymd);
+    if (wd === null) return '';
+    const [, m, d] = ymd.split('-').map(Number);
+    const rel = ymd === todayYmd ? t.today : ymd === tomorrowYmd ? t.tomorrow : '';
     if (locale === 'en') {
-      const rel = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : '';
-      const md = `${WD_EN_SHORT[d.getDay()]} ${d.getDate()} ${MONTH_EN[d.getMonth()]}`;
+      const md = `${WD_EN_SHORT[wd]} ${d} ${MONTH_EN[m - 1]}`;
       return rel ? `${rel}, ${md}` : md;
     }
-    const rel = diff === 0 ? '今天 ' : diff === 1 ? '明天 ' : '';
-    return `${rel}${d.getMonth() + 1}月${d.getDate()}日（周${WD_ZH[d.getDay()]}）`;
-  }, [locale]);
+    return `${rel ? rel + ' ' : ''}${m}月${d}日（周${WD_ZH[wd]}）`;
+  }, [locale, t, todayYmd, tomorrowYmd]);
+  /** 日期条上的两行：上「明天 / 周五」，下「10/9」。 */
+  const chipLabel = useCallback((ymd: string) => {
+    const wd = weekdayOfYMD(ymd) ?? 0;
+    const [, m, d] = ymd.split('-').map(Number);
+    const top = ymd === todayYmd ? t.today : ymd === tomorrowYmd ? t.tomorrow : t.wd(wd);
+    const bottom = locale === 'en' ? `${d} ${MONTH_EN[m - 1]}` : `${m}/${d}`;
+    return { top, bottom, wd };
+  }, [locale, t, todayYmd, tomorrowYmd]);
 
-  // ⚠️ 复购链接里的几道菜**可能落在不同配送日**（各自的最近可点日：常驻菜是明天，
-  // 周三特餐就是周三）。CartDrawer 本来就支持拆成多单分日送，机制没问题 ——
-  // 但页头只显示第一项的日期会让客户以为一起送。日期不一致时必须说清楚。
   const cartDates = useMemo(
     () => Array.from(new Set(cart.map(b => b.selectedDate).filter(Boolean))).sort(),
     [cart],
   );
   const multiDate = cartDates.length > 1;
-  const activeDate = cartDates[0] || (orderable[0] ? dates[orderable[0].id]?.actualDate : '') || '';
-  const dateLabel = useMemo(
-    () => (multiDate ? t.multiDate(cartDates.length) : fmtDate(activeDate)),
-    [multiDate, cartDates.length, activeDate, fmtDate, t],
-  );
-
-  // 碗妈每天只做当天排的菜（周三特餐就是周三）：菜单按送达日分组、每组一个日期
-  // 标题；已选的菜永远带日期徽章。
-  const todayYmd = useMemo(() => formatYMD(new Date()), []);
-  const dayGroups = useMemo(() => {
-    const byDate = new Map<string, MenuItem[]>();
-    for (const d of orderable) {
-      const ymd = dates[d.id]?.actualDate;
-      if (!ymd) continue;
-      if (!byDate.has(ymd)) byDate.set(ymd, []);
-      byDate.get(ymd)!.push(d);
-    }
-    return Array.from(byDate.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [orderable, dates]);
   const cartSorted = useMemo(
     () => [...cart].sort((a, b) => (a.selectedDate || '').localeCompare(b.selectedDate || '')),
     [cart],
   );
-  const DateChip = ({ ymd }: { ymd: string }) => {
-    const isToday = ymd === todayYmd;
+  const DateChip = ({ ymd }: { ymd: string }) => (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
+      ymd === todayYmd ? 'bg-[#EAF5EE] text-[#3B7A57]' : 'bg-[#FFF4E5] text-[#B4661E]'}`}>
+      {t.dayChip(fmtDate(ymd))}
+    </span>
+  );
+
+  const DishCard = ({ d }: { d: MenuItem }) => {
+    const hit = bundleOf(d, day);
+    const qty = hit ? (hit.dishQty || 1) : 0;
+    const sub = locale === 'en' ? (d.descEn || '') : (d.nameEn || d.desc || '');
     return (
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap ${
-        isToday ? 'bg-[#EAF5EE] text-[#3B7A57]' : 'bg-[#FFF4E5] text-[#B4661E]'}`}>
-        {isToday ? t.todayChip : t.dayChip(fmtDate(ymd))}
-      </span>
+      <li className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${qty ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
+        <button type="button" onClick={() => addDish(d, day)} aria-label={locale === 'en' ? d.nameEn : d.name}
+          className="relative w-[84px] h-[84px] rounded-xl overflow-hidden shrink-0 bg-[#E3EADA] active:scale-[0.98] transition">
+          <DishThumb dish={d} size="84px" />
+        </button>
+        <div className="flex-1 min-w-0 self-stretch flex flex-col justify-between py-0.5">
+          <div className="min-w-0">
+            <p className="text-[15px] font-bold leading-snug line-clamp-2">{locale === 'en' ? d.nameEn : d.name}</p>
+            {sub && <p className="text-[12px] text-[#8A8A8A] mt-0.5 truncate">{sub}</p>}
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-1.5">
+            <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
+            {qty === 0 ? (
+              <button type="button" onClick={() => addDish(d, day)} aria-label="add"
+                className="w-9 h-9 rounded-full bg-[#B4661E] text-white flex items-center justify-center shadow-[0_2px_6px_rgba(180,102,30,0.35)] active:scale-95 transition">
+                <Plus className="w-4 h-4" strokeWidth={2.5} />
+              </button>
+            ) : (
+              <div className="flex items-center rounded-full bg-[#B4661E] text-white">
+                <button type="button" aria-label="minus" onClick={() => hit && stepQty(hit.cartItemId, -1)} className="w-9 h-9 flex items-center justify-center">
+                  <Minus className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+                <span className="text-[14px] font-bold w-5 text-center tabular-nums">{qty}</span>
+                <button type="button" aria-label="plus" onClick={() => addDish(d, day)} className="w-9 h-9 flex items-center justify-center">
+                  <Plus className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </li>
     );
   };
 
   return (
-    // 桌面端：整页收成手机宽的一栏居中（之前卡片横拉满屏，2000px 宽的白条像没做完）。
-    // 移动端 max-w-lg 就是全宽。
+    // 桌面端：整页收成手机宽的一栏居中。移动端 max-w-lg 就是全宽。
     <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] flex flex-col">
       {/* ── 头部：品牌 + 三个信任点，不放导航（这一页只有一个出口：结账）── */}
       <header className="w-full bg-gradient-to-b from-[#F3EEE2] to-[#FDFBF7]">
-        <div className="max-w-lg mx-auto px-5 pt-6 pb-4">
+        <div className="max-w-lg mx-auto px-5 pt-6 pb-3">
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-2 ring-white">
               <Image src="/logo.webp" alt="" fill sizes="48px" className="object-cover" priority />
@@ -411,38 +486,57 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         </div>
       </header>
 
+      {/* ── 日期条：粘在顶上，横滑 ── */}
+      <div className="sticky top-0 z-10 bg-[#FDFBF7]/95 backdrop-blur border-b border-[#EFE9DD]">
+        <div className="max-w-lg mx-auto">
+          <p className="px-5 pt-2 text-[11.5px] font-semibold text-[#8A8A8A]">{t.pickDay}</p>
+          <div className="flex gap-2 overflow-x-auto px-5 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(ready ? days : []).map(ymd => {
+              const { top, bottom, wd } = chipLabel(ymd);
+              const on = ymd === day;
+              const n = countOn(ymd);
+              const isMon = wd === 1 && ymd !== days[0];
+              return (
+                <button key={ymd} type="button" onClick={() => setDay(ymd)} aria-pressed={on}
+                  ref={el => { chipRefs.current[ymd] = el; }}
+                  className={`relative shrink-0 min-w-[64px] px-3 py-1.5 rounded-2xl border text-center transition ${
+                    on ? 'bg-[#3B7A57] border-[#3B7A57] text-white shadow-[0_3px_10px_rgba(59,122,87,0.3)]'
+                       : 'bg-white border-[#E5DFD3] text-[#1A2D23]'} ${isMon && !on ? 'ml-2' : ''}`}>
+                  <span className={`block text-[11px] font-semibold ${on ? 'text-white/85' : 'text-[#8A8A8A]'}`}>{top}</span>
+                  <span className="block text-[14px] font-extrabold leading-tight tabular-nums">{bottom}</span>
+                  {n > 0 && (
+                    <span className={`absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10.5px] font-bold flex items-center justify-center ${
+                      on ? 'bg-white text-[#3B7A57]' : 'bg-[#B4661E] text-white'}`}>{n}</span>
+                  )}
+                </button>
+              );
+            })}
+            {!ready && [0, 1, 2, 3, 4].map(i => <div key={i} className="shrink-0 w-[68px] h-[46px] rounded-2xl bg-[#EFE9DD] animate-pulse" />)}
+          </div>
+        </div>
+      </div>
+
       <main className="flex-1 w-full max-w-lg mx-auto px-5 pb-36">
         {/* 午/晚：等宽两半，一眼看到哪个亮着 */}
-        <div className="grid grid-cols-2 rounded-2xl bg-[#E3EADA] p-1 mt-1">
+        <div className="grid grid-cols-2 rounded-2xl bg-[#E3EADA] p-1 mt-3">
           {(['lunch', 'dinner'] as const).map(m => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => switchMeal(m)}
-              aria-pressed={meal === m}
+            <button key={m} type="button" onClick={() => switchMeal(m)} aria-pressed={meal === m}
               className={`py-2.5 rounded-xl text-[13.5px] font-bold transition ${
-                meal === m ? 'bg-white text-[#1A2D23] shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'text-[#7A8A7E]'
-              }`}
-            >
+                meal === m ? 'bg-white text-[#1A2D23] shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'text-[#7A8A7E]'}`}>
               {m === 'lunch' ? t.lunch : t.dinner}
             </button>
           ))}
         </div>
 
         {ready && promoOn && (
-          <p className="mt-3 text-[12.5px] font-semibold text-[#3B7A57] bg-[#EAF5EE] rounded-xl px-3 py-2">
-            {t.promo(FIRST_ORDER_PROMO_RM)}
-          </p>
+          <p className="mt-3 text-[12.5px] font-semibold text-[#3B7A57] bg-[#EAF5EE] rounded-xl px-3 py-2">{t.promo(FIRST_ORDER_PROMO_RM)}</p>
         )}
+        {notice && <p className="mt-3 text-[12.5px] text-[#B4661E] bg-[#FFF4E5] rounded-xl px-3 py-2">{notice}</p>}
 
-        {notice && (
-          <p className="mt-3 text-[12.5px] text-[#B4661E] bg-[#FFF4E5] rounded-xl px-3 py-2">{notice}</p>
-        )}
-
-        {/* 骨架屏：三张灰卡，别让客户盯着「载入中…」 */}
+        {/* 骨架屏 */}
         {!ready && (
           <div className="mt-5 space-y-3 animate-pulse" aria-hidden>
-            <div className="h-4 w-40 rounded bg-[#EFE9DD]" />
+            <div className="h-4 w-32 rounded bg-[#EFE9DD]" />
             {[0, 1, 2].map(i => (
               <div key={i} className="flex gap-3 bg-white rounded-2xl p-3">
                 <div className="w-[84px] h-[84px] rounded-xl bg-[#EFE9DD]" />
@@ -461,36 +555,28 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
           <section className="mt-4 bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
             <div className="flex items-baseline justify-between px-4 pt-3 pb-1">
               <h2 className="text-[13px] font-bold">{t.picked}</h2>
-              <p className="text-[12px] text-[#6B6B6B]">{multiDate ? '' : t.forDate(dateLabel)}</p>
+              {multiDate && <p className="text-[11.5px] text-[#B4661E]">{t.multiDate(cartDates.length)}</p>}
             </div>
-            {multiDate && (
-              <p className="mx-4 mb-1 text-[12px] text-[#B4661E] bg-[#FFF4E5] rounded-lg px-2.5 py-1.5">{dateLabel}</p>
-            )}
             <ul className="divide-y divide-[#F1ECE2]">
               {cartSorted.map(b => (
                 <li key={b.cartItemId} className="flex items-center gap-2 px-4 py-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold leading-snug truncate">
-                      {locale === 'en' ? b.dish?.nameEn : b.dish?.name}
-                    </p>
+                    <p className="text-[14px] font-semibold leading-snug truncate">{locale === 'en' ? b.dish?.nameEn : b.dish?.name}</p>
                     <p className="text-[12px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
                       <span>RM{(getDishPrice(b.dish?.price ?? 0) * (b.dishQty || 1)).toFixed(2)}</span>
                       {b.selectedDate && <DateChip ymd={b.selectedDate} />}
                     </p>
                   </div>
                   <div className="flex items-center rounded-full border border-[#E5DFD3] bg-[#FDFBF7]">
-                    <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)}
-                      className="w-8 h-8 flex items-center justify-center text-[#6B6B6B]">
+                    <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)} className="w-8 h-8 flex items-center justify-center text-[#6B6B6B]">
                       <Minus className="w-3.5 h-3.5" />
                     </button>
                     <span className="text-[14px] font-bold w-5 text-center tabular-nums">{b.dishQty || 1}</span>
-                    <button type="button" aria-label="plus" onClick={() => stepQty(b.cartItemId, 1)}
-                      className="w-8 h-8 flex items-center justify-center text-[#B4661E]">
+                    <button type="button" aria-label="plus" onClick={() => stepQty(b.cartItemId, 1)} className="w-8 h-8 flex items-center justify-center text-[#B4661E]">
                       <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <button type="button" aria-label="remove" onClick={() => removeFromCart(b.cartItemId)}
-                    className="w-8 h-8 flex items-center justify-center text-[#C4C4C4]">
+                  <button type="button" aria-label="remove" onClick={() => removeFromCart(b.cartItemId)} className="w-8 h-8 flex items-center justify-center text-[#C4C4C4]">
                     <X className="w-4 h-4" />
                   </button>
                 </li>
@@ -499,68 +585,24 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
           </section>
         )}
 
-        {/* 菜单：常驻可见，按送达日分组，卡片上直接加减 */}
-        {ready && (
+        {/* 那天的菜：⭐ 当日精选 → 🍚 每天都有 */}
+        {ready && day && (
           <div className="mt-5">
-            <p className="text-[13.5px] font-bold">{cart.length === 0 ? t.empty : t.pickHint}</p>
-            {cart.length === 0 && <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t.pickHint}</p>}
-            {dayGroups.map(([ymd, dishes]) => {
-              const isToday = ymd === todayYmd;
-              return (
-                <section key={ymd} className="mt-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold ${
-                      isToday ? 'bg-[#3B7A57] text-white' : 'bg-[#B4661E] text-white'}`}>
-                      {t.groupHeader(fmtDate(ymd))}
-                    </span>
-                    <span className="text-[11.5px] text-[#8A8A8A]">{t.groupSub(dishes.length)}</span>
-                  </div>
-                  <ul className="space-y-2.5">
-                    {dishes.map(d => {
-                      const hit = bundleOf(d);
-                      const qty = hit ? (hit.dishQty || 1) : 0;
-                      const sub = locale === 'en' ? (d.descEn || '') : (d.nameEn || d.desc || '');
-                      return (
-                        <li key={d.id} className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${
-                          qty ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
-                          <button type="button" onClick={() => addDish(d)} aria-label={locale === 'en' ? d.nameEn : d.name}
-                            className="relative w-[84px] h-[84px] rounded-xl overflow-hidden shrink-0 bg-[#E3EADA] active:scale-[0.98] transition">
-                            <DishThumb dish={d} size="84px" />
-                          </button>
-                          <div className="flex-1 min-w-0 self-stretch flex flex-col justify-between py-0.5">
-                            <div className="min-w-0">
-                              <p className="text-[15px] font-bold leading-snug line-clamp-2">{locale === 'en' ? d.nameEn : d.name}</p>
-                              {sub && <p className="text-[12px] text-[#8A8A8A] mt-0.5 truncate">{sub}</p>}
-                            </div>
-                            <div className="flex items-center justify-between gap-2 mt-1.5">
-                              <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
-                              {qty === 0 ? (
-                                <button type="button" onClick={() => addDish(d)} aria-label="add"
-                                  className="w-9 h-9 rounded-full bg-[#B4661E] text-white flex items-center justify-center shadow-[0_2px_6px_rgba(180,102,30,0.35)] active:scale-95 transition">
-                                  <Plus className="w-4 h-4" strokeWidth={2.5} />
-                                </button>
-                              ) : (
-                                <div className="flex items-center rounded-full bg-[#B4661E] text-white">
-                                  <button type="button" aria-label="minus" onClick={() => hit && stepQty(hit.cartItemId, -1)}
-                                    className="w-9 h-9 flex items-center justify-center">
-                                    <Minus className="w-4 h-4" strokeWidth={2.5} />
-                                  </button>
-                                  <span className="text-[14px] font-bold w-5 text-center tabular-nums">{qty}</span>
-                                  <button type="button" aria-label="plus" onClick={() => addDish(d)}
-                                    className="w-9 h-9 flex items-center justify-center">
-                                    <Plus className="w-4 h-4" strokeWidth={2.5} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </section>
-              );
-            })}
+            {dayMenu.length === 0 && (
+              <p className="text-[13px] text-[#8A8A8A] bg-white rounded-2xl px-4 py-6 text-center">{t.noMenu}</p>
+            )}
+            {specials.length > 0 && (
+              <section>
+                <h2 className="text-[13.5px] font-bold mb-2">{t.specials(locale === 'en' ? WD_EN_SHORT[weekdayOfYMD(day) ?? 0] : `周${WD_ZH[weekdayOfYMD(day) ?? 0]}`)}</h2>
+                <ul className="space-y-2.5">{specials.map(d => <DishCard key={d.id} d={d} />)}</ul>
+              </section>
+            )}
+            {dailies.length > 0 && (
+              <section className={specials.length ? 'mt-5' : ''}>
+                <h2 className="text-[13.5px] font-bold mb-2">{t.daily}</h2>
+                <ul className="space-y-2.5">{dailies.map(d => <DishCard key={d.id} d={d} />)}</ul>
+              </section>
+            )}
             <p className="mt-6 text-[11.5px] text-[#A5A5A5] text-center">{t.cutoff}</p>
           </div>
         )}
@@ -571,7 +613,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-[#EFE9DD] px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-4 max-w-lg mx-auto">
             <div className="min-w-0">
-              <p className="text-[11px] text-[#8A8A8A]">{t.total} · {t.portions(count)}</p>
+              <p className="text-[11px] text-[#8A8A8A]">{t.total} · {t.portions(count)}{!multiDate && cartDates[0] ? ` · ${t.dayChip(fmtDate(cartDates[0]))}` : ''}</p>
               <p className="text-[20px] font-extrabold leading-tight tabular-nums">RM{total.toFixed(2)}</p>
             </div>
             <button type="button" onClick={() => setIsCartOpen(true)}
