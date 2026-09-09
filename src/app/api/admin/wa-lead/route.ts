@@ -82,6 +82,11 @@ function toIntl(raw: unknown): string {
 interface TemplateRow { name: string; lang: string; bodyText: string; paramCount: number }
 let tplCache: { at: number; rows: TemplateRow[]; error?: string } | null = null;
 const TPL_TTL_MS = 10 * 60 * 1000;
+/**
+ * 收件箱不给用的模板。window_reopen_* 提交时是 UTILITY，Meta 审成 MARKETING（2026-09-09）——
+ * 拿它「拉回超 24h 没回的客户」每条都按营销价收，老板拍板不用。不在列表里 = 下拉选不到、send 也拒。
+ */
+const TPL_DENY = /^window_reopen_/;
 
 async function listTemplates(): Promise<{ templates: TemplateRow[]; configured: boolean; error?: string }> {
   // 正式 WABA 不是密钥，直接给默认值；沙盒 1092790916611496 上建不了模板
@@ -101,7 +106,7 @@ async function listTemplates(): Promise<{ templates: TemplateRow[]; configured: 
     const j: any = await res.json().catch(() => ({}));
     if (!res.ok || j?.error) throw new Error(j?.error?.message || `HTTP ${res.status}`);
     const rows: TemplateRow[] = (j.data || [])
-      .filter((t: any) => t.status === 'APPROVED')
+      .filter((t: any) => t.status === 'APPROVED' && !TPL_DENY.test(String(t.name)))
       .map((t: any) => {
         const body = (t.components || []).find((c: any) => c.type === 'BODY');
         const text = String(body?.text || '');
