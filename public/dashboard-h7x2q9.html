@@ -8905,7 +8905,7 @@ incredibowl.my`,
             try {
                 const r = await callAdminAPI('/api/admin/wa-lead', { op: 'assets' });
                 inboxAssets = r.dishes || [];
-                if (inbox.mode === 'media') renderInboxAttach();
+                if (inbox.mode === 'media') renderInboxAttach(true);
             } catch { /* 拿不到就只剩手填链接，不影响发送 */ }
         }
         const inboxDishAssets = () => inboxAssets || [];
@@ -8925,12 +8925,13 @@ incredibowl.my`,
         }
 
         /** 窗口过期时的 composer：模板下拉 + 变量输入 + 预览。 */
-        function renderInboxTemplatePanel() {
+        function renderInboxTemplatePanel(force) {
             const box = $('#inboxAttach');
             box.hidden = false;
             const st = inboxTemplates || {};
-            if (st.loading) { box.innerHTML = '<div class="inbox-attach-title">读取已过审模板…</div>'; return; }
+            if (st.loading) { box.dataset.mode = 'template:loading'; box.innerHTML = '<div class="inbox-attach-title">读取已过审模板…</div>'; return; }
             if (st.error || !(st.templates || []).length) {
+                box.dataset.mode = 'template:none';
                 box.innerHTML = `<div class="inbox-attach-title">窗口外只能发模板</div>
                     <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(st.error || '还没有已过审的模板。跑 node scripts/wa-templates.mjs submit all --apply 提交，过审后这里就有了。')}</div>`;
                 return;
@@ -8938,6 +8939,9 @@ incredibowl.my`,
             const cur = inbox.tpl || st.templates[0].name;
             const t = st.templates.find(x => x.name === cur) || st.templates[0];
             inbox.tpl = t.name;
+            // 同一个模板已画好就不重画，否则刷新一次变量框就清一次（换模板时 key 变了会重画）
+            if (!force && box.dataset.mode === 'template:' + t.name) return;
+            box.dataset.mode = 'template:' + t.name;
             const params = Array.from({ length: t.paramCount }, (_, i) => inbox.tplParams?.[i] || '');
             box.innerHTML = `
                 <div class="inbox-attach-title">24 小时窗口已过，只能发 Meta 审核过的模板</div>
@@ -9179,10 +9183,14 @@ incredibowl.my`,
         }
 
         /** 📎 / 🔘 / 📋 三个模式各自的输入面板。text 模式什么都不显示。 */
-        function renderInboxAttach() {
+        /** force=true 才允许在同一模式下重画。线程每 10 秒刷新一次都会经过这里，
+         *  重画 = 老板正在填的按钮文字 / 链接 / 列表行全被清空（2026-09-10 老板反馈）。 */
+        function renderInboxAttach(force) {
             const box = $('#inboxAttach');
-            if (inbox.mode === 'template') { renderInboxTemplatePanel(); return; }
-            if (inbox.mode === 'text') { box.hidden = true; box.innerHTML = ''; return; }
+            if (inbox.mode === 'template') { renderInboxTemplatePanel(force); return; }
+            if (inbox.mode === 'text') { box.hidden = true; box.innerHTML = ''; box.dataset.mode = ''; return; }
+            if (!force && box.dataset.mode === inbox.mode) return;
+            box.dataset.mode = inbox.mode;
             box.hidden = false;
             if (inbox.mode === 'media') {
                 // 菜品图走 /meta-jpg/（Meta 图片消息不收 webp，站上默认就是 webp）
