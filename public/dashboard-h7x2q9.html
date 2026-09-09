@@ -660,9 +660,9 @@
         .section-head .section-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
         /* ═══════ 碗妈收件箱（WATI 式三栏）═══════ */
-        .inbox-nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; line-height: 14px; }
+        .inbox-nav-badge { margin-left: auto; background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; line-height: 14px; }
         .inbox-wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr) 280px; gap: 12px; height: calc(100vh - 150px); min-height: 520px; }
-        .inbox-left, .inbox-main, .inbox-right { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+        .inbox-left, .inbox-main, .inbox-right { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
         .inbox-tools { padding: 10px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
         .inbox-tools input[type=search] { width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; }
         .inbox-seg { flex-wrap: wrap; }
@@ -671,7 +671,7 @@
         .inbox-row { display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; align-items: flex-start; }
         .inbox-row:hover { background: var(--bg-subtle); }
         .inbox-row.active { background: var(--accent-soft); }
-        .inbox-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: 0 0 36px; color: var(--text-muted); }
+        .inbox-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; flex: 0 0 32px; color: var(--text-muted); }
         .inbox-row.unread .inbox-avatar { background: var(--accent-soft); color: var(--accent); }
         .inbox-row-main { flex: 1; min-width: 0; }
         .inbox-row-top { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
@@ -684,30 +684,31 @@
         .inbox-chip.human { background: var(--danger-soft); color: var(--danger); }
         .inbox-chip.ok { background: var(--success-soft); color: var(--success); }
         .inbox-chip.warn { background: rgba(245,158,11,0.14); color: #B45309; }
-        .inbox-unread { background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 18px; text-align: center; }
+        .inbox-unread { background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 18px; text-align: center; }
         .inbox-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
         .inbox-head-name { font-weight: 700; font-size: 15px; }
         .inbox-head-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .inbox-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
         .inbox-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
-        .inbox-day { align-self: center; font-size: 11px; color: var(--text-muted); background: var(--bg-elev); border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; margin: 8px 0 4px; }
-        .inbox-bubble { max-width: 72%; padding: 8px 11px; border-radius: 14px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; position: relative; }
+        .inbox-day { align-self: stretch; display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-muted); margin: 10px 0 4px; }
+        .inbox-day::before, .inbox-day::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .inbox-bubble { max-width: 72%; padding: 8px 11px; border-radius: 10px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; position: relative; }
         .inbox-bubble .t { display: block; font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right; }
         .inbox-bubble.in { align-self: flex-start; background: var(--bg-elev); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-        .inbox-bubble.out { align-self: flex-end; background: #DCF3E6; border-bottom-right-radius: 4px; }
-        .inbox-bubble.nudge { align-self: flex-end; background: #EEF8F1; border: 1px dashed #9AD0AF; border-bottom-right-radius: 4px; }
-        .inbox-bubble.bc { align-self: flex-end; background: #EEF1F8; border: 1px dashed #9AAFD0; border-bottom-right-radius: 4px; }
-        .inbox-bubble.boss { align-self: flex-end; background: #F6E7CF; border-bottom-right-radius: 4px; }
+        .inbox-bubble.out { align-self: flex-end; background: var(--bg-subtle); border-bottom-right-radius: 4px; }
+        .inbox-bubble.nudge { align-self: flex-end; background: var(--bg-subtle); border-left: 3px solid var(--accent); border-bottom-right-radius: 4px; }
+        .inbox-bubble.bc { align-self: flex-end; background: var(--bg-subtle); border-left: 3px solid var(--info); border-bottom-right-radius: 4px; }
+        .inbox-bubble.boss { align-self: flex-end; background: var(--primary-soft); border-bottom-right-radius: 4px; }
         .inbox-bubble.sys { align-self: center; max-width: 90%; background: transparent; color: var(--text-muted); font-size: 11px; padding: 2px 8px; }
-        .inbox-bubble .who { display: block; font-size: 10px; font-weight: 700; color: var(--text-muted); margin-bottom: 2px; }
+        .inbox-bubble .who { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); margin-bottom: 2px; }
         .inbox-tick { margin-left: 5px; letter-spacing: -1px; }
         .inbox-tick.read { color: #34b7f1; }
         .inbox-tick.failed { color: var(--danger); letter-spacing: 0; }
         .inbox-quote { border-left: 3px solid var(--border-strong); padding: 2px 0 2px 7px; margin-bottom: 5px; font-size: 11px; color: var(--text-muted); max-height: 34px; overflow: hidden; }
         .inbox-media { display: block; max-width: 240px; max-height: 240px; border-radius: 8px; margin: 2px 0 4px; cursor: pointer; background: var(--bg-elev); }
         .inbox-media-file { display: inline-block; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); margin: 2px 0 4px; }
-        .inbox-attach { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-elev); }
-        .inbox-emoji { border: 1px solid var(--border); border-radius: 10px; padding: 6px 8px; background: var(--bg-elev); display: flex; flex-wrap: wrap; gap: 2px; }
+        .inbox-attach { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-elev); }
+        .inbox-emoji { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; background: var(--bg-elev); display: flex; flex-wrap: wrap; gap: 2px; }
         .inbox-emoji .inbox-emoji-label { width: 100%; font-size: 11px; color: var(--text-muted); padding: 2px 4px 0; }
         .inbox-emoji button { border: 0; background: transparent; font-size: 20px; line-height: 1; padding: 4px 5px; border-radius: 6px; cursor: pointer; font-family: inherit; }
         .inbox-emoji button:hover { background: var(--bg-subtle); }
@@ -717,14 +718,23 @@
         .inbox-bubble .act { position: absolute; top: 2px; right: 6px; opacity: 0; font-size: 11px; cursor: pointer; color: var(--text-muted); }
         .inbox-bubble:hover .act { opacity: 1; }
         .inbox-composer { border-top: 1px solid var(--border); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
-        .inbox-composer textarea { width: 100%; min-height: 64px; max-height: 160px; resize: vertical; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; font-family: inherit; }
+        .inbox-composer textarea { width: 100%; min-height: 64px; max-height: 160px; resize: vertical; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; font-family: inherit; }
         .inbox-composer-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
         .inbox-composer-row select { flex: 1; min-width: 160px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 12px; }
         .inbox-window { font-size: 11px; color: var(--text-muted); }
         .inbox-window.closed { color: var(--danger); font-weight: 600; }
         .inbox-right { padding: 12px; overflow-y: auto; gap: 12px; font-size: 12px; }
-        .inbox-section-title { font-weight: 700; font-size: 12px; margin-bottom: 6px; }
-        .inbox-kv { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+        .inbox-section-title { font-weight: 600; font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 6px; }
+        /* 收件箱内的按钮层级：每区一个实心主按钮，其余 ghost = 透明底细边框，hover 才上底色 */
+        .inbox-wrap .btn.ghost { background: transparent; border: 1px solid var(--border-strong); color: var(--text-secondary); }
+        .inbox-wrap .btn.ghost:hover { background: var(--bg-subtle); color: var(--text); transform: none; box-shadow: none; }
+        .inbox-wrap .btn.ghost.danger-text { color: var(--danger); }
+        .inbox-wrap .btn.ghost.danger-text:hover { background: var(--danger-soft); }
+        .inbox-icon-btn { width: 28px; height: 28px; padding: 0 !important; justify-content: center; }
+        .inbox-icon-btn svg { pointer-events: none; }
+        .inbox-icon-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+        .inbox-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+        .inbox-kv { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
         .inbox-kv span:first-child { color: var(--text-muted); }
         .inbox-thread-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; }
         @media (max-width: 1180px) { .inbox-wrap { grid-template-columns: 260px minmax(0, 1fr); } .inbox-right { grid-column: 1 / -1; height: 260px; } .inbox-wrap { height: auto; } .inbox-left, .inbox-main { height: calc(100vh - 460px); min-height: 420px; } }
@@ -1801,8 +1811,8 @@
                                 <div class="seg inbox-seg" id="inboxFilter">
                                     <button class="active" data-f="all">全部</button>
                                     <button data-f="unread">未读 <span id="inboxUnreadCount"></span></button>
-                                    <button data-f="human">🙋 人工中</button>
-                                    <button data-f="bot">🤖 bot</button>
+                                    <button data-f="human">人工中</button>
+                                    <button data-f="bot">bot</button>
                                     <button data-f="ordered">已成交</button>
                                     <button data-f="closed">已关闭</button>
                                 </div>
@@ -1812,15 +1822,15 @@
                         <section class="inbox-main">
                             <div id="inboxHead" class="inbox-head" hidden></div>
                             <div id="inboxMsgs" class="inbox-msgs" hidden></div>
-                            <div id="inboxEmpty" class="inbox-thread-empty">← 左边选一个对话</div>
+                            <div id="inboxEmpty" class="inbox-thread-empty">选择一个对话</div>
                             <div id="inboxComposer" class="inbox-composer" hidden>
                                 <div class="inbox-composer-row">
-                                    <select id="inboxQr"><option value="">⚡ 快捷回复…</option></select>
-                                    <button class="btn ghost sm" id="inboxQrEditBtn" title="编辑快捷回复（每行一条）">✎</button>
-                                    <button class="btn ghost sm inbox-mode" data-mode="media" title="发图片或文件">📎</button>
-                                    <button class="btn ghost sm inbox-mode" data-mode="buttons" title="发按钮（客户点一下就回）">🔘</button>
-                                    <button class="btn ghost sm inbox-mode" data-mode="list" title="发列表（最多 10 项）">📋</button>
-                                    <button class="btn ghost sm" id="inboxEmojiBtn" title="插入 emoji">😊</button>
+                                    <select id="inboxQr"><option value="">快捷回复</option></select>
+                                    <button class="btn ghost sm inbox-icon-btn" id="inboxQrEditBtn" title="编辑快捷回复（每行一条）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                                    <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="media" title="发图片或文件"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+                                    <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="buttons" title="发按钮（客户点一下就回）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/></svg></button>
+                                    <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="list" title="发列表（最多 10 项）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+                                    <button class="btn ghost sm inbox-icon-btn" id="inboxEmojiBtn" title="插入表情"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
                                     <span class="inbox-window" id="inboxWindow"></span>
                                 </div>
                                 <div id="inboxEmoji" class="inbox-emoji" hidden></div>
@@ -1828,12 +1838,12 @@
                                     <textarea id="inboxQrText" placeholder="每行一条快捷回复"></textarea>
                                     <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存快捷回复</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
                                 </div>
-                                <div id="inboxReplyBar" class="inbox-reply-bar" hidden><span id="inboxReplyText" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn ghost sm" id="inboxReplyCancel">✕</button></div>
+                                <div id="inboxReplyBar" class="inbox-reply-bar" hidden><span id="inboxReplyText" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn ghost sm inbox-icon-btn" id="inboxReplyCancel" title="取消引用"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
                                 <div id="inboxAttach" class="inbox-attach" hidden></div>
-                                <textarea id="inboxText" placeholder="回复客户…（Ctrl+Enter 发送）从这里回复后 bot 会自动闭嘴 2 小时"></textarea>
+                                <textarea id="inboxText" placeholder="输入回复，Ctrl+Enter 发送"></textarea>
                                 <div class="inbox-composer-row" style="justify-content:space-between">
                                     <span id="inboxSendHint" class="inbox-window"></span>
-                                    <button class="btn sm" id="inboxSend">发送 ➤</button>
+                                    <button class="btn sm" id="inboxSend">发送</button>
                                 </div>
                             </div>
                         </section>
@@ -8921,7 +8931,7 @@ incredibowl.my`,
             const st = inboxTemplates || {};
             if (st.loading) { box.innerHTML = '<div class="inbox-attach-title">读取已过审模板…</div>'; return; }
             if (st.error || !(st.templates || []).length) {
-                box.innerHTML = `<div class="inbox-attach-title">📄 窗口外只能发模板</div>
+                box.innerHTML = `<div class="inbox-attach-title">窗口外只能发模板</div>
                     <div style="font-size:11px;color:var(--text-muted)">${escapeHtml(st.error || '还没有已过审的模板。跑 node scripts/wa-templates.mjs submit all --apply 提交，过审后这里就有了。')}</div>`;
                 return;
             }
@@ -8930,7 +8940,7 @@ incredibowl.my`,
             inbox.tpl = t.name;
             const params = Array.from({ length: t.paramCount }, (_, i) => inbox.tplParams?.[i] || '');
             box.innerHTML = `
-                <div class="inbox-attach-title">📄 24 小时窗口已过 —— 只能发 Meta 审核过的模板</div>
+                <div class="inbox-attach-title">24 小时窗口已过，只能发 Meta 审核过的模板</div>
                 <select id="inboxTplName">${st.templates.map(x => `<option value="${escapeHtml(x.name)}"${x.name === t.name ? ' selected' : ''}>${escapeHtml(x.name)}（${escapeHtml(x.lang)}）</option>`).join('')}</select>
                 ${params.map((v, i) => `<input class="inbox-tpl-param" data-i="${i}" placeholder="变量 {{${i + 1}}}" value="${escapeHtml(v)}">`).join('')}
                 <div style="font-size:11px;color:var(--text-muted);white-space:pre-wrap;border-top:1px solid var(--border);padding-top:6px">${escapeHtml(inboxTplPreview(t, params))}</div>`;
@@ -8943,7 +8953,7 @@ incredibowl.my`,
         /** 出站气泡右下角的勾：Meta 回执 sent → delivered → read，失败标红。 */
         function inboxTick(t) {
             if (t.role === 'in' || t.role === 'sys') return '';
-            if (t.status === 'failed') return `<span class="inbox-tick failed" title="${escapeHtml(t.err || '发送失败')}">⚠ 未送达</span>`;
+            if (t.status === 'failed') return `<span class="inbox-tick failed" title="${escapeHtml(t.err || '发送失败')}">未送达</span>`;
             if (t.status === 'read') return '<span class="inbox-tick read" title="已读">✓✓</span>';
             if (t.status === 'delivered') return '<span class="inbox-tick" title="已送达">✓✓</span>';
             if (t.status === 'sent') return '<span class="inbox-tick" title="已发出">✓</span>';
@@ -8993,11 +9003,11 @@ incredibowl.my`,
         const inboxHm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
         function inboxStatusChips(r) {
             const c = [];
-            if (r.human) c.push('<span class="inbox-chip human">🙋 人工中</span>');
+            if (r.human) c.push('<span class="inbox-chip human">人工</span>');
             else if (r.status === 'ordered') c.push('<span class="inbox-chip ok">已成交</span>');
             else if (r.status === 'closed') c.push('<span class="inbox-chip">已关闭</span>');
-            else c.push('<span class="inbox-chip ok">🤖 bot</span>');
-            if (r.clicked) c.push('<span class="inbox-chip">🔗 点过链接</span>');
+            else c.push('<span class="inbox-chip ok">bot</span>');
+            if (r.clicked) c.push('<span class="inbox-chip">已点链接</span>');
             if (r.nudgeCount) c.push(`<span class="inbox-chip">追单 ${r.nudgeCount}</span>`);
             if (r.windowRemainingMs <= 0 && r.status !== 'ordered') c.push('<span class="inbox-chip warn">24h 已过</span>');
             (r.tags || []).slice(0, 2).forEach(t => c.push(`<span class="inbox-chip">${escapeHtml(t)}</span>`));
@@ -9093,7 +9103,7 @@ incredibowl.my`,
         }
 
         function renderInboxHead(d) {
-            const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600">🙋 人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600">🤖 bot 接待中</span>';
+            const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600"><i class="inbox-dot" style="background:var(--danger)"></i>人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600"><i class="inbox-dot" style="background:var(--success)"></i>bot 接待中</span>';
             const nudge = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
             $('#inboxHead').innerHTML = `
                 <div style="min-width:0">
@@ -9102,10 +9112,10 @@ incredibowl.my`,
                 </div>
                 <div class="inbox-head-actions">
                     ${d.human
-                        ? '<button class="btn sm inbox-act" data-op="release">🤖 释放给 bot</button>'
-                        : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">🙋 接管 2h</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">到明早</button>'}
-                    ${d.status !== 'closed' && d.status !== 'ordered' ? '<button class="btn ghost sm inbox-act" data-op="close" title="停止对这个号码的自动追单">停止追单</button>' : ''}
-                    <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">📱 WhatsApp</a>
+                        ? '<button class="btn sm inbox-act" data-op="release">交回 bot</button>'
+                        : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">接管 2 小时</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">接管到明早</button>'}
+                    ${d.status !== 'closed' && d.status !== 'ordered' ? '<button class="btn ghost sm danger-text inbox-act" data-op="close" title="停止对这个号码的自动追单">停止追单</button>' : ''}
+                    <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">WhatsApp <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
                 </div>`;
         }
 
@@ -9130,9 +9140,9 @@ incredibowl.my`,
                     media = t.media.id ? `<img class="inbox-media" data-media-id="${escapeHtml(t.media.id)}" alt="图片">`
                         : t.media.link ? `<img class="inbox-media" src="${escapeHtml(t.media.link)}" alt="图片">` : '';
                 } else if (t.media) {
-                    media = `<div class="inbox-media-file">📄 ${escapeHtml(t.media.filename || t.media.kind)}</div>`;
+                    media = `<div class="inbox-media-file">文件：${escapeHtml(t.media.filename || t.media.kind)}</div>`;
                 }
-                const act = t.msgId ? `<span class="act inbox-quote-btn" data-msgid="${escapeHtml(t.msgId)}" title="引用回复">↩</span>` : '';
+                const act = t.msgId ? `<span class="act inbox-quote-btn" data-msgid="${escapeHtml(t.msgId)}" title="引用回复">引用</span>` : '';
                 return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${escapeHtml(t.text)}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
             }).join('');
             inboxHydrateMedia();
@@ -9152,20 +9162,20 @@ incredibowl.my`,
             const hasTpl = tplMode && !!(inboxTemplates?.templates || []).length;
             const canSend = d.sendConfigured && d.status !== 'closed' && (rem > 0 || hasTpl);
             btn.disabled = !canSend; ta.disabled = !canSend && !tplMode;
-            btn.textContent = tplMode ? '发模板 ➤' : '发送 ➤';
-            hint.textContent = !d.sendConfigured ? '⚠️ Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）'
+            btn.textContent = tplMode ? '发送模板' : '发送';
+            hint.textContent = !d.sendConfigured ? 'Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）'
                 : d.status === 'closed' ? '已关闭的对话不发'
                 : tplMode ? (hasTpl ? '模板消息按条计费，发出去就会重开 24 小时窗口' : '还没有已过审模板')
                 : '发送后 bot 自动闭嘴 2 小时';
             const sel = $('#inboxQr');
             const cur = sel.value;
-            sel.innerHTML = '<option value="">⚡ 快捷回复…</option>' + inboxQuickReplies().map((q, i) => `<option value="${i}">${escapeHtml(q.slice(0, 60))}</option>`).join('');
+            sel.innerHTML = '<option value="">快捷回复</option>' + inboxQuickReplies().map((q, i) => `<option value="${i}">${escapeHtml(q.slice(0, 60))}</option>`).join('');
             sel.value = cur && sel.querySelector(`option[value="${cur}"]`) ? cur : '';
             [...$$('.inbox-mode')].forEach(b => b.classList.toggle('active', b.dataset.mode === inbox.mode));
             renderInboxAttach();
             const bar = $('#inboxReplyBar');
             bar.hidden = !inbox.replyTo;
-            if (inbox.replyTo) $('#inboxReplyText').textContent = '↩ 引用：' + inbox.replyText.slice(0, 60);
+            if (inbox.replyTo) $('#inboxReplyText').textContent = '引用：' + inbox.replyText.slice(0, 60);
         }
 
         /** 📎 / 🔘 / 📋 三个模式各自的输入面板。text 模式什么都不显示。 */
@@ -9178,7 +9188,7 @@ incredibowl.my`,
                 // 菜品图走 /meta-jpg/（Meta 图片消息不收 webp，站上默认就是 webp）
                 const dishes = (typeof inboxDishAssets === 'function' ? inboxDishAssets() : []);
                 box.innerHTML = `
-                    <div class="inbox-attach-title">📎 发图片 / 文件（链接必须是公网 https）</div>
+                    <div class="inbox-attach-title">发图片 / 文件（链接必须是公网 https）</div>
                     ${dishes.length ? `<select id="inboxMediaPreset"><option value="">— 选本周菜品图 —</option>${dishes.map(d => `<option value="${escapeHtml(d.url)}">${escapeHtml(d.name)}</option>`).join('')}</select>` : ''}
                     <input id="inboxMediaLink" type="url" placeholder="https://www.incredibowl.my/meta-jpg/chicken_chop.jpg">
                     <div class="inbox-composer-row">
@@ -9188,14 +9198,14 @@ incredibowl.my`,
                     <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字会当作图片说明一起发。</div>`;
             } else if (inbox.mode === 'buttons') {
                 box.innerHTML = `
-                    <div class="inbox-attach-title">🔘 按钮（最多 3 个，每个 ≤20 字；客户点一下就当文字回过来）</div>
+                    <div class="inbox-attach-title">按钮（最多 3 个，每个 ≤20 字；客户点一下就当文字回过来）</div>
                     <input class="inbox-btn-title" placeholder="按钮 1，例：要加饭">
                     <input class="inbox-btn-title" placeholder="按钮 2，例：不用了">
                     <input class="inbox-btn-title" placeholder="按钮 3（可留空）">
                     <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字 = 按钮上方的问题。</div>`;
             } else {
                 box.innerHTML = `
-                    <div class="inbox-attach-title">📋 列表（最多 10 项，标题 ≤24 字；每行「标题 | 说明」）</div>
+                    <div class="inbox-attach-title">列表（最多 10 项，标题 ≤24 字；每行「标题 | 说明」）</div>
                     <input id="inboxListButton" placeholder="打开按钮的文字，例：看菜单" value="选择">
                     <textarea id="inboxListRows" style="min-height:80px" placeholder="香煎鸡扒 | RM12.90&#10;柠檬三文鱼 | RM15.90"></textarea>
                     <div style="font-size:11px;color:var(--text-muted)">下面输入框里的文字 = 列表上方的说明。</div>`;
@@ -9217,7 +9227,7 @@ incredibowl.my`,
             }).filter(Boolean).join('') || '<div style="color:var(--text-muted)">（还没有备注）</div>';
             $('#inboxProfile').innerHTML = `
                 <div>
-                    <div class="inbox-section-title">👤 客户</div>
+                    <div class="inbox-section-title">客户</div>
                     <div class="inbox-kv"><span>名字</span><span>${escapeHtml(user?.displayName || d.name || '—')}</span></div>
                     <div class="inbox-kv"><span>电话</span><span>${escapeHtml(d.phone)}</span></div>
                     <div class="inbox-kv"><span>账号</span><span>${user ? (user.email ? escapeHtml(user.email) : '会员') : '未注册 / 访客'}</span></div>
@@ -9227,7 +9237,7 @@ incredibowl.my`,
                     <div class="inbox-kv"><span>Lead 状态</span><span>${escapeHtml(d.status || '—')}${d.clicked ? ' · 点过链接' : ''}</span></div>
                 </div>
                 <div>
-                    <div class="inbox-section-title">📝 bot 记住的（碗妈答话会用）</div>
+                    <div class="inbox-section-title">备注（bot 会引用）</div>
                     ${profileRows}
                     <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
                         <select id="inboxNoteKey" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px">
@@ -9328,7 +9338,7 @@ incredibowl.my`,
                 const t = (inbox.detail?.turns || []).find(x => x.msgId === quoteBtn.dataset.msgid);
                 inbox.replyTo = quoteBtn.dataset.msgid; inbox.replyText = t?.text || '';
                 $('#inboxReplyBar').hidden = false;
-                $('#inboxReplyText').textContent = '↩ 引用：' + inbox.replyText.slice(0, 60);
+                $('#inboxReplyText').textContent = '引用：' + inbox.replyText.slice(0, 60);
                 $('#inboxText').focus();
                 return;
             }
