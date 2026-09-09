@@ -14,7 +14,7 @@ import {
   mergeProfileFact, renderProfileBlock, parseBossCommand,
   applyStatus, splitStatuses, splitTemplateEvents, describeSendError,
   mediaOfInbound, replyToOfInbound, parseOptOut, optOutReply,
-  RATE_LIMIT_PER_HOUR, SEEN_IDS_MAX, TURNS_MAX, SILENT_TYPES,
+  RATE_LIMIT_PER_HOUR, SEEN_IDS_MAX, TURNS_MAX, TURN_TEXT_MAX, SILENT_TYPES,
 } from '@/lib/waWebhook';
 
 let pass = 0, fail = 0;
@@ -112,8 +112,8 @@ console.log('\n=== 4. 对话记录（turns）===');
   let acc: any = t1;
   for (let i = 0; i < TURNS_MAX + 10; i++) acc = appendTurn(acc, 'out', 'r' + i, 3000 + i);
   check(`封顶 ${TURNS_MAX} 条且保留最新`, acc.length === TURNS_MAX && acc.at(-1).text === 'r' + (TURNS_MAX + 9));
-  const longText = 'x'.repeat(2000);
-  check('单条截到 600 字', appendTurn([], 'in', longText, 1)[0].text.length === 600);
+  const longText = 'x'.repeat(TURN_TEXT_MAX + 1000);
+  check(`单条截到 TURN_TEXT_MAX=${TURN_TEXT_MAX} 字`, appendTurn([], 'in', longText, 1)[0].text.length === TURN_TEXT_MAX);
   const dirty = appendTurn([{ role: 'hacker', text: 'a', ts: 'z' }, { text: 5 }, null], 'in', 'ok', 9);
   check('脏数据：非法 role → sys、非字符串 text 丢掉、null 丢掉', dirty.length === 2 && dirty[0].role === 'sys' && dirty[0].ts === 0);
 
