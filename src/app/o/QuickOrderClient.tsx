@@ -136,6 +136,18 @@ const DICT = {
 interface Props { locale?: Locale }
 
 /**
+ * 语言落点：模板/群发的按钮只能写死一个网址（改按钮要重新过审），但正文是英文、
+ * 客户里两种人都有。所以落地页自己认人：手机设中文给中文版，其余给英文版；客户
+ * 手动切过一次就永久记住（localStorage），之后不再自动跳。
+ *
+ * 跳转必须**带上 query** —— d/items/promo/lead/src 全在里面，丢了就等于客户点开
+ * 一个空页面，碗妈报的那一单没了。
+ */
+const LOCALE_KEY = 'incredibowl_o_locale';
+const AUTO_KEY = 'incredibowl_o_auto_locale';
+const pathFor = (l: Locale) => (l === 'en' ? '/en/o' : '/o');
+
+/**
  * 菜品缩略图。
  *
  * ⚠️ weeklyMenu 的 `image` **不一定是路径** —— 这个仓库允许用 emoji 当占位图
@@ -213,12 +225,39 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const { cart, addBundle, updateBundle, updateQuantity, removeFromCart, clearCart } = useCartStore();
 
   const [ready, setReady] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [meal, setMeal] = useState<'lunch' | 'dinner'>('lunch');
   const [notice, setNotice] = useState('');
   const [promoOn, setPromoOn] = useState(false);
   const [day, setDay] = useState('');
+
+  // 语言落点：记住过的选择优先，否则看手机语言。自动跳每个会话只跳一次（防来回弹），
+  // 手动切过就写进 localStorage 永久生效。localStorage 被禁（无痕）就原地不动。
+  useEffect(() => {
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(LOCALE_KEY); } catch { return; }
+    const want: Locale = stored === 'zh' || stored === 'en'
+      ? stored
+      : (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    if (want === locale) return;
+    if (!stored) {
+      try {
+        if (sessionStorage.getItem(AUTO_KEY)) return;
+        sessionStorage.setItem(AUTO_KEY, '1');
+      } catch { return; }
+    }
+    setRedirecting(true);
+    window.location.replace(pathFor(want) + window.location.search);
+  }, [locale]);
+
+  const switchLocale = (next: Locale) => {
+    if (next === locale) return;
+    try { localStorage.setItem(LOCALE_KEY, next); } catch { /* 无痕：这次切了，下次记不住 */ }
+    setRedirecting(true);
+    window.location.href = pathFor(next) + window.location.search;
+  };
 
   // 运行时排期（Firestore 权威）：version 变了日期表 / 每天的菜都重算
   const { menu: weeklyMenu, version: menuVersion } = useMenuRuntime();
@@ -484,6 +523,11 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     );
   };
 
+  // 正在换语言：给一屏干净的底色，别让客户看到旧语言闪一下再跳
+  if (redirecting) {
+    return <div className="min-h-screen bg-[#FDFBF7]" aria-busy="true" />;
+  }
+
   return (
     // 桌面端：整页收成手机宽的一栏居中。移动端 max-w-lg 就是全宽。
     <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] flex flex-col">
@@ -494,9 +538,20 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-2 ring-white">
               <Image src="/logo.webp" alt="" fill sizes="48px" className="object-cover" priority />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[17px] font-extrabold tracking-tight leading-tight">{t.brand}</p>
               <p className="text-[12.5px] text-[#6B6B6B] mt-0.5 leading-snug">{t.tagline}</p>
+            </div>
+            {/* 语言切换：模板按钮只能指一个网址，客户落错语言时一键换（切过就记住） */}
+            <div className="flex items-center rounded-full bg-white/80 border border-[#E5DFD3] p-0.5 shrink-0 self-start">
+              {(['zh', 'en'] as const).map(l => (
+                <button key={l} type="button" onClick={() => switchLocale(l)} aria-pressed={locale === l}
+                  aria-label={l === 'zh' ? '切换到中文' : 'Switch to English'}
+                  className={`px-2.5 py-1 rounded-full text-[11.5px] font-bold transition ${
+                    locale === l ? 'bg-[#3B7A57] text-white' : 'text-[#8A8578]'}`}>
+                  {l === 'zh' ? '中' : 'EN'}
+                </button>
+              ))}
             </div>
           </div>
           <ul className="flex flex-wrap gap-1.5 mt-3">
