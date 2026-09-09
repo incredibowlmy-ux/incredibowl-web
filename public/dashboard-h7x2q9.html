@@ -82,6 +82,7 @@
         a:hover { color: var(--accent); }
 
         .hidden { display: none !important; }
+        [hidden] { display: none !important; }   /* 让 hidden 属性赢过 .inbox-composer / .inbox-reply-bar / .inbox-thread-empty 这类 display:flex 规则 */
 
         /* ═══════════════ LOGIN ═══════════════ */
         .login-screen {
