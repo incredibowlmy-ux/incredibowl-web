@@ -9,6 +9,7 @@
  * 语言跟着 order.locale 走（memory: 通知语言跟着下单语言走）。
  * 所有失败只记日志，绝不影响订单确认本身。
  */
+import { properName } from '@/lib/waName';
 import { sendTemplate } from '@/lib/waSend';
 import { appendTurn } from '@/lib/waWebhook';
 
@@ -37,7 +38,7 @@ export function deliveryLabel(ymd: string, time: string, locale: 'zh' | 'en'): s
 /** 三个变量：名字 / 短号 / 送达。名字空则用中性称呼。 */
 export function orderConfirmParams(orderId: string, o: Record<string, any>): { locale: 'zh' | 'en'; params: [string, string, string] } {
   const locale: 'zh' | 'en' = o?.locale === 'en' ? 'en' : 'zh';
-  const name = String(o?.userName || '').trim() || (locale === 'en' ? 'there' : '朋友');
+  const name = properName(o?.userName, locale === 'en' ? 'there' : '朋友');
   return { locale, params: [name.slice(0, 60), shortId(orderId), deliveryLabel(o?.deliveryDate, o?.deliveryTime, locale)] };
 }
 

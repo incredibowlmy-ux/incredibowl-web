@@ -114,6 +114,8 @@ console.log('\n=== 4. 对话记录（turns）===');
   check(`封顶 ${TURNS_MAX} 条且保留最新`, acc.length === TURNS_MAX && acc.at(-1).text === 'r' + (TURNS_MAX + 9));
   const longText = 'x'.repeat(TURN_TEXT_MAX + 1000);
   check(`单条截到 TURN_TEXT_MAX=${TURN_TEXT_MAX} 字`, appendTurn([], 'in', longText, 1)[0].text.length === TURN_TEXT_MAX);
+  check('模板快捷回复（type=button）取按钮文字', describeInboundForTurn({ type: 'button', button: { text: 'STOP', payload: 'STOP' } }) === 'STOP');
+  check('快捷回复 STOP 算退订', parseOptOut(describeInboundForTurn({ type: 'button', button: { text: 'STOP' } })) === 'stop');
   const dirty = appendTurn([{ role: 'hacker', text: 'a', ts: 'z' }, { text: 5 }, null], 'in', 'ok', 9);
   check('脏数据：非法 role → sys、非字符串 text 丢掉、null 丢掉', dirty.length === 2 && dirty[0].role === 'sys' && dirty[0].ts === 0);
 

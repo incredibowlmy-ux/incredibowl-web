@@ -9,6 +9,7 @@
 import type { MenuItem, MenuWeek } from '@/data/weeklyMenu';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { DELIVERY_TIER_COPY, DELIVERY_TIER_COPY_FAR } from '@/lib/deliveryCopy';
+import { properName } from '@/lib/waName';
 
 const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WD_EN = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -35,9 +36,9 @@ export function dishEmoji(d: Pick<MenuItem, 'name' | 'nameEn'>): string {
 }
 
 /**
- * weekly_menu_v1 模板的三个变量：{{1}} 名字、{{2}} 日期段、{{3}} 新菜一句。
+ * weekly_menu_v2（v1 同款变量）的三个变量：{{1}} 名字、{{2}} 日期段、{{3}} 亮点一句。
  * 模板正文是 Meta 审过的死文案，这里只产变量；新菜判定与 buildBroadcast 同一条规则。
- * {{3}} 不能带换行（Meta 模板变量禁换行），也别太长（审核样例是一行）。
+ * {{3}} 在 v2 里独立成行（"✨ {{3}}"），所以首字母大写、不带句号；不能带换行（Meta 禁），也别太长。
  */
 export function broadcastTemplateParams(input: Pick<BroadcastInput, 'monday' | 'week' | 'prevWeek' | 'menu' | 'forceNewIds'> & { name: string }): [string, string, string] {
     const { monday, week, prevWeek, menu, forceNewIds = [] } = input;
@@ -52,10 +53,10 @@ export function broadcastTemplateParams(input: Pick<BroadcastInput, 'monday' | '
     // 菜名本身可能含 &（Surf & Turf），连接词就用 and，免得读成三道菜
     const joiner = newNames.some(n => n.includes('&')) ? ' and ' : ' & ';
     let newLine: string;
-    if (!newNames.length) newLine = 'all your favourites are back';
-    else if (newNames.length <= 2) newLine = `new this week: ${newNames.join(joiner)}`;
-    else newLine = `new this week: ${newNames.slice(0, 2).join(', ')}${joiner}${newNames.length - 2} more`;
-    return [input.name.trim() || 'there', range, newLine.replace(/\s+/g, ' ').slice(0, 120)];
+    if (!newNames.length) newLine = 'All your favourites are back on the menu';
+    else if (newNames.length <= 2) newLine = `New this week: ${newNames.join(joiner)}`;
+    else newLine = `New this week: ${newNames.slice(0, 2).join(', ')}${joiner}${newNames.length - 2} more`;
+    return [properName(input.name), range, newLine.replace(/\s+/g, ' ').slice(0, 120)];
 }
 
 export interface BroadcastInput {

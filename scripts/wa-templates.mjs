@@ -65,6 +65,33 @@ const TEMPLATES = {
     ],
   },
 
+  /**
+   * 每周菜单群发 v2（2026-09-09 老板嫌 v1 一坨字不体面）：标题 + 分行正文 + 页脚 + 两个按钮。
+   * 变量和 v1 一样三个，broadcastTemplateParams 直接复用。QUICK_REPLY「STOP」回来是 type=button，
+   * webhook 已认；Meta 对营销模板带一键退订按钮也更宽松。过审后 wa-broadcast-weekly 默认就用它。
+   */
+  weekly_menu_v2: {
+    name: 'weekly_menu_v2',
+    language: 'en',
+    category: 'MARKETING',
+    components: [
+      { type: 'HEADER', format: 'TEXT', text: "Next Week's Menu · Incredibowl" },
+      {
+        type: 'BODY',
+        text: "Hi {{1}}, Wei Ting here from Incredibowl 👋\n\nOur menu for *{{2}}* is ready.\n✨ {{3}}\n\n🍱 Freshly cooked every morning\n🌿 No MSG · less oil · less salt\n🛵 Delivered to your door around Old Klang Road\n\nOrder before *6:00 AM* for same-day delivery. We cook a limited number of meals each day, so early orders are safest.",
+        example: { body_text: [['Ebby Cheong', '14 Sep – 18 Sep', 'New this week: Chinese Yam & Black Fungus Surf & Turf and Lemon Pan-Seared Salmon']] },
+      },
+      { type: 'FOOTER', text: 'Reply STOP or tap the button to unsubscribe' },
+      {
+        type: 'BUTTONS',
+        buttons: [
+          { type: 'URL', text: 'See menu & order', url: 'https://www.incredibowl.my/o?src=wa_weekly' },
+          { type: 'QUICK_REPLY', text: 'STOP' },
+        ],
+      },
+    ],
+  },
+
   /** 订单确认（中文）。UTILITY = 交易类，便宜且不受营销限流。 */
   order_confirmed_zh_v1: {
     name: 'order_confirmed_zh_v1',

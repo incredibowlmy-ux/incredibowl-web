@@ -36,7 +36,8 @@ const SEND = argv.includes('--send');
 const ONLY = (flag('--to') || '').replace(/\D/g, '');
 const MAX = Number(flag('--max')) || 240;
 const REPORT = flag('--report');
-const TEMPLATE = 'weekly_menu_v1';
+// v2 = 标题+分行+页脚+STOP 按钮（2026-09-09 提交）；v2 没过审前可 --template weekly_menu_v1 顶一下
+const TEMPLATE = flag('--template') || 'weekly_menu_v2';
 const BOSS = (process.env.WA_BOSS_PHONE || '60165014501').replace(/\D/g, '');
 const OUT_DIR = path.join(process.cwd(), 'analytics', 'wa-broadcast');
 
@@ -44,6 +45,21 @@ type LogRow = { phone: string; name: string; msgId?: string; ok: boolean; error?
 const logPath = (monday: string) => path.join(OUT_DIR, `${monday}.json`);
 const readLog = (monday: string): LogRow[] => fs.existsSync(logPath(monday)) ? JSON.parse(fs.readFileSync(logPath(monday), 'utf8')) : [];
 const writeLog = (monday: string, rows: LogRow[]) => { fs.mkdirSync(OUT_DIR, { recursive: true }); fs.writeFileSync(logPath(monday), JSON.stringify(rows, null, 2)); };
+
+/** 本地预览用的模板正文（跟 wa-templates.mjs 里提交的一致；真发的正文由 Meta 端渲染）。 */
+function previewOf(tpl: string, p: [string, string, string]): string {
+  if (tpl === 'weekly_menu_v1') {
+    return `Hi ${p[0]} 😊 wei ting from Incredibowl here. Next week's menu (${p[1]}) is ready — ${p[2]}. Freshly cooked every morning, no MSG, less oil & salt. Order before 6:00 AM for same-day delivery. Reply STOP anytime to unsubscribe.\n[See menu & order]`;
+  }
+  return [
+    "Next Week's Menu · Incredibowl", '',
+    `Hi ${p[0]}, Wei Ting here from Incredibowl 👋`, '',
+    `Our menu for *${p[1]}* is ready.`, `✨ ${p[2]}`, '',
+    '🍱 Freshly cooked every morning', '🌿 No MSG · less oil · less salt', '🛵 Delivered to your door around Old Klang Road', '',
+    'Order before *6:00 AM* for same-day delivery. We cook a limited number of meals each day, so early orders are safest.', '',
+    'Reply STOP or tap the button to unsubscribe', '[See menu & order]  [STOP]',
+  ].join('\n');
+}
 
 const norm = (raw: unknown) => { let d = String(raw ?? '').replace(/\D/g, ''); if (d.startsWith('0')) d = '60' + d.slice(1); return /^60\d{8,10}$/.test(d) ? d : ''; };
 
@@ -125,10 +141,9 @@ const targets = ONLY ? [{ phone: ONLY, name: nameByPhone.get(ONLY) || 'Ebby' }] 
 
 console.log(`名单：可发 ${list.length}（跳过 退订 ${skip.optOut} / 已关闭 ${skip.closed} / 本周已发 ${skip.already} / 老板 ${skip.boss}）`);
 console.log(`本次：${targets.length} 条${ONLY ? `（只发 ${ONLY}）` : list.length > MAX ? `（上限 ${MAX}，剩 ${list.length - MAX} 条明天再跑）` : ''}`);
-console.log(`\n预览（发给 ${targets[0]?.name || 'there'}）：`);
 const p0 = paramsFor(targets[0]?.name || '');
-console.log(`  Hi ${p0[0]} 😊 wei ting from Incredibowl here. Next week's menu (${p0[1]}) is ready — ${p0[2]}. Freshly cooked every morning, no MSG, less oil & salt. Order before 6:00 AM for same-day delivery. Reply STOP anytime to unsubscribe.`);
-console.log(`  [See menu & order] → https://www.incredibowl.my/o?src=wa_weekly`);
+console.log(`\n预览（模板 ${TEMPLATE}，发给 ${p0[0]}）：`);
+console.log(previewOf(TEMPLATE, p0).split('\n').map(l => '  ' + l).join('\n'));
 console.log(`\n费用：${targets.length} 条营销模板 × 马来西亚单价（Meta 定价页选 Malaysia + MYR 看真数）`);
 
 if (!SEND) { console.log('\n（dry-run。真发加 --send；先给自己发一条：--to 60165119118 --send）\n'); process.exit(0); }
@@ -147,7 +162,7 @@ for (const t of targets) {
     ok++;
     const ref = db.collection('waLeads').doc(t.phone);
     const prevDoc = (await ref.get()).data() || {};
-    const text = `Hi ${params[0]} 😊 wei ting from Incredibowl here. Next week's menu (${params[1]}) is ready — ${params[2]}. …`;
+    const text = previewOf(TEMPLATE, params);
     await ref.set({ phone: t.phone, lastMsgMs: now, updatedAtMs: now, lastBroadcastMs: now,
       turns: appendTurn(prevDoc.turns, 'bc', text, now, r.msgId ? { msgId: r.msgId, status: 'sent', statusAtMs: now } : undefined) }, { merge: true });
     process.stdout.write(`  ✅ ${t.phone} ${t.name || ''}\n`);

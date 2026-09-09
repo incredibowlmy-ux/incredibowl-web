@@ -388,6 +388,8 @@ export function describeInboundForTurn(msg: Record<string, any>): string {
       const lr = msg?.interactive?.list_reply;
       return String(br?.title || lr?.title || br?.id || lr?.id || '[按钮]');
     }
+    // 模板里的 QUICK_REPLY 按钮（例：weekly_menu_v2 的 STOP）回来是 type=button，不是 interactive
+    case 'button': return String(msg?.button?.text || msg?.button?.payload || '[按钮]');
     case 'image': return `[图片]${msg?.image?.caption ? ' ' + msg.image.caption : ''}`;
     case 'location': return `[定位] ${msg?.location?.name || msg?.location?.address || ''}`.trim();
     case 'audio': return '[语音]';
