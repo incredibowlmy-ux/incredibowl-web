@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * /o —— 碗妈 WhatsApp bot 专用的极简下单页。
+ * /o —— 碗妈 WhatsApp bot / 每周菜单群发 专用的极简下单页。
  *
  * 为什么不复用首页：v2 的 0 成交诊断里，新客要打字说清 6 样信息才能下单。这一页
  * 的存在就是把那 6 样压成「点一下」。首页有 hero / 轮播 / FAQ / 订阅弹窗，对
@@ -14,7 +14,13 @@
  *     支付链路是全站风险最高的地方，为了一个落地页去复制它是愚蠢的。
  *   · 链接带了菜 = **购物车按链接重建**（不是追加）。客户点开必须看到碗妈报的
  *     那一单；而且 bot 先后发过两条不同链接时，追加会让客户不知不觉付两单的钱。
- *     想加菜有「再加一道」，主动权留给客户。
+ *     想加菜直接在菜单上按 +，主动权留给客户。
+ *
+ * 2026-09-09 手机版重做（老板：「不体面、不专业」，客户九成用手机）：
+ *   · 菜单**常驻可见**，每道菜卡片上直接 − n +，不再「加一道就把菜单收起来」
+ *   · 已选的菜在菜单上方一张紧凑卡：菜名 × 份数 · 送达日 · 可删，多日送达说清楚
+ *   · 大图（84px）、菜名 + 英文/一句描述、价格突出；没图/坏图回落到品牌占位，不再露 alt 字
+ *   · 载入用骨架屏；底栏一个出口「去结账 · RM 合计」
  *
  * URL 参数（bot 拼，客户不会手输）：
  *   d=30            单道菜的 id
@@ -30,7 +36,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { Plus, Minus, X, ShoppingBag, Loader2 } from 'lucide-react';
+import { Plus, Minus, X, ShoppingBag } from 'lucide-react';
 import { type MenuItem } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { isDinnerClosedOn } from '@/data/blockedDates';
@@ -63,51 +69,55 @@ type Locale = 'zh' | 'en';
 const DICT = {
   zh: {
     brand: '碗妈的厨房',
-    tagline: '每天巴刹现采 · 不放味精 · 送到你楼下',
+    tagline: '每天巴刹现采，家的味道送到你楼下',
+    chips: ['🌿 不放味精', '🍳 每天现做', '⏰ 早上 6 点截单'],
     forDate: (d: string) => `${d} 送达`,
     lunch: '午餐 11:00–13:00',
     dinner: '晚餐 17:30–20:00',
     empty: '选一道今天想吃的 👇',
-    addMore: '＋ 再加一道',
-    hideMore: '收起',
+    picked: '你的选择',
     promo: (rm: number) => `🎁 新朋友首单立减 RM${rm}，结账自动套用`,
     total: '合计',
     checkout: '去结账',
-    loading: '载入中…',
+    portions: (n: number) => `${n} 份`,
     soldOutNote: '（今日不可点）',
-    cutoff: '每天早上 6 点截单',
+    cutoff: '每天早上 6 点截单 · 当天现做当天送',
     unavailable: '这道菜今天不可点，帮你换成最近可点的日子了',
     missing: (names: string) => `不好意思，${names} 这天没排哦～下面是可以点的 👇`,
     missingUnnamed: '不好意思，这道菜这天没排哦～下面是可以点的 👇',
     multiDate: (n: number) => `这几道菜不在同一天做，会分 ${n} 天送达 —— 每道菜都在它的日子当天现做`,
     todayChip: '今天送',
-    dayChip: (d: string) => `${d} 送 · 当天现做`,
-    groupHeader: (d: string, today: boolean) => (today ? `${d} 送达` : `${d} 送达 · 当天现做`),
-    pickHint: '碗妈每天只做当天排的菜，按送达日挑：',
+    dayChip: (d: string) => `${d} 送`,
+    groupHeader: (d: string) => d,
+    groupSub: (n: number) => `${n} 道 · 当天现做`,
+    pickHint: '碗妈每天只做当天排的菜，按送达日挑',
+    imgAlt: '菜品图片',
   },
   en: {
     brand: "BowlMama's Kitchen",
-    tagline: 'Market-fresh daily · No MSG · Delivered to your door',
+    tagline: 'Market-fresh every morning, home-cooked to your door',
+    chips: ['🌿 No MSG', '🍳 Cooked daily', '⏰ Orders close 6 AM'],
     forDate: (d: string) => `Delivery ${d}`,
     lunch: 'Lunch 11:00–13:00',
     dinner: 'Dinner 17:30–20:00',
     empty: 'Pick what you feel like today 👇',
-    addMore: '＋ Add another',
-    hideMore: 'Hide',
+    picked: 'Your picks',
     promo: (rm: number) => `🎁 RM${rm} off your first order — applied at checkout`,
     total: 'Total',
     checkout: 'Checkout',
-    loading: 'Loading…',
+    portions: (n: number) => `${n} ${n === 1 ? 'meal' : 'meals'}`,
     soldOutNote: '(unavailable today)',
-    cutoff: 'Orders close 6:00 AM daily',
+    cutoff: 'Orders close 6:00 AM daily · cooked fresh and delivered same day',
     unavailable: 'That dish is not available today — moved to its next available date',
     missing: (names: string) => `Sorry, ${names} isn't on the menu that day. Here's what's available 👇`,
     missingUnnamed: "Sorry, that dish isn't on the menu that day. Here's what's available 👇",
     multiDate: (n: number) => `These dishes are cooked on ${n} different days, so they arrive separately — each one fresh on its own day`,
-    todayChip: 'Delivered today',
-    dayChip: (d: string) => `${d} · cooked fresh that day`,
-    groupHeader: (d: string, today: boolean) => (today ? `Delivery ${d}` : `Delivery ${d} · cooked fresh that day`),
-    pickHint: 'BowlMama only cooks what is scheduled for the day. Pick by delivery day:',
+    todayChip: 'Today',
+    dayChip: (d: string) => d,
+    groupHeader: (d: string) => d,
+    groupSub: (n: number) => `${n} ${n === 1 ? 'dish' : 'dishes'} · cooked fresh that day`,
+    pickHint: 'BowlMama only cooks what is scheduled for the day. Pick by delivery day',
+    imgAlt: 'dish photo',
   },
 } as const;
 
@@ -118,15 +128,28 @@ interface Props { locale?: Locale }
  *
  * ⚠️ weeklyMenu 的 `image` **不一定是路径** —— 这个仓库允许用 emoji 当占位图
  * （新菜还没拍照时就是这样）。直接丢给 next/image 会打出
- * `/_next/image?url=🍖` 然后 400。首页 MenuCarousel 和 CartItemCard 早就有
- * `startsWith('/')` 守卫，这里补齐，别让 /o 成为唯一会炸的那一页。
+ * `/_next/image?url=🍖` 然后 400。另外排期里的菜可能**引用了还没上传的图**
+ * （2026-09-09 线上两道菜 404，卡片上露出一行 alt 字）—— onError 回落到品牌占位，
+ * 客户永远看不到破图。
  */
 function DishThumb({ dish, size }: { dish?: { image?: string; name?: string } | null; size: string }) {
   const src = dish?.image || '';
-  if (src.startsWith('/')) {
-    return <Image src={src} alt={dish?.name || ''} fill sizes={size} className="object-cover" />;
+  const [broken, setBroken] = useState(false);
+  useEffect(() => { setBroken(false); }, [src]);
+  if (src.startsWith('/') && !broken) {
+    return <Image src={src} alt="" fill sizes={size} className="object-cover" onError={() => setBroken(true)} />;
   }
-  return <div className="w-full h-full flex items-center justify-center text-2xl">{src}</div>;
+  // emoji 占位原样显示；路径坏了用淡化的 logo —— 比一个 emoji 更像「这家店的菜」，也不依赖手机有没有彩色 emoji 字体
+  if (src && !src.startsWith('/')) {
+    return <div className="w-full h-full flex items-center justify-center text-[28px] bg-gradient-to-br from-[#EEF3E6] to-[#E3EADA]" aria-hidden>{src}</div>;
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#EEF3E6] to-[#E3EADA]" aria-hidden>
+      <div className="relative w-1/2 h-1/2 opacity-60">
+        <Image src="/logo.webp" alt="" fill sizes="42px" className="object-contain" />
+      </div>
+    </div>
+  );
 }
 
 /** `items=30x2,31x1` / `d=30&q=2` → [{id, qty}]，非法输入静默丢弃。 */
@@ -156,7 +179,6 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const [ready, setReady] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
   const [meal, setMeal] = useState<'lunch' | 'dinner'>('lunch');
   const [notice, setNotice] = useState('');
   const [promoOn, setPromoOn] = useState(false);
@@ -220,7 +242,6 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     const askedMeal = (params.get('meal') || '').toLowerCase();
     const wantDinner = askedMeal === 'dinner';
     if (askedMeal === 'dinner' || askedMeal === 'lunch') setMeal(wantDinner ? 'dinner' : 'lunch');
-    const time = wantDinner ? DINNER : LUNCH;
 
     if (wanted.length) {
       // 幂等：同一个链接刷新不重复填。换成别的链接（不同 query）会重新填。
@@ -254,7 +275,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         // ⚠️ 链接携带菜品时 = **替换**购物车，不是追加。两个理由：
         //  1) 客户点开必须看到碗妈报的那一单，不能混进上一次浏览的残留
         //  2) bot 先后发过两条不同链接时，追加会让客户不知不觉付两单的钱
-        // 「再加一道」按钮仍然可以自己加，主动权在客户手上。
+        // 菜单上的 + 仍然可以自己加，主动权在客户手上。
         clearCart();
         built.forEach(b => addBundle(b));
 
@@ -275,11 +296,19 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
       updateBundle(b.cartItemId, { selectedTime: slotOn(b.selectedDate, next === 'dinner') }));
   };
 
+  /** 这道菜在购物车里对应的 bundle（同菜 + 它的可点日 + 当前午/晚）。 */
+  const bundleOf = useCallback((dish: MenuItem) => {
+    const info = dates[dish.id];
+    if (!info?.actualDate) return undefined;
+    const time = slotOn(info.actualDate, meal === 'dinner');
+    return cart.find(b => b.dish?.id === dish.id && b.selectedDate === info.actualDate && b.selectedTime === time);
+  }, [cart, dates, meal]);
+
   const addDish = (dish: MenuItem) => {
     const info = dates[dish.id];
     if (!info || info.disabled || !info.actualDate) return;
     const time = slotOn(info.actualDate, meal === 'dinner');
-    const hit = cart.find(b => b.dish?.id === dish.id && b.selectedDate === info.actualDate && b.selectedTime === time);
+    const hit = bundleOf(dish);
     if (hit) {
       updateBundle(hit.cartItemId, {
         dishQty: (hit.dishQty || 1) + 1,
@@ -288,7 +317,6 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     } else {
       addBundle(bundleFor(dish, 1, info.actualDate, time, cart.length));
     }
-    setShowPicker(false);
   };
 
   const stepQty = (cartItemId: string, delta: number) => {
@@ -310,8 +338,8 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
     if (locale === 'en') {
-      const rel = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : '';
-      const md = `${WD_EN_SHORT[d.getDay()]} ${MONTH_EN[d.getMonth()]} ${d.getDate()}`;
+      const rel = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : '';
+      const md = `${WD_EN_SHORT[d.getDay()]} ${d.getDate()} ${MONTH_EN[d.getMonth()]}`;
       return rel ? `${rel}, ${md}` : md;
     }
     const rel = diff === 0 ? '今天 ' : diff === 1 ? '明天 ' : '';
@@ -332,10 +360,8 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     [multiDate, cartDates.length, activeDate, fmtDate, t],
   );
 
-  // ── 「为什么这道菜是别的日子送」——老板 2026-09-07 看桌面版时的第一反应 ──
-  // 碗妈每天只做当天排的菜（周三特餐就是周三）。之前选菜列表不带日期，客户
-  // 加了一道周三的菜才在购物车里看到橙色日期，像是被塞了一个没解释的条件。
-  // 现在：选菜列表按送达日分组、每组一个日期标题；购物车每道菜永远带日期徽章。
+  // 碗妈每天只做当天排的菜（周三特餐就是周三）：菜单按送达日分组、每组一个日期
+  // 标题；已选的菜永远带日期徽章。
   const todayYmd = useMemo(() => formatYMD(new Date()), []);
   const dayGroups = useMemo(() => {
     const byDate = new Map<string, MenuItem[]>();
@@ -363,134 +389,181 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
 
   return (
     // 桌面端：整页收成手机宽的一栏居中（之前卡片横拉满屏，2000px 宽的白条像没做完）。
-    // 移动端零变化 —— max-w-lg 在手机上就是全宽。
+    // 移动端 max-w-lg 就是全宽。
     <div className="min-h-screen bg-[#FDFBF7] text-[#1A2D23] flex flex-col">
-      {/* ── 头部：极简，不放导航（这一页只有一个出口：结账）── */}
-      <header className="w-full max-w-lg mx-auto px-5 pt-6 pb-4 flex items-center gap-3">
-        <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
-          <Image src="/logo.webp" alt="" fill sizes="44px" className="object-cover" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[15px] font-bold tracking-tight">{t.brand} 🍲</p>
-          <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t.tagline}</p>
+      {/* ── 头部：品牌 + 三个信任点，不放导航（这一页只有一个出口：结账）── */}
+      <header className="w-full bg-gradient-to-b from-[#F3EEE2] to-[#FDFBF7]">
+        <div className="max-w-lg mx-auto px-5 pt-6 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-2 ring-white">
+              <Image src="/logo.webp" alt="" fill sizes="48px" className="object-cover" priority />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[17px] font-extrabold tracking-tight leading-tight">{t.brand}</p>
+              <p className="text-[12.5px] text-[#6B6B6B] mt-0.5 leading-snug">{t.tagline}</p>
+            </div>
+          </div>
+          <ul className="flex flex-wrap gap-1.5 mt-3">
+            {t.chips.map(c => (
+              <li key={c} className="text-[11.5px] font-semibold text-[#3B5A47] bg-white/80 border border-[#E5DFD3] rounded-full px-2.5 py-1">{c}</li>
+            ))}
+          </ul>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-lg mx-auto px-5 pb-40">
-        {/* 配送日 + 午/晚 */}
-        <div className="mb-4">
-          {dateLabel && (
-            // 多日那句自带完整语义，不能再被 forDate() 包一层（会读成「分 2 天送达 送达」）
-            <p className="text-[13px] text-[#6B6B6B] mb-2">{multiDate ? dateLabel : t.forDate(dateLabel)}</p>
-          )}
-          <div className="inline-flex rounded-full bg-[#E3EADA] p-1">
-            {(['lunch', 'dinner'] as const).map(m => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMeal(m)}
-                className={`px-4 py-2 rounded-full text-[13px] font-semibold transition ${
-                  meal === m ? 'bg-white text-[#1A2D23] shadow-sm' : 'text-[#8A8A8A]'
-                }`}
-              >
-                {m === 'lunch' ? t.lunch : t.dinner}
-              </button>
-            ))}
-          </div>
+      <main className="flex-1 w-full max-w-lg mx-auto px-5 pb-36">
+        {/* 午/晚：等宽两半，一眼看到哪个亮着 */}
+        <div className="grid grid-cols-2 rounded-2xl bg-[#E3EADA] p-1 mt-1">
+          {(['lunch', 'dinner'] as const).map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => switchMeal(m)}
+              aria-pressed={meal === m}
+              className={`py-2.5 rounded-xl text-[13.5px] font-bold transition ${
+                meal === m ? 'bg-white text-[#1A2D23] shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'text-[#7A8A7E]'
+              }`}
+            >
+              {m === 'lunch' ? t.lunch : t.dinner}
+            </button>
+          ))}
         </div>
 
-        {notice && (
-          <p className="mb-3 text-[12px] text-[#B4661E] bg-[#FFF4E5] rounded-xl px-3 py-2">{notice}</p>
-        )}
-
-        {!ready && (
-          <p className="flex items-center gap-2 text-[13px] text-[#8A8A8A] py-8">
-            <Loader2 className="w-4 h-4 animate-spin" /> {t.loading}
-          </p>
-        )}
-
-        {/* 购物车内容 */}
-        {ready && cart.length > 0 && (
-          <ul className="space-y-3">
-            {cartSorted.map(b => (
-              <li key={b.cartItemId} className="flex gap-3 bg-white rounded-2xl p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
-                  <DishThumb dish={b.dish} size="80px" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold leading-snug truncate">
-                    {locale === 'en' ? b.dish?.nameEn : b.dish?.name}
-                  </p>
-                  <p className="text-[13px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
-                    <span>RM{getDishPrice(b.dish?.price ?? 0).toFixed(2)}</span>
-                    {b.selectedDate && <DateChip ymd={b.selectedDate} />}
-                  </p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)}
-                      className="w-8 h-8 rounded-full border border-[#E5DFD3] flex items-center justify-center">
-                      <Minus className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-[14px] font-semibold w-5 text-center">{b.dishQty || 1}</span>
-                    <button type="button" aria-label="plus" onClick={() => stepQty(b.cartItemId, 1)}
-                      className="w-8 h-8 rounded-full border border-[#E5DFD3] flex items-center justify-center">
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" aria-label="remove" onClick={() => removeFromCart(b.cartItemId)}
-                      className="ml-auto text-[#C4C4C4]">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* 空车 / 加菜：直接铺当天可点的菜，不用再跳首页 */}
-        {ready && (cart.length === 0 || showPicker) && (
-          <div className={cart.length === 0 ? '' : 'mt-4'}>
-            {cart.length === 0 && <p className="text-[13px] text-[#6B6B6B] mb-1">{t.empty}</p>}
-            <p className="text-[12px] text-[#8A8A8A] mb-3">{t.pickHint}</p>
-            {dayGroups.map(([ymd, dishes]) => (
-              <section key={ymd} className="mb-4">
-                <h2 className={`text-[12px] font-bold mb-2 ${ymd === todayYmd ? 'text-[#3B7A57]' : 'text-[#B4661E]'}`}>
-                  {t.groupHeader(fmtDate(ymd), ymd === todayYmd)}
-                </h2>
-                <ul className="space-y-2">
-                  {dishes.map(d => (
-                    <li key={d.id}>
-                      <button type="button" onClick={() => addDish(d)}
-                        className="w-full flex gap-3 items-center bg-white rounded-2xl p-3 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)] active:scale-[0.99] transition">
-                        <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-[#E3EADA]">
-                          <DishThumb dish={d} size="56px" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[14px] font-semibold truncate">{locale === 'en' ? d.nameEn : d.name}</p>
-                          <p className="text-[13px] text-[#8A8A8A]">RM{getDishPrice(d.price).toFixed(2)}</p>
-                        </div>
-                        <Plus className="w-4 h-4 text-[#B4661E]" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        )}
-
-        {ready && cart.length > 0 && (
-          <button type="button" onClick={() => setShowPicker(v => !v)}
-            className="mt-4 text-[13px] font-semibold text-[#B4661E]">
-            {showPicker ? t.hideMore : t.addMore}
-          </button>
-        )}
-
         {ready && promoOn && (
-          <p className="mt-5 text-[12px] text-[#3B7A57] bg-[#EAF5EE] rounded-xl px-3 py-2">
+          <p className="mt-3 text-[12.5px] font-semibold text-[#3B7A57] bg-[#EAF5EE] rounded-xl px-3 py-2">
             {t.promo(FIRST_ORDER_PROMO_RM)}
           </p>
         )}
-        <p className="mt-3 text-[11px] text-[#A5A5A5]">{t.cutoff}</p>
+
+        {notice && (
+          <p className="mt-3 text-[12.5px] text-[#B4661E] bg-[#FFF4E5] rounded-xl px-3 py-2">{notice}</p>
+        )}
+
+        {/* 骨架屏：三张灰卡，别让客户盯着「载入中…」 */}
+        {!ready && (
+          <div className="mt-5 space-y-3 animate-pulse" aria-hidden>
+            <div className="h-4 w-40 rounded bg-[#EFE9DD]" />
+            {[0, 1, 2].map(i => (
+              <div key={i} className="flex gap-3 bg-white rounded-2xl p-3">
+                <div className="w-[84px] h-[84px] rounded-xl bg-[#EFE9DD]" />
+                <div className="flex-1 pt-1 space-y-2">
+                  <div className="h-4 w-3/5 rounded bg-[#EFE9DD]" />
+                  <div className="h-3 w-4/5 rounded bg-[#F4F0E7]" />
+                  <div className="h-4 w-16 rounded bg-[#EFE9DD]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 已选：紧凑一张卡，菜名 × 份数 · 送达日 · 可删 */}
+        {ready && cart.length > 0 && (
+          <section className="mt-4 bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden">
+            <div className="flex items-baseline justify-between px-4 pt-3 pb-1">
+              <h2 className="text-[13px] font-bold">{t.picked}</h2>
+              <p className="text-[12px] text-[#6B6B6B]">{multiDate ? '' : t.forDate(dateLabel)}</p>
+            </div>
+            {multiDate && (
+              <p className="mx-4 mb-1 text-[12px] text-[#B4661E] bg-[#FFF4E5] rounded-lg px-2.5 py-1.5">{dateLabel}</p>
+            )}
+            <ul className="divide-y divide-[#F1ECE2]">
+              {cartSorted.map(b => (
+                <li key={b.cartItemId} className="flex items-center gap-2 px-4 py-2.5">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold leading-snug truncate">
+                      {locale === 'en' ? b.dish?.nameEn : b.dish?.name}
+                    </p>
+                    <p className="text-[12px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>RM{(getDishPrice(b.dish?.price ?? 0) * (b.dishQty || 1)).toFixed(2)}</span>
+                      {b.selectedDate && <DateChip ymd={b.selectedDate} />}
+                    </p>
+                  </div>
+                  <div className="flex items-center rounded-full border border-[#E5DFD3] bg-[#FDFBF7]">
+                    <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)}
+                      className="w-8 h-8 flex items-center justify-center text-[#6B6B6B]">
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-[14px] font-bold w-5 text-center tabular-nums">{b.dishQty || 1}</span>
+                    <button type="button" aria-label="plus" onClick={() => stepQty(b.cartItemId, 1)}
+                      className="w-8 h-8 flex items-center justify-center text-[#B4661E]">
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <button type="button" aria-label="remove" onClick={() => removeFromCart(b.cartItemId)}
+                    className="w-8 h-8 flex items-center justify-center text-[#C4C4C4]">
+                    <X className="w-4 h-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* 菜单：常驻可见，按送达日分组，卡片上直接加减 */}
+        {ready && (
+          <div className="mt-5">
+            <p className="text-[13.5px] font-bold">{cart.length === 0 ? t.empty : t.pickHint}</p>
+            {cart.length === 0 && <p className="text-[12px] text-[#8A8A8A] mt-0.5">{t.pickHint}</p>}
+            {dayGroups.map(([ymd, dishes]) => {
+              const isToday = ymd === todayYmd;
+              return (
+                <section key={ymd} className="mt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[12px] font-bold ${
+                      isToday ? 'bg-[#3B7A57] text-white' : 'bg-[#B4661E] text-white'}`}>
+                      {t.groupHeader(fmtDate(ymd))}
+                    </span>
+                    <span className="text-[11.5px] text-[#8A8A8A]">{t.groupSub(dishes.length)}</span>
+                  </div>
+                  <ul className="space-y-2.5">
+                    {dishes.map(d => {
+                      const hit = bundleOf(d);
+                      const qty = hit ? (hit.dishQty || 1) : 0;
+                      const sub = locale === 'en' ? (d.descEn || '') : (d.nameEn || d.desc || '');
+                      return (
+                        <li key={d.id} className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${
+                          qty ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
+                          <button type="button" onClick={() => addDish(d)} aria-label={locale === 'en' ? d.nameEn : d.name}
+                            className="relative w-[84px] h-[84px] rounded-xl overflow-hidden shrink-0 bg-[#E3EADA] active:scale-[0.98] transition">
+                            <DishThumb dish={d} size="84px" />
+                          </button>
+                          <div className="flex-1 min-w-0 self-stretch flex flex-col justify-between py-0.5">
+                            <div className="min-w-0">
+                              <p className="text-[15px] font-bold leading-snug line-clamp-2">{locale === 'en' ? d.nameEn : d.name}</p>
+                              {sub && <p className="text-[12px] text-[#8A8A8A] mt-0.5 truncate">{sub}</p>}
+                            </div>
+                            <div className="flex items-center justify-between gap-2 mt-1.5">
+                              <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
+                              {qty === 0 ? (
+                                <button type="button" onClick={() => addDish(d)} aria-label="add"
+                                  className="w-9 h-9 rounded-full bg-[#B4661E] text-white flex items-center justify-center shadow-[0_2px_6px_rgba(180,102,30,0.35)] active:scale-95 transition">
+                                  <Plus className="w-4 h-4" strokeWidth={2.5} />
+                                </button>
+                              ) : (
+                                <div className="flex items-center rounded-full bg-[#B4661E] text-white">
+                                  <button type="button" aria-label="minus" onClick={() => hit && stepQty(hit.cartItemId, -1)}
+                                    className="w-9 h-9 flex items-center justify-center">
+                                    <Minus className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                  <span className="text-[14px] font-bold w-5 text-center tabular-nums">{qty}</span>
+                                  <button type="button" aria-label="plus" onClick={() => addDish(d)}
+                                    className="w-9 h-9 flex items-center justify-center">
+                                    <Plus className="w-4 h-4" strokeWidth={2.5} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              );
+            })}
+            <p className="mt-6 text-[11.5px] text-[#A5A5A5] text-center">{t.cutoff}</p>
+          </div>
+        )}
       </main>
 
       {/* ── 固定底栏：全页唯一的出口 ─────────────────── */}
@@ -498,13 +571,13 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
         <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-[#EFE9DD] px-5 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-4 max-w-lg mx-auto">
             <div className="min-w-0">
-              <p className="text-[11px] text-[#8A8A8A]">{t.total}</p>
-              <p className="text-[18px] font-bold leading-tight">RM{total.toFixed(2)}</p>
+              <p className="text-[11px] text-[#8A8A8A]">{t.total} · {t.portions(count)}</p>
+              <p className="text-[20px] font-extrabold leading-tight tabular-nums">RM{total.toFixed(2)}</p>
             </div>
             <button type="button" onClick={() => setIsCartOpen(true)}
-              className="flex-1 bg-[#B4661E] text-white rounded-full py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 active:scale-[0.99] transition">
+              className="flex-1 bg-[#B4661E] text-white rounded-full py-3.5 font-bold text-[15px] flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(180,102,30,0.35)] active:scale-[0.99] transition">
               <ShoppingBag className="w-4 h-4" />
-              {t.checkout}{count > 0 ? ` (${count})` : ''}
+              {t.checkout}
             </button>
           </div>
         </div>
