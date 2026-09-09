@@ -356,6 +356,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   // （老板 09-10）在午餐加一份、切到晚餐再加一份，购物车里就是两条，各自带时段。
   const switchMeal = (next: 'lunch' | 'dinner') => setMeal(next);
   const slotLabel = (time?: string) => (time === DINNER ? t.dinnerShort : t.lunchShort);
+  // 午=日头黄、晚=夜色靛：一眼分得出，不用读字（老板 09-10）。Tailwind 要静态类名，写死两套。
+  const slotChip = (time?: string) => (time === DINNER
+    ? 'bg-[#E7E8F7] text-[#4A4A8C]'
+    : 'bg-[#FFF1D6] text-[#A2700B]');
 
   /** 这道菜在「选中的那天 + 当前午/晚」对应的购物车 bundle。 */
   const bundleOf = useCallback((dish: MenuItem, ymd: string) => {
@@ -452,7 +456,11 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
           <div className="flex items-center justify-between gap-2 mt-1.5">
             <div className="min-w-0">
               <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
-              {other && <p className="text-[10.5px] text-[#3B7A57] font-semibold leading-tight">{t.otherSlot(slotLabel(otherTime), other.dishQty || 1)}</p>}
+              {other && (
+                <p className={`text-[10.5px] font-semibold leading-tight ${otherTime === DINNER ? 'text-[#4A4A8C]' : 'text-[#A2700B]'}`}>
+                  {t.otherSlot(slotLabel(otherTime), other.dishQty || 1)}
+                </p>
+              )}
             </div>
             {qty === 0 ? (
               <button type="button" onClick={() => addDish(d, day)} aria-label="add"
@@ -530,12 +538,15 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
       </div>
 
       <main className="flex-1 w-full max-w-lg mx-auto px-5 pb-36">
-        {/* 午/晚：等宽两半，一眼看到哪个亮着 */}
-        <div className="grid grid-cols-2 rounded-2xl bg-[#E3EADA] p-1 mt-3">
+        {/* 午/晚：等宽两半。午=日头黄、晚=夜色靛，选中那半整块上色，不看字也知道在往哪个时段加菜 */}
+        <div className="grid grid-cols-2 rounded-2xl bg-[#E9E5DB] p-1 mt-3">
           {(['lunch', 'dinner'] as const).map(m => (
             <button key={m} type="button" onClick={() => switchMeal(m)} aria-pressed={meal === m}
-              className={`py-2.5 rounded-xl text-[13.5px] font-bold transition ${
-                meal === m ? 'bg-white text-[#1A2D23] shadow-[0_1px_4px_rgba(0,0,0,0.08)]' : 'text-[#7A8A7E]'}`}>
+              className={`py-2.5 rounded-xl text-[13.5px] font-bold transition flex items-center justify-center gap-1.5 ${
+                meal !== m ? 'text-[#8A8578]'
+                  : m === 'lunch' ? 'bg-[#FFF1D6] text-[#A2700B] shadow-[0_1px_4px_rgba(0,0,0,0.08)]'
+                    : 'bg-[#E7E8F7] text-[#4A4A8C] shadow-[0_1px_4px_rgba(0,0,0,0.08)]'}`}>
+              <span aria-hidden>{m === 'lunch' ? '☀️' : '🌙'}</span>
               {m === 'lunch' ? t.lunch : t.dinner}
             </button>
           ))}
@@ -578,7 +589,9 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                     <p className="text-[12px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
                       <span>RM{(getDishPrice(b.dish?.price ?? 0) * (b.dishQty || 1)).toFixed(2)}</span>
                       {b.selectedDate && <DateChip ymd={b.selectedDate} />}
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-[#EEF1F8] text-[#3B5A8A]">{slotLabel(b.selectedTime)}</span>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${slotChip(b.selectedTime)}`}>
+                        {b.selectedTime === DINNER ? '🌙' : '☀️'} {slotLabel(b.selectedTime)}
+                      </span>
                     </p>
                   </div>
                   <div className="flex items-center rounded-full border border-[#E5DFD3] bg-[#FDFBF7]">
