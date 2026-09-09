@@ -59,8 +59,8 @@ const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: fa
 
 const LUNCH = 'Lunch (11AM-1PM)';
 const DINNER = 'Dinner (5PM-8PM)';
-/** 日期条最多列几天（≈ 一周半的营业日，够群发「下周」落点又不至于滑不到头）。 */
-const MAX_DAYS = 8;
+/** 日期条列几天（老板 09-10：5 天够了）。群发「下周一」不在这 5 天里就落最近一天。 */
+const MAX_DAYS = 5;
 
 // 只送午餐的日子（blockedDates.DINNER_CLOSED_DATES）按天回落到午餐。这一页
 // 的午/晚是整车开关，但每个 bundle 各带各的日期 —— 不按天判就会把晚市单塞进
@@ -85,6 +85,9 @@ const DICT = {
     wd: (d: number) => `周${WD_ZH[d]}`,
     lunch: '午餐 11:00–13:00',
     dinner: '晚餐 17:30–20:00',
+    lunchShort: '午餐',
+    dinnerShort: '晚餐',
+    otherSlot: (label: string, n: number) => `${label}已选 ${n}`,
     specials: (d: string) => `⭐ ${d}精选`,
     daily: '🍚 每天都有',
     noMenu: '这天碗妈还没排菜，先看看别的日子 👆',
@@ -110,6 +113,9 @@ const DICT = {
     wd: (d: number) => WD_EN_SHORT[d],
     lunch: 'Lunch 11:00–13:00',
     dinner: 'Dinner 17:30–20:00',
+    lunchShort: 'Lunch',
+    dinnerShort: 'Dinner',
+    otherSlot: (label: string, n: number) => `${label} ×${n} added`,
     specials: (d: string) => `⭐ ${d} specials`,
     daily: '🍚 Every day',
     noMenu: 'Nothing scheduled for this day yet — try another day 👆',
@@ -346,12 +352,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     chipRefs.current[day]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
   }, [day]);
 
-  // 午/晚切换：整车统一（这一页刻意不支持一单里午晚混点 —— 那是首页的场景）
-  const switchMeal = (next: 'lunch' | 'dinner') => {
-    setMeal(next);
-    useCartStore.getState().cart.forEach(b =>
-      updateBundle(b.cartItemId, { selectedTime: slotOn(b.selectedDate, next === 'dinner') }));
-  };
+  // 午/晚是「现在往哪个时段加菜」的开关，不改已经选好的菜 —— 同一天午晚都要的客户
+  // （老板 09-10）在午餐加一份、切到晚餐再加一份，购物车里就是两条，各自带时段。
+  const switchMeal = (next: 'lunch' | 'dinner') => setMeal(next);
+  const slotLabel = (time?: string) => (time === DINNER ? t.dinnerShort : t.lunchShort);
 
   /** 这道菜在「选中的那天 + 当前午/晚」对应的购物车 bundle。 */
   const bundleOf = useCallback((dish: MenuItem, ymd: string) => {
@@ -362,19 +366,21 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const addDish = (dish: MenuItem, ymd: string) => {
     if (!isDishOrderableOn(dish, ymd).ok) return;
     const time = slotOn(ymd, meal === 'dinner');
-    const hit = bundleOf(dish, ymd);
+    // 读 store 里的最新购物车，不读渲染闭包 —— 客户快速连点两下时闭包还是旧的，会加出两条同菜同时段
+    const live = useCartStore.getState().cart;
+    const hit = live.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time);
     if (hit) {
       updateBundle(hit.cartItemId, {
         dishQty: (hit.dishQty || 1) + 1,
         price: getDishPrice(dish.price) * ((hit.dishQty || 1) + 1),
       });
     } else {
-      addBundle(bundleFor(dish, 1, ymd, time, cart.length));
+      addBundle(bundleFor(dish, 1, ymd, time, live.length));
     }
   };
 
   const stepQty = (cartItemId: string, delta: number) => {
-    const b = cart.find(x => x.cartItemId === cartItemId);
+    const b = useCartStore.getState().cart.find(x => x.cartItemId === cartItemId);
     if (!b) return;
     const next = (b.dishQty || 1) + delta;
     if (next < 1) { removeFromCart(cartItemId); return; }
@@ -427,6 +433,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const DishCard = ({ d }: { d: MenuItem }) => {
     const hit = bundleOf(d, day);
     const qty = hit ? (hit.dishQty || 1) : 0;
+    // 另一个时段已经选了这道菜 → 小字提示，免得客户以为没加上
+    const otherTime = slotOn(day, meal !== 'dinner');
+    const other = otherTime !== slotOn(day, meal === 'dinner')
+      ? cart.find(b => b.dish?.id === d.id && b.selectedDate === day && b.selectedTime === otherTime) : undefined;
     const sub = locale === 'en' ? (d.descEn || '') : (d.nameEn || d.desc || '');
     return (
       <li className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${qty ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
@@ -440,7 +450,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
             {sub && <p className="text-[12px] text-[#8A8A8A] mt-0.5 truncate">{sub}</p>}
           </div>
           <div className="flex items-center justify-between gap-2 mt-1.5">
-            <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
+            <div className="min-w-0">
+              <p className="text-[14.5px] font-extrabold text-[#B4661E] tabular-nums">RM{getDishPrice(d.price).toFixed(2)}</p>
+              {other && <p className="text-[10.5px] text-[#3B7A57] font-semibold leading-tight">{t.otherSlot(slotLabel(otherTime), other.dishQty || 1)}</p>}
+            </div>
             {qty === 0 ? (
               <button type="button" onClick={() => addDish(d, day)} aria-label="add"
                 className="w-9 h-9 rounded-full bg-[#B4661E] text-white flex items-center justify-center shadow-[0_2px_6px_rgba(180,102,30,0.35)] active:scale-95 transition">
@@ -565,6 +578,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                     <p className="text-[12px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
                       <span>RM{(getDishPrice(b.dish?.price ?? 0) * (b.dishQty || 1)).toFixed(2)}</span>
                       {b.selectedDate && <DateChip ymd={b.selectedDate} />}
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold bg-[#EEF1F8] text-[#3B5A8A]">{slotLabel(b.selectedTime)}</span>
                     </p>
                   </div>
                   <div className="flex items-center rounded-full border border-[#E5DFD3] bg-[#FDFBF7]">
