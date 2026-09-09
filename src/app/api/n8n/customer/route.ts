@@ -74,12 +74,19 @@ export async function GET(req: NextRequest) {
   try {
     const db = await getDb();
     const { normalizePhone } = await import('@/lib/phoneUtils');
-    const { findUserByNormalizedPhone } = await import('@/lib/adminUserLookup');
+    const { findUsersByNormalizedPhone } = await import('@/lib/adminUserLookup');
 
+    // 同一个号码可能有多个真实账号（09-10 实例：ebby 两个 email 各注册一次，bot 只看到 0 单那个）
+    // → 档案主体取「未合并 + 订单最多」的那个，订单/餐券按全部账号聚合。只读，不动 users。
     const normalized = normalizePhone(phoneRaw);
-    const userSnap = normalized ? await findUserByNormalizedPhone(db, normalized) : null;
+    const userDocs = normalized ? await findUsersByNormalizedPhone(db, normalized) : [];
+    const liveDocs = userDocs.filter(d => !d.data().mergedInto);
+    const userSnap = (liveDocs.length ? liveDocs : userDocs)
+      .slice()
+      .sort((a, b) => (Number(b.data().totalOrders) || 0) - (Number(a.data().totalOrders) || 0))[0] || null;
     const user = userSnap ? (userSnap.data() as Record<string, any>) : null;
-    const uid = userSnap ? userSnap.id : `manual_${phoneDigits}`; // 券/credit 仍按这个主 uid 查
+    const uid = userSnap ? userSnap.id : `manual_${phoneDigits}`; // 加料 credit 仍按这个主 uid 查
+    const userIds = userDocs.map(d => d.id);
 
     // ⚠️ 手动单的 userId 用的是**本地号码格式**（`manual_0125230066`），而 WhatsApp
     // webhook 传进来的 msg.from 是国际格式（`60125230066`）。只拼 `manual_${digits}`
@@ -88,19 +95,19 @@ export async function GET(req: NextRequest) {
     // 两种格式都查（单字段 in 查询，自动索引，不需要建复合索引）。
     const localDigits = phoneDigits.startsWith('60') ? `0${phoneDigits.slice(2)}` : phoneDigits;
     const uidCandidates = Array.from(new Set([
-      ...(userSnap ? [userSnap.id] : []),
+      ...userIds,
       `manual_${phoneDigits}`,
       `manual_${localDigits}`,
-    ])).slice(0, 10); // Firestore in 查询上限，实际最多 3 个
+    ])).slice(0, 10); // Firestore in 查询上限 30，实际就几个
 
     // ── 并行查：订单 / 餐券 / 加料 credit / 碗妈对话档案（waLeads）──
     const now = Date.now();
     const [ordersQ, vouchersQ, addonCredits, leadSnap] = await Promise.all([
       // 等值查询不需要复合索引；单客户订单量小，内存排序即可
       db.collection('orders').where('userId', 'in', uidCandidates).limit(300).get(),
-      userSnap
+      userIds.length
         ? db.collection('mealVouchers')
-            .where('userId', '==', uid)
+            .where('userId', 'in', userIds.slice(0, 10))
             .where('status', '==', 'available')
             .get()
         : Promise.resolve(null),
@@ -220,6 +227,9 @@ export async function GET(req: NextRequest) {
     } else {
       lines.push('【客户档案】（按来电号码自动查到，仅限回答该客户本人）');
       lines.push(`- ${name ? `${name}` : '（没记录到名字）'}${userSnap ? '，注册会员' : '，WhatsApp 老客（未注册）'}，历史 ${totalOrders} 单${totalSpent > 0 ? `（累计 RM ${totalSpent.toFixed(0)}）` : ''}`);
+      if (liveDocs.length > 1) {
+        lines.push(`- ⚠️ 这个号码下有 ${liveDocs.length} 个账号（订单已合并查看）—— 客户说有单但下面没有时，[求救老板] 让老板查`);
+      }
       if (addressText) {
         lines.push(`- 常用地址：${addressText}${hasVerifiedCoords ? '（已验证）' : ''} —— 下单先确认「还是送这里吗」，客户点头就不用再要地址`);
       }

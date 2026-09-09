@@ -322,7 +322,14 @@ WhatsApp 的「指令」功能会让客户发出 /menu /order /fee /human 这样
     `【求救机制 —— 全流程只有一个标记：[求救老板]】
 以下情况在回复开头加 [求救老板]，并告诉客户「这个碗妈得跟老板确认一下，稍等哦 ❤️」：
 客户点了「找碗妈」按钮或明确说要找人工 / 真人 / 老板、`,
+  )
+  // 09-10：档案只能看到按号码对上的账号（同号码多账号、用别的号码/名字下的单都看不到）→ 查不到别硬说没有
+  .replace(
+    '· 客户问「我的饭到哪了 / 几点到」→ 用档案里进行中订单的状态回答；有跟踪链接就发给客户。',
+    `· 客户问「我的饭到哪了 / 几点到」→ 用档案里进行中订单的状态回答；有跟踪链接就发给客户。
+· 客户说「帮我查一下我的单 / 我明天有单」但档案里**没有**那张单 → 绝不说「你没有订单」，回「碗妈帮你查一下，稍等哦 ❤️」并 [求救老板]（可能是用别的号码或名字下的）。`,
   );
+if (!SYSTEM_PROMPT.includes('绝不说「你没有订单」')) throw new Error('SYSTEM_PROMPT 注入失败：找不到「饭到哪了」锚点');
 if (!SYSTEM_PROMPT.includes('remember_customer_fact') || !SYSTEM_PROMPT.includes('payment_block')) {
   throw new Error('SYSTEM_PROMPT 注入失败：找不到锚点');
 }
@@ -352,7 +359,11 @@ put('Webhook', {
 // ── Router / Context / Prompt ──
 nodes.unshift(codeNode('Router', 'v4-router', ROUTER_CODE, [-4400, -400]));
 nodes.push(codeNode('Context Builder', 'v4-context', CONTEXT_CODE, [-1720, -1000]));
-put('AI Agent', { parameters: { ...byName['AI Agent'].parameters, options: { systemMessage: SYSTEM_PROMPT } } });
+// 09-10 凌晨事故：Gemini 503 一次就把整条执行判死，客户静默 → 重试 3 次 + 错误走兜底分支（见下 AI Down 链）
+put('AI Agent', {
+  parameters: { ...byName['AI Agent'].parameters, options: { systemMessage: SYSTEM_PROMPT } },
+  retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueErrorOutput',
+});
 
 // ── Main Switch：11 条规则 + 兜底 ──
 const ROUTES = ['customer_text', 'boss_reply', 'image', 'location', 'audio', 'boss_direct',
@@ -422,6 +433,39 @@ nodes.push(leadPost('Log Reply · 老板', 'v4-log-boss',
 nodes.push(leadPost('Log Reply · 定位', 'v4-log-pin',
   `{ action: 'reply', role: 'out', phone: $('Pin Reply Builder').first().json.phone, text: $('Pin Reply Builder').first().json.reply, msgId: $json.messages?.[0]?.id || '' }`,
   [-3040, 40]));
+
+// ── AI 兜底链（AI Agent 错误输出）：客户一句「稍等」+ 老板 WA 警报（可引用回复转达）+ Telegram ──
+// 三路并行，任一路发不出去不影响其它两路。老板引用回复 = 现有 alert 映射机制，自动接管 120 分钟。
+nodes.push(codeNode('AI Down Build', 'v4-aidown-build', `// AI Agent 重试 3 次仍失败（多半是 Gemini 503 过载）→ 组兜底话术 + 警报内容
+const ctx = $('Context Builder').first().json;
+const errIn = $input.first().json || {};
+const rawErr = errIn.error;
+const err = String((rawErr && typeof rawErr === 'object') ? (rawErr.description || rawErr.message || JSON.stringify(rawErr)) : (rawErr || '未知错误')).slice(0, 300);
+const lang = ctx.lang === 'en' ? 'en' : 'zh';
+const reply = lang === 'en'
+  ? "BowlMama's system hiccuped for a moment 😅 I've pinged the boss to reply to you personally — hang on a bit ❤️"
+  : '碗妈这边系统卡了一下 😅 已经叫老板亲自回你，稍等一下哦 ❤️';
+return [{ json: { phone: ctx.phone, lang, customerMsg: ctx.text || '', reply, err } }];`, [-1180, -1400]));
+nodes.push(waText('AI Down Reply', 'v4-aidown-reply', "={{ $json.phone }}", "={{ $json.reply }}", [-940, -1400]));
+nodes.push(leadPost('Log Reply · 兜底', 'v4-aidown-log',
+  `{ action: 'reply', role: 'out', phone: $('AI Down Build').first().json.phone, text: $('AI Down Build').first().json.reply, msgId: $json.messages?.[0]?.id || '' }`,
+  [-700, -1400]));
+nodes.push(waText('AI Down Boss WA', 'v4-aidown-boss', BOSS_PHONE,
+  "=🚨 [碗妈挂了] 客户 {{ $json.phone }} 的消息没回到！\n\n客户原话：{{ $json.customerMsg }}\n\n错误：{{ $json.err }}\n\n👉 长按这条引用回复，会直接转给客户（并自动接管 120 分钟）。",
+  [-940, -1520]));
+nodes.push(leadPost('Lead Alert · 兜底', 'v4-aidown-alert',
+  `{ action: 'alert', phone: $('AI Down Build').first().json.phone, alertMsgId: $('AI Down Boss WA').first().json.messages?.[0]?.id || 'unknown', customerMsg: $('AI Down Build').first().json.customerMsg, kind: 'ai_down' }`,
+  [-700, -1520]));
+{
+  const tg = JSON.parse(JSON.stringify(byName['Boss Alert Telegram']));
+  nodes.push({
+    ...tg, id: 'v4-aidown-tg', name: 'AI Down Telegram', position: [-940, -1640],
+    parameters: {
+      ...tg.parameters,
+      text: "=🚨 [碗妈挂了] AI 重试 3 次仍失败，客户 {{ $json.phone }} 只收到「稍等」\n\n客户原话：{{ $json.customerMsg }}\n错误：{{ $json.err }}\n\n👉 直接回他：https://wa.me/{{ $json.phone }}\n（WhatsApp 上也发了同样警报，引用回复即可转达）",
+    },
+  });
+}
 
 // ── 人工接管（A2）──
 nodes.push(ifNode('Boss 要释放?', 'v4-if-release', "={{ $('Parse Boss Intent').first().json.releaseBot }}", '', [-1940, -540]));
@@ -561,7 +605,13 @@ conn('Get Dishes', 'Get Live Menu');
 conn('Get Live Menu', 'Get Customer');
 conn('Get Customer', 'Context Builder');
 conn('Context Builder', 'AI Agent');
-conn('AI Agent', 'Post-process');
+conn('AI Agent', 'Post-process', 0);
+conn('AI Agent', 'AI Down Build', 1); // continueErrorOutput 的错误口
+conn('AI Down Build', 'AI Down Reply');
+conn('AI Down Reply', 'Log Reply · 兜底');
+conn('AI Down Build', 'AI Down Boss WA');
+conn('AI Down Boss WA', 'Lead Alert · 兜底');
+conn('AI Down Build', 'AI Down Telegram');
 conn('Post-process', 'Action Switch');
 conn('Action Switch', 'Send Reply', 0);
 conn('Action Switch', 'Send QR', 1);
@@ -680,6 +730,15 @@ const followup = {
 // ════════════════════════════════════════════════════════════
 const v4err = JSON.parse(JSON.stringify(v3e));
 v4err.name = 'Bowlmama v4 — Error Handler';
+// 09-10：报警只带外层一句「Service unavailable」看不出是谁挂的 → 补 error.description（Gemini 503 的真正原因在这里）
+{
+  const tg = v4err.nodes.find(n => n.type === 'n8n-nodes-base.telegram');
+  tg.parameters.text = tg.parameters.text.replace(
+    "错误信息：{{ $json.execution?.error?.message || '未知' }}",
+    "错误信息：{{ $json.execution?.error?.message || '未知' }}\n详情：{{ ($json.execution?.error?.description || '').slice(0, 400) || '（无）' }}",
+  );
+  if (!tg.parameters.text.includes('详情：')) throw new Error('Error Handler 文案注入失败');
+}
 
 writeFileSync(join(DIR, 'bowlmama-v4-main.json'), JSON.stringify(v4main, null, 2), 'utf8');
 writeFileSync(join(DIR, 'bowlmama-v4-followup.json'), JSON.stringify(followup, null, 2), 'utf8');
