@@ -263,6 +263,7 @@ async function replyFullMenu(db: FirebaseFirestore.Firestore, from: string, now:
     const text = buildBroadcast({
       monday, week: cur.week, prevWeek: prev.week, menu: buildMenu(cur.week),
       customerName: properName(lead.name || lead.profile?.nickname, 'there'),
+      optOutLine: false,
     });
     const sent = await sendText(from, text);
     if (!sent.ok) { console.error(`[wa/webhook] full menu send failed ${from}: ${sent.error}`); return false; }

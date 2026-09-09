@@ -84,6 +84,8 @@ export interface BroadcastInput {
     customerName?: string;
     /** 额外强制标为新菜的 id（例：dashboard 从销量判断从未卖过）。 */
     forceNewIds?: number[];
+    /** 结尾的「reply STOP」句。群发/手机 broadcast 要带；客户按「Full menu」要来的回复不带（模板上已有 STOP 按钮）。默认带。 */
+    optOutLine?: boolean;
 }
 
 export function buildBroadcast(input: BroadcastInput): string {
@@ -165,6 +167,6 @@ export function buildBroadcast(input: BroadcastInput): string {
     out.push('');
     out.push('🙏 One small favour: even a quick reply (an emoji 👍😊 or a single letter) really helps keep our broadcasts reaching you. Thank you for your support! 💛');
     out.push('');
-    out.push("If you'd rather not receive our weekly menu, just reply STOP anytime.");
-    return out.join('\n');
+    if (input.optOutLine !== false) out.push("If you'd rather not receive our weekly menu, just reply STOP anytime.");
+    return out.join('\n').replace(/\n+$/, '');
 }

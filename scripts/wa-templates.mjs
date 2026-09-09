@@ -81,7 +81,7 @@ const TEMPLATES = {
         text: "Hi {{1}}, Wei Ting here from Incredibowl 👋\n\nOur menu for *{{2}}* is ready.\n✨ {{3}}\n\n🍱 Freshly cooked every morning\n🌿 No MSG · less oil · less salt\n🛵 Delivered to your door around Old Klang Road\n\nOrder before *6:00 AM* for same-day delivery. We cook a limited number of meals each day, so early orders are safest.",
         example: { body_text: [['Ebby Cheong', '14 Sep – 18 Sep', 'New this week: Chinese Yam & Black Fungus Surf & Turf and Lemon Pan-Seared Salmon']] },
       },
-      { type: 'FOOTER', text: 'Full menu = daily dishes & prices · STOP to unsubscribe' },
+      { type: 'FOOTER', text: 'Tap Full menu for daily dishes & prices' },
       {
         type: 'BUTTONS',
         buttons: [
