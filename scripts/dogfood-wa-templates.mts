@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { deliveryLabel, orderConfirmParams, normalizePhone, shortId, isOrderConfirmEnabled, ORDER_CONFIRM_TEMPLATE } from '../src/lib/waOrderConfirm';
-import { broadcastTemplateParams } from '../src/lib/menuBroadcast';
+import { broadcastTemplateParams, broadcastWeekFor } from '../src/lib/menuBroadcast';
 import { properName } from '../src/lib/waName';
 import type { MenuItem, MenuWeek } from '../src/data/weeklyMenu';
 
@@ -69,6 +69,16 @@ ok(p[1] === '28 Sep – 2 Oct', '跨月日期段');
 ok(!/\n/.test(p.join('')), '变量里没有换行（Meta 禁）');
 p = broadcastTemplateParams({ monday: '2026-09-14', week: week([1]), prevWeek: week([1]), menu, name: '  ebby   cheong ' });
 ok(p[0] === 'Ebby Cheong', '群发名字规整');
+
+// ── Full menu 讲哪一周（输入 UTC 毫秒，按 MYT 判）───────────────
+const myt = (s: string) => Date.parse(s + '+08:00');
+ok(broadcastWeekFor(myt('2026-09-09T22:00:00')) === '2026-09-07', '周三晚 → 本周一');
+ok(broadcastWeekFor(myt('2026-09-07T10:00:00')) === '2026-09-07', '周一 → 本周一');
+ok(broadcastWeekFor(myt('2026-09-11T05:59:00')) === '2026-09-07', '周五截单前 → 本周一');
+ok(broadcastWeekFor(myt('2026-09-11T06:00:00')) === '2026-09-14', '周五 06:00 起 → 下周一');
+ok(broadcastWeekFor(myt('2026-09-12T12:00:00')) === '2026-09-14', '周六 → 下周一');
+ok(broadcastWeekFor(myt('2026-09-13T23:30:00')) === '2026-09-14', '周日深夜 → 下周一');
+ok(broadcastWeekFor(myt('2026-09-14T00:30:00')) === '2026-09-14', '周一凌晨（UTC 还是周日）→ 本周一');
 
 // ── 称呼规整 ────────────────────────────────────────────────
 ok(properName('ebby cheong') === 'Ebby Cheong', '小写 → 首字母大写');

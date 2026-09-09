@@ -514,6 +514,17 @@ export function parseOptOut(text: unknown): 'stop' | 'start' | null {
   return null;
 }
 
+/**
+ * 「给我完整菜单」：weekly_menu_v2 的快捷回复按钮（Full menu 🍱）或客户自己打的同义句。
+ * 认到就直接回 buildBroadcast 的完整周报，不走 AI —— 那份文案是老板定稿的，AI 不该改写。
+ * 只认整句（去 emoji/标点后），"menu" 一个词和 /menu 仍归 AI/斜杠指令。
+ */
+export function isFullMenuRequest(text: unknown): boolean {
+  const t = String(text || '').replace(/[\p{Extended_Pictographic}\uFE0F]/gu, '').replace(/[.!。！?？]+$/, '').trim().toLowerCase();
+  if (!t) return false;
+  return /^(see |show |send |get )?(the )?full menu( please| pls)?$/.test(t) || /^(完整菜单|看完整菜单|要完整菜单|整周菜单)$/.test(t);
+}
+
 /** 退订/订阅的固定回执（双语一条，不走 AI）。 */
 export function optOutReply(kind: 'stop' | 'start'): string {
   return kind === 'stop'

@@ -59,6 +59,21 @@ export function broadcastTemplateParams(input: Pick<BroadcastInput, 'monday' | '
     return [properName(input.name), range, newLine.replace(/\s+/g, ' ').slice(0, 120)];
 }
 
+/**
+ * 客户此刻点「Full menu」该看哪一周：周六/日 → 下周一；周五过了 06:00 截单 → 下周一
+ * （这周只剩已截单的周五）；其余 → 本周一。跟群发脚本发的「下周」在客户点开那刻对得上。
+ * 输入 UTC 毫秒，按马来西亚时间（UTC+8）判。返回 YYYY-MM-DD。
+ */
+export function broadcastWeekFor(nowMs: number): string {
+    const myt = new Date(nowMs + 8 * 3600e3);
+    const wd = myt.getUTCDay(); // 0=Sun
+    const hour = myt.getUTCHours();
+    const todayMon = new Date(Date.UTC(myt.getUTCFullYear(), myt.getUTCMonth(), myt.getUTCDate() - ((wd + 6) % 7)));
+    const bump = wd === 6 || wd === 0 || (wd === 5 && hour >= 6) ? 7 : 0;
+    const d = new Date(todayMon.getTime() + bump * 86400e3);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
 export interface BroadcastInput {
     monday: string;
     week: MenuWeek;

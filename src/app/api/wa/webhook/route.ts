@@ -3,11 +3,16 @@ import {
   verifyMetaSignature, splitInbound, buildSinglePayload, decideInbound,
   appendTurn, describeInboundForTurn, SILENT_TYPES,
   splitStatuses, splitTemplateEvents, applyStatus, describeSendError,
-  mediaOfInbound, replyToOfInbound, parseOptOut, optOutReply,
+  mediaOfInbound, replyToOfInbound, parseOptOut, optOutReply, isFullMenuRequest,
   type InboundMessage, type RelayFlags, type StatusEvent,
 } from '@/lib/waWebhook';
 import { sendTelegramAlert } from '@/lib/telegramAlert';
 import { markRead, sendText } from '@/lib/waSend';
+import { readMenuRuntime } from '@/lib/menuRuntime.server';
+import { weekDocFor } from '@/lib/menuResolve';
+import { buildMenu } from '@/data/weeklyMenu';
+import { buildBroadcast, broadcastWeekFor } from '@/lib/menuBroadcast';
+import { properName } from '@/lib/waName';
 
 /**
  * /api/wa/webhook —— Meta WhatsApp webhook 的进入层（v4 relay）。
@@ -212,6 +217,13 @@ async function handleOne(im: InboundMessage): Promise<void> {
     return;
   }
 
+  // 「Full menu 🍱」（weekly_menu_v2 的快捷回复）：客户一点窗口就开了，直接回老板定稿的完整
+  // 周报（菜单/价格/新菜从 Firestore 排期现算，免费）。发不出去就放行给 AI 照常答。
+  if (!isBoss && !decision.throttled && isFullMenuRequest(describeInboundForTurn(im.message))) {
+    void markRead(im.msgId, { typing: true });
+    if (await replyFullMenu(db, im.from, now)) return;
+  }
+
   if (decision.throttled && !decision.throttleNotify) {
     console.log(`[wa/webhook] throttled ${im.from} — dropped (already notified this hour)`);
     return;
@@ -236,6 +248,33 @@ async function handleOne(im: InboundMessage): Promise<void> {
     humanEndedRecently: decision.humanEndedRecently,
   };
   await forwardToN8n(buildSinglePayload(im, flags), im);
+}
+
+async function replyFullMenu(db: FirebaseFirestore.Firestore, from: string, now: number): Promise<boolean> {
+  try {
+    const rt = await readMenuRuntime(db);
+    const monday = broadcastWeekFor(now);
+    const cur = weekDocFor(rt, monday, now);
+    const [y, m, d] = monday.split('-').map(Number);
+    const prevMonday = new Date(Date.UTC(y, m - 1, d - 7)).toISOString().slice(0, 10);
+    const prev = weekDocFor(rt, prevMonday, now);
+    const ref = db.collection(COL).doc(from);
+    const lead = ((await ref.get()).data() || {}) as Record<string, any>;
+    const text = buildBroadcast({
+      monday, week: cur.week, prevWeek: prev.week, menu: buildMenu(cur.week),
+      customerName: properName(lead.name || lead.profile?.nickname, 'there'),
+    });
+    const sent = await sendText(from, text);
+    if (!sent.ok) { console.error(`[wa/webhook] full menu send failed ${from}: ${sent.error}`); return false; }
+    await ref.set({
+      phone: from, lastMsgMs: now, updatedAtMs: now, lastFullMenuMs: now,
+      turns: appendTurn(lead.turns, 'out', text, now, sent.msgId ? { msgId: sent.msgId, status: 'sent', statusAtMs: now } : undefined),
+    }, { merge: true });
+    return true;
+  } catch (e) {
+    console.error(`[wa/webhook] full menu failed ${from}:`, e);
+    return false;
+  }
 }
 
 async function forwardToN8n(body: unknown, im: InboundMessage): Promise<void> {
