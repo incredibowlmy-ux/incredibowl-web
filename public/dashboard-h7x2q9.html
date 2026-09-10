@@ -738,6 +738,59 @@
         .inbox-kv span:first-child { color: var(--text-muted); }
         .inbox-thread-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; }
         @media (max-width: 1180px) { .inbox-wrap { grid-template-columns: 260px minmax(0, 1fr); } .inbox-right { grid-column: 1 / -1; height: 260px; } .inbox-wrap { height: auto; } .inbox-left, .inbox-main { height: calc(100vh - 460px); min-height: 420px; } }
+        /* 手机专用控件：桌面三栏并排用不上，默认藏起来 */
+        .inbox-back, .inbox-profile-btn, .inbox-sheet-bar, .inbox-sheet-backdrop { display: none; }
+        #inboxProfile { display: flex; flex-direction: column; gap: 12px; }
+        /* ═══ 手机（≤700px）：WhatsApp 式单栏 ═══
+           列表 ↔ 线程二选一（线程铺满整屏，← 回列表），客户档案变底部抽屉。
+           2026-09-10 老板：三栏挤在 390px 里，线程栏只剩 94px 宽，没法用。 */
+        @media (max-width: 700px) {
+            .inbox-wrap { display: block; height: auto; min-height: 0; }
+            .inbox-left { height: calc(100dvh - 150px); min-height: 360px; border-radius: 12px; }
+            .inbox-tools { padding: 8px 10px; gap: 6px; }
+            .inbox-tools input[type=search] { padding: 10px 12px; font-size: 16px; border-radius: 10px; }  /* 16px：iOS 聚焦不放大 */
+            .inbox-seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+            .inbox-seg::-webkit-scrollbar { display: none; }
+            .inbox-seg button { flex: 0 0 auto; padding: 7px 11px; font-size: 12.5px; }
+            .inbox-row { padding: 12px; gap: 12px; }
+            .inbox-avatar { width: 40px; height: 40px; flex-basis: 40px; font-size: 14px; }
+            .inbox-row-name { font-size: 14.5px; }
+            .inbox-row-preview { font-size: 13px; }
+            .inbox-chip { font-size: 11px; padding: 2px 8px; }
+            /* 线程：默认不显示；开了就铺满整屏，盖过顶栏 */
+            .inbox-main { display: none; }
+            .inbox-wrap.thread-open .inbox-left { display: none; }
+            .inbox-wrap.thread-open .inbox-main { display: flex; position: fixed; inset: 0; z-index: 150; border: 0; border-radius: 0; height: 100dvh; }
+            .inbox-head { padding: 8px 10px 8px 6px; gap: 6px; row-gap: 8px; }
+            .inbox-back, .inbox-profile-btn { display: inline-flex; width: 36px; height: 36px; }
+            .inbox-head-name { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .inbox-head-name span { display: none; }   /* 号码/语言进档案抽屉，标题只留名字 */
+            .inbox-head-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+            .inbox-head-actions { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+            .inbox-head-actions::-webkit-scrollbar { display: none; }
+            .inbox-head-actions > * { flex: 0 0 auto; }
+            .inbox-msgs { padding: 10px; }
+            .inbox-bubble { max-width: 86%; font-size: 14px; }
+            .inbox-bubble .act { opacity: 1; position: static; float: right; margin: 0 0 2px 10px; }   /* 手机没有 hover，引用按钮常显；改成浮动，别压到正文 */
+            .inbox-media { max-width: 100%; }
+            .inbox-composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+            .inbox-composer textarea { min-height: 48px; max-height: 120px; font-size: 16px; }
+            .inbox-composer-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+            .inbox-composer-row::-webkit-scrollbar { display: none; }
+            .inbox-composer-row > * { flex: 0 0 auto; }
+            .inbox-composer-row select { flex: 1 1 140px; min-width: 120px; font-size: 14px; }
+            .inbox-icon-btn { width: 36px; height: 36px; }
+            .inbox-attach input, .inbox-attach select { font-size: 16px; }
+            #inboxSend { padding: 10px 18px; font-size: 14px; }
+            /* 客户档案：底部抽屉 */
+            .inbox-right { display: none; }
+            .inbox-wrap.profile-open .inbox-right { display: flex; position: fixed; left: 0; right: 0; bottom: 0; max-height: 78dvh; z-index: 160; border-radius: 16px 16px 0 0; border-bottom: 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.18); padding: 0 14px calc(14px + env(safe-area-inset-bottom)); }
+            .inbox-wrap.profile-open .inbox-sheet-bar { display: flex; position: sticky; top: 0; background: var(--bg-elev); z-index: 1; align-items: center; justify-content: space-between; padding: 10px 0 8px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; }
+            .inbox-sheet-backdrop { position: fixed; inset: 0; background: rgba(20, 30, 25, 0.35); z-index: 155; }
+            .inbox-wrap.profile-open .inbox-sheet-backdrop { display: block; }
+            #inboxProfile { padding-top: 12px; }
+            #inboxProfile input, #inboxProfile select { font-size: 16px; }
+        }
 
         /* ═══════ MODAL ═══════ */
         .modal-backdrop {
@@ -1847,7 +1900,11 @@
                                 </div>
                             </div>
                         </section>
-                        <aside class="inbox-right" id="inboxProfile"><div class="inbox-thread-empty">客户档案</div></aside>
+                        <aside class="inbox-right">
+                            <div class="inbox-sheet-bar"><span>客户档案</span><button class="btn ghost sm inbox-icon-btn" id="inboxProfileClose" title="收起"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+                            <div id="inboxProfile"><div class="inbox-thread-empty">客户档案</div></div>
+                        </aside>
+                        <div class="inbox-sheet-backdrop" id="inboxSheetBackdrop"></div>
                     </div>
                 </div>
 
@@ -9081,12 +9138,28 @@ incredibowl.my`,
             if (!phone) return;
             inbox.phone = phone; inbox.stickBottom = true;
             $('#inboxEmpty').hidden = true; $('#inboxHead').hidden = false; $('#inboxMsgs').hidden = false; $('#inboxComposer').hidden = false;
+            inboxMobileThread(true);
             $('#inboxMsgs').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
             $$('.inbox-row').forEach(el => el.classList.toggle('active', el.dataset.phone === phone));
             await inboxRefreshThread(false);
             inboxStartThreadTimer();
         }
         function inboxJump(phoneRaw) { switchPage('inbox'); openInboxThread(phoneRaw); }
+
+        /**
+         * 手机版（≤700px）的两个开关。桌面三栏并排，这两个类没有对应样式，加了也没事。
+         *   thread-open  线程铺满整屏（← 回列表）
+         *   profile-open 客户档案从底部滑上来
+         */
+        function inboxMobileThread(open) {
+            const w = document.querySelector('.inbox-wrap'); if (!w) return;
+            w.classList.toggle('thread-open', !!open);
+            if (!open) w.classList.remove('profile-open');
+        }
+        function inboxMobileProfile(open) {
+            const w = document.querySelector('.inbox-wrap'); if (!w) return;
+            w.classList.toggle('profile-open', !!open);
+        }
 
         async function inboxRefreshThread(silent) {
             const phone = inbox.phone;
@@ -9110,10 +9183,12 @@ incredibowl.my`,
             const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600"><i class="inbox-dot" style="background:var(--danger)"></i>人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600"><i class="inbox-dot" style="background:var(--success)"></i>bot 接待中</span>';
             const nudge = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
             $('#inboxHead').innerHTML = `
-                <div style="min-width:0">
+                <button class="btn ghost sm inbox-icon-btn inbox-back" title="回对话列表" aria-label="返回"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <div style="min-width:0;flex:1">
                     <div class="inbox-head-name">${escapeHtml(d.name || '（无名字）')} <span style="font-weight:400;color:var(--text-muted);font-size:12px">${escapeHtml(d.phone)}${d.lang ? ' · ' + escapeHtml(d.lang) : ''}</span></div>
                     <div class="inbox-head-sub">${humanLine} · ${nudge}</div>
                 </div>
+                <button class="btn ghost sm inbox-icon-btn inbox-profile-btn" title="客户档案" aria-label="客户档案"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></button>
                 <div class="inbox-head-actions">
                     ${d.human
                         ? '<button class="btn sm inbox-act" data-op="release">交回 bot</button>'
@@ -9362,6 +9437,9 @@ incredibowl.my`,
             if (e.target.id === 'inboxEmojiBtn') { const p = $('#inboxEmoji'); p.hidden = !p.hidden; if (!p.hidden) renderInboxEmoji(); return; }
             const emojiBtn = e.target.closest('#inboxEmoji button');
             if (emojiBtn) { inboxInsertEmoji(emojiBtn.dataset.e); return; }
+            if (e.target.closest('.inbox-back')) { inboxMobileThread(false); return; }
+            if (e.target.closest('.inbox-profile-btn')) { inboxMobileProfile(true); return; }
+            if (e.target.closest('#inboxProfileClose') || e.target.id === 'inboxSheetBackdrop') { inboxMobileProfile(false); return; }
             if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
             if (e.target.id === 'inboxQrCancel') { $('#inboxQrEditor').hidden = true; return; }
             if (e.target.id === 'inboxQrSave') {
