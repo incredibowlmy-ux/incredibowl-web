@@ -53,8 +53,11 @@ import { calcCartTotal, calcCartCount } from '@/lib/cartUtils';
 import { claimFirstOrderPromo, FIRST_ORDER_PROMO_RM } from '@/lib/firstOrderPromo';
 import { setOrderAttribution } from '@/lib/orderAttribution';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import type { AddOnSelection, CartBundle } from '@/types';
 
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
+// 加料弹窗与官网首页同一个组件：规则/价格/推荐/互斥全在里面，这里不写第二套
+const AddOnModal = dynamic(() => import('@/components/menu/AddOnModal'), { ssr: false });
 const AuthModal = dynamic(() => import('@/components/auth/AuthModal'), { ssr: false });
 
 const LUNCH = 'Lunch (11AM-1PM)';
@@ -92,6 +95,10 @@ const DICT = {
     daily: '🍚 每天都有',
     noMenu: '这天碗妈还没排菜，先看看别的日子 👆',
     picked: '你的选择',
+    addOnLink: '＋ 加料 / 备注',
+    editAddOn: '修改加料 / 备注',
+    noteLabel: '备注：',
+    customHint: (n: number) => `另有 ${n} 份带加料`,
     promo: (rm: number) => `🎁 新朋友首单立减 RM${rm}，结账自动套用`,
     total: '合计',
     checkout: '去结账',
@@ -120,6 +127,10 @@ const DICT = {
     daily: '🍚 Every day',
     noMenu: 'Nothing scheduled for this day yet — try another day 👆',
     picked: 'Your picks',
+    addOnLink: '+ Add-ons / note',
+    editAddOn: 'Edit add-ons / note',
+    noteLabel: 'Note: ',
+    customHint: (n: number) => `+${n} with add-ons`,
     promo: (rm: number) => `🎁 RM${rm} off your first order — applied at checkout`,
     total: 'Total',
     checkout: 'Checkout',
@@ -217,6 +228,17 @@ function orderableDays(): string[] {
   return out;
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+/**
+ * 一条购物车的价钱 —— 与 cartRepricing / submit-order **逐字同一公式**：
+ * getDishPrice(菜价) × 份数 + Σ(加料单价 × 加料数)。加料按条算，不随份数放大
+ * （AddOnModal 也是这么算的）。只算菜价会把加料的钱算丢，结账被服务端拒收。
+ */
+const bundlePrice = (dish: { price?: number } | undefined, dishQty: number, addOns: AddOnSelection[] = []) =>
+  round2(getDishPrice(dish?.price ?? 0) * dishQty + addOns.reduce((s, a) => s + (a.item?.price || 0) * (a.quantity || 0), 0));
+/** 没加料、没备注的「素」条目 —— 菜卡上的 −/+ 只动这种，带加料的在「你的选择」里单独管。 */
+const isPlain = (b: CartBundle) => !(b.addOns && b.addOns.length) && !(b.note && b.note.trim());
+
 /** 当日精选 = 这周排在这个 weekday 的菜 / 限日常驻菜；其余 = 每天都有。 */
 const isSpecial = (d: MenuItem) => typeof d.weekday === 'number' || !!(d.availableWeekdays && d.availableWeekdays.length);
 
@@ -232,6 +254,14 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const [notice, setNotice] = useState('');
   const [promoOn, setPromoOn] = useState(false);
   const [day, setDay] = useState('');
+  const [minDate, setMinDate] = useState('');
+  // 加料弹窗：只以「编辑某一条」的方式打开（菜卡上一下 + 进车，想加料再点那条下面的链接）
+  const [addOnDish, setAddOnDish] = useState<MenuItem | null>(null);
+  const [isAddOnOpen, setIsAddOnOpen] = useState(false);
+  const [editConfig, setEditConfig] = useState<{
+    cartItemId: string; quantities: Record<string, number>; dishQty: number; note: string; selectedDate: string; selectedTime: string;
+  } | null>(null);
+  const [editFromCart, setEditFromCart] = useState(false);
 
   // 语言落点：记住过的选择优先，否则看手机语言。自动跳每个会话只跳一次（防来回弹），
   // 手动切过就写进 localStorage 永久生效。localStorage 被禁（无痕）就原地不动。
@@ -264,8 +294,9 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
   const days = useMemo(() => orderableDays(), []);
   const [dates, setDates] = useState<Record<number, MenuDateInfo>>({});
   useEffect(() => {
-    const { menuDates } = computeMenuDates(weeklyMenu, locale);
+    const { menuDates, minDate: md } = computeMenuDates(weeklyMenu, locale);
     setDates(menuDates);
+    setMinDate(md);
   }, [locale, weeklyMenu, menuVersion]);
 
   /** 某天能点的菜（和结账 / submit-order 同一个判定）。 */
@@ -284,8 +315,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     addOns: [],
     selectedDate: date,
     selectedTime: time,
-    // 与 cartRepricing / submit-order 完全一致的算法：getDishPrice × 份数
-    price: getDishPrice(dish.price) * qty,
+    price: bundlePrice(dish, qty),
     quantity: 1,
   }), []);
 
@@ -400,10 +430,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     ? 'bg-[#E7E8F7] text-[#4A4A8C]'
     : 'bg-[#FFF1D6] text-[#A2700B]');
 
-  /** 这道菜在「选中的那天 + 当前午/晚」对应的购物车 bundle。 */
+  /** 这道菜在「选中的那天 + 当前午/晚」的**素**条目（菜卡 −/+ 只动它）。 */
   const bundleOf = useCallback((dish: MenuItem, ymd: string) => {
     const time = slotOn(ymd, meal === 'dinner');
-    return cart.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time);
+    return cart.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time && isPlain(b));
   }, [cart, meal]);
 
   const addDish = (dish: MenuItem, ymd: string) => {
@@ -411,12 +441,10 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     const time = slotOn(ymd, meal === 'dinner');
     // 读 store 里的最新购物车，不读渲染闭包 —— 客户快速连点两下时闭包还是旧的，会加出两条同菜同时段
     const live = useCartStore.getState().cart;
-    const hit = live.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time);
+    const hit = live.find(b => b.dish?.id === dish.id && b.selectedDate === ymd && b.selectedTime === time && isPlain(b));
     if (hit) {
-      updateBundle(hit.cartItemId, {
-        dishQty: (hit.dishQty || 1) + 1,
-        price: getDishPrice(dish.price) * ((hit.dishQty || 1) + 1),
-      });
+      const q = (hit.dishQty || 1) + 1;
+      updateBundle(hit.cartItemId, { dishQty: q, price: bundlePrice(hit.dish, q) });
     } else {
       addBundle(bundleFor(dish, 1, ymd, time, live.length));
     }
@@ -427,7 +455,51 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     if (!b) return;
     const next = (b.dishQty || 1) + delta;
     if (next < 1) { removeFromCart(cartItemId); return; }
-    updateBundle(cartItemId, { dishQty: next, price: getDishPrice(b.dish?.price ?? 0) * next });
+    // 带加料的条目：加料钱按条算，份数变了加料不变
+    updateBundle(cartItemId, { dishQty: next, price: bundlePrice(b.dish, next, b.addOns) });
+  };
+
+  // ── 加料 / 备注：打开官网同一个弹窗编辑某一条 ──
+  const openAddOnEdit = (b: CartBundle, fromCart: boolean) => {
+    const quantities: Record<string, number> = {};
+    (b.addOns || []).forEach(a => { quantities[a.item.id] = a.quantity; });
+    setEditConfig({
+      cartItemId: b.cartItemId, quantities, dishQty: b.dishQty || 1, note: b.note ?? '',
+      selectedDate: b.selectedDate, selectedTime: b.selectedTime,
+    });
+    setAddOnDish(b.dish);
+    setEditFromCart(fromCart);
+    if (fromCart) setIsCartOpen(false);
+    setIsAddOnOpen(true);
+  };
+  const closeAddOn = () => {
+    setIsAddOnOpen(false);
+    setEditConfig(null);
+    // 从结账抽屉点「修改」进来的，改完/关掉都回抽屉 —— 客户在哪儿来就回哪儿
+    if (editFromCart) { setEditFromCart(false); setIsCartOpen(true); }
+  };
+  const handleAddOnSave = (
+    dish: MenuItem, addOns: AddOnSelection[], _modalTotal: number, note: string,
+    sDate: string, sTime: string, dishQty: number, editId?: string,
+  ) => {
+    // 价钱不信弹窗算的（它用原价没过 getDishPrice），按服务端公式重算
+    const price = bundlePrice(dish, dishQty, addOns);
+    const live = useCartStore.getState().cart;
+    if (editId) {
+      // 加料全删掉、备注也清空 → 变回素条目；同菜同日同时段已有素条目就并进去，别留两行一样的
+      const twin = !addOns.length && !note.trim()
+        ? live.find(b => b.cartItemId !== editId && b.dish?.id === dish.id && b.selectedDate === sDate && b.selectedTime === sTime && isPlain(b))
+        : undefined;
+      if (twin) {
+        const q = (twin.dishQty || 1) + dishQty;
+        updateBundle(twin.cartItemId, { dishQty: q, price: bundlePrice(twin.dish, q) });
+        removeFromCart(editId);
+      } else {
+        updateBundle(editId, { dish, dishQty, addOns, note, selectedDate: sDate, selectedTime: sTime, price });
+      }
+    } else {
+      addBundle({ cartItemId: `${dish.id}-${Date.now()}`, dish, dishQty, addOns, note, selectedDate: sDate, selectedTime: sTime, price, quantity: 1 });
+    }
   };
 
   const total = calcCartTotal(cart);
@@ -480,9 +552,14 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
     const otherTime = slotOn(day, meal !== 'dinner');
     const other = otherTime !== slotOn(day, meal === 'dinner')
       ? cart.find(b => b.dish?.id === d.id && b.selectedDate === day && b.selectedTime === otherTime) : undefined;
+    // 同时段带加料的份数：菜卡的 −/+ 不碰它们，但得让客户知道这道菜已经在车里
+    const thisTime = slotOn(day, meal === 'dinner');
+    const custom = cart
+      .filter(b => b.dish?.id === d.id && b.selectedDate === day && b.selectedTime === thisTime && !isPlain(b))
+      .reduce((s, b) => s + (b.dishQty || 1), 0);
     const sub = locale === 'en' ? (d.descEn || '') : (d.nameEn || d.desc || '');
     return (
-      <li className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${qty ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
+      <li className={`flex gap-3 items-center bg-white rounded-2xl p-2.5 pr-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)] transition ${qty || custom ? 'ring-1 ring-[#E8C9A6]' : ''}`}>
         <button type="button" onClick={() => addDish(d, day)} aria-label={locale === 'en' ? d.nameEn : d.name}
           className="relative w-[84px] h-[84px] rounded-xl overflow-hidden shrink-0 bg-[#E3EADA] active:scale-[0.98] transition">
           <DishThumb dish={d} size="84px" />
@@ -500,6 +577,7 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                   {t.otherSlot(slotLabel(otherTime), other.dishQty || 1)}
                 </p>
               )}
+              {custom > 0 && <p className="text-[10.5px] font-semibold leading-tight text-[#B4661E]">{t.customHint(custom)}</p>}
             </div>
             {qty === 0 ? (
               <button type="button" onClick={() => addDish(d, day)} aria-label="add"
@@ -642,12 +720,25 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold leading-snug truncate">{locale === 'en' ? b.dish?.nameEn : b.dish?.name}</p>
                     <p className="text-[12px] text-[#8A8A8A] mt-0.5 flex items-center gap-2 flex-wrap">
-                      <span>RM{(getDishPrice(b.dish?.price ?? 0) * (b.dishQty || 1)).toFixed(2)}</span>
+                      {/* 条目小计（含加料）= 与底栏合计、结账同一个数 */}
+                      <span>RM{(b.price || 0).toFixed(2)}</span>
                       {b.selectedDate && <DateChip ymd={b.selectedDate} />}
                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${slotChip(b.selectedTime)}`}>
                         {b.selectedTime === DINNER ? '🌙' : '☀️'} {slotLabel(b.selectedTime)}
                       </span>
                     </p>
+                    {(b.addOns?.length || b.note) ? (
+                      <div className="text-[11.5px] text-[#6B6B6B] mt-1 leading-snug">
+                        {b.addOns?.length ? (
+                          <p>{b.addOns.map(a => `${locale === 'en' ? (a.item.nameEn || a.item.name) : a.item.name}${a.quantity > 1 ? ` ×${a.quantity}` : ''}`).join(' · ')}</p>
+                        ) : null}
+                        {b.note ? <p className="text-[#8A8A8A] truncate">{t.noteLabel}{b.note}</p> : null}
+                      </div>
+                    ) : null}
+                    <button type="button" onClick={() => openAddOnEdit(b, false)}
+                      className="mt-1 text-[12px] font-semibold text-[#B4661E] active:opacity-70">
+                      {isPlain(b) ? t.addOnLink : t.editAddOn}
+                    </button>
                   </div>
                   <div className="flex items-center rounded-full border border-[#E5DFD3] bg-[#FDFBF7]">
                     <button type="button" aria-label="minus" onClick={() => stepQty(b.cartItemId, -1)} className="w-8 h-8 flex items-center justify-center text-[#6B6B6B]">
@@ -720,8 +811,25 @@ export default function QuickOrderClient({ locale = 'zh' }: Props) {
             cartCount={count}
             onAuthOpen={() => { setIsCartOpen(false); setIsAuthOpen(true); }}
             onClearCart={clearCart}
-            onEditItem={undefined}
+            onEditItem={b => openAddOnEdit(b, true)}
             locale={locale}
+          />
+        </ErrorBoundary>
+      )}
+      {addOnDish && (
+        <ErrorBoundary>
+          <AddOnModal
+            isOpen={isAddOnOpen}
+            onClose={closeAddOn}
+            dish={addOnDish}
+            onAddToCart={handleAddOnSave}
+            defaultDate={editConfig?.selectedDate || dates[addOnDish.id]?.actualDate}
+            isDaily={addOnDish.day === 'Daily / 常驻'}
+            minDate={minDate}
+            // 定日特餐的日期标签：用这条自己的送达日，别用「最近一次出现」（下周一的菜会显示成错的日子）
+            dateLabel={editConfig?.selectedDate ? fmtDate(editConfig.selectedDate) : dates[addOnDish.id]?.topTag}
+            locale={locale}
+            initialConfig={editConfig}
           />
         </ErrorBoundary>
       )}
