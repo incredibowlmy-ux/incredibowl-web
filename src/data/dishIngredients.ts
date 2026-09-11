@@ -91,13 +91,14 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
-    // 2026-09-11 新菜（id 34，hidden 待命）。只放已知的白饭 80g；
-    // TODO_CONFIRM: 鸡腿用哪种、几只/几克（鸡全腿 1 只？去骨鸡腿肉 Xg？）、配菜（时蔬？）
-    //   —— 老板/碗妈确认后补，上架前必须补齐，否则备餐清单漏算鸡腿。
+    // 2026-09-11 新菜（id 34）。老板 09-11 确认：鸡全腿 1 只、配西兰花；饭菜同装不用 150mm 餐盒。
+    // TODO_CONFIRM: 西兰花 50g 是沿用全表主菜统一份量，老板只说「配西兰花」未给克数。
     name: '阿嫲葱油鸡腿饭',
     shortName: '葱鸡',
     ingredients: [
+      { name: '鸡全腿', qty: 1, unit: '只' },
       { name: '白饭', qty: 80, unit: 'g' },
+      { name: '西兰花', qty: 50, unit: 'g' },
     ],
   },
   {
