@@ -92,3 +92,39 @@
   （dishIngredients.ts 里三条 TODO_RECIPE），所以鸡蛋合计仍数不到它们。08-17 晚餐就卖了
   2 份鲜虾西兰花滑蒸蛋。老板给克数/蛋数就能自动接上，在那之前故意不编。
 - 新客赠品那份薯煎蛋B 走服务端派生，不进 dashboard 鸡蛋合计（与既有设计一致）。
+
+---
+
+## 2026-09-11 · Dashboard 侧边菜单手机端无法滚动
+
+### 病因（实测，非猜测）
+`public/dashboard-h7x2q9.html` 的侧栏是 flex 纵向布局，但**整条链路上没有任何一层开了 `overflow-y`**：
+
+- `.app { height: 100dvh; overflow: hidden }` —— 祖先直接裁掉溢出内容
+- `.sidebar` —— 手机端 `position: fixed; top:0; bottom:0`，高度被钉死 = 视口高，无 `overflow-y`
+- `.nav { flex: 1 }` —— flex 子项 `min-height` 默认 `auto`，**撑不下也不收缩**，于是直接顶破侧栏
+
+16 个导航项 + 3 个分组标题 + 品牌头 + 用户卡 ≈ 773px 内容，塞进 700px 的视口。
+
+### 实测数据（Chromium，390×700 手机视口）
+| | 修复前 | 修复后 |
+|---|---|---|
+| `.nav` clientHeight / scrollHeight | 773 / 773 | 513 / 773 |
+| `overflow-y` | `visible` | `auto` |
+| 可滚动 | ❌ | ✅ |
+| 「设置」底边 y | 863（屏外 163px） | 滚到底后 603 ✅ |
+| 「退出登录」页脚底边 y | 936（屏外 236px） | 676 固定在底 ✅ |
+
+结论：不是「滚不动」，是**根本不存在滚动容器**，溢出部分被祖先 `overflow:hidden` 裁掉后彻底点不到。
+矮屏笔电（可视高 < ~800px）在桌面端也中招，不只是手机。
+
+### 修复
+1. `.nav` 变成侧栏里唯一的滚动区：`flex: 1 1 auto` + **`min-height: 0`**（关键，不写则 flex 子项不收缩）
+   + `overflow-y: auto` + `overscroll-behavior: contain`（防滚动穿透到背景页）+ `-webkit-overflow-scrolling: touch`
+2. `.sidebar` 加 `min-height: 0; overflow: hidden` —— 滚动交给 `.nav`，品牌头和用户卡保持固定
+3. `.sidebar-brand` / `.sidebar-footer` 加 `flex-shrink: 0` —— 内容变多时不被压扁
+4. 手机媒体查询里 `.sidebar` 补 `padding-bottom: calc(24px + env(safe-area-inset-bottom))` —— iOS 底部 home indicator 不再盖住最后一项
+5. `.nav` 滚动条样式跟随 `.content` 既有风格（6px，`--border-strong`）
+
+### 验证
+Playwright + Chromium 真机视口实跑，前后对比见上表；截图确认「设置」可达、退出登录固定在底部、品牌头不跟着滚。
