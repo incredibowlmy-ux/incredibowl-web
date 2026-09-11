@@ -517,6 +517,22 @@ const DISH_CATALOG: DishData[] = [
         desc: "鸡扒煎到金黄，淋上蜜汁再撒一把白芝麻，芝麻的焦香把甜味托起来，外脆里嫩很下饭。",
         descEn: "Chicken chop pan-seared golden, finished with a honey glaze and a scatter of toasted sesame — nutty, sweet and made for rice."
     },
+    {
+        // 全新菜 2026-09-11 入系统（老板定名+定价 RM19.90），待命 hidden，老板备好后在
+        //   dashboard「菜单排期」页排期并取消「未上架」。无实拍图，emoji 占位防 hero 404
+        //   （有图后换 /xxx.webp）。餐券全覆盖无 top-up。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
+        id: 34,
+        name: "阿嫲葱油鸡腿饭",
+        nameEn: "Grandma's Scallion Oil Chicken Leg Rice",
+        price: 19.90,
+        image: "🍗",
+        hidden: true,
+        tags: ["阿嫲古早味", "葱油飘香", "皮滑肉嫩", "葱油拌饭"],
+        tagsEn: ["Grandma's recipe", "Fragrant scallion oil", "Silky & tender", "Scallion oil over rice"],
+        desc: "热油一泼，葱香瞬间炸开，淋在嫩滑鸡腿上，连饭都拌着葱油吃光——阿嫲的老味道。",
+        descEn: "Sizzling oil poured over fresh scallions, the aroma bursting over tender chicken leg — scallion oil soaking into the rice, just like grandma made it."
+    },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
