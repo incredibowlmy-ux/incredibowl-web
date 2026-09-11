@@ -3143,6 +3143,7 @@
             // ─── 周五 Fri ────────────────────────────────────────────
             { id: 33, name: '芝麻蜜汁鸡扒饭', nameEn: 'Sesame Honey Glazed Chicken Chop', price: 18.50, costPrice: 0, day: 'Fri', active: true },  // 🆕 2026-09-04 新菜（webapp id 33）；顶替 #1 金黄鸡扒；命名刻意与 #26 柠檬蜜糖鸡扒拉开距离；costPrice 未知需 Settings 手动填
             { id: 29, name: '古早味照烧鳗鱼饭', nameEn: 'Hometown Glazed Unagi Rice', price: 24.90, costPrice: 0, day: 'Fri', active: true, voucherTopUp: 5 },  // 2026-09-07 从 Thu 挪到周五第二道（webapp id 29）
+            { id: 34, name: '阿嫲葱油鸡腿饭', nameEn: "Grandma's Scallion Oil Chicken Leg Rice", price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 🆕 2026-09-11 新菜（webapp id 34）；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
@@ -16396,11 +16397,17 @@ incredibowl.my`,
                     </div>`;
                 }).join('') || '<div style="opacity:.5;font-size:12px;padding:6px 8px">（空）</div>';
                 const st = msStatsMap();
-                const options = MS.catalog
-                    .filter(c => !list.includes(c.id) && !(c.hidden && key !== 'paused'))
+                // 按主料分组（鱼·海鲜/鸡/猪/牛/其他），组内按近4周销量排。
+                // 未上架的菜也列出来：排进日期/常驻列时 msOnChange 会先自动上架（2026-09-11 老板要求）。
+                const ranked = MS.catalog
+                    .filter(c => !list.includes(c.id))
                     .map(c => { const s = st.byName.get(canonicalDishName(c.name)); return { c, qty: s ? s.qty : 0 }; })
-                    .sort((a, b) => b.qty - a.qty || a.c.name.localeCompare(b.c.name, 'zh'))
-                    .map(({ c, qty }) => `<option value="${c.id}">${msEsc(c.name)}（近4周 ${qty} 份）${c.hidden ? '（未上架）' : ''}</option>`).join('');
+                    .sort((a, b) => b.qty - a.qty || a.c.name.localeCompare(b.c.name, 'zh'));
+                const options = MS_PROTEIN_GROUPS.map(g => {
+                    const items = ranked.filter(({ c }) => msProteinGroup(c) === g);
+                    return items.length ? `<optgroup label="${g}">${items.map(({ c, qty }) =>
+                        `<option value="${c.id}">${msEsc(c.name)}（近4周 ${qty} 份）${c.hidden ? (key === 'paused' ? '（未上架）' : '（未上架·选中即上架）') : ''}</option>`).join('')}</optgroup>` : '';
+                }).join('');
                 return `<div class="card" style="margin:0">
                     <div class="card-header"><div><div class="card-title">${title}</div><div class="card-sub">${sub}</div></div>
                         ${opts.saveDay ? `<button class="btn ghost sm" data-act="saveDay" data-key="${key}">只保存${title}</button>` : ''}</div>
@@ -16550,10 +16557,35 @@ incredibowl.my`,
                 return null;
             }
         }
-        function msOnChange(ev) {
+        // 排期下拉的主料分组。菜名关键词判断；名字看不出主料的按配方主料写死在 OVERRIDE。
+        const MS_PROTEIN_GROUPS = ['🐟 鱼·海鲜', '🐔 鸡', '🐷 猪', '🐮 牛', '🥚 其他'];
+        const MS_PROTEIN_OVERRIDE = {
+            12: '🐟 鱼·海鲜',  // 山药云耳海陆双鲜炒：虾 4 只 + 鸡胸 65g
+            22: '🐷 猪',       // 参峇臭豆虾仁炒花肉：五花肉 75g 为主、虾 4 只
+            25: '🐔 鸡',       // 家常日式咖喱饭：鸡胸 60g
+        };
+        function msProteinGroup(c) {
+            if (MS_PROTEIN_OVERRIDE[c.id]) return MS_PROTEIN_OVERRIDE[c.id];
+            const n = c.name || '';
+            if (/鱼|虾|鳗|三文/.test(n)) return '🐟 鱼·海鲜';
+            if (/鸡/.test(n)) return '🐔 鸡';
+            if (/猪|花肉|排骨|三层肉/.test(n)) return '🐷 猪';
+            if (/牛/.test(n)) return '🐮 牛';
+            return '🥚 其他';
+        }
+        async function msOnChange(ev) {
             const t = ev.target;
             if (t.dataset.role === 'add-select' && t.value) {
-                msPlace(t.value, t.dataset.key);
+                const id = t.value, key = t.dataset.key;
+                const dish = msDish(id);
+                // 未上架的菜排进日期/常驻列 = 要上菜单 → 先取消「未上架」（后端拒收 hidden 菜的排期）。
+                // 不在任何列时网站本来就不显示，所以提前上架不会让顾客看到。
+                if (dish && dish.hidden && key !== 'paused') {
+                    t.disabled = true;
+                    const res = await msApply({ action: 'setDish', id: Number(id), hidden: false }, `已上架「${dish.name}」`);
+                    if (!res) { t.disabled = false; t.value = ''; return; }
+                }
+                msPlace(id, key);
                 msRender();
                 return;
             }
