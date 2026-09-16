@@ -538,7 +538,7 @@ const DISH_CATALOG: DishData[] = [
     {
         // 全新菜 2026-09-16 入系统（老板定名+定价 RM19.90），计划 2026-09-21（周一）上线。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排进周一并取消「未上架」。
-        //   餐券全覆盖无 top-up。主料巴丁鱼片，配方照 #20 姜葱鱼片（葱换蒜），见 dishIngredients.ts。
+        //   餐券全覆盖无 top-up。主料巴丁鱼片，配方照 #20 姜葱鱼片（葱换蒜、不配荷包蛋，老板 09-16 定），见 dishIngredients.ts。
         // 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在 Google Sheet
         //   dishes 表加一行给 chatbot 发图）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
@@ -548,10 +548,10 @@ const DISH_CATALOG: DishData[] = [
         price: 19.90,
         image: "🐟",
         hidden: true,
-        tags: ["阿嫲古早味", "蚝油姜蒜爆香", "巴丁鱼片嫩滑", "荷包蛋"],
-        tagsEn: ["Grandma's recipe", "Oyster sauce, ginger & garlic", "Silky patin fillet", "Sunny-side egg"],
-        desc: "巴丁鱼片下锅，姜丝蒜米爆香，一勺蚝油裹得油亮，再盖一颗荷包蛋——阿嫲的家常下饭菜。",
-        descEn: "Silky patin fillet wok-tossed with ginger and garlic, glossed in oyster sauce and crowned with a sunny-side-up egg — grandma's everyday rice companion."
+        tags: ["阿嫲古早味", "蚝油姜蒜爆香", "巴丁鱼片嫩滑", "下饭神器"],
+        tagsEn: ["Grandma's recipe", "Oyster sauce, ginger & garlic", "Silky patin fillet", "Made for rice"],
+        desc: "巴丁鱼片下锅，姜丝蒜米爆香，一勺蚝油裹得油亮，浇在白饭上——阿嫲的家常下饭菜。",
+        descEn: "Silky patin fillet wok-tossed with ginger and garlic, glossed in oyster sauce and spooned over rice — grandma's everyday rice companion."
     },
 ];
 

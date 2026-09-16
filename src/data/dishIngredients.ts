@@ -279,15 +279,14 @@ export const dishRecipes: DishRecipe[] = [
     ],
   },
   {
-    // 2026-09-16 新菜（id 35）。老板 09-16 定：配方同 #20 古早味姜葱鱼片饭，葱换蒜
-    //   （含荷包蛋 1 颗 → dashboard DISH_DEFAULT_EGGS 已同步登记）。
+    // 2026-09-16 新菜（id 35）。老板 09-16 定：配方同 #20 古早味姜葱鱼片饭，葱换蒜；
+    //   老板 09-16 追加：不配荷包蛋（与 #20 不同，无鸡蛋 → dashboard DISH_DEFAULT_EGGS 不登记）。
     // TODO_CONFIRM: 蒜的克数老板未给，暂不列（全表此前没有「蒜」这个采购项）；给数字后补
     //   { name: '蒜', qty: ?, unit: 'g' }。蚝油属调味料，与 #20 的绍兴酒一样不入配方。
     name: '阿嫲蚝油姜蒜鱼片饭',
     shortName: '蒜鱼',
     ingredients: [
       { name: '巴丁鱼片', qty: 250, unit: 'g' },
-      { name: '鸡蛋(生)', qty: 1, unit: '颗' },
       { name: '白饭', qty: 80, unit: 'g' },
       { name: '姜', qty: 12, unit: 'g' },
     ],
