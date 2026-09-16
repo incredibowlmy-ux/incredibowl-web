@@ -572,6 +572,29 @@ const DISH_CATALOG: DishData[] = [
         desc: "五花肉和土豆一锅慢火焖煮，土豆吸饱了肉汁，软糯下饭——就是家里常吃的那一味。",
         descEn: "Pork belly and potatoes braised together low and slow — the potatoes soak up every drop of the gravy. Simple, homely and made for rice."
     },
+    {
+        // 全新菜 2026-09-17 入系统（老板定英文名 + 定价 RM24.90）。老板说：食材与 #13
+        //   马铃薯炖花肉片相同，只是梅花肉片换成和牛片（配方见 dishIngredients.ts）。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
+        // a la carte RM24.90；餐券抵扣需补 RM5（voucherTopUp，餐券覆盖 RM19.90，与同价的三文鱼/鳗鱼一致）。
+        //   老板 09-17 定：开预付升级池 wagyu-slice-upgrade RM5/张（#24 和牛饼的 wagyu-upgrade 是 RM3，不共用）。
+        // ⚠️ TODO_CONFIRM 中文名：老板只给了英文名，「马铃薯炖和牛片」是照 #13 命名的草稿。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在 Google Sheet
+        //   dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        id: 37,
+        name: "马铃薯炖和牛片",
+        nameEn: "Wagyu Beef Slices & Potato Stew",
+        price: 24.90,
+        voucherTopUp: 5,
+        topUpAddonId: "wagyu-slice-upgrade",
+        image: "🥩",
+        hidden: true,
+        tags: ["和牛片", "软糯入味", "土豆吸满肉汁", "餐券+RM5"],
+        tagsEn: ["Wagyu slices", "Tender & glazed", "Potatoes soak up the gravy", "Voucher +RM5"],
+        desc: "和牛片和土豆一锅炖煮，土豆吸饱了牛肉的香，软糯入味，拌饭一流。",
+        descEn: "Wagyu beef slices simmered with potatoes until the potatoes soak up all that rich beefy flavour — tender, glazed and made for rice."
+    },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
