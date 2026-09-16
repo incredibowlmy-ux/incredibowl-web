@@ -519,14 +519,16 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         // 全新菜 2026-09-11 入系统（老板定名+定价 RM19.90），待命 hidden，老板备好后在
-        //   dashboard「菜单排期」页排期并取消「未上架」。无实拍图，emoji 占位防 hero 404
-        //   （有图后换 /xxx.webp）。餐券全覆盖无 top-up。
+        //   dashboard「菜单排期」页排期并取消「未上架」。餐券全覆盖无 top-up。
+        // 主图 2026-09-16 老板提供（源图 Dish image/Gpt/scallionoilchicken.jpeg 1254²
+        //   → 1024² webp 150KB，与 #33 同规格）。⚠️ 仍保持 hidden：老板 09-16 指示
+        //   「只转图接上，先别取消上架」—— 上架时机由老板在 dashboard 决定。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
         id: 34,
         name: "阿嫲葱油鸡腿饭",
         nameEn: "Grandma's Scallion Oil Chicken Leg Rice",
         price: 19.90,
-        image: "🍗",
+        image: "/scallion_oil_chicken_leg.webp",
         hidden: true,
         tags: ["阿嫲古早味", "葱油飘香", "皮滑肉嫩", "葱油拌饭"],
         tagsEn: ["Grandma's recipe", "Fragrant scallion oil", "Silky & tender", "Scallion oil over rice"],
