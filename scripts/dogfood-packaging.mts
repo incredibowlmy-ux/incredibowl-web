@@ -70,7 +70,7 @@ ok(count(trayMains, CUTLERY_SET) === 4, `4 份主菜餐具应 4，得 ${count(tr
 // 餐盒名单每个名字都必须还在 weeklyMenu 里（改菜名会静默算 0）
 const menuNames = new Set(DISH_CATALOG_ALL.map(d => d.name));
 for (const n of TRAY_DISH_NAMES) ok(menuNames.has(n), `TRAY_DISH_NAMES「${n}」不在 weeklyMenu 里`);
-ok(TRAY_DISH_NAMES.size === 11, `餐盒名单应 11 道，得 ${TRAY_DISH_NAMES.size}`);
+ok(TRAY_DISH_NAMES.size === 12, `餐盒名单应 12 道，得 ${TRAY_DISH_NAMES.size}`);
 
 // 纸袋：按单 ceil(碗数/4)，至少 1
 ok(count(web, PAPER_BAG) === 1, `网页单 4 碗应 1 袋，得 ${count(web, PAPER_BAG)}`);        // 2+2 = 4 碗
