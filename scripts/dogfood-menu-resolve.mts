@@ -87,6 +87,44 @@ ok(dup.length === 1, '同一道菜不重复出现');
 ok(new Set(ids(comp)).size === comp.length, '合成周无重复 id');
 ok(menuForWeekdayDates(dates) === comp, '合成周缓存命中');
 
+console.log('6b. 合成周跨两周：本周已过去那几天的菜、下周转暂别 → 必须出现在暂别区（2026-09-16 真实排期）');
+{
+    const w0914 = {
+        days: { 1: [12, 21], 2: [30, 3], 3: [23, 34], 4: [14, 25], 5: [2, 20] },
+        daily: [11, 13],
+        paused: [22, 5, 24, 28, 26, 31, 27, 32, 33, 29, 1, 4],
+    };
+    const w0921 = {
+        days: { 1: [12], 2: [3], 3: [23, 28], 4: [14, 25], 5: [2, 20] },
+        daily: [11, 13],
+        paused: [34, 22, 5, 24, 26, 31, 27, 32, 33, 1, 4, 21, 30],
+    };
+    const real: MenuRuntimeData = {
+        source: 'firestore',
+        weeks: { '2026-09-14': w0914, '2026-09-21': w0921 },
+        catalog: { '34': { hidden: false } },   // 老板 09-10 在 dashboard 取消了未上架
+        closures: {},
+        loadedAt: Date.now(),
+    };
+    setRuntimeData(real);
+    // 周三 09-16 23:50 MYT：截单后，窗口 = 周四 09-17 … 周三 09-23
+    const wedNight = Date.UTC(2026, 8, 16, 23, 50) - 8 * 3600e3;
+    const win = nextOccurrenceDates(wedNight);
+    ok(win[4] === '2026-09-17' && win[1] === '2026-09-21' && win[3] === '2026-09-23', '窗口 = 09-17(四) … 09-23(三)');
+    const m = currentMenu(wedNight);
+    const retired = m.filter(d => d.retired && !d.hidden).map(d => d.id);
+    for (const [id, nm] of [[21, '柠香三文鱼'], [30, '白萝卜焖花肉'], [34, '葱油鸡腿']] as const) {
+        ok(retired.includes(id), `#${id} ${nm}：本周已过那天排过、下周转暂别 → 出现在暂别区`);
+    }
+    ok(m.find(d => d.id === 28)?.weekday === 3 && !m.find(d => d.id === 28)?.retired, '#28 本周暂别、下周三排期 → 显示成周三日期卡，不进暂别');
+    ok(retired.includes(29), '#29 本周暂别、下周没排 → 仍在暂别区');
+    ok(new Set(ids(m)).size === m.length, '无重复 id');
+    const visible = m.filter(d => !d.hidden);
+    const shouldSee = new Set([...Object.values(w0921.days).flat(), ...w0921.daily, ...w0921.paused, ...w0914.paused]);
+    ok([...shouldSee].every(id => visible.some(d => d.id === id)), '两周里被排进任一栏的菜全都可见，一道不丢');
+    setRuntimeData(data);
+}
+
 console.log('7. nextOccurrenceDates（截单前后、跳周末、跳停业日）');
 const tueEarly = Date.UTC(2026, 8, 8, 5, 0) - 8 * 3600e3;  // MYT 周二 05:00
 const tueLate = Date.UTC(2026, 8, 8, 7, 0) - 8 * 3600e3;   // MYT 周二 07:00

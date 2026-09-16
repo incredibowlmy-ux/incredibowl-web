@@ -95,11 +95,16 @@ export function menuForWeekdayDates(dates: Record<number, string>, data: MenuRun
         const claim = (ids: number[]) => ids.filter(id => (seen.has(id) ? false : (seen.add(id), true)));
         const days: Record<number, number[]> = {};
         const daily = claim(base.daily ?? []);
+        const weeks = [base];
         for (const wd of order) {
             const wk = weekDocFor(data, dates[wd]).week;
+            weeks.push(wk);
             days[wd] = claim(wk.days?.[wd] ?? []);
         }
-        const paused = claim(base.paused ?? []);
+        // 暂别取窗口涉及的**所有周**的并集（日期卡已先认领的 id 自动跳过）。只看 base 周会漏：
+        // 本周排在已过去那几天、下周被移进暂别的菜，既不在任何日期卡、也不在 base 的暂别名单，
+        // 于是从网站整个消失（2026-09-16 实测 #21 柠香三文鱼 / #30 白萝卜焖花肉 / #34 葱油鸡腿）。
+        const paused = claim(weeks.flatMap(w => w.paused ?? []));
         return buildMenu({ days, daily, paused }, { overrides: data.catalog });
     });
 }
