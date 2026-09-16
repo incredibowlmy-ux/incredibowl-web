@@ -184,7 +184,7 @@ const DISH_CATALOG: DishData[] = [
     {
         id: 13,
         name: "马铃薯炖花肉片",
-        nameEn: "Home-style Pork Belly Slices & Potato Stew",
+        nameEn: "Japanese-style Pork Belly Slices & Potato Stew",  // 2026-09-17 老板改名（原 Home-style）
         price: 19.90,
         // 2026-07-27 周起恢复全周常驻（老板 07-24 菜单），不再限日。
         image: "/pork_potato_stew.webp",
@@ -552,6 +552,25 @@ const DISH_CATALOG: DishData[] = [
         tagsEn: ["Grandma's recipe", "Oyster sauce, ginger & garlic", "Silky patin fillet", "Made for rice"],
         desc: "巴丁鱼片下锅，姜丝蒜米爆香，一勺蚝油裹得油亮，浇在白饭上——阿嫲的家常下饭菜。",
         descEn: "Silky patin fillet wok-tossed with ginger and garlic, glossed in oyster sauce and spooned over rice — grandma's everyday rice companion."
+    },
+    {
+        // 全新菜 2026-09-17 入系统（老板从 10 个候选里选定菜名）。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排进某天并取消「未上架」。
+        // ⚠️ TODO_CONFIRM 价格：老板未给，暂按花肉系列同价 RM19.90 占位（hidden 期间顾客看不到），上架前必须确认。
+        // 配方份量未给，见 dishIngredients.ts（只放白饭 80g，其余待补）。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在 Google Sheet
+        //   dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
+        id: 36,
+        name: "家常土豆焖五花肉",
+        nameEn: "Home-Style Braised Pork Belly & Potato",
+        price: 19.90,
+        image: "🥔",
+        hidden: true,
+        tags: ["家常味道", "五花肉焖到软糯", "土豆吸满肉汁", "下饭神器"],
+        tagsEn: ["Home-style", "Braised till tender", "Potatoes soak up the gravy", "Made for rice"],
+        desc: "五花肉和土豆一锅慢火焖煮，土豆吸饱了肉汁，软糯下饭——就是家里常吃的那一味。",
+        descEn: "Pork belly and potatoes braised together low and slow — the potatoes soak up every drop of the gravy. Simple, homely and made for rice."
     },
 ];
 
