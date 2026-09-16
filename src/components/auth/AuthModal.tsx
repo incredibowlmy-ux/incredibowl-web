@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, upsertSavedAddress } from '@/lib/auth';
+import { signInWithGoogle, signInWithFacebook, loginWithEmail, registerWithEmail, resetPassword, logout, onAuthChange, getUserProfile, updateUserProfile, upsertSavedAddress, pendingLinkFromError, getSignInMethods, completePendingLink, LinkEmailMismatchError, LinkStepError, type PendingLink } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { saveDeliveryProfile } from '@/lib/deliveryProfile';
 import { User } from 'firebase/auth';
@@ -12,10 +12,11 @@ import AuthMainView from './AuthMainView';
 import AuthEmailLoginView from './AuthEmailLoginView';
 import AuthEmailSignupView from './AuthEmailSignupView';
 import AuthProfileView from './AuthProfileView';
+import AuthLinkExistingView from './AuthLinkExistingView';
 import type { Locale } from '@/lib/locale';
 import { AUTH_DICT } from './dict';
 
-type AuthView = 'main' | 'email-login' | 'email-signup' | 'profile';
+type AuthView = 'main' | 'email-login' | 'email-signup' | 'profile' | 'link-existing';
 
 export default function AuthModal({ isOpen, onClose, onProfileComplete, locale = 'zh' }: {
     isOpen: boolean,
@@ -42,6 +43,9 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
     const [editingProfile, setEditingProfile] = useState(false);
     const [userOrders, setUserOrders] = useState<any[]>([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
+    // 同邮箱撞号：被拒的 provider credential 暂存在这，等客户登完原账号再绑上去
+    const [pendingLink, setPendingLink] = useState<PendingLink | null>(null);
+    const [linkMethods, setLinkMethods] = useState<string[]>([]);
 
     useEffect(() => {
         const unsubscribe = onAuthChange((user) => {
@@ -72,35 +76,69 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
 
     if (!isOpen) return null;
 
-    const handleGoogleLogin = async () => {
+    // 社交登录撞上已有账号（同邮箱、不同 provider）→ 转到「登原账号并绑定」视图。
+    // 回 false = 不是撞号错误，调用方按普通错误处理。
+    const startLinkFlow = async (error: unknown): Promise<boolean> => {
+        const pending = pendingLinkFromError(error);
+        if (!pending) return false;
+        setLinkMethods(await getSignInMethods(pending.email));
+        setPendingLink(pending);
+        setPassword(''); setMessage('');
+        setView('link-existing');
+        return true;
+    };
+
+    const handleSocialLogin = async (signIn: () => Promise<User>) => {
         setLoading(true); setMessage('');
         try {
-            const user = await signInWithGoogle();
+            const user = await signIn();
             setMessage(t.loginSuccess);
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
-            if (error.code === 'auth/popup-closed-by-user') setMessage(t.loginCancelled);
+            if (await startLinkFlow(error)) { /* 视图已切走 */ }
+            else if (error.code === 'auth/popup-closed-by-user') setMessage(t.loginCancelled);
+            else if (error.code === 'auth/account-exists-with-different-credential') setMessage(t.fbAccountExists);
             else if (error.code === 'auth/unauthorized-domain') setMessage(t.unauthorizedDomain);
             else setMessage(t.loginFailed(error.message));
         }
         setLoading(false);
     };
 
-    const handleFacebookLogin = async () => {
+    const handleGoogleLogin = () => handleSocialLogin(signInWithGoogle);
+    const handleFacebookLogin = () => handleSocialLogin(signInWithFacebook);
+
+    // 登原账号 → linkWithCredential。登进去的瞬间 onAuthChange 已把视图切到
+    // profile，绑定结果用 message 在那里显示。绑定失败客户也已经在原账号里，
+    // 没有裂号；下次再用 Facebook 登会重新进这条流程。
+    const finishLink = async (signIn: () => Promise<User>) => {
+        if (!pendingLink) return;
         setLoading(true); setMessage('');
+        const providerName = AUTH_DICT[locale].link.providerName[pendingLink.provider];
         try {
-            const user = await signInWithFacebook();
-            setMessage(t.loginSuccess);
+            const user = await completePendingLink(pendingLink, signIn);
+            setPendingLink(null);
+            setMessage(t.linkDone(providerName));
             const profile = await getUserProfile(user.uid);
             if (!profile?.phone || !profile?.address) setEditingProfile(true);
         } catch (error: any) {
-            if (error.code === 'auth/popup-closed-by-user') setMessage(t.loginCancelled);
-            else if (error.code === 'auth/account-exists-with-different-credential') setMessage(t.fbAccountExists);
+            if (error instanceof LinkEmailMismatchError) { setPendingLink(null); setMessage(t.linkEmailMismatch); }
+            else if (error instanceof LinkStepError) { console.warn('[finishLink]', error.cause); setPendingLink(null); setMessage(t.linkFailed); }
+            else if (error.code === 'auth/popup-closed-by-user') setMessage(t.loginCancelled);
+            else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') setMessage(t.wrongCredentials);
+            else if (error.code === 'auth/user-not-found') setMessage(t.userNotFound);
             else if (error.code === 'auth/unauthorized-domain') setMessage(t.unauthorizedDomain);
             else setMessage(t.loginFailed(error.message));
         }
         setLoading(false);
+    };
+
+    const handleLinkViaGoogle = () => finishLink(signInWithGoogle);
+    const handleLinkViaEmail = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!pendingLink) return;
+        if (!password) { setMessage(t.fillEmailPassword); return; }
+        return finishLink(() => loginWithEmail(pendingLink.email, password));
     };
 
     const handleEmailLogin = async (e: React.FormEvent) => {
@@ -205,6 +243,7 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
     const resetAndClose = () => {
         setEmail(''); setPassword(''); setName(''); setMessage('');
         setShowPassword(false); setEditingProfile(false);
+        setPendingLink(null);
         onClose();
     };
 
@@ -252,6 +291,19 @@ export default function AuthModal({ isOpen, onClose, onProfileComplete, locale =
                         onSignup={() => { setView('email-signup'); setMessage(''); }}
                         onBack={() => { setView('main'); setMessage(''); }}
                         onForgotPassword={handlePasswordReset}
+                        locale={locale}
+                    />
+                )}
+
+                {view === 'link-existing' && pendingLink && (
+                    <AuthLinkExistingView
+                        pending={pendingLink} methods={linkMethods}
+                        password={password} setPassword={setPassword}
+                        showPassword={showPassword} setShowPassword={setShowPassword}
+                        loading={loading} message={message}
+                        onGoogle={handleLinkViaGoogle}
+                        onEmailSubmit={handleLinkViaEmail}
+                        onBack={() => { setPendingLink(null); setView('main'); setMessage(''); }}
                         locale={locale}
                     />
                 )}

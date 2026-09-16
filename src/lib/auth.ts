@@ -4,12 +4,15 @@ import {
     createUserWithEmailAndPassword,
     signInAnonymously,
     linkWithPopup,
+    linkWithCredential,
+    fetchSignInMethodsForEmail,
     GoogleAuthProvider,
     FacebookAuthProvider,
     signOut,
     onAuthStateChanged,
     sendPasswordResetEmail,
     User,
+    AuthCredential,
     updateProfile
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from "firebase/firestore";
@@ -34,6 +37,62 @@ export const signInWithFacebook = async () => {
     const result = await signInWithPopup(auth, facebookProvider);
     await saveUserProfile(result.user);
     return result.user;
+};
+
+// ───────────── 同邮箱撞号 → 绑定到原账号（不裂新 uid）─────────────
+// Firebase「一个邮箱一个账号」模式下，用 Facebook 登一个已用 Google/邮箱注册过的
+// 邮箱会抛 auth/account-exists-with-different-credential。以前只弹文案让客户换
+// 方式登录 —— 死胡同。现在把被拒的 credential 暂存，引导客户登一次原账号，再
+// linkWithCredential 把新 provider 挂上去：同一个 uid，餐券 / credit / LTV 全保留。
+// 912 张单里已有 8 位客户跨 2 个 uid（newCustomerGift.ts），不能再添一条裂法。
+export interface PendingLink {
+    credential: AuthCredential;
+    email: string;
+    /** 被拒的那个 provider，UI 文案用 */
+    provider: 'facebook' | 'google';
+}
+
+export const pendingLinkFromError = (error: unknown): PendingLink | null => {
+    const e = error as { code?: string; customData?: { email?: string } };
+    if (e?.code !== 'auth/account-exists-with-different-credential') return null;
+    const email = e.customData?.email;
+    if (!email) return null;
+    const fb = FacebookAuthProvider.credentialFromError(error as never);
+    if (fb) return { credential: fb, email, provider: 'facebook' };
+    const gg = GoogleAuthProvider.credentialFromError(error as never);
+    if (gg) return { credential: gg, email, provider: 'google' };
+    return null;
+};
+
+// 原账号是用什么方式注册的（'google.com' / 'password' …）。Firebase 开了 Email
+// Enumeration Protection 时这个 API 一律回空数组 —— 调用方遇到空就两种都给客户选。
+export const getSignInMethods = async (email: string): Promise<string[]> => {
+    try { return await fetchSignInMethodsForEmail(auth, email); }
+    catch { return []; }
+};
+
+// 两种「已登进原账号、但没绑上」的结果 —— 调用方据此区分文案：此时客户不是
+// 没登录，而是在原账号里，没有裂号。
+export class LinkEmailMismatchError extends Error {
+    code = 'link/email-mismatch';
+    constructor() { super('signed-in account email does not match the pending credential'); }
+}
+export class LinkStepError extends Error {
+    code = 'link/failed';
+    constructor(public cause: unknown) { super('linkWithCredential failed after sign-in'); }
+}
+
+// signIn 负责登进原账号（signInWithGoogle / loginWithEmail，各自已 saveUserProfile）。
+// 登进来的邮箱必须和被拒 credential 的邮箱一致 —— 客户在 Google 选错账号时绝不能
+// 把别人的 Facebook 绑到这个 uid 上；此时客户已登进那个 Google 账号，只是不绑。
+export const completePendingLink = async (pending: PendingLink, signIn: () => Promise<User>): Promise<User> => {
+    const user = await signIn();
+    if ((user.email || '').toLowerCase() !== pending.email.toLowerCase()) {
+        throw new LinkEmailMismatchError();
+    }
+    try { await linkWithCredential(user, pending.credential); }
+    catch (e) { throw new LinkStepError(e); }
+    return user;
 };
 
 // Sign in with Email/Password

@@ -31,6 +31,9 @@ interface AuthModalDict {
     profileUpdated: string;
     updateFailed: (msg: string) => string;
     loggedOut: string;
+    linkDone: (provider: string) => string;
+    linkEmailMismatch: string;
+    linkFailed: string;
 }
 
 interface AuthMainDict {
@@ -38,7 +41,21 @@ interface AuthMainDict {
     subtitle: string;
     connecting: string;
     googleContinue: string;
+    facebookContinue: string;
     emailContinue: string;
+}
+
+// 同邮箱撞号 → 登原账号绑定 的中间视图
+interface AuthLinkDict {
+    title: string;
+    desc: (email: string, provider: string) => string;
+    providerName: Record<'facebook' | 'google', string>;
+    googleBtn: string;
+    orEmail: string;
+    passwordLabel: string;
+    emailBtn: string;
+    linking: string;
+    back: string;
 }
 
 interface AuthEmailLoginDict {
@@ -115,6 +132,7 @@ interface AuthProfileDict {
 export interface AuthDict {
     modal: AuthModalDict;
     main: AuthMainDict;
+    link: AuthLinkDict;
     emailLogin: AuthEmailLoginDict;
     emailSignup: AuthEmailSignupDict;
     profile: AuthProfileDict;
@@ -149,13 +167,28 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             profileUpdated: '✅ 资料已更新！',
             updateFailed: (msg) => `⚠️ 更新失败: ${msg}`,
             loggedOut: '已登出',
+            linkDone: (provider) => `✅ 已绑定 ${provider}，以后用它登录也是同一个账号`,
+            linkEmailMismatch: '⚠️ 登录的账号邮箱不一致，未绑定。你已登入刚选的账号',
+            linkFailed: '⚠️ 绑定未完成，你已用原账号登录，下次再试即可',
         },
         main: {
             title: '注册 / 登录',
             subtitle: '加入我们，享受免配送费福利与每日精选菜单推送。',
             connecting: '连接中...',
             googleContinue: '使用 Google 继续',
+            facebookContinue: '使用 Facebook 继续',
             emailContinue: '使用邮箱登录',
+        },
+        link: {
+            title: '这个邮箱已有账号',
+            desc: (email, provider) => `${email} 之前已经注册过。登录一次原账号，我们就把 ${provider} 绑上去 —— 订单记录、餐券、加料额度全都保留，以后两种方式都能登录。`,
+            providerName: { facebook: 'Facebook', google: 'Google' },
+            googleBtn: '用 Google 登录并绑定',
+            orEmail: '或用邮箱密码',
+            passwordLabel: '密码 Password',
+            emailBtn: '登录并绑定',
+            linking: '绑定中...',
+            back: '← 返回',
         },
         emailLogin: {
             title: '邮箱登录',
@@ -254,13 +287,28 @@ export const AUTH_DICT: Record<Locale, AuthDict> = {
             profileUpdated: '✅ Profile updated!',
             updateFailed: (msg) => `⚠️ Update failed: ${msg}`,
             loggedOut: 'Signed out',
+            linkDone: (provider) => `✅ ${provider} linked — signing in with it now uses this same account`,
+            linkEmailMismatch: "⚠️ That account's email doesn't match, so nothing was linked. You're signed in to the account you just chose",
+            linkFailed: "⚠️ Linking didn't complete — you're signed in to your original account, just try again next time",
         },
         main: {
             title: 'Sign up / Sign in',
             subtitle: 'Join us for free-delivery perks and daily menu picks.',
             connecting: 'Connecting...',
             googleContinue: 'Continue with Google',
+            facebookContinue: 'Continue with Facebook',
             emailContinue: 'Sign in with email',
+        },
+        link: {
+            title: 'This email already has an account',
+            desc: (email, provider) => `${email} is already registered. Sign in to that account once and we'll link ${provider} to it — your orders, vouchers and add-on credits all stay, and either method works from then on.`,
+            providerName: { facebook: 'Facebook', google: 'Google' },
+            googleBtn: 'Sign in with Google & link',
+            orEmail: 'or with email & password',
+            passwordLabel: 'Password',
+            emailBtn: 'Sign in & link',
+            linking: 'Linking...',
+            back: '← Back',
         },
         emailLogin: {
             title: 'Email sign-in',

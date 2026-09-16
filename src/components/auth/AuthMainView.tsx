@@ -5,6 +5,11 @@ import { Mail } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 import { AUTH_DICT } from './dict';
 
+// Facebook 按钮开关。Meta 后台（Advanced Access + Go Live + 商家验证）和 Firebase
+// Console 的 Facebook provider 都配好之前不能露出能点的按钮；在 Vercel 设
+// NEXT_PUBLIC_FACEBOOK_LOGIN=1 重新部署即开。撞号绑定流程不受开关影响，Google 撞号也走它。
+const FACEBOOK_LOGIN_ENABLED = process.env.NEXT_PUBLIC_FACEBOOK_LOGIN === '1';
+
 interface AuthMainViewProps {
     loading: boolean;
     message: string;
@@ -35,16 +40,15 @@ export default function AuthMainView({ loading, message, onGoogleLogin, onFacebo
                     {loading ? t.connecting : t.googleContinue}
                 </button>
 
-
-{/* 暂时移除 Facebook 登录，等待审核通过后再开启
-                <button onClick={onFacebookLogin} disabled={loading}
-                    className="w-full py-3.5 bg-[#1877F2] text-white rounded-xl flex items-center justify-center gap-3 font-bold hover:bg-[#1565C0] transition-all disabled:opacity-50 shadow-lg shadow-[#1877F2]/20">
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                    </svg>
-                    {loading ? '连接中...' : '使用 Facebook 继续'}
-                </button>
-                */}
+                {FACEBOOK_LOGIN_ENABLED && (
+                    <button onClick={onFacebookLogin} disabled={loading}
+                        className="w-full py-3.5 bg-[#1877F2] text-white rounded-xl flex items-center justify-center gap-3 font-bold hover:bg-[#1565C0] transition-all disabled:opacity-50 shadow-lg shadow-[#1877F2]/20">
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        {loading ? t.connecting : t.facebookContinue}
+                    </button>
+                )}
 
                 <div className="relative py-1">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-line"></div></div>
