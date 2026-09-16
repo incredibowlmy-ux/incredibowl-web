@@ -557,7 +557,7 @@ const DISH_CATALOG: DishData[] = [
         // 全新菜 2026-09-17 入系统（老板从 10 个候选里选定菜名）。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排进某天并取消「未上架」。
         // ⚠️ TODO_CONFIRM 价格：老板未给，暂按花肉系列同价 RM19.90 占位（hidden 期间顾客看不到），上架前必须确认。
-        // 配方份量未给，见 dishIngredients.ts（只放白饭 80g，其余待补）。
+        // 配方老板 09-17 给（五花肉同 #30、马铃薯 100g），见 dishIngredients.ts；装碗用 150mm 餐盒。
         // 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在 Google Sheet
         //   dishes 表加一行给 chatbot 发图）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。

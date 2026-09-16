@@ -293,11 +293,14 @@ export const dishRecipes: DishRecipe[] = [
   },
   {
     // 2026-09-17 新菜（weeklyMenu id 36），hidden 待命。
-    // TODO_CONFIRM 老板未给份量：五花肉（有皮？几 g）、马铃薯几 g、是否有配菜 —— 逐项问，
-    //   别照抄 #30 白萝卜焖花肉的 156g。先放全表统一的白饭 80g，免得这道菜在备餐清单里整条消失。
+    // 份量老板 2026-09-17 给：「五花肉 follow daikon pork belly portion. potato 100g」
+    //   → 有皮五花 156g 生（与 #30 家乡白萝卜焖花肉同口径）+ 马铃薯 100g + 白饭 80g。
+    //   老板只说肉跟 #30，没说配菜 → 不抄 #30 的西兰花 50g。
     name: '家常土豆焖五花肉',
     shortName: '土豆',
     ingredients: [
+      { name: '顶级有皮五花肉', qty: 156, unit: 'g' },
+      { name: '马铃薯', qty: 100, unit: 'g' },
       { name: '白饭', qty: 80, unit: 'g' },
     ],
   },
