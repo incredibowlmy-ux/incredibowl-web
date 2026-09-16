@@ -107,6 +107,7 @@ const closuresBlock = [
     '];',
 ].join('\n');
 const dinnerBlock = `export const DINNER_CLOSED_DATES: string[] = [${dates.filter(d => data.closures[d].dinnerClosed && !data.closures[d].closed).map(d => `'${d}'`).join(', ')}];`;
+const lunchBlock = `export const LUNCH_CLOSED_DATES: string[] = [${dates.filter(d => data.closures[d].lunchClosed && !data.closures[d].closed).map(d => `'${d}'`).join(', ')}];`;
 const blockedById: Record<number, string[]> = {};
 for (const d of dates) for (const id of data.closures[d].blockedDishIds ?? []) (blockedById[id] ??= []).push(d);
 const blockedBlock = [
@@ -117,6 +118,7 @@ const blockedBlock = [
 const cloNext = cloLF
     .replace(/export const CLOSURES: Closure\[\] = \[[\s\S]*?\n\];/, closuresBlock)
     .replace(/export const DINNER_CLOSED_DATES: string\[\] = \[[^\]]*\];/, dinnerBlock)
+    .replace(/export const LUNCH_CLOSED_DATES: string\[\] = \[[^\]]*\];/, lunchBlock)
     .replace(/export const BLOCKED_DATES: Record<number, string\[\]> = \{[\s\S]*?\n\};/, blockedBlock);
 const cloOut = cloNext.split('\n').join(CNL);
 

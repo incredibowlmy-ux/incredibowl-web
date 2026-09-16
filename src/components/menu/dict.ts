@@ -19,6 +19,7 @@ interface AddOnDictShape {
     lunchSlot: string;
     dinnerSlot: string;
     dinnerClosedNote: string;
+    lunchClosedNote: string;
     noteTitle: string;
     notePlaceholder: string;
     summaryLine: (main: string, addons: string) => string;
@@ -49,6 +50,7 @@ export const ADDON_DICT: Record<Locale, AddOnDictShape> = {
         lunchSlot: '🌞 午餐 11AM - 1PM',
         dinnerSlot: '🌙 晚餐 5PM - 8PM',
         dinnerClosedNote: '该日只送午餐，晚市休息。 (Lunch only on this date — no dinner delivery.)',
+        lunchClosedNote: '该日只送晚餐，午市休息。 (Dinner only on this date — no lunch delivery.)',
         noteTitle: '备注（选填）',
         notePlaceholder: '告诉碗妈你的要求，例如：不放葱、送到门口或楼下 guard house…',
         summaryLine: (main, addons) => `主菜 RM ${main} + 加购 RM ${addons}`,
@@ -75,6 +77,7 @@ export const ADDON_DICT: Record<Locale, AddOnDictShape> = {
         lunchSlot: '🌞 Lunch 11AM - 1PM',
         dinnerSlot: '🌙 Dinner 5PM - 8PM',
         dinnerClosedNote: 'Lunch only on this date — no dinner delivery.',
+        lunchClosedNote: 'Dinner only on this date — no lunch delivery.',
         noteTitle: 'Note to Kitchen',
         notePlaceholder: 'Special instructions (e.g. no green onions, leave at door / guard house)...',
         summaryLine: (main, addons) => `Main RM ${main} + add-ons RM ${addons}`,

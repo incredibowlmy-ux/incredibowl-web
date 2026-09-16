@@ -53,6 +53,8 @@ function loadCalendar() {
   // G3：解析器本身也要断言。抓不到就是 blockedDates.ts 结构变了，必须炸而不是当成「没有停业日」。
   if (!closed) throw new Error('解析 CLOSURES 失败 —— blockedDates.ts 结构可能变了');
   if (!dinnerClosed) throw new Error('解析 DINNER_CLOSED_DATES 失败 —— blockedDates.ts 结构可能变了');
+  const lunchClosed = grab('LUNCH_CLOSED_DATES');
+  if (!lunchClosed) throw new Error('解析 LUNCH_CLOSED_DATES 失败 —— blockedDates.ts 结构可能变了');
 
   // 暂别/退役的菜。权威源是 weeklyMenu.ts 不是 Firestore menu ——
   // Firestore 那份是派生快照，暂别的菜可能还留在里面（实测 id 22 参峇臭豆就是）。
@@ -62,7 +64,7 @@ function loadCalendar() {
   const paused = new Set([...pausedBlock[1].matchAll(/id:\s*(\d+)/g)].map((x) => x[1]));
   if (paused.size === 0) throw new Error('PAUSED_DISHES 解析出 0 个 id —— 正则可能失效了，拒绝当成「没有暂别菜」');
 
-  return { closed, dinnerClosed, paused };
+  return { closed, dinnerClosed, lunchClosed, paused };
 }
 
 const ymd = (d) => {
@@ -377,6 +379,10 @@ const REGISTRY = [
         if (ctx.cal.closed.includes(day)) lines.push(`${short(d.id)} ${day} 是停业日却有单 · ${o.userName || '?'} ${rm(o.total)}`);
         else if (ctx.cal.dinnerClosed.includes(day) && (o.mealSlot === 'dinner' || o.slot === 'dinner')) {
           lines.push(`${short(d.id)} ${day} 只送午餐却收了晚餐单 · ${o.userName || '?'}`);
+        }
+        // deliveryTime 有两种形态：网页单 'Lunch (11AM-1PM)'、手动单 '12:30'。
+        else if (ctx.cal.lunchClosed.includes(day) && /lunch|午|^(0?\d|1[0-4]):/i.test(String(o.deliveryTime || ''))) {
+          lines.push(`${short(d.id)} ${day} 只送晚餐却收了午餐单 · ${o.userName || '?'} ${o.deliveryTime}`);
         }
       }
       return lines.length ? fire(docs.length, cand, lines, 'CLOSED_DATES 只挡新单，这些旧单要人工联系客户改期') : pass(docs.length);

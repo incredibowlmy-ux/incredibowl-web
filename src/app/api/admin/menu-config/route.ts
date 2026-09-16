@@ -22,7 +22,7 @@ import { categorizeIngredient, getConversionFor } from '@/data/ingredientCatalog
  *   { action:'saveDay',  monday, weekday, ids }          → 只改某一天（周文档不存在则先从继承周物化）
  *   { action:'conflicts', monday, week }                 → 不写库，只算「撤菜撞已有订单」
  *   { action:'setDish',  id, price?, hidden? }           → menuCatalog 覆盖 + 镜像 dashboard menu.price
- *   { action:'setClosure', date, closed?, reason?, dinnerClosed?, blockedDishIds? }
+ *   { action:'setClosure', date, closed?, reason?, dinnerClosed?, lunchClosed?, blockedDishIds? }
  *   { action:'deleteClosure', date }
  *
  * 校验规则 = buildMenu(strict)：id 必须存在、不能重复、hidden 不能排期。
@@ -359,10 +359,12 @@ export async function POST(req: NextRequest) {
                     doc.reason = body.reason === 'holiday' ? 'holiday' : 'soldout';
                 } else if (body.dinnerClosed === true) {
                     doc.dinnerClosed = true;
+                } else if (body.lunchClosed === true) {
+                    doc.lunchClosed = true;
                 }
                 const blocked = numArr(body.blockedDishIds);
                 if (blocked.length) doc.blockedDishIds = blocked;
-                if (!doc.closed && !doc.dinnerClosed && !doc.blockedDishIds) {
+                if (!doc.closed && !doc.dinnerClosed && !doc.lunchClosed && !doc.blockedDishIds) {
                     await db.collection(MENU_COLLECTIONS.closures).doc(body.date).delete();
                 } else {
                     await db.collection(MENU_COLLECTIONS.closures).doc(body.date).set(doc);

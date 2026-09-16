@@ -16501,14 +16501,14 @@ incredibowl.my`,
             const today = ymdKey(new Date());
             const closures = Object.entries((MS.runtime && MS.runtime.closures) || {}).filter(([d]) => d >= today).sort();
             const cloRows = closures.map(([d, c]) => {
-                const kind = c.closed ? (c.reason === 'holiday' ? '整天 · 放假' : '整天 · 售罄/临时停') : c.dinnerClosed ? '只关晚市' : '';
+                const kind = c.closed ? (c.reason === 'holiday' ? '整天 · 放假' : '整天 · 售罄/临时停') : c.dinnerClosed ? '只关晚市' : c.lunchClosed ? '只关午市' : '';
                 const blocked = (c.blockedDishIds || []).map(msName).join('、');
                 return `<tr><td class="mono">${msEsc(d)}</td><td>${kind}${blocked ? (kind ? ' · ' : '') + '停售：' + msEsc(blocked) : ''}</td>
                     <td class="r"><button class="btn ghost sm" data-act="delClosure" data-date="${d}">删除</button></td></tr>`;
             }).join('') || '<tr><td colspan="3" style="opacity:.5">（无）</td></tr>';
             const dishOpts = MS.catalog.filter(c => !c.hidden).sort((a, b) => a.name.localeCompare(b.name, 'zh')).map(c => `<option value="${c.id}">${msEsc(c.name)}</option>`).join('');
             const closureCard = `<div class="card collapsible collapsed" data-collapsible>
-                <div class="card-header"><div><div class="card-title">停业日 / 单菜停售</div><div class="card-sub">整天停：菜单顺延到下一个营业日、当天不能下单；只关晚市：午餐照送；单菜停售：那天只停这道菜</div></div>
+                <div class="card-header"><div><div class="card-title">停业日 / 单菜停售</div><div class="card-sub">整天停：菜单顺延到下一个营业日、当天不能下单；只关晚市：午餐照送；只关午市：晚餐照送；单菜停售：那天只停这道菜</div></div>
                     <svg class="collapse-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
                 <div class="card-content">
                     <div class="table-wrap"><table class="dt"><thead><tr><th>日期</th><th>类型</th><th></th></tr></thead><tbody>${cloRows}</tbody></table></div>
@@ -16518,6 +16518,7 @@ incredibowl.my`,
                             <option value="soldout">整天 · 售罄/临时停</option>
                             <option value="holiday">整天 · 放假</option>
                             <option value="dinner">只关晚市</option>
+                            <option value="lunch">只关午市</option>
                             <option value="dish">单菜停售</option>
                         </select>
                         <select id="msCloDish" style="padding:5px 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg-elev);display:none">${dishOpts}</select>
@@ -16716,12 +16717,14 @@ incredibowl.my`,
                 const body = { action: 'setClosure', date };
                 if (kind === 'soldout' || kind === 'holiday') { body.closed = true; body.reason = kind; }
                 else if (kind === 'dinner') body.dinnerClosed = true;
+                else if (kind === 'lunch') body.lunchClosed = true;
                 else {
                     const dishId = Number(document.getElementById('msCloDish').value);
                     const cur = (MS.runtime.closures || {})[date] || {};
                     body.blockedDishIds = [...new Set([...(cur.blockedDishIds || []), dishId])];
                     if (cur.closed) { body.closed = true; body.reason = cur.reason; }
                     if (cur.dinnerClosed) body.dinnerClosed = true;
+                    else if (cur.lunchClosed) body.lunchClosed = true;
                 }
                 btn.disabled = true;
                 await msApply(body, `已加入 ${date}`);

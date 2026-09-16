@@ -4,7 +4,7 @@
  * 三个集合（全部仅 admin 读写，前端走 API）：
  *   menuWeeks/{周一 YYYY-MM-DD}   { days:{1..5:[id]}, daily:[id], paused:[id] }
  *   menuCatalog/{webappId}        { price?, hidden? }
- *   menuClosures/{YYYY-MM-DD}     { closed?, reason?, dinnerClosed?, blockedDishIds? }
+ *   menuClosures/{YYYY-MM-DD}     { closed?, reason?, dinnerClosed?, lunchClosed?, blockedDishIds? }
  *
  * 缓存 30s（每个 serverless 实例各自一份），dashboard 写入后调 invalidate 让
  * 本实例立刻重读；其它实例最多晚 30s。一份周文档都没有（还没 seed）→ 视为
@@ -69,6 +69,7 @@ export function normalizeClosure(raw: Record<string, unknown> | undefined): Clos
     if (raw?.closed === true) c.closed = true;
     if (raw?.reason === 'holiday' || raw?.reason === 'soldout') c.reason = raw.reason;
     if (raw?.dinnerClosed === true) c.dinnerClosed = true;
+    if (raw?.lunchClosed === true) c.lunchClosed = true;
     const b = numArr(raw?.blockedDishIds);
     if (b.length) c.blockedDishIds = b;
     return c;

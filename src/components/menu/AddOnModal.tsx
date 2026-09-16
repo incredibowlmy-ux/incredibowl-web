@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { X, ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Leaf, Calendar } from 'lucide-react';
 import { buildAddOnSections, defaultAddOnSections } from './addOnSections';
 import type { AddOnItem, AddOnSection, DishItem } from './addOnSections';
-import { isDishBlockedOn, isDateClosed, isDinnerClosedOn, closureReasonOn } from '@/data/blockedDates';
+import { isDishBlockedOn, isDateClosed, isDinnerClosedOn, isLunchClosedOn, closureReasonOn } from '@/data/blockedDates';
 import type { Locale } from '@/lib/locale';
 import { ADDON_DICT } from './dict';
 import { useModalA11y } from '@/components/ui/useModalA11y';
@@ -105,13 +105,15 @@ export default function AddOnModal({
     /** 时段区的一次性高亮（1.2s 后自动撤）。 */
     const [slotHighlight, setSlotHighlight] = useState(false);
 
-    // 只送午餐的日子（长假前最后一天等）：晚餐按钮灰掉。上次记住的时段是
-    // 晚餐、或者先选了晚餐再改日期的，都要把已选时段清掉 —— 否则 CTA 亮着
-    // 却会被 /api/submit-order 拒收。
+    // 只开半天的日子（长假前最后一天只送午餐 / 某天午市休息）：关掉的时段按钮
+    // 灰掉。上次记住的时段正好被关、或者先选了时段再改日期的，都要把已选时段
+    // 清掉 —— 否则 CTA 亮着却会被 /api/submit-order 拒收。
     const dinnerClosed = !!selectedDate && isDinnerClosedOn(selectedDate);
+    const lunchClosed = !!selectedDate && isLunchClosedOn(selectedDate);
     useEffect(() => {
         if (dinnerClosed && selectedTime === SLOT_DINNER) setSelectedTime('');
-    }, [dinnerClosed, selectedTime]);
+        if (lunchClosed && selectedTime === SLOT_LUNCH) setSelectedTime('');
+    }, [dinnerClosed, lunchClosed, selectedTime]);
 
     // Compute dynamic add-on sections based on the selected dish
     // 「常一起点」推荐（dashboard 菜品分析按同单数据推送 → Firestore → 运行时菜单）：
@@ -435,7 +437,7 @@ export default function AddOnModal({
                                     { value: SLOT_LUNCH, label: t.lunchSlot },
                                     { value: SLOT_DINNER, label: t.dinnerSlot },
                                 ] as const).map(slot => {
-                                    const closed = slot.value === SLOT_DINNER && dinnerClosed;
+                                    const closed = slot.value === SLOT_DINNER ? dinnerClosed : lunchClosed;
                                     return (
                                     <button
                                         key={slot.value}
@@ -455,9 +457,9 @@ export default function AddOnModal({
                                     );
                                 })}
                             </div>
-                            {dinnerClosed && (
+                            {(dinnerClosed || lunchClosed) && (
                                 <div className="-mt-1 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-800 leading-relaxed">
-                                    {t.dinnerClosedNote}
+                                    {dinnerClosed ? t.dinnerClosedNote : t.lunchClosedNote}
                                 </div>
                             )}
                         </div>

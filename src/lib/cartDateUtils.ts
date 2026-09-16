@@ -15,7 +15,7 @@
  * Client-side check in CartDrawer auto-cleans stale items as a UX courtesy.
  */
 
-import { isDateClosed, isDishBlockedOn, isDinnerClosedOn } from '@/data/blockedDates';
+import { isDateClosed, isDishBlockedOn, isDinnerClosedOn, isLunchClosedOn } from '@/data/blockedDates';
 import type { MenuItem } from '@/data/weeklyMenu';
 
 const CUTOFF_HOUR_MY = 6;
@@ -192,7 +192,7 @@ export function isDinnerSlot(slot: string | null | undefined): boolean {
 
 export type SlotValidity =
     | { ok: true }
-    | { ok: false; reason: 'dinner_closed'; message: string };
+    | { ok: false; reason: 'dinner_closed' | 'lunch_closed'; message: string };
 
 /**
  * 这个时段在 selectedDate 能不能下单。
@@ -206,6 +206,13 @@ export function isSlotOrderableOn(selectedDate: string, selectedTime: string | n
             ok: false,
             reason: 'dinner_closed',
             message: `${selectedDate} 只送午餐，晚市休息，请改选午餐时段`,
+        };
+    }
+    if (!isDinnerSlot(selectedTime) && isLunchClosedOn(selectedDate)) {
+        return {
+            ok: false,
+            reason: 'lunch_closed',
+            message: `${selectedDate} 只送晚餐，午市休息，请改选晚餐时段`,
         };
     }
     return { ok: true };

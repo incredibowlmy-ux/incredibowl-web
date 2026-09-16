@@ -43,6 +43,8 @@ export interface ClosureDoc {
     reason?: 'soldout' | 'holiday';
     /** 只关晚市（午餐照送）。与 closed 互斥，closed 优先。 */
     dinnerClosed?: boolean;
+    /** 只关午市（晚餐照送）。与 dinnerClosed 互斥；两个都要关请用 closed。 */
+    lunchClosed?: boolean;
     /** 当天停售的单个菜（webapp id）。 */
     blockedDishIds?: number[];
 }

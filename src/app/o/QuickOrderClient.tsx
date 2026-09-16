@@ -44,7 +44,7 @@ import { Plus, Minus, X, ShoppingBag } from 'lucide-react';
 import { type MenuItem } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { menuForDate } from '@/lib/menuResolve';
-import { isDinnerClosedOn, isDateClosed } from '@/data/blockedDates';
+import { isDinnerClosedOn, isLunchClosedOn, isDateClosed } from '@/data/blockedDates';
 import { computeMenuDates, formatYMD, type MenuDateInfo } from '@/lib/dateUtils';
 import { isDishOrderableOn, todayInMY, past6AmCutoffMY, weekdayOfYMD } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
@@ -65,11 +65,13 @@ const DINNER = 'Dinner (5PM-8PM)';
 /** 日期条列几天（老板 09-10：5 天够了）。群发「下周一」不在这 5 天里就落最近一天。 */
 const MAX_DAYS = 5;
 
-// 只送午餐的日子（blockedDates.DINNER_CLOSED_DATES）按天回落到午餐。这一页
-// 的午/晚是整车开关，但每个 bundle 各带各的日期 —— 不按天判就会把晚市单塞进
-// 购物车，客户一路填到付款才被 submit-order 拒收。
-const slotOn = (date: string, wantDinner: boolean) =>
-  (wantDinner && !isDinnerClosedOn(date) ? DINNER : LUNCH);
+// 只开半天的日子（blockedDates.DINNER_/LUNCH_CLOSED_DATES）按天回落到开着的
+// 那个时段。这一页的午/晚是整车开关，但每个 bundle 各带各的日期 —— 不按天判
+// 就会把关掉时段的单塞进购物车，客户一路填到付款才被 submit-order 拒收。
+const slotOn = (date: string, wantDinner: boolean) => {
+  if (wantDinner) return isDinnerClosedOn(date) ? LUNCH : DINNER;
+  return isLunchClosedOn(date) ? DINNER : LUNCH;
+};
 
 const WD_ZH = ['日', '一', '二', '三', '四', '五', '六'];
 const WD_EN_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

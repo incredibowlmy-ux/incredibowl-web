@@ -66,6 +66,20 @@ export function isDinnerClosedOn(ymd: string): boolean {
     return DINNER_CLOSED_DATES.includes(ymd);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Lunch-only closures：当天午市不出，晚餐照送。与 DINNER_CLOSED_DATES 对称、互斥
+// （两个都要关请用 CLOSED_DATES）。
+//
+// 2026-09-18（周五）：老板关午市，晚餐照常。
+export const LUNCH_CLOSED_DATES: string[] = ['2026-09-18'];
+
+/** True if that date delivers dinner only (lunch slot closed). */
+export function isLunchClosedOn(ymd: string): boolean {
+    const r = rt();
+    if (r) return !!r[ymd]?.lunchClosed && !r[ymd]?.closed;
+    return LUNCH_CLOSED_DATES.includes(ymd);
+}
+
 /** True if the whole day is closed (sold out / boss stop). */
 export function isDateClosed(ymd: string): boolean {
     const r = rt();

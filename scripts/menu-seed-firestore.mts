@@ -10,7 +10,7 @@
 import admin from 'firebase-admin';
 import fs from 'node:fs';
 import { MENU_SNAPSHOT_WEEK, DISH_CATALOG_ALL } from '@/data/weeklyMenu';
-import { CLOSURES, DINNER_CLOSED_DATES, BLOCKED_DATES } from '@/data/blockedDates';
+import { CLOSURES, DINNER_CLOSED_DATES, LUNCH_CLOSED_DATES, BLOCKED_DATES } from '@/data/blockedDates';
 import { mondayOf, ymdOfUTC, MYT_OFFSET_MS } from '@/lib/menuResolve';
 import { MENU_COLLECTIONS } from '@/lib/menuRuntime.server';
 
@@ -39,6 +39,7 @@ console.log(`  暂别: ${MENU_SNAPSHOT_WEEK.paused.map(nameOf).join('、')}`);
 const closures: Record<string, Record<string, unknown>> = {};
 for (const c of CLOSURES) closures[c.date] = { ...(closures[c.date] ?? {}), closed: true, reason: c.reason };
 for (const d of DINNER_CLOSED_DATES) closures[d] = { ...(closures[d] ?? {}), dinnerClosed: true };
+for (const d of LUNCH_CLOSED_DATES) closures[d] = { ...(closures[d] ?? {}), lunchClosed: true };
 for (const [id, dates] of Object.entries(BLOCKED_DATES)) {
     for (const d of dates) {
         const prev = (closures[d]?.blockedDishIds as number[] | undefined) ?? [];
