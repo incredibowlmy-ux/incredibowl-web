@@ -4233,6 +4233,22 @@ incredibowl.my`,
                     failedReads.push(label);
                     return { docs: [], _err: e };
                 });
+
+                // ─── 空读绊线（2026-09-17 加）────────────────────────────────────
+                // _err 只挡「读报错」，挡不住「读成功但集合真的空了」。2026-09-15 22:57
+                // 就是这样：menu / addons 在服务端为空 → 走 auto-seed 整体重建 →
+                // 全部 costPrice 被冲成 0，而 PITR 是关的，捞不回来。
+                // 绊线：本机记住每个集合见过的最大文档数；一旦这次读到 0 而历史上见过 >0，
+                // 判定为异常（集合被清空 / 连到了错的项目），**绝不 seed**，只在内存兜底并报错。
+                const SEEN_KEY = 'ib_collection_seen_counts';
+                const seenCounts = () => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch { return {}; } };
+                const rememberCount = (name, n) => {
+                    try {
+                        const s = seenCounts();
+                        if (n > (s[name] || 0)) { s[name] = n; localStorage.setItem(SEEN_KEY, JSON.stringify(s)); }
+                    } catch {}
+                };
+                const emptyReadLooksWrong = (name, n) => n === 0 && (seenCounts()[name] || 0) > 0;
                 const [ordersSnap, usersSnap, vouchersSnap, spendSnap, cfgSnap, menuSnap, fixedSnap, promoSnap, addonsSnap, mvPurchasesSnap, mvSnap, addonCreditsSnap, menuWeeksSnap] = await Promise.all([
                     getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))),
                     getDocs(collection(db, 'users')),
@@ -4269,23 +4285,35 @@ incredibowl.my`,
 
                 // Load menu from Firestore, fall back to seed if empty
                 const menuReadFailed = !!menuSnap._err;
+                const menuLooksWiped = emptyReadLooksWrong('menu', menuSnap.docs.length);
                 if (menuSnap.docs.length > 0) {
                     state.menu = menuSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                } else if (menuReadFailed) {
-                    // 读失败 → 只在内存里用 SEED 兜底，绝不写库。此时写库会被 SDK
+                    rememberCount('menu', menuSnap.docs.length);
+                } else if (menuReadFailed || menuLooksWiped) {
+                    // 读失败 / 疑似被清空 → 只在内存里用 SEED 兜底，绝不写库。此时写库会被 SDK
                     // 排队，恢复联网后把老板改过的价格/成本全部覆盖回默认值。
                     state.menu = MENU_SEED.map(m => ({ ...m, id: String(m.id) }));
+                    // 只在「读成功但是空的」时报清空 —— 读失败已有自己的「读取失败」提示，
+                    // 两个都弹会把人往错方向带。
+                    if (menuLooksWiped && !menuReadFailed) {
+                        migrationErrors.push('⛔ 菜单集合读到 0 条，但本机以前见过菜单数据 —— 已跳过自动重建（避免把成本价冲成 0）。请检查 Firestore 的 menu 集合是否被清空');
+                    }
                 } else {
                     state.menu = MENU_SEED.map(m => ({ ...m, id: String(m.id) }));
-                    // Auto-seed Firestore so user can edit going forward
+                    // Auto-seed Firestore so user can edit going forward。
+                    // ⚠️ 2026-09-17：这里**永不写 costPrice**，且一律 merge —— 成本价只活在
+                    // Firestore（「设置→菜品成本」里维护），seed 没有它的真值；从前带
+                    // `costPrice: 0` 且不 merge，导致 09-15 一次空读把 27 道菜的成本全冲掉。
                     try {
                         for (const m of MENU_SEED) {
-                            const costPrice = MENU_COSTS_FROM_EXCEL[String(m.id)] ?? 0;
+                            // MENU_SEED 的字面量里带着 costPrice: 0 —— 必须剥掉再写，
+                            // 否则 merge 也会把已有的真实成本覆盖成 0。
+                            const { costPrice: _seedHasNoRealCost, ...seedFields } = m;
                             await setDoc(doc(db, 'menu', String(m.id)), {
-                                ...m, costPrice,
+                                ...seedFields,
                                 createdAt: Timestamp.now(),
                                 updatedAt: Timestamp.now(),
-                            });
+                            }, { merge: true });
                         }
                     } catch (e) {
                         console.error('Menu auto-seed failed:', e);
@@ -4296,7 +4324,7 @@ incredibowl.my`,
                 // ─── Menu migrations（menuReadFailed 时整体跳过 — 它们都基于 state.menu
                 //     写 Firestore，而读失败时 state.menu 只是内存 SEED 兜底，据此写库
                 //     会把老板的真实数据覆盖掉；migrationsDone = 本会话已跑过，跳过）───
-                if (!menuReadFailed && !migrationsDone) {
+                if (!menuReadFailed && !menuLooksWiped && !migrationsDone) {
                 // ─── Migration: backfill any MENU_SEED entry missing from Firestore
                 //     (e.g. newly added 绍兴酒蒸花肉 周四特餐). Runs once per missing
                 //     id; no-op afterwards. Keeps dashboard dropdown in sync when we
@@ -4305,14 +4333,16 @@ incredibowl.my`,
                 const existingMenuIds = new Set(state.menu.map(m => String(m.id)));
                 for (const m of MENU_SEED) {
                     if (existingMenuIds.has(String(m.id))) continue;
-                    const costPrice = MENU_COSTS_FROM_EXCEL[String(m.id)] ?? 0;
+                    // 同 auto-seed：剥掉 seed 里的 costPrice: 0 且用 merge，成本价只由
+                    //「设置→菜品成本」维护，seed 永远不碰（2026-09-17）。
+                    const { costPrice: _seedHasNoRealCost, ...seedFields } = m;
                     try {
                         await setDoc(doc(db, 'menu', String(m.id)), {
-                            ...m, costPrice,
+                            ...seedFields,
                             createdAt: Timestamp.now(),
                             updatedAt: Timestamp.now(),
-                        });
-                        state.menu.push({ ...m, id: String(m.id), costPrice });
+                        }, { merge: true });
+                        state.menu.push({ ...seedFields, id: String(m.id), costPrice: 0 });
                         seededNew++;
                     } catch (e) {
                         console.error(`New seed dish ${m.name} failed:`, e);
@@ -4407,21 +4437,29 @@ incredibowl.my`,
                 // get added without overwriting existing user-edited costPrice values).
                 // 读失败时同 menu：只内存兜底，绝不写（否则 ADDON_SEED 会把已填的
                 // costPrice 全部清零回写）。
-                if (addonsSnap._err) {
+                // 2026-09-17：加上与 menu 同一条空读绊线 —— 09-15 那次 addons 77 个文档
+                // 也是这样被整体重建、costPrice 全清零的。
+                const addonsLooksWiped = emptyReadLooksWrong('addons', addonsSnap.docs.length);
+                if (addonsSnap._err || addonsLooksWiped) {
                     state.addons = ADDON_SEED.map(a => ({ id: a.id, name: a.name, price: a.price, category: a.category, costPrice: 0 }));
+                    if (addonsLooksWiped && !addonsSnap._err) {
+                        migrationErrors.push('⛔ 配料集合读到 0 条，但本机以前见过配料数据 —— 已跳过自动重建（避免把成本价冲成 0）。请检查 Firestore 的 addons 集合是否被清空');
+                    }
                 } else {
+                rememberCount('addons', addonsSnap.docs.length);
                 const existingAddons = new Map(addonsSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
                 for (const a of ADDON_SEED) {
                     if (!existingAddons.has(a.id)) {
-                        const newDoc = { name: a.name, price: a.price, category: a.category, costPrice: 0, updatedAt: Timestamp.now() };
+                        // 建档不写 costPrice（成本价只由「设置→配料成本」维护），且 merge。
+                        const newDoc = { name: a.name, price: a.price, category: a.category, updatedAt: Timestamp.now() };
                         try {
-                            await setDoc(doc(db, 'addons', a.id), newDoc);
-                            existingAddons.set(a.id, { id: a.id, ...newDoc });
+                            await setDoc(doc(db, 'addons', a.id), newDoc, { merge: true });
+                            existingAddons.set(a.id, { id: a.id, costPrice: 0, ...newDoc });
                         } catch (e) {
                             console.error(`Addon seed for ${a.id} failed:`, e);
                             migrationErrors.push(`Add-on 初始化 (${a.name}): ${e.message}`);
                             // Still expose in-memory so UI works even without write perm
-                            existingAddons.set(a.id, { id: a.id, ...newDoc });
+                            existingAddons.set(a.id, { id: a.id, costPrice: 0, ...newDoc });
                         }
                     } else {
                         // Refresh price/name/category from seed (canonical source) but PRESERVE costPrice
