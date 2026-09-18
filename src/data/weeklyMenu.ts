@@ -595,6 +595,28 @@ const DISH_CATALOG: DishData[] = [
         desc: "和牛片和土豆一锅炖煮，土豆吸饱了牛肉的香，软糯入味，拌饭一流。",
         descEn: "Wagyu beef slices simmered with potatoes until the potatoes soak up all that rich beefy flavour — tender, glazed and made for rice."
     },
+    {
+        // 全新菜 2026-09-18 入系统（老板定名「柚香香煎三文鱼饭」+ 一切沿用 #32 蜜糖三文鱼：
+        //   RM24.90、voucherTopUp 5、salmon-upgrade 预付升级池、120g 三文鱼）。
+        //   唯一差异：配菜只有西兰花（老板 09-18 拍板），配方见 dishIngredients.ts。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /yuzu_salmon.webp，并提醒老板在 Google
+        //   Sheet dishes 表加一行给 chatbot 发图）。
+        // 蛋白标签沿用 #32：同为 120g 三文鱼，克数不变则蛋白不变；仍待碗妈复核。
+        // 简介为初稿，待老板审定。
+        id: 38,
+        name: "柚香香煎三文鱼饭",
+        nameEn: "Yuzu Pan-Seared Salmon Rice",
+        price: 24.90,
+        voucherTopUp: 5,
+        topUpAddonId: "salmon-upgrade",
+        image: "🐟",
+        hidden: true,
+        tags: ["高蛋白 30g+", "柚子清香", "香煎三文鱼", "Omega-3", "餐券+RM5"],
+        tagsEn: ["30g+ protein", "Yuzu citrus", "Pan-seared salmon", "Omega-3", "Voucher +RM5"],
+        desc: "香煎三文鱼外焦里嫩，淋上柚子酱汁，清香微酸把鱼油的丰腴衬得刚刚好，配一把清脆西兰花——清爽不腻。",
+        descEn: "Pan-seared salmon, crisp outside and tender within, finished with a bright yuzu sauce that cuts through the richness — served with crisp broccoli. Light and clean."
+    },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
