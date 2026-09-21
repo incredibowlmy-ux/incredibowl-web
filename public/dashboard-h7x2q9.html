@@ -11689,8 +11689,9 @@ incredibowl.my`,
         // Canonical dish → add-on mapping. Source: AddOnModal.tsx + addOnsConfig.ts (Incredibowl-web).
         // Keys are STRING dish IDs (matches state.menu Firestore doc id and stringified MENU_SEED ids).
         //
-        // 共享饮品组（每道菜都有，跟 webapp 一致）— 改茶价或加新茶只改这一处，
-        // 不用同步 9 道菜。
+        // 共享饮品组 —— 2026-09-22 老板拍板：饮品组不再挂任何菜（历史 0 单，网站也没有）。
+        // 常量留着：scripts/gen-dish-addon-map.mjs 会读它；要恢复就把 ...DRINKS_PILLS 加回
+        // DEFAULT_ADDONS / 各菜条目。
         const DRINKS_PILLS = [
             { id: 'longjing-ice',    label: '龙井 (冰)',   price: 3.80 },
             { id: 'longjing-warm',   label: '龙井 (温)',   price: 3.80 },
@@ -11712,12 +11713,8 @@ incredibowl.my`,
                 { id: 'sunny-egg',          label: '荷包蛋', price: 2.50 },
                 { id: 'potato-egg',         label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',       label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',         label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',      label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',         label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '12': [
                 { id: 'surf-turf-super-combo', label: '海陆澎湃三件套', price: 11.40 },
@@ -11734,12 +11731,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',             label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',            label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',          label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',            label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',         label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',            label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',          label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '13': [
                 { id: 'herbal-chicken-rice-king-combo', label: '归香下饭套', price: 12.90 },  // 2026-08-16 首套（西兰花炒蛋+荷包蛋+加饭）
@@ -11754,12 +11747,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',          label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',         label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',       label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',         label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame',      label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',         label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',       label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '14': [
                 { id: 'soy-chicken-rice-king-combo', label: '酱香下饭套', price: 12.90 },  // 2026-09-21 补两档套餐
@@ -11772,11 +11761,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '1': [
                 { id: 'chicken-chop-rice-king-combo', label: '古早味下饭套', price: 12.90 },  // 2026-08-16 换互补型（旧古早味大满贯三件套鸡扒版退役，不再可选）
@@ -11793,10 +11779,6 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '3': [
                 { id: 'greek-protein-bomb-combo',  label: '蛋白质核弹三件套', price: 15.90 },
@@ -11813,12 +11795,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '4': [
                 { id: 'pork-potato-duo-combo', label: '薯肉双拼满足套', price: 13.40 },
@@ -11832,12 +11810,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '5': [
                 { id: 'scallion-soup-combo',       label: '爆量满足三件套', price: 12.90 },
@@ -11850,12 +11824,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '2': [
                 // 绍兴酒蒸花肉 — 2026-07-16 起自带专属套餐+双档加肉（与 webapp AddOnModal id:4 同步）
@@ -11869,11 +11839,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '20': [
                 // 古早味姜葱鱼片饭 — 2026-07-16 起自带专属 side（与 webapp AddOnModal id:20 同步）：加姜葱鱼片
@@ -11886,11 +11853,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '21': [
                 // 柠香香煎三文鱼饭（周二）— RM 24.90，餐券抵扣需补 RM 5（voucherTopUp）
@@ -11908,11 +11872,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '22': [
                 // 参峇臭豆虾仁炒花肉（常驻新菜）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
@@ -11926,11 +11887,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '23': [
                 // 家乡豆酱焖花肉（周四新菜）— RM 19.90，无 voucherTopUp
@@ -11945,11 +11903,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '24': [
                 // 澳洲和牛饼饭（周二主推）— RM 22.90，餐券抵扣需补 RM 3（voucherTopUp）
@@ -11967,11 +11922,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '25': [
                 // 家常日式咖喱饭（鸡胸）— RM 18.50，新菜 2026-06-29。
@@ -11986,11 +11938,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '26': [
                 // 柠檬蜜糖煎鸡扒（周二 Hero，🆕 2026-07-13）— RM 18.50
@@ -12009,10 +11958,6 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                // ─── Drinks ───
-                ...DRINKS_PILLS,
             ],
             '27': [
                 // 家乡甜酸洋葱猪扒（周四 Hero）— RM 19.90，无 voucherTopUp
@@ -12028,11 +11973,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '29': [
                 // 古早味照烧鳗鱼饭（常驻·限周一/四，🆕 2026-07-30）— RM 24.90，
@@ -12052,11 +11994,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             // 家乡白萝卜焖花肉（webapp id 30）故意**不建条目**：2026-08-09 老板改口径 ——
             // 加白萝卜挂 UNIVERSAL_ADDONS 给所有菜用，不再是这道菜的专属。没有专属加料
@@ -12078,11 +12017,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '28': [
                 // 豆酱焖排骨 — RM 19.90
@@ -12096,11 +12032,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '30': [
                 // 家乡白萝卜焖花肉 — RM 19.90（加白萝卜走 UNIVERSAL_ADDONS）
@@ -12114,11 +12047,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '32': [
                 // 蜜糖香煎三文鱼饭 — RM 24.90，餐券抵扣需补 RM 5
@@ -12132,11 +12062,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '33': [
                 // 芝麻蜜汁鸡扒饭 — RM 18.50；A 档复用古早味下饭套
@@ -12150,11 +12077,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '34': [
                 // 阿嫲葱油鸡腿饭 — RM 19.90（碗里有西兰花 → 第二档 C 档）
@@ -12168,11 +12092,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '35': [
                 // 阿嫲蚝油姜蒜鱼片饭 — RM 19.90（不配荷包蛋，老板 09-16 定）
@@ -12186,11 +12107,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '36': [
                 // 家常土豆焖五花肉 — RM 19.90（碗里有马铃薯 → 第二档走干饭套）
@@ -12204,11 +12122,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '37': [
                 // 马铃薯炖和牛片 — RM 24.90，餐券抵扣需补 RM 5（碗里有马铃薯 → 第二档走干饭套）
@@ -12222,11 +12137,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
             '38': [
                 // 柚香香煎三文鱼饭 — RM 24.90，餐券抵扣需补 RM 5；与 #21/#32 共用三文鱼两套
@@ -12240,11 +12152,8 @@ incredibowl.my`,
                 { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
                 { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
                 { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-                { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
                 { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
                 { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-                { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-                ...DRINKS_PILLS,
             ],
         };
 
@@ -12266,7 +12175,7 @@ incredibowl.my`,
             { id: 'extra-daikon-90g',            label: '【清甜解腻】加白萝卜 (100g)', price: 3.50 },
         ];
         // 新菜兜底加料：DISH_ADDON_MAP 还没登记的菜（刚上架的新菜）自动拿这套
-        // 标准 à la carte + 饭量 + 饮品，不用先来这里抄一份才有加料可选。
+        // 标准 à la carte + 饭量，不用先来这里抄一份才有加料可选。
         // 该菜有专属加料时再去 DISH_ADDON_MAP 建正式条目（照惯例把标准块抄全）。
         const DEFAULT_ADDONS = [
             { id: 'less-rice',     label: '少饭', price: 0.00 },
@@ -12276,11 +12185,8 @@ incredibowl.my`,
             { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
             { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
             { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
-            { id: 'shrimp-egg',    label: '虾仁炒蛋', price: 12.90 },
             { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
             { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
-            { id: 'chia-pudding',  label: '奇亚籽布丁', price: 6.90 },
-            ...DRINKS_PILLS,
         ];
         function getDishAddons(dishName) {
             if (!dishName) return [];

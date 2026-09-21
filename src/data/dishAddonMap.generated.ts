@@ -61,11 +61,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -74,41 +69,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -188,11 +148,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -201,41 +156,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -310,11 +230,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -323,41 +238,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -442,11 +322,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -455,41 +330,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -569,11 +409,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -582,41 +417,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -691,11 +491,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -704,41 +499,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -813,11 +573,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -826,41 +581,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -940,11 +660,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -953,41 +668,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1067,11 +747,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1080,41 +755,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1189,11 +829,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1202,41 +837,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1316,11 +916,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1329,41 +924,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1438,11 +998,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1451,41 +1006,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1560,11 +1080,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1573,41 +1088,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1687,11 +1167,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1700,41 +1175,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1809,11 +1249,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1822,41 +1257,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -1931,11 +1331,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -1944,41 +1339,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2053,11 +1413,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2066,41 +1421,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2175,11 +1495,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2188,41 +1503,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2297,11 +1577,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2310,41 +1585,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2429,11 +1669,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2442,41 +1677,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2551,11 +1751,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2564,41 +1759,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2673,11 +1833,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2686,41 +1841,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2815,11 +1935,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2828,41 +1943,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -2957,11 +2037,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -2970,41 +2045,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -3094,46 +2134,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
-    },
-    {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
@@ -3221,11 +2221,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -3234,41 +2229,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -3353,11 +2313,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
       "id": "extra-edamame",
       "label": "毛豆仁 (25g)",
       "price": 2.5
@@ -3366,41 +2321,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "extra-corn",
       "label": "甜玉米 (30g)",
       "price": 2.5
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
     },
     {
       "id": "shrimp-broccoli-steamed-egg",
@@ -3495,46 +2415,6 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 10.9
     },
     {
-      "id": "shrimp-egg",
-      "label": "虾仁炒蛋",
-      "price": 12.9
-    },
-    {
-      "id": "chia-pudding",
-      "label": "奇亚籽布丁",
-      "price": 6.9
-    },
-    {
-      "id": "longjing-ice",
-      "label": "龙井 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "longjing-warm",
-      "label": "龙井 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-ice",
-      "label": "铁观音 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "tieguanyin-warm",
-      "label": "铁观音 (温)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-ice",
-      "label": "水仙 (冰)",
-      "price": 3.8
-    },
-    {
-      "id": "shuixian-warm",
-      "label": "水仙 (温)",
-      "price": 3.8
-    },
-    {
       "id": "shrimp-broccoli-steamed-egg",
       "label": "鲜虾西兰花滑蒸蛋",
       "price": 6.8
@@ -3600,11 +2480,6 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
     "price": 10.9
   },
   {
-    "id": "shrimp-egg",
-    "label": "虾仁炒蛋",
-    "price": 12.9
-  },
-  {
     "id": "extra-edamame",
     "label": "毛豆仁 (25g)",
     "price": 2.5
@@ -3613,41 +2488,6 @@ export const DEFAULT_ADDON_OPTIONS: DishAddonOption[] = [
     "id": "extra-corn",
     "label": "甜玉米 (30g)",
     "price": 2.5
-  },
-  {
-    "id": "chia-pudding",
-    "label": "奇亚籽布丁",
-    "price": 6.9
-  },
-  {
-    "id": "longjing-ice",
-    "label": "龙井 (冰)",
-    "price": 3.8
-  },
-  {
-    "id": "longjing-warm",
-    "label": "龙井 (温)",
-    "price": 3.8
-  },
-  {
-    "id": "tieguanyin-ice",
-    "label": "铁观音 (冰)",
-    "price": 3.8
-  },
-  {
-    "id": "tieguanyin-warm",
-    "label": "铁观音 (温)",
-    "price": 3.8
-  },
-  {
-    "id": "shuixian-ice",
-    "label": "水仙 (冰)",
-    "price": 3.8
-  },
-  {
-    "id": "shuixian-warm",
-    "label": "水仙 (温)",
-    "price": 3.8
   },
   {
     "id": "shrimp-broccoli-steamed-egg",
