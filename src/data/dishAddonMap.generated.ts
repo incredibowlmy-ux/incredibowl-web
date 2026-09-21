@@ -265,6 +265,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "参峇臭豆虾仁炒花肉": [
     {
+      "id": "sambal-rice-king-combo",
+      "label": "参峇下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "sambal-rice-combo",
+      "label": "参峇干饭套",
+      "price": 5.9
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -1505,6 +1515,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "阿嫲蚝油姜蒜鱼片饭": [
     {
+      "id": "oyster-fish-rice-king-combo",
+      "label": "蚝油下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "oyster-fish-rice-combo",
+      "label": "蚝油鱼片干饭套",
+      "price": 5.9
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -1744,6 +1764,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "阿嫲葱油鸡腿饭": [
     {
+      "id": "scallion-chicken-rice-king-combo",
+      "label": "葱油下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "scallion-chicken-rice-combo",
+      "label": "葱油鸡干饭套",
+      "price": 7
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -1855,6 +1885,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "家常土豆焖五花肉": [
+    {
+      "id": "potato-pork-rice-king-combo",
+      "label": "土豆焖肉下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "potato-pork-rice-combo",
+      "label": "土豆焖肉干饭套",
+      "price": 5.9
+    },
     {
       "id": "less-rice",
       "label": "少饭",
@@ -1968,6 +2008,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
   ],
   "马铃薯炖和牛片": [
     {
+      "id": "wagyu-slice-rice-king-combo",
+      "label": "和牛片下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "wagyu-slice-rice-combo",
+      "label": "和牛片干饭套",
+      "price": 5.9
+    },
+    {
       "id": "less-rice",
       "label": "少饭",
       "price": 0
@@ -2079,6 +2129,16 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
     }
   ],
   "柚香香煎三文鱼饭": [
+    {
+      "id": "salmon-rice-king-combo",
+      "label": "三文鱼下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "salmon-rice-combo",
+      "label": "三文鱼干饭套",
+      "price": 7
+    },
     {
       "id": "less-rice",
       "label": "少饭",
@@ -2695,6 +2755,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 15.9
     },
     {
+      "id": "greek-rice-king-combo",
+      "label": "柠香鸡胸下饭套",
+      "price": 12.9
+    },
+    {
       "id": "extra-greek-chicken-180g",
       "label": "加柠香烤鸡胸 (150g)",
       "price": 11.9
@@ -2832,6 +2897,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "price": 11.4
     },
     {
+      "id": "yam-rice-king-combo",
+      "label": "山药下饭套",
+      "price": 12.9
+    },
+    {
       "id": "extra-prawns",
       "label": "鲜甜大虾仁 (4只)",
       "price": 7
@@ -2962,6 +3032,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "chicken-chop-rice-king-combo",
       "label": "古早味下饭套",
       "price": 12.9
+    },
+    {
+      "id": "chicken-chop-rice-combo",
+      "label": "鸡扒干饭套",
+      "price": 7
     },
     {
       "id": "extra-chicken-chop",
@@ -3358,6 +3433,11 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "chicken-chop-rice-king-combo",
       "label": "古早味下饭套",
       "price": 12.9
+    },
+    {
+      "id": "chicken-chop-rice-combo",
+      "label": "鸡扒干饭套",
+      "price": 7
     },
     {
       "id": "extra-chicken-chop",

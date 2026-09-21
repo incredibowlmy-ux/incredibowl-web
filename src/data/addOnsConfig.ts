@@ -216,6 +216,27 @@ export const ADD_ON_PRICES: Record<string, number> = {
   'salmon-rice-combo': 7.00,            // 三文鱼干饭套：马铃薯煎蛋+荷包蛋+加饭（原价 8.50）
   // #33 芝麻蜜汁鸡扒 —— A 档复用 chicken-chop-rice-king-combo（古早味下饭套）
   'chicken-chop-rice-combo': 7.00,      // 鸡扒干饭套：马铃薯煎蛋+荷包蛋+加饭（原价 8.50）
+
+  // ─── 2026-09-22 本周菜单全部补齐两档套餐（老板拍板，规则同上）─────────
+  // #38 柚香三文鱼 共用 salmon-rice-king-combo / salmon-rice-combo；#14 #26 金黄/柠檬鸡扒
+  // 补挂 chicken-chop-rice-combo —— 都不新增 id。
+  // #34 阿嫲葱油鸡腿饭（碗里有西兰花 50g → 第二档 C 档）
+  'scallion-chicken-rice-king-combo': 12.90, // 葱油下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'scallion-chicken-rice-combo': 7.00,       // 葱油鸡干饭套：马铃薯煎蛋+荷包蛋+加饭（原价 8.50）
+  // #35 阿嫲蚝油姜蒜鱼片饭（碗里没菜没蛋）
+  'oyster-fish-rice-king-combo': 12.90,      // 蚝油下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'oyster-fish-rice-combo': 5.90,            // 蚝油鱼片干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
+  // #36 家常土豆焖五花肉 / #37 马铃薯炖和牛片 —— 碗里已有马铃薯，第二档避开 C 档的马铃薯煎蛋
+  'potato-pork-rice-king-combo': 12.90,      // 土豆焖肉下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'potato-pork-rice-combo': 5.90,            // 土豆焖肉干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
+  'wagyu-slice-rice-king-combo': 12.90,      // 和牛片下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'wagyu-slice-rice-combo': 5.90,            // 和牛片干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
+  // #22 参峇臭豆虾仁炒花肉（碗里没菜没蛋）
+  'sambal-rice-king-combo': 12.90,           // 参峇下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'sambal-rice-combo': 5.90,                 // 参峇干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
+  // #12 山药云耳 / #3 希腊鸡胸 —— 原有加量三件套保留，补一档下饭套
+  'yam-rice-king-combo': 12.90,              // 山药下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'greek-rice-king-combo': 12.90,            // 柠香鸡胸下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
 };
 
 /**
