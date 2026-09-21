@@ -71,9 +71,21 @@ const ONSEN_EGG: ComboPart = { id: 'onsen-egg', fallback: 3, label: '浓厚温�
 const BRAISED_EGG: ComboPart = { id: 'braised-egg', fallback: 3, label: '古早味卤蛋', labelEn: 'braised soy egg' };
 const EXTRA_RICE: ComboPart = { id: 'extra-rice', fallback: 2, label: '加饭 150g', labelEn: 'extra rice 150g' };
 const EDAMAME: ComboPart = { id: 'extra-edamame', fallback: 2.5, label: '清甜毛豆 25g', labelEn: '25g edamame' };
+const POTATO_EGG: ComboPart = { id: 'potato-egg', fallback: 4, label: '马铃薯煎蛋', labelEn: 'potato fried egg' };
 
 /** 「下饭套」家族：西兰花炒蛋 + 荷包蛋 + 加饭（家乡/甜酸/古早味/归香/酒香 共用）。 */
 const RICE_KING_PARTS: ComboPart[] = [BROCCOLI_EGG, SUNNY_EGG, EXTRA_RICE];
+/** 「干饭套」家族：荷包蛋 + 加饭 + 毛豆（猪扒/酱油鸡 共用）。 */
+const RICE_BOWL_PARTS: ComboPart[] = [SUNNY_EGG, EXTRA_RICE, EDAMAME];
+/**
+ * C 档（2026-09-21 老板定 RM7.00）：马铃薯煎蛋 + 荷包蛋 + 加饭。给碗里已经有
+ * 西兰花 / 毛豆玉米番茄的菜用 —— 不再把碗里已有的菜加倍，改打包客人单点最多的两颗蛋。
+ */
+const DOUBLE_EGG_RICE_PARTS: ComboPart[] = [POTATO_EGG, SUNNY_EGG, EXTRA_RICE];
+
+// 三文鱼两套：#21 柠香 与 #32 蜜糖 同一碗配料，共用商品，卖点各写各的。
+const SALMON_RICE_KING_ITEM = { id: 'salmon-rice-king-combo', name: '三文鱼下饭套 (原价 RM 15.40)', nameEn: 'Salmon Rice King Set', fallback: 12.90 };
+const SALMON_RICE_ITEM = { id: 'salmon-rice-combo', name: '三文鱼干饭套 (原价 RM 8.50)', nameEn: 'Salmon Rice Set', fallback: 7.00 };
 
 // ─── 逐菜配置（顺序保持原 AddOnModal 分支顺序）────────────────────────────────
 
@@ -202,32 +214,30 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
     // Lemon Pan-Seared Salmon (id: 21): sides carry the dish's own ingredients
     // (edamame / corn / cherry tomato) plus an extra-salmon upsell.
     // 西兰花 (50g) intentionally absent — no standalone add-on price provided yet.
-    // 2026-07-31 加两个专属套餐（老板拍板）：数据说三文鱼客最常加的是
-    // 蒜蓉西兰花炒蛋（7 周里 6 周排前三），而 RM18.50 的加三文鱼在约 122 份
-    // 里只卖出过 1 次 —— 所以套餐围着「客人已经在买的东西」打包，不推双份鱼。
+    // 套餐围着「客人已经在买的东西」打包，不推双份鱼：11 周快照里这道菜付费加料
+    // 第一是蒜蓉西兰花炒蛋（19 次），其后加饭 8 / 马铃薯煎蛋 7 / 荷包蛋 6，而
+    // RM18.50 的加三文鱼只卖出 1 次。
+    // 2026-09-21 老板要求换新两档（与 #32 共用）：旧「柠香双蛋白套」「三色加倍套」
+    // 退役，id 留在 ADD_ON_PRICES / dashboard 给历史订单。
     21: {
         combos: [
             {
-                sectionId: 'salmon-protein-combo',
-                title: '✨ 柠香双蛋白套',
-                titleEn: 'Lemon Salmon Protein Duo (+ RM 12.90)',
-                item: { id: 'salmon-protein-duo-combo', name: '柠香双蛋白套 (原价 RM 13.90)', nameEn: 'Protein Duo', fallback: 12.90 },
-                parts: [BROCCOLI_EGG, ONSEN_EGG],
-                quote: '"香煎三文鱼配蒜香西兰花炒蛋，再戳破一颗流心温泉蛋——一碗吃满两份蛋白质。"',
-                quoteEn: '"Pan-seared salmon with garlicky broccoli-egg and a silky onsen egg — two proteins in one bowl."',
+                sectionId: 'salmon-rice-king-combo-section',
+                title: '✨ 三文鱼下饭套',
+                titleEn: 'Salmon Rice King Set (+ RM 12.90)',
+                item: SALMON_RICE_KING_ITEM,
+                parts: RICE_KING_PARTS,
+                quote: '"柠香三文鱼清爽不腻，再配蒜香西兰花炒蛋，戳破流心荷包蛋拌进白饭——一碗吃到饱。"',
+                quoteEn: '"Zesty lemon salmon, garlicky broccoli-egg and a runny yolk over extra rice — a bowl that truly fills you up."',
             },
             {
-                sectionId: 'salmon-tricolor-combo-section',
-                title: '✨ 三色加倍套',
-                titleEn: 'Triple Veggie Boost (+ RM 5.90)',
-                item: { id: 'salmon-tricolor-combo', name: '三色加倍套 (原价 RM 7.50)', nameEn: 'Triple Veggie Boost', fallback: 5.90 },
-                parts: [
-                    EDAMAME,
-                    { id: 'extra-corn', fallback: 2.5, label: '金黄甜玉米 30g', labelEn: '30g sweet corn' },
-                    { id: 'cherry-tomato', fallback: 2.5, label: '爽脆小番茄 20g', labelEn: '20g cherry tomato' },
-                ],
-                quote: '"碗里本来就有的三样配色，全部加倍——每一口都咬得到。"',
-                quoteEn: '"The three colours already in your bowl, doubled — something in every bite."',
+                sectionId: 'salmon-rice-combo-section',
+                title: '✨ 三文鱼干饭套',
+                titleEn: 'Salmon Rice Set (+ RM 7.00)',
+                item: SALMON_RICE_ITEM,
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"柠香酱汁拌饭刚刚好——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，吃得饱饱的。"',
+                quoteEn: '"That lemony sauce over rice — extra rice, a sunny-side-up egg and a soft potato-egg to fill you right up."',
             },
         ],
         sides: {
@@ -245,7 +255,29 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
     // Aussie Wagyu Beef Patty Don (id: 24): sides carry the dish's own
     // cherry-tomato & onion salad (tossed in extra-virgin olive oil + pinch of
     // salt — NOT the plain 'cherry-tomato' add-on) plus an extra-patty upsell.
+    // 2026-09-21 补两档套餐（老板拍板）。碗里自带一颗温泉蛋，所以 A 档照姜葱下饭套
+    // 用马铃薯煎蛋不用荷包蛋；B 档照烧干饭套同结构（温泉蛋+加饭+毛豆）。
     24: {
+        combos: [
+            {
+                sectionId: 'wagyu-rice-king-combo-section',
+                title: '✨ 和牛下饭套',
+                titleEn: 'Wagyu Rice King Set (+ RM 13.90)',
+                item: { id: 'wagyu-rice-king-combo', name: '和牛下饭套 (原价 RM 16.90)', nameEn: 'Wagyu Rice King Set', fallback: 13.90 },
+                parts: [BROCCOLI_EGG, POTATO_EGG, EXTRA_RICE],
+                quote: '"和牛饼肉汁丰盈，碗里已有一颗温泉蛋——再添蒜香西兰花炒蛋补一口青、绵软马铃薯煎蛋加分量，一碗饭根本不够。"',
+                quoteEn: '"The patty already comes with an onsen egg — add garlicky greens and a soft potato-egg, and one bowl of rice won\'t be enough."',
+            },
+            {
+                sectionId: 'wagyu-rice-combo-section',
+                title: '✨ 和牛干饭套',
+                titleEn: 'Wagyu Rice Set (+ RM 5.90)',
+                item: { id: 'wagyu-rice-combo', name: '和牛干饭套 (原价 RM 7.50)', nameEn: 'Wagyu Rice Set', fallback: 5.90 },
+                parts: [ONSEN_EGG, EXTRA_RICE, EDAMAME],
+                quote: '"和牛肉汁拌饭最香——多一碗饭、再加一颗温泉蛋、一把脆毛豆，一口接一口。"',
+                quoteEn: '"Wagyu juices over rice — extra rice, one more onsen egg and crisp edamame, bite after bite."',
+            },
+        ],
         sides: {
             items: [
                 { id: 'extra-wagyu-patty', name: '加澳洲和牛饼 (1块)', nameEn: 'Extra Aussie Wagyu Patty (1 pc)', fallback: 17.50, maxQty: 3 },
@@ -354,7 +386,29 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
     },
 
     // Grandma's Traditional Soy Sauce Chicken Whole Leg (now Monday special, id: 1), same pattern as id:13
+    // 2026-09-21 补两档套餐（老板拍板）。7 周快照里这道菜付费加料：换糙米 25、
+    // 西兰花炒蛋 13、荷包蛋 5；碗里无蛋 → 标准下饭套 + 干饭套。
     1: {
+        combos: [
+            {
+                sectionId: 'soy-chicken-rice-king-combo-section',
+                title: '✨ 酱香下饭套',
+                titleEn: 'Soy Rice King Set (+ RM 12.90)',
+                item: { id: 'soy-chicken-rice-king-combo', name: '酱香下饭套 (原价 RM 15.40)', nameEn: 'Soy Rice King Set', fallback: 12.90 },
+                parts: RICE_KING_PARTS,
+                quote: '"酱油鸡汁最该拿来捞饭——蒜香西兰花炒蛋添一口青，再戳破流心荷包蛋，阿嫲的酱香一滴不剩。"',
+                quoteEn: '"That soy chicken gravy was made for rice — garlicky broccoli-egg and a runny yolk soak up every drop."',
+            },
+            {
+                sectionId: 'soy-chicken-rice-combo-section',
+                title: '✨ 酱油鸡干饭套',
+                titleEn: 'Soy Chicken Rice Set (+ RM 5.90)',
+                item: { id: 'soy-chicken-rice-combo', name: '酱油鸡干饭套 (原价 RM 7.00)', nameEn: 'Soy Chicken Rice Set', fallback: 5.90 },
+                parts: RICE_BOWL_PARTS,
+                quote: '"鸡腿配酱汁，一碗饭哪里够——多一碗饭、一颗流心蛋、一把脆毛豆，吃得干干净净。"',
+                quoteEn: '"One bowl of rice is never enough for that soy gravy — extra rice, a runny egg and crisp edamame."',
+            },
+        ],
         sides: {
             items: [
                 { id: 'extra-soy-leg-1', name: '【犒劳自己】多加一只酱油全鸡腿', nameEn: 'Extra Soy Sauce Chicken Whole Leg (+1)', fallback: 16.50, maxQty: 1 },
@@ -470,7 +524,29 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
     // 2026-08-09 老板拍板：新菜首发自带一个专属加料（+90g 白萝卜 RM3）。
     // 2026-08-12 老板改：份量 90g→100g 熟（生重 200g），价 RM3→RM3.50。
     // id 保持 extra-daikon-90g（历史命名，不改 id 以免历史成本归因失真）。
+    // 2026-09-21 补两档套餐（老板拍板）。碗里已有西兰花 50g，快照里付费加料是
+    // 荷包蛋 8 / 马铃薯煎蛋 6 / 西兰花炒蛋 2 → A 档仍用标准下饭套，第二档用 C 档。
     30: {
+        combos: [
+            {
+                sectionId: 'daikon-rice-king-combo-section',
+                title: '✨ 萝卜下饭套',
+                titleEn: 'Daikon Rice King Set (+ RM 12.90)',
+                item: { id: 'daikon-rice-king-combo', name: '萝卜下饭套 (原价 RM 15.40)', nameEn: 'Daikon Rice King Set', fallback: 12.90 },
+                parts: RICE_KING_PARTS,
+                quote: '"萝卜吸饱了肉汁，花肉焖得软糯——再来一份蒜香西兰花炒蛋，戳破流心荷包蛋拌饭，家的味道就这么简单。"',
+                quoteEn: '"Daikon soaked in pork gravy — add garlicky broccoli-egg and a runny yolk over extra rice. Home, simply."',
+            },
+            {
+                sectionId: 'daikon-rice-combo-section',
+                title: '✨ 萝卜干饭套',
+                titleEn: 'Daikon Rice Set (+ RM 7.00)',
+                item: { id: 'daikon-rice-combo', name: '萝卜干饭套 (原价 RM 8.50)', nameEn: 'Daikon Rice Set', fallback: 7.00 },
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"焖汁清甜又下饭——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，汤汁全吸光。"',
+                quoteEn: '"That sweet braising broth deserves more rice — extra rice, a sunny-side-up egg and a soft potato-egg soak it all up."',
+            },
+        ],
         sides: {
             items: [
                 { id: 'extra-daikon-90g', name: '【清甜解腻】加白萝卜 (100g)', nameEn: 'Extra Daikon (100g)', fallback: 3.50, maxQty: 3 },
@@ -489,11 +565,7 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
             title: '✨ 姜葱下饭套',
             titleEn: 'Ginger-Scallion Rice King Set (+ RM 13.90)',
             item: { id: 'ginger-fish-rice-king-combo', name: '姜葱下饭套 (原价 RM 16.90)', nameEn: 'Ginger-Scallion Rice King Set', fallback: 13.90 },
-            parts: [
-                BROCCOLI_EGG,
-                { id: 'potato-egg', fallback: 4, label: '马铃薯煎蛋', labelEn: 'potato fried egg' },
-                EXTRA_RICE,
-            ],
+            parts: [BROCCOLI_EGG, POTATO_EGG, EXTRA_RICE],
             quote: '"姜葱爆香的鱼片本来就配一颗荷包蛋，再添蒜香西兰花炒蛋和绵软马铃薯煎蛋——鱼嫩、菜香、蛋绵，一碗饭根本不够。"',
             quoteEn: '"The fish already comes with a sunny-side-up egg — add garlicky greens and a soft potato-egg, and one bowl of rice won\'t be enough."',
         }],
@@ -546,5 +618,77 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 { id: 'extra-pork-belly', name: '【浓香入味】加花肉片 (70g)', nameEn: 'Extra Pork Belly Slices (70g)', fallback: 11.90, maxQty: 3 },
             ],
         },
+    },
+
+    // ─── 2026-09-21 补齐两档套餐（老板拍板）──────────────────────────────
+
+    // Hometown Taucu Braised Pork Ribs (id: 28)。碗里有西兰花 50g、没有蛋 →
+    // A 标准下饭套，第二档 C 档（快照里付费加料：荷包蛋 3、马铃薯煎蛋 2）。
+    28: {
+        combos: [
+            {
+                sectionId: 'taucu-ribs-rice-king-combo-section',
+                title: '✨ 排骨下饭套',
+                titleEn: 'Taucu Ribs Rice King Set (+ RM 12.90)',
+                item: { id: 'taucu-ribs-rice-king-combo', name: '排骨下饭套 (原价 RM 15.40)', nameEn: 'Taucu Ribs Rice King Set', fallback: 12.90 },
+                parts: RICE_KING_PARTS,
+                quote: '"豆酱排骨咸香入骨，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，骨边的酱汁都不放过。"',
+                quoteEn: '"Savoury taucu ribs beg for greens — garlicky broccoli-egg and a runny yolk over extra rice, right down to the last bit of sauce."',
+            },
+            {
+                sectionId: 'taucu-ribs-rice-combo-section',
+                title: '✨ 排骨干饭套',
+                titleEn: 'Taucu Ribs Rice Set (+ RM 7.00)',
+                item: { id: 'taucu-ribs-rice-combo', name: '排骨干饭套 (原价 RM 8.50)', nameEn: 'Taucu Ribs Rice Set', fallback: 7.00 },
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"豆酱汁太下饭——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，排骨啃完饭也刚好吃完。"',
+                quoteEn: '"That taucu gravy needs more rice — extra rice, a sunny-side-up egg and a soft potato-egg to finish with the ribs."',
+            },
+        ],
+    },
+
+    // Honey Pan-Seared Salmon Rice (id: 32)：与 #21 同一碗配料，共用三文鱼两套。
+    32: {
+        combos: [
+            {
+                sectionId: 'salmon-rice-king-combo-section',
+                title: '✨ 三文鱼下饭套',
+                titleEn: 'Salmon Rice King Set (+ RM 12.90)',
+                item: SALMON_RICE_KING_ITEM,
+                parts: RICE_KING_PARTS,
+                quote: '"蜜糖三文鱼甜咸刚好，再配蒜香西兰花炒蛋，戳破流心荷包蛋拌进白饭——一碗吃到饱。"',
+                quoteEn: '"Honey-glazed salmon, garlicky broccoli-egg and a runny yolk over extra rice — a bowl that truly fills you up."',
+            },
+            {
+                sectionId: 'salmon-rice-combo-section',
+                title: '✨ 三文鱼干饭套',
+                titleEn: 'Salmon Rice Set (+ RM 7.00)',
+                item: SALMON_RICE_ITEM,
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"蜜糖酱汁最配白饭——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，甜香一口不落。"',
+                quoteEn: '"That honey glaze belongs on rice — extra rice, a sunny-side-up egg and a soft potato-egg, every sweet drop."',
+            },
+        ],
+    },
+
+    // Sesame Honey Glazed Chicken Chop (id: 33)：碗的配置同 #14 金黄鸡扒。A 档直接
+    // 复用古早味下饭套（同 id 同标签，只换卖点）；第二档 C 档只挂 #33，不动 #14/#26。
+    33: {
+        combos: [
+            {
+                ...CHICKEN_CHOP.combos![0],
+                quote: '"蜜汁芝麻鸡扒香甜下饭，就差一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，一口都不干。"',
+                quoteEn: '"A honey-sesame chop needs greens and a runny yolk — garlicky broccoli-egg and a burst of yolk keep every bite moist."',
+            },
+            {
+                sectionId: 'chicken-chop-rice-combo-section',
+                title: '✨ 鸡扒干饭套',
+                titleEn: 'Chicken Chop Rice Set (+ RM 7.00)',
+                item: { id: 'chicken-chop-rice-combo', name: '鸡扒干饭套 (原价 RM 8.50)', nameEn: 'Chicken Chop Rice Set', fallback: 7.00 },
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"蜜汁鸡扒一块，白饭两碗才够——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，吃饱才有力气。"',
+                quoteEn: '"One honey-glazed chop, two bowls of rice — extra rice, a sunny-side-up egg and a soft potato-egg to fuel you up."',
+            },
+        ],
     },
 };
