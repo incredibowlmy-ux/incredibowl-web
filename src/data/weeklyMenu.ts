@@ -731,6 +731,9 @@ export function buildMenu(week: MenuWeek, opts: BuildMenuOptions = {}): MenuItem
     for (const id of week.paused ?? []) {
         const d = take(id, 'PAUSED_DISHES');
         if (!d) continue;
+        // 未上架优先于暂别：老板把暂别里的菜设成 hidden，旧周文档的 paused 里还留着它。
+        // 不能带 retired 出去 —— 首页暂别区 / n8n 菜单只按 retired 取，会把未上架菜又亮出来。
+        if (d.hidden) { menu.push({ ...d, day: 'Unscheduled / 未排期' }); continue; }
         menu.push({ ...d, day: PAUSED_DAY_LABELS[id] ?? PAUSED_DAY_LABEL_DEFAULT, retired: true });
     }
 
