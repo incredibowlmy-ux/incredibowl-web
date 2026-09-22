@@ -22,7 +22,8 @@ import {
  *   { op: 'human',   phone, minutes? }          老板接管（bot 静音）
  *   { op: 'release', phone }                    释放
  *   { op: 'note',    phone, key, value }        记备注（key 白名单同 bot）
- *   { op: 'close',   phone }                    关闭 lead（停止追单）
+ *   { op: 'nudgeoff', phone }                   只停自动追单（对话照常：bot 照常回、老板照常发；客户再来消息也不会恢复）
+ *   { op: 'nudgeon',  phone }                   恢复自动追单（客户下一条消息起重新排程）
  *
  * 鉴权：与 /api/admin/update-user 同款（Firebase ID token + 管理员邮箱白名单）。
  * CORS：Desktop 版 dashboard 从 file:// 调，必须带 * + OPTIONS（见 memory dashboard 两副本）。
@@ -186,6 +187,7 @@ export async function POST(req: NextRequest) {
           unread,
           clicked: !!x.clickedAtMs,
           nudgeCount: Number(x.nudgeCount) || 0,
+          nudgeOff: x.nudgeOff === true,
           tags: Array.isArray(profile.tags) ? profile.tags : [],
           windowRemainingMs: windowRemainingMs(turns, now),
         };
@@ -290,6 +292,7 @@ export async function POST(req: NextRequest) {
         intent: String(d.intent || ''),
         name: String(d.name || ''),
         nudgeCount: Number(d.nudgeCount) || 0,
+        nudgeOff: d.nudgeOff === true,
         nextNudgeMs: Number(d.nextNudgeMs) || 0,
         lastMsgMs: Number(d.lastMsgMs) || 0,
         clicked: !!d.clickedAtMs,
@@ -332,9 +335,15 @@ export async function POST(req: NextRequest) {
       return corsify(NextResponse.json({ ok: true, profile: merged }));
     }
 
-    if (op === 'close') {
-      await ref.set({ phone, status: 'closed', nextNudgeMs: 0, closedReason: 'dashboard', closedAtMs: now, updatedAtMs: now }, { merge: true });
-      return corsify(NextResponse.json({ ok: true }));
+    // 只关追单，不动 status —— 以前用 status='closed' 会连带把收件箱对话锁死
+    if (op === 'nudgeoff' || op === 'nudgeon') {
+      const off = op === 'nudgeoff';
+      await ref.set({
+        phone, nudgeOff: off, nudgeOffAtMs: off ? now : 0, updatedAtMs: now,
+        ...(off ? { nextNudgeMs: 0 } : {}),
+        turns: appendTurn(d.turns, 'sys', off ? '老板停止自动追单（对话照常）' : '老板恢复自动追单', now),
+      }, { merge: true });
+      return corsify(NextResponse.json({ ok: true, nudgeOff: off }));
     }
 
     return corsify(NextResponse.json({ error: `未知 op: ${op}` }, { status: 400 }));

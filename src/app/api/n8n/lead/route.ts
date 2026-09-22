@@ -101,6 +101,7 @@ function publicLead(id: string, d: Record<string, any>, now = Date.now()) {
     humanBy: String(d.humanBy || ''),
     profile: (d.profile && typeof d.profile === 'object') ? d.profile : {},
     nextNudgeMs: Number(d.nextNudgeMs) || 0,
+    nudgeOff: d.nudgeOff === true,
   };
 }
 
@@ -201,8 +202,8 @@ export async function GET(req: NextRequest) {
       const nudgeCount = Number(d.nudgeCount) || 0;
       const lastNudgeMs = Number(d.lastNudgeMs) || 0;
 
-      // 已成交 / 已关闭 / 追满 → 清掉排程，永不再扫到
-      if (status === 'ordered' || status === 'closed' || nudgeCount >= MAX_NUDGES) {
+      // 已成交 / 已关闭 / 老板停了追单 / 追满 → 清掉排程，永不再扫到
+      if (status === 'ordered' || status === 'closed' || d.nudgeOff === true || nudgeCount >= MAX_NUDGES) {
         batch.update(doc.ref, { nextNudgeMs: 0 }); writes++;
         continue;
       }
@@ -360,7 +361,8 @@ export async function POST(req: NextRequest) {
 
     const nudgeCount = newSession ? 0 : (Number(prev.nudgeCount) || 0);
     const lastNudgeMs = newSession ? 0 : (Number(prev.lastNudgeMs) || 0);
-    const nextNudgeMs = computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
+    // 老板在 dashboard 停了追单 → 跨 session 一直生效，直到手动恢复
+    const nextNudgeMs = prev.nudgeOff === true ? 0 : computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
 
     // 未处理消息缓冲：客户连发的每一条都进来，等胜出的那次执行一并取走。
     const prevPending: { ts: number; text: string }[] = Array.isArray(prev.pending) ? prev.pending : [];
