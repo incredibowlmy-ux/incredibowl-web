@@ -16437,6 +16437,7 @@ incredibowl.my`,
             draftMonday: '',
             draftFromScheduled: false,
             dirty: false,
+            autoPaused: new Set(), // msAutoPause 本次草稿自动放进暂别的菜（还没保存）
             conflicts: [],
             broadcast: '',
             forecast: null,
@@ -16488,6 +16489,7 @@ incredibowl.my`,
             MS.draft = msCloneWeek(pend || msWeekFor(MS.draftMonday).week);
             MS.draftFromScheduled = !!pend;
             MS.dirty = false;
+            MS.autoPaused = new Set();
             MS.draftReasons = null;
             MS.broadcast = ''; MS.forecast = null;
         }
@@ -16532,6 +16534,18 @@ incredibowl.my`,
         function msUnscheduled() {
             const used = new Set(msAllLists().flatMap(x => x.list));
             return MS.catalog.filter(c => !used.has(c.id));
+        }
+        /**
+         * 没排的菜自动进暂别（网站灰显），只有「未上架」的才留在未排期（2026-09-23 老板要求）。
+         * 每次 render 前跑，所以载入 / 移出 / 复制上周 / 自动起稿 / 改上架状态后都成立。
+         * 不算 dirty（切周不弹确认），靠 pill 提示「保存后生效」—— 没保存网站仍按旧排期。
+         */
+        function msAutoPause() {
+            for (const c of msUnscheduled()) {
+                if (c.hidden) continue;
+                MS.draft.paused.push(c.id);
+                MS.autoPaused.add(c.id);
+            }
         }
         /** 近 4 周销量 + 上次供应（一次扫描，按 render 缓存）。 */
         function msStatsMap() {
@@ -16599,6 +16613,8 @@ incredibowl.my`,
             const root = document.getElementById('msRoot');
             if (!root) return;
             if (!MS.loaded) { root.innerHTML = '<div class="card"><div class="card-content">加载中…</div></div>'; return; }
+            msAutoPause();
+            const autoPausedNow = MS.draft.paused.filter(id => MS.autoPaused.has(id));
             const monday = MS.draftMonday;
             const info = msWeekFor(monday);
             const pending = msPending(monday);
@@ -16632,7 +16648,9 @@ incredibowl.my`,
                         ${opts.hero && i > 0 ? `<button class="btn ghost sm" title="设为主打" data-act="hero" data-key="${key}" data-id="${id}">⭐</button>` : ''}
                         <button class="btn ghost sm" title="上移" data-act="up" data-key="${key}" data-id="${id}" ${i === 0 ? 'disabled' : ''}>↑</button>
                         <button class="btn ghost sm" title="下移" data-act="down" data-key="${key}" data-id="${id}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button>
-                        <button class="btn ghost sm" title="移出（变成未排期/下架）" data-act="remove" data-id="${id}">✕</button>
+                        ${key === 'paused'
+                            ? `<button class="btn ghost sm" title="设为未上架（网站完全不显示，立即生效）" data-act="hide" data-id="${id}">✕</button>`
+                            : `<button class="btn ghost sm" title="移出（进暂别）" data-act="remove" data-id="${id}">✕</button>`}
                     </div>`;
                 }).join('') || '<div style="opacity:.5;font-size:12px;padding:6px 8px">（空）</div>';
                 const st = msStatsMap();
@@ -16664,7 +16682,7 @@ incredibowl.my`,
             const dailyCard = colCard('daily', '常驻', '每个营业日都卖', MS.draft.daily);
             const pausedCard = colCard('paused', '暂别', '网站灰显可见不可点', MS.draft.paused);
             const pool = msUnscheduled();
-            const poolCard = `<div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">未排期</div><div class="card-sub">不在任何列 = 网站不显示（dashboard 仍可见）</div></div></div>
+            const poolCard = `<div class="card" style="margin:0"><div class="card-header"><div><div class="card-title">未排期</div><div class="card-sub">只放「未上架」的菜 = 网站不显示（dashboard 仍可见）；其它没排的菜自动进暂别</div></div></div>
                 <div class="card-content">${pool.length ? pool.map(c => `<span class="pill muted" style="margin:2px" title="${msEsc(msStatText(c))}">${msEsc(c.name)}${c.hidden ? ' · 未上架' : ''}</span>`).join('') : '<span style="opacity:.5;font-size:12px">（无）</span>'}</div></div>`;
 
             const conflictsCard = MS.conflicts.length ? `<div class="card" style="border-color:#e0a800;background:rgba(255,184,0,.06)">
@@ -16742,7 +16760,7 @@ incredibowl.my`,
             root.innerHTML = `
                 <div class="card">
                     <div class="card-header">
-                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
+                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${autoPausedNow.length ? `<span class="pill warn" title="${msEsc(autoPausedNow.map(msName).join('、'))}">${autoPausedNow.length} 道没排的菜已自动放进暂别 · 保存后网站生效</span>` : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                             ${tabs}
                             <button class="btn ghost sm" data-act="autoDraft" title="按销量 / 回头率 / 轮换间隔 / 配对打分自动排一版草稿，每道菜带理由，你改完再保存">✨ 自动起稿</button>
@@ -16862,6 +16880,16 @@ incredibowl.my`,
             if (act === 'up') { msMove(btn.dataset.key, btn.dataset.id, -1); msRender(); return; }
             if (act === 'down') { msMove(btn.dataset.key, btn.dataset.id, 1); msRender(); return; }
             if (act === 'remove') { msRemove(btn.dataset.id); msRender(); return; }
+            if (act === 'hide') {
+                // 暂别里的 ✕ = 下架：没排的菜会被 msAutoPause 放回暂别，所以只有设「未上架」才能真正拿掉。
+                const name = msName(btn.dataset.id);
+                if (!confirm(`把「${name}」设为未上架？网站完全不显示，立即生效（在「菜品价格 / 上架」可改回）。`)) return;
+                btn.disabled = true;
+                msRemove(btn.dataset.id);
+                // 失败时 msApply 照样 render → 菜仍未隐藏 → msAutoPause 放回暂别，不会丢。
+                await msApply({ action: 'setDish', id: Number(btn.dataset.id), hidden: true }, `已下架「${name}」`);
+                return;
+            }
             if (act === 'saveWeek') {
                 btn.disabled = true;
                 await msApply({ action: 'saveWeek', monday: MS.draftMonday, week: msWeekPayload() }, `已保存 ${MS.draftMonday} 整周排期`);
