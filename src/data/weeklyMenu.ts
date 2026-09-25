@@ -598,10 +598,10 @@ const DISH_CATALOG: DishData[] = [
     {
         // 全新菜 2026-09-18 入系统（老板定名「柚香香煎三文鱼饭」+ 一切沿用 #32 蜜糖三文鱼：
         //   RM24.90、voucherTopUp 5、salmon-upgrade 预付升级池、120g 三文鱼）。
-        //   唯一差异：配菜只有西兰花（老板 09-18 拍板），配方见 dishIngredients.ts。
+        //   配菜：西兰花 + 玉米 30g + 毛豆 25g（09-18 原定只有西兰花，09-26 老板按主图改），配方见 dishIngredients.ts。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
-        // 无实拍图，emoji 占位防 hero 404（有图后换 /yuzu_salmon.webp，并提醒老板在 Google
-        //   Sheet dishes 表加一行给 chatbot 发图）。
+        // 2026-09-26 接上主图（yuzu_salmon.webp，1024² webp q82，源图 Gpt/yuzusalmon.jpeg）；仍需老板在 Google
+        //   Sheet dishes 表加一行给 chatbot 发图。
         // 蛋白标签沿用 #32：同为 120g 三文鱼，克数不变则蛋白不变；仍待碗妈复核。
         // 简介为初稿，待老板审定。
         id: 38,
@@ -610,12 +610,12 @@ const DISH_CATALOG: DishData[] = [
         price: 24.90,
         voucherTopUp: 5,
         topUpAddonId: "salmon-upgrade",
-        image: "🐟",
+        image: "/yuzu_salmon.webp",
         hidden: true,
         tags: ["高蛋白 30g+", "柚子清香", "香煎三文鱼", "Omega-3", "餐券+RM5"],
         tagsEn: ["30g+ protein", "Yuzu citrus", "Pan-seared salmon", "Omega-3", "Voucher +RM5"],
-        desc: "香煎三文鱼外焦里嫩，淋上柚子酱汁，清香微酸把鱼油的丰腴衬得刚刚好，配一把清脆西兰花——清爽不腻。",
-        descEn: "Pan-seared salmon, crisp outside and tender within, finished with a bright yuzu sauce that cuts through the richness — served with crisp broccoli. Light and clean."
+        desc: "香煎三文鱼外焦里嫩，淋上柚子酱汁，清香微酸把鱼油的丰腴衬得刚刚好，配上清脆西兰花、清甜玉米和毛豆——清爽不腻。",
+        descEn: "Pan-seared salmon, crisp outside and tender within, finished with a bright yuzu sauce that cuts through the richness — served with crisp broccoli, sweet corn and edamame. Light and clean."
     },
     {
         // 新菜 2026-09-26 入系统（老板定名+定价 RM19.90，英文名老板从 10 个里选）。
