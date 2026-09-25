@@ -2,7 +2,7 @@
  * ⚠ AUTO-GENERATED — DO NOT EDIT BY HAND.
  * Source: Desktop incredibowl-dashboard.html 的 DISH_ADDON_MAP（手动录单同款加料表）。
  * Regenerate: node scripts/gen-dish-addon-map.mjs
- * Generated: 2026-09-21
+ * Generated: 2026-09-25
  */
 
 export interface DishAddonOption { id: string; label: string; price: number }
@@ -1458,6 +1458,170 @@ export const DISH_ADDONS_BY_NAME: Record<string, DishAddonOption[]> = {
       "id": "salmon-rice-combo",
       "label": "三文鱼干饭套",
       "price": 7
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 4
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (30g)",
+      "price": 2.5
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
+      "id": "side-soup",
+      "label": "汤 (Soup)",
+      "price": 19.9
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (100g)",
+      "price": 3.5
+    }
+  ],
+  "家乡豆豉焖排骨": [
+    {
+      "id": "taucu-ribs-rice-king-combo",
+      "label": "排骨下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "taucu-ribs-rice-combo",
+      "label": "排骨干饭套",
+      "price": 7
+    },
+    {
+      "id": "less-rice",
+      "label": "少饭",
+      "price": 0
+    },
+    {
+      "id": "extra-rice",
+      "label": "加饭",
+      "price": 2
+    },
+    {
+      "id": "brown-rice",
+      "label": "换糙米",
+      "price": 2
+    },
+    {
+      "id": "sunny-egg",
+      "label": "荷包蛋",
+      "price": 2.5
+    },
+    {
+      "id": "onsen-egg",
+      "label": "温泉蛋",
+      "price": 3
+    },
+    {
+      "id": "potato-egg",
+      "label": "马铃薯煎蛋",
+      "price": 4
+    },
+    {
+      "id": "broccoli-egg",
+      "label": "蒜蓉西兰花炒蛋",
+      "price": 10.9
+    },
+    {
+      "id": "extra-edamame",
+      "label": "毛豆仁 (25g)",
+      "price": 2.5
+    },
+    {
+      "id": "extra-corn",
+      "label": "甜玉米 (30g)",
+      "price": 2.5
+    },
+    {
+      "id": "shrimp-broccoli-steamed-egg",
+      "label": "鲜虾西兰花滑蒸蛋",
+      "price": 6.8
+    },
+    {
+      "id": "minced-pork-egg",
+      "label": "猪肉碎煎蛋",
+      "price": 10.9
+    },
+    {
+      "id": "extra-prawns",
+      "label": "鲜甜大虾仁 (4只)",
+      "price": 7
+    },
+    {
+      "id": "side-soup",
+      "label": "汤 (Soup)",
+      "price": 19.9
+    },
+    {
+      "id": "extra-daikon-90g",
+      "label": "【清甜解腻】加白萝卜 (100g)",
+      "price": 3.5
+    }
+  ],
+  "家常土豆焖鸡": [
+    {
+      "id": "potato-pork-rice-king-combo",
+      "label": "土豆焖肉下饭套",
+      "price": 12.9
+    },
+    {
+      "id": "potato-pork-rice-combo",
+      "label": "土豆焖肉干饭套",
+      "price": 5.9
     },
     {
       "id": "less-rice",

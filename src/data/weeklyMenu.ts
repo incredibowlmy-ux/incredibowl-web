@@ -617,6 +617,44 @@ const DISH_CATALOG: DishData[] = [
         desc: "香煎三文鱼外焦里嫩，淋上柚子酱汁，清香微酸把鱼油的丰腴衬得刚刚好，配一把清脆西兰花——清爽不腻。",
         descEn: "Pan-seared salmon, crisp outside and tender within, finished with a bright yuzu sauce that cuts through the richness — served with crisp broccoli. Light and clean."
     },
+    {
+        // 新菜 2026-09-26 入系统（老板定名+定价 RM19.90，英文名老板从 10 个里选）。
+        // 份量老板 09-26 拍板「同豆酱焖排骨」：排骨 180g + 西兰花 50g + 白饭 80g，
+        //   无蛋无马铃薯 → 共用 #28 排骨两档套餐；用 150mm 餐盒。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /tausee_pork_ribs.webp，并提醒老板在
+        //   Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        id: 39,
+        name: "家乡豆豉焖排骨",
+        nameEn: "Hometown Tau See Pork Ribs",
+        price: 19.90,
+        image: "🍖",
+        hidden: true,
+        tags: ["家乡豆豉", "焖煮入味", "骨边肉香", "下饭神器"],
+        tagsEn: ["Hometown tau see", "Slow-braised", "Fall-off-the-bone", "Made for rice"],
+        desc: "家乡豆豉慢火焖排骨，豉香咸鲜渗进骨边肉里，配一把清脆西兰花，豉汁拌饭一流。",
+        descEn: "Pork ribs slow-braised with hometown fermented black beans (tau see) — savoury and deeply infused, served with crisp broccoli and a gravy made for rice."
+    },
+    {
+        // 新菜 2026-09-26 入系统（老板从 10 个名字里选定，定价 RM18.50）。
+        // 碗里：鸡 + 马铃薯，无配菜无蛋 → 共用 #36 土豆焖两套；用 150mm 餐盒。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
+        // 份量老板 09-26 说 TODO：鸡用哪个部位、几 g、马铃薯几 g 都待补（见 dishIngredients.ts）。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /potato_braised_chicken.webp，并提醒老板在
+        //   Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
+        id: 40,
+        name: "家常土豆焖鸡",
+        nameEn: "Home-Style Braised Chicken & Potato",
+        price: 18.50,
+        image: "🍗",
+        hidden: true,
+        tags: ["家常味道", "鸡肉焖到入味", "土豆吸满肉汁", "下饭神器"],
+        tagsEn: ["Home-style", "Braised till tender", "Potatoes soak up the gravy", "Made for rice"],
+        desc: "鸡肉和土豆一锅慢火焖煮，土豆吸饱了鸡汁，软糯下饭——就是家里常吃的那一味。",
+        descEn: "Chicken and potatoes braised together low and slow — the potatoes soak up every drop of the gravy. Simple, homely and made for rice."
+    },
 ];
 
 // ═══════════════════════════════════════════════════════════════════

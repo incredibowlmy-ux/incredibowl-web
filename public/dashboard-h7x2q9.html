@@ -3172,6 +3172,8 @@
             { id: 36, name: '家常土豆焖五花肉', nameEn: 'Home-Style Braised Pork Belly & Potato', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 🆕 2026-09-17 新菜（webapp id 36）；价格 RM19.90 为占位待老板确认；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
             { id: 37, name: '马铃薯炖和牛片', nameEn: 'Wagyu Beef Slices & Potato Stew', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 🆕 2026-09-17 新菜（webapp id 37）；中文名为草稿待老板确认；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
             { id: 38, name: '柚香香煎三文鱼饭', nameEn: 'Yuzu Pan-Seared Salmon Rice', price: 24.90, costPrice: 0, day: 'Daily', active: true, voucherTopUp: 5 },  // 🆕 2026-09-18 新菜（webapp id 38）；沿用 #32 三文鱼口径 + salmon-upgrade 预付池；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
+            { id: 39, name: '家乡豆豉焖排骨', nameEn: 'Hometown Tau See Pork Ribs', price: 19.90, costPrice: 0, day: 'Daily', active: true },  // 🆕 2026-09-26 新菜（webapp id 39）；份量同 #28 豆酱焖排骨、共用排骨两套；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
+            { id: 40, name: '家常土豆焖鸡', nameEn: 'Home-Style Braised Chicken & Potato', price: 18.50, costPrice: 0, day: 'Daily', active: true },  // 🆕 2026-09-26 新菜（webapp id 40）；共用 #36 土豆焖两套；份量待老板补；网站上架由「菜单排期」页控制；costPrice 未知需 Settings 手动填
             // ─── 退役/暂别 Retired（webapp 灰显不可点；active:false = 手动单也不选） ───
             { id: 5,  name: '金黄葱香煎鸡汤', nameEn: 'Golden Scallion Chicken Soup', price: 18.50, costPrice: 0, day: 'Fri', active: false },  // 退役 2026-06-08
             { id: 24, name: '澳洲和牛饼饭', nameEn: 'Aussie Wagyu Beef Patty Don', price: 22.90, costPrice: 0, day: 'Tue', active: true, voucherTopUp: 3 },  // webapp 暂别 2026-07-13；dashboard 留 active 给 WA 加单
@@ -12150,6 +12152,36 @@ incredibowl.my`,
                 // 2026-09-22 补两档套餐（与 webapp dishCombos 同步）；登记后 DEFAULT_ADDONS 兜底失效，标准块照惯例抄全。
                 { id: 'salmon-rice-king-combo', label: '三文鱼下饭套', price: 12.90 },
                 { id: 'salmon-rice-combo', label: '三文鱼干饭套', price: 7.00 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+            ],
+            '39': [
+                // 家乡豆豉焖排骨 — RM 19.90；与 #28 豆酱焖排骨同碗配料，共用排骨两套
+                // 2026-09-26 新菜上架（与 webapp dishCombos 同步）；登记后 DEFAULT_ADDONS 兜底失效，标准块照惯例抄全。
+                { id: 'taucu-ribs-rice-king-combo', label: '排骨下饭套', price: 12.90 },
+                { id: 'taucu-ribs-rice-combo', label: '排骨干饭套', price: 7.00 },
+                { id: 'less-rice',     label: '少饭', price: 0.00 },
+                { id: 'extra-rice',    label: '加饭', price: 2.00 },
+                { id: 'brown-rice',    label: '换糙米', price: 2.00 },
+                { id: 'sunny-egg',     label: '荷包蛋', price: 2.50 },
+                { id: 'onsen-egg',     label: '温泉蛋', price: 3.00 },
+                { id: 'potato-egg',    label: '马铃薯煎蛋', price: 4.00 },
+                { id: 'broccoli-egg',  label: '蒜蓉西兰花炒蛋', price: 10.90 },
+                { id: 'extra-edamame', label: '毛豆仁 (25g)', price: 2.50 },
+                { id: 'extra-corn',    label: '甜玉米 (30g)', price: 2.50 },
+            ],
+            '40': [
+                // 家常土豆焖鸡 — RM 18.50；与 #36 同碗配料（碗里有马铃薯、无菜无蛋），共用土豆焖两套
+                // 2026-09-26 新菜上架（与 webapp dishCombos 同步）；登记后 DEFAULT_ADDONS 兜底失效，标准块照惯例抄全。
+                { id: 'potato-pork-rice-king-combo', label: '土豆焖肉下饭套', price: 12.90 },
+                { id: 'potato-pork-rice-combo', label: '土豆焖肉干饭套', price: 5.90 },
                 { id: 'less-rice',     label: '少饭', price: 0.00 },
                 { id: 'extra-rice',    label: '加饭', price: 2.00 },
                 { id: 'brown-rice',    label: '换糙米', price: 2.00 },

@@ -87,6 +87,14 @@ const DOUBLE_EGG_RICE_PARTS: ComboPart[] = [POTATO_EGG, SUNNY_EGG, EXTRA_RICE];
 const SALMON_RICE_KING_ITEM = { id: 'salmon-rice-king-combo', name: '三文鱼下饭套 (原价 RM 15.40)', nameEn: 'Salmon Rice King Set', fallback: 12.90 };
 const SALMON_RICE_ITEM = { id: 'salmon-rice-combo', name: '三文鱼干饭套 (原价 RM 8.50)', nameEn: 'Salmon Rice Set', fallback: 7.00 };
 
+// 排骨两套：#28 豆酱 与 #39 豆豉 同一碗配料（排骨+西兰花），共用商品，卖点各写各的。
+const RIBS_RICE_KING_ITEM = { id: 'taucu-ribs-rice-king-combo', name: '排骨下饭套 (原价 RM 15.40)', nameEn: 'Taucu Ribs Rice King Set', fallback: 12.90 };
+const RIBS_RICE_ITEM = { id: 'taucu-ribs-rice-combo', name: '排骨干饭套 (原价 RM 8.50)', nameEn: 'Taucu Ribs Rice Set', fallback: 7.00 };
+
+// 土豆焖两套：#36 五花肉 与 #40 鸡 同碗配料（碗里已有马铃薯、无菜无蛋），共用商品，卖点各写各的。
+const POTATO_BRAISE_RICE_KING_ITEM = { id: 'potato-pork-rice-king-combo', name: '土豆焖肉下饭套 (原价 RM 15.40)', nameEn: 'Pork & Potato Rice King Set', fallback: 12.90 };
+const POTATO_BRAISE_RICE_ITEM = { id: 'potato-pork-rice-combo', name: '土豆焖肉干饭套 (原价 RM 7.00)', nameEn: 'Pork & Potato Rice Set', fallback: 5.90 };
+
 // 鸡扒干饭套（C 档）：#33 首发，2026-09-22 起 #14 金黄 / #26 柠檬蜜糖鸡扒同碗共用。
 const CHICKEN_CHOP_RICE_ITEM = { id: 'chicken-chop-rice-combo', name: '鸡扒干饭套 (原价 RM 8.50)', nameEn: 'Chicken Chop Rice Set', fallback: 7.00 };
 
@@ -660,7 +668,7 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 sectionId: 'taucu-ribs-rice-king-combo-section',
                 title: '✨ 排骨下饭套',
                 titleEn: 'Taucu Ribs Rice King Set (+ RM 12.90)',
-                item: { id: 'taucu-ribs-rice-king-combo', name: '排骨下饭套 (原价 RM 15.40)', nameEn: 'Taucu Ribs Rice King Set', fallback: 12.90 },
+                item: RIBS_RICE_KING_ITEM,
                 parts: RICE_KING_PARTS,
                 quote: '"豆酱排骨咸香入骨，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，骨边的酱汁都不放过。"',
                 quoteEn: '"Savoury taucu ribs beg for greens — garlicky broccoli-egg and a runny yolk over extra rice, right down to the last bit of sauce."',
@@ -669,7 +677,7 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 sectionId: 'taucu-ribs-rice-combo-section',
                 title: '✨ 排骨干饭套',
                 titleEn: 'Taucu Ribs Rice Set (+ RM 7.00)',
-                item: { id: 'taucu-ribs-rice-combo', name: '排骨干饭套 (原价 RM 8.50)', nameEn: 'Taucu Ribs Rice Set', fallback: 7.00 },
+                item: RIBS_RICE_ITEM,
                 parts: DOUBLE_EGG_RICE_PARTS,
                 quote: '"豆酱汁太下饭——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，排骨啃完饭也刚好吃完。"',
                 quoteEn: '"That taucu gravy needs more rice — extra rice, a sunny-side-up egg and a soft potato-egg to finish with the ribs."',
@@ -782,7 +790,7 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 sectionId: 'potato-pork-rice-king-combo-section',
                 title: '✨ 土豆焖肉下饭套',
                 titleEn: 'Pork & Potato Rice King Set (+ RM 12.90)',
-                item: { id: 'potato-pork-rice-king-combo', name: '土豆焖肉下饭套 (原价 RM 15.40)', nameEn: 'Pork & Potato Rice King Set', fallback: 12.90 },
+                item: POTATO_BRAISE_RICE_KING_ITEM,
                 parts: RICE_KING_PARTS,
                 quote: '"土豆吸饱五花肉汁，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋拌饭，家常得刚刚好。"',
                 quoteEn: '"Potatoes soaked in pork-belly gravy just need greens — garlicky broccoli-egg and a runny yolk over extra rice."',
@@ -791,10 +799,34 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 sectionId: 'potato-pork-rice-combo-section',
                 title: '✨ 土豆焖肉干饭套',
                 titleEn: 'Pork & Potato Rice Set (+ RM 5.90)',
-                item: { id: 'potato-pork-rice-combo', name: '土豆焖肉干饭套 (原价 RM 7.00)', nameEn: 'Pork & Potato Rice Set', fallback: 5.90 },
+                item: POTATO_BRAISE_RICE_ITEM,
                 parts: RICE_BOWL_PARTS,
                 quote: '"焖肉汁拌饭停不下来——多一碗饭、一颗荷包蛋、一把清甜毛豆，汁一滴都不浪费。"',
                 quoteEn: '"Braising gravy over rice is addictive — extra rice, a sunny-side-up egg and sweet edamame, not a drop wasted."',
+            },
+        ],
+    },
+
+    // Home-Style Braised Chicken & Potato (id: 40)：碗里配料同 #36（已有马铃薯、无菜无蛋），共用土豆焖两套。
+    40: {
+        combos: [
+            {
+                sectionId: 'potato-pork-rice-king-combo-section',
+                title: '✨ 土豆焖肉下饭套',
+                titleEn: 'Potato Braise Rice King Set (+ RM 12.90)',
+                item: POTATO_BRAISE_RICE_KING_ITEM,
+                parts: RICE_KING_PARTS,
+                quote: '"土豆吸饱鸡肉汁，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋拌饭，家常得刚刚好。"',
+                quoteEn: '"Potatoes soaked in chicken gravy just need greens — garlicky broccoli-egg and a runny yolk over extra rice."',
+            },
+            {
+                sectionId: 'potato-pork-rice-combo-section',
+                title: '✨ 土豆焖肉干饭套',
+                titleEn: 'Potato Braise Rice Set (+ RM 5.90)',
+                item: POTATO_BRAISE_RICE_ITEM,
+                parts: RICE_BOWL_PARTS,
+                quote: '"焖鸡汁拌饭停不下来——多一碗饭、一颗荷包蛋、一把清甜毛豆，汁一滴都不浪费。"',
+                quoteEn: '"Braised chicken gravy over rice is addictive — extra rice, a sunny-side-up egg and sweet edamame, not a drop wasted."',
             },
         ],
     },
@@ -843,6 +875,30 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
                 parts: DOUBLE_EGG_RICE_PARTS,
                 quote: '"柚香酱汁清爽开胃——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，越吃越想吃。"',
                 quoteEn: '"That yuzu glaze whets the appetite — extra rice, a sunny-side-up egg and a soft potato-egg."',
+            },
+        ],
+    },
+
+    // Hometown Tau See Pork Ribs (id: 39)：碗里配料同 #28（排骨+西兰花，无蛋），共用排骨两套。
+    39: {
+        combos: [
+            {
+                sectionId: 'taucu-ribs-rice-king-combo-section',
+                title: '✨ 排骨下饭套',
+                titleEn: 'Ribs Rice King Set (+ RM 12.90)',
+                item: RIBS_RICE_KING_ITEM,
+                parts: RICE_KING_PARTS,
+                quote: '"豆豉排骨咸香浓郁，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，骨边的豉汁都不放过。"',
+                quoteEn: '"Savoury black bean ribs beg for greens — garlicky broccoli-egg and a runny yolk over extra rice, right down to the last bit of sauce."',
+            },
+            {
+                sectionId: 'taucu-ribs-rice-combo-section',
+                title: '✨ 排骨干饭套',
+                titleEn: 'Ribs Rice Set (+ RM 7.00)',
+                item: RIBS_RICE_ITEM,
+                parts: DOUBLE_EGG_RICE_PARTS,
+                quote: '"豉汁太下饭——多一碗饭、一颗荷包蛋、一块绵软马铃薯煎蛋，排骨啃完饭也刚好吃完。"',
+                quoteEn: '"That black bean gravy needs more rice — extra rice, a sunny-side-up egg and a soft potato-egg to finish with the ribs."',
             },
         ],
     },
