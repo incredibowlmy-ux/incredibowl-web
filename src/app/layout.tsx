@@ -5,6 +5,7 @@ import "./globals.css";
 import { weeklyMenu } from "@/data/weeklyMenu";
 import { AuthProvider } from "@/context/AuthContext";
 import { DELIVERY_PROSE_SHORT_ZH, COVERAGE_AREAS } from "@/lib/deliveryCopy";
+import { ATTRIBUTION_CAPTURE_SCRIPT } from "@/lib/attribution";
 
 // Build Menu structured data from the live menu so Google's food rich
 // results stay in sync with the actual dishes shown on the page.
@@ -259,6 +260,15 @@ export default function RootLayout({
               ]
             })
           }}
+        />
+        {/* 广告归因捕获 —— 把落地 URL 上的 utm_* / fbclid 写进 ib_attr
+            cookie，submit-order 在服务端读它写进订单（见 lib/attribution.ts）。
+            用 afterInteractive 而不是 lazyOnload：客户从广告点进来可能几秒内
+            就点走，lazyOnload 有可能还没跑到就丢了这次落地。 */}
+        <Script
+          id="ad-attribution"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{ __html: ATTRIBUTION_CAPTURE_SCRIPT }}
         />
         <Script
           id="fb-pixel"

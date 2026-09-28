@@ -7,6 +7,7 @@ import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type DeliveryZone } from '@/lib/deliveryUtils';
 import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
+import { parseAttributionCookie } from '@/lib/attribution';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
 import { allocateVouchersByGroup } from '@/lib/voucherGroupAllocation';
 import { claimAddonCredits, releaseAddonCredits, getAvailableAddonCredits } from '@/lib/addonCreditUtils';
@@ -32,6 +33,10 @@ async function getDb() {
  */
 export async function POST(req: Request) {
   try {
+    // 广告归因：从 cookie 读，不从 body 读。body 里的东西客户端能随便填，
+    // 而且每个下单路径都得记着塞一遍；cookie 自动跟着请求头上来。
+    const orderAttribution = parseAttributionCookie(req);
+
     // ── AuthN: the caller IS the customer ─────────────────────
     // The order's userId comes from the verified token, NEVER from the body —
     // a body userId let anyone place orders (and burn meal vouchers) as any
@@ -613,6 +618,11 @@ export async function POST(req: Request) {
         if (!dishDeductedAll[key]) continue;
         partDeducted[key] = (partDeducted[key] || 0) + (vb.dishQty || 1) * (vb.quantity || 1);
       }
+      // 广告归因（末次触点）—— 从 ib_attr cookie 来，见 lib/attribution.ts。
+      // 拿不到就不写字段：没有来源 ≠ 空字符串来源，分析时要能区分
+      // 「自然流量」和「字段缺失」。多日单每一 part 都写同一份，方便按
+      // part 直接分组统计，不用回头 join groupId。
+      if (orderAttribution) payload.attribution = orderAttribution;
       if (Object.keys(partDeducted).length) payload.stockDeducted = partDeducted;
       payload.stockDeductedIngredients = true;
       // Meal voucher accounting (per-part RM discount only — voucherIds attach to part 1 only, populated below)
