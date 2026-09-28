@@ -35,8 +35,24 @@ export interface VoucherPurchaseCapiInput {
   userId?: string;
   userEmail?: string;
   userPhone?: string;
-  /** 默认 'website'。手工开券传 'business_messaging'。 */
+  /**
+   * 默认 'website'。老板手工开的券传 **'other'**。
+   *
+   * ⚠️ 别用 'business_messaging'：Meta 对它有一串硬要求，最后一道是
+   * `ctwa_clid`（Click-to-WhatsApp 点击 id，subcode 2804071），手工单
+   * 根本没有这个 id，编不出来。2026-09-29 实测一路撞过
+   * messaging_channel → page_id → ctwa_clid 三道门。
+   * 'other' 才是「我们代客户录进来的成交」的正确口径 —— 它不谎称发生在
+   * 网站上，也不假装来自某次 CTWA 点击。
+   */
   actionSource?: CapiActionSource;
+  /** CTWA 点击 id。只有 business_messaging 用得上，等 CTWA 重开再说。 */
+  ctwaClid?: string;
+  /**
+   * 成交时刻（ms），默认「现在」。手工单支持补录日期（老板可能隔天才录），
+   * 要传 paidAt 而不是录入时刻。⚠️ 超过 7 天的会被 Meta 丢掉。
+   */
+  eventTimeMs?: number;
   /**
    * 只有「客户自己的浏览器发起的请求」才填这个。webhook（Razorpay 的
    * IP）、admin 核收据（老板的浏览器）一律留空。
@@ -66,6 +82,7 @@ export async function sendVoucherPurchaseCapi(
       // 固定 id：跨路径、跨重放都收敛成一条
       eventId: `voucher_${input.purchaseId}`,
       actionSource: input.actionSource || 'website',
+      eventTimeMs: input.eventTimeMs,
       eventSourceUrl: input.browser?.eventSourceUrl,
       userData: {
         email: input.userEmail || undefined,
@@ -75,6 +92,7 @@ export async function sendVoucherPurchaseCapi(
         fbc: input.browser?.fbc,
         clientIpAddress: input.browser?.clientIpAddress || '',
         clientUserAgent: input.browser?.clientUserAgent || '',
+        ctwaClid: input.ctwaClid,
       },
       customData: {
         currency: 'MYR',

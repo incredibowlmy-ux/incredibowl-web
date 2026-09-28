@@ -4,6 +4,7 @@ import { mintAddonCredits, type ResolvedPrepaidAddon } from '@/lib/addonCreditUt
 import { getBundle, getValidityDaysForBundle } from '@/data/mealVoucherConfig';
 import { getAddOnPrice, getPrepaidAddonOption } from '@/data/addOnsConfig';
 import { normalizePhone } from '@/lib/phoneUtils';
+import { sendVoucherPurchaseCapi } from '@/lib/voucherPurchaseCapi';
 import { findUserByNormalizedPhone } from '@/lib/adminUserLookup';
 import { adoptManualOrders } from '@/lib/manualStubAdoption';
 
@@ -269,6 +270,32 @@ export async function POST(req: NextRequest) {
         updatedAt: FieldValue.serverTimestamp(),
       });
     }
+
+    // ── 4.5 Meta CAPI Purchase ────────────────────────────────────
+    // 手工券占已付券款的 64%（RM15,018 / RM23,626，2026-05 至 09）。不报 =
+    // Meta 只看到网站那 36%，优化器按一个错的客单价找人。
+    //
+    // action_source = 'other'：这笔是老板在 WhatsApp 谈成、手工录进来的，
+    // 不是客户在网站上完成的。传 'website' 会把线下成交混进
+    // 网站漏斗的统计。
+    //
+    // event_time 用 purchasedAt（支持补录日期）而不是「现在」—— 归因窗口
+    // 要对着真实成交时刻。⚠️ Meta 只收 7 天内的，补录太久的会被丢掉，
+    // 那种情况只是少一条事件，不影响券和账。
+    //
+    // 发起这个请求的浏览器是老板的，所以不传任何浏览器上下文，
+    // 只给客户的手机号 / 邮箱 / uid 让 Meta 匹配（历史数据：100% 有手机号）。
+    await sendVoucherPurchaseCapi({
+      purchaseId: purchaseRef.id,
+      amountPaid: totalAmountPaid,
+      userId,
+      userEmail: userDataSnapshot.email || undefined,
+      userPhone: phone,
+      // 'other' 而不是 'business_messaging'：后者必须带 CTWA 点击 id（ctwa_clid），
+      // 手工单没有。'other' 是「我们代客户录进来的成交」的正确口径。
+      actionSource: 'other',
+      eventTimeMs: purchasedAt.toMillis(),
+    });
 
     // ── 5. Bump user.totalSpent by TOTAL cash (bundle + prepaid add-ons) ──
     await db.collection('users').doc(userId).update({

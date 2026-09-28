@@ -216,7 +216,9 @@ export async function finalizeMealVoucherPurchase(
   if (!alreadyPaid) {
     await sendVoucherPurchaseCapi({
       purchaseId,
-      amountPaid: Number(d.amountPaid) || 0,
+      // totalAmountPaid 才是客户这一笔真的转了多少（券包 + 预付加料）；
+      // amountPaid 只是券包那部分。报给 Meta 的必须是全部现金流入。
+      amountPaid: Number(d.totalAmountPaid ?? d.amountPaid) || 0,
       userId,
       userEmail: d.userEmail || undefined,
       userPhone: d.userPhone || undefined,

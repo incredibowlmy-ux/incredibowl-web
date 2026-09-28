@@ -18,6 +18,8 @@ import crypto from 'crypto';
 
 const PIXEL_ID = process.env.META_PIXEL_ID || '762982966692354';
 const ACCESS_TOKEN = process.env.META_CAPI_ACCESS_TOKEN || '';
+// Incredibowl 的 Facebook Page —— business_messaging 事件必须带 page_id。
+const PAGE_ID = process.env.META_PAGE_ID || '1005456919311982';
 const TEST_EVENT_CODE = process.env.META_CAPI_TEST_EVENT_CODE; // unset in prod
 const META_API_VERSION = 'v21.0';
 const ENDPOINT = `https://graph.facebook.com/${META_API_VERSION}/${PIXEL_ID}/events`;
@@ -48,6 +50,25 @@ export type CapiUserData = {
   fbc?: string;        // _fbc cookie
   clientIpAddress: string;
   clientUserAgent: string;
+  /**
+   * Facebook Page id。action_source = 'business_messaging' 时 Meta 必填
+   * （subcode 2804069 "Missing Page ID"）。不填会整条拒。
+   * 不传就用 META_PAGE_ID / Incredibowl 的 Page id 兜底。
+   */
+  pageId?: string;
+  /**
+   * Click-to-WhatsApp 的点击 id。
+   *
+   * ⚠️ 2026-09-29 实测出来的硬约束：`business_messaging` **必须**带它
+   * （subcode 2804071 "Missing CTWA clid"），没有兜底值可编。
+   * 换句话说 business_messaging 只服务「客户从 CTWA 广告点进 WhatsApp」
+   * 这一条路 —— 客户自己找上来、老板手工成交的单**没有**这个 id，
+   * 那种单的正确口径是 action_source = 'other'，不是 business_messaging。
+   *
+   * CTWA 战役重开之后，webhook payload 里会带 referral.ctwa_clid，
+   * 存下来再往这里传，手工单才能真正走 business_messaging。
+   */
+  ctwaClid?: string;
 };
 
 export type CapiCustomData = {
@@ -79,12 +100,31 @@ export type CapiEventName =
  */
 export type CapiActionSource = 'website' | 'business_messaging' | 'other';
 
+/**
+ * 对话渠道。当 action_source = 'business_messaging' 时 Meta **强制要求**这个
+ * 参数，缺了整条事件被拒（code 100 / subcode 2804063 "Missing messaging
+ * channel parameter"）。2026-09-29 实测踩到过。
+ */
+export type CapiMessagingChannel = 'whatsapp' | 'messenger' | 'instagram';
+
 export type CapiEvent = {
   eventName: CapiEventName;
   eventId: string;
   eventSourceUrl?: string;
   /** Defaults to 'website'. */
   actionSource?: CapiActionSource;
+  /**
+   * action_source = 'business_messaging' 时必填，其它情况不要传。
+   * 不填会被 Meta 整条拒掉（subcode 2804063）。
+   */
+  messagingChannel?: CapiMessagingChannel;
+  /**
+   * 事件真正发生的时刻（ms）。默认「现在」。
+   * 手工单老板可能隔一两天才录（manual-voucher-purchase 支持补录日期），
+   * 拿录入时刻当成交时刻会把归因窗口算歪，所以要传真实成交时刻。
+   * ⚠️ Meta 只接受过去 7 天内的 event_time，更早的会被整条丢掉。
+   */
+  eventTimeMs?: number;
   userData: CapiUserData;
   customData?: CapiCustomData;
 };
@@ -105,6 +145,13 @@ export async function sendCapiEvent(event: CapiEvent): Promise<{ ok: boolean; er
     return { ok: false, error: 'no_token' };
   }
 
+  const actionSource = event.actionSource || 'website';
+  // business_messaging 缺 messaging_channel 会被整条拒（subcode 2804063）。
+  // 默认补 whatsapp —— 这个生意的对话成交只走 WhatsApp，兜底比丢事件好。
+  const messagingChannel = actionSource === 'business_messaging'
+    ? (event.messagingChannel || 'whatsapp')
+    : undefined;
+
   const u: Record<string, unknown> = {
     client_ip_address: event.userData.clientIpAddress,
     client_user_agent: event.userData.clientUserAgent,
@@ -114,6 +161,10 @@ export async function sendCapiEvent(event: CapiEvent): Promise<{ ok: boolean; er
   if (event.userData.email) u.em = [sha256(event.userData.email)];
   if (event.userData.phone) u.ph = [sha256(normalizePhone(event.userData.phone))];
   if (event.userData.externalId) u.external_id = [sha256(event.userData.externalId)];
+  // page_id / ctwa_clid 都不 hash —— Meta 要原值。
+  if (event.userData.pageId) u.page_id = event.userData.pageId;
+  else if (actionSource === 'business_messaging') u.page_id = PAGE_ID;
+  if (event.userData.ctwaClid) u.ctwa_clid = event.userData.ctwaClid;
 
   const c: Record<string, unknown> = {};
   if (event.customData) {
@@ -128,10 +179,16 @@ export async function sendCapiEvent(event: CapiEvent): Promise<{ ok: boolean; er
   const payload = {
     data: [{
       event_name: event.eventName,
-      event_time: Math.floor(Date.now() / 1000),
+      event_time: Math.floor((event.eventTimeMs ?? Date.now()) / 1000),
       event_id: event.eventId,
-      action_source: event.actionSource || 'website',
-      event_source_url: event.eventSourceUrl || 'https://www.incredibowl.my/',
+      action_source: actionSource,
+      ...(messagingChannel ? { messaging_channel: messagingChannel } : {}),
+      // business_messaging 事件**不许**带 event_source_url —— 带了整条被拒
+      // （subcode 2804064 "Please remove all invalid arguments ... event_source_url"）。
+      // 对话里成交本来就没有网页 URL，Meta 这个要求是合理的。2026-09-29 实测。
+      ...(actionSource === 'business_messaging'
+        ? {}
+        : { event_source_url: event.eventSourceUrl || 'https://www.incredibowl.my/' }),
       user_data: u,
       custom_data: c,
     }],

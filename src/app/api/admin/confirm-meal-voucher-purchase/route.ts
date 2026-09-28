@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     if (firstPaidTransition) {
       await sendVoucherPurchaseCapi({
         purchaseId,
-        amountPaid: Number(data.amountPaid) || 0,
+        amountPaid: Number(data.totalAmountPaid ?? data.amountPaid) || 0,
         userId: data.userId || undefined,
         userEmail: data.userEmail || undefined,
         userPhone: data.userPhone || undefined,
