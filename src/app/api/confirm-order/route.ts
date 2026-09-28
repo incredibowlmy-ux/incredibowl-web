@@ -181,9 +181,13 @@ export async function POST(req: Request) {
       // for the first time (FPX flow: customer just paid; QR flow: admin
       // marked the receipt verified). We fire after the Firestore writes
       // settle, so a CAPI failure can't roll back the order.
-      // Skip zero-value orders (voucher fully covered the bill) — Purchase
-      // event was already fired when customer bought the voucher bundle, so
-      // firing again on redemption would double-count in Meta ads.
+      // Skip zero-value orders (voucher fully covered the bill) — the券款
+      // Purchase 在客户**买券包**那一刻已经发过（lib/voucherPurchaseCapi.ts，
+      // 事件 id `voucher_<purchaseId>`），兑券时再发一次就是双算。
+      // ⚠️ 2026-09-29 之前这条注释是假的：买券包那边压根没发过任何事件，
+      // 于是两头都不发，整条餐券现金流对 Meta 隐形（上报客单价被压到
+      // RM10.63）。voucherPurchaseCapi.ts 补上之后这个跳过才真的成立 ——
+      // 如果哪天把买券的事件拿掉了，这里也必须一起改。
       if (isFirstConfirm) {
         const foodAfterDiscount = orderData.total ?? 0;
         const deliveryFee = orderData.deliveryFee ?? 0;

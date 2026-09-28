@@ -68,10 +68,23 @@ export type CapiEventName =
   | 'Lead'
   | 'CompleteRegistration';
 
+/**
+ * Where the conversion actually happened. Meta uses this to grade match
+ * quality and to keep offline sales out of the website funnel's stats.
+ *   'website'           — customer completed it on incredibowl.my (default)
+ *   'business_messaging'— completed in a WhatsApp/Messenger thread
+ *   'other'             — anything else we booked on the customer's behalf
+ * Sending 'website' for a sale the boss keyed in by hand misreports the
+ * funnel, so manual flows must pass the right value.
+ */
+export type CapiActionSource = 'website' | 'business_messaging' | 'other';
+
 export type CapiEvent = {
   eventName: CapiEventName;
   eventId: string;
   eventSourceUrl?: string;
+  /** Defaults to 'website'. */
+  actionSource?: CapiActionSource;
   userData: CapiUserData;
   customData?: CapiCustomData;
 };
@@ -117,7 +130,7 @@ export async function sendCapiEvent(event: CapiEvent): Promise<{ ok: boolean; er
       event_name: event.eventName,
       event_time: Math.floor(Date.now() / 1000),
       event_id: event.eventId,
-      action_source: 'website',
+      action_source: event.actionSource || 'website',
       event_source_url: event.eventSourceUrl || 'https://www.incredibowl.my/',
       user_data: u,
       custom_data: c,

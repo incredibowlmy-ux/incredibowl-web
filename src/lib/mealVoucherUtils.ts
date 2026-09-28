@@ -17,6 +17,7 @@ import type { Firestore } from 'firebase-admin/firestore';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getBundle, getValidityDaysForBundle, FACE_VALUE_RM } from '@/data/mealVoucherConfig';
 import { claimPromoVoucher } from '@/lib/voucherValidation';
+import { sendVoucherPurchaseCapi } from '@/lib/voucherPurchaseCapi';
 
 export interface MintInput {
   userId: string;
@@ -135,6 +136,18 @@ export async function finalizeMealVoucherPurchase(
   db: Firestore,
   purchaseId: string,
   payment: FinalizePayment,
+  /**
+   * 客户自己浏览器的上下文（cookie / IP / UA），只有
+   * /api/meal-vouchers/confirm-purchase 该传。webhook 的请求来自
+   * Razorpay 的服务器，传进来等于拿 Razorpay 的 IP 冒充客户，宁缺勿滥。
+   */
+  browserContext?: {
+    fbp?: string;
+    fbc?: string;
+    clientIpAddress?: string;
+    clientUserAgent?: string;
+    eventSourceUrl?: string;
+  },
 ): Promise<{ voucherIds: string[]; alreadyPaid: boolean }> {
   const purchaseRef = db.collection('mealVoucherPurchases').doc(purchaseId);
   const snap = await purchaseRef.get();
@@ -195,6 +208,21 @@ export async function finalizeMealVoucherPurchase(
     } catch (e) {
       console.warn('Failed to claim promo voucher on meal-voucher finalize:', e);
     }
+  }
+
+  // Meta CAPI Purchase —— 只在「首次转 paid」时发，alreadyPaid 的重放跳过。
+  // AWAIT：`void` 在 Vercel serverless 里会被冻结的实例掐掉（confirm-order
+  // 那边已经踩过这个坑），多等 ~200ms 换确定送达。
+  if (!alreadyPaid) {
+    await sendVoucherPurchaseCapi({
+      purchaseId,
+      amountPaid: Number(d.amountPaid) || 0,
+      userId,
+      userEmail: d.userEmail || undefined,
+      userPhone: d.userPhone || undefined,
+      actionSource: 'website', // 这条路一定是客户在网站上买的
+      browser: browserContext,
+    });
   }
 
   return { voucherIds, alreadyPaid };

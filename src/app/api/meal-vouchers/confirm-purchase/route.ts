@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { finalizeMealVoucherPurchase } from '@/lib/mealVoucherUtils';
+import { extractRequestContext } from '@/lib/meta-capi';
 
 let adminDb: FirebaseFirestore.Firestore | null = null;
 async function getDb() {
@@ -97,11 +98,14 @@ export async function POST(req: NextRequest) {
     // ── Finalize: mint + flip paid + bump LTV + burn promo ──────
     // Shared with /api/payment/webhook so the browser path and the Curlec
     // server-to-server path can never drift. Idempotent across retries.
+    // 第 4 个参数是客户浏览器的上下文（_fbp / _fbc / IP / UA）—— 这条路
+    // 请求确实来自客户自己的浏览器，所以可以传，Meta 匹配质量更高。
+    // webhook 那条路不传（那是 Razorpay 的服务器）。
     const { voucherIds } = await finalizeMealVoucherPurchase(db, purchaseId, {
       razorpayPaymentId,
       razorpaySignature,
       source: 'client-confirm',
-    });
+    }, extractRequestContext(req));
 
     return NextResponse.json({
       success: true,

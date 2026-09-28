@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mintVouchersForPurchase } from '@/lib/mealVoucherUtils';
 import { claimPromoVoucher } from '@/lib/voucherValidation';
+import { sendVoucherPurchaseCapi } from '@/lib/voucherPurchaseCapi';
 
 const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
@@ -91,11 +92,13 @@ export async function POST(req: NextRequest) {
     // status guard so admin double-clicks don't double-bump).
     const userRef = db.collection('users').doc(data.userId);
     let shouldClaimPromo = false;
+    let firstPaidTransition = false;
     await db.runTransaction(async (tx) => {
       const fresh = await tx.get(ref);
       if (!fresh.exists) return;
       const d = fresh.data() || {};
       if (d.status === 'paid') return;
+      firstPaidTransition = true;
       shouldClaimPromo = !!d.promoCode;
       tx.update(ref, {
         status: 'paid',
@@ -116,6 +119,21 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.warn('Failed to claim promo voucher on admin meal-voucher confirm:', e);
       }
+    }
+
+    // Meta CAPI Purchase —— 这是 QR 路：客户在**网站上**下的券单，老板只是
+    // 核了收据，所以 action_source 仍是 'website'。但发起这个请求的浏览器是
+    // 老板的，绝不能把老板的 _fbp/_fbc/IP/UA 当成客户的传过去 —— 只传客户
+    // 的身份字段。事件 id 与 FPX 路共用 `voucher_<purchaseId>`，Meta 去重。
+    if (firstPaidTransition) {
+      await sendVoucherPurchaseCapi({
+        purchaseId,
+        amountPaid: Number(data.amountPaid) || 0,
+        userId: data.userId || undefined,
+        userEmail: data.userEmail || undefined,
+        userPhone: data.userPhone || undefined,
+        actionSource: 'website',
+      });
     }
 
     return NextResponse.json({
