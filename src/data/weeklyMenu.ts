@@ -539,14 +539,14 @@ const DISH_CATALOG: DishData[] = [
         // 全新菜 2026-09-16 入系统（老板定名+定价 RM19.90），计划 2026-09-21（周一）上线。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排进周一并取消「未上架」。
         //   餐券全覆盖无 top-up。主料巴丁鱼片，配方照 #20 姜葱鱼片（葱换蒜、不配荷包蛋，老板 09-16 定），见 dishIngredients.ts。
-        // 无实拍图，emoji 占位防 hero 404（有图后换 /xxx.webp，并提醒老板在 Google Sheet
-        //   dishes 表加一行给 chatbot 发图）。
+        // 2026-09-30 接上主图（oyster_ginger_garlic_fish.webp，1024² webp q82，源图 Gpt/阿嫲蚝油姜蒜鱼片饭.jpeg）；
+        //   仍需老板在 Google Sheet dishes 表加一行给 chatbot 发图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
         id: 35,
         name: "阿嫲蚝油姜蒜鱼片饭",
         nameEn: "Grandma's Oyster Sauce Ginger-Garlic Fish Fillet Rice",
         price: 19.90,
-        image: "🐟",
+        image: "/oyster_ginger_garlic_fish.webp",
         hidden: true,
         tags: ["阿嫲古早味", "蚝油姜蒜爆香", "巴丁鱼片嫩滑", "下饭神器"],
         tagsEn: ["Grandma's recipe", "Oyster sauce, ginger & garlic", "Silky patin fillet", "Made for rice"],
@@ -641,14 +641,14 @@ const DISH_CATALOG: DishData[] = [
         // 碗里：鸡 + 马铃薯，无配菜无蛋 → 共用 #36 土豆焖两套；用 150mm 餐盒。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
         // 份量老板 09-26 说 TODO：鸡用哪个部位、几 g、马铃薯几 g 都待补（见 dishIngredients.ts）。
-        // 无实拍图，emoji 占位防 hero 404（有图后换 /potato_braised_chicken.webp，并提醒老板在
-        //   Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 2026-09-30 接上主图（potato_braised_chicken.webp，1024² webp q82，源图 Gpt/家常土豆焖鸡.jpeg）；
+        //   仍需老板在 Google Sheet dishes 表加一行给 chatbot 发图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 40,
         name: "家常土豆焖鸡",
         nameEn: "Home-Style Braised Chicken & Potato",
         price: 18.50,
-        image: "🍗",
+        image: "/potato_braised_chicken.webp",
         hidden: true,
         tags: ["家常味道", "鸡肉焖到入味", "土豆吸满肉汁", "下饭神器"],
         tagsEn: ["Home-style", "Braised till tender", "Potatoes soak up the gravy", "Made for rice"],
