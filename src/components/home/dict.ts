@@ -5,6 +5,7 @@
 // ⚠️ 相邻文本节点：像 `{COUNT}+ Google 评价` 这种「表达式 + 文本」在 SSR 会插 `<!-- -->`，
 //    搬进字典时必须保持两个子节点（`{COUNT}{t.suffix}`），不能合并成一个字符串。
 import type { Locale } from '@/lib/locale';
+import type { DishCategory } from '@/data/weeklyMenu';
 import {
     DELIVERY_SUMMARY_ZH, DELIVERY_SUMMARY_EN,
     DISTANCE_BASIS_ZH, DISTANCE_BASIS_EN,
@@ -302,6 +303,16 @@ interface MenuCarouselDict {
     retiredCountAfter: string;
     collapse: string;
     expand: string;
+    /** 往期人气菜分组标题（按 DishCategory） */
+    categoryLabel: Record<DishCategory, string>;
+    /** 往期卡片图片左上角小标签 */
+    retiredBadge: string;
+    /** 往期卡片按钮：不下单，改成 WhatsApp 表达「想它回来」 */
+    missIt: string;
+    /** 手机窄卡用的短版（360px 宽下完整句会被截断） */
+    missItShort: string;
+    /** 预填 WhatsApp 讯息（菜名按 locale 传入） */
+    missItHref: (dishName: string) => string;
     voucherTitle: string;
     voucherSub: string;
     /** 后面紧跟 `<span className="hidden lg:inline"> →</span>` */
@@ -580,6 +591,11 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             retiredCountAfter: ' 道）',
             collapse: '收起 ▲',
             expand: '展开看看 ▼',
+            categoryLabel: { chicken: '🍗 鸡肉', pork: '🐖 猪肉', seafood: '🐟 鱼虾海鲜', beef: '🥩 牛肉', other: '🥢 其他' },
+            retiredBadge: '往期人气 · 会回来',
+            missIt: '想它回来？告诉碗妈',
+            missItShort: '想它回来？',
+            missItHref: (name) => `https://wa.me/60103370197?text=${encodeURIComponent(`Hi BowlMama! 我想念【${name}】，什么时候回来？`)}`,
             voucherTitle: '餐券预付包 · 一次买，慢慢吃',
             voucherSub: '任意主菜都能兑 · 20 张装单券低至 RM 17.50 · 30 / 60 天有效',
             voucherCta: '去看餐券包',
@@ -829,6 +845,11 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             retiredCountAfter: ')',
             collapse: 'Hide ▲',
             expand: 'Take a look ▼',
+            categoryLabel: { chicken: '🍗 Chicken', pork: '🐖 Pork', seafood: '🐟 Fish & Seafood', beef: '🥩 Beef', other: '🥢 Others' },
+            retiredBadge: 'Back soon',
+            missIt: 'Miss it? Tell BowlMama',
+            missItShort: 'Want it back?',
+            missItHref: (name) => `https://wa.me/60103370197?text=${encodeURIComponent(`Hi BowlMama! I miss the ${name} — when is it coming back?`)}`,
             voucherTitle: 'Meal Voucher Bundles · Buy once, eat anytime',
             voucherSub: 'Any main dish · 20-pack from RM 17.50 a voucher · Valid 30 / 60 days',
             voucherCta: 'View bundles',

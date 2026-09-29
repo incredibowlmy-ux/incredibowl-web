@@ -3,8 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, Sparkles, Phone, Ticket } from 'lucide-react';
-import { MenuItem, dishImageAlt } from '@/data/weeklyMenu';
+import { ShoppingBag, Sparkles, Phone, Ticket, MessageCircle } from 'lucide-react';
+import { MenuItem, dishImageAlt, DISH_CATEGORIES } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { MenuDateInfo } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
@@ -28,8 +28,8 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
     // `ready` === the date layer has landed (page.tsx / en/page.tsx computes it in an effect).
     // It gates ONLY date-derived values — never the cards themselves.
     const ready = Object.keys(menuDates).length > 0;
-    // Desktop-only: retired dishes collapsed by default so new visitors aren't
-    // greeted by a wall of unorderable grey cards. Mobile keeps them expanded.
+    // Retired (往期人气菜) section collapsed by default on both breakpoints so new
+    // visitors aren't greeted by a wall of unorderable cards.
     const [showRetired, setShowRetired] = useState(false);
 
     // Date-dependent → stays behind `ready`. Computing this during render would
@@ -64,7 +64,10 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             }))
             .filter(g => g.dishes.length > 0);
         const retired = weeklyMenu.filter(d => d.retired);
-        return { daily, days, retired };
+        const retiredByCategory = DISH_CATEGORIES
+            .map(c => ({ c, dishes: retired.filter(d => (d.category ?? 'other') === c) }))
+            .filter(g => g.dishes.length > 0);
+        return { daily, days, retired, retiredByCategory };
     }, [weeklyMenu]);
 
     // ── Section header (spans the full row in both grids) ──
@@ -291,6 +294,66 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
         );
     };
 
+    // ── 往期人气菜卡片（手机/桌面共用，compact = 手机）──
+    // 彩色照片、不标价、不能下单：卡片本身不可点，唯一按钮是 WhatsApp「想它回来」，
+    // 顺便把回归需求收集到碗妈那边。不读 menuDates —— 与日期无关，预渲染 HTML 即最终态。
+    const renderRetiredCard = (dish: MenuItem, compact: boolean) => {
+        const name = locale === 'en' ? dish.nameEn : dish.name;
+        const tags = (locale === 'en' ? (dish.tagsEn ?? dish.tags) : dish.tags).slice(0, compact ? 2 : 3);
+        return (
+            <div
+                key={dish.id}
+                className={`bg-white border border-gray-100 flex flex-col ${compact ? 'rounded-2xl p-3' : 'rounded-3xl p-5'}`}
+            >
+                <div className={`aspect-square w-full bg-paper relative overflow-hidden flex items-center justify-center ${compact ? 'rounded-xl mb-2 text-5xl' : 'rounded-2xl mb-4 text-6xl'}`}>
+                    <span className={`absolute z-10 max-w-[calc(100%-12px)] truncate rounded-md font-bold bg-white/90 text-primary shadow-sm ${compact ? 'top-1.5 left-1.5 px-1.5 py-0.5 text-[11px]' : 'top-2.5 left-2.5 px-2.5 py-1 text-[13px]'}`}>
+                        {t.retiredBadge}
+                    </span>
+                    {dish.image.startsWith('/') ? (
+                        <Image
+                            src={dish.image}
+                            alt={dishImageAlt(dish, locale)}
+                            fill
+                            className="object-cover"
+                            sizes={compact ? '(max-width: 640px) 45vw, 30vw' : '(min-width: 1280px) 25vw, 33vw'}
+                        />
+                    ) : (
+                        dish.image
+                    )}
+                </div>
+
+                {compact ? (
+                    <h4 className="font-extrabold text-[14px] leading-tight mb-1.5 text-ink line-clamp-2 min-h-[34px]">{name}</h4>
+                ) : (
+                    <>
+                        <h4 className="font-extrabold text-[22px] leading-tight mb-1 text-ink line-clamp-2 min-h-[56px]">{name}</h4>
+                        <p lang={locale === 'en' ? 'zh' : 'en'} className="text-[15px] font-medium mb-3 leading-relaxed text-gray-400 line-clamp-2 min-h-[49px]">
+                            {locale === 'en' ? dish.name : dish.nameEn}
+                        </p>
+                    </>
+                )}
+
+                <div className={`flex flex-wrap overflow-hidden ${compact ? 'gap-1 mb-2.5 min-h-[18px] max-h-[18px]' : 'gap-1.5 mb-5 content-start min-h-[62px] max-h-[62px]'}`}>
+                    {tags.map(tag => (
+                        <span key={tag} className={`font-bold rounded bg-line/70 text-ink truncate max-w-full ${compact ? 'text-[11px] px-1.5 py-0.5' : 'text-[13px] px-2.5 py-1 rounded-md'}`}>
+                            {tag}
+                        </span>
+                    ))}
+                </div>
+
+                <a
+                    href={t.missItHref(name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`mt-auto w-full rounded-xl font-bold flex justify-center items-center border-2 border-[#25D366]/60 text-[#128C4B] hover:bg-[#25D366] hover:border-[#25D366] hover:text-white transition-colors ${compact ? 'min-h-[40px] py-2 text-[12px] gap-1' : 'py-3 text-[15px] gap-2'}`}
+                >
+                    <MessageCircle size={compact ? 12 : 17} className="shrink-0" />
+                    <span className="truncate">{compact ? t.missItShort : t.missIt}</span>
+                </a>
+            </div>
+        );
+    };
+
     // Date sub-label for a day band, derived from that day's first dish's topTag
     // (zh special topTag = "6月30日 周一 · Mon" → "6月30日"; en topTag = "Jun 30 · Mon" → "Jun 30").
     const dayDateSub = (dish: MenuItem) => menuDates[dish.id]?.topTag?.split(t.dayDateSubSep)[0] ?? null;
@@ -393,7 +456,12 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                                 <span className="ml-auto text-[12px] font-bold text-primary">{showRetired ? t.collapse : t.expand}</span>
                             </button>
                         </div>
-                        {showRetired && groups.retired.map(renderMobileCard)}
+                        {showRetired && groups.retiredByCategory.map(g => (
+                            <React.Fragment key={`m-ret-${g.c}`}>
+                                {sectionHeader(`m-ret-hdr-${g.c}`, t.categoryLabel[g.c], `${t.retiredCountBefore}${g.dishes.length}${t.retiredCountAfter}`, false, 'sm')}
+                                {g.dishes.map(d => renderRetiredCard(d, true))}
+                            </React.Fragment>
+                        ))}
                     </>
                 )}
             </div>
@@ -452,11 +520,17 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                             <span className="text-[14px] font-bold text-gray-400">{t.retiredCountBefore}{groups.retired.length}{t.retiredCountAfter}</span>
                             <span className="ml-auto text-[14px] font-bold text-primary">{showRetired ? t.collapse : t.expand}</span>
                         </button>
-                        {showRetired && (
-                            <div className="mt-5 grid grid-cols-3 xl:grid-cols-4 gap-5">
-                                {groups.retired.map(renderDesktopCard)}
+                        {showRetired && groups.retiredByCategory.map(g => (
+                            <div key={`d-ret-${g.c}`} className="mt-8">
+                                <h4 className="flex items-baseline gap-2 px-1 mb-4">
+                                    <span className="text-[20px] font-extrabold text-ink leading-none">{t.categoryLabel[g.c]}</span>
+                                    <span className="text-[14px] font-bold text-gray-400">{t.retiredCountBefore}{g.dishes.length}{t.retiredCountAfter}</span>
+                                </h4>
+                                <div className="grid grid-cols-3 xl:grid-cols-4 gap-5">
+                                    {g.dishes.map(d => renderRetiredCard(d, false))}
+                                </div>
                             </div>
-                        )}
+                        ))}
                     </div>
                 )}
             </div>

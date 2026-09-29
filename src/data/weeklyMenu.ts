@@ -79,7 +79,13 @@ export interface MenuItem {
      * 加料弹窗把它们置顶并打标签；不改价、不加分区。
      */
     recommendedAddOns?: string[];
+    /** 主料分类 —— 首页「往期人气菜」按它分组。按配方主料定（dishIngredients.ts）。目录里必填（见 DishData）。 */
+    category?: DishCategory;
 }
+
+/** 主料分类（顺序 = 首页分组顺序）。 */
+export const DISH_CATEGORIES = ['chicken', 'pork', 'seafood', 'beef', 'other'] as const;
+export type DishCategory = typeof DISH_CATEGORIES[number];
 
 /**
  * SEO-optimised alt text for a menu item image.
@@ -167,11 +173,12 @@ export const PAUSED_DISHES: { id: number; day: string }[] = [
 //   加新菜：目录加一条（未排期前必须 hidden:true + emoji 占位图），
 //   要上线时把 id 排进 WEEKLY_SCHEDULE / DAILY_DISHES 并去掉 hidden。
 // ═══════════════════════════════════════════════════════════════════
-export type DishData = Omit<MenuItem, 'day' | 'weekday' | 'isPrimary' | 'retired'>;
+export type DishData = Omit<MenuItem, 'day' | 'weekday' | 'isPrimary' | 'retired' | 'category'> & { category: DishCategory };
 
 const DISH_CATALOG: DishData[] = [
     {
         id: 11,
+        category: "other",
         name: "纳豆月见海苔饭",
         nameEn: "Natto Tsukimi Seaweed Rice Bowl",
         price: 16.90,
@@ -183,6 +190,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 13,
+        category: "pork",
         name: "马铃薯炖花肉片",
         nameEn: "Japanese-style Pork Belly Slices & Potato Stew",  // 2026-09-17 老板改名（原 Home-style）
         price: 19.90,
@@ -195,6 +203,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 1,
+        category: "chicken",
         name: "阿嫲古早味酱油鸡全腿",
         nameEn: "Soy Sauce Chicken Whole Leg",
         price: 18.50,
@@ -206,6 +215,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 4,
+        category: "pork",
         name: "绍兴酒蒸花肉",
         nameEn: "Shaoxing Wine Steamed Pork Belly",
         price: 19.90,
@@ -221,6 +231,7 @@ const DISH_CATALOG: DishData[] = [
         // a la carte RM22.90；餐券抵扣需补 RM3（voucherTopUp，餐券覆盖到 RM19.90）。
         // 蛋白 32g（老板/碗妈 2026-06-21 提供）。暂别 2026-07-13（见 PAUSED_DISHES）。
         id: 24,
+        category: "beef",
         unavailableNote: "和牛饼暂别，敬请期待回归",
         unavailableNoteEn: "Wagyu patty paused — back soon",
         name: "澳洲和牛饼饭",
@@ -238,6 +249,7 @@ const DISH_CATALOG: DishData[] = [
         // 新菜 2026-06-29 入系统（鸡胸）；2026-07-04 上线；2026-07-17 补主图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）。
         id: 25,
+        category: "chicken",
         name: "家常日式咖喱饭",
         nameEn: "Homestyle Japanese Curry Rice",
         price: 18.50,
@@ -251,6 +263,7 @@ const DISH_CATALOG: DishData[] = [
         // 新菜 2026-07-10 入系统，2026-07-13（周二）上线主打。暂别 2026-07-20；2026-07-18 补主图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 26,
+        category: "chicken",
         unavailableNote: "蜜糖鸡扒暂别，敬请期待回归",
         unavailableNoteEn: "Honey lemon chicken chop paused — back soon",
         name: "柠檬蜜糖煎鸡扒",
@@ -273,6 +286,7 @@ const DISH_CATALOG: DishData[] = [
         // availableWeekdays / featureOnAvailableDays / unavailableNote（否则残留
         //「仅周一、周四供应」文案会误导顾客）。
         id: 27,
+        category: "pork",
         name: "家乡甜酸洋葱猪扒",
         nameEn: "Hometown Sweet & Sour Onion Pork Chop",
         price: 19.90,
@@ -290,6 +304,7 @@ const DISH_CATALOG: DishData[] = [
         // availableWeekdays + featureOnAvailableDays（同一道菜不能排两个 weekday）。
         // 2026-08-10 起收成周五单日特餐 → 收回 WEEKLY_SCHEDULE，去掉那三个字段。
         id: 21,
+        category: "seafood",
         name: "柠香香煎三文鱼饭",
         nameEn: "Lemon Pan-Seared Salmon",
         price: 24.90,
@@ -303,6 +318,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 2,
+        category: "chicken",
         name: "招牌原盅当归蒸鸡全腿",
         nameEn: "Angelica Steamed Whole Chicken Leg",
         price: 18.50,
@@ -315,6 +331,7 @@ const DISH_CATALOG: DishData[] = [
     {
         // 暂别 2026-07-13 → 2026-07-20 回归（周三）。
         id: 3,
+        category: "chicken",
         name: "希腊柠香烤鸡胸",
         nameEn: "Greek Mediterranean Lemon Chicken",
         price: 19.90,
@@ -326,6 +343,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 12,
+        category: "seafood",
         name: "山药云耳海陆双鲜炒",
         nameEn: "Chinese Yam & Black Fungus Surf & Turf",
         price: 18.50,
@@ -337,6 +355,7 @@ const DISH_CATALOG: DishData[] = [
     },
     {
         id: 14,
+        category: "chicken",
         name: "香煎金黄鸡扒饭",
         nameEn: "Pan-Fried Golden Chicken Chop Rice",
         price: 18.50,
@@ -352,6 +371,7 @@ const DISH_CATALOG: DishData[] = [
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿，待老板审定。
         id: 28,
+        category: "pork",
         name: "豆酱焖排骨",
         nameEn: "Hometown Taucu Braised Pork Ribs",
         price: 19.90,
@@ -375,6 +395,7 @@ const DISH_CATALOG: DishData[] = [
         // 与同价的柠香三文鱼一致）。2026-07-27 开通预付升级池 unagi-upgrade
         // （老板要求，比照 salmon-upgrade）：餐券客可预充 RM5/张 抵 top-up。
         id: 29,
+        category: "seafood",
         name: "古早味照烧鳗鱼饭",
         nameEn: "Hometown Glazed Unagi Rice",
         price: 24.90,
@@ -393,6 +414,7 @@ const DISH_CATALOG: DishData[] = [
         // 全新菜 2026-06-15 上架。2026-06-27 回填实拍主图（taucu_pork_belly.webp，1024² webp）。
         // 蛋白克数等营养标签待碗妈提供后再补；简介为初稿，待老板审定。
         id: 23,
+        category: "pork",
         name: "家乡豆酱焖花肉",
         nameEn: "Hometown Taucu Braised Pork Belly",
         price: 19.90,
@@ -410,6 +432,7 @@ const DISH_CATALOG: DishData[] = [
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿，待老板审定。
         id: 30,
+        category: "pork",
         name: "家乡白萝卜焖花肉",
         nameEn: "Hometown Stewed Pork Belly with Daikon",
         price: 19.90,
@@ -428,6 +451,7 @@ const DISH_CATALOG: DishData[] = [
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；
         // 简介为初稿（与 broadcast 文案同源），待老板审定。
         id: 31,
+        category: "pork",
         name: "古早味卤三层肉豆腐蛋",
         nameEn: "Hometown Braised Pork Belly with Tofu & Egg",
         price: 19.90,
@@ -440,6 +464,7 @@ const DISH_CATALOG: DishData[] = [
     {
         // 暂别中（见 PAUSED_DISHES）。unavailableNote 是菜的暂别文案，跟菜走。
         id: 22,
+        category: "pork",
         unavailableNote: "参峇臭豆暂别，敬请期待回归",
         unavailableNoteEn: "Sambal petai paused — back soon",
         name: "参峇臭豆虾仁炒花肉",
@@ -455,6 +480,7 @@ const DISH_CATALOG: DishData[] = [
     {
         // 暂别中（见 PAUSED_DISHES）。
         id: 5,
+        category: "chicken",
         unavailableNote: "鸡汤暂别，敬请期待回归",
         unavailableNoteEn: "Scallion soup paused — back soon",
         name: "金黄葱香煎鸡汤",
@@ -470,6 +496,7 @@ const DISH_CATALOG: DishData[] = [
         // 2026-07-13 回归周五。回归价 RM19.90（老板 2026-07-04 定价，原 RM18.50）。
         // 暂别 2026-07-20；2026-07-27 周回归周五第二道。
         id: 20,
+        category: "seafood",
         name: "古早味姜葱鱼片饭",
         nameEn: "Grandma-Style Ginger-Scallion Fish Fillet",
         price: 19.90,
@@ -488,6 +515,7 @@ const DISH_CATALOG: DishData[] = [
         //   RM5，复用现有 salmon-upgrade 预付升级池 —— #21 转暂别后，已预充三文鱼
         //   升级券的客户可直接拿来抵这道，不会卡死（老板 09-04 拍板）。
         id: 32,
+        category: "seafood",
         name: "蜜糖香煎三文鱼饭",
         nameEn: "Honey Pan-Seared Salmon Rice",
         price: 24.90,
@@ -508,6 +536,7 @@ const DISH_CATALOG: DishData[] = [
         // 白芝麻按调味料处理、不进备餐采购清单（老板 09-04 拍板，与蜜糖/柠檬/酱油同口径）。
         // 简介为初稿，待老板审定。a la carte RM18.50（老板 09-04 定），餐券全覆盖无 top-up。
         id: 33,
+        category: "chicken",
         name: "芝麻蜜汁鸡扒饭",
         nameEn: "Sesame Honey Glazed Chicken Chop",
         price: 18.50,
@@ -525,6 +554,7 @@ const DISH_CATALOG: DishData[] = [
         //   「只转图接上，先别取消上架」—— 上架时机由老板在 dashboard 决定。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
         id: 34,
+        category: "chicken",
         name: "阿嫲葱油鸡腿饭",
         nameEn: "Grandma's Scallion Oil Chicken Leg Rice",
         price: 19.90,
@@ -543,6 +573,7 @@ const DISH_CATALOG: DishData[] = [
         //   仍需老板在 Google Sheet dishes 表加一行给 chatbot 发图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
         id: 35,
+        category: "seafood",
         name: "阿嫲蚝油姜蒜鱼片饭",
         nameEn: "Grandma's Oyster Sauce Ginger-Garlic Fish Fillet Rice",
         price: 19.90,
@@ -562,6 +593,7 @@ const DISH_CATALOG: DishData[] = [
         //   dishes 表加一行给 chatbot 发图）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；英文名/简介为初稿，待老板审定。
         id: 36,
+        category: "pork",
         name: "家常土豆焖五花肉",
         nameEn: "Home-Style Braised Pork Belly & Potato",
         price: 19.90,
@@ -583,6 +615,7 @@ const DISH_CATALOG: DishData[] = [
         //   dishes 表加一行给 chatbot 发图）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 37,
+        category: "beef",
         name: "马铃薯炖和牛片",
         nameEn: "Wagyu Beef Slices & Potato Stew",
         price: 24.90,
@@ -605,6 +638,7 @@ const DISH_CATALOG: DishData[] = [
         // 蛋白标签沿用 #32：同为 120g 三文鱼，克数不变则蛋白不变；仍待碗妈复核。
         // 简介为初稿，待老板审定。
         id: 38,
+        category: "seafood",
         name: "柚香香煎三文鱼饭",
         nameEn: "Yuzu Pan-Seared Salmon Rice",
         price: 24.90,
@@ -626,6 +660,7 @@ const DISH_CATALOG: DishData[] = [
         //   Google Sheet dishes 表加一行给 chatbot 发图）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 39,
+        category: "pork",
         name: "家乡豆豉焖排骨",
         nameEn: "Hometown Tau See Pork Ribs",
         price: 19.90,
@@ -645,6 +680,7 @@ const DISH_CATALOG: DishData[] = [
         //   仍需老板在 Google Sheet dishes 表加一行给 chatbot 发图。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 40,
+        category: "chicken",
         name: "家常土豆焖鸡",
         nameEn: "Home-Style Braised Chicken & Potato",
         price: 18.50,
