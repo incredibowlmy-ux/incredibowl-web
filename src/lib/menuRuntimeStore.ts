@@ -17,6 +17,12 @@ export interface MenuWeekDoc {
     updatedAt?: string;
     updatedBy?: string;
     /**
+     * 老板在 dashboard 菜单排期页点「开放预订」→ true。网站只在本周（MYT 日历周）
+     * 或已开放的周卖**特餐**（常驻菜不受限）。保存整周/某天**不会**自动开放 ——
+     * saveDay 会把继承周整份复制过来，「周文档存在」≠「老板排好了」。见 isWeekBookable。
+     */
+    bookable?: boolean;
+    /**
      * 排定生效：到 `at`（ISO）那一刻自动换成这份排期（老板不用熬夜等低峰）。
      * 解析层 weekDocFor 到点后用它替换 days/daily/paused；文档本体保留旧排期
      * 直到 dashboard 下次保存把它落成正式内容。

@@ -36,6 +36,7 @@ export function normalizeWeekDoc(raw: Record<string, unknown> | undefined): Menu
     for (const wd of [1, 2, 3, 4, 5]) days[wd] = numArr(daysRaw[String(wd)] ?? daysRaw[wd]);
     const doc: MenuWeekDoc = { days, daily: numArr(raw?.daily), paused: numArr(raw?.paused) };
     if (typeof raw?.updatedBy === 'string') doc.updatedBy = raw.updatedBy;
+    if (raw?.bookable === true) doc.bookable = true;
     const sch = raw?.scheduled as Record<string, unknown> | undefined;
     if (sch && typeof sch.at === 'string' && !Number.isNaN(Date.parse(sch.at))) {
         const sDaysRaw = (sch.days ?? {}) as Record<string, unknown>;

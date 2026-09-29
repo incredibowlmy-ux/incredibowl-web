@@ -15,7 +15,7 @@ import {
     type DeliveryTier,
     type DeliveryZone,
 } from '@/lib/deliveryUtils';
-import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
+import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn, isSpecialOpenOn } from '@/lib/cartDateUtils';
 import { getDishPrice } from '@/data/promoConfig';
 import { dishVoucherValue } from '@/data/weeklyMenu';
 import { menuForDate } from '@/lib/menuResolve';
@@ -207,7 +207,7 @@ export default function CartDrawer({
             if (!isSlotOrderableOn(item.selectedDate, item.selectedTime).ok) { dateStale.push(item); continue; }
             const live = menuForDate(item.selectedDate).find(d => d.id === item.dish?.id);
             // 菜已从目录整个删掉 → 同样清掉，否则结账时才报「菜品不存在」
-            if (!live || !isDishOrderableOn(live, item.selectedDate).ok) unavailable.push(item);
+            if (!live || !isDishOrderableOn(live, item.selectedDate).ok || !isSpecialOpenOn(live, item.selectedDate).ok) unavailable.push(item);
         }
         if (dateStale.length === 0 && unavailable.length === 0) {
             setStaleNotice('');

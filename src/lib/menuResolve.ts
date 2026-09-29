@@ -33,6 +33,29 @@ export function mondayOf(ymd: string): string {
     return ymdOfUTC(d);
 }
 
+/** 日历周（周一~周日）的周一。与 mondayOf 不同：周六/日仍算本周。 */
+function calendarMondayOf(ymd: string): string {
+    const d = parseYMD(ymd);
+    if (!d) return ymd;
+    d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    return ymdOfUTC(d);
+}
+
+/**
+ * 这一天的**特餐**能不能卖给顾客（常驻菜不受此限）。
+ *   · 本周及以前（MYT 日历周，周末仍算本周）→ 永远可卖；
+ *   · 之后的周 → 老板在菜单排期页点了「开放预订」(bookable) 才卖。
+ * 否则截单后那一列会改卖「下周同一天」，而下周多半还是沿用/复制的本周菜。
+ * snapshot 模式（SSR、fetch 失败、Firestore 没数据）一律放行 —— 不能让页面闪占位，
+ * 服务端校验时一定已 loadMenuRuntime。只接顾客路径；录单脚本/订阅引擎/手动单不走这里。
+ */
+export function isWeekBookable(ymd: string, data: MenuRuntimeData = getRuntimeData(), nowMs = Date.now()): boolean {
+    if (data.source !== 'firestore') return true;
+    const monday = mondayOf(ymd);
+    if (monday <= calendarMondayOf(ymdOfUTC(new Date(nowMs + MYT_OFFSET_MS)))) return true;
+    return data.weeks[monday]?.bookable === true;
+}
+
 /** 日期所属周的排期文档：精确命中 → 最近更早的一周 → 代码快照。 */
 /** 排定生效到点了就用排定的那份（老板不用熬夜等低峰改菜单）。 */
 function effectiveWeek(doc: MenuWeek & { scheduled?: { at: string } & MenuWeek }, nowMs: number): MenuWeek {

@@ -5,7 +5,7 @@ import { dishVoucherValue } from '@/data/weeklyMenu';
 import { menuForDate } from '@/lib/menuResolve';
 import { validateVoucher } from '@/lib/voucherValidation';
 import { calcPerDeliveryFees, isBeyondServiceRange, MAX_DELIVERY_KM, type DeliveryZone } from '@/lib/deliveryUtils';
-import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn } from '@/lib/cartDateUtils';
+import { isOrderDateValid, isDishOrderableOn, isSlotOrderableOn, isSpecialOpenOn } from '@/lib/cartDateUtils';
 import { sendCapiEvent, extractRequestContext } from '@/lib/meta-capi';
 import { parseAttributionCookie } from '@/lib/attribution';
 import { claimMealVouchers, countAvailableVouchers } from '@/lib/mealVoucherUtils';
@@ -163,6 +163,11 @@ export async function POST(req: Request) {
       const dishCheck = isDishOrderableOn(dish, String(bundle.selectedDate || ''));
       if (!dishCheck.ok) {
         return NextResponse.json({ error: dishCheck.message }, { status: 400 });
+      }
+      // 特餐所在周老板还没「开放预订」（截单后那一列指向下周）→ 拒收。CartDrawer 同一个函数。
+      const openCheck = isSpecialOpenOn(dish, String(bundle.selectedDate || ''));
+      if (!openCheck.ok) {
+        return NextResponse.json({ error: openCheck.message }, { status: 400 });
       }
 
       // 数量归一（负数 / 小数 / NaN / 超大值一律拒收）。缺省视为 1 份。

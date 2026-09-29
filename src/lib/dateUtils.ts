@@ -1,5 +1,6 @@
 import { MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
+import { isWeekBookable } from '@/lib/menuResolve';
 import { AdminOrder } from '@/types';
 
 // Shape of per-dish date info computed for the menu
@@ -190,6 +191,18 @@ export function computeMenuDates(
         const topTag = en
             ? `${formatMDEn(targetDate)} · ${wdEn[targetWd]}`
             : `${formatMD(targetDate)} ${wdCn[targetWd]} · ${wdEn[targetWd]}`;
+        // 目标日落在老板还没「开放预订」的周 → 不能加购（首页那一列会整列换成「即将公布」占位，
+        // 这里挡的是 Hero ?prefill 和任何拿 menuDates 判断能不能开弹窗的入口）。
+        if (!isWeekBookable(formatYMD(targetDate))) {
+            menuDates[dish.id] = {
+                topTag,
+                btnText: en ? `${wdEn[targetWd]} menu coming soon` : `下${wdCn[targetWd]}菜单即将公布`,
+                disabled: true,
+                actualDate: formatYMD(targetDate),
+                reasonShort: en ? 'Coming soon' : '即将公布',
+            };
+            return;
+        }
         menuDates[dish.id] = { topTag, btnText, disabled: isDisabled, actualDate: formatYMD(targetDate) };
     });
 

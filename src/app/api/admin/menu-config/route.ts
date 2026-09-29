@@ -285,6 +285,27 @@ export async function POST(req: NextRequest) {
                 return respondState({ monday });
             }
 
+            case 'setBookable': {
+                // 「开放预订」：这周的特餐开始在网站 / bot 上卖（本周永远可卖，见 isWeekBookable）。
+                // 保存整周/某天都是 merge，不会冲掉这个开关。
+                if (!isYmd(body.monday)) return adminJson({ error: 'monday 格式应为 YYYY-MM-DD' }, 400);
+                const monday = mondayOf(body.monday);
+                const patch: Record<string, unknown> = {
+                    bookable: body.bookable === true,
+                    updatedAt: FieldValue.serverTimestamp(), updatedBy: email,
+                };
+                // 周文档不存在（沿用周）→ 连同现行内容一起物化。只写 bookable 会得到一份
+                // 空周（精确命中优先于继承），这周的菜会被整份清掉。
+                if (!data.weeks[monday]) {
+                    const live = weekDocFor(data, monday).week;
+                    patch.days = Object.fromEntries([1, 2, 3, 4, 5].map(wd => [String(wd), live.days?.[wd] ?? []]));
+                    patch.daily = live.daily ?? [];
+                    patch.paused = live.paused ?? [];
+                }
+                await db.collection(MENU_COLLECTIONS.weeks).doc(monday).set(patch, { merge: true });
+                return respondState({ monday });
+            }
+
             case 'saveDay': {
                 if (!isYmd(body.monday)) return adminJson({ error: 'monday 格式应为 YYYY-MM-DD' }, 400);
                 const monday = mondayOf(body.monday);

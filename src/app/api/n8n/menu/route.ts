@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MenuItem, dishVoucherValue } from '@/data/weeklyMenu';
-import { menuForDate } from '@/lib/menuResolve';
+import { menuForDate, isWeekBookable } from '@/lib/menuResolve';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
 import { dishRecipes } from '@/data/dishIngredients';
 import { COVERAGE_AREAS } from '@/lib/deliveryCopy';
@@ -207,9 +207,13 @@ export async function GET(req: NextRequest) {
     && (!d.availableWeekdays || d.availableWeekdays.includes(wd))
     && !isDishBlockedOn(d.id, deliveryDate),
   );
-  const specials = live.filter(d =>
+  // 送达日那一周老板还没「开放预订」→ 特餐不卖（与网站/结账同一判断），菜单里说「即将公布」。
+  const specialsOpen = isWeekBookable(deliveryDate);
+  const specials = specialsOpen ? live.filter(d =>
     d.weekday === wd && !isDishBlockedOn(d.id, deliveryDate),
-  );
+  ) : [];
+  const comingSoonLine = `${dayName}特餐：下周菜单即将公布，碗妈排好就开放预订。`;
+  const comingSoonLineEn = `${WD_EN[wd]} special: next week's menu is coming soon — opens for pre-order once BowlMama sets it.`;
 
   const orderableStaples = staples.filter(d => !isSoldOut(d));
   const orderableSpecials = specials.filter(d => !isSoldOut(d));
@@ -220,6 +224,7 @@ export async function GET(req: NextRequest) {
   const lines: string[] = ['常驻菜（每天可点）：'];
   for (const d of orderableStaples) lines.push(menuLine(d, 'staple', wd, remainingOf(d)));
   for (const d of orderableSpecials) lines.push(menuLine(d, 'special', wd, remainingOf(d)));
+  if (!specialsOpen) lines.push(comingSoonLine);
   if (soldOut.length) {
     lines.push(`今日售罄（不可点）：${soldOut.map(d => d.name).join('、')}`);
   }
@@ -237,12 +242,14 @@ export async function GET(req: NextRequest) {
   const shortLines: string[] = [];
   for (const d of orderableStaples) shortLines.push(menuLine(d, 'staple', wd, remainingOf(d)));
   for (const d of orderableSpecials) shortLines.push(menuLine(d, 'special', wd, remainingOf(d)));
+  if (!specialsOpen) shortLines.push(comingSoonLine);
   const todayMenuShort = shortLines.join('\n');
 
   // ── 英文版菜单块（客流中英混，bot 按客户语言二选一）──────
   const linesEn: string[] = ['Available every day:'];
   for (const d of orderableStaples) linesEn.push(menuLineEn(d, 'staple', wd, remainingOf(d)));
   for (const d of orderableSpecials) linesEn.push(menuLineEn(d, 'special', wd, remainingOf(d)));
+  if (!specialsOpen) linesEn.push(comingSoonLineEn);
   if (soldOut.length) {
     linesEn.push(`Sold out today: ${soldOut.map(d => d.nameEn).join(', ')}`);
   }
@@ -250,6 +257,7 @@ export async function GET(req: NextRequest) {
   const shortLinesEn: string[] = [];
   for (const d of orderableStaples) shortLinesEn.push(menuLineEn(d, 'staple', wd, remainingOf(d)));
   for (const d of orderableSpecials) shortLinesEn.push(menuLineEn(d, 'special', wd, remainingOf(d)));
+  if (!specialsOpen) shortLinesEn.push(comingSoonLineEn);
   const todayMenuShortEn = shortLinesEn.join('\n');
 
   const dishJson = (d: MenuItem, kind: 'staple' | 'special') => ({
@@ -327,6 +335,8 @@ export async function GET(req: NextRequest) {
         weekday: wd,
         days_ahead: daysAhead,
         is_after_cutoff: isAfterCutoff,
+        // false = 送达日那周老板还没开放预订，特餐不卖（菜单文字里已写「即将公布」）
+        specials_open: specialsOpen,
       },
       delivery_label: deliveryLabel,
       delivery_label_en: relative

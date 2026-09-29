@@ -311,6 +311,10 @@ interface MenuCarouselDict {
     missIt: string;
     /** 手机窄卡用的短版（360px 宽下完整句会被截断） */
     missItShort: string;
+    /** 下周还没「开放预订」的那一列占位：标题（参数 = wdLabel 里的星期） */
+    comingSoonTitle: (wd: string) => string;
+    comingSoonBadge: string;
+    comingSoonSub: string;
     /** 预填 WhatsApp 讯息（菜名按 locale 传入） */
     missItHref: (dishName: string) => string;
     voucherTitle: string;
@@ -595,6 +599,9 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             retiredBadge: '往期人气 · 会回来',
             missIt: '想它回来？告诉碗妈',
             missItShort: '想它回来？',
+            comingSoonTitle: (wd) => `下${wd}的菜单`,
+            comingSoonBadge: '即将公布',
+            comingSoonSub: '碗妈排好下周菜单就开放预订',
             missItHref: (name) => `https://wa.me/60103370197?text=${encodeURIComponent(`Hi BowlMama! 我想念【${name}】，什么时候回来？`)}`,
             voucherTitle: '餐券预付包 · 一次买，慢慢吃',
             voucherSub: '任意主菜都能兑 · 20 张装单券低至 RM 17.50 · 30 / 60 天有效',
@@ -849,6 +856,9 @@ export const HOME_DICT: Record<Locale, HomeDict> = {
             retiredBadge: 'Back soon',
             missIt: 'Miss it? Tell BowlMama',
             missItShort: 'Want it back?',
+            comingSoonTitle: (wd) => `Next ${wd}'s menu`,
+            comingSoonBadge: 'Coming soon',
+            comingSoonSub: "Opens for pre-order once BowlMama sets next week's menu",
             missItHref: (name) => `https://wa.me/60103370197?text=${encodeURIComponent(`Hi BowlMama! I miss the ${name} — when is it coming back?`)}`,
             voucherTitle: 'Meal Voucher Bundles · Buy once, eat anytime',
             voucherSub: 'Any main dish · 20-pack from RM 17.50 a voucher · Valid 30 / 60 days',

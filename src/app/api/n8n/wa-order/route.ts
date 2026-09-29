@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADD_ON_PRICES } from '@/data/addOnsConfig';
 import { resolveAddon, resolveDishName } from '@/lib/waOrderResolve';
+import { menuForDate } from '@/lib/menuResolve';
+import { isSpecialOpenOn } from '@/lib/cartDateUtils';
 import {
   buildPlan, resolveManualUserId, writeManualOrderDays,
   round2, WD_CN, type PlannedDay,
@@ -333,6 +335,15 @@ export async function POST(req: NextRequest) {
       });
       return { date: String(entry?.date || ''), meal: entry?.meal === 'dinner' ? 'dinner' : 'lunch', time: entry?.time, items };
     });
+
+    // 特餐所在周老板还没「开放预订」→ bot 不接（与网站结账同一判断）。
+    // 只在这里拦：buildPlan 也给 admin 多日单用，老板排单不受开放与否限制。
+    const notOpen = planDays.flatMap((pd: { date: string; items: { dishName: string }[] }) => pd.items.map(it => {
+      const dish = menuForDate(pd.date).find(d => d.name === it.dishName);
+      const check = dish ? isSpecialOpenOn(dish, pd.date) : { ok: true as const };
+      return check.ok ? null : check.message;
+    })).filter(Boolean);
+    if (notOpen.length) return biz({ ok: false, error: notOpen.join('；') });
 
     const { days, errors } = buildPlan(planDays, 0); // 运费下面按距离/门槛逐天算
     if (errors.length) return biz({ ok: false, error: errors.join('；') });

@@ -16454,7 +16454,7 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   MENU SCHEDULE（菜单排期）—— 每周换菜 / hero / 常驻 / 暂别 / 价格 / 停业日
         //   后端：POST /api/admin/menu-config（get / saveWeek / saveDay / setDish /
-        //   setClosure / deleteClosure / cancelSchedule / broadcast / forecast）。
+        //   setClosure / deleteClosure / cancelSchedule / setBookable / broadcast / forecast）。
         //   Firestore menuWeeks / menuCatalog / menuClosures 是网站运行时的权威源；
         //   保存后网站约 1 分钟内生效。限量（按菜可售份数）沿用「库存」页，这里只放入口。
         //   销量提示 / 食材预测的需求量来自下方 DISH ANALYTICS 模块（浏览器内存算）。
@@ -16514,6 +16514,15 @@ incredibowl.my`,
             const doc = MS.runtime && MS.runtime.weeks && MS.runtime.weeks[monday];
             const s = doc && doc.scheduled;
             return s && Date.parse(s.at) > Date.now() ? s : null;
+        }
+        /**
+         * 这周要不要老板「开放预订」网站才卖特餐：本周及以前（日历周，周末仍算本周）永远可卖，
+         * 之后的周要开。与网站 menuResolve.isWeekBookable 同口径。注意 msMonday(0) 在周末已是下周。
+         */
+        function msNeedsBookable(monday) {
+            const t = new Date(); t.setHours(0, 0, 0, 0);
+            t.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+            return monday > ymdKey(t);
         }
         function msLoadDraft(fromScheduled = false) {
             MS.draftMonday = msMonday(MS.offset);
@@ -16659,11 +16668,16 @@ incredibowl.my`,
             const pendingPill = pending
                 ? `<span class="pill info">⏱ 已排定 ${msEsc(msFmtAt(pending.at))} 自动生效</span> <button class="btn ghost sm" data-act="loadScheduled">编辑排定内容</button> <button class="btn ghost sm" data-act="cancelSchedule">取消排定</button>`
                 : '';
+            const wkDoc = MS.runtime && MS.runtime.weeks && MS.runtime.weeks[monday];
+            const bookablePill = !msNeedsBookable(monday) ? ''
+                : (wkDoc && wkDoc.bookable)
+                    ? `<span class="pill ok">✅ 已开放预订</span> <button class="btn ghost sm" data-act="setBookable" data-on="0">关闭预订</button>`
+                    : `<span class="pill warn" title="网站上这周的特餐显示「即将公布」、顾客和 bot 都不能下单；常驻菜照卖。保存排期不会自动开放。">🔒 未开放预订</span> <button class="btn sm" data-act="setBookable" data-on="1">开放预订</button>`;
             const tabs = [0, 1, 2].map(o => {
                 const m = msMonday(o);
                 const label = o === 0 ? '本周' : o === 1 ? '下周' : '下下周';
                 const has = MS.runtime && MS.runtime.weeks && MS.runtime.weeks[m];
-                return `<button class="btn ${o === MS.offset ? '' : 'ghost'} sm" data-act="week" data-offset="${o}">${label} ${msFmt(m)}${has ? ' ●' : ''}</button>`;
+                return `<button class="btn ${o === MS.offset ? '' : 'ghost'} sm" data-act="week" data-offset="${o}">${label} ${msFmt(m)}${has ? ' ●' : ''}${has && has.bookable && msNeedsBookable(m) ? ' ✅' : ''}</button>`;
             }).join(' ');
 
             const colCard = (key, title, sub, list, opts = {}) => {
@@ -16792,7 +16806,7 @@ incredibowl.my`,
             root.innerHTML = `
                 <div class="card">
                     <div class="card-header">
-                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${autoPausedNow.length ? `<span class="pill warn" title="${msEsc(autoPausedNow.map(msName).join('、'))}">${autoPausedNow.length} 道没排的菜已自动放进暂别 · 保存后网站生效</span>` : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
+                        <div><div class="card-title">每周排期 · 周一 ${msEsc(monday)} 起</div><div class="card-sub">${statusPill} ${bookablePill} ${pendingPill} ${src !== 'firestore' ? '<span class="pill warn">网站目前吃代码快照</span>' : ''} ${MS.dirty ? '<span class="pill info">有未保存改动</span>' : ''} ${autoPausedNow.length ? `<span class="pill warn" title="${msEsc(autoPausedNow.map(msName).join('、'))}">${autoPausedNow.length} 道没排的菜已自动放进暂别 · 保存后网站生效</span>` : ''} ${MS.draftFromScheduled ? '<span class="pill info">正在编辑排定内容</span>' : ''}</div></div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                             ${tabs}
                             <button class="btn ghost sm" data-act="autoDraft" title="按销量 / 回头率 / 轮换间隔 / 配对打分自动排一版草稿，每道菜带理由，你改完再保存">✨ 自动起稿</button>
@@ -16934,6 +16948,14 @@ incredibowl.my`,
                 if (!(atMs > Date.now())) { toast('生效时间必须在未来', 'error'); return; }
                 btn.disabled = true;
                 await msApply({ action: 'saveWeek', monday: MS.draftMonday, week: msWeekPayload(), scheduleAt: new Date(atMs).toISOString() }, `已排定 ${msFmtAt(new Date(atMs).toISOString())} 自动生效`);
+                btn.disabled = false; return;
+            }
+            if (act === 'setBookable') {
+                const on = btn.dataset.on === '1';
+                if (on && MS.dirty && !confirm('这周有未保存的改动。开放预订后网站卖的是「已保存」的排期。\n\n确定 = 仍然直接开放；取消 = 先回去保存')) return;
+                if (!on && !confirm('关闭后网站上这周的特餐会改回「即将公布」，顾客不能再下单（已下的单不受影响）。确定关闭？')) return;
+                btn.disabled = true;
+                await msApply({ action: 'setBookable', monday: MS.draftMonday, bookable: on }, on ? `已开放 ${MS.draftMonday} 这周预订（网站约 1 分钟内生效）` : `已关闭 ${MS.draftMonday} 这周预订`);
                 btn.disabled = false; return;
             }
             if (act === 'cancelSchedule') {

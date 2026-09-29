@@ -1,6 +1,6 @@
 import type { MenuItem } from '@/data/weeklyMenu';
 import { isDishBlockedOn, isDateClosed } from '@/data/blockedDates';
-import { currentMenu } from '@/lib/menuResolve';
+import { currentMenu, isWeekBookable } from '@/lib/menuResolve';
 
 export interface NextSpecial {
     dish: MenuItem;
@@ -14,8 +14,9 @@ export interface NextSpecial {
 
 /**
  * Compute the next available special dish based on the 06:00 cutoff.
- * Skips weekends. Falls back to the signature daily Chicken Chop (id 14)
- * if no weekly special exists for the next available weekday.
+ * Skips weekends. Falls back to a daily (常驻) dish orderable that day if no
+ * weekly special exists for the next available weekday, or if that week isn't
+ * open for booking yet (isWeekBookable).
  *
  * Lives in /lib so both HeroSection (display) and the deep-link prefill
  * handler in page.tsx can share the exact same dish.
@@ -64,8 +65,14 @@ export function computeNextSpecial(): NextSpecial {
     }
 
     const targetWd = next.getUTCDay();
-    const weeklySpecial = pickSpecial(targetWd);
-    const fallback = weeklyMenu.find(d => d.id === 14) ?? weeklyMenu[0];
+    // 那一周老板还没「开放预订」→ 特餐不卖（首页那列是「即将公布」占位），Hero 改推当天能订的常驻菜。
+    const weeklySpecial = isWeekBookable(ymdUTC(next)) ? pickSpecial(targetWd) : undefined;
+    // 回退 = 当天能订的常驻菜（原来写死 #14 金黄鸡扒，它 09-07 已暂别）。
+    const fallback = weeklyMenu.find(d =>
+        !d.retired && !d.hidden && d.weekday === undefined
+        && (!d.availableWeekdays?.length || d.availableWeekdays.includes(targetWd))
+        && !isDishBlockedOn(d.id, ymdUTC(next)),
+    ) ?? weeklyMenu.find(d => !d.retired && !d.hidden) ?? weeklyMenu[0];
     const dish = weeklySpecial ?? fallback;
 
     const nowMid = new Date(now).setUTCHours(0, 0, 0, 0);

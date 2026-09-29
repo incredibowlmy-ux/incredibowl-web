@@ -17,6 +17,7 @@
 
 import { isDateClosed, isDishBlockedOn, isDinnerClosedOn, isLunchClosedOn } from '@/data/blockedDates';
 import type { MenuItem } from '@/data/weeklyMenu';
+import { isWeekBookable } from '@/lib/menuResolve';
 
 const CUTOFF_HOUR_MY = 6;
 
@@ -151,6 +152,23 @@ export function isDishOrderableOn(
     }
 
     return { ok: true };
+}
+
+/**
+ * 特餐所在的那一周老板「开放预订」了没（见 menuResolve.isWeekBookable）。
+ * 常驻菜（没有 weekday）直接放行。只给顾客路径用：网站结账、购物车清理、
+ * chatbot 下单。录单脚本 / 订阅引擎 / 手动单不调它 —— 老板排单不受开放与否限制。
+ */
+export function isSpecialOpenOn(
+    dish: Pick<MenuItem, 'name' | 'weekday'>,
+    selectedDate: string,
+): { ok: true } | { ok: false; reason: 'week_not_open'; message: string } {
+    if (dish.weekday === undefined || isWeekBookable(selectedDate)) return { ok: true };
+    return {
+        ok: false,
+        reason: 'week_not_open',
+        message: `${dish.name}（${selectedDate}）那一周的菜单还没公布，暂不接单`,
+    };
 }
 
 /**

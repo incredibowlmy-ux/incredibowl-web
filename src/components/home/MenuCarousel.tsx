@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { ShoppingBag, Sparkles, Phone, Ticket, MessageCircle } from 'lucide-react';
 import { MenuItem, dishImageAlt, DISH_CATEGORIES } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
-import { MenuDateInfo } from '@/lib/dateUtils';
+import { MenuDateInfo, formatMD, formatMDEn } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
+import { nextOccurrenceDates, isWeekBookable } from '@/lib/menuResolve';
+import { isDateClosed } from '@/data/blockedDates';
 import SoldOutNotice from '@/components/home/SoldOutNotice';
 import type { Locale } from '@/lib/locale';
 import { HOME_DICT } from './dict';
@@ -61,14 +63,31 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                         .sort((a, b) => (b.isPrimary ? 1 : 0) - (a.isPrimary ? 1 : 0)),
                     ...active.filter(d => featured(d) && d.availableWeekdays!.includes(wd)),
                 ],
-            }))
-            .filter(g => g.dishes.length > 0);
+            }));
         const retired = weeklyMenu.filter(d => d.retired);
         const retiredByCategory = DISH_CATEGORIES
             .map(c => ({ c, dishes: retired.filter(d => (d.category ?? 'other') === c) }))
             .filter(g => g.dishes.length > 0);
         return { daily, days, retired, retiredByCategory };
     }, [weeklyMenu]);
+
+    // 截单后那一列指向下周同一天；那一周老板还没「开放预订」→ 整列换成「即将公布」占位，
+    // 不再卖沿用/复制来的菜。wd → 那一列的日期。日期相关 → 同 tomorrowsId 只在 ready 后算
+    // （预渲染 HTML 永远是菜卡）。
+    const notOpen = useMemo(() => {
+        const out: Record<number, string> = {};
+        if (!ready) return out;
+        const dates = nextOccurrenceDates(Date.now(), isDateClosed);
+        for (const wd of [1, 2, 3, 4, 5]) if (dates[wd] && !isWeekBookable(dates[wd])) out[wd] = dates[wd];
+        return out;
+    }, [ready, menuVersion]);
+    // 老板把某天排空（当天不卖特餐）→ 那列照旧不显示；未开放的周即使排空也显示占位。
+    const visibleDays = groups.days.filter(g => g.dishes.length > 0 || notOpen[g.wd]);
+    const ymdLabel = (ymd: string) => {
+        const [y, m, d] = ymd.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        return locale === 'en' ? formatMDEn(dt) : formatMD(dt);
+    };
 
     // ── Section header (spans the full row in both grids) ──
     const sectionHeader = (key: string, title: string, dateSub: string | null, highlight: boolean, size: 'sm' | 'lg', badgeNum?: number) => (
@@ -354,6 +373,49 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
         );
     };
 
+    // ── 「下周X 菜单即将公布」占位（未开放预订的那一列）──
+    // 整张卡就是 WhatsApp「通知我」链接（复用下周预告那条预填讯息）。
+    const renderComingSoon = (wd: number, compact: boolean) => compact ? (
+        <a
+            key={`m-soon-${wd}`}
+            href={t.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="col-span-2 bg-white/60 rounded-2xl p-4 border-2 border-dashed border-gray-200 flex items-center gap-3 active:scale-[0.99] transition-transform"
+        >
+            <div className="w-10 h-10 bg-primary/12 rounded-full flex items-center justify-center shrink-0">
+                <Sparkles size={18} className="text-primary" strokeWidth={2.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-[14px] font-extrabold text-ink leading-tight">
+                    {t.comingSoonTitle(WD_LABEL[wd])} · <span className="text-primary">{t.comingSoonBadge}</span>
+                </p>
+                <p className="text-[11px] font-medium text-gray-500 mt-0.5 leading-snug">{t.comingSoonSub}</p>
+            </div>
+            <span className="inline-flex items-center justify-center w-9 h-9 bg-[#25D366] text-white rounded-full shadow-sm shadow-[#25D366]/30 shrink-0">
+                <Phone size={14} strokeWidth={2.5} />
+            </span>
+        </a>
+    ) : (
+        <a
+            key={`d-soon-${wd}`}
+            href={t.whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group bg-white/60 rounded-3xl p-5 border-2 border-dashed border-gray-200 hover:border-primary/40 flex flex-col items-center justify-center text-center min-h-[420px] transition-colors"
+        >
+            <div className="w-14 h-14 bg-primary/12 rounded-full flex items-center justify-center mb-4">
+                <Sparkles size={24} className="text-primary" strokeWidth={2.5} />
+            </div>
+            <span className="text-[12px] font-black text-primary bg-primary/12 rounded-full px-2.5 py-1 mb-3">{t.comingSoonBadge}</span>
+            <p className="text-[20px] font-extrabold text-ink leading-tight mb-2">{t.comingSoonTitle(WD_LABEL[wd])}</p>
+            <p className="text-[13px] font-medium text-ink/60 leading-relaxed mb-5 max-w-[200px]">{t.comingSoonSub}</p>
+            <span className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#25D366] group-hover:bg-[#20BE5A] text-white rounded-full text-[13px] font-black shadow-md shadow-[#25D366]/30 transition-colors">
+                <Phone size={13} strokeWidth={2.5} />{t.notifyMe}
+            </span>
+        </a>
+    );
+
     // Date sub-label for a day band, derived from that day's first dish's topTag
     // (zh special topTag = "6月30日 周一 · Mon" → "6月30日"; en topTag = "Jun 30 · Mon" → "Jun 30").
     const dayDateSub = (dish: MenuItem) => menuDates[dish.id]?.topTag?.split(t.dayDateSubSep)[0] ?? null;
@@ -421,12 +483,13 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
 
             {/* MOBILE + TABLET — compact 2-column grid, grouped by weekday */}
             <div className="lg:hidden grid grid-cols-2 gap-3 px-3 pt-2">
-                {groups.days.map(g => {
-                    const isNext = g.dishes.some(d => d.id === tomorrowsId);
+                {visibleDays.map(g => {
+                    const soon = notOpen[g.wd];
+                    const isNext = !soon && g.dishes.some(d => d.id === tomorrowsId);
                     return (
                         <React.Fragment key={`m-day-${g.wd}`}>
-                            {sectionHeader(`m-hdr-${g.wd}`, WD_LABEL[g.wd], dayDateSub(g.dishes[0]), isNext, 'sm', g.wd)}
-                            {g.dishes.map(renderMobileCard)}
+                            {sectionHeader(`m-hdr-${g.wd}`, WD_LABEL[g.wd], soon ? ymdLabel(soon) : dayDateSub(g.dishes[0]), isNext, 'sm', g.wd)}
+                            {soon ? renderComingSoon(g.wd, true) : g.dishes.map(renderMobileCard)}
                         </React.Fragment>
                     );
                 })}
@@ -471,8 +534,9 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
             <div className="hidden lg:block px-2 pt-4">
                 {/* 本周特餐 · 一周日历（5 列对齐填满宽度，无网格留白） */}
                 <div className="grid grid-cols-5 gap-4">
-                    {groups.days.map(g => {
-                        const isNext = g.dishes.some(d => d.id === tomorrowsId);
+                    {visibleDays.map(g => {
+                        const soon = notOpen[g.wd];
+                        const isNext = !soon && g.dishes.some(d => d.id === tomorrowsId);
                         return (
                             <div key={`d-day-${g.wd}`} className="flex flex-col gap-4">
                                 <div className={`flex flex-col items-center text-center pb-2 border-b-2 ${isNext ? 'border-primary' : 'border-gray-100'}`}>
@@ -482,11 +546,11 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
                                     </span>
                                     {/* min-h 预留：日期小字来自 menuDates，SSR 时为空。没有它，
                                         日期落地那一刻 5 个列头同时长高，把整片卡片往下推（CLS）。 */}
-                                    <span className="text-[13px] font-bold text-gray-500 mt-1.5 min-h-[16px]">{dayDateSub(g.dishes[0])}</span>
+                                    <span className="text-[13px] font-bold text-gray-500 mt-1.5 min-h-[16px]">{soon ? ymdLabel(soon) : dayDateSub(g.dishes[0])}</span>
                                     {/* 非下一餐用 invisible 占位 —— 5 个列头等高，第一行卡片顶对齐 */}
                                     <span className={`mt-1.5 text-[11px] font-black text-primary bg-primary/12 rounded-full px-2 py-0.5 ${isNext ? '' : 'invisible'}`}>{t.upNext}</span>
                                 </div>
-                                {g.dishes.map(renderDesktopCard)}
+                                {soon ? renderComingSoon(g.wd, false) : g.dishes.map(renderDesktopCard)}
                             </div>
                         );
                     })}
