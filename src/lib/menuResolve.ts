@@ -152,6 +152,21 @@ export function nextOccurrenceDates(nowMs = Date.now(), isClosed: (ymd: string) 
     return out;
 }
 
+/**
+ * 首页「每日精选」：哪些 weekday 那一列指向还没「开放预订」的周（wd → 那一列的日期）。
+ * 这些列整列换成「即将公布」占位。
+ */
+export function notOpenWeekdayDates(
+    isClosed?: (ymd: string) => boolean,
+    nowMs = Date.now(),
+    data: MenuRuntimeData = getRuntimeData(),
+): Record<number, string> {
+    const dates = nextOccurrenceDates(nowMs, isClosed);
+    const out: Record<number, string> = {};
+    for (const wd of [1, 2, 3, 4, 5]) if (dates[wd] && !isWeekBookable(dates[wd], data, nowMs)) out[wd] = dates[wd];
+    return out;
+}
+
 export function currentMenu(
     nowMs = Date.now(),
     isClosed?: (ymd: string) => boolean,

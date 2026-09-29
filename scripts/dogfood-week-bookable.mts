@@ -6,7 +6,7 @@
  * 周三~五是 saveDay 复制来的本周菜，且没开放。
  */
 import { setRuntimeData, EMPTY_RUNTIME, type MenuRuntimeData } from '@/lib/menuRuntimeStore';
-import { isWeekBookable } from '@/lib/menuResolve';
+import { isWeekBookable, notOpenWeekdayDates } from '@/lib/menuResolve';
 import { isSpecialOpenOn } from '@/lib/cartDateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
 
@@ -48,6 +48,14 @@ ok(!isWeekBookable('2026-10-12', opened, wed), '下下周：各周独立，仍�
 
 console.log('4. snapshot 模式（SSR / fetch 失败）一律放行');
 ok(isWeekBookable('2026-10-12', EMPTY_RUNTIME, wed), 'snapshot → true');
+ok(Object.keys(notOpenWeekdayDates(undefined, wed, EMPTY_RUNTIME)).length === 0, 'snapshot → 首页没有占位列');
+
+console.log('4b. notOpenWeekdayDates：首页哪几列换成「即将公布」');
+const cols = (now: number, d = base) => JSON.stringify(notOpenWeekdayDates(undefined, now, d));
+ok(cols(wed) === '{"1":"2026-10-05","2":"2026-10-06"}', `周三 03:00（截单前）→ 只有周一二：${cols(wed)}`);
+ok(cols(myt('2026-09-30T06:00:00')) === '{"1":"2026-10-05","2":"2026-10-06","3":"2026-10-07"}', '周三 06:00 截单 → 周三那列也换成占位');
+ok(cols(myt('2026-10-02T06:30:00')) === '{"1":"2026-10-05","2":"2026-10-06","3":"2026-10-07","4":"2026-10-08","5":"2026-10-09"}', '周五截单后 → 五列全是占位');
+ok(cols(myt('2026-10-02T06:30:00'), opened) === '{}', '下周已开放 → 没有占位列');
 
 // 以下走默认 nowMs = Date.now()，把时钟钉在周三凌晨。
 const realNow = Date.now;

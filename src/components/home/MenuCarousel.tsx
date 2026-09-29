@@ -8,7 +8,7 @@ import { MenuItem, dishImageAlt, DISH_CATEGORIES } from '@/data/weeklyMenu';
 import { useMenuRuntime } from '@/lib/useMenuRuntime';
 import { MenuDateInfo, formatMD, formatMDEn } from '@/lib/dateUtils';
 import { computeNextSpecial } from '@/lib/nextSpecial';
-import { nextOccurrenceDates, isWeekBookable } from '@/lib/menuResolve';
+import { notOpenWeekdayDates } from '@/lib/menuResolve';
 import { isDateClosed } from '@/data/blockedDates';
 import SoldOutNotice from '@/components/home/SoldOutNotice';
 import type { Locale } from '@/lib/locale';
@@ -74,13 +74,10 @@ export default function MenuCarousel({ locale, menuDates, onOpenAddOn, dishStock
     // 截单后那一列指向下周同一天；那一周老板还没「开放预订」→ 整列换成「即将公布」占位，
     // 不再卖沿用/复制来的菜。wd → 那一列的日期。日期相关 → 同 tomorrowsId 只在 ready 后算
     // （预渲染 HTML 永远是菜卡）。
-    const notOpen = useMemo(() => {
-        const out: Record<number, string> = {};
-        if (!ready) return out;
-        const dates = nextOccurrenceDates(Date.now(), isDateClosed);
-        for (const wd of [1, 2, 3, 4, 5]) if (dates[wd] && !isWeekBookable(dates[wd])) out[wd] = dates[wd];
-        return out;
-    }, [ready, menuVersion]);
+    const notOpen = useMemo<Record<number, string>>(
+        () => (ready ? notOpenWeekdayDates(isDateClosed) : {}),
+        [ready, menuVersion],
+    );
     // 老板把某天排空（当天不卖特餐）→ 那列照旧不显示；未开放的周即使排空也显示占位。
     const visibleDays = groups.days.filter(g => g.dishes.length > 0 || notOpen[g.wd]);
     const ymdLabel = (ymd: string) => {
