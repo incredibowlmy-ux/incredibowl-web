@@ -6,8 +6,9 @@
 /** 称呼按顾客名字来；没名字就只写 Hi，别出现「Hi 匿名」。 */
 export function etaMessage(name: string): string {
     const hi = name.trim() ? `Hi ${name.trim()}` : 'Hi';
-    return `${hi}！我是 Incredibowl 🛵 您的餐点大约还有 10 分钟就送到了，请留意电话哦～\n\n`
-        + `${hi}! Incredibowl here 🛵 Your meal will arrive in about 10 minutes. Please keep your phone nearby. Thank you!`;
+    // 署名 Wei Ting —— 老板 09-30 要求消息里带上她自己的名字
+    return `${hi}！我是 Incredibowl 的 Wei Ting 🛵 您的餐点大约还有 10 分钟就送到了，请留意电话哦～\n\n`
+        + `${hi}! Wei Ting from Incredibowl here 🛵 Your meal will arrive in about 10 minutes. Please keep your phone nearby. Thank you!`;
 }
 
 /**

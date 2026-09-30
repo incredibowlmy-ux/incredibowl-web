@@ -25,6 +25,7 @@ console.log(`\n${msg}\n`);
 ok('中文段含「大约还有 10 分钟就送到了」', msg.includes('大约还有 10 分钟就送到了'));
 ok('英文段含「about 10 minutes」', msg.includes('about 10 minutes'));
 ok('两段都称呼名字', (msg.match(/Hi Amy/g) || []).length === 2);
+ok('两段都署名 Wei Ting', msg.includes('我是 Incredibowl 的 Wei Ting') && msg.includes('Wei Ting from Incredibowl here'));
 ok('没名字 → 只写 Hi，不出现 undefined/匿名', etaMessage('  ').startsWith('Hi！') && !/undefined|匿名/.test(etaMessage('')));
 
 console.log('\n【B】链接往返解码');
