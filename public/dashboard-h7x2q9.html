@@ -11675,9 +11675,9 @@ incredibowl.my`,
             // Render the per-dish ingredient list (with cook-once dishes marked 全天).
             // ingMeal = { groups:[{dish,servings,allDay,text}], addOnText } from the server, or null.
             // dayTotals = 全天结构化食材合计（毛豆/玉米/樱桃番茄行的数据源），可为空。
-            // gifts = 本餐段的新客名单 [{name,meal}]（/api/admin/daily-prep 的 newCustomers）。
+            // gifts = 本餐段的新客名单 [{name,meal,qty}]（/api/admin/daily-prep 的 newCustomers；qty = 每碗主菜一份，旧接口无 qty 当 1）。
             // 赠品那份料已经算进 addOnText / dayTotals 了，这一行是告诉人「放进谁的碗」。
-            // loyalty = 本餐段的回头客赠品名单（/api/admin/daily-prep 的 loyaltyGifts，每 3 / 5 个配送日一份）。
+            // loyalty = 本餐段的回头客赠品名单（/api/admin/daily-prep 的 loyaltyGifts，每 3 / 5 个配送日一次，qty = 那张单每碗主菜一份）。
             function renderIngredients(ingMeal, dayTotals, gifts, comboByDish, loyalty) {
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
@@ -11709,10 +11709,10 @@ incredibowl.my`,
                 const riceRow = staples ? `<div class="ing-row">${staples}</div>` : '';
                 const addOnRow = hasAddOn ? `<div class="ing-row"><b class="ing-d">加料</b> ${escP(ingMeal.addOnText)}</div>` : '';
                 const giftRow = giftList.length
-                    ? `<div class="ing-row"><b class="ing-d">🎁 新客赠送（薯煎蛋B）</b> ${giftList.map(g => escP(g.name)).join(' · ')}</div>`
+                    ? `<div class="ing-row"><b class="ing-d">🎁 新客赠送（薯煎蛋B）</b> ${giftList.map(g => escP(g.name) + ((g.qty || 1) > 1 ? ` ×${g.qty}` : '')).join(' · ')}</div>`
                     : '';
                 const loyaltyRow = loyaltyList.length
-                    ? `<div class="ing-row"><b class="ing-d">🎁 回头客赠送（薯煎蛋B）</b> ${loyaltyList.map(g => escP(g.name)).join(' · ')}</div>`
+                    ? `<div class="ing-row"><b class="ing-d">🎁 回头客赠送（薯煎蛋B）</b> ${loyaltyList.map(g => escP(g.name) + ((g.qty || 1) > 1 ? ` ×${g.qty}` : '')).join(' · ')}</div>`
                     : '';
                 // 老板指定：全天合计行卡在「白饭（统一煮）」和「加料」两行中间。
                 return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}${giftRow}${loyaltyRow}</div>`;
@@ -11802,7 +11802,7 @@ incredibowl.my`,
             function mealSection(title, orders, ingMeal, dayTotals, gifts, loyalty) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
-                const agg = aggregate(sorted, (gifts || []).length + (loyalty || []).length);
+                const agg = aggregate(sorted, [...(gifts || []), ...(loyalty || [])].reduce((n, g) => n + (g.qty || 1), 0));
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
                 const ingHtml = renderIngredients(ingMeal, dayTotals, gifts, collectComboByDish(sorted), loyalty);
                 return `<section class="meal">
@@ -11835,12 +11835,12 @@ incredibowl.my`,
                 // 而这边还有「其他/未分类」段，光靠餐段行会漏掉那种单。
                 const gifts = (ing && Array.isArray(ing.newCustomers)) ? ing.newCustomers : [];
                 const giftBanner = gifts.length
-                    ? `<div class="giftbar">🎁 新客首单赠送 · 每人一份马铃薯煎蛋B：${gifts.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）')).join('、')}</div>`
+                    ? `<div class="giftbar">🎁 新客首单赠送 · 每碗主菜一份马铃薯煎蛋B：${gifts.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）') + ((g.qty || 1) > 1 ? `×${g.qty}` : '')).join('、')}</div>`
                     : '';
                 // 回头客赠品（每 3 / 5 个配送日一份，客人不知道）—— 同样横幅兜底 + 餐段内一行。
                 const loyalty = (ing && Array.isArray(ing.loyaltyGifts)) ? ing.loyaltyGifts : [];
                 const loyaltyBanner = loyalty.length
-                    ? `<div class="giftbar">🎁 回头客赠送 · 每人一份马铃薯煎蛋B：${loyalty.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）')).join('、')}</div>`
+                    ? `<div class="giftbar">🎁 回头客赠送 · 每碗主菜一份马铃薯煎蛋B：${loyalty.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）') + ((g.qty || 1) > 1 ? `×${g.qty}` : '')).join('、')}</div>`
                     : '';
                 const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals, gifts.filter(g => g.meal !== 'dinner'), loyalty.filter(g => g.meal !== 'dinner'))
                     + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals, gifts.filter(g => g.meal === 'dinner'), loyalty.filter(g => g.meal === 'dinner'))

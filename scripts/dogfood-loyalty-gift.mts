@@ -11,7 +11,7 @@ import {
   LOYALTY_GIFT_SINCE, type LoyaltyCandidate, type LoyaltyType,
 } from '@/lib/loyaltyGift';
 import { selectFirstOrderIds } from '@/lib/newCustomerGift';
-import { aggregateIngredients, buildDailyPrepIngredients, type PrepOrder } from '@/lib/prepIngredients';
+import { aggregateIngredients, buildDailyPrepIngredients, giftServingsOf, type PrepOrder } from '@/lib/prepIngredients';
 import { LOYALTY_GIFT_SOURCE, NEW_CUSTOMER_GIFT_SOURCE } from '@/data/dishIngredients';
 
 let pass = 0, fail = 0;
@@ -111,20 +111,25 @@ console.log('\n=== 7. 稳定性：输入顺序打乱结果不变 ===');
   eq('乱序 = 顺序', ids(selectLoyaltyGiftIds(shuffled)), ids(selectLoyaltyGiftIds(list)));
 }
 
-console.log('\n=== 8. 聚合：赠品一份薯煎蛋B，带来源标签 ===');
+console.log('\n=== 8. 聚合：赠品按主菜碗数（每碗一份薯煎蛋B，老板 2026-10-01），带来源标签 ===');
 {
   const base: PrepOrder = { mealType: 'lunch', items: [{ name: '__不存在的菜__', quantity: 2 }] };
+  const oneBowl: PrepOrder = { mealType: 'lunch', items: [{ name: '__不存在的菜__', quantity: 1 }] };
   const pick = (o: PrepOrder[], n: string) => aggregateIngredients(o).lines.find(l => l.name === n)?.qty ?? 0;
   eq('无标记 → 0 马铃薯', pick([base], '马铃薯'), 0);
-  eq('回头客 → 37.5g（按人不按碗）', pick([{ ...base, isLoyaltyGift: true }], '马铃薯'), 37.5);
-  eq('回头客 → 0.5 颗蛋', pick([{ ...base, isLoyaltyGift: true }], '鸡蛋(生)'), 0.5);
-  const { lunch } = buildDailyPrepIngredients([{ ...base, isLoyaltyGift: true }, { ...base, isLoyaltyGift: true }], []);
-  ok(`备餐单加料行带「${LOYALTY_GIFT_SOURCE} ×2」`, lunch.addOnText.includes(`${LOYALTY_GIFT_SOURCE} ×2`));
-  // 同一天一位新客 + 一位回头客（两张不同的单）→ 两个来源各自成行，料共两份
+  eq('回头客 1 碗 → 37.5g', pick([{ ...oneBowl, isLoyaltyGift: true }], '马铃薯'), 37.5);
+  eq('回头客 2 碗 → 75g（一单两碗送两份）', pick([{ ...base, isLoyaltyGift: true }], '马铃薯'), 75);
+  eq('回头客 2 碗 → 1 颗蛋', pick([{ ...base, isLoyaltyGift: true }], '鸡蛋(生)'), 1);
+  eq('回头客 ↳ 加料不算碗', giftServingsOf({ isLoyaltyGift: true, items: [
+    { name: '__不存在的菜__', quantity: 1 }, { name: '↳ 荷包蛋', quantity: 3 },
+  ] }), 1);
+  const { lunch } = buildDailyPrepIngredients([{ ...oneBowl, isLoyaltyGift: true }, { ...oneBowl, isLoyaltyGift: true }], []);
+  ok(`两位回头客各 1 碗 → 备餐单加料行带「${LOYALTY_GIFT_SOURCE} ×2」`, lunch.addOnText.includes(`${LOYALTY_GIFT_SOURCE} ×2`));
+  // 同一天一位新客 + 一位回头客（两张不同的单，各 2 碗）→ 两个来源各自成行，各送 2 份
   const day2 = [{ ...base, isNewCustomer: true }, { ...base, isLoyaltyGift: true }];
-  eq('同天一位新客 + 一位回头客 → 共 75g', pick(day2, '马铃薯'), 75);
+  eq('同天一位新客(2碗) + 一位回头客(2碗) → 共 150g', pick(day2, '马铃薯'), 150);
   const text = buildDailyPrepIngredients(day2, []).lunch.addOnText;
-  ok('两个来源标签各占一行', text.includes(`${NEW_CUSTOMER_GIFT_SOURCE} ×1`) && text.includes(`${LOYALTY_GIFT_SOURCE} ×1`));
+  ok('两个来源标签各占一行', text.includes(`${NEW_CUSTOMER_GIFT_SOURCE} ×2`) && text.includes(`${LOYALTY_GIFT_SOURCE} ×2`));
 }
 
 console.log('\n=== 9. 新客首单与回头客赠品永不落在同一张单 ===');

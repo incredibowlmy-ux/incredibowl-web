@@ -51,14 +51,38 @@ export interface PrepOrder {
   isLoyaltyGift?: boolean;
 }
 
+/** 一张单的主菜碗数 = 非「↳」行的份数合计（与 packagingLines 的 1000ml 碗同口径）。 */
+export function mainBowlsOf(o: { items?: { name: string; quantity?: number }[] }): number {
+  let n = 0;
+  for (const it of o.items || []) {
+    const qty = it.quantity || 0;
+    if (qty > 0 && !isAddOnItem(it.name)) n += qty;
+  }
+  return n;
+}
+
 /**
- * 这一单要多备的赠品来源（一份薯煎蛋B）。新客与回头客**不会落在同一张单**：
- * 首单是那个人的第 1 个配送日，回头客赠品最早在第 3 个 —— 见 dogfood-loyalty-gift 第 9 节。
+ * 这张赠品单送几份薯煎蛋B：**每碗主菜一份**（老板 2026-10-01 改：一单两碗就送两份），
+ * 新客首单与回头客赠品同一规则。只点加料没点主菜的单也照送一份。没有赠品标记 → 0。
+ * 回头客「哪张单送」仍由 loyaltyGift.ts 决定（一个配送日只挑一张），这里只管那张送几份。
  */
-function prepGiftsOf(o: PrepOrder): string[] {
-  const out: string[] = [];
-  if (o.isNewCustomer) out.push(NEW_CUSTOMER_GIFT_SOURCE);
-  if (o.isLoyaltyGift) out.push(LOYALTY_GIFT_SOURCE);
+export function giftServingsOf(o: {
+  isNewCustomer?: boolean;
+  isLoyaltyGift?: boolean;
+  items?: { name: string; quantity?: number }[];
+}): number {
+  return o.isNewCustomer || o.isLoyaltyGift ? Math.max(1, mainBowlsOf(o)) : 0;
+}
+
+/**
+ * 这一单要多备的赠品（来源 + 份数）。
+ * 新客与回头客**不会落在同一张单**：首单是那个人的第 1 个配送日，回头客赠品最早在
+ * 第 3 个 —— 见 dogfood-loyalty-gift 第 9 节。
+ */
+function prepGiftsOf(o: PrepOrder): { source: string; servings: number }[] {
+  const out: { source: string; servings: number }[] = [];
+  if (o.isNewCustomer) out.push({ source: NEW_CUSTOMER_GIFT_SOURCE, servings: giftServingsOf(o) });
+  if (o.isLoyaltyGift) out.push({ source: LOYALTY_GIFT_SOURCE, servings: giftServingsOf(o) });
   return out;
 }
 
@@ -136,8 +160,8 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
         }
       }
     }
-    // 赠品：每个标记一份，与点了几碗无关。
-    const gifts = prepGiftsOf(o).length;
+    // 赠品：新客首单 / 回头客都按主菜碗数，每碗一份。
+    const gifts = prepGiftsOf(o).reduce((n, g) => n + g.servings, 0);
     if (gifts) NEW_CUSTOMER_GIFT_RECIPE.forEach(line => bump(line, gifts));
   }
   const lines = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'));
@@ -363,7 +387,7 @@ function aggregateByDish(orders: PrepOrder[]): {
     }
     // 赠品挂进「加料」桶，带自己的来源标签 —— 与客人真花钱加的料分得开，备餐单上读作
     // 「新客赠送·薯煎蛋B ×1（马铃薯 37.5g · …）」/「回头客赠送·薯煎蛋B ×2（…）」。
-    for (const src of prepGiftsOf(o)) addUnit(src, 1, NEW_CUSTOMER_GIFT_RECIPE);
+    for (const g of prepGiftsOf(o)) addUnit(g.source, g.servings, NEW_CUSTOMER_GIFT_RECIPE);
   }
   return { mains, addOns, rice, brownRice };
 }

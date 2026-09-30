@@ -3,14 +3,14 @@
  *
  * 两件事必须钉死，错了就是漏送 / 重复送 / 备错料：
  *   1. 判定 —— 谁是新客（电话优先归并、拆单只算一次、取消单不算历史、活动前不补送）
- *   2. 聚合 —— 赠品按「人」不按「碗」，且在备餐单上带得出来源标签
+ *   2. 聚合 —— 赠品按「主菜碗」算（一单两碗送两份，老板 2026-10-01），且在备餐单上带得出来源标签
  *
  * 跑法：node --import ./scripts/_register-alias.mjs scripts/dogfood-new-customer-gift.mts
  */
 import {
   selectFirstOrderIds, customerKeyOf, NEW_CUSTOMER_GIFT_SINCE, type Candidate,
 } from '@/lib/newCustomerGift';
-import { aggregateIngredients, buildDailyPrepIngredients, type PrepOrder } from '@/lib/prepIngredients';
+import { aggregateIngredients, buildDailyPrepIngredients, giftServingsOf, type PrepOrder } from '@/lib/prepIngredients';
 import { NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE } from '@/data/dishIngredients';
 
 let pass = 0, fail = 0;
@@ -94,7 +94,7 @@ console.log('\n=== 6. 认不出是谁的单不送（宁可漏，不乱送）==='
   eq('无电话无 uid → 跳过', ids(set), ['known']);
 }
 
-console.log('\n=== 7. 赠品按「人」算，不按「碗」算 ===');
+console.log('\n=== 7. 赠品按「主菜碗」算：一单两碗送两份（老板 2026-10-01）===');
 {
   const oneBowl: PrepOrder = { isNewCustomer: true, items: [{ name: '马铃薯炖花肉片', quantity: 1 }] };
   const threeBowls: PrepOrder = { isNewCustomer: true, items: [{ name: '马铃薯炖花肉片', quantity: 3 }] };
@@ -103,10 +103,28 @@ console.log('\n=== 7. 赠品按「人」算，不按「碗」算 ===');
   const eggOf = (o: PrepOrder) =>
     aggregateIngredients([o]).lines.find(l => l.name === '鸡蛋(生)')?.qty ?? 0;
 
-  // 主菜自带马铃薯 100g/份，赠品另加 37.5g（只加一次）
+  // 主菜自带马铃薯 100g/份，赠品每碗另加 37.5g
   eq('1 碗：100 + 37.5', potatoOf(oneBowl), 137.5);
-  eq('3 碗：300 + 37.5（不是 +112.5）', potatoOf(threeBowls), 337.5);
+  eq('3 碗：300 + 3×37.5', potatoOf(threeBowls), 412.5);
   eq('赠品的蛋 0.5 颗', eggOf(oneBowl), 0.5);
+  eq('3 碗 → 1.5 颗蛋', eggOf(threeBowls), 1.5);
+
+  // 两道不同主菜各 1 碗 + 网页 ↳ 加料行：加料不算碗
+  const twoDishes: PrepOrder = { isNewCustomer: true, items: [
+    { name: '豆酱焖排骨', quantity: 1 },
+    { name: '↳ 【优质碳水】加马铃薯 (90g)', quantity: 1 },
+    { name: '马铃薯炖花肉片', quantity: 1 },
+  ] };
+  eq('两道主菜各一碗 → 送 2 份', giftServingsOf(twoDishes), 2);
+  eq('只点加料的首单 → 仍送 1 份', giftServingsOf({ isNewCustomer: true, items: [{ name: '↳ 荷包蛋', quantity: 2 }] }), 1);
+  eq('不是新客 → 0 份', giftServingsOf({ items: [{ name: '豆酱焖排骨', quantity: 2 }] }), 0);
+  const { lunch } = buildDailyPrepIngredients(
+    [{ ...threeBowls, deliveryTime: '12:00' }], [],
+  );
+  ok(`备餐单加料行读作「${NEW_CUSTOMER_GIFT_SOURCE} ×3」`, lunch.addOnText.includes(`${NEW_CUSTOMER_GIFT_SOURCE} ×3`));
+  // 回头客赠品同一规则：3 碗送 3 份
+  eq('回头客 3 碗也送 3 份（300 + 3×37.5）',
+    potatoOf({ isLoyaltyGift: true, items: [{ name: '马铃薯炖花肉片', quantity: 3 }] }), 412.5);
 
   const notNew: PrepOrder = { items: [{ name: '马铃薯炖花肉片', quantity: 1 }] };
   eq('不是新客 → 一克都不多', potatoOf(notNew), 100);

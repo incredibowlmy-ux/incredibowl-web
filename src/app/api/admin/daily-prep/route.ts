@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { aggregateIngredients, buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
+import { aggregateIngredients, buildDailyPrepIngredients, isLunchOrder, giftServingsOf, PrepOrder } from '@/lib/prepIngredients';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
 import { loadLoyaltyGiftIds, loyaltyTypeOf } from '@/lib/loyaltyGift';
 import { NEW_CUSTOMER_GIFT_SOURCE, LOYALTY_GIFT_SOURCE } from '@/data/dishIngredients';
@@ -93,14 +93,14 @@ export async function POST(req: NextRequest) {
       }));
 
     // 谁是新客要报出来 —— 只知道「多备 37.5g 马铃薯」而不知道放进哪个碗，
-    // 这份料就送不出去。
+    // 这份料就送不出去。qty = 送几份（每碗主菜一份）。
     const newCustomers = orders
       .filter(o => o.isNewCustomer)
-      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner' }));
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', qty: giftServingsOf(o) }));
     // type: voucher = 餐券单（每 5 天）/ payg = 现金单（每 3 天）
     const loyaltyGifts = orders
       .filter(o => o.isLoyaltyGift)
-      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o) }));
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o), qty: giftServingsOf(o) }));
 
     const lunchOrders = orders.filter(isLunchOrder);
     const dinnerOrders = orders.filter(o => !isLunchOrder(o));

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDishShortName, getAddOnShortName } from '@/data/dishIngredients';
-import { aggregateIngredients, isLunchOrder } from '@/lib/prepIngredients';
+import { aggregateIngredients, isLunchOrder, giftServingsOf } from '@/lib/prepIngredients';
 import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
 import { loadLoyaltyGiftIds, loyaltyTypeOf } from '@/lib/loyaltyGift';
@@ -137,8 +137,8 @@ function aggregate(orders: FirestoreOrder[]): {
     }
     // 赠品也要做 → 进加料清单。碗妈 23:59 的 Telegram 预告只读 mains / addOns，
     // 不进这里她就不知道要多煎几份薯煎蛋B。
-    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_ADDON] = (addOnCounts[NEW_CUSTOMER_GIFT_ADDON] || 0) + 1;
-    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_ADDON] = (addOnCounts[LOYALTY_GIFT_ADDON] || 0) + 1;
+    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_ADDON] = (addOnCounts[NEW_CUSTOMER_GIFT_ADDON] || 0) + giftServingsOf(o);
+    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_ADDON] = (addOnCounts[LOYALTY_GIFT_ADDON] || 0) + giftServingsOf(o);
   }
   const mains = Object.entries(mainCounts).sort((a, b) => b[1] - a[1]);
   const addOns = Object.entries(addOnCounts).sort((a, b) => b[1] - a[1]);
@@ -340,8 +340,8 @@ function buildOrderMatrix(orders: FirestoreOrder[]): string {
     }
     // 新客赠品挂在「加料」这一列（表格最后一列，不参与对齐补白，所以 emoji
     // 不会把整张表撑歪）。碗妈照着这一行就知道哪个客人多配一份薯煎蛋B。
-    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_TAG] = 1;
-    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_TAG] = 1;
+    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_TAG] = giftServingsOf(o);
+    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_TAG] = giftServingsOf(o);
     rows.push({ name: o.userName || '客户', counts, addOns: addOnCounts });
   }
 
@@ -488,13 +488,13 @@ export async function GET(req: NextRequest) {
     // 新客名单单独列一行，碗妈不用在客户表里逐行找 🎁。
     const newCustomers = allOrders
       .filter(o => o.isNewCustomer)
-      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner' }));
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', qty: giftServingsOf(o) }));
     const newCustomerText = newCustomers.length
-      ? newCustomers.map(c => `${c.name}（${c.meal === 'lunch' ? '午' : '晚'}）`).join('、')
+      ? newCustomers.map(c => `${c.name}（${c.meal === 'lunch' ? '午' : '晚'}）${c.qty > 1 ? `×${c.qty}` : ''}`).join('、')
       : '无';
     const loyaltyGifts = allOrders
       .filter(o => o.isLoyaltyGift)
-      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o) }));
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o), qty: giftServingsOf(o) }));
 
     return NextResponse.json({
       date,
