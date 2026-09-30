@@ -656,15 +656,15 @@ const DISH_CATALOG: DishData[] = [
         // 份量老板 09-26 拍板「同豆酱焖排骨」：排骨 180g + 西兰花 50g + 白饭 80g，
         //   无蛋无马铃薯 → 共用 #28 排骨两档套餐；用 150mm 餐盒。
         //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
-        // 无实拍图，emoji 占位防 hero 404（有图后换 /tausee_pork_ribs.webp，并提醒老板在
-        //   Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 2026-09-30 接上主图（tausee_pork_ribs.webp，1024² webp q82，源图 Gpt/豆si焖排骨.jpeg）；
+        //   仍需老板在 Google Sheet dishes 表加一行给 chatbot 发图。⚠️ 图里没有西兰花（配方有 50g）。
         // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介为初稿，待老板审定。
         id: 39,
         category: "pork",
         name: "家乡豆豉焖排骨",
         nameEn: "Hometown Tau See Pork Ribs",
         price: 19.90,
-        image: "🍖",
+        image: "/tausee_pork_ribs.webp",
         hidden: true,
         tags: ["家乡豆豉", "焖煮入味", "骨边肉香", "下饭神器"],
         tagsEn: ["Hometown tau see", "Slow-braised", "Fall-off-the-bone", "Made for rice"],
