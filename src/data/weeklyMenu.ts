@@ -691,6 +691,27 @@ const DISH_CATALOG: DishData[] = [
         desc: "鸡肉和土豆一锅慢火焖煮，土豆吸饱了鸡汁，软糯下饭——就是家里常吃的那一味。",
         descEn: "Chicken and potatoes braised together low and slow — the potatoes soak up every drop of the gravy. Simple, homely and made for rice."
     },
+    {
+        // 新菜 2026-09-30 入系统（老板从 10 个名字里选定 #10，定价 RM19.90，不需餐券补差价）。
+        // 碗里：宫保苏东 + 白饭，无配菜无蛋无马铃薯 → 专属两套「宫保下饭套 / 宫保苏东干饭套」；用 150mm 餐盒。
+        // 老板 09-30 确认：不放坚果（花生/腰果）、只有一点点辣。
+        //   hidden 待命：push 上线后老板在 dashboard「菜单排期」页排期并取消「未上架」。
+        // 份量老板 09-30 说稍后给：苏东几 g、宫保配料各几 g 都待补（见 dishIngredients.ts）。
+        // 无实拍图，emoji 占位防 hero 404（有图后换 /kung_pao_sotong.webp，并提醒老板在
+        //   Google Sheet dishes 表加一行给 chatbot 发图）。
+        // 蛋白克数等营养标签待碗妈提供后再补（诚实原则，绝不编数字）；简介/标签为初稿，待老板审定。
+        id: 41,
+        category: "seafood",
+        name: "招牌宫保苏东饭",
+        nameEn: "Signature Kung Pao Sotong Rice",
+        price: 19.90,
+        image: "🦑",
+        hidden: true,
+        tags: ["招牌宫保酱", "苏东弹牙", "微微辣", "下饭神器"],
+        tagsEn: ["Signature kung pao sauce", "Springy sotong", "Just a hint of heat", "Made for rice"],
+        desc: "苏东裹上招牌宫保酱汁，咸香带甜、只有一点点辣，不放花生腰果——酱汁拌饭一流。",
+        descEn: "Sotong (squid) tossed in our signature kung pao sauce — savoury-sweet with just a hint of heat, and no peanuts or cashews. A sauce made for rice."
+    },
 ];
 
 // ═══════════════════════════════════════════════════════════════════

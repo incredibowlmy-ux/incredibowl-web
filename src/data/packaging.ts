@@ -58,6 +58,7 @@ export const TRAY_DISH_NAMES: ReadonlySet<string> = new Set([
   '家乡豆豉焖排骨',         // id 39（老板 2026-09-26 点名用餐盒）
   '家常土豆焖鸡',           // id 40（老板 2026-09-26 点名用餐盒）
   '家常土豆焖五花肉',       // id 36（老板 2026-09-17 点名用餐盒）
+  '招牌宫保苏东饭',         // id 41（老板 2026-09-30 点名用餐盒）
 ]);
 
 /** 用 750ml 碗的加料成品 label（网页 label 空间，与 addOnRecipes / COMBO_COMPONENTS 同源）。 */

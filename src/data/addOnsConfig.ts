@@ -237,6 +237,10 @@ export const ADD_ON_PRICES: Record<string, number> = {
   // #12 山药云耳 / #3 希腊鸡胸 —— 原有加量三件套保留，补一档下饭套
   'yam-rice-king-combo': 12.90,              // 山药下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
   'greek-rice-king-combo': 12.90,            // 柠香鸡胸下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+
+  // ─── 2026-09-30 新菜 #41 招牌宫保苏东饭（碗里没菜没蛋没马铃薯）─────────
+  'kungpao-sotong-rice-king-combo': 12.90,   // 宫保下饭套：西兰花炒蛋+荷包蛋+加饭（原价 15.40）
+  'kungpao-sotong-rice-combo': 5.90,         // 宫保苏东干饭套：荷包蛋+加饭+毛豆25g（原价 7.00）
 };
 
 /**

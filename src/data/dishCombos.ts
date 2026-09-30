@@ -903,6 +903,31 @@ export const DISH_COMBOS: Record<number, DishComboConfig> = {
         ],
     },
 
+    // Signature Kung Pao Sotong Rice (id: 41)。碗里没菜没蛋没马铃薯（老板 09-30 确认）→ 下饭套 + 干饭套。
+    // 卖点 quote 为初稿，待老板审定（老板 09-30：只有一点点辣、不放坚果）。
+    41: {
+        combos: [
+            {
+                sectionId: 'kungpao-sotong-rice-king-combo-section',
+                title: '✨ 宫保下饭套',
+                titleEn: 'Kung Pao Rice King Set (+ RM 12.90)',
+                item: { id: 'kungpao-sotong-rice-king-combo', name: '宫保下饭套 (原价 RM 15.40)', nameEn: 'Kung Pao Rice King Set', fallback: 12.90 },
+                parts: RICE_KING_PARTS,
+                quote: '"宫保酱汁咸香微辣，最缺一口青——蒜香西兰花炒蛋补上，再戳破流心荷包蛋捞饭，酱汁一滴都不剩。"',
+                quoteEn: '"Savoury kung pao sauce with a hint of heat just needs greens — garlicky broccoli-egg and a runny yolk over extra rice."',
+            },
+            {
+                sectionId: 'kungpao-sotong-rice-combo-section',
+                title: '✨ 宫保苏东干饭套',
+                titleEn: 'Kung Pao Sotong Rice Set (+ RM 5.90)',
+                item: { id: 'kungpao-sotong-rice-combo', name: '宫保苏东干饭套 (原价 RM 7.00)', nameEn: 'Kung Pao Sotong Rice Set', fallback: 5.90 },
+                parts: RICE_BOWL_PARTS,
+                quote: '"宫保酱汁太下饭——多一碗饭、一颗荷包蛋、一把清甜毛豆，苏东吃完饭也刚好吃完。"',
+                quoteEn: '"That kung pao sauce begs for rice — extra rice, a sunny-side-up egg and sweet edamame to finish with the sotong."',
+            },
+        ],
+    },
+
     // Sambal Petai Prawn & Pork Belly (id: 22，暂别中)。碗里没菜没蛋 → A 标准下饭套 + 干饭套。
     22: {
         combos: [
