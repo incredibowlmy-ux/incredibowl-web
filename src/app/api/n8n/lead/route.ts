@@ -269,12 +269,16 @@ export async function POST(req: NextRequest) {
     if (action === 'alert') {
       const alertId = String(body?.alertMsgId || '').trim();
       if (!alertId || alertId === 'unknown') return NextResponse.json({ ok: false, error: '缺 alertMsgId' }, { status: 200 });
+      const kind = String(body?.kind || 'escalate').slice(0, 40);
       await db.collection(ALERTS).doc(alertId).set({
         phone,
         customerMsg: String(body?.customerMsg || '').slice(0, 1000),
-        kind: String(body?.kind || 'escalate').slice(0, 40),
+        kind,
         ts: now,
       });
+      // 同时在 lead 上留个记号：收件箱列表靠它给「bot 求救」的对话打红标、置顶（见 waInbox.needsReplyWhy）。
+      // 以前求救只发到老板手机，收件箱里看不出哪条是 bot 搞不定的。记不上不影响警报本身。
+      await ref.set({ alertAtMs: now, alertKind: kind }, { merge: true }).catch(() => { /* fail-open */ });
       return NextResponse.json({ ok: true, alertId });
     }
 

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import {
   lastInboundTs, windowRemainingMs, WA_WINDOW_MS, sendText, sendMedia, sendInteractive,
   markRead, sendTemplate, buildInteractive, isConfigured,
-  WA_BUTTON_MAX, WA_LIST_ROW_MAX,
+  WA_BUTTON_MAX, WA_LIST_ROW_MAX, uploadMedia, WA_UPLOAD_MAX_BYTES,
 } from '../src/lib/waSend';
 
 let n = 0;
@@ -79,6 +79,60 @@ ok(/最多 10 项/.test(buildInteractive({ body: 'x', list: { button: '选', row
 ok(/超过 24 字/.test(buildInteractive({ body: 'x', list: { button: '选', rows: [{ id: 'r', title: 'R'.repeat(25) }] } }) as string), '列表项标题超 24 字 → 人话错误');
 ok(/说明超过 72 字/.test(buildInteractive({ body: 'x', list: { button: '选', rows: [{ id: 'r', title: 'R', description: 'D'.repeat(73) }] } }) as string), '列表项说明超 72 字 → 人话错误');
 ok((buildInteractive({ body: 'x', list: { button: '这个按钮文字非常非常非常长超过二十个字', rows: [{ id: 'r', title: 'R' }] } }) as any).action.button.length <= 20, '列表按钮文字截断到 20');
+
+// ── 上传文件换 media id，再按 id 发（收件箱「上传发图」）──────────
+// fetch 换成假的：本机没有真 token，这里验的是「请求拼对了、错误翻译成人话、坏输入不打网络」。
+{
+  delete process.env.WA_ACCESS_TOKEN;
+  const none = await uploadMedia(new Uint8Array([1, 2, 3]), 'image/jpeg', 'a.jpg');
+  ok(none.ok === false && none.configured === false, '未配置时 uploadMedia 不打 Meta');
+
+  process.env.WA_ACCESS_TOKEN = 'test-token';
+  const realFetch = globalThis.fetch;
+  const calls: Array<{ url: string; init: any }> = [];
+  let reply: { status: number; json: any } = { status: 200, json: { id: '987654321012345' } };
+  globalThis.fetch = (async (url: any, init: any) => {
+    calls.push({ url: String(url), init });
+    return new Response(JSON.stringify(reply.json), { status: reply.status, headers: { 'Content-Type': 'application/json' } });
+  }) as typeof fetch;
+  try {
+    const up = await uploadMedia(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]), 'image/jpeg', 'photo.jpg');
+    ok(up.ok === true && up.id === '987654321012345', '上传成功 → 拿到 media id');
+    ok(/\/media$/.test(calls[0].url) && calls[0].init.method === 'POST', '打的是 /{phone-id}/media');
+    ok(calls[0].init.headers.Authorization === 'Bearer test-token', '带 token');
+    const form = calls[0].init.body as FormData;
+    ok(form.get('messaging_product') === 'whatsapp' && form.get('type') === 'image/jpeg', 'multipart 字段齐');
+    const f = form.get('file') as File;
+    ok(f && f.size === 4 && f.type === 'image/jpeg' && f.name === 'photo.jpg', '文件本体、类型、文件名都带上');
+
+    calls.length = 0;
+    ok((await uploadMedia(new Uint8Array([1]), 'image/webp', 'a.webp')).error?.includes('JPG') === true, 'webp → 人话拒绝');
+    ok((await uploadMedia(new Uint8Array(0), 'image/png', 'a.png')).ok === false, '空文件拒绝');
+    ok(/太大/.test((await uploadMedia(new Uint8Array(WA_UPLOAD_MAX_BYTES + 1), 'application/pdf', 'a.pdf')).error || ''), '超过上限 → 人话拒绝');
+    ok(calls.length === 0, '坏输入一律不打网络');
+
+    reply = { status: 400, json: { error: { message: 'Unsupported file' } } };
+    const bad = await uploadMedia(new Uint8Array([1]), 'application/pdf', 'a.pdf');
+    ok(bad.ok === false && /Unsupported file/.test(bad.error || ''), 'Meta 拒收 → 带原因');
+    reply = { status: 200, json: {} };
+    ok((await uploadMedia(new Uint8Array([1]), 'image/png', 'a.png')).ok === false, '200 但没有 id → 当失败');
+
+    // 按 id 发
+    calls.length = 0;
+    reply = { status: 200, json: { messages: [{ id: 'wamid.UP1' }] } };
+    const byId = await sendMedia('60123456789', { kind: 'image', id: '987654321012345', caption: '今天的出品' });
+    const sentBody = JSON.parse(calls[0].init.body);
+    ok(byId.ok === true && byId.msgId === 'wamid.UP1', '按 media id 发成功');
+    ok(sentBody.type === 'image' && sentBody.image.id === '987654321012345' && !('link' in sentBody.image) && sentBody.image.caption === '今天的出品', '消息体用 id 不用 link');
+    calls.length = 0;
+    ok((await sendMedia('60123456789', { kind: 'image', id: 'not-an-id' })).ok === false && calls.length === 0, 'id 格式不对 → 本地拒绝');
+    ok((await sendMedia('60123456789', { kind: 'image' })).ok === false && calls.length === 0, 'link 和 id 都没有 → 本地拒绝');
+    const pdf = await sendMedia('60123456789', { kind: 'document', id: '987654321012345', filename: 'menu.pdf' });
+    ok(pdf.ok === true && JSON.parse(calls[0].init.body).document.filename === 'menu.pdf', '文件按 id 发，带文件名');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
 
 delete process.env.WA_ACCESS_TOKEN;
 console.log(`✓ dogfood-wa-send ${n} 条全过`);

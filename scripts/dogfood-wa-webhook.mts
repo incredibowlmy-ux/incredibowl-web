@@ -126,6 +126,9 @@ console.log('\n=== 4. 对话记录（turns）===');
   check('按钮回复 → title', describeInboundForTurn({ type: 'interactive', interactive: { button_reply: { id: 'btn_order', title: '直接下单 🛒' } } }) === '直接下单 🛒');
   check('图片 → [图片] + caption', describeInboundForTurn({ type: 'image', image: { caption: '转账了' } }) === '[图片] 转账了');
   check('定位 → [定位] 地名', describeInboundForTurn({ type: 'location', location: { name: 'Pearl Suria' } }) === '[定位] Pearl Suria');
+  check('定位带经纬度 → 附地图链接', describeInboundForTurn({ type: 'location', location: { name: 'Pearl Suria', latitude: 3.0731, longitude: 101.6712 } }) === '[定位] Pearl Suria https://maps.google.com/?q=3.0731,101.6712');
+  check('裸 pin（没有地名）→ 只有链接也能点', describeInboundForTurn({ type: 'location', location: { latitude: 3.0731, longitude: 101.6712 } }) === '[定位] https://maps.google.com/?q=3.0731,101.6712');
+  check('视频 → [视频] + caption', describeInboundForTurn({ type: 'video', video: { caption: '今天的出品' } }) === '[视频] 今天的出品');
   check('reaction / sticker / contacts 属于静默类型', SILENT_TYPES.has('reaction') && SILENT_TYPES.has('sticker') && SILENT_TYPES.has('contacts'));
   check('audio / location / image / document 不静默', !SILENT_TYPES.has('audio') && !SILENT_TYPES.has('location') && !SILENT_TYPES.has('image') && !SILENT_TYPES.has('document'));
 

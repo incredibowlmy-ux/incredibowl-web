@@ -692,6 +692,8 @@
         .inbox-conn { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(245,158,11,0.14); color: #B45309; }
         .inbox-seg { flex-wrap: wrap; }
         .inbox-seg button { font-size: 11px; padding: 4px 8px; }
+        .inbox-cnt { margin-left: 3px; font-weight: 600; opacity: 0.75; font-variant-numeric: tabular-nums; }
+        .inbox-cnt.hot { color: var(--danger); opacity: 1; }
         .inbox-list { flex: 1; overflow-y: auto; }
         .inbox-row { display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); cursor: pointer; align-items: flex-start; }
         .inbox-row:hover { background: var(--bg-subtle); }
@@ -734,6 +736,14 @@
         .inbox-quote { border-left: 3px solid var(--border-strong); padding: 2px 0 2px 7px; margin-bottom: 5px; font-size: 11px; color: var(--text-muted); max-height: 34px; overflow: hidden; }
         .inbox-media { display: block; max-width: 240px; max-height: 240px; border-radius: 8px; margin: 2px 0 4px; cursor: pointer; background: var(--bg-elev); }
         .inbox-media-file { display: inline-block; font-size: 12px; padding: 4px 8px; border-radius: 6px; background: var(--bg-elev); border: 1px solid var(--border); margin: 2px 0 4px; }
+        button.inbox-media-file, a.inbox-media-file { cursor: pointer; font-family: inherit; color: inherit; text-decoration: none; }
+        button.inbox-media-file:hover, a.inbox-media-file:hover { border-color: var(--primary); }
+        .inbox-bubble audio, .inbox-bubble video { display: block; max-width: 260px; margin: 2px 0 4px; border-radius: 8px; }
+        .inbox-bubble a:not(.inbox-media-file) { color: var(--primary); text-decoration: underline; word-break: break-all; }
+        .inbox-chip.todo { background: var(--danger); color: #fff; font-weight: 700; }
+        .inbox-order { padding: 6px 0; border-bottom: 1px solid var(--border); line-height: 1.45; }
+        .inbox-order.open { color: #B45309; }
+        .inbox-order small { color: var(--text-muted); }
         .inbox-attach { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-elev); }
         .inbox-emoji { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; background: var(--bg-elev); display: flex; flex-wrap: wrap; gap: 2px; }
         .inbox-emoji .inbox-emoji-label { width: 100%; font-size: 11px; color: var(--text-muted); padding: 2px 4px 0; }
@@ -1896,12 +1906,13 @@
                                 </div>
                                 <div id="inboxConn" class="inbox-conn" hidden></div>
                                 <div class="seg inbox-seg" id="inboxFilter">
-                                    <button class="active" data-f="all">全部</button>
-                                    <button data-f="unread">未读 <span id="inboxUnreadCount"></span></button>
-                                    <button data-f="human">人工中</button>
-                                    <button data-f="bot">bot</button>
-                                    <button data-f="ordered">已成交</button>
-                                    <button data-f="closed">已关闭</button>
+                                    <button class="active" data-f="all">全部<span class="inbox-cnt" data-cnt="all"></span></button>
+                                    <button data-f="todo" title="在等你本人回：人工接管中客户说了最后一句 / bot 求救 / 客户发来图片文件">待回复<span class="inbox-cnt" data-cnt="todo"></span></button>
+                                    <button data-f="unread">未读<span class="inbox-cnt" data-cnt="unread"></span></button>
+                                    <button data-f="human">人工中<span class="inbox-cnt" data-cnt="human"></span></button>
+                                    <button data-f="bot">bot<span class="inbox-cnt" data-cnt="bot"></span></button>
+                                    <button data-f="ordered">已成交<span class="inbox-cnt" data-cnt="ordered"></span></button>
+                                    <button data-f="closed">已关闭<span class="inbox-cnt" data-cnt="closed"></span></button>
                                 </div>
                             </div>
                             <div id="inboxList" class="inbox-list"><div class="inbox-thread-empty">加载中…</div></div>
@@ -1918,12 +1929,16 @@
                                     <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="buttons" title="发按钮（客户点一下就回）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="6" rx="2"/><rect x="3" y="13" width="18" height="6" rx="2"/></svg></button>
                                     <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="list" title="发列表（最多 10 项）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
                                     <button class="btn ghost sm inbox-icon-btn" id="inboxEmojiBtn" title="插入表情"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                                    <button class="btn ghost sm inbox-icon-btn" id="inboxLinkBtn" title="插入下单链接（带这条对话的标识：客户点了、下了单都归得回来）" aria-label="插入下单链接"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
                                     <span class="inbox-window" id="inboxWindow"></span>
                                 </div>
                                 <div id="inboxEmoji" class="inbox-emoji" hidden></div>
                                 <div id="inboxQrEditor" hidden>
+                                    <div class="inbox-attach-title">快捷回复（每行一条；所有设备共用）</div>
                                     <textarea id="inboxQrText" placeholder="每行一条快捷回复"></textarea>
-                                    <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存快捷回复</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
+                                    <div class="inbox-attach-title" style="margin-top:6px">常用图片（每行「名称 | https 链接」；出现在 📎 的下拉里）</div>
+                                    <textarea id="inboxPresetText" style="min-height:48px" placeholder="付款 QR（DuitNow） | https://www.incredibowl.my/duitnow_qr.png"></textarea>
+                                    <div class="inbox-composer-row" style="margin-top:6px"><button class="btn sm" id="inboxQrSave">保存</button><button class="btn ghost sm" id="inboxQrCancel">取消</button></div>
                                 </div>
                                 <div id="inboxReplyBar" class="inbox-reply-bar" hidden><span id="inboxReplyText" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span><button class="btn ghost sm inbox-icon-btn" id="inboxReplyCancel" title="取消引用"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
                                 <div id="inboxAttach" class="inbox-attach" hidden></div>
@@ -9040,6 +9055,7 @@ incredibowl.my`,
             human: 'bot 已静音，客户消息会原文转到你的 WhatsApp', release: 'bot 已恢复',
             nudgeon: '已恢复追单（客户下次来消息起排程）', nudgeoff: '已停止追单，对话照常',
             ordered: '已标记成交，追单已停', close: '已关闭，追单已停（客户再来消息会自动重开）', reopen: '已重新打开',
+            unread: '已标为未读',
         };
         function waActConfirm(op) {
             if (op === 'nudgeoff') return confirm('停止对这个号码的自动追单？\n对话照常：bot 照常回复，你也可以继续发消息。');
@@ -9108,9 +9124,11 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         const INBOX_LIST_MS = 20000, INBOX_THREAD_MS = 10000;
         const INBOX_QR_KEY = 'incredibowl_inbox_quick_replies';
+        const INBOX_QR_OLD_DINNER = '今天午餐 11:00–13:00、晚餐 17:30–20:00 送达，请问要哪一餐？';   // 旧默认文案写错了时段（老板 09-30 确认晚餐是 17:00 起）
+        const INBOX_MEDIA_PRESET_DEFAULT = [{ name: '付款 QR（DuitNow）', url: 'https://www.incredibowl.my/duitnow_qr.png' }];
         const INBOX_QR_DEFAULT = [
             '收到，马上帮你安排 🙂',
-            '今天午餐 11:00–13:00、晚餐 17:30–20:00 送达，请问要哪一餐？',
+            '今天午餐 11:00–13:00、晚餐 17:00–20:00 送达，请问要哪一餐？',
             '下单链接 https://www.incredibowl.my/o?ref=wa ，30 秒搞定，新客首单立减 RM5 结账自动扣。',
             '付款可以 TnG / DuitNow / FPX / 信用卡，暂不支持 COD 哦。',
             '好的，那先不打扰你啦，想吃的时候随时找碗妈 ❤️',
@@ -9124,21 +9142,27 @@ incredibowl.my`,
             seeded: false,         // 第一次拿到列表前不提醒（一登录就响一串没意义）
             pulseSince: 0, pulseBusy: false, starting: false,
             okAt: 0, connErr: '',  // 上次成功更新的时间 / 当前的连接错误
-            profilePhone: '' };    // 档案栏的备注表单是给哪个号码画的
+            profilePhone: '',      // 档案栏的备注表单是给哪个号码画的
+            links: {},             // 号码 → 带对话标识的下单链接（问过一次就记住）
+            upload: null };        // 📎 面板里选好、压好的待发文件 { kind, data(base64), mime, filename, size }
         // 客户发来的图片要带 Authorization 才能取（Meta 媒体 URL 5 分钟过期且要 token），
         // 所以 <img src> 用不了 —— fetch 成 blob 再挂上去，同一张只取一次。
         const inboxMediaCache = new Map();
+        /** Meta media id → 本地 blob URL（图片 / 语音 / 视频 / PDF 都走这里；同一个 id 只取一次）。 */
+        async function inboxFetchMedia(id) {
+            if (inboxMediaCache.has(id)) return inboxMediaCache.get(id);
+            const user = auth.currentUser;
+            if (!user) throw new Error('未登录');
+            const token = await user.getIdToken();
+            const res = await fetch(`${ADMIN_API_BASE}/api/admin/wa-media?id=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const url = URL.createObjectURL(await res.blob());
+            inboxMediaCache.set(id, url);
+            return url;
+        }
         async function inboxLoadMedia(id, img) {
-            if (inboxMediaCache.has(id)) { img.src = inboxMediaCache.get(id); return; }
             try {
-                const user = auth.currentUser;
-                if (!user) return;
-                const token = await user.getIdToken();
-                const res = await fetch(`${ADMIN_API_BASE}/api/admin/wa-media?id=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const url = URL.createObjectURL(await res.blob());
-                inboxMediaCache.set(id, url);
-                img.src = url;
+                img.src = await inboxFetchMedia(id);
             } catch (err) {
                 img.replaceWith(Object.assign(document.createElement('div'), { className: 'inbox-media-file', textContent: '图片取不到：' + err.message }));
             }
@@ -9219,7 +9243,72 @@ incredibowl.my`,
         }
 
         const inboxIntl = (raw) => { let d = String(raw || '').replace(/\D/g, ''); if (d.startsWith('0')) d = '60' + d.slice(1); return d; };
-        function inboxQuickReplies() { try { const v = JSON.parse(localStorage.getItem(INBOX_QR_KEY) || 'null'); if (Array.isArray(v) && v.length) return v; } catch { /* noop */ } return INBOX_QR_DEFAULT.slice(); }
+        // ── 收件箱设置：快捷回复 + 图片预设，存云端 dashboardConfig/inbox ─────────
+        //   以前只存在当前浏览器的 localStorage：电脑、手机、桌面版各是各的。
+        //   现在云端一份（和促销模板同一个集合，规则已允许管理员读写）；本机那份只当读不到云端时的后备。
+        let inboxSettings = null;   // null = 还没从云端读到
+        let inboxSettingsBusy = false;
+        function inboxLocalQuickReplies() {
+            try {
+                const v = JSON.parse(localStorage.getItem(INBOX_QR_KEY) || 'null');
+                if (Array.isArray(v) && v.length) return v.map(x => x === INBOX_QR_OLD_DINNER ? INBOX_QR_DEFAULT[1] : x);
+            } catch { /* noop */ }
+            return null;
+        }
+        function inboxQuickReplies() {
+            if (inboxSettings && Array.isArray(inboxSettings.quickReplies)) return inboxSettings.quickReplies;   // 云端存的是空数组 = 老板清空了，尊重
+            return inboxLocalQuickReplies() || INBOX_QR_DEFAULT.slice();
+        }
+        const inboxMediaPresets = () => (inboxSettings && Array.isArray(inboxSettings.mediaPresets)) ? inboxSettings.mediaPresets : INBOX_MEDIA_PRESET_DEFAULT;
+        async function inboxLoadSettings() {
+            if (inboxSettings || inboxSettingsBusy) return;
+            inboxSettingsBusy = true;
+            try {
+                const snap = await getDoc(doc(db, 'dashboardConfig', 'inbox'));
+                if (snap.exists()) inboxSettings = snap.data() || {};
+                else {
+                    // 第一次：把这台设备上已有的（没有就用默认）搬上云，之后所有设备看到同一份
+                    inboxSettings = { quickReplies: inboxLocalQuickReplies() || INBOX_QR_DEFAULT.slice(), mediaPresets: INBOX_MEDIA_PRESET_DEFAULT.slice() };
+                    await setDoc(doc(db, 'dashboardConfig', 'inbox'), { ...inboxSettings, updatedAt: Timestamp.now() }, { merge: true });
+                }
+                if (inbox.detail) renderInboxComposer(inbox.detail);
+            } catch { /* 云端读不到就继续用本机的，不挡回复 */ }
+            finally { inboxSettingsBusy = false; }
+        }
+        async function inboxSaveSettings(patch) {
+            inboxSettings = { ...(inboxSettings || {}), ...patch };
+            try { localStorage.setItem(INBOX_QR_KEY, JSON.stringify(inboxSettings.quickReplies || [])); } catch { /* noop */ }
+            await setDoc(doc(db, 'dashboardConfig', 'inbox'), { ...patch, updatedAt: Timestamp.now() }, { merge: true });
+        }
+
+        /** 在回复框光标处插入一段文字（表情 / 下单链接共用）。 */
+        function inboxInsertText(s) {
+            const ta = $('#inboxText'); if (!ta || !s) return;
+            const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? ta.value.length;
+            ta.value = ta.value.slice(0, a) + s + ta.value.slice(b);
+            ta.selectionStart = ta.selectionEnd = a + s.length;
+            ta.focus();
+        }
+        /**
+         * 带对话标识的下单链接（…/o?ref=wa&lead=<token>）。客户点了，这条对话就亮「已点链接」，
+         * 下的单也挂得回这条对话。以前老板手发的链接只有 ref=wa，点击和成交都归不回来。
+         */
+        async function inboxOrderLink(phone) {
+            if (inbox.links[phone]) return inbox.links[phone];
+            const r = await callAdminAPI('/api/admin/wa-lead', { op: 'orderlink', phone });
+            if (!r.url) throw new Error(r.error || '拿不到下单链接');
+            inbox.links[phone] = r.url;
+            return r.url;
+        }
+        /** 快捷回复里的下单链接（…/o?…，没有 lead=）→ 补上这条对话的标识。取不到就原样用。 */
+        async function inboxTagOrderLinks(text, phone) {
+            const re = /https?:\/\/(?:www\.)?incredibowl\.my\/(?:en\/)?o\?[A-Za-z0-9=&_%-]*/g;
+            if (!re.test(text) || /[?&]lead=/.test(text)) return text;
+            try {
+                const tok = new URL(await inboxOrderLink(phone)).searchParams.get('lead');
+                return tok ? text.replace(re, m => `${m}&lead=${tok}`) : text;
+            } catch { return text; }
+        }
         // ── 回复框 emoji 面板：固定常用表 + 最近用过（localStorage，最多 16 个）──
         const INBOX_EMOJI_KEY = 'incredibowl_inbox_emoji_recent';
         const INBOX_EMOJI_SET = [
@@ -9261,6 +9350,10 @@ incredibowl.my`,
         const inboxHm = (ms) => { const d = new Date(ms); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
         function inboxStatusChips(r) {
             const c = [];
+            // 在等老板本人：红底白字放最前。三种原因见后端 waInbox.needsReplyWhy
+            if (r.needsReply) c.push(r.needsWhy === 'sos' ? '<span class="inbox-chip todo" title="bot 答不上来 / AI 出错，已向你求救，之后你还没回过">bot 求救</span>'
+                : r.needsWhy === 'media' ? '<span class="inbox-chip todo" title="客户最后发来的是图片 / 文件 / 语音（多半是付款截图），你还没回过">待回复 · 发来文件</span>'
+                : '<span class="inbox-chip todo" title="人工接管中（bot 已静音），客户说了最后一句">待回复</span>');
             if (r.human) c.push('<span class="inbox-chip human">人工</span>');
             if (r.status === 'ordered') c.push('<span class="inbox-chip ok">已成交</span>');
             else if (r.status === 'closed') c.push('<span class="inbox-chip">已关闭</span>');
@@ -9269,6 +9362,11 @@ incredibowl.my`,
             if (r.nudgeOff) c.push('<span class="inbox-chip">追单已停</span>');
             else if (r.nudgeCount) c.push(`<span class="inbox-chip">追单 ${r.nudgeCount}</span>`);
             if (r.windowRemainingMs <= 0 && r.status !== 'ordered') c.push('<span class="inbox-chip warn">24h 已过</span>');
+            // 窗口快关了还没了结：再不回就只能发模板（收费）
+            else if (r.windowRemainingMs > 0 && r.windowRemainingMs < 3 * 3600000 && r.status !== 'ordered' && r.status !== 'closed') {
+                const m = Math.floor(r.windowRemainingMs / 60000);
+                c.push(`<span class="inbox-chip warn" title="24 小时窗口快关了，关了之后只能发模板">窗口剩 ${m >= 60 ? Math.floor(m / 60) + 'h' : m + ' 分'}</span>`);
+            }
             (r.tags || []).slice(0, 2).forEach(t => c.push(`<span class="inbox-chip">${escapeHtml(t)}</span>`));
             return c.join('');
         }
@@ -9288,7 +9386,12 @@ incredibowl.my`,
         //   数的是「有未读的对话」个数，不是消息条数（一个客户连发 5 条 ≠ 5 件事）。
         function inboxUpdateBadges() {
             const n = inbox.rows.filter(r => r.unread).length;
-            const uc = $('#inboxUnreadCount'); if (uc) uc.textContent = n ? `(${n})` : '';
+            // 每个筛选后面跟对话数；待回复 / 未读有东西时标红
+            $$('#inboxFilter .inbox-cnt').forEach(el => {
+                const k = el.dataset.cnt, c = inbox.rows.filter(INBOX_FILTERS[k] || (() => false)).length;
+                el.textContent = c ? String(c) : '';
+                el.classList.toggle('hot', c > 0 && (k === 'todo' || k === 'unread'));
+            });
             const nb = $('#inboxNavBadge'); if (nb) { nb.textContent = n; nb.hidden = !n; }
             document.title = n ? `(${n}) ${INBOX_BASE_TITLE}` : INBOX_BASE_TITLE;
         }
@@ -9368,6 +9471,7 @@ incredibowl.my`,
             if (state.currentPage !== 'inbox') return;   // 等数据的时候已经切到别的页
             inbox.listTimer = setInterval(() => { if (!document.hidden) inboxRefreshList(); }, INBOX_LIST_MS);
             renderInboxAlertBtn();
+            inboxLoadSettings();
             if (inbox.phone) { inboxStartThreadTimer(); inboxRefreshThread(true); }
         }
         function inboxStop() {
@@ -9416,18 +9520,35 @@ incredibowl.my`,
             finally { inbox.pulseBusy = false; }
         }
 
+        /** 筛选条件（列表过滤和每个筛选后面的数字共用同一份，免得数字和点进去看到的对不上）。 */
+        const INBOX_FILTERS = {
+            all: () => true,
+            todo: r => !!r.needsReply,
+            unread: r => !!r.unread,
+            human: r => !!r.human,
+            bot: r => !r.human && r.status !== 'ordered' && r.status !== 'closed',
+            ordered: r => r.status === 'ordered',
+            closed: r => r.status === 'closed',
+        };
+        /** 搜索：名字 / 最后一句 / 标签按文字；号码先去掉空格、横线、加号，012… 和 6012… 互认。 */
+        function inboxMatches(r, qRaw) {
+            const q = String(qRaw || '').trim().toLowerCase();
+            if (!q) return true;
+            const digits = q.replace(/[\s\-+()]/g, '');
+            if (/^\d{3,}$/.test(digits)) {
+                const intl = digits.startsWith('0') ? '60' + digits.slice(1) : digits;
+                if (r.phone.includes(digits) || r.phone.includes(intl)) return true;
+            }
+            return (r.name || '').toLowerCase().includes(q)
+                || (r.lastMsg?.text || '').toLowerCase().includes(q)
+                || (r.tags || []).some(t => String(t).toLowerCase().includes(q));
+        }
+
         function renderInboxList() {
-            const q = inbox.q.trim().toLowerCase();
-            const f = inbox.filter;
-            const rows = inbox.rows.filter(r => {
-                if (f === 'unread' && !r.unread) return false;
-                if (f === 'human' && !r.human) return false;
-                if (f === 'bot' && (r.human || r.status === 'ordered' || r.status === 'closed')) return false;
-                if (f === 'ordered' && r.status !== 'ordered') return false;
-                if (f === 'closed' && r.status !== 'closed') return false;
-                if (q && !(r.phone.includes(q) || (r.name || '').toLowerCase().includes(q) || (r.lastMsg?.text || '').toLowerCase().includes(q))) return false;
-                return true;
-            });
+            const keep = INBOX_FILTERS[inbox.filter] || INBOX_FILTERS.all;
+            // 在等老板本人回的排最前（不管停在哪个筛选），其余按最后活动时间
+            const rows = inbox.rows.filter(r => keep(r) && inboxMatches(r, inbox.q))
+                .sort((a, b) => (Number(!!b.needsReply) - Number(!!a.needsReply)) || ((b.activityMs || b.lastMsgMs || 0) - (a.activityMs || a.lastMsgMs || 0)));
             inboxUpdateBadges();
             if (!rows.length) { $('#inboxList').innerHTML = '<div class="inbox-thread-empty" style="padding:30px">没有匹配的对话</div>'; return; }
             $('#inboxList').innerHTML = rows.map(r => {
@@ -9458,7 +9579,7 @@ incredibowl.my`,
         }
         /** 切线程 / 关线程：回复框恢复干净 —— 引用、附件面板、模板变量都是「上一位客户」的。 */
         function inboxResetComposer(phone) {
-            inbox.replyTo = null; inbox.replyText = ''; inbox.mode = 'text'; inbox.tplParams = [];
+            inbox.replyTo = null; inbox.replyText = ''; inbox.mode = 'text'; inbox.tplParams = []; inbox.upload = null;
             $('#inboxText').value = (phone && inbox.drafts[phone]) || '';
             $('#inboxReplyBar').hidden = true; $('#inboxEmoji').hidden = true; $('#inboxQrEditor').hidden = true;
             [...$$('.inbox-mode')].forEach(b => b.classList.remove('active'));
@@ -9479,6 +9600,7 @@ incredibowl.my`,
             $('#inboxEmpty').hidden = true; $('#inboxHead').hidden = false; $('#inboxMsgs').hidden = false; $('#inboxComposer').hidden = false;
             $('#inboxHead').innerHTML = `${INBOX_BACK_BTN}<div class="inbox-head-id"><div class="inbox-head-name">${escapeHtml(row?.name || phone)}</div><div class="inbox-head-sub">加载中…</div></div>`;
             $('#inboxMsgs').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
+            $('#inboxMsgs').dataset.sig = '';   // 手动换过内容了：下次渲染不能被「内容没变就不重画」挡住
             $('#inboxProfile').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
             inboxMobileThread(true);
             renderInboxList();
@@ -9521,6 +9643,7 @@ incredibowl.my`,
                 if (inbox.phone !== phone) return;
                 if (silent) { inboxConn(err.message); return; }
                 $('#inboxMsgs').innerHTML = `<div style="color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
+                $('#inboxMsgs').dataset.sig = '';
                 const sub = document.querySelector('#inboxHead .inbox-head-sub'); if (sub) sub.textContent = '读取失败，点左边的对话重试';
                 return;
             }
@@ -9554,14 +9677,29 @@ incredibowl.my`,
                         ? '<button class="btn sm inbox-act" data-op="release">交回 bot</button>'
                         : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">接管 2 小时</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">接管到明早</button>'}
                     ${waOutcomeButtons(d, 'inbox-act')}
+                    ${(d.turns || []).some(t => t.role === 'in') ? '<button class="btn ghost sm inbox-act" data-op="unread" title="现在没空回：放回「未读」，角标也算上（客户那边的已读收不回来）">标为未读</button>' : ''}
                     <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">WhatsApp <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
                 </div>`;
         }
 
+        /** 已转义的文字里把 http(s) 链接变成可点的（定位的地图链接、下单链接）。只认 http(s)，别的一律不碰。 */
+        function inboxLinkify(escaped) {
+            return escaped.replace(/https?:\/\/[^\s<"']+/g, (u) => {
+                const tail = (u.match(/[)）。，,.!！?？]+$/) || [''])[0];   // 句尾标点不算进链接
+                const href = tail ? u.slice(0, -tail.length) : u;
+                return `<a href="${href}" target="_blank" rel="noopener noreferrer">${href}</a>${tail}`;
+            });
+        }
+        const INBOX_MEDIA_LABEL = { audio: '语音', video: '视频', document: '文件' };
+
         function renderInboxMsgs(d, prevCount) {
             const box = $('#inboxMsgs');
             const turns = d.turns || [];
-            if (!turns.length) { box.innerHTML = '<div class="inbox-thread-empty">（没有对话记录）</div>'; return; }
+            if (!turns.length) { box.innerHTML = '<div class="inbox-thread-empty">（没有对话记录）</div>'; box.dataset.sig = ''; return; }
+            // 内容没变就不重画：每 10 秒整段 innerHTML 会让图片闪、正在放的语音断掉、选中的文字丢掉
+            const sig = `${d.phone}|${new Date().toDateString()}|${turns.map(t => `${t.ts}${t.status || ''}${t.err ? '!' : ''}`).join(',')}`;
+            if (box.dataset.sig === sig) { if (inbox.stickBottom) { box.scrollTop = box.scrollHeight; inbox.stickBottom = false; } return; }
+            box.dataset.sig = sig;
             const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
             let lastDay = '';
             const who = { in: '', out: '碗妈', boss: '你', nudge: '自动追单', bc: '每周菜单群发', sys: '' };
@@ -9579,10 +9717,14 @@ incredibowl.my`,
                     media = t.media.id ? `<img class="inbox-media" data-media-id="${escapeHtml(t.media.id)}" alt="图片">`
                         : t.media.link ? `<img class="inbox-media" src="${escapeHtml(t.media.link)}" alt="图片">` : '';
                 } else if (t.media) {
-                    media = `<div class="inbox-media-file">文件：${escapeHtml(t.media.filename || t.media.kind)}</div>`;
+                    // 语音 / 视频 / 文件：点一下才去取（要过一道带 token 的代理），取到后语音视频就地播放、文件新开一页
+                    const label = `${INBOX_MEDIA_LABEL[t.media.kind] || '文件'}${t.media.filename ? '：' + escapeHtml(t.media.filename) : ''}`;
+                    media = t.media.id ? `<button type="button" class="inbox-media-file inbox-media-open" data-id="${escapeHtml(t.media.id)}" data-kind="${escapeHtml(t.media.kind)}">${label} · 点击打开</button>`
+                        : t.media.link ? `<a class="inbox-media-file" href="${escapeHtml(t.media.link)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+                        : `<div class="inbox-media-file">${label}</div>`;
                 }
                 const act = t.msgId ? `<span class="act inbox-quote-btn" data-msgid="${escapeHtml(t.msgId)}" title="引用回复">引用</span>` : '';
-                return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${escapeHtml(t.text)}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
+                return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${inboxLinkify(escapeHtml(t.text))}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
             }).join('');
             inboxHydrateMedia();
             if (inbox.stickBottom || nearBottom || turns.length !== prevCount) box.scrollTop = box.scrollHeight;
@@ -9629,10 +9771,16 @@ incredibowl.my`,
             if (inbox.mode === 'media') {
                 // 菜品图走 /meta-jpg/（Meta 图片消息不收 webp，站上默认就是 webp）
                 const dishes = (typeof inboxDishAssets === 'function' ? inboxDishAssets() : []);
+                const presets = inboxMediaPresets();
+                const up = inbox.upload;
                 box.innerHTML = `
-                    <div class="inbox-attach-title">发图片 / 文件（链接必须是公网 https）</div>
-                    ${dishes.length ? `<select id="inboxMediaPreset"><option value="">— 选本周菜品图 —</option>${dishes.map(d => `<option value="${escapeHtml(d.url)}">${escapeHtml(d.name)}</option>`).join('')}</select>` : ''}
-                    <input id="inboxMediaLink" type="url" placeholder="https://www.incredibowl.my/meta-jpg/chicken_chop.jpg">
+                    <div class="inbox-attach-title">发图片 / 文件</div>
+                    ${up
+                        ? `<div class="inbox-composer-row" style="font-size:12px"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">已选：${escapeHtml(up.filename)}（${up.size >= 1048576 ? (up.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(up.size / 1024)) + ' KB'}）</span><button type="button" class="btn ghost sm" id="inboxUploadClear">换一个</button></div>`
+                        : `<input id="inboxMediaFile" type="file" accept="image/*,application/pdf" title="从电脑 / 手机选一张图片或 PDF">`}
+                    <div style="font-size:11px;color:var(--text-muted)">${up ? '发送时直接上传，不用下面的链接。' : '或者用现成的：'}</div>
+                    <select id="inboxMediaPreset"${up ? ' disabled' : ''}><option value="">— 选常用图片 / 本周菜品图 —</option>${presets.length ? `<optgroup label="常用">${presets.map(p => `<option value="${escapeHtml(p.url)}">${escapeHtml(p.name)}</option>`).join('')}</optgroup>` : ''}${dishes.length ? `<optgroup label="本周菜品">${dishes.map(d => `<option value="${escapeHtml(d.url)}">${escapeHtml(d.name)}</option>`).join('')}</optgroup>` : ''}</select>
+                    <input id="inboxMediaLink" type="url"${up ? ' disabled' : ''} placeholder="或贴一个公网 https 链接">
                     <div class="inbox-composer-row">
                         <select id="inboxMediaKind" style="flex:0 0 auto"><option value="image">图片</option><option value="document">文件（PDF 等）</option></select>
                         <input id="inboxMediaFilename" placeholder="文件名（只对文件有用）" style="flex:1">
@@ -9654,6 +9802,9 @@ incredibowl.my`,
             }
         }
 
+        const INBOX_LEAD_STATUS = { engaged: '进行中', clicked: '进行中 · 点过下单链接', ordered: '已成交', closed: '已关闭' };
+        const INBOX_ORDER_STATUS = { pending: '待确认付款', confirmed: '已确认', preparing: '准备中', delivering: '配送中', delivered: '已送达', cancelled: '已取消' };
+
         function renderInboxProfile(d) {
             const phoneNorm = normalizePhone(d.phone);
             const user = phoneNorm ? state.users.find(u => normalizePhone(u.phone) === phoneNorm) : null;
@@ -9661,6 +9812,27 @@ incredibowl.my`,
             const spent = orders.reduce((s, o) => s + orderAccrualRevenue(o) + (o.deliveryFee || 0), 0);
             const lastOrder = orders.map(o => tsToDate(o.createdAt)).filter(Boolean).sort((a, b) => b - a)[0];
             const addr = user?.deliveryProfile?.addressText || user?.address || user?.addressText || orders[0]?.deliveryAddress || orders[0]?.userAddress || '';
+            // 餐券：与 svmVoucherBalance 同一个口径（同号多账号时取没被合并的那个；未过期的 available）
+            const cands = phoneNorm ? state.users.filter(u => normalizePhone(u.phone || '') === phoneNorm) : [];
+            const uid = (cands.find(u => !u.mergedInto) || cands[0])?.id;
+            const vouchers = phoneNorm ? (state.mealVouchers || []).filter(v =>
+                ((uid && v.userId === uid) || normalizePhone(v.userPhone || '') === phoneNorm)
+                && v.status === 'available' && (tsToDate(v.expiresAt)?.getTime() || 0) > Date.now()) : [];
+            const vExp = vouchers.map(v => tsToDate(v.expiresAt)).filter(Boolean).sort((a, b) => a - b)[0];
+            // 订单：所有状态都要（paidOrders 不含 pending —— 正在问「我付了你收到没」的客户会显示 0 单）
+            const md = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || '')); return m ? `${Number(m[2])}/${Number(m[3])}` : '—'; };
+            const t0 = new Date(); const today = `${t0.getFullYear()}-${String(t0.getMonth() + 1).padStart(2, '0')}-${String(t0.getDate()).padStart(2, '0')}`;
+            const allOrders = (phoneNorm ? state.orders.filter(o => normalizePhone(o.userPhone) === phoneNorm && o.status !== 'cancelled') : [])
+                .sort((a, b) => (tsToDate(b.createdAt) || 0) - (tsToDate(a.createdAt) || 0));
+            const isOpen = (o) => o.status === 'pending' || (['confirmed', 'preparing', 'delivering'].includes(o.status) && String(o.deliveryDate || '').slice(0, 10) >= today);
+            const orderLine = (o) => {
+                const dishes = (o.items || []).filter(i => i && i.name && !String(i.name).trim().startsWith('↳'));
+                const what = dishes.length ? `${dishes[0].name}${(dishes[0].quantity || 1) > 1 ? ` ×${dishes[0].quantity}` : ''}${dishes.length > 1 ? ` 等 ${dishes.length} 样` : ''}` : '（无菜品）';
+                const meal = /dinner/i.test(String(o.deliveryTime || '')) ? '晚' : '午';
+                return `<div class="inbox-order${isOpen(o) ? ' open' : ''}"><div>${md(o.deliveryDate)} ${meal} · ${escapeHtml(INBOX_ORDER_STATUS[o.status] || o.status || '')} · RM${((Number(o.total) || 0) + (Number(o.deliveryFee) || 0)).toFixed(2)}</div><small>#${escapeHtml(String(o.id || '').slice(-6).toUpperCase())} ${escapeHtml(what)}</small></div>`;
+            };
+            const openOrders = allOrders.filter(isOpen);
+            const recentOrders = allOrders.filter(o => !isOpen(o)).slice(0, 3);
             const p = d.profile || {};
             const profileRows = Object.entries(WA_PROFILE_LABEL).map(([k, label]) => {
                 let v = k === 'tag' ? (p.tags || []).join('、') : k === 'note' ? (p.notes || []).join('；') : (p[k] || '');
@@ -9693,9 +9865,43 @@ incredibowl.my`,
                     <div class="inbox-kv"><span>账号</span><span>${user ? (user.email ? escapeHtml(user.email) : '会员') : '未注册 / 访客'}</span></div>
                     <div class="inbox-kv"><span>已付订单</span><span>${orders.length} 单 · RM${spent.toFixed(0)}</span></div>
                     <div class="inbox-kv"><span>最近下单</span><span>${lastOrder ? `${lastOrder.getMonth() + 1}/${lastOrder.getDate()}` : '—'}</span></div>
-                    ${addr ? `<div class="inbox-kv"><span>地址</span><span style="text-align:right">${escapeHtml(String(addr)).slice(0, 80)}</span></div>` : ''}
-                    <div class="inbox-kv"><span>Lead 状态</span><span>${escapeHtml(d.status || '—')}${d.clicked ? ' · 点过链接' : ''}</span></div>`;
+                    ${addr ? `<div class="inbox-kv"><span>地址</span><span style="text-align:right">${escapeHtml(String(addr).slice(0, 80))}</span></div>` : ''}
+                    <div class="inbox-kv"><span>对话状态</span><span>${escapeHtml(INBOX_LEAD_STATUS[d.status] || d.status || '—')}${d.clicked && d.status !== 'clicked' ? ' · 点过链接' : ''}</span></div>
+                    <div class="inbox-kv"><span>餐券</span><span>${vouchers.length ? `剩 ${vouchers.length} 张${vExp ? ` · 最早 ${vExp.getMonth() + 1}/${vExp.getDate()} 到期` : ''}` : '没有可用的'}</span></div>
+                    ${openOrders.length ? `<div class="inbox-section-title" style="margin-top:10px">进行中的订单（${openOrders.length}）</div>${openOrders.slice(0, 5).map(orderLine).join('')}` : ''}
+                    ${recentOrders.length ? `<div class="inbox-section-title" style="margin-top:10px">最近订单</div>${recentOrders.map(orderLine).join('')}` : ''}
+                    <div style="display:flex;gap:6px;margin-top:10px">
+                        ${user || allOrders.length ? '<button type="button" class="btn ghost sm" id="inboxProfileFull" style="flex:1">完整档案</button>' : ''}
+                        <button type="button" class="btn ghost sm" id="inboxProfileReload" style="flex:1" title="订单 / 餐券是打开 dashboard 时读的，点这里重新读一次">刷新数据</button>
+                    </div>`;
             $('#inboxProfileNotes').innerHTML = profileRows;
+        }
+
+        /**
+         * 老板选了一个文件 → 准备成可以直接发的样子（base64）。
+         * 图片一律在浏览器里缩到最长边 1600px、转成 JPEG：手机原图动辄 5–10MB，而请求体上限是 4.5MB，
+         * 而且 Meta 图片消息只收 jpeg / png。PDF 不动，超过 3MB 直接拒。
+         */
+        const INBOX_UPLOAD_MAX = 3 * 1024 * 1024;
+        async function inboxPrepareUpload(file) {
+            const toB64 = (blob) => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).replace(/^data:[^,]*,/, '')); fr.onerror = () => rej(new Error('读不了这个文件')); fr.readAsDataURL(blob); });
+            if (file.type === 'application/pdf') {
+                if (file.size > INBOX_UPLOAD_MAX) throw new Error('PDF 超过 3MB，发不了（压缩一下，或改发链接）');
+                return { kind: 'document', data: await toB64(file), mime: 'application/pdf', filename: file.name || 'file.pdf', size: file.size };
+            }
+            if (!file.type.startsWith('image/')) throw new Error('只能发图片或 PDF');
+            let bmp;
+            try { bmp = await createImageBitmap(file); } catch { throw new Error('这张图片浏览器打不开（HEIC 等格式先转成 JPG）'); }
+            const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+            const cv = document.createElement('canvas');
+            cv.width = Math.max(1, Math.round(bmp.width * scale)); cv.height = Math.max(1, Math.round(bmp.height * scale));
+            const ctx = cv.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);   // 透明 PNG 转 JPEG 不能变黑底
+            ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+            const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.85));
+            if (!blob) throw new Error('图片转换失败');
+            if (blob.size > INBOX_UPLOAD_MAX) throw new Error('图片压缩后还是超过 3MB');
+            return { kind: 'image', data: await toB64(blob), mime: 'image/jpeg', filename: (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', size: blob.size };
         }
 
         /** 把三个模式的输入拼成 /api/admin/wa-lead op=send 的 body。返回字符串 = 本地就能报的错。 */
@@ -9710,8 +9916,13 @@ incredibowl.my`,
                 return { op: 'send', phone: inbox.phone, template: { name: t.name, lang: t.lang, params } };
             }
             if (inbox.mode === 'media') {
+                if (inbox.upload) {
+                    const u = inbox.upload;
+                    base.media = { kind: u.kind, data: u.data, mime: u.mime, filename: u.filename, caption: text };
+                    return base;
+                }
                 const link = ($('#inboxMediaLink')?.value || '').trim();
-                if (!link) return '要先填图片/文件链接';
+                if (!link) return '先选一个文件，或选一张现成的图片';
                 if (!/^https:\/\//i.test(link)) return '链接必须是 https';
                 const kind = $('#inboxMediaKind')?.value === 'document' ? 'document' : 'image';
                 if (kind === 'image' && /\.webp(\?|$)/i.test(link)) return 'Meta 图片消息不收 webp，用 /meta-jpg/ 下的 jpg';
@@ -9770,7 +9981,7 @@ incredibowl.my`,
             if (still) {
                 ta.value = ''; ta.disabled = false; btn.disabled = false;
                 inbox.replyTo = null; inbox.replyText = '';
-                inbox.mode = 'text';
+                inbox.mode = 'text'; inbox.upload = null;
                 inbox.stickBottom = true;
                 if (inbox.detail) renderInboxComposer(inbox.detail);   // 下面的刷新就算失败，发送键也不会一直灰着
                 await inboxRefreshThread(true);
@@ -9787,6 +9998,7 @@ incredibowl.my`,
             const modeBtn = e.target.closest('.inbox-mode');
             if (modeBtn) {
                 inbox.mode = inbox.mode === modeBtn.dataset.mode ? 'text' : modeBtn.dataset.mode;
+                if (inbox.mode !== 'media') inbox.upload = null;
                 [...$$('.inbox-mode')].forEach(b => b.classList.toggle('active', b.dataset.mode === inbox.mode));
                 if (inbox.mode === 'media') inboxLoadAssets();
                 renderInboxAttach();
@@ -9827,12 +10039,32 @@ incredibowl.my`,
             }
             if (e.target.closest('.inbox-profile-btn')) { inboxMobileProfile(true); return; }
             if (e.target.closest('#inboxProfileClose') || e.target.id === 'inboxSheetBackdrop') { inboxMobileProfile(false); return; }
-            if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
+            if (e.target.id === 'inboxQrEditBtn') {
+                $('#inboxQrText').value = inboxQuickReplies().join('\n');
+                $('#inboxPresetText').value = inboxMediaPresets().map(p => `${p.name} | ${p.url}`).join('\n');
+                $('#inboxQrEditor').hidden = false; return;
+            }
             if (e.target.id === 'inboxQrCancel') { $('#inboxQrEditor').hidden = true; return; }
             if (e.target.id === 'inboxQrSave') {
-                const arr = $('#inboxQrText').value.split('\n').map(s => s.trim()).filter(Boolean);
-                try { localStorage.setItem(INBOX_QR_KEY, JSON.stringify(arr)); } catch { /* noop */ }
-                $('#inboxQrEditor').hidden = true; if (inbox.detail) renderInboxComposer(inbox.detail); toast('快捷回复已保存', 'success'); return;
+                const quickReplies = $('#inboxQrText').value.split('\n').map(s => s.trim()).filter(Boolean);
+                const mediaPresets = [];
+                for (const line of $('#inboxPresetText').value.split('\n').map(s => s.trim()).filter(Boolean)) {
+                    const i = line.lastIndexOf('|');
+                    const name = (i > 0 ? line.slice(0, i) : '').trim(), url = (i > 0 ? line.slice(i + 1) : line).trim();
+                    if (!name || !/^https:\/\/\S+$/i.test(url)) { toast(`常用图片这一行看不懂：「${line.slice(0, 40)}」— 要写成「名称 | https 链接」`, 'error'); return; }
+                    if (/\.webp(\?|$)/i.test(url)) { toast(`「${name}」是 webp，Meta 图片消息不收，换成 jpg / png`, 'error'); return; }
+                    mediaPresets.push({ name: name.slice(0, 40), url });
+                }
+                e.target.disabled = true;
+                try {
+                    await inboxSaveSettings({ quickReplies, mediaPresets });
+                    $('#inboxQrEditor').hidden = true;
+                    if (inbox.detail) renderInboxComposer(inbox.detail);
+                    if (inbox.mode === 'media') renderInboxAttach(true);
+                    toast('已保存，电脑和手机都会用这一份', 'success');
+                } catch (err) { toast('保存到云端失败（本机已记下）：' + err.message, 'error'); }
+                finally { e.target.disabled = false; }
+                return;
             }
             const act = e.target.closest('.inbox-act');
             if (act && inbox.phone) {
@@ -9842,10 +10074,51 @@ incredibowl.my`,
                 try {
                     await callAdminAPI('/api/admin/wa-lead', { op, phone: inbox.phone, minutes: Number(act.dataset.minutes) || undefined });
                     toast(WA_ACT_TOAST[op] || '已更新', 'success');
+                    // 标为未读：线程得关掉，不然下一拍轮询又把它标回已读
+                    if (op === 'unread') { inboxCloseThread(); inboxRefreshList(); return; }
                     await inboxRefreshThread(true); inboxRefreshList();
                 } catch (err) { toast('操作失败：' + err.message, 'error'); act.disabled = false; }
                 return;
             }
+            if (e.target.closest('#inboxLinkBtn') && inbox.phone) {
+                const phone = inbox.phone;
+                try {
+                    const url = await inboxOrderLink(phone);
+                    if (inbox.phone === phone) inboxInsertText(url);
+                } catch (err) { toast('拿不到下单链接：' + err.message, 'error'); }
+                return;
+            }
+            // 客户发来的语音 / 视频 / 文件：取回来，语音视频就地播放，文件新开一页
+            const mediaBtn = e.target.closest('.inbox-media-open');
+            if (mediaBtn) {
+                const kind = mediaBtn.dataset.kind, label = mediaBtn.textContent;
+                mediaBtn.disabled = true; mediaBtn.textContent = '加载中…';
+                try {
+                    const url = await inboxFetchMedia(mediaBtn.dataset.id);
+                    if (kind === 'audio' || kind === 'video') {
+                        const el = document.createElement(kind);
+                        el.controls = true; el.src = url; el.autoplay = true;
+                        mediaBtn.replaceWith(el);
+                    } else {
+                        window.open(url, '_blank');
+                        mediaBtn.disabled = false; mediaBtn.textContent = label;
+                    }
+                } catch (err) { mediaBtn.disabled = false; mediaBtn.textContent = `取不到（${err.message}）· 点击重试`; }
+                return;
+            }
+            if (e.target.id === 'inboxProfileFull' && inbox.phone) {
+                inboxMobileProfile(false);
+                openCustomerProfileByKey('p:' + normalizePhone(inbox.phone));
+                return;
+            }
+            if (e.target.id === 'inboxProfileReload') {
+                e.target.disabled = true;
+                try { await reloadData(['orders', 'users', 'mealVouchers']); toast('订单 / 餐券数据已刷新', 'success'); }
+                catch (err) { toast('刷新失败：' + err.message, 'error'); }
+                if (inbox.detail) renderInboxProfile(inbox.detail);
+                return;
+            }
+            if (e.target.id === 'inboxUploadClear') { inbox.upload = null; renderInboxAttach(true); return; }
             if (e.target.id === 'inboxNoteSave' && inbox.phone) {
                 const key = $('#inboxNoteKey').value, value = $('#inboxNoteValue').value.trim();
                 if (!value) { toast('备注不能为空', 'error'); return; }
@@ -9870,9 +10143,26 @@ incredibowl.my`,
                 if (e.target.value) $('#inboxMediaLink').value = e.target.value;
                 return;
             }
+            if (e.target.id === 'inboxMediaFile') {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+                const phone = inbox.phone;
+                inboxPrepareUpload(file).then((u) => {
+                    if (inbox.phone !== phone || inbox.mode !== 'media') return;   // 压图的时候已经切走了
+                    inbox.upload = u; renderInboxAttach(true);
+                }).catch((err) => { toast(err.message, 'error'); e.target.value = ''; });
+                return;
+            }
             if (e.target.id === 'inboxQr') {
                 const q = inboxQuickReplies()[Number(e.target.value)] || '';
-                const ta = $('#inboxText'); ta.value = ta.value ? ta.value.replace(/\s*$/, '') + '\n' + q : q; ta.focus(); e.target.value = '';
+                e.target.value = '';
+                if (!q) return;
+                const phone = inbox.phone;
+                // 快捷回复里有下单链接 → 补上这条对话的标识再插入
+                inboxTagOrderLinks(q, phone).then((text) => {
+                    if (inbox.phone !== phone) return;
+                    const ta = $('#inboxText'); ta.value = ta.value ? ta.value.replace(/\s*$/, '') + '\n' + text : text; ta.focus();
+                });
             }
         });
         document.addEventListener('input', (e) => {

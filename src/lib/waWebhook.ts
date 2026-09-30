@@ -391,7 +391,14 @@ export function describeInboundForTurn(msg: Record<string, any>): string {
     // 模板里的 QUICK_REPLY 按钮（例：weekly_menu_v2 的 STOP）回来是 type=button，不是 interactive
     case 'button': return String(msg?.button?.text || msg?.button?.payload || '[按钮]');
     case 'image': return `[图片]${msg?.image?.caption ? ' ' + msg.image.caption : ''}`;
-    case 'location': return `[定位] ${msg?.location?.name || msg?.location?.address || ''}`.trim();
+    case 'location': {
+      // 带上地图链接：以前只记地名，客户丢一个裸 pin 过来线程里就只剩「[定位]」，老板得回手机看
+      const loc = msg?.location || {};
+      const lat = Number(loc.latitude), lng = Number(loc.longitude);
+      const map = Number.isFinite(lat) && Number.isFinite(lng) && (lat || lng) ? ` https://maps.google.com/?q=${lat},${lng}` : '';
+      return `[定位] ${loc.name || loc.address || ''}`.trim() + map;
+    }
+    case 'video': return `[视频]${msg?.video?.caption ? ' ' + msg.video.caption : ''}`;
     case 'audio': return '[语音]';
     case 'document': return `[文件]${msg?.document?.filename ? ' ' + msg.document.filename : ''}`;
     case 'sticker': return '[贴纸]';

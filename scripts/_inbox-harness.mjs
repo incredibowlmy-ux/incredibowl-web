@@ -16,7 +16,7 @@ const SA = 'C:/Users/User/Desktop/Incredibowl Services/Firebase/incredibowl-1eed
 const API_KEY = 'AIzaSyBSTpQdHv0XkijnWcLN8Ys8eNusdaNbgDc';
 const BASE = process.env.HARNESS_BASE || 'http://localhost:3461';
 const HTML = process.env.DASHBOARD_SRC || 'public/dashboard-h7x2q9.html';
-const PHONES = ['60000000021', '60000000022', '60000000023', '60000000024', '60000000025', '60000000026'];
+const PHONES = ['60000000021', '60000000022', '60000000023', '60000000024', '60000000025', '60000000026', '60000000027'];
 
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync(SA, 'utf-8'))) });
 const db = admin.firestore();
@@ -53,6 +53,10 @@ if (cmd === 'seed') {
         base('60000000025', 'SMOKE Ee', {     // 最新一条是图片，但 lastMsgMs 停在两天前（旧排序会把它沉底）
             lastMsgMs: now - 48 * H, lastInboundAtMs: now - 5 * M, bossReadAtMs: now - 47 * H,
             turns: [t('in', '我昨天订的那单', 48 * H), t('out', '收到', 48 * H), t('in', '[图片] 付款截图', 5 * M, { msgId: 'wamid.SMK25', media: { kind: 'image', id: '1234567890', mime: 'image/jpeg' } })],
+        }),
+        base('60000000027', 'SMOKE Gina', {   // bot 求救过、老板还没回；24h 窗口只剩 2 小时
+            lastMsgMs: now - 22 * H, lastInboundAtMs: now - 22 * H, bossReadAtMs: now, alertAtMs: now - 20 * M, alertKind: 'escalate',
+            turns: [t('in', '我对花生过敏，哪道菜可以吃？', 22 * H), t('out', '这个我帮你问一下碗妈，稍等哦', 22 * H)],
         }),
         { phone: '60000000026', name: 'SMOKE Faiz', lang: 'zh', status: 'engaged', lastInboundAtMs: now - 8 * H, bossReadAtMs: now,   // 完全没有 lastMsgMs（旧查询直接看不到它）
             turns: [t('in', '[语音]', 8 * H, { msgId: 'wamid.SMK26', media: { kind: 'audio', id: '2234567890', mime: 'audio/ogg' } })] },
@@ -159,6 +163,12 @@ async function callAdminAPI(path, body) {
     if ('sendConfigured' in data) data.sendConfigured = true;
     return data;
 }
+// Firestore 客户端只在内存里模拟 —— 测试页绝不碰线上的 dashboardConfig
+const db = {}; window.__fs = {};
+const doc = (_db, ...p) => p.join('/');
+const getDoc = async (k) => ({ exists: () => k in window.__fs, data: () => window.__fs[k] });
+const setDoc = async (k, v) => { window.__fs[k] = { ...(window.__fs[k] || {}), ...v }; };
+const Timestamp = { now: () => ({ seconds: Math.floor(Date.now() / 1000) }) };
 function switchPage(p) { state.currentPage = p; document.querySelector('#page-inbox').classList.toggle('active', p === 'inbox'); if (p === 'inbox') inboxStart(); else inboxStop(); }
 function reloadData() { window.__reloads = (window.__reloads || 0) + 1; return Promise.resolve(); }
 function openCustomerProfileByKey(k) { window.__profileKey = k; }

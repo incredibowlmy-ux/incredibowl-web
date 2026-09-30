@@ -6,7 +6,7 @@
  *
  * 跑法：npx tsx scripts/dogfood-wa-inbox.mts
  */
-import { leadRow, inboxRows } from '@/lib/waInbox';
+import { leadRow, inboxRows, needsReplyWhy } from '@/lib/waInbox';
 
 let pass = 0, fail = 0;
 function check(label: string, cond: boolean, detail: unknown = '') {
@@ -73,6 +73,38 @@ console.log('\n=== 4. 整份列表 ===');
   check('按最后活动倒序：img → mid → old', rows.map(r => r.phone).join(',') === 'img,mid,old', rows.map(r => r.phone).join(','));
   check('没有任何对话的文档不出现', !rows.some(r => r.phone === 'boss-own-number'));
   check('limit 生效', inboxRows(docs, NOW, 2).length === 2);
+}
+
+console.log('\n=== 5. 待回复（等老板本人，不是等 bot）===');
+{
+  const why = (x: Record<string, any>) => needsReplyWhy(x, NOW);
+  const img = { msgId: 'm', media: { kind: 'image', id: '123456' } };
+  check('人工接管中 + 客户说了最后一句 → human', why({ humanUntil: NOW + H, turns: [t('boss', '午餐还是晚餐', 9 * M), t('in', '晚餐', 3 * M)] }) === 'human');
+  check('人工接管中但老板说了最后一句 → 不算', why({ humanUntil: NOW + H, turns: [t('in', '晚餐', 9 * M), t('boss', '好的', 3 * M)] }) === '');
+  check('接管后只多了一条系统行，最后一句仍是客户 → human', why({ humanUntil: NOW + H, turns: [t('in', '在吗', 5 * M), t('sys', '老板在 dashboard 接管 120 分钟，bot 静音', 1 * M)] }) === 'human');
+  check('接管已过期 → 不再按 human 算', why({ humanUntil: NOW - M, turns: [t('in', '晚餐', 3 * M)] }) === '');
+  check('bot 接待中、客户说了最后一句文字 → 不算（bot 的开场白等没记进 turns，会误报）', why({ turns: [t('in', 'hi', 3 * M)] }) === '');
+
+  check('bot 求救（escalate）之后老板没说过话 → sos', why({ alertAtMs: NOW - 10 * M, alertKind: 'escalate', turns: [t('in', '可以换菜吗', 11 * M), t('out', '我帮你问一下碗妈', 10 * M)] }) === 'sos');
+  check('AI 挂了（ai_down）→ sos', why({ alertAtMs: NOW - 10 * M, alertKind: 'ai_down', turns: [t('in', 'hi', 11 * M)] }) === 'sos');
+  check('求救之后老板回过了 → 清掉', why({ alertAtMs: NOW - 10 * M, alertKind: 'escalate', turns: [t('in', '可以换菜吗', 11 * M), t('boss', '可以', 5 * M)] }) === '');
+  check('求救超过 48 小时 → 不再置顶', why({ alertAtMs: NOW - 49 * H, alertKind: 'escalate', turns: [t('in', 'x', 49 * H)] }) === '');
+  check('kind=human / image 的警报不算求救', why({ alertAtMs: NOW - M, alertKind: 'human', turns: [t('in', 'x', 2 * M), t('out', 'y', M)] }) === '' && why({ alertAtMs: NOW - M, alertKind: 'image', turns: [t('out', 'y', M)] }) === '');
+
+  check('客户最后发的是图片、老板没回过 → media', why({ turns: [t('in', '我转账了', 6 * M), t('in', '[图片]', 5 * M, img)] }) === 'media');
+  check('图片之后 bot 自动回了一句，老板仍没回 → 还是 media', why({ turns: [t('in', '[图片]', 5 * M, img), t('out', '收到图片，碗妈会看', 4 * M)] }) === 'media');
+  check('图片之后老板回了 → 清掉', why({ turns: [t('in', '[图片]', 5 * M, img), t('boss', '收到', 4 * M)] }) === '');
+  check('图片之后客户又发了文字 → 最后一条客户消息不是媒体，不算', why({ turns: [t('in', '[图片]', 5 * M, img), t('in', '谢谢', 4 * M)] }) === '');
+  check('两天前的图片 → 不再算', why({ turns: [t('in', '[图片]', 49 * H, img)] }) === '');
+
+  check('客户发图之后订单确认了（已成交）→ 了结，不算', why({ status: 'ordered', closedAtMs: NOW - 2 * M, turns: [t('in', '[图片]', 5 * M, img)] }) === '');
+  check('已成交之后客户又发图 → 重新算', why({ status: 'ordered', closedAtMs: NOW - 10 * M, turns: [t('in', '[图片]', 5 * M, img)] }) === 'media');
+  check('老板关闭之后 → 不算', why({ status: 'closed', closedAtMs: NOW - M, humanUntil: NOW + H, turns: [t('in', '不要了', 5 * M)] }) === '');
+
+  const row = leadRow('60141', { alertAtMs: NOW - 10 * M, alertKind: 'escalate', turns: [t('in', 'x', 11 * M)] }, NOW);
+  check('列表行带上 needsReply / needsWhy / sos', row.needsReply === true && row.needsWhy === 'sos' && row.sos === true, row);
+  const plain = leadRow('60142', { turns: [t('in', 'hi', 3 * M), t('out', '你好', 2 * M)] }, NOW);
+  check('普通对话 → 三个都是空', plain.needsReply === false && plain.needsWhy === '' && plain.sos === false);
 }
 
 console.log(`\n${'─'.repeat(52)}`);

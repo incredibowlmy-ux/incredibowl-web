@@ -91,8 +91,10 @@ export async function sendText(to: string, text: string, opts: { replyTo?: strin
 export type SendMediaKind = 'image' | 'document';
 export interface SendMediaSpec {
   kind: SendMediaKind;
-  /** 公网可达的 https 链接。Meta 自己去抓，抓不到就 131053。 */
-  link: string;
+  /** 公网可达的 https 链接。Meta 自己去抓，抓不到就 131053。与 id 二选一。 */
+  link?: string;
+  /** uploadMedia 拿到的 Meta media id（老板从电脑 / 手机直接上传的文件走这条）。 */
+  id?: string;
   caption?: string;
   /** 只对 document 有意义：客户看到的文件名。 */
   filename?: string;
@@ -102,18 +104,64 @@ export interface SendMediaSpec {
 export async function sendMedia(to: string, spec: SendMediaSpec): Promise<SendResult> {
   if (!isConfigured()) return { ok: false, configured: false, error: 'WA_ACCESS_TOKEN 未配置' };
   if (spec.kind !== 'image' && spec.kind !== 'document') return { ok: false, configured: true, error: '只支持 image / document' };
+  const id = String(spec.id || '').trim();
   const link = String(spec.link || '').trim();
-  // Meta 只从公网 https 抓，localhost / http 一律当场拒掉，别等它回 131053
-  if (!/^https:\/\/[^\s]+$/i.test(link)) return { ok: false, configured: true, error: '媒体链接必须是公网 https' };
-  // 图片只收 jpeg/png —— webp 是本站的默认格式，但 Meta 图片消息不收（会静默失败）
-  if (spec.kind === 'image' && /\.webp(\?|$)/i.test(link)) {
-    return { ok: false, configured: true, error: 'Meta 图片消息不收 webp，用 /meta-jpg/ 下的 jpg' };
+  if (id) {
+    if (!/^\d{5,40}$/.test(id)) return { ok: false, configured: true, error: 'media id 格式不对' };
+  } else {
+    // Meta 只从公网 https 抓，localhost / http 一律当场拒掉，别等它回 131053
+    if (!/^https:\/\/[^\s]+$/i.test(link)) return { ok: false, configured: true, error: '媒体链接必须是公网 https' };
+    // 图片只收 jpeg/png —— webp 是本站的默认格式，但 Meta 图片消息不收（会静默失败）
+    if (spec.kind === 'image' && /\.webp(\?|$)/i.test(link)) {
+      return { ok: false, configured: true, error: 'Meta 图片消息不收 webp，用 /meta-jpg/ 下的 jpg' };
+    }
   }
-  const media: Record<string, unknown> = { link };
+  const media: Record<string, unknown> = id ? { id } : { link };
   const caption = String(spec.caption || '').trim().slice(0, 1024);
   if (caption) media.caption = caption;
   if (spec.kind === 'document' && spec.filename) media.filename = String(spec.filename).slice(0, 120);
   return graphSend(withContext({ to, type: spec.kind, [spec.kind]: media }, spec.replyTo));
+}
+
+/** 收件箱上传允许的类型。图片只有 jpeg / png（Meta 图片消息不收 webp / heic）。 */
+export const WA_UPLOAD_MIMES = ['image/jpeg', 'image/png', 'application/pdf'] as const;
+/** 解码后的上限。Vercel 请求体上限 4.5MB，base64 膨胀 4/3 → 3MB 的文件约 4MB 请求体。 */
+export const WA_UPLOAD_MAX_BYTES = 3 * 1024 * 1024;
+
+export interface UploadResult { ok: boolean; id?: string; error?: string; configured: boolean }
+
+/**
+ * 把一个文件传给 Meta 换 media id（之后 sendMedia({ id }) 发出去）。
+ *
+ * 为什么不放自己的存储再发链接：老板要发的是随手拍的出品 / 截图，没必要多一个公网可读的桶；
+ * Meta 自己托管，30 天过期 —— 和客户发来的图片同一条规则。
+ */
+export async function uploadMedia(bytes: Uint8Array, mime: string, filename = 'file'): Promise<UploadResult> {
+  const token = process.env.WA_ACCESS_TOKEN;
+  if (!token) return { ok: false, configured: false, error: 'WA_ACCESS_TOKEN 未配置' };
+  if (!(WA_UPLOAD_MIMES as readonly string[]).includes(mime)) return { ok: false, configured: true, error: '只能上传 JPG / PNG 图片或 PDF' };
+  if (!bytes.byteLength) return { ok: false, configured: true, error: '空文件' };
+  if (bytes.byteLength > WA_UPLOAD_MAX_BYTES) return { ok: false, configured: true, error: `文件太大（上限 ${WA_UPLOAD_MAX_BYTES / 1024 / 1024}MB）` };
+  const form = new FormData();
+  form.append('messaging_product', 'whatsapp');
+  form.append('type', mime);
+  form.append('file', new Blob([bytes as BlobPart], { type: mime }), String(filename).slice(0, 120) || 'file');
+  let res: Response;
+  try {
+    res = await fetch(`${GRAPH}/${phoneNumberId()}/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (e: any) {
+    return { ok: false, configured: true, error: `上传打不通 Meta：${String(e?.message || e).slice(0, 120)}` };
+  }
+  const j: any = await res.json().catch(() => ({}));
+  if (!res.ok || j?.error || !j?.id) {
+    return { ok: false, configured: true, error: `Meta 上传 ${res.status}: ${j?.error?.message || '没有返回 media id'}` };
+  }
+  return { ok: true, configured: true, id: String(j.id) };
 }
 
 // ────────────────────────────────────────────────────────────

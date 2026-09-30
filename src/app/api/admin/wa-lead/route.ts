@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { appendTurn, mergeProfileFact, PROFILE_KEYS, type TurnExtra } from '@/lib/waWebhook';
 import {
   isConfigured as waConfigured, lastInboundTs, sendText, sendMedia, sendInteractive,
-  markRead, sendTemplate, windowRemainingMs,
+  markRead, sendTemplate, windowRemainingMs, uploadMedia,
   type SendResult, type SendInteractiveSpec,
 } from '@/lib/waSend';
 import { inboxRows, mutateLead } from '@/lib/waInbox';
@@ -18,9 +18,12 @@ import { inboxRows, mutateLead } from '@/lib/waInbox';
  *   { op: 'read',    phone }                    老板看过了 → bossReadAtMs = now（未读归零）
  *   { op: 'assets' }                            本周菜品图清单（发图下拉用）
  *   { op: 'templates' }                         已过审模板清单（窗口外回复用，缓存 10 分钟）
+ *   { op: 'unread',  phone }                    标为未读（已读时间拨回最后一条客户消息之前）
+ *   { op: 'orderlink', phone }                  带对话标识的下单链接（…/o?ref=wa&lead=<clickToken>，没有 token 就生成）
  *   { op: 'send',    phone, text, minutes?,
  *            media? / interactive? / template?, replyTo? }
  *                                               从收件箱回客户：文本 / 图片文件 / 按钮列表 / 模板
+ *                                               media = { kind, link } 或 { kind, data(base64), mime, filename? }（直接上传）
  *                                               → 记 turn(boss，带 wamid) → 自动接管
  *   { op: 'human',   phone, minutes? }          老板接管（bot 静音）
  *   { op: 'release', phone }                    释放
@@ -201,6 +204,28 @@ export async function POST(req: NextRequest) {
       return corsify(NextResponse.json({ ok: true, marked: !!lastUnread }));
     }
 
+    // 标为未读：老板扫了一眼但现在没空回。把已读时间拨回最后一条客户消息之前，
+    // 它就重新出现在「未读」里、角标也算上。客户那边的蓝勾收不回来（Meta 没有这个接口）。
+    if (op === 'unread') {
+      const lastIn = lastInboundTs(d.turns);
+      if (!lastIn) return corsify(NextResponse.json({ error: '这个对话里还没有客户消息' }, { status: 400 }));
+      await ref.set({ bossReadAtMs: lastIn - 1, updatedAtMs: now }, { merge: true });
+      return corsify(NextResponse.json({ ok: true }));
+    }
+
+    // 带对话标识的下单链接：客户点了 → 这条对话亮「已点链接」，下的单也带上 waLeadToken（见 /o 与 /api/wa-click）。
+    // token 平时由 n8n 的 touch 生成；老板对一个 bot 还没碰过的号码发链接时这里补一个。
+    if (op === 'orderlink') {
+      let token = String(d.clickToken || '');
+      if (!/^[a-z0-9]{8,32}$/.test(token)) {
+        const { randomBytes } = await import('node:crypto');
+        token = randomBytes(8).toString('hex');
+        await ref.set({ phone, clickToken: token, updatedAtMs: now }, { merge: true });
+      }
+      const path = d.lang === 'en' ? '/en/o' : '/o';
+      return corsify(NextResponse.json({ ok: true, token, url: `https://www.incredibowl.my${path}?ref=wa&lead=${token}` }));
+    }
+
     if (op === 'send') {
       const text = String(body?.text || '').trim();
       const mediaIn = (body?.media && typeof body.media === 'object') ? body.media : null;
@@ -238,9 +263,20 @@ export async function POST(req: NextRequest) {
         if (kind !== 'image' && kind !== 'document') return corsify(NextResponse.json({ ok: false, error: '只支持 image / document' }, { status: 400 }));
         const caption = String(mediaIn.caption || text || '').trim();
         const filename = mediaIn.filename ? String(mediaIn.filename) : undefined;
-        sent = await sendMedia(phone, { kind, link: String(mediaIn.link || ''), caption, filename, replyTo });
+        // 两条路：公网链接（菜品图 / 预设），或老板直接上传的文件（base64 → 传给 Meta 换 media id）
+        const dataB64 = typeof mediaIn.data === 'string' ? mediaIn.data.replace(/^data:[^,]*,/, '') : '';
+        if (dataB64) {
+          const mime = String(mediaIn.mime || '');
+          if ((kind === 'image') !== mime.startsWith('image/')) return corsify(NextResponse.json({ ok: false, error: '文件类型和发送方式对不上' }, { status: 400 }));
+          const up = await uploadMedia(new Uint8Array(Buffer.from(dataB64, 'base64')), mime, filename || (kind === 'image' ? 'photo.jpg' : 'file.pdf'));
+          if (!up.ok || !up.id) return corsify(NextResponse.json({ ok: false, configured: up.configured, error: up.error || '上传失败' }, { status: 200 }));
+          sent = await sendMedia(phone, { kind, id: up.id, caption, filename, replyTo });
+          extra.media = { kind, id: up.id, mime, ...(filename ? { filename } : {}) };
+        } else {
+          sent = await sendMedia(phone, { kind, link: String(mediaIn.link || ''), caption, filename, replyTo });
+          extra.media = { kind, link: String(mediaIn.link || ''), ...(filename ? { filename } : {}) };
+        }
         turnText = kind === 'image' ? `[图片]${caption ? ' ' + caption : ''}` : `[文件]${filename ? ' ' + filename : ''}${caption ? ' ' + caption : ''}`;
-        extra.media = { kind, link: String(mediaIn.link || ''), ...(filename ? { filename } : {}) };
       } else if (interIn) {
         const spec: SendInteractiveSpec = {
           body: String(interIn.body || text || ''),

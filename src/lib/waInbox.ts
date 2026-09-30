@@ -26,6 +26,46 @@ export interface InboxRow {
   nudgeOff: boolean;
   tags: string[];
   windowRemainingMs: number;
+  /** bot 向老板求救过（escalate / ai_down），之后老板还没在这条对话里说过话。 */
+  sos: boolean;
+  /** 这条对话在等老板（不是等 bot）。见 needsReplyWhy。 */
+  needsReply: boolean;
+  /** 'human' | 'sos' | 'media' | ''：列表 chip 的说明用。 */
+  needsWhy: string;
+}
+
+/** bot 求救 / 客户发来媒体之后，多久还没人理就不再算「待回复」（那时 24h 窗口早过了，置顶只会变噪音）。 */
+export const NEEDS_REPLY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+const SOS_KINDS = new Set(['escalate', 'ai_down']);
+
+/**
+ * 这条对话是不是在等**老板本人**回。只认三种确定的情形：
+ *   human  人工接管中（bot 已静音）而客户说了最后一句 —— 只有老板能回
+ *   sos    bot 求救过（答不上来 / AI 挂了），之后老板没说过话
+ *   media  客户最后发来的是图片 / 文件 / 语音 / 视频（多半是付款截图），之后老板没说过话
+ *
+ * 故意**不**把「bot 接待中、客户说了最后一句文字」算进来：n8n 的开场白、图片自动回复等
+ * 没有记进 turns，那样判断会把 bot 其实已经回过的对话全部误报成待回复。
+ * 已成交 / 已关闭发生在客户最后一条消息之后 → 这件事已经了结，不算。
+ */
+export function needsReplyWhy(x: Record<string, any>, now: number): '' | 'human' | 'sos' | 'media' {
+  const turns: any[] = Array.isArray(x?.turns) ? x.turns.filter((t: any) => t && typeof t === 'object') : [];
+  let last: any = null, lastIn: any = null, lastBossTs = 0;
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i];
+    if (!last && t.role !== 'sys') last = t;
+    if (!lastIn && t.role === 'in') lastIn = t;
+    if (!lastBossTs && t.role === 'boss') lastBossTs = Number(t.ts) || 0;
+    if (last && lastIn && lastBossTs) break;
+  }
+  const lastInMs = lastIn ? Number(lastIn.ts) || 0 : 0;
+  const settled = (x?.status === 'ordered' || x?.status === 'closed') && (Number(x?.closedAtMs) || 0) >= lastInMs;
+  if (settled) return '';
+  if ((Number(x?.humanUntil) || 0) > now && last?.role === 'in') return 'human';
+  const alertAt = Number(x?.alertAtMs) || 0;
+  if (SOS_KINDS.has(String(x?.alertKind || '')) && alertAt > lastBossTs && now - alertAt < NEEDS_REPLY_MAX_AGE_MS) return 'sos';
+  if (lastIn?.media && lastInMs > lastBossTs && now - lastInMs < NEEDS_REPLY_MAX_AGE_MS) return 'media';
+  return '';
 }
 
 /**
@@ -49,6 +89,7 @@ export function leadRow(id: string, x: Record<string, any>, now: number): InboxR
   const readAt = Number(x?.bossReadAtMs) || 0;
   const profile = (x?.profile && typeof x.profile === 'object') ? x.profile : {};
   const activityMs = Math.max(Number(x?.lastMsgMs) || 0, last ? Number(last.ts) || 0 : 0);
+  const needsWhy = needsReplyWhy(x, now);
   return {
     phone: id,
     name: String(x?.name || profile.nickname || ''),
@@ -66,6 +107,9 @@ export function leadRow(id: string, x: Record<string, any>, now: number): InboxR
     nudgeOff: x?.nudgeOff === true,
     tags: Array.isArray(profile.tags) ? profile.tags : [],
     windowRemainingMs: windowRemainingMs(turns, now),
+    sos: needsWhy === 'sos',
+    needsReply: needsWhy !== '',
+    needsWhy,
   };
 }
 

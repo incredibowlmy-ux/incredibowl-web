@@ -1,6 +1,6 @@
 /**
  * 收件箱「已成交 / 已关闭」端到端 smoke —— 打本地 next start（读写的是真 Firestore）。
- * 只用一个合成号码 60000000021，跑完删掉。
+ * 只用合成号码 60000000031 / 32（与测试页的 2x 号段错开），跑完删掉。
  *
  * 跑法（worktree 里）：
  *   N8N_API_KEY=smoke-local npx next start -p 3461     # 另一个终端
@@ -13,8 +13,8 @@ import { markLeadsOrdered } from '@/lib/waLeadStatus';
 const BASE = process.env.SMOKE_BASE || 'http://localhost:3461';
 const N8N_KEY = process.env.SMOKE_N8N_KEY || 'smoke-local';
 const API_KEY = 'AIzaSyBSTpQdHv0XkijnWcLN8Ys8eNusdaNbgDc';
-const PHONE = '60000000021';
-const GHOST = '60000000022';   // 从不建文档的号码
+const PHONE = '60000000031';
+const GHOST = '60000000032';   // 从不建文档的号码
 
 admin.initializeApp({ credential: admin.credential.cert(JSON.parse(fs.readFileSync('C:/Users/User/Desktop/Incredibowl Services/Firebase/incredibowl-1eedd-firebase-adminsdk-fbsvc-f78b077e14.json', 'utf-8'))) });
 const db = admin.firestore();
@@ -144,6 +144,55 @@ try {
     const badNote = await post('/api/admin/wa-lead', signIn.idToken, { op: 'note', phone: PHONE, key: 'hack', value: 'x' });
     ck('note 非白名单 key → 400', badNote.http === 400, badNote.http);
     await op('release');
+  }
+
+  console.log('\n=== 9. 标为未读 / 下单链接 / bot 求救 / 待回复（第 2 批）===');
+  {
+    await op('reopen');
+    await op('read');
+    l = await op('list');
+    let row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('read 之后未读 0', row?.unread === 0, row?.unread);
+    r = await op('unread');
+    l = await op('list');
+    row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('op=unread → 重新算未读（≥1）', r.ok === true && row?.unread >= 1, { r, unread: row?.unread });
+
+    const link = await op('orderlink');
+    d = await doc();
+    ck('op=orderlink → 带 ref=wa 和这条对话的 token', link.ok === true && link.url === `https://www.incredibowl.my/o?ref=wa&lead=${d.clickToken}` && /^[a-z0-9]{8,32}$/.test(d.clickToken), link);
+    await ref.update({ lang: 'en', clickToken: '' });
+    const link2 = await op('orderlink');
+    d = await doc();
+    ck('没有 token 时补一个；英文客户给 /en/o', /^https:\/\/www\.incredibowl\.my\/en\/o\?ref=wa&lead=[a-z0-9]{16}$/.test(link2.url || '') && d.clickToken === link2.token, link2);
+    const click = await fetch(BASE + '/api/wa-click', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: link2.token }) });
+    d = await doc();
+    ck('客户点这个链接 → 对话记下点击（/api/wa-click 认得这个 token）', click.status === 200 && d.clickedAtMs > 0 && d.status === 'clicked', { s: d.status, c: d.clickedAtMs });
+
+    // bot 求救：n8n 的 alert 以前只写 waAlerts，现在也在 lead 上留记号
+    const alert = await post('/api/n8n/lead', N8N_KEY, { action: 'alert', phone: PHONE, alertMsgId: 'wamid.SMOKEALERT', customerMsg: 'smoke', kind: 'escalate' });
+    l = await op('list');
+    row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('alert(escalate) → 列表行 sos / needsReply', alert.ok === true && row?.sos === true && row?.needsReply === true && row?.needsWhy === 'sos', { alert, sos: row?.sos, why: row?.needsWhy });
+    await db.collection('waAlerts').doc('wamid.SMOKEALERT').delete();
+    await post('/api/n8n/lead', N8N_KEY, { action: 'reply', phone: PHONE, role: 'boss', text: '老板从手机回了' });
+    l = await op('list');
+    row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('老板回过之后求救标记清掉', row?.sos === false && row?.needsReply === false, { sos: row?.sos, why: row?.needsWhy });
+
+    // 人工接管中 + 客户说了最后一句 → 待回复
+    await op('human');
+    const cur = await doc();
+    const ts = Date.now();
+    await ref.update({ lastInboundAtMs: ts, turns: [...cur.turns, { role: 'in', text: '在吗', ts }] });
+    l = await op('list');
+    row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('人工接管中客户说了最后一句 → needsWhy=human', row?.needsWhy === 'human', row?.needsWhy);
+    await op('release');
+
+    // 上传发图：本机没有 WA token，验到「参数校验 + 不会把文件当链接发」为止
+    const up = await post('/api/admin/wa-lead', signIn.idToken, { op: 'send', phone: PHONE, text: '', media: { kind: 'image', data: 'aGVsbG8=', mime: 'image/jpeg', filename: 'a.jpg' } });
+    ck('send(上传)：没配 token → 明确告知未配置，不报 500', up.http === 200 && up.ok === false && up.configured === false, up);
   }
 
   console.log('\n=== 6. 护栏 ===');
