@@ -3,9 +3,15 @@ import { getDishShortName, getAddOnShortName } from '@/data/dishIngredients';
 import { aggregateIngredients, isLunchOrder } from '@/lib/prepIngredients';
 import { isCriticalNote, isAdminBookkeepingNote, isStaleFpxPending } from '@/lib/n8nNoteUtils';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
+import { loadLoyaltyGiftIds, loyaltyTypeOf } from '@/lib/loyaltyGift';
+import { NEW_CUSTOMER_GIFT_SOURCE, LOYALTY_GIFT_SOURCE } from '@/data/dishIngredients';
 
-/** 客户表「加料」列里给新客赠品打的标记。 */
+/** 客户表「加料」列里给赠品打的标记。 */
 const NEW_CUSTOMER_GIFT_TAG = '🎁新客·薯煎蛋B';
+const LOYALTY_GIFT_TAG = '🎁回头客·薯煎蛋B';
+/** 按餐段加料汇总（mains / addOns）里的赠品行名。 */
+const NEW_CUSTOMER_GIFT_ADDON = `🎁${NEW_CUSTOMER_GIFT_SOURCE}`;
+const LOYALTY_GIFT_ADDON = `🎁${LOYALTY_GIFT_SOURCE}`;
 
 /**
  * GET /api/n8n/daily-prep
@@ -88,6 +94,9 @@ interface FirestoreOrder {
   note?: string;
   /** 新客首单标记 —— 备餐层派生，Firestore 里没这个字段。见 lib/newCustomerGift.ts */
   isNewCustomer?: boolean;
+  /** 回头客赠品标记 —— 同上，备餐层派生。见 lib/loyaltyGift.ts */
+  isLoyaltyGift?: boolean;
+  mealVouchersUsed?: number;
 }
 
 
@@ -126,6 +135,10 @@ function aggregate(orders: FirestoreOrder[]): {
         }
       }
     }
+    // 赠品也要做 → 进加料清单。碗妈 23:59 的 Telegram 预告只读 mains / addOns，
+    // 不进这里她就不知道要多煎几份薯煎蛋B。
+    if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_ADDON] = (addOnCounts[NEW_CUSTOMER_GIFT_ADDON] || 0) + 1;
+    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_ADDON] = (addOnCounts[LOYALTY_GIFT_ADDON] || 0) + 1;
   }
   const mains = Object.entries(mainCounts).sort((a, b) => b[1] - a[1]);
   const addOns = Object.entries(addOnCounts).sort((a, b) => b[1] - a[1]);
@@ -328,6 +341,7 @@ function buildOrderMatrix(orders: FirestoreOrder[]): string {
     // 新客赠品挂在「加料」这一列（表格最后一列，不参与对齐补白，所以 emoji
     // 不会把整张表撑歪）。碗妈照着这一行就知道哪个客人多配一份薯煎蛋B。
     if (o.isNewCustomer) addOnCounts[NEW_CUSTOMER_GIFT_TAG] = 1;
+    if (o.isLoyaltyGift) addOnCounts[LOYALTY_GIFT_TAG] = 1;
     rows.push({ name: o.userName || '客户', counts, addOns: addOnCounts });
   }
 
@@ -443,13 +457,21 @@ export async function GET(req: NextRequest) {
     const nowMs = Date.now();
     // 新客首单多备一份赠品（马铃薯煎蛋B）。标记是按全库订单历史现算的派生值，
     // 订单文档里没有，客人端也看不到 —— 见 lib/newCustomerGift.ts。
-    const giftIds = await loadNewCustomerFirstOrderIds(db);
+    // 回头客赠品（每 3 / 5 个配送日）同理，见 lib/loyaltyGift.ts。
+    const [giftIds, loyaltyIds] = await Promise.all([
+      loadNewCustomerFirstOrderIds(db),
+      loadLoyaltyGiftIds(db),
+    ]);
     const allOrders = snap.docs
       .filter(d => {
         const o = d.data() as FirestoreOrder;
         return o.status !== 'cancelled' && !isStaleFpxPending(o, nowMs);
       })
-      .map(d => ({ ...(d.data() as FirestoreOrder), isNewCustomer: giftIds.has(d.id) }));
+      .map(d => ({
+        ...(d.data() as FirestoreOrder),
+        isNewCustomer: giftIds.has(d.id),
+        isLoyaltyGift: loyaltyIds.has(d.id),
+      }));
 
     const lunchOrders = allOrders.filter(isLunchOrder);
     const dinnerOrders = allOrders.filter(o => !isLunchOrder(o));
@@ -470,12 +492,16 @@ export async function GET(req: NextRequest) {
     const newCustomerText = newCustomers.length
       ? newCustomers.map(c => `${c.name}（${c.meal === 'lunch' ? '午' : '晚'}）`).join('、')
       : '无';
+    const loyaltyGifts = allOrders
+      .filter(o => o.isLoyaltyGift)
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o) }));
 
     return NextResponse.json({
       date,
       totalOrders: allOrders.length,
       newCustomers,
       newCustomerText,
+      loyaltyGifts,
       lunch: {
         ...aggregate(lunchOrders),
         orders: lunchSummary.orders,

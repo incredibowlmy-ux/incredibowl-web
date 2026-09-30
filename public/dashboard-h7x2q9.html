@@ -10905,6 +10905,8 @@ incredibowl.my`,
             // ⚠️ 与 webapp src/data/dishIngredients.ts 的 addOnRecipes 对齐。
             //    套餐不必列 —— prepUnitIds() 会先把套餐拆成这些组成项。
             const ADDON_EGGS = { '荷包蛋': 1, '温泉蛋': 1, '马铃薯煎蛋': 2, '卤蛋': 1, '蒜蓉西兰花炒蛋': 3 };
+            // 赠品（新客首单 / 回头客）= 一块马铃薯煎蛋B，与鳗鱼饭自带那块同口径：每份 0.5 颗。
+            const GIFT_EGGS_PER = 0.5;
             const EGG_ICON = { '荷包蛋': '🍳', '温泉蛋': '🌡️', '马铃薯煎蛋': '🥔', '卤蛋': '🥚', '蒜蓉西兰花炒蛋': '🥬', '马铃薯煎蛋B': '🥔' };
 
             // 套餐 → 它实际要做的东西（老板 2026-08-18：备餐看的是「总共做几份什么」，
@@ -10921,13 +10923,16 @@ incredibowl.my`,
                 return (hit && hit.name) || fallback;
             };
 
-            function aggregate(orders) {
+            // giftCount = 本餐段的赠品份数（新客首单 + 回头客，每份一块马铃薯煎蛋B = 0.5 颗蛋）。
+            // 赠品不在订单 items 里（客人看不到），名单来自 /api/admin/daily-prep ——
+            // 不传进来，鸡蛋合计就比食材清单少这几颗。
+            function aggregate(orders, giftCount) {
                 const dishes = new Map(), addons = new Map();
-                // 蛋型 → { default: 颗, addon: 颗, servings: 份 }
+                // 蛋型 → { default: 颗, addon: 颗, gift: 颗, servings: 份 }
                 // 份 ≠ 颗：马铃薯煎蛋 1 份 = 2 颗、蒜蓉西兰花炒蛋 1 份 = 3 颗。
                 const eggCounts = new Map();
                 const bumpEgg = (type, kind, servings, per) => {
-                    const cur = eggCounts.get(type) || { default: 0, addon: 0, servings: 0 };
+                    const cur = eggCounts.get(type) || { default: 0, addon: 0, gift: 0, servings: 0 };
                     cur[kind] += per * servings;
                     cur.servings += servings;
                     eggCounts.set(type, cur);
@@ -10960,20 +10965,21 @@ incredibowl.my`,
                         });
                     });
                 }));
+                if (giftCount > 0) bumpEgg('马铃薯煎蛋B', 'gift', giftCount, GIFT_EGGS_PER);
                 const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${escP(k)} <b>×${v}</b>`).join(' · ');
 
                 // Per-type egg lines（按总数倒序），跳过 0 项。一份多颗的（马铃薯煎蛋 /
                 // 蒜蓉西兰花炒蛋）额外印份数 —— 光看「9 颗」不知道要炒几份。
                 const eggLines = [...eggCounts.entries()]
-                    .filter(([, c]) => (c.default + c.addon) > 0)
-                    .sort((a, b) => (b[1].default + b[1].addon) - (a[1].default + a[1].addon))
+                    .filter(([, c]) => (c.default + c.addon + c.gift) > 0)
+                    .sort((a, b) => (b[1].default + b[1].addon + b[1].gift) - (a[1].default + a[1].addon + a[1].gift))
                     .map(([type, c]) => {
-                        const total = c.default + c.addon;
+                        const total = c.default + c.addon + c.gift;
                         const icon = EGG_ICON[type] || '🥚';
                         const per = c.servings !== total ? `${c.servings} 份 → ` : '';
-                        return `${icon} ${escP(type)} ${per}共 <b>${total}</b> 颗（菜品自带 ${c.default} + 客户加料 ${c.addon}）`;
+                        return `${icon} ${escP(type)} ${per}共 <b>${total}</b> 颗（菜品自带 ${c.default} + 客户加料 ${c.addon}${c.gift ? ` + 🎁赠送 ${c.gift}` : ''}）`;
                     });
-                const totalEggs = [...eggCounts.values()].reduce((s, c) => s + c.default + c.addon, 0);
+                const totalEggs = [...eggCounts.values()].reduce((s, c) => s + c.default + c.addon + c.gift, 0);
                 const eggsHtml = eggLines.length > 0 ? eggLines.join('<br/>') : '无';
                 return {
                     dishesHtml: fmt(dishes) || '—',
@@ -11036,13 +11042,15 @@ incredibowl.my`,
             // dayTotals = 全天结构化食材合计（毛豆/玉米/樱桃番茄行的数据源），可为空。
             // gifts = 本餐段的新客名单 [{name,meal}]（/api/admin/daily-prep 的 newCustomers）。
             // 赠品那份料已经算进 addOnText / dayTotals 了，这一行是告诉人「放进谁的碗」。
-            function renderIngredients(ingMeal, dayTotals, gifts, comboByDish) {
+            // loyalty = 本餐段的回头客赠品名单（/api/admin/daily-prep 的 loyaltyGifts，每 3 / 5 个配送日一份）。
+            function renderIngredients(ingMeal, dayTotals, gifts, comboByDish, loyalty) {
                 if (!ingMeal) return '';
                 const groups = ingMeal.groups || [];
                 const hasAddOn = ingMeal.addOnText && ingMeal.addOnText !== '—' && ingMeal.addOnText !== '无';
                 const giftList = Array.isArray(gifts) ? gifts : [];
+                const loyaltyList = Array.isArray(loyalty) ? loyalty : [];
                 const cmb = comboByDish instanceof Map ? comboByDish : new Map();
-                if (!groups.length && !hasAddOn && !giftList.length && !cmb.size && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
+                if (!groups.length && !hasAddOn && !giftList.length && !loyaltyList.length && !cmb.size && !ingMeal.riceText && !ingMeal.brownRiceText) return '';
                 // 套餐行：跟在所属主菜后面、白饭行之前（老板 2026-08-15 指定位置）。
                 // 只印名字 + 包含哪几样，不印克数 —— 克数在下面「加料」总量行里，
                 // 印两遍会被当成两份料备。
@@ -11068,8 +11076,11 @@ incredibowl.my`,
                 const giftRow = giftList.length
                     ? `<div class="ing-row"><b class="ing-d">🎁 新客赠送（薯煎蛋B）</b> ${giftList.map(g => escP(g.name)).join(' · ')}</div>`
                     : '';
+                const loyaltyRow = loyaltyList.length
+                    ? `<div class="ing-row"><b class="ing-d">🎁 回头客赠送（薯煎蛋B）</b> ${loyaltyList.map(g => escP(g.name)).join(' · ')}</div>`
+                    : '';
                 // 老板指定：全天合计行卡在「白饭（统一煮）」和「加料」两行中间。
-                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}${giftRow}</div>`;
+                return `<div class="ing"><div class="ing-t">🛒 食材清单（按菜分开）</div>${rows}${riceRow}${daySumRow(dayTotals)}${addOnRow}${giftRow}${loyaltyRow}</div>`;
             }
 
             // 全天合计：毛豆/玉米/樱桃番茄是一次备一天的量（老板 07-15 要求），
@@ -11153,12 +11164,12 @@ incredibowl.my`,
                 </div>`;
             }
 
-            function mealSection(title, orders, ingMeal, dayTotals, gifts) {
+            function mealSection(title, orders, ingMeal, dayTotals, gifts, loyalty) {
                 if (!orders.length) return '';
                 const sorted = orders.slice().sort((a, b) => String(a.deliveryTime || '').localeCompare(String(b.deliveryTime || '')));
-                const agg = aggregate(sorted);
+                const agg = aggregate(sorted, (gifts || []).length + (loyalty || []).length);
                 const collectN = sorted.filter(o => payInfo(o).collect).length;
-                const ingHtml = renderIngredients(ingMeal, dayTotals, gifts, collectComboByDish(sorted));
+                const ingHtml = renderIngredients(ingMeal, dayTotals, gifts, collectComboByDish(sorted), loyalty);
                 return `<section class="meal">
                     <h2>${title} · ${sorted.length} 单${collectN ? ` · ⚠️ ${collectN} 单要收现金` : ''}</h2>
                     <div class="agg">
@@ -11191,9 +11202,14 @@ incredibowl.my`,
                 const giftBanner = gifts.length
                     ? `<div class="giftbar">🎁 新客首单赠送 · 每人一份马铃薯煎蛋B：${gifts.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）')).join('、')}</div>`
                     : '';
-                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals, gifts.filter(g => g.meal !== 'dinner'))
-                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals, gifts.filter(g => g.meal === 'dinner'))
-                    + mealSection('其他 / 未分类', other, null, null, []);
+                // 回头客赠品（每 3 / 5 个配送日一份，客人不知道）—— 同样横幅兜底 + 餐段内一行。
+                const loyalty = (ing && Array.isArray(ing.loyaltyGifts)) ? ing.loyaltyGifts : [];
+                const loyaltyBanner = loyalty.length
+                    ? `<div class="giftbar">🎁 回头客赠送 · 每人一份马铃薯煎蛋B：${loyalty.map(g => escP(g.name) + (g.meal === 'dinner' ? '（晚）' : '（午）')).join('、')}</div>`
+                    : '';
+                const body = mealSection('🟠 午餐', lunch, ing && ing.lunch, dayTotals, gifts.filter(g => g.meal !== 'dinner'), loyalty.filter(g => g.meal !== 'dinner'))
+                    + mealSection('🟣 晚餐', dinner, ing && ing.dinner, dayTotals, gifts.filter(g => g.meal === 'dinner'), loyalty.filter(g => g.meal === 'dinner'))
+                    + mealSection('其他 / 未分类', other, null, null, [], []);
                 return `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><title>备餐单 ${escP(dateStr)}</title><style>${PREP_CSS}</style></head><body>
                     <header class="sheet-head">
                         <div class="brand">Incredibowl 备餐单</div>
@@ -11201,7 +11217,7 @@ incredibowl.my`,
                         <div class="printed">打印于 ${escP(printedAt)}</div>
                     </header>
                     ${ingFail}
-                    ${giftBanner}
+                    ${giftBanner}${loyaltyBanner}
                     ${body || '<p class="empty">这一天暂无订单。</p>'}
                 </body></html>`;
             }

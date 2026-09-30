@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { verifyAdminEmail, adminJson, corsPreflight } from '@/lib/adminApi';
 import { aggregateStockNeeds, type PrepOrder } from '@/lib/prepIngredients';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
+import { loadLoyaltyGiftIds } from '@/lib/loyaltyGift';
 
 /**
  * POST /api/admin/ingredient-stock   (admin Bearer token; CORS '*')
@@ -116,10 +117,17 @@ export async function POST(req: NextRequest) {
         const snap = await db.collection('orders').where('deliveryDate', '==', date).get();
         // 带上新客赠品，「所需」才跟备餐单同一个数 —— 两处口径不一样，
         // 盘点表就永远差那 37.5g 马铃薯，查起来最费神。
-        const giftIds = await loadNewCustomerFirstOrderIds(db);
+        const [giftIds, loyaltyIds] = await Promise.all([
+          loadNewCustomerFirstOrderIds(db),
+          loadLoyaltyGiftIds(db),
+        ]);
         const orders = snap.docs
           .filter(d => (d.data() as PrepOrder).status !== 'cancelled')
-          .map(d => ({ ...(d.data() as PrepOrder), isNewCustomer: giftIds.has(d.id) }));
+          .map(d => ({
+            ...(d.data() as PrepOrder),
+            isNewCustomer: giftIds.has(d.id),
+            isLoyaltyGift: loyaltyIds.has(d.id),
+          }));
         const lines = aggregateStockNeeds(orders);
         for (const l of lines) needed.set(l.name, (needed.get(l.name) || 0) + l.qty);
         const { collectUnrecipedLabels } = await import('@/lib/prepIngredients');
@@ -183,10 +191,17 @@ export async function POST(req: NextRequest) {
       // deliveryDate is an ISO string → lexicographic range == chronological range.
       const snap = await db.collection('orders')
         .where('deliveryDate', '>=', startDate).where('deliveryDate', '<=', endDate).get();
-      const giftIds = await loadNewCustomerFirstOrderIds(db);
+      const [giftIds, loyaltyIds] = await Promise.all([
+        loadNewCustomerFirstOrderIds(db),
+        loadLoyaltyGiftIds(db),
+      ]);
       const orders = snap.docs
         .filter(x => (x.data() as PrepOrder).status !== 'cancelled')
-        .map(x => ({ ...(x.data() as PrepOrder), isNewCustomer: giftIds.has(x.id) }));
+        .map(x => ({
+          ...(x.data() as PrepOrder),
+          isNewCustomer: giftIds.has(x.id),
+          isLoyaltyGift: loyaltyIds.has(x.id),
+        }));
 
       const byDate = new Map<string, PrepOrder[]>();
       for (const o of orders) {

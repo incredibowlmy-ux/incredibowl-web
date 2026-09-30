@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aggregateIngredients, buildDailyPrepIngredients, isLunchOrder, PrepOrder } from '@/lib/prepIngredients';
 import { loadNewCustomerFirstOrderIds } from '@/lib/newCustomerGift';
-import { NEW_CUSTOMER_GIFT_SOURCE } from '@/data/dishIngredients';
+import { loadLoyaltyGiftIds, loyaltyTypeOf } from '@/lib/loyaltyGift';
+import { NEW_CUSTOMER_GIFT_SOURCE, LOYALTY_GIFT_SOURCE } from '@/data/dishIngredients';
 
 /**
  * POST /api/admin/daily-prep
@@ -78,12 +79,17 @@ export async function POST(req: NextRequest) {
     const snap = await db.collection('orders').where('deliveryDate', '==', date).get();
     // 新客首单 → 备餐层多算一份赠品（马铃薯煎蛋B）。订单本身不带这个字段，
     // 是按全库订单历史现算的；客人端完全无感，见 lib/newCustomerGift.ts。
-    const giftIds = await loadNewCustomerFirstOrderIds(db);
+    // 回头客（每 3 / 5 个配送日）同理，见 lib/loyaltyGift.ts。
+    const [giftIds, loyaltyIds] = await Promise.all([
+      loadNewCustomerFirstOrderIds(db),
+      loadLoyaltyGiftIds(db),
+    ]);
     const orders = snap.docs
       .filter(d => (d.data() as PrepOrder).status !== 'cancelled')
       .map(d => ({
-        ...(d.data() as PrepOrder & { userName?: string }),
+        ...(d.data() as PrepOrder & { userName?: string; mealVouchersUsed?: number }),
         isNewCustomer: giftIds.has(d.id),
+        isLoyaltyGift: loyaltyIds.has(d.id),
       }));
 
     // 谁是新客要报出来 —— 只知道「多备 37.5g 马铃薯」而不知道放进哪个碗，
@@ -91,6 +97,10 @@ export async function POST(req: NextRequest) {
     const newCustomers = orders
       .filter(o => o.isNewCustomer)
       .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner' }));
+    // type: voucher = 餐券单（每 5 天）/ payg = 现金单（每 3 天）
+    const loyaltyGifts = orders
+      .filter(o => o.isLoyaltyGift)
+      .map(o => ({ name: o.userName || '客户', meal: isLunchOrder(o) ? 'lunch' : 'dinner', type: loyaltyTypeOf(o) }));
 
     const lunchOrders = orders.filter(isLunchOrder);
     const dinnerOrders = orders.filter(o => !isLunchOrder(o));
@@ -106,6 +116,8 @@ export async function POST(req: NextRequest) {
       dayTotals,
       newCustomers,
       newCustomerGift: NEW_CUSTOMER_GIFT_SOURCE,
+      loyaltyGifts,
+      loyaltyGift: LOYALTY_GIFT_SOURCE,
       lunch: { count: lunchOrders.length, groups: lunch.groups, riceText: lunch.riceText, brownRiceText: lunch.brownRiceText, addOnText: lunch.addOnText },
       dinner: { count: dinnerOrders.length, groups: dinner.groups, riceText: dinner.riceText, brownRiceText: dinner.brownRiceText, addOnText: dinner.addOnText },
     }));

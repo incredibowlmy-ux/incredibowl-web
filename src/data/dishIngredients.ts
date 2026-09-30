@@ -940,6 +940,12 @@ export const NEW_CUSTOMER_GIFT_RECIPE: IngredientLine[] = [
 /** 备餐单「加料」行里给这份赠品打的来源标签（与真加料区分开）。 */
 export const NEW_CUSTOMER_GIFT_SOURCE = '新客赠送·薯煎蛋B';
 
+/**
+ * 回头客赠品（每 3 / 5 个配送日一份，见 lib/loyaltyGift.ts）—— 份量与新客
+ * 赠品相同，都是薯煎蛋B，所以直接共用配方；只是来源标签分开。
+ */
+export const LOYALTY_GIFT_SOURCE = '回头客赠送·薯煎蛋B';
+
 // ─── Lookup helpers ──────────────────────────────
 
 const recipeByName = new Map<string, DishRecipe>(

@@ -11,7 +11,7 @@
  */
 import {
   getRecipeForDish, getAddOnRecipe, resolveAddOnAlias, UNTRACKED_OK,
-  NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, expandComboLabel,
+  NEW_CUSTOMER_GIFT_RECIPE, NEW_CUSTOMER_GIFT_SOURCE, LOYALTY_GIFT_SOURCE, expandComboLabel,
 } from '@/data/dishIngredients';
 import type { IngredientLine } from '@/data/dishIngredients';
 import { BOWL_1000, BOWL_750, BOWL_750_ADDON_LABEL, PAPER_BAG, BOWLS_PER_BAG, CUTLERY_SET, FOOD_TRAY, TRAY_DISH_NAMES, TRAY_COMBO_RICE_LABEL } from '@/data/packaging';
@@ -44,6 +44,22 @@ export interface PrepOrder {
    * 时不会自动扣赠品那份料 —— 靠老板每天盘点覆盖，与其它 best-effort 口径一致。
    */
   isNewCustomer?: boolean;
+  /**
+   * 回头客赠品（每 3 / 5 个配送日一份薯煎蛋B）—— 同上，也是备餐层派生标记，
+   * 调用方用 lib/loyaltyGift.loadLoyaltyGiftIds() 算好后打上。
+   */
+  isLoyaltyGift?: boolean;
+}
+
+/**
+ * 这一单要多备的赠品来源（一份薯煎蛋B）。新客与回头客**不会落在同一张单**：
+ * 首单是那个人的第 1 个配送日，回头客赠品最早在第 3 个 —— 见 dogfood-loyalty-gift 第 9 节。
+ */
+function prepGiftsOf(o: PrepOrder): string[] {
+  const out: string[] = [];
+  if (o.isNewCustomer) out.push(NEW_CUSTOMER_GIFT_SOURCE);
+  if (o.isLoyaltyGift) out.push(LOYALTY_GIFT_SOURCE);
+  return out;
 }
 
 type Line = { name: string; qty: number; unit: string };
@@ -120,8 +136,9 @@ export function aggregateIngredients(orders: PrepOrder[]): { lines: Line[]; text
         }
       }
     }
-    // 新客赠品：一位新客一份，与他点了几碗无关。
-    if (o.isNewCustomer) NEW_CUSTOMER_GIFT_RECIPE.forEach(line => bump(line, 1));
+    // 赠品：每个标记一份，与点了几碗无关。
+    const gifts = prepGiftsOf(o).length;
+    if (gifts) NEW_CUSTOMER_GIFT_RECIPE.forEach(line => bump(line, gifts));
   }
   const lines = Array.from(counts.values()).sort((a, b) => a.name.localeCompare(b.name, 'zh'));
   return { lines, text: lines.length === 0 ? '无' : lines.map(l => `${l.name} ${formatQty(l.qty, l.unit)}`).join('；') };
@@ -344,9 +361,9 @@ function aggregateByDish(orders: PrepOrder[]): {
         }
       }
     }
-    // 新客赠品挂进「加料」桶，带自己的来源标签 —— 与客人真花钱加的料分得开，
-    // 备餐单上读作「新客赠送·薯煎蛋B ×1（马铃薯 37.5g · …）」。
-    if (o.isNewCustomer) addUnit(NEW_CUSTOMER_GIFT_SOURCE, 1, NEW_CUSTOMER_GIFT_RECIPE);
+    // 赠品挂进「加料」桶，带自己的来源标签 —— 与客人真花钱加的料分得开，备餐单上读作
+    // 「新客赠送·薯煎蛋B ×1（马铃薯 37.5g · …）」/「回头客赠送·薯煎蛋B ×2（…）」。
+    for (const src of prepGiftsOf(o)) addUnit(src, 1, NEW_CUSTOMER_GIFT_RECIPE);
   }
   return { mains, addOns, rice, brownRice };
 }
