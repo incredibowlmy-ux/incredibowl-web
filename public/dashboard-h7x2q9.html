@@ -14998,6 +14998,23 @@ incredibowl.my`,
             renderDbmList();
         });
 
+        /**
+         * 开始配送前取一次当下位置 —— 服务端从这里起算路线（09-30 起不再固定从厨房）。
+         * 拿不到（拒绝授权 / 不支持 / 超时）就返回 null，服务端退回厨房。
+         * 外面包 6 秒兜底：权限弹窗挂着没人点时浏览器自己的 timeout 不计时，按钮会一直卡住。
+         * 精度好坏交给服务端 resolveOrigin 把关（电脑 IP 定位那种几公里误差会被挡掉并写进 note）。
+         */
+        function dbmCurrentOrigin() {
+            return new Promise(resolve => {
+                if (!('geolocation' in navigator)) { resolve(null); return; }
+                const guard = setTimeout(() => resolve(null), 6000);
+                navigator.geolocation.getCurrentPosition(
+                    p => { clearTimeout(guard); resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracyM: p.coords.accuracy }); },
+                    () => { clearTimeout(guard); resolve(null); },
+                    { enableHighAccuracy: true, maximumAge: 30000, timeout: 5000 });
+            });
+        }
+
         $('#dbmSubmitBtn').addEventListener('click', async () => {
             const eligible = dbmEligibleOrders().map(o => o.id);
             const orderIds  = eligible.filter(id => dbmAssign[id] === 'self');
@@ -15096,10 +15113,12 @@ incredibowl.my`,
             }
             const btn = $('#dbmSubmitBtn');
             btn.disabled = true;
+            btn.textContent = '获取当前位置…';
+            const origin = await dbmCurrentOrigin();
             btn.textContent = '建立批次中…';
             let startRes;
             try {
-                startRes = await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds });
+                startRes = await callAdminAPI('/api/admin/delivery-batch', { action: 'start', orderIds, ...(origin ? { origin } : {}) });
             } catch (err) {
                 errEl.textContent = err.message || '建立批次失败';
                 errEl.classList.remove('hidden');
@@ -15144,6 +15163,11 @@ incredibowl.my`,
                 'none': '⚠️ 未能自动排序，保持你勾选的顺序',
             };
             let routeHtml = `<div style="margin-top:8px">${SRC_LABEL[route.source] || SRC_LABEL.none}</div>`;
+            // 起点如实显示（服务端还是旧版、不回 origin 时就不显示）；定位被拒的原因在下面 route.note 里
+            if (route.origin) {
+                routeHtml += `<div style="color:var(--text-muted);font-size:12px">${route.origin.source === 'gps' ? '📍 起点：你现在的位置'
+                    : origin ? '🏠 起点：厨房' : '🏠 起点：厨房（没拿到你的当前位置）'}</div>`;
+            }
             if (route.totalKm != null || route.totalMinutes != null) {
                 const bits = [];
                 if (route.totalKm != null) bits.push(`${route.totalKm} km`);

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { etaWhatsAppLink } from '@/lib/driverWhatsApp';
 
 // Client-side gate is cosmetic only — every API call below is re-verified
 // server-side by verifyAdminEmail. (Kept local: adminApi.ts imports
@@ -10,6 +11,8 @@ const ADMIN_EMAILS = ['hello@incredibowl.my', 'incredibowl.my@gmail.com'];
 
 const GPS_REPORT_MS = 8_000;
 const BATCH_POLL_MS = 30_000;
+// 重排时最近一次定位多新才直接拿来当起点；再旧就现场重新取一次
+const ORIGIN_FRESH_MS = 30_000;
 
 interface BatchOrder {
     id: string;
@@ -31,13 +34,14 @@ interface BatchMeta {
     id: string;
     deliveredOrderIds: string[];
     routeSource?: string;
+    /** 这趟顺序是从哪里算起的。null = 09-30 之前的老批次（一律从厨房算） */
+    routeOrigin?: { lat: number; lng: number; source: 'gps' | 'kitchen' } | null;
     routeTotalKm?: number | null;
     routeTotalMinutes?: number | null;
 }
 
-// 厨房坐标（与 deliveryUtils.PEARL_POINT_* 同源）。这里硬写是为了不把
-// 整个 deliveryUtils 拖进客户端 bundle —— 只要两个数字。
-const KITCHEN = '3.0853475861917716,101.67428154483449';
+type Fix = { lat: number; lng: number; accuracyM: number; ts: number };
+
 // 每段最多几个中途点。取 3 是因为 Google 两份官方文档口径打架：
 //   · 帮助中心（iOS/Android/桌面同文）：「最多 9 个停靠点，含终点」→ 中途点 ≤ 8
 //   · URLs API：「移动浏览器最多 3 个 waypoints，其余场景最多 9 个」
@@ -56,6 +60,8 @@ export default function DriverClient() {
     const [busy, setBusy] = useState<string | null>(null); // orderId being marked
     const lastReportRef = useRef(0);
     const batchIdRef = useRef<string | null>(null);
+    // 最近一次 GPS 定位（不受上报节流影响）—— 重排路线时当起点用
+    const lastFixRef = useRef<Fix | null>(null);
 
     const isAdmin = !!currentUser?.email && ADMIN_EMAILS.includes(currentUser.email);
 
@@ -95,6 +101,12 @@ export default function DriverClient() {
         if (!isAdmin || !batch?.id || !('geolocation' in navigator)) return;
         const report = (pos: GeolocationPosition) => {
             setGpsState('ok');
+            lastFixRef.current = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracyM: pos.coords.accuracy,
+                ts: pos.timestamp,
+            };
             const now = Date.now();
             if (now - lastReportRef.current < GPS_REPORT_MS) return;
             lastReportRef.current = now;
@@ -167,21 +179,42 @@ export default function DriverClient() {
         setBusy(null);
     };
 
-    // 重新排一次剩余的单。排序只在建批次那一刻算一次并写死进库，所以改完
-    // Google API 配置后必须重排才看得到效果；中途插单/跳单后也用它。
+    /**
+     * 当下位置 → 重排的起点。最近一次定位够新就直接用，否则现场取一次。
+     * 拿不到返回 null（服务端退回厨房并在 note 里说明），绝不让按钮卡住：
+     * 权限弹窗挂着没人点时浏览器的 timeout 不计时，所以外面再包一层 10 秒兜底。
+     */
+    const currentOrigin = () => new Promise<{ lat: number; lng: number; accuracyM: number } | null>(resolve => {
+        const f = lastFixRef.current;
+        if (f && Date.now() - f.ts <= ORIGIN_FRESH_MS) {
+            resolve({ lat: f.lat, lng: f.lng, accuracyM: f.accuracyM });
+            return;
+        }
+        if (!('geolocation' in navigator)) { resolve(null); return; }
+        const guard = setTimeout(() => resolve(null), 10_000);
+        navigator.geolocation.getCurrentPosition(
+            p => { clearTimeout(guard); resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracyM: p.coords.accuracy }); },
+            () => { clearTimeout(guard); resolve(null); },
+            { enableHighAccuracy: true, maximumAge: 10_000, timeout: 8_000 });
+    });
+
+    // 从当下位置重新排一次剩余的单。排序只在建批次那一刻算一次并写死进库，
+    // 所以送到一半、中途插单/跳单、改完 Google API 配置后都要靠它重算。
     const [resorting, setResorting] = useState(false);
     const resortRoute = async () => {
         if (!batch) return;
         setResorting(true);
         try {
-            const res = await callApi({ action: 'resort', batchId: batch.id });
+            const origin = await currentOrigin();
+            const res = await callApi({ action: 'resort', batchId: batch.id, ...(origin ? { origin } : {}) });
             await refreshBatch();
             const s = res?.route?.source;
             const label = s === 'google' ? '🚦 已按实时路况重排'
                 : s === 'google-notraffic' ? '🗺️ 已按路网重排（无路况）'
                 : s === 'local' ? '📐 已按直线距离重排（Google 路线服务仍不可用）'
                 : '⚠️ 未能自动排序';
-            alert(`${label}${res?.route?.totalKm != null ? `\n全程 ${res.route.totalKm} km` : ''}${res?.route?.totalMinutes != null ? ` · 约 ${res.route.totalMinutes} 分钟` : ''}${res?.route?.note ? `\n\n${res.route.note}` : ''}`);
+            const from = res?.route?.origin?.source === 'gps' ? '📍 起点：你现在的位置' : '🏠 起点：厨房';
+            alert(`${label}\n${from}${res?.route?.totalKm != null ? `\n全程 ${res.route.totalKm} km` : ''}${res?.route?.totalMinutes != null ? ` · 约 ${res.route.totalMinutes} 分钟` : ''}${res?.route?.note ? `\n\n${res.route.note}` : ''}`);
         } catch (e: any) { alert(e.message || '重排失败'); }
         setResorting(false);
     };
@@ -193,8 +226,6 @@ export default function DriverClient() {
             setBatch(null); setOrders([]);
         } catch (e: any) { alert(e.message || '操作失败'); }
     };
-
-    const waLink = (phone: string) => `https://wa.me/${phone.replace(/[^0-9]/g, '').replace(/^0/, '60')}`;
 
     /**
      * 单点导航 —— 这是最可靠的一条路：没有 waypoints 就没有上限之争，
@@ -333,12 +364,18 @@ export default function DriverClient() {
                                 </span>
                             )}
                         </div>
+                        {/* 如实说明这个顺序是从哪算起的 —— 从厨房算而人不在厨房时，顺序会显得莫名其妙 */}
+                        <p className="text-xs text-gray-500">
+                            {batch.routeOrigin?.source === 'gps'
+                                ? '📍 起点：排路线时你所在的位置'
+                                : '🏠 起点：厨房 — 不是从厨房出发的话，点下面按钮按你现在的位置重排'}
+                        </p>
                         <button
                             onClick={resortRoute}
                             disabled={resorting || remaining.length === 0}
                             className="w-full py-2 text-xs font-bold text-gray-500 border border-dashed border-gray-300 rounded-xl disabled:opacity-40"
                         >
-                            {resorting ? '重新计算中…' : `🔄 重新排一次剩下的 ${remaining.length} 单`}
+                            {resorting ? '定位 + 重新计算中…' : `🔄 从我现在的位置重排剩下的 ${remaining.length} 单`}
                         </button>
                         {navLegs.length === 0 ? (
                             <p className="text-xs text-gray-400">没有可导航的坐标 — 请用每单的「🧭 导航去这一单」</p>
@@ -401,7 +438,8 @@ export default function DriverClient() {
                             </a>
                             <div className="flex gap-2">
                                 <a href={`tel:${o.userPhone}`} className="flex-1 py-2.5 text-center bg-gray-100 rounded-xl text-sm font-bold text-[#1A2D23]">📞 打电话</a>
-                                <a href={waLink(o.userPhone)} target="_blank" rel="noopener noreferrer"
+                                {/* 预填「约 10 分钟送到」中英双语 —— 出发后点开直接发送 */}
+                                <a href={etaWhatsAppLink(o.userPhone, o.userName)} target="_blank" rel="noopener noreferrer"
                                    className="flex-1 py-2.5 text-center bg-[#25D366]/10 text-[#1EBE57] rounded-xl text-sm font-bold">💬 WhatsApp</a>
                             </div>
                             <button

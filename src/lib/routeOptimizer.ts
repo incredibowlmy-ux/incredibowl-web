@@ -34,7 +34,17 @@ import {
 
 // 老板 2026-07-31 定：终点 = 最后一单，不算回厨房的回程。
 // 改成 true 就变成闭环（出去转一圈再回厨房），Google 会给不同的顺序。
+// 注意闭环的回程终点永远是厨房，跟起点从哪出发无关。
 const ROUTE_END_AT_KITCHEN = false;
+
+// 起点：老板 2026-09-30 定 —— 从「当下所在位置」出发，不再固定从厨房。
+// 调用方（dashboard 开始配送 / /driver 重排）传手机定位进来，resolveOrigin() 把关；
+// 没传或不可信就退回厨房，并在 note 里如实写原因。
+//
+// 精度门槛 500m 是判断取值，不是查来的数：手机 GPS 一般几十米，电脑 Wi-Fi 定位
+// 几十到一两百米，而退化到 IP 定位时动辄几公里 —— 要挡的是最后这种。在 4km 配送
+// 半径里，几百米的起点误差最多影响第一站选谁，远比「起点错到另一个区」无害。
+const MAX_ORIGIN_ACCURACY_M = 500;
 
 // Routes API 的 intermediates 上限（不含 origin/destination，所以单次最多 26 个配送点）。
 // delivery-batch 本身已限 30 单 → 27 个中途点，超一点点，所以要有兜底（超了走本地排序）。
@@ -73,9 +83,28 @@ export interface RouteOrderInput {
     deliveryLng?: number;
 }
 
+/** 调用方传进来的起点（浏览器 Geolocation 原样）。全部字段都要过 resolveOrigin 校验。 */
+export interface RouteOriginInput {
+    lat: number;
+    lng: number;
+    /** coords.accuracy，米。没给就不校验精度 */
+    accuracyM?: number;
+}
+
+/** 实际用来排路线的起点 —— source 如实告诉 /driver 和 dashboard 是哪一个。 */
+export interface RouteOrigin {
+    lat: number;
+    lng: number;
+    source: 'gps' | 'kitchen';
+}
+
+const KITCHEN_ORIGIN: RouteOrigin = { lat: PEARL_POINT_LAT, lng: PEARL_POINT_LNG, source: 'kitchen' };
+
 export interface RoutePlan {
     /** 排好序的订单 id —— 直接存进 batch.orderIds */
     orderedIds: string[];
+    /** 这次排序实际用的起点（存进 batch.routeOrigin） */
+    origin: RouteOrigin;
     routeSource: RouteSource;
     /** 全程公里数。Google 给的是路网真实里程；本地降级时是直线距离之和（会偏小） */
     totalKm: number | null;
@@ -295,6 +324,32 @@ function isFiniteCoord(lat: unknown, lng: unknown): boolean {
     return Number.isFinite(km) && km <= MAX_SANE_GEOCODE_KM;
 }
 
+/**
+ * 起点把关。输入来自请求体（不可信），所以任何形状都要接得住、永不抛错。
+ *
+ * 没传 → 厨房，不写 note（这是调用方的正常选择，不是故障）。
+ * 传了但不可信 → 厨房，note 写原因 —— 司机以为「按我的位置排了」其实是从厨房排的，
+ * 顺序就会莫名其妙，所以必须让界面能说清楚。
+ */
+export function resolveOrigin(input: RouteOriginInput | null | undefined): { origin: RouteOrigin; note: string | null } {
+    if (input == null) return { origin: KITCHEN_ORIGIN, note: null };
+    const { lat, lng, accuracyM } = input as Partial<RouteOriginInput>;
+    if (typeof lat !== 'number' || typeof lng !== 'number' || !isFinite(lat) || !isFinite(lng)
+        || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        return { origin: KITCHEN_ORIGIN, note: '当前位置数据无效，已改用厨房作起点' };
+    }
+    const km = distanceFromPearlPointKm(lat, lng);
+    if (!Number.isFinite(km) || km > MAX_SANE_GEOCODE_KM) {
+        return { origin: KITCHEN_ORIGIN, note: `当前位置离厨房 ${km.toFixed(1)}km，超出配送范围，已改用厨房作起点` };
+    }
+    if (accuracyM !== undefined
+        && (typeof accuracyM !== 'number' || !isFinite(accuracyM) || accuracyM > MAX_ORIGIN_ACCURACY_M)) {
+        const why = typeof accuracyM === 'number' && isFinite(accuracyM) ? `±${Math.round(accuracyM)}m 太差` : '无法判断';
+        return { origin: KITCHEN_ORIGIN, note: `当前定位精度${why}，已改用厨房作起点` };
+    }
+    return { origin: { lat, lng, source: 'gps' }, note: null };
+}
+
 // ─────────────────────────────────────────────────────────────
 //   Google Directions 排序
 // ─────────────────────────────────────────────────────────────
@@ -407,13 +462,16 @@ async function callComputeRoutes(body: unknown, apiKey: string): Promise<CallRes
  *
  * Routes API 和 legacy Directions 一样，必须给一个明确的 destination —— 没有
  * 「让 Google 自己挑终点」这个选项，它只重排 intermediates。
- * 所以我们用 haversine 挑出离厨房最远的那一单当 destination，其余全丢进 intermediates。
+ * 所以我们用 haversine 挑出离**起点**最远的那一单当 destination，其余全丢进 intermediates。
  * 这是启发式不是全局最优（全局最优要每个候选终点各跑一次），但符合配送直觉
  * 「先近后远，送完人在外圈」，且只花一次调用。
+ * （以前量的是「离厨房最远」—— 起点改成当前位置后必须跟着改，否则人在外圈时
+ *  会挑中身边那单当终点，先绕回去再送回来。）
  */
 async function optimizeWithGoogle(
     points: Located[],
     apiKey: string,
+    origin: RouteOrigin,
 ): Promise<GoogleResult | null> {
     if (points.length === 0) return null;
 
@@ -423,11 +481,11 @@ async function optimizeWithGoogle(
     if (ROUTE_END_AT_KITCHEN) {
         middle = points;
     } else {
-        // 最远的一单当终点
+        // 离起点最远的一单当终点
         let farIdx = 0;
         let farKm = -1;
         points.forEach((p, i) => {
-            const km = distanceFromPearlPointKm(p.lat, p.lng);
+            const km = haversineKm(origin.lat, origin.lng, p.lat, p.lng);
             if (km > farKm) { farKm = km; farIdx = i; }
         });
         destPoint = points[farIdx];
@@ -446,7 +504,7 @@ async function optimizeWithGoogle(
     const doOptimize = middle.length >= 2;
 
     const buildBody = (withTraffic: boolean) => ({
-        origin: wp(PEARL_POINT_LAT, PEARL_POINT_LNG),
+        origin: wp(origin.lat, origin.lng),
         destination: wp(destLat, destLng),
         ...(middle.length > 0 ? { intermediates: middle.map(m => wp(m.lat, m.lng)) } : {}),
         travelMode: 'DRIVE',
@@ -495,17 +553,22 @@ async function optimizeWithGoogle(
  *
  * 在 4km 半径、20 单以内，直线距离排出来的顺序和真实路网差别很小 ——
  * 这条路径不只是「兜底」，就算 Google 全挂了也够用。
+ *
+ * origin 默认厨房（老调用方不传就是原来的行为）。
  */
-export function optimizeLocally(points: Located[]): { order: Located[]; totalKm: number } {
+export function optimizeLocally(
+    points: Located[],
+    origin: { lat: number; lng: number } = KITCHEN_ORIGIN,
+): { order: Located[]; totalKm: number } {
     if (points.length <= 1) {
         return { order: [...points], totalKm: points.length === 1
-            ? distanceFromPearlPointKm(points[0].lat, points[0].lng) : 0 };
+            ? haversineKm(origin.lat, origin.lng, points[0].lat, points[0].lng) : 0 };
     }
 
     // ── 最近邻 ──
     const remaining = [...points];
     const tour: Located[] = [];
-    let curLat = PEARL_POINT_LAT, curLng = PEARL_POINT_LNG;
+    let curLat = origin.lat, curLng = origin.lng;
     while (remaining.length > 0) {
         let bestIdx = 0, bestKm = Infinity;
         remaining.forEach((p, i) => {
@@ -525,9 +588,9 @@ export function optimizeLocally(points: Located[]): { order: Located[]; totalKm:
         improved = false;
         for (let i = 0; i < tour.length - 1; i++) {
             for (let j = i + 1; j < tour.length; j++) {
-                const before = tourLength(tour);
+                const before = tourLength(tour, origin);
                 const candidate = [...tour.slice(0, i), ...tour.slice(i, j + 1).reverse(), ...tour.slice(j + 1)];
-                if (tourLength(candidate) < before - 1e-9) {
+                if (tourLength(candidate, origin) < before - 1e-9) {
                     tour.splice(0, tour.length, ...candidate);
                     improved = true;
                 }
@@ -535,7 +598,7 @@ export function optimizeLocally(points: Located[]): { order: Located[]; totalKm:
         }
     }
 
-    return { order: tour, totalKm: Math.round(tourLength(tour) * 10) / 10 };
+    return { order: tour, totalKm: Math.round(tourLength(tour, origin) * 10) / 10 };
 }
 
 /**
@@ -546,10 +609,10 @@ export function optimizeLocally(points: Located[]): { order: Located[]; totalKm:
  */
 export const __testables = { applyWaypointOrder, parseDurationSeconds };
 
-/** 厨房 → 各点依次 的直线总长（ROUTE_END_AT_KITCHEN 时补回程）。 */
-function tourLength(tour: Located[]): number {
+/** 起点 → 各点依次 的直线总长（ROUTE_END_AT_KITCHEN 时补回厨房的回程）。 */
+function tourLength(tour: Located[], origin: { lat: number; lng: number }): number {
     if (tour.length === 0) return 0;
-    let sum = haversineKm(PEARL_POINT_LAT, PEARL_POINT_LNG, tour[0].lat, tour[0].lng);
+    let sum = haversineKm(origin.lat, origin.lng, tour[0].lat, tour[0].lng);
     for (let i = 0; i < tour.length - 1; i++) {
         sum += haversineKm(tour[i].lat, tour[i].lng, tour[i + 1].lat, tour[i + 1].lng);
     }
@@ -568,12 +631,27 @@ function tourLength(tour: Located[]): number {
  * 给一批订单排出配送顺序。**永不抛错** —— 最坏情况原样返回传入顺序。
  *
  * 拿不到坐标的单一律排到队尾（/driver 会标黄提醒人工确认位置）。
+ *
+ * opts.origin = 司机当下位置（浏览器定位原样传进来）；不传或不可信就从厨房算。
  */
 export async function planRoute(
     db: FirebaseFirestore.Firestore,
     orders: RouteOrderInput[],
+    opts: { origin?: RouteOriginInput | null } = {},
 ): Promise<RoutePlan> {
-    const fallback = (note: string): RoutePlan => ({
+    const { origin, note: originNote } = resolveOrigin(opts.origin);
+    const plan = await planFrom(db, orders, origin);
+    // 起点降级的原因排前面 —— 它决定了整条路线是从哪算起的
+    const note = [originNote, plan.note].filter(Boolean).join('；') || null;
+    return { ...plan, origin, note };
+}
+
+async function planFrom(
+    db: FirebaseFirestore.Firestore,
+    orders: RouteOrderInput[],
+    origin: RouteOrigin,
+): Promise<Omit<RoutePlan, 'origin'>> {
+    const fallback = (note: string): Omit<RoutePlan, 'origin'> => ({
         orderedIds: orders.map(o => o.id),
         routeSource: 'none',
         totalKm: null,
@@ -617,7 +695,7 @@ export async function planRoute(
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (apiKey) {
         try {
-            const g = await optimizeWithGoogle(located, apiKey);
+            const g = await optimizeWithGoogle(located, apiKey, origin);
             if (g) {
                 return {
                     orderedIds: [...g.order.map(p => p.id), ...unlocated],
@@ -636,7 +714,7 @@ export async function planRoute(
 
     // ── 降级：本地直线距离 ──
     try {
-        const l = optimizeLocally(located);
+        const l = optimizeLocally(located, origin);
         return {
             orderedIds: [...l.order.map(p => p.id), ...unlocated],
             routeSource: 'local',

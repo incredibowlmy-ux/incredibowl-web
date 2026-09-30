@@ -17,6 +17,7 @@ import {
     planRoute,
     optimizeLocally,
     normalizeAddress,
+    resolveOrigin,
     __testables,
     type RouteOrderInput,
 } from '@/lib/routeOptimizer';
@@ -249,6 +250,80 @@ async function main() {
         eq('乱码 "abc" → null 不是 NaN', parseDurationSeconds('abc'), null);
         ok('绝不返回 NaN', ['165s', 'abc', '', 's', undefined, null, 165, {}]
             .every(v => !Number.isNaN(parseDurationSeconds(v as any))));
+    }
+
+    console.log('\n【J】起点 = 当下位置（09-30）— 不传就是厨房，传了要把关');
+    {
+        // J1: resolveOrigin 把关（输入来自请求体，什么形状都可能）
+        const nearE = { lat: STOPS.E.lat - 0.001, lng: STOPS.E.lng + 0.001 };
+        eq('不传 → 厨房、无 note', resolveOrigin(undefined), { origin: { lat: PEARL_POINT_LAT, lng: PEARL_POINT_LNG, source: 'kitchen' }, note: null });
+        eq('合法 GPS（±20m）→ gps', resolveOrigin({ ...nearE, accuracyM: 20 }).origin, { ...nearE, source: 'gps' });
+        eq('没给精度也接受（只是不校验）', resolveOrigin(nearE).origin.source, 'gps');
+        const bad = [
+            ['NaN 坐标', { lat: NaN, lng: 101.6 }, '无效'],
+            ['字符串坐标', { lat: '3.1', lng: '101.6' }, '无效'],
+            ['整个是字符串', '3.1,101.6', '无效'],
+            ['离厨房 40km', { lat: 3.45, lng: 101.67 }, 'km'],
+            ['精度 ±2000m（IP 定位级）', { ...nearE, accuracyM: 2000 }, '±2000m'],
+            ['精度字段是乱码', { ...nearE, accuracyM: 'x' }, '无法判断'],
+        ] as const;
+        for (const [label, input, hint] of bad) {
+            const r = resolveOrigin(input as any);
+            ok(`${label} → 退厨房且 note 说明原因`, r.origin.source === 'kitchen' && !!r.note?.includes(hint), `note: ${r.note}`);
+        }
+
+        // J2: 本地排序 —— 人在西北角 E 旁边，第一站就该是 E（从厨房算第一站是 A）
+        const orders: RouteOrderInput[] = Object.entries(STOPS).map(([id, c]) => ({ id, deliveryLat: c.lat, deliveryLng: c.lng }));
+        const fromKitchen = await planRoute(fakeDb(), orders);
+        const fromE = await planRoute(fakeDb(), orders, { origin: { ...nearE, accuracyM: 15 } });
+        eq('不传起点：第一站仍是离厨房最近的 A（旧行为不变）', fromKitchen.orderedIds[0], 'A');
+        eq('不传起点：origin.source = kitchen', fromKitchen.origin.source, 'kitchen');
+        eq('人在 E 旁边：第一站变成 E', fromE.orderedIds[0], 'E');
+        eq('人在 E 旁边：origin.source = gps', fromE.origin.source, 'gps');
+        eq('带起点也一单不少', [...fromE.orderedIds].sort(), orders.map(o => o.id).sort());
+
+        // J3: totalKm 从起点量起
+        const pts = Object.entries(STOPS).map(([id, c]) => ({ id, lat: c.lat, lng: c.lng }));
+        const l = optimizeLocally(pts, nearE);
+        let km = haversineKm(nearE.lat, nearE.lng, l.order[0].lat, l.order[0].lng);
+        for (let i = 0; i < l.order.length - 1; i++) km += haversineKm(l.order[i].lat, l.order[i].lng, l.order[i + 1].lat, l.order[i + 1].lng);
+        ok('totalKm 是从起点出发的里程（±0.1）', Math.abs(l.totalKm - km) < 0.1, `报告 ${l.totalKm} / 实算 ${km.toFixed(2)}`);
+
+        // J4: 起点被拒 → note 先说起点原因，再接排序降级原因
+        const rej = await planRoute(fakeDb(), orders, { origin: { ...nearE, accuracyM: 3000 } });
+        eq('起点被拒 → 按厨房排（与不传一致）', rej.orderedIds, fromKitchen.orderedIds);
+        ok('note 同时带起点原因和降级原因', !!rej.note?.startsWith('当前定位精度') && rej.note.includes('本地直线距离'), `note: ${rej.note}`);
+
+        // J5: Google 路径 —— 拦截 fetch，检查真正发给 Routes API 的请求体
+        const realFetch = globalThis.fetch;
+        const bodies: any[] = [];
+        globalThis.fetch = (async (_url: any, init: any) => {
+            const body = JSON.parse(init.body);
+            bodies.push(body);
+            const n = body.intermediates?.length || 0;
+            return new Response(JSON.stringify({ routes: [{
+                optimizedIntermediateWaypointIndex: Array.from({ length: n }, (_, i) => i),
+                distanceMeters: 12000, duration: '1500s',
+            }] }), { status: 200 });
+        }) as any;
+        process.env.GOOGLE_MAPS_API_KEY = 'dogfood-fake-key';
+        try {
+            const g1 = await planRoute(fakeDb(), orders, { origin: { ...nearE, accuracyM: 10 } });
+            const b1 = bodies.at(-1);
+            eq('Google：routeSource = google', g1.routeSource, 'google');
+            eq('Google：请求 origin = 当下位置', b1.origin.location.latLng, { latitude: nearE.lat, longitude: nearE.lng });
+            // 离 E 旁边最远的是东南角 D；以前固定量「离厨房最远」会挑 E（就在身边）当终点
+            eq('Google：终点 = 离起点最远的 D', b1.destination.location.latLng, { latitude: STOPS.D.lat, longitude: STOPS.D.lng });
+            eq('Google：D 排最后', g1.orderedIds.at(-1), 'D');
+
+            await planRoute(fakeDb(), orders);
+            const b2 = bodies.at(-1);
+            eq('Google 不传起点：origin 仍是厨房', b2.origin.location.latLng, { latitude: PEARL_POINT_LAT, longitude: PEARL_POINT_LNG });
+            eq('Google 不传起点：终点仍是离厨房最远的 E', b2.destination.location.latLng, { latitude: STOPS.E.lat, longitude: STOPS.E.lng });
+        } finally {
+            globalThis.fetch = realFetch;
+            delete process.env.GOOGLE_MAPS_API_KEY;
+        }
     }
 
     console.log(`\n${'─'.repeat(50)}`);

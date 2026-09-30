@@ -17,7 +17,7 @@ async function getDb() {
  * Called by the dashboard (cross-origin, Bearer admin token) and /driver.
  *
  * actions:
- *   start    {orderIds[]}          → 自动排出最优配送顺序（planRoute），create batch,
+ *   start    {orderIds[], origin?} → 自动排出最优配送顺序（planRoute），create batch,
  *                                    orders → 'delivering' (+batchId, backfill
  *                                    trackToken for manual orders);
  *                                    auto-completes any previous active batch
@@ -25,11 +25,15 @@ async function getDb() {
  *   location {batchId, lat, lng}   → update live driver position
  *   deliver  {batchId, orderId}    → order → 'delivered'; auto-complete batch
  *                                    when every order is delivered
- *   resort   {batchId}             → 对「还没送的单」重新排一次路线，就地更新顺序。
+ *   resort   {batchId, origin?}    → 对「还没送的单」重新排一次路线，就地更新顺序。
  *                                    不碰订单状态、不碰批次生死 —— 用于中途插单/跳单后
  *                                    重排，也用于改完 Google API 配置后立刻验证效果
  *                                    （排序只在建批次那一刻算一次，刷新页面不会重算）
  *   complete {batchId}             → force-close the batch (drops driverLoc)
+ *
+ * origin = {lat, lng, accuracyM} 司机当下的浏览器定位 —— 路线从这里起算；
+ * 不传或不可信（planRoute 内 resolveOrigin 把关）就从厨房算。实际用的起点
+ * 存进 batch.routeOrigin，/driver 和 dashboard 据此如实显示「起点：…」。
  */
 // `start` 要跑路线排序（首次启用时可能要 geocode 一整批新地址 + 调 Directions），
 // 默认 10s 不够。routeOptimizer 内部已有 20s + 8s×2 的时间预算，60s 是安全上限。
@@ -70,7 +74,7 @@ export async function POST(req: NextRequest) {
           deliveryLat: d.deliveryLat,
           deliveryLng: d.deliveryLng,
         };
-      }));
+      }), { origin: body.origin });
       const routedIds = plan.orderedIds;
 
       // Only one batch on the road at a time — close any stale active batch
@@ -86,6 +90,7 @@ export async function POST(req: NextRequest) {
         startedBy: adminEmail,
         startedAt: FieldValue.serverTimestamp(),
         routeSource: plan.routeSource,
+        routeOrigin: plan.origin,
         routeTotalKm: plan.totalKm,
         routeTotalMinutes: plan.totalMinutes,
         unlocatedOrderIds: plan.unlocatedOrderIds,
@@ -110,6 +115,7 @@ export async function POST(req: NextRequest) {
         route: {
           orderIds: routedIds,
           source: plan.routeSource,
+          origin: plan.origin,
           totalKm: plan.totalKm,
           totalMinutes: plan.totalMinutes,
           unlocatedOrderIds: plan.unlocatedOrderIds,
@@ -158,6 +164,8 @@ export async function POST(req: NextRequest) {
           orderIds: batchOrderIds,
           deliveredOrderIds: batch.deliveredOrderIds || [],
           routeSource: batch.routeSource || 'none',
+          // 09-30 之前建的批次没有这个字段 —— 那时一律从厨房算
+          routeOrigin: batch.routeOrigin ?? null,
           routeTotalKm: batch.routeTotalKm ?? null,
           routeTotalMinutes: batch.routeTotalMinutes ?? null,
         },
@@ -230,11 +238,12 @@ export async function POST(req: NextRequest) {
       const plan = await planRoute(db, snaps.filter(s => s.exists).map(s => {
         const d = s.data() || {};
         return { id: s.id, userAddress: d.userAddress, deliveryLat: d.deliveryLat, deliveryLng: d.deliveryLng };
-      }));
+      }), { origin: body.origin });
 
       await batchRef.update({
         orderIds: [...doneIds, ...plan.orderedIds],
         routeSource: plan.routeSource,
+        routeOrigin: plan.origin,
         routeTotalKm: plan.totalKm,
         routeTotalMinutes: plan.totalMinutes,
         unlocatedOrderIds: plan.unlocatedOrderIds,
@@ -247,6 +256,7 @@ export async function POST(req: NextRequest) {
         route: {
           orderIds: plan.orderedIds,
           source: plan.routeSource,
+          origin: plan.origin,
           totalKm: plan.totalKm,
           totalMinutes: plan.totalMinutes,
           unlocatedOrderIds: plan.unlocatedOrderIds,
