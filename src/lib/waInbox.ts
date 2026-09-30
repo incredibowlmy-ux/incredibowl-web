@@ -37,12 +37,32 @@ export interface InboxRow {
 /** bot 求救 / 客户发来媒体之后，多久还没人理就不再算「待回复」（那时 24h 窗口早过了，置顶只会变噪音）。 */
 export const NEEDS_REPLY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 const SOS_KINDS = new Set(['escalate', 'ai_down']);
+/** n8n 的 alert 里哪些 kind 算「bot 求救」（答不上来 / AI 挂了）。图片、定位、人工转发不算。 */
+export const isSosKind = (kind: unknown): boolean => SOS_KINDS.has(String(kind || ''));
+
+/**
+ * 给收件箱看的状态。已关闭之后客户又来了消息 → 当作重新进行中。
+ * 库里的 status 只有 n8n 文字路线的 touch 会改回 engaged；客户发图片 / 语音 / 定位、或人工接管期间来消息
+ * 都不经过 touch，对话会一直停在「已关闭」里没人看。这里只改显示，不写库、不影响 bot 的新一轮判断。
+ */
+export function effectiveStatus(x: Record<string, any>): string {
+  const status = String(x?.status || 'engaged');
+  if (status !== 'closed') return status;
+  const closedAt = Number(x?.closedAtMs) || 0;
+  const turns: any[] = Array.isArray(x?.turns) ? x.turns : [];
+  for (let i = turns.length - 1; i >= 0; i--) {
+    const t = turns[i];
+    if (t && t.role === 'in') return closedAt > 0 && (Number(t.ts) || 0) > closedAt ? 'engaged' : status;
+  }
+  return status;
+}
 
 /**
  * 这条对话是不是在等**老板本人**回。只认三种确定的情形：
  *   human  人工接管中（bot 已静音）而客户说了最后一句 —— 只有老板能回
  *   sos    bot 求救过（答不上来 / AI 挂了），之后老板没说过话
- *   media  客户最后发来的是图片 / 文件 / 语音 / 视频（多半是付款截图），之后老板没说过话
+ *   media  老板最后一次说话之后，客户发来过图片 / 文件 / 语音 / 视频（多半是付款截图）。
+ *          看的是「之后有没有」，不是「最后一条是不是」：客户发完截图紧跟一句「已转账」很常见，不能被那句文字冲掉。
  *
  * 故意**不**把「bot 接待中、客户说了最后一句文字」算进来：n8n 的开场白、图片自动回复等
  * 没有记进 turns，那样判断会把 bot 其实已经回过的对话全部误报成待回复。
@@ -50,21 +70,24 @@ const SOS_KINDS = new Set(['escalate', 'ai_down']);
  */
 export function needsReplyWhy(x: Record<string, any>, now: number): '' | 'human' | 'sos' | 'media' {
   const turns: any[] = Array.isArray(x?.turns) ? x.turns.filter((t: any) => t && typeof t === 'object') : [];
-  let last: any = null, lastIn: any = null, lastBossTs = 0;
+  let last: any = null, lastIn: any = null, lastBossTs = 0, mediaInMs = 0;
+  // 从后往前，走到最后一条老板消息为止：它之前的事老板已经接过手了
   for (let i = turns.length - 1; i >= 0; i--) {
     const t = turns[i];
     if (!last && t.role !== 'sys') last = t;
-    if (!lastIn && t.role === 'in') lastIn = t;
-    if (!lastBossTs && t.role === 'boss') lastBossTs = Number(t.ts) || 0;
-    if (last && lastIn && lastBossTs) break;
+    if (t.role === 'boss') { lastBossTs = Number(t.ts) || 0; break; }
+    if (t.role === 'in') {
+      if (!lastIn) lastIn = t;
+      if (!mediaInMs && t.media) mediaInMs = Number(t.ts) || 0;
+    }
   }
   const lastInMs = lastIn ? Number(lastIn.ts) || 0 : 0;
   const settled = (x?.status === 'ordered' || x?.status === 'closed') && (Number(x?.closedAtMs) || 0) >= lastInMs;
   if (settled) return '';
   if ((Number(x?.humanUntil) || 0) > now && last?.role === 'in') return 'human';
   const alertAt = Number(x?.alertAtMs) || 0;
-  if (SOS_KINDS.has(String(x?.alertKind || '')) && alertAt > lastBossTs && now - alertAt < NEEDS_REPLY_MAX_AGE_MS) return 'sos';
-  if (lastIn?.media && lastInMs > lastBossTs && now - lastInMs < NEEDS_REPLY_MAX_AGE_MS) return 'media';
+  if (isSosKind(x?.alertKind) && alertAt > lastBossTs && now - alertAt < NEEDS_REPLY_MAX_AGE_MS) return 'sos';
+  if (mediaInMs > 0 && now - mediaInMs < NEEDS_REPLY_MAX_AGE_MS) return 'media';
   return '';
 }
 
@@ -93,7 +116,7 @@ export function leadRow(id: string, x: Record<string, any>, now: number): InboxR
   return {
     phone: id,
     name: String(x?.name || profile.nickname || ''),
-    status: String(x?.status || 'engaged'),
+    status: effectiveStatus(x),
     lang: String(x?.lang || ''),
     human: (Number(x?.humanUntil) || 0) > now,
     humanUntil: Number(x?.humanUntil) || 0,

@@ -87,7 +87,14 @@ export async function GET(req: NextRequest) {
     }
 
     const headers = new Headers(CORS_HEADERS);
-    headers.set('Content-Type', String(meta.mime_type || fileRes.headers.get('content-type') || 'application/octet-stream'));
+    // 这是任何人都能发过来的文件：只有图片 / 音视频 / PDF 按原类型给，其余（html、svg、未知类型…）一律
+    // 当二进制附件。dashboard 会把取回的内容做成同源的 blob，html / svg 按原类型给就等于让陌生人在
+    // 管理后台的源下跑脚本。
+    const mime = String(meta.mime_type || fileRes.headers.get('content-type') || '').toLowerCase().split(';')[0].trim();
+    const safe = /^(image\/(jpeg|png|webp|gif)|audio\/[\w.+-]+|video\/[\w.+-]+|application\/pdf)$/.test(mime);
+    headers.set('Content-Type', safe ? String(meta.mime_type || mime) : 'application/octet-stream');
+    headers.set('X-Content-Type-Options', 'nosniff');
+    if (!safe) headers.set('Content-Disposition', 'attachment');
     // private：这是客户发来的内容，不进任何共享缓存
     headers.set('Cache-Control', 'private, max-age=3600');
     const len = fileRes.headers.get('content-length');

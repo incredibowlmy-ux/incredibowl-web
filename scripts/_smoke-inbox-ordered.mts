@@ -68,8 +68,12 @@ try {
   await ref.update({ closedAtMs: Date.now() - 25 * 3600 * 1000 });
   t = await touch('下周菜单有什么');
   d = await doc();
-  ck('算新一轮：回到 engaged', t.newSession === true && d.status === 'engaged', { n: t.newSession, s: d.status });
+  ck('保护期过了：状态回到 engaged', d.status === 'engaged', d.status);
+  ck('但刚聊过（<24h）不当新一轮 —— n8n 走 AI 回答，不发开场白', t.newSession === false, t.newSession);
   ck('追单恢复排程', Number(d.nextNudgeMs) > 0, d.nextNudgeMs);
+  await ref.update({ status: 'ordered', closedAtMs: Date.now() - 30 * 3600 * 1000, lastMsgMs: Date.now() - 26 * 3600 * 1000 });
+  t = await touch('这周还有鸡扒吗');
+  ck('成交已久且 24h 没说过话 → 才是新一轮', t.newSession === true && (await doc()).status === 'engaged', t.newSession);
 
   console.log('\n=== 4. 关闭 / 重新打开 ===');
   r = await op('close');
@@ -175,6 +179,11 @@ try {
     row = l.rows?.find((x: any) => x.phone === PHONE);
     ck('alert(escalate) → 列表行 sos / needsReply', alert.ok === true && row?.sos === true && row?.needsReply === true && row?.needsWhy === 'sos', { alert, sos: row?.sos, why: row?.needsWhy });
     await db.collection('waAlerts').doc('wamid.SMOKEALERT').delete();
+    // 求救之后客户丢了个定位（n8n 会再发一条 kind=pin 的 alert）→ 求救记号不能被盖掉
+    await post('/api/n8n/lead', N8N_KEY, { action: 'alert', phone: PHONE, alertMsgId: 'wamid.SMOKEPIN', customerMsg: 'pin', kind: 'pin' });
+    await db.collection('waAlerts').doc('wamid.SMOKEPIN').delete();
+    l = await op('list');
+    ck('之后来一条 kind=pin 的 alert → 求救红标还在', l.rows?.find((x: any) => x.phone === PHONE)?.needsWhy === 'sos', l.rows?.find((x: any) => x.phone === PHONE)?.needsWhy);
     await post('/api/n8n/lead', N8N_KEY, { action: 'reply', phone: PHONE, role: 'boss', text: '老板从手机回了' });
     l = await op('list');
     row = l.rows?.find((x: any) => x.phone === PHONE);
@@ -189,6 +198,17 @@ try {
     row = l.rows?.find((x: any) => x.phone === PHONE);
     ck('人工接管中客户说了最后一句 → needsWhy=human', row?.needsWhy === 'human', row?.needsWhy);
     await op('release');
+
+    // 已关闭之后客户发来图片（不经过 touch，库里 status 不会变）→ 列表和线程都显示为进行中
+    await op('close');
+    const c2 = await doc();
+    const ts2 = Date.now() + 5;
+    await ref.update({ lastInboundAtMs: ts2, turns: [...c2.turns, { role: 'in', text: '[图片]', ts: ts2, media: { kind: 'image', id: '123456789' } }] });
+    l = await op('list');
+    row = l.rows?.find((x: any) => x.phone === PHONE);
+    const g2 = await op('get');
+    ck('关闭后客户发图：库里仍 closed，列表 / 线程显示 engaged，且进「待回复」', (await doc()).status === 'closed' && row?.status === 'engaged' && g2.status === 'engaged' && row?.needsWhy === 'media', { db: (await doc()).status, row: row?.status, get: g2.status, why: row?.needsWhy });
+    await op('reopen');
 
     // 上传发图：本机没有 WA token，验到「参数校验 + 不会把文件当链接发」为止
     const up = await post('/api/admin/wa-lead', signIn.idToken, { op: 'send', phone: PHONE, text: '', media: { kind: 'image', data: 'aGVsbG8=', mime: 'image/jpeg', filename: 'a.jpg' } });

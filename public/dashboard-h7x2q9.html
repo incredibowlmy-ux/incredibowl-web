@@ -9148,12 +9148,20 @@ incredibowl.my`,
             pulseSince: 0, pulseBusy: false, starting: false,
             okAt: 0, connErr: '',  // 上次成功更新的时间 / 当前的连接错误
             profilePhone: '',      // 档案栏的备注表单是给哪个号码画的
+            sending: '',           // 正在发送中的号码（发完清空）；期间发送键不能被轮询重新点亮
+            closing: false,        // 手机：已经在退历史关线程了，别再退一格（连点两次 ← 会直接离开 dashboard）
             links: {},             // 号码 → 带对话标识的下单链接（问过一次就记住）
             upload: null };        // 📎 面板里选好、压好的待发文件 { kind, data(base64), mime, filename, size }
         // 客户发来的图片要带 Authorization 才能取（Meta 媒体 URL 5 分钟过期且要 token），
         // 所以 <img src> 用不了 —— fetch 成 blob 再挂上去，同一张只取一次。
         const inboxMediaCache = new Map();
         /** Meta media id → 本地 blob URL（图片 / 语音 / 视频 / PDF 都走这里；同一个 id 只取一次）。 */
+        //
+        // ⚠️ 安全：blob URL 和 dashboard 同源。客户可以发任何文件过来，如果把一个 text/html 或 svg 的 blob
+        // 当页面打开，里面的脚本就在管理后台的源下执行（能拿到登录凭据）。所以这里把类型收死：
+        // 只有图片 / 音视频 / PDF 保留原类型，其余一律重包成 application/octet-stream —— 只能下载，永远不会被渲染。
+        const INBOX_INLINE_MIME = /^(image\/(jpeg|png|webp|gif)|audio\/[\w.+-]+|video\/[\w.+-]+|application\/pdf)$/;
+        const inboxMediaType = new Map();   // id → 归一后的类型（'' = 不可内联，只能下载）
         async function inboxFetchMedia(id) {
             if (inboxMediaCache.has(id)) return inboxMediaCache.get(id);
             const user = auth.currentUser;
@@ -9161,8 +9169,12 @@ incredibowl.my`,
             const token = await user.getIdToken();
             const res = await fetch(`${ADMIN_API_BASE}/api/admin/wa-media?id=${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const url = URL.createObjectURL(await res.blob());
+            const raw = await res.blob();
+            const type = String(raw.type || '').toLowerCase().split(';')[0].trim();
+            const safe = INBOX_INLINE_MIME.test(type);
+            const url = URL.createObjectURL(safe ? raw : new Blob([raw], { type: 'application/octet-stream' }));
             inboxMediaCache.set(id, url);
+            inboxMediaType.set(id, safe ? type : '');
             return url;
         }
         async function inboxLoadMedia(id, img) {
@@ -9384,7 +9396,8 @@ incredibowl.my`,
         const inboxIsMobile = () => window.matchMedia('(max-width: 700px)').matches;
         function inboxWatching(phone) {
             if (!inbox.phone || (phone && phone !== inbox.phone)) return false;
-            if (document.hidden || state.currentPage !== 'inbox') return false;
+            // hasFocus：dashboard 在副屏上开着、人在别的窗口（或离开电脑）时 hidden 仍是 false，那也不算在看
+            if (document.hidden || !document.hasFocus() || state.currentPage !== 'inbox') return false;
             return !inboxIsMobile() || !!document.querySelector('.inbox-wrap.thread-open');
         }
 
@@ -9621,7 +9634,12 @@ incredibowl.my`,
          * 这样「界面上的 ←」和「系统返回键」走的是同一条路，历史里不会留下多余的一格。
          */
         function inboxCloseThread(fromHistory) {
-            if (!fromHistory && history.state && history.state.inboxThread) { history.back(); return; }
+            if (!fromHistory && history.state && history.state.inboxThread) {
+                if (inbox.closing) return;
+                inbox.closing = true; setTimeout(() => { inbox.closing = false; }, 1000);
+                history.back(); return;
+            }
+            inbox.closing = false;
             inboxStashDraft();
             clearInterval(inbox.threadTimer); inbox.threadTimer = null;
             inbox.phone = ''; inbox.detail = null; inbox.profilePhone = '';
@@ -9677,11 +9695,11 @@ incredibowl.my`,
 
         /**
          * 「接管到早上 9 点」要接管多少分钟。以前按钮写「接管到明早」实际是固定 12 小时 ——
-         * 上午点只到晚上、晚上 10 点点又多管到上午 10 点。离 9 点不到 1 小时（比如 08:30）就算到下一个 9 点。
+         * 上午点只到晚上、晚上 10 点点又多管到上午 10 点。现在就是「到下一个 09:00」，最长 24 小时，正好在后端上限内。
          */
         function inboxMorning(now = new Date()) {
             const t = new Date(now); t.setHours(9, 0, 0, 0);
-            if (t.getTime() - now.getTime() < 60 * 60000) t.setDate(t.getDate() + 1);
+            if (t.getTime() <= now.getTime()) t.setDate(t.getDate() + 1);
             const sameDay = t.getDate() === now.getDate();
             return { minutes: Math.min(1440, Math.max(1, Math.round((t.getTime() - now.getTime()) / 60000))), label: sameDay ? '接管到今早 9 点' : '接管到明早 9 点' };
         }
@@ -9770,7 +9788,10 @@ incredibowl.my`,
             const canSend = d.sendConfigured && (rem > 0 || hasTpl);
             // 模板模式下输入框锁住：模板只发上面的变量，这里打的字不会发出去（以前能打、发完还被清空 = 静默丢字）。
             // 框里已有的草稿原样留着，等客户回了、窗口重开再发。
-            btn.disabled = !canSend; ta.disabled = !canSend || tplMode;
+            // inbox.sending：这条线程正有一条在发（上传图片可能要十几秒）。轮询每 10 秒经过这里，
+            // 不能把发送键重新点亮 —— 老板以为没发出去再点一次，客户就收到两份。
+            const busy = inbox.sending === d.phone;
+            btn.disabled = !canSend || busy; ta.disabled = !canSend || tplMode || busy;
             ta.placeholder = tplMode ? '模板模式：这里的文字不会发出，请填上面的变量' : '输入回复，Ctrl+Enter 发送';
             btn.textContent = tplMode ? '发送模板' : '发送';
             hint.textContent = !d.sendConfigured ? 'Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）'
@@ -9988,16 +10009,20 @@ incredibowl.my`,
         async function inboxSend() {
             const ta = $('#inboxText'), btn = $('#inboxSend');
             const phone = inbox.phone;   // 锁定收件人：等 Meta 的那几秒里老板可能已经点到别的对话
+            if (inbox.sending) { toast('上一条还在发送中，等它发完', 'error'); return; }
             if (!phone || btn.disabled) return;
             const text = ta.value.trim();
             const body = inboxSendBody(text);
             if (typeof body === 'string') { toast(body, 'error'); return; }
+            inbox.sending = phone;
             btn.disabled = true; ta.disabled = true;
+            if (body.media && body.media.data) btn.textContent = '上传中…';
             let failed = '';
             try {
                 const r = await callAdminAPI('/api/admin/wa-lead', body);
                 if (!r.ok) failed = r.error || '发送失败';
             } catch (err) { failed = '发送失败：' + err.message; }
+            finally { inbox.sending = ''; }
             const still = inbox.phone === phone;
             if (failed) {
                 toast(failed, 'error');
@@ -10051,7 +10076,10 @@ incredibowl.my`,
                 return;
             }
             if (e.target.classList?.contains('inbox-media')) {
-                if (e.target.src) window.open(e.target.src, '_blank');
+                // 点图片看大图。blob 只有确认是位图才新开页（同源，见 inboxFetchMedia 的安全说明）；老板自己发的是 https 链接
+                const src = e.target.src || '';
+                const okBlob = src.startsWith('blob:') && [...inboxMediaCache.entries()].some(([id, u]) => u === src && /^image\//.test(inboxMediaType.get(id) || ''));
+                if (okBlob || /^https:\/\//i.test(src)) window.open(src, '_blank', 'noopener');
                 return;
             }
             if (e.target.id === 'inboxEmojiBtn') { const p = $('#inboxEmoji'); p.hidden = !p.hidden; if (!p.hidden) renderInboxEmoji(); return; }
@@ -10127,14 +10155,22 @@ incredibowl.my`,
                 const kind = mediaBtn.dataset.kind, label = mediaBtn.textContent;
                 mediaBtn.disabled = true; mediaBtn.textContent = '加载中…';
                 try {
-                    const url = await inboxFetchMedia(mediaBtn.dataset.id);
-                    if (kind === 'audio' || kind === 'video') {
+                    const id = mediaBtn.dataset.id;
+                    const url = await inboxFetchMedia(id);
+                    const type = inboxMediaType.get(id) || '';
+                    if ((kind === 'audio' && type.startsWith('audio/')) || (kind === 'video' && type.startsWith('video/'))) {
                         const el = document.createElement(kind);
                         el.controls = true; el.src = url; el.autoplay = true;
                         mediaBtn.replaceWith(el);
                     } else {
-                        window.open(url, '_blank');
-                        mediaBtn.disabled = false; mediaBtn.textContent = label;
+                        // 换成一个真链接让老板再点一下：PDF 新开一页看，其它类型只给下载（见 inboxFetchMedia 的安全说明）。
+                        // 不用 window.open —— 等完网络再开窗，手机浏览器会当弹窗拦掉。
+                        const a = document.createElement('a');
+                        a.className = 'inbox-media-file'; a.href = url;
+                        const name = label.replace(/ · 点击打开$/, '');
+                        if (type === 'application/pdf') { a.target = '_blank'; a.rel = 'noopener'; a.textContent = `${name} · 打开 PDF`; }
+                        else { a.download = (name.split('：')[1] || 'file').trim(); a.textContent = `${name} · 下载`; }
+                        mediaBtn.replaceWith(a);
                     }
                 } catch (err) { mediaBtn.disabled = false; mediaBtn.textContent = `取不到（${err.message}）· 点击重试`; }
                 return;
@@ -10222,11 +10258,13 @@ incredibowl.my`,
             if (inbox.phone || (w && w.classList.contains('thread-open'))) inboxCloseThread(true);
         });
         // 回到前台：马上追平（后台期间线程轮询是停的），顺带把正在看的线程标已读
-        document.addEventListener('visibilitychange', () => {
+        function inboxComeBack() {
             if (document.hidden || state.currentPage !== 'inbox') return;
             inboxRefreshList();
             if (inbox.phone) inboxRefreshThread(true);
-        });
+        }
+        document.addEventListener('visibilitychange', inboxComeBack);
+        window.addEventListener('focus', inboxComeBack);   // 从别的窗口点回来
         // 全局轮询：登录后 4 秒内先拿一次整份列表（角标马上对），之后每 30 秒一拍
         setInterval(inboxPulse, INBOX_PULSE_MS);
         let inboxSeedTries = 0;

@@ -5,7 +5,7 @@ import {
   markRead, sendTemplate, windowRemainingMs, uploadMedia,
   type SendResult, type SendInteractiveSpec,
 } from '@/lib/waSend';
-import { inboxRows, mutateLead } from '@/lib/waInbox';
+import { effectiveStatus, inboxRows, mutateLead } from '@/lib/waInbox';
 
 /**
  * POST /api/admin/wa-lead —— dashboard 的「碗妈对话」面板 + 「碗妈收件箱」（WATI 式）后端。
@@ -318,7 +318,7 @@ export async function POST(req: NextRequest) {
       return corsify(NextResponse.json({
         found: snap.exists,
         phone,
-        status: String(d.status || ''),
+        status: snap.exists ? effectiveStatus(d) : '',   // 已关闭后客户又来消息 → 显示为进行中，与列表一致
         orderId: String(d.orderId || ''),
         closedAtMs: Number(d.closedAtMs) || 0,
         lang: String(d.lang || ''),

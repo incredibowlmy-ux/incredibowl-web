@@ -7,7 +7,7 @@ import {
   WINDOW_MS,
 } from '@/lib/waLeadSchedule';
 import { appendTurn, mergeProfileFact, type TurnRole } from '@/lib/waWebhook';
-import { mutateLead } from '@/lib/waInbox';
+import { isSosKind, mutateLead } from '@/lib/waInbox';
 
 /**
  * /api/n8n/lead —— 碗妈 bot 的 lead 状态机（v4：+ 对话记录 / 人工接管 / 客户备注 / 警报映射）。
@@ -276,9 +276,10 @@ export async function POST(req: NextRequest) {
         kind,
         ts: now,
       });
-      // 同时在 lead 上留个记号：收件箱列表靠它给「bot 求救」的对话打红标、置顶（见 waInbox.needsReplyWhy）。
-      // 以前求救只发到老板手机，收件箱里看不出哪条是 bot 搞不定的。记不上不影响警报本身。
-      await ref.set({ alertAtMs: now, alertKind: kind }, { merge: true }).catch(() => { /* fail-open */ });
+      // 求救类（bot 答不上来 / AI 挂了）同时在 lead 上留个记号：收件箱列表靠它打红标、置顶
+      // （见 waInbox.needsReplyWhy）。以前求救只发到老板手机，收件箱里看不出哪条是 bot 搞不定的。
+      // 只记求救类：图片 / 定位 / 人工转发也会走 alert，不能让它们把还没处理的求救盖掉。记不上不影响警报本身。
+      if (isSosKind(kind)) await ref.set({ alertAtMs: now, alertKind: kind }, { merge: true }).catch(() => { /* fail-open */ });
       return NextResponse.json({ ok: true, alertId });
     }
 
@@ -364,11 +365,14 @@ export async function POST(req: NextRequest) {
     // 新一轮对话 = 距上次消息超过 24h（窗口已断）或上一轮已经收尾。
     // 只有新一轮才重置追单额度，避免同一个客户被连着几天反复追。
     // ⚠️ turns / profile 不随 session 重置 —— 记忆跨天保留，这正是 v4 与 buffer memory 的区别。
-    // 例外：刚成交（24h 内）的客户回一句「谢谢」不算新一轮 —— 保持已成交、不排追单。
-    // 否则成交标记一条消息就没了，1 小时后还会追一个已经下单的人（老板 2026-09-30 定）。
+    // 已成交的两段（老板 2026-09-30 定 24 小时）：
+    //   成交后 24h 内：客户回一句「谢谢」不算新一轮 —— 保持已成交、不排追单。否则成交标记一条消息就没了，
+    //     1 小时后还会追一个刚下单的人。
+    //   过了 24h：状态回到进行中、追单照常，但**不**因为「上一轮是已成交」就强行当新一轮 ——
+    //     n8n 对新一轮发的是固定开场白而不是 AI 回答；客户隔天问一句「到了吗」不该收到「你好，想吃什么」。
+    //     是不是新一轮只看「24h 没说过话」这一条，和普通客户一样。
     const orderedSticky = isOrderedSticky(prevStatus, prev.closedAtMs, now);
     const newSession = !orderedSticky && (!snap.exists
-      || prevStatus === 'ordered'
       || prevStatus === 'closed'
       || now - prevLastMsg > WINDOW_MS);
 

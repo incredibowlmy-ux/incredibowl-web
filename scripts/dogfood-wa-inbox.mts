@@ -6,7 +6,7 @@
  *
  * 跑法：npx tsx scripts/dogfood-wa-inbox.mts
  */
-import { leadRow, inboxRows, needsReplyWhy } from '@/lib/waInbox';
+import { leadRow, inboxRows, needsReplyWhy, isSosKind, effectiveStatus } from '@/lib/waInbox';
 
 let pass = 0, fail = 0;
 function check(label: string, cond: boolean, detail: unknown = '') {
@@ -94,7 +94,10 @@ console.log('\n=== 5. 待回复（等老板本人，不是等 bot）===');
   check('客户最后发的是图片、老板没回过 → media', why({ turns: [t('in', '我转账了', 6 * M), t('in', '[图片]', 5 * M, img)] }) === 'media');
   check('图片之后 bot 自动回了一句，老板仍没回 → 还是 media', why({ turns: [t('in', '[图片]', 5 * M, img), t('out', '收到图片，碗妈会看', 4 * M)] }) === 'media');
   check('图片之后老板回了 → 清掉', why({ turns: [t('in', '[图片]', 5 * M, img), t('boss', '收到', 4 * M)] }) === '');
-  check('图片之后客户又发了文字 → 最后一条客户消息不是媒体，不算', why({ turns: [t('in', '[图片]', 5 * M, img), t('in', '谢谢', 4 * M)] }) === '');
+  check('发完截图紧跟一句「已转账」→ 仍然 media（不能被后面那句文字冲掉）', why({ turns: [t('in', '[图片]', 5 * M, img), t('in', '已转账', 4 * M)] }) === 'media');
+  check('老板回过之后客户只发了文字 → 不算（截图那件事老板已经接手）', why({ turns: [t('in', '[图片]', 9 * M, img), t('boss', '收到', 6 * M), t('in', '谢谢', 4 * M)] }) === '');
+  check('老板回过之后客户又发了一张图 → 重新算', why({ turns: [t('in', '[图片]', 9 * M, img), t('boss', '收到', 6 * M), t('in', '[图片]', 4 * M, img)] }) === 'media');
+  check('求救类 kind 才留记号：escalate / ai_down 是，pin / image / human 不是', isSosKind('escalate') && isSosKind('ai_down') && !isSosKind('pin') && !isSosKind('image') && !isSosKind('human') && !isSosKind(undefined));
   check('两天前的图片 → 不再算', why({ turns: [t('in', '[图片]', 49 * H, img)] }) === '');
 
   check('客户发图之后订单确认了（已成交）→ 了结，不算', why({ status: 'ordered', closedAtMs: NOW - 2 * M, turns: [t('in', '[图片]', 5 * M, img)] }) === '');
@@ -105,6 +108,19 @@ console.log('\n=== 5. 待回复（等老板本人，不是等 bot）===');
   check('列表行带上 needsReply / needsWhy / sos', row.needsReply === true && row.needsWhy === 'sos' && row.sos === true, row);
   const plain = leadRow('60142', { turns: [t('in', 'hi', 3 * M), t('out', '你好', 2 * M)] }, NOW);
   check('普通对话 → 三个都是空', plain.needsReply === false && plain.needsWhy === '' && plain.sos === false);
+}
+
+console.log('\n=== 6. 已关闭之后客户又来消息 → 显示为进行中 ===');
+{
+  // 库里的 status 只有 n8n 文字路线会改回 engaged；图片 / 语音 / 人工接管期间的消息不会
+  check('关闭后客户发来图片 → 进行中', effectiveStatus({ status: 'closed', closedAtMs: NOW - 10 * M, turns: [t('in', '不要了', 20 * M), t('in', '[图片]', 5 * M)] }) === 'engaged');
+  check('关闭后没有新消息 → 仍是已关闭', effectiveStatus({ status: 'closed', closedAtMs: NOW - 10 * M, turns: [t('in', '不要了', 20 * M), t('out', '好的', 19 * M)] }) === 'closed');
+  check('关闭后只有 bot / 老板的消息 → 仍是已关闭', effectiveStatus({ status: 'closed', closedAtMs: NOW - 10 * M, turns: [t('in', '不要了', 20 * M), t('boss', '下次再来', 5 * M)] }) === 'closed');
+  check('旧数据没记关闭时间 → 不猜，保持已关闭', effectiveStatus({ status: 'closed', turns: [t('in', 'hi', 5 * M)] }) === 'closed');
+  check('已成交不受影响（它有自己的 24h 保护期）', effectiveStatus({ status: 'ordered', closedAtMs: NOW - 10 * M, turns: [t('in', '谢谢', 5 * M)] }) === 'ordered');
+  check('status 空 → engaged', effectiveStatus({}) === 'engaged');
+  const row = leadRow('60151', { status: 'closed', closedAtMs: NOW - 10 * M, humanUntil: NOW + H, turns: [t('in', '还是要一份', 5 * M)] }, NOW);
+  check('列表行：状态显示进行中，且算待回复（人工接管中）', row.status === 'engaged' && row.needsWhy === 'human', row);
 }
 
 console.log(`\n${'─'.repeat(52)}`);
