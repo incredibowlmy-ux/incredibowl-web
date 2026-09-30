@@ -339,6 +339,14 @@ export async function POST(req: Request) {
       } catch (e: any) {
         console.warn('[confirm-order] WhatsApp 确认失败（不影响订单）:', String(e?.message || e).slice(0, 160));
       }
+      // ── 碗妈收件箱：同号码的对话标成「已成交」并停追单（只动已存在的对话，自己吞错）──
+      try {
+        const { markLeadsOrdered } = await import('@/lib/waLeadStatus');
+        const n = await markLeadsOrdered(db, receiptOrders);
+        if (n) console.log(`[confirm-order] 收件箱标记成交 ${n} 条`);
+      } catch (e: any) {
+        console.warn('[confirm-order] 收件箱标记成交失败（不影响订单）:', String(e?.message || e).slice(0, 160));
+      }
     }
 
     return NextResponse.json({

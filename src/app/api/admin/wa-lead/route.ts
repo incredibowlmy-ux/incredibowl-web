@@ -24,6 +24,9 @@ import {
  *   { op: 'note',    phone, key, value }        记备注（key 白名单同 bot）
  *   { op: 'nudgeoff', phone }                   只停自动追单（对话照常：bot 照常回、老板照常发；客户再来消息也不会恢复）
  *   { op: 'nudgeon',  phone }                   恢复自动追单（客户下一条消息起重新排程）
+ *   { op: 'ordered', phone }                    标记成交：停追单，归入「已成交」（客户 24h 内再来消息仍保持）
+ *   { op: 'close',   phone }                    关闭：停追单，归入「已关闭」（客户再来消息自动重开）
+ *   { op: 'reopen',  phone }                    重新打开：回到进行中（客户下一条消息起恢复追单排程）
  *
  * 鉴权：与 /api/admin/update-user 同款（Firebase ID token + 管理员邮箱白名单）。
  * CORS：Desktop 版 dashboard 从 file:// 调，必须带 * + OPTIONS（见 memory dashboard 两副本）。
@@ -288,6 +291,8 @@ export async function POST(req: NextRequest) {
         found: snap.exists,
         phone,
         status: String(d.status || ''),
+        orderId: String(d.orderId || ''),
+        closedAtMs: Number(d.closedAtMs) || 0,
         lang: String(d.lang || ''),
         intent: String(d.intent || ''),
         name: String(d.name || ''),
@@ -333,6 +338,25 @@ export async function POST(req: NextRequest) {
       if (!merged) return corsify(NextResponse.json({ error: `不接受的 key 或空值（可用：${PROFILE_KEYS.join(' / ')}）` }, { status: 400 }));
       await ref.set({ phone, profile: merged, profileUpdatedAtMs: now, profileUpdatedBy: admin.email, updatedAtMs: now }, { merge: true });
       return corsify(NextResponse.json({ ok: true, profile: merged }));
+    }
+
+    // 手动收尾：成交 / 关闭 / 重新打开。成交与关闭都停追单，对话不锁（bot 照常回、老板照常发）。
+    // 订单确认时也会自动标成交，见 src/lib/waLeadStatus.ts；客户再来消息的处理见 n8n/lead 的 touch。
+    if (op === 'ordered' || op === 'close' || op === 'reopen') {
+      if (!snap.exists) return corsify(NextResponse.json({ error: '这个号码还没有对话记录' }, { status: 404 }));
+      if (op === 'reopen') {
+        await ref.set({
+          status: 'engaged', closedReason: '', closedAtMs: 0, orderId: '', updatedAtMs: now,
+          turns: appendTurn(d.turns, 'sys', '老板重新打开对话（客户下一条消息起恢复追单排程）', now),
+        }, { merge: true });
+        return corsify(NextResponse.json({ ok: true, status: 'engaged' }));
+      }
+      const status = op === 'ordered' ? 'ordered' : 'closed';
+      await ref.set({
+        status, nextNudgeMs: 0, closedReason: 'manual', closedBy: admin.email, closedAtMs: now, updatedAtMs: now,
+        turns: appendTurn(d.turns, 'sys', op === 'ordered' ? '老板标记成交，停止追单' : '老板关闭对话，停止追单（客户再来消息会自动重开）', now),
+      }, { merge: true });
+      return corsify(NextResponse.json({ ok: true, status }));
     }
 
     // 只关追单，不动 status —— 以前用 status='closed' 会连带把收件箱对话锁死

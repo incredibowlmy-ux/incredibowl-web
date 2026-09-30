@@ -8983,7 +8983,7 @@ incredibowl.my`,
             const humanLine = d.human
                 ? `<span style="color:var(--danger);font-weight:600">🙋 人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}（${escapeHtml(d.humanBy || '')}）`
                 : '<span style="color:var(--success, #4caf50);font-weight:600">🤖 bot 接待中</span>';
-            const nudgeLine = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭（不再追）'
+            const nudgeLine = d.status === 'ordered' ? waOrderedLabel(d) : d.status === 'closed' ? '已关闭（不再追）'
                 : d.nudgeOff ? `已停（追过 ${d.nudgeCount} 次）`
                 : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ' · 无排程'}${d.clicked ? ' · 点过链接' : ''}`;
             $('#waLeadBody').innerHTML = `
@@ -8998,9 +8998,7 @@ incredibowl.my`,
                             ${d.human
                                 ? '<button class="btn sm wa-lead-act" data-op="release">🤖 释放给 bot</button>'
                                 : '<button class="btn sm wa-lead-act" data-op="human" data-minutes="120">🙋 接管 2 小时</button><button class="btn ghost sm wa-lead-act" data-op="human" data-minutes="720">接管 12 小时</button>'}
-                            ${d.status === 'closed' || d.status === 'ordered' ? ''
-                                : d.nudgeOff ? '<button class="btn ghost sm wa-lead-act" data-op="nudgeon" title="恢复对这个号码的自动追单">恢复追单</button>'
-                                : '<button class="btn ghost sm wa-lead-act" data-op="nudgeoff" title="只停自动追单，对话照常">停止追单</button>'}
+                            ${waOutcomeButtons(d, 'wa-lead-act')}
                         </div>
                     </div>
                 </div>
@@ -9025,6 +9023,30 @@ incredibowl.my`,
             `;
         }
 
+        // ── 对话收尾（收件箱头部 + 「碗妈对话」弹窗共用）────────────────────
+        //   进行中 → 标记成交 / 追单开关 / 关闭；已成交·已关闭 → 重新打开。
+        //   成交也会在订单确认时自动标（src/lib/waLeadStatus.ts）；手动录的单靠这里的按钮。
+        const WA_ACT_TOAST = {
+            human: 'bot 已静音，客户消息会原文转到你的 WhatsApp', release: 'bot 已恢复',
+            nudgeon: '已恢复追单（客户下次来消息起排程）', nudgeoff: '已停止追单，对话照常',
+            ordered: '已标记成交，追单已停', close: '已关闭，追单已停（客户再来消息会自动重开）', reopen: '已重新打开',
+        };
+        function waActConfirm(op) {
+            if (op === 'nudgeoff') return confirm('停止对这个号码的自动追单？\n对话照常：bot 照常回复，你也可以继续发消息。');
+            if (op === 'close') return confirm('关闭这个对话？\n会停止追单并归入「已关闭」；客户再来消息会自动重开。');
+            return true;
+        }
+        const waOrderedLabel = (d) => `已成交${d.orderId ? ` · 订单 #${escapeHtml(String(d.orderId).slice(-6).toUpperCase())}` : ''}${d.closedAtMs ? ` · ${waFmtTs(d.closedAtMs)}` : ''}`;
+        function waOutcomeButtons(d, cls) {
+            if (d.status === 'ordered' || d.status === 'closed')
+                return `<button class="btn ghost sm ${cls}" data-op="reopen" title="回到进行中；客户下一条消息起恢复追单排程">重新打开</button>`;
+            return `<button class="btn ghost sm ${cls}" data-op="ordered" style="color:var(--success);font-weight:600" title="这位客户已下单：停止追单，归入「已成交」">标记成交</button>`
+                + (d.nudgeOff
+                    ? `<button class="btn ghost sm ${cls}" data-op="nudgeon" title="恢复对这个号码的自动追单">恢复追单</button>`
+                    : `<button class="btn ghost sm danger-text ${cls}" data-op="nudgeoff" title="只停自动追单，对话照常">停止追单</button>`)
+                + `<button class="btn ghost sm ${cls}" data-op="close" title="这位客户不买了：停止追单，归入「已关闭」；客户再来消息会自动重开">关闭</button>`;
+        }
+
         document.addEventListener('click', async (e) => {
             const open = e.target.closest('.wa-lead-btn');
             // 🤖 按钮：直接跳进收件箱对应线程（老弹窗保留作 fallback，收件箱未就绪时用）
@@ -9033,11 +9055,11 @@ incredibowl.my`,
             const act = e.target.closest('.wa-lead-act');
             if (act && waLeadCurrentPhone) {
                 const op = act.dataset.op;
-                if (op === 'nudgeoff' && !confirm('停止对这个号码的自动追单？\n对话照常：bot 照常回复，你也可以继续发消息。')) return;
+                if (!waActConfirm(op)) return;
                 act.disabled = true;
                 try {
                     await callAdminAPI('/api/admin/wa-lead', { op, phone: waLeadCurrentPhone, minutes: Number(act.dataset.minutes) || undefined });
-                    toast(op === 'human' ? 'bot 已静音，客户消息会原文转到你的 WhatsApp' : op === 'release' ? 'bot 已恢复' : op === 'nudgeon' ? '已恢复追单（客户下次来消息起排程）' : '已停止追单，对话照常', 'success');
+                    toast(WA_ACT_TOAST[op] || '已更新', 'success');
                     await refreshWaLeadPanel();
                 } catch (err) {
                     toast('操作失败：' + err.message, 'error');
@@ -9070,7 +9092,7 @@ incredibowl.my`,
         // ═══════════════════════════════════════════════════════════════
         //   碗妈收件箱（WATI 式三栏）—— 2026-09-07
         //   左：对话列表（未读 / 筛选 / 搜索）  中：线程气泡 + 回复框  右：客户档案 + bot 备注
-        //   数据：/api/admin/wa-lead op=list / get / read / send / human / release / note / close
+        //   数据：/api/admin/wa-lead op=list / get / read / send / human / release / note / nudgeoff / nudgeon / ordered / close / reopen
         //   「从收件箱回复」= 网站直接打 Meta Cloud API 发文本，并自动接管 2 小时（bot 闭嘴），
         //   等同 WATI 的 assign to me。需要 Vercel 配 WA_ACCESS_TOKEN；没配时其它功能照常。
         // ═══════════════════════════════════════════════════════════════
@@ -9221,9 +9243,9 @@ incredibowl.my`,
         function inboxStatusChips(r) {
             const c = [];
             if (r.human) c.push('<span class="inbox-chip human">人工</span>');
-            else if (r.status === 'ordered') c.push('<span class="inbox-chip ok">已成交</span>');
+            if (r.status === 'ordered') c.push('<span class="inbox-chip ok">已成交</span>');
             else if (r.status === 'closed') c.push('<span class="inbox-chip">已关闭</span>');
-            else c.push('<span class="inbox-chip ok">bot</span>');
+            else if (!r.human) c.push('<span class="inbox-chip ok">bot</span>');
             if (r.clicked) c.push('<span class="inbox-chip">已点链接</span>');
             if (r.nudgeOff) c.push('<span class="inbox-chip">追单已停</span>');
             else if (r.nudgeCount) c.push(`<span class="inbox-chip">追单 ${r.nudgeCount}</span>`);
@@ -9338,7 +9360,7 @@ incredibowl.my`,
 
         function renderInboxHead(d) {
             const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600"><i class="inbox-dot" style="background:var(--danger)"></i>人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600"><i class="inbox-dot" style="background:var(--success)"></i>bot 接待中</span>';
-            const nudge = d.status === 'ordered' ? '已成交' : d.status === 'closed' ? '已关闭' : d.nudgeOff ? '追单已停' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
+            const nudge = d.status === 'ordered' ? waOrderedLabel(d) : d.status === 'closed' ? '已关闭' : d.nudgeOff ? '追单已停' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
             $('#inboxHead').innerHTML = `
                 <button class="btn ghost sm inbox-icon-btn inbox-back" title="回对话列表" aria-label="返回"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
                 <div style="min-width:0;flex:1">
@@ -9350,9 +9372,7 @@ incredibowl.my`,
                     ${d.human
                         ? '<button class="btn sm inbox-act" data-op="release">交回 bot</button>'
                         : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">接管 2 小时</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">接管到明早</button>'}
-                    ${d.status === 'closed' || d.status === 'ordered' ? ''
-                        : d.nudgeOff ? '<button class="btn ghost sm inbox-act" data-op="nudgeon" title="恢复对这个号码的自动追单">恢复追单</button>'
-                        : '<button class="btn ghost sm danger-text inbox-act" data-op="nudgeoff" title="只停自动追单，对话照常">停止追单</button>'}
+                    ${waOutcomeButtons(d, 'inbox-act')}
                     <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">WhatsApp <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
                 </div>`;
         }
@@ -9608,11 +9628,11 @@ incredibowl.my`,
             const act = e.target.closest('.inbox-act');
             if (act && inbox.phone) {
                 const op = act.dataset.op;
-                if (op === 'nudgeoff' && !confirm('停止对这个号码的自动追单？\n对话照常：bot 照常回复，你也可以继续发消息。')) return;
+                if (!waActConfirm(op)) return;
                 act.disabled = true;
                 try {
                     await callAdminAPI('/api/admin/wa-lead', { op, phone: inbox.phone, minutes: Number(act.dataset.minutes) || undefined });
-                    toast(op === 'human' ? 'bot 已静音，客户消息会原文转到你的 WhatsApp' : op === 'release' ? 'bot 已恢复' : op === 'nudgeon' ? '已恢复追单（客户下次来消息起排程）' : '已停止追单，对话照常', 'success');
+                    toast(WA_ACT_TOAST[op] || '已更新', 'success');
                     await inboxRefreshThread(true); inboxRefreshList();
                 } catch (err) { toast('操作失败：' + err.message, 'error'); act.disabled = false; }
                 return;

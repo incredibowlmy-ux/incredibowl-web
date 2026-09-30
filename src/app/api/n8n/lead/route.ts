@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   computeNextNudge,
+  isOrderedSticky,
   isWithinWindow,
   MAX_NUDGES,
   WINDOW_MS,
@@ -354,15 +355,18 @@ export async function POST(req: NextRequest) {
     // 新一轮对话 = 距上次消息超过 24h（窗口已断）或上一轮已经收尾。
     // 只有新一轮才重置追单额度，避免同一个客户被连着几天反复追。
     // ⚠️ turns / profile 不随 session 重置 —— 记忆跨天保留，这正是 v4 与 buffer memory 的区别。
-    const newSession = !snap.exists
+    // 例外：刚成交（24h 内）的客户回一句「谢谢」不算新一轮 —— 保持已成交、不排追单。
+    // 否则成交标记一条消息就没了，1 小时后还会追一个已经下单的人（老板 2026-09-30 定）。
+    const orderedSticky = isOrderedSticky(prevStatus, prev.closedAtMs, now);
+    const newSession = !orderedSticky && (!snap.exists
       || prevStatus === 'ordered'
       || prevStatus === 'closed'
-      || now - prevLastMsg > WINDOW_MS;
+      || now - prevLastMsg > WINDOW_MS);
 
     const nudgeCount = newSession ? 0 : (Number(prev.nudgeCount) || 0);
     const lastNudgeMs = newSession ? 0 : (Number(prev.lastNudgeMs) || 0);
     // 老板在 dashboard 停了追单 → 跨 session 一直生效，直到手动恢复
-    const nextNudgeMs = prev.nudgeOff === true ? 0 : computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
+    const nextNudgeMs = (prev.nudgeOff === true || orderedSticky) ? 0 : computeNextNudge({ lastMsgMs: now, nudgeCount, lastNudgeMs }) ?? 0;
 
     // 未处理消息缓冲：客户连发的每一条都进来，等胜出的那次执行一并取走。
     const prevPending: { ts: number; text: string }[] = Array.isArray(prev.pending) ? prev.pending : [];
@@ -373,7 +377,7 @@ export async function POST(req: NextRequest) {
 
     const patch: Record<string, any> = {
       phone,
-      status: 'engaged',
+      status: orderedSticky ? 'ordered' : 'engaged',
       pending,
       lastMsgMs: now,
       nudgeCount,

@@ -102,3 +102,15 @@ export function computeNextNudge({ lastMsgMs, nudgeCount, lastNudgeMs = 0 }: Nud
 export function isWithinWindow(lastMsgMs: number, nowMs: number): boolean {
   return nowMs < lastMsgMs + WINDOW_MS;
 }
+
+/** 成交后这段时间内客户再来消息仍算同一笔成交：保持「已成交」、不排追单（老板 2026-09-30 定：24 小时）。 */
+export const ORDERED_STICKY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 这条 lead 是不是「刚成交、还在保护期」。
+ * closedAtMs 缺失（旧数据 / 没记时间）一律不算 —— 回到原来的「新一轮」行为。
+ */
+export function isOrderedSticky(status: unknown, closedAtMs: unknown, nowMs: number): boolean {
+  const at = Number(closedAtMs) || 0;
+  return status === 'ordered' && at > 0 && nowMs >= at && nowMs - at < ORDERED_STICKY_MS;
+}

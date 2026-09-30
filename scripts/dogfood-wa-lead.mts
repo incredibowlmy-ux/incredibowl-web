@@ -12,9 +12,10 @@
 
 import {
   computeNextNudge, shiftOutOfQuietHours, isWithinWindow, mytClock, mytHour,
-  NUDGE2_HOUR, MAX_NUDGES, WINDOW_MS, NUDGE1_DELAY_MS,
+  NUDGE2_HOUR, MAX_NUDGES, WINDOW_MS, NUDGE1_DELAY_MS, isOrderedSticky, ORDERED_STICKY_MS,
 } from '@/lib/waLeadSchedule';
 import { bowlsInOrder, isAddonLine } from '@/lib/bowlCount';
+import { leadPhoneId } from '@/lib/waLeadStatus';
 
 let pass = 0, fail = 0;
 function check(label: string, cond: boolean, detail = '') {
@@ -166,6 +167,23 @@ console.log('\n=== 8. 碗数口径（团餐档期的地基）===');
   check('items 缺失 → 0（不抛错）', bowlsInOrder(undefined) === 0);
   check('items 非数组 → 0', bowlsInOrder('boom' as unknown) === 0);
   check('畸形行被跳过', bowlsInOrder([null, { name: 'x' }, { name: 'y', quantity: -3 }, { name: 'z', quantity: 2 }]) === 2);
+}
+
+console.log('\n=== 成交保护期（24h 内客户再来消息仍是已成交、不追单）===');
+{
+  const at = myt('2026-09-30', 12, 0);
+  check('保护期 = 24 小时（老板 2026-09-30 定）', ORDERED_STICKY_MS === 24 * 60 * 60 * 1000);
+  check('成交后 1 分钟回「谢谢」→ 保护', isOrderedSticky('ordered', at, at + 60 * 1000));
+  check('成交后 23:59 → 仍保护', isOrderedSticky('ordered', at, at + ORDERED_STICKY_MS - 60 * 1000));
+  check('成交后正好 24h → 算新一轮', !isOrderedSticky('ordered', at, at + ORDERED_STICKY_MS));
+  check('已关闭不保护（客户再来消息 = 重开）', !isOrderedSticky('closed', at, at + 60 * 1000));
+  check('进行中不保护', !isOrderedSticky('engaged', at, at + 60 * 1000));
+  check('旧数据没有 closedAtMs → 不保护（回到原行为）', !isOrderedSticky('ordered', undefined, at) && !isOrderedSticky('ordered', 0, at));
+  check('closedAtMs 在未来（时钟错乱）→ 不保护', !isOrderedSticky('ordered', at + 5000, at));
+
+  check('订单电话 012-345 6789 → 60123456789', leadPhoneId('012-345 6789') === '60123456789', leadPhoneId('012-345 6789'));
+  check('+60 12-345 6789 → 60123456789', leadPhoneId('+60 12-345 6789') === '60123456789');
+  check('空 / 太短 → 空串（不去碰 waLeads）', leadPhoneId('') === '' && leadPhoneId('12345') === '' && leadPhoneId(undefined) === '');
 }
 
 console.log(`\n${'─'.repeat(52)}`);
