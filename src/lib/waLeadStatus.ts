@@ -10,6 +10,7 @@
  * 所有失败只记日志，绝不影响订单确认本身。
  */
 import { appendTurn } from '@/lib/waWebhook';
+import { mutateLead } from '@/lib/waInbox';
 
 const COL = 'waLeads';
 
@@ -39,23 +40,25 @@ export async function markLeadsOrdered(
     seen.add(phone);
     try {
       const ref = db.collection(COL).doc(phone);
-      const snap = await ref.get();
-      if (!snap.exists) continue;
-      const prev = snap.data() as Record<string, any>;
       const now = Date.now();
-      await ref.set({
-        status: 'ordered',
-        nextNudgeMs: 0,
-        closedReason: 'order_confirmed',
-        orderId: String(id).slice(0, 64),
-        closedAtMs: now,
-        updatedAtMs: now,
-        // 常客天天下单：已经是已成交就不再叠系统行，免得把真实对话挤出 turns 上限
-        ...(prev.status === 'ordered' ? {} : {
-          turns: appendTurn(prev.turns, 'sys', `订单 #${shortId(id)} 已确认，自动标记成交，停止追单`, now),
-        }),
-      }, { merge: true });
-      marked++;
+      let done = false;
+      await mutateLead(ref, (prev, exists) => {
+        done = exists;
+        if (!exists) return null;
+        return {
+          status: 'ordered',
+          nextNudgeMs: 0,
+          closedReason: 'order_confirmed',
+          orderId: String(id).slice(0, 64),
+          closedAtMs: now,
+          updatedAtMs: now,
+          // 常客天天下单：已经是已成交就不再叠系统行，免得把真实对话挤出 turns 上限
+          ...(prev.status === 'ordered' ? {} : {
+            turns: appendTurn(prev.turns, 'sys', `订单 #${shortId(id)} 已确认，自动标记成交，停止追单`, now),
+          }),
+        };
+      });
+      if (done) marked++;
     } catch (e: any) {
       console.warn('[waLeadStatus] 标记成交失败', phone, String(e?.message || e).slice(0, 160));
     }

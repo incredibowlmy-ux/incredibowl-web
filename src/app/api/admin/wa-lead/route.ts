@@ -5,12 +5,15 @@ import {
   markRead, sendTemplate, windowRemainingMs,
   type SendResult, type SendInteractiveSpec,
 } from '@/lib/waSend';
+import { inboxRows, mutateLead } from '@/lib/waInbox';
 
 /**
  * POST /api/admin/wa-lead —— dashboard 的「碗妈对话」面板 + 「碗妈收件箱」（WATI 式）后端。
  *
  * 一个 POST 端点承载读和写（dashboard 的 callAdminAPI 只会 POST）：
- *   { op: 'list' }                              收件箱列表：全部 waLeads 按最近消息倒序，带未读数 / 24h 窗口
+ *   { op: 'list' }                              收件箱列表：全部 waLeads 按最后活动倒序，带未读数 / 24h 窗口
+ *   { op: 'pulse',   since }                    只回 since 之后有新客户消息的对话（全局角标 / 新消息提醒的轻量轮询；
+ *                                               since=0 等同 list）。行的形状与 list 一致
  *   { op: 'get',     phone }                    读 waLeads/{phone}：档案、全部 turns、人工接管状态、追单排程
  *   { op: 'read',    phone }                    老板看过了 → bossReadAtMs = now（未读归零）
  *   { op: 'assets' }                            本周菜品图清单（发图下拉用）
@@ -142,7 +145,7 @@ export async function POST(req: NextRequest) {
   }
   const op = String(body?.op || 'get').toLowerCase();
   const phone = toIntl(body?.phone);
-  if (!['list', 'assets', 'templates'].includes(op) && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
+  if (!['list', 'pulse', 'assets', 'templates'].includes(op) && !phone) return corsify(NextResponse.json({ error: '缺 phone' }, { status: 400 }));
 
   try {
     const db = await getDb();
@@ -169,34 +172,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 收件箱列表：一次读全集合（waLeads 量级是几百，不分页）────────────
-    if (op === 'list') {
-      const all = await db.collection(COL).orderBy('lastMsgMs', 'desc').limit(400).get();
-      const rows = all.docs.map(doc => {
-        const x = doc.data() as Record<string, any>;
-        const turns: any[] = Array.isArray(x.turns) ? x.turns : [];
-        const last = turns[turns.length - 1];
-        const readAt = Number(x.bossReadAtMs) || 0;
-        const unread = turns.filter(t => t && t.role === 'in' && Number(t.ts) > readAt).length;
-        const profile = (x.profile && typeof x.profile === 'object') ? x.profile : {};
-        return {
-          phone: doc.id,
-          name: String(x.name || profile.nickname || ''),
-          status: String(x.status || 'engaged'),
-          lang: String(x.lang || ''),
-          human: (Number(x.humanUntil) || 0) > now,
-          humanUntil: Number(x.humanUntil) || 0,
-          lastMsg: last ? { role: String(last.role || ''), text: String(last.text || '').slice(0, 120), ts: Number(last.ts) || 0 } : null,
-          lastMsgMs: Number(x.lastMsgMs) || (last ? Number(last.ts) || 0 : 0),
-          unread,
-          clicked: !!x.clickedAtMs,
-          nudgeCount: Number(x.nudgeCount) || 0,
-          nudgeOff: x.nudgeOff === true,
-          tags: Array.isArray(profile.tags) ? profile.tags : [],
-          windowRemainingMs: windowRemainingMs(turns, now),
-        };
-      }).filter(r => r.lastMsgMs > 0);
-      rows.sort((a, b) => b.lastMsgMs - a.lastMsgMs);
-      return corsify(NextResponse.json({ rows, now, sendConfigured: waConfigured() }, { headers: { 'Cache-Control': 'no-store' } }));
+    // 不用 Firestore 的 orderBy('lastMsgMs')：那个字段客户发图片 / 语音 / 人工接管期间都不更新，
+    // 而且缺这个字段的文档会被 orderBy 直接排除。排序改在内存里按真实最后活动算（见 waInbox.leadRow）。
+    //
+    // pulse = 同一份行数据的增量版：只读 since 之后有新入站的文档（webhook 每条入站都写
+    // lastInboundAtMs），没新消息时一次轮询只算 1 次读取，所以可以在任何页面、后台标签页一直跑。
+    if (op === 'list' || op === 'pulse') {
+      const since = op === 'pulse' ? Math.max(0, Number(body?.since) || 0) : 0;
+      const snapAll = since > 0
+        ? await db.collection(COL).where('lastInboundAtMs', '>', since).get()
+        : await db.collection(COL).get();
+      const rows = inboxRows(snapAll.docs.map(doc => ({ id: doc.id, data: doc.data() as Record<string, any> })), now);
+      return corsify(NextResponse.json({ rows, now, full: since === 0, sendConfigured: waConfigured() }, { headers: { 'Cache-Control': 'no-store' } }));
     }
 
     const ref = db.collection(COL).doc(phone);
@@ -276,14 +263,19 @@ export async function POST(req: NextRequest) {
       if (replyTo) extra.replyTo = replyTo;
       // 像 WATI 的「assign to me」：从收件箱回了话，bot 就闭嘴，不然客户下一句被 AI 抢答
       const minutes = Math.min(720, Math.max(1, Number(body?.minutes) || 120));
-      const wasHuman = (Number(d.humanUntil) || 0) > now;
-      let turns = appendTurn(d.turns, 'boss', turnText, now, { ...extra, status: 'sent', statusAtMs: now });
-      if (!wasHuman) turns = appendTurn(turns, 'sys', `老板从收件箱回复，接管 ${minutes} 分钟，bot 静音`, now + 1);
-      await ref.set({
-        phone, turns, lastMsgMs: now, bossReadAtMs: now, updatedAtMs: now,
-        humanUntil: Math.max(Number(d.humanUntil) || 0, now + minutes * 60 * 1000), humanBy: 'inbox', humanSetAtMs: wasHuman ? (d.humanSetAtMs || now) : now,
-      }, { merge: true });
-      return corsify(NextResponse.json({ ok: true, msgId: sent.msgId, humanUntil: Math.max(Number(d.humanUntil) || 0, now + minutes * 60 * 1000) }));
+      // 落库在事务里重读 turns：发 Meta 那一下最长 10 秒，期间客户回的话不能被旧数组盖掉
+      let humanUntil = 0;
+      await mutateLead(ref, (cur) => {
+        const wasHuman = (Number(cur.humanUntil) || 0) > now;
+        let turns = appendTurn(cur.turns, 'boss', turnText, now, { ...extra, status: 'sent', statusAtMs: now });
+        if (!wasHuman) turns = appendTurn(turns, 'sys', `老板从收件箱回复，接管 ${minutes} 分钟，bot 静音`, now + 1);
+        humanUntil = Math.max(Number(cur.humanUntil) || 0, now + minutes * 60 * 1000);
+        return {
+          phone, turns, lastMsgMs: now, bossReadAtMs: now, updatedAtMs: now,
+          humanUntil, humanBy: 'inbox', humanSetAtMs: wasHuman ? (cur.humanSetAtMs || now) : now,
+        };
+      });
+      return corsify(NextResponse.json({ ok: true, msgId: sent.msgId, humanUntil }));
     }
 
     if (op === 'get') {
@@ -317,27 +309,34 @@ export async function POST(req: NextRequest) {
     if (op === 'human') {
       const minutes = Math.min(720, Math.max(1, Number(body?.minutes) || 120));
       const humanUntil = now + minutes * 60 * 1000;
-      await ref.set({
+      await mutateLead(ref, (cur) => ({
         phone, humanUntil, humanBy: 'dashboard', humanSetAtMs: now, updatedAtMs: now,
-        turns: appendTurn(d.turns, 'sys', `老板在 dashboard 接管 ${minutes} 分钟，bot 静音`, now),
-      }, { merge: true });
+        turns: appendTurn(cur.turns, 'sys', `老板在 dashboard 接管 ${minutes} 分钟，bot 静音`, now),
+      }));
       return corsify(NextResponse.json({ ok: true, humanUntil }));
     }
 
     if (op === 'release') {
-      const wasHuman = (Number(d.humanUntil) || 0) > now;
-      await ref.set({
-        phone, humanUntil: wasHuman ? now - 1 : (Number(d.humanUntil) || 0), humanReleasedAtMs: now, updatedAtMs: now,
-        ...(wasHuman ? { turns: appendTurn(d.turns, 'sys', '老板在 dashboard 释放，bot 恢复', now) } : {}),
-      }, { merge: true });
+      let wasHuman = false;
+      await mutateLead(ref, (cur) => {
+        wasHuman = (Number(cur.humanUntil) || 0) > now;
+        return {
+          phone, humanUntil: wasHuman ? now - 1 : (Number(cur.humanUntil) || 0), humanReleasedAtMs: now, updatedAtMs: now,
+          ...(wasHuman ? { turns: appendTurn(cur.turns, 'sys', '老板在 dashboard 释放，bot 恢复', now) } : {}),
+        };
+      });
       return corsify(NextResponse.json({ ok: true, wasHuman }));
     }
 
     if (op === 'note') {
-      const merged = mergeProfileFact(d.profile, String(body?.key || ''), body?.value);
-      if (!merged) return corsify(NextResponse.json({ error: `不接受的 key 或空值（可用：${PROFILE_KEYS.join(' / ')}）` }, { status: 400 }));
-      await ref.set({ phone, profile: merged, profileUpdatedAtMs: now, profileUpdatedBy: admin.email, updatedAtMs: now }, { merge: true });
-      return corsify(NextResponse.json({ ok: true, profile: merged }));
+      // bot 也会写 profile（/api/n8n/lead note）→ 同样在事务里合并，别互相盖
+      const out: { merged: ReturnType<typeof mergeProfileFact> } = { merged: null };
+      await mutateLead(ref, (cur) => {
+        out.merged = mergeProfileFact(cur.profile, String(body?.key || ''), body?.value);
+        return out.merged ? { phone, profile: out.merged, profileUpdatedAtMs: now, profileUpdatedBy: admin.email, updatedAtMs: now } : null;
+      });
+      if (!out.merged) return corsify(NextResponse.json({ error: `不接受的 key 或空值（可用：${PROFILE_KEYS.join(' / ')}）` }, { status: 400 }));
+      return corsify(NextResponse.json({ ok: true, profile: out.merged }));
     }
 
     // 手动收尾：成交 / 关闭 / 重新打开。成交与关闭都停追单，对话不锁（bot 照常回、老板照常发）。
@@ -345,28 +344,28 @@ export async function POST(req: NextRequest) {
     if (op === 'ordered' || op === 'close' || op === 'reopen') {
       if (!snap.exists) return corsify(NextResponse.json({ error: '这个号码还没有对话记录' }, { status: 404 }));
       if (op === 'reopen') {
-        await ref.set({
+        await mutateLead(ref, (cur) => ({
           status: 'engaged', closedReason: '', closedAtMs: 0, orderId: '', updatedAtMs: now,
-          turns: appendTurn(d.turns, 'sys', '老板重新打开对话（客户下一条消息起恢复追单排程）', now),
-        }, { merge: true });
+          turns: appendTurn(cur.turns, 'sys', '老板重新打开对话（客户下一条消息起恢复追单排程）', now),
+        }));
         return corsify(NextResponse.json({ ok: true, status: 'engaged' }));
       }
       const status = op === 'ordered' ? 'ordered' : 'closed';
-      await ref.set({
+      await mutateLead(ref, (cur) => ({
         status, nextNudgeMs: 0, closedReason: 'manual', closedBy: admin.email, closedAtMs: now, updatedAtMs: now,
-        turns: appendTurn(d.turns, 'sys', op === 'ordered' ? '老板标记成交，停止追单' : '老板关闭对话，停止追单（客户再来消息会自动重开）', now),
-      }, { merge: true });
+        turns: appendTurn(cur.turns, 'sys', op === 'ordered' ? '老板标记成交，停止追单' : '老板关闭对话，停止追单（客户再来消息会自动重开）', now),
+      }));
       return corsify(NextResponse.json({ ok: true, status }));
     }
 
     // 只关追单，不动 status —— 以前用 status='closed' 会连带把收件箱对话锁死
     if (op === 'nudgeoff' || op === 'nudgeon') {
       const off = op === 'nudgeoff';
-      await ref.set({
+      await mutateLead(ref, (cur) => ({
         phone, nudgeOff: off, nudgeOffAtMs: off ? now : 0, updatedAtMs: now,
         ...(off ? { nextNudgeMs: 0 } : {}),
-        turns: appendTurn(d.turns, 'sys', off ? '老板停止自动追单（对话照常）' : '老板恢复自动追单', now),
-      }, { merge: true });
+        turns: appendTurn(cur.turns, 'sys', off ? '老板停止自动追单（对话照常）' : '老板恢复自动追单', now),
+      }));
       return corsify(NextResponse.json({ ok: true, nudgeOff: off }));
     }
 

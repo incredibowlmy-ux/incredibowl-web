@@ -102,6 +102,50 @@ try {
   g = await op('get');
   ck('get 回 orderId', g.orderId === 'SMOKEORDERabc999', g.orderId);
 
+  console.log('\n=== 7. 列表排序 / pulse（第 1 批）===');
+  {
+    // 模拟 webhook 收到一张图片：只写 turns + lastInboundAtMs，不碰 lastMsgMs（线上就是这样）
+    await ref.update({ lastMsgMs: Date.now() - 48 * 3600 * 1000, bossReadAtMs: Date.now() - 60 * 1000 });
+    const before = Date.now();
+    await new Promise(res => setTimeout(res, 30));
+    const inTs = Date.now();
+    const cur = await doc();
+    await ref.update({ lastInboundAtMs: inTs, turns: [...cur.turns, { role: 'in', text: '[图片] 付款截图', ts: inTs, msgId: 'wamid.SMOKEIMG' }] });
+    l = await op('list');
+    const row = l.rows?.find((x: any) => x.phone === PHONE);
+    ck('list：图片那条把对话顶上来（activityMs = 图片时间，不是 48 小时前）', row?.activityMs === inTs && row?.lastMsgMs === inTs, { a: row?.activityMs, inTs });
+    ck('list：lastInMs / 未读 / full 标记', row?.lastInMs === inTs && row?.unread >= 1 && l.full === true, { lastIn: row?.lastInMs, unread: row?.unread, full: l.full });
+    ck('list：比它旧的对话排在后面', l.rows.findIndex((x: any) => x.phone === PHONE) <= l.rows.findIndex((x: any) => x.activityMs < inTs && x.phone !== PHONE) || !l.rows.some((x: any) => x.activityMs < inTs && x.phone !== PHONE));
+    let p = await post('/api/admin/wa-lead', signIn.idToken, { op: 'pulse', since: before });
+    ck('pulse(since=刚才)：只带回有新客户消息的对话，含这条', p.full === false && p.rows?.some((x: any) => x.phone === PHONE) && p.rows.length < Math.max(2, l.rows.length), { full: p.full, n: p.rows?.length });
+    p = await post('/api/admin/wa-lead', signIn.idToken, { op: 'pulse', since: Date.now() + 60 * 1000 });
+    ck('pulse(since=未来)：空', Array.isArray(p.rows) && p.rows.length === 0 && typeof p.now === 'number', p.rows?.length);
+    p = await post('/api/admin/wa-lead', signIn.idToken, { op: 'pulse', since: 0 });
+    ck('pulse(since=0)：等同整份列表', p.full === true && p.rows.length === l.rows.length, { n: p.rows?.length, l: l.rows.length });
+    // 没有 lastMsgMs 字段的文档：旧查询 orderBy('lastMsgMs') 会直接漏掉
+    await db.collection('waLeads').doc(GHOST).set({ phone: GHOST, name: 'SMOKE 无排序键', lastInboundAtMs: inTs, turns: [{ role: 'in', text: '[语音]', ts: inTs - 1000 }] });
+    l = await op('list');
+    ck('list：没有 lastMsgMs 的对话也出现', l.rows?.some((x: any) => x.phone === GHOST));
+    await db.collection('waLeads').doc(GHOST).delete();
+  }
+
+  console.log('\n=== 8. 并发写 turns 不互相覆盖（第 1 批）===');
+  {
+    const n0 = (await doc()).turns.length;
+    const reply = (text: string) => post('/api/n8n/lead', N8N_KEY, { action: 'reply', phone: PHONE, role: 'out', text });
+    const rs = await Promise.all([op('human'), reply('并发回复 A'), op('nudgeoff'), reply('并发回复 B'), op('nudgeon'), reply('并发回复 C')]);
+    d = await doc();
+    const texts = d.turns.slice(n0).map((x: any) => x.text);
+    ck('6 个并行写全部成功', rs.every(x => x.ok === true), rs.map(x => x.ok));
+    ck('6 条新 turn 一条不少（以前整数组写回会互相盖）', d.turns.length === n0 + 6 && ['并发回复 A', '并发回复 B', '并发回复 C'].every(x => texts.includes(x)), { n0, n: d.turns.length, texts });
+    ck('前面的客户消息还在', d.turns.some((x: any) => x.msgId === 'wamid.SMOKEIMG'));
+    const note = await post('/api/admin/wa-lead', signIn.idToken, { op: 'note', phone: PHONE, key: 'nickname', value: 'SMOKE 备注' });
+    ck('note 仍可用（事务化后）', note.ok === true && (await doc()).profile?.nickname === 'SMOKE 备注', note);
+    const badNote = await post('/api/admin/wa-lead', signIn.idToken, { op: 'note', phone: PHONE, key: 'hack', value: 'x' });
+    ck('note 非白名单 key → 400', badNote.http === 400, badNote.http);
+    await op('release');
+  }
+
   console.log('\n=== 6. 护栏 ===');
   r = await op('ordered', GHOST);
   ck('没有对话记录的号码 → 404，不建档', r.http === 404 && !(await db.collection('waLeads').doc(GHOST).get()).exists, r);

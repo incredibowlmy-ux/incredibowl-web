@@ -7,6 +7,7 @@ import {
   WINDOW_MS,
 } from '@/lib/waLeadSchedule';
 import { appendTurn, mergeProfileFact, type TurnRole } from '@/lib/waWebhook';
+import { mutateLead } from '@/lib/waInbox';
 
 /**
  * /api/n8n/lead —— 碗妈 bot 的 lead 状态机（v4：+ 对话记录 / 人工接管 / 客户备注 / 警报映射）。
@@ -304,7 +305,8 @@ export async function POST(req: NextRequest) {
       // 没带也照旧记 turn —— 少一个勾比丢一条对话记录轻得多。
       const msgId = String(body?.msgId || '').trim();
       const extra = msgId ? { msgId, status: 'sent' as const, statusAtMs: now } : undefined;
-      await ref.set({ phone, turns: appendTurn(prev.turns, role, text, now, extra), updatedAtMs: now }, { merge: true });
+      // 事务内重读 turns：bot 回复和客户下一条消息常常前后脚到，整数组写回会互相盖（见 waInbox.mutateLead）
+      await mutateLead(ref, (cur) => ({ phone, turns: appendTurn(cur.turns, role, text, now, extra), updatedAtMs: now }));
       return NextResponse.json({ ok: true, logged: msgId || null });
     }
 
@@ -312,25 +314,28 @@ export async function POST(req: NextRequest) {
     if (action === 'human') {
       const minutes = Math.min(HUMAN_MAX_MIN, Math.max(1, Number(body?.minutes) || HUMAN_DEFAULT_MIN));
       const humanUntil = now + minutes * 60 * 1000;
-      await ref.set({
+      await mutateLead(ref, (cur) => ({
         phone,
         humanUntil,
         humanBy: String(body?.by || 'boss_reply').slice(0, 40),
         humanSetAtMs: now,
         updatedAtMs: now,
-        turns: appendTurn(prev.turns, 'sys', `老板接管 ${minutes} 分钟，bot 静音`, now),
-      }, { merge: true });
+        turns: appendTurn(cur.turns, 'sys', `老板接管 ${minutes} 分钟，bot 静音`, now),
+      }));
       return NextResponse.json({ ok: true, humanUntil, minutes });
     }
     if (action === 'release') {
-      const wasHuman = (Number(prev.humanUntil) || 0) > now;
-      await ref.set({
-        phone,
-        humanUntil: wasHuman ? now - 1 : (Number(prev.humanUntil) || 0),
-        humanReleasedAtMs: now,
-        updatedAtMs: now,
-        ...(wasHuman ? { turns: appendTurn(prev.turns, 'sys', '老板释放，bot 恢复', now) } : {}),
-      }, { merge: true });
+      let wasHuman = false;
+      await mutateLead(ref, (cur) => {
+        wasHuman = (Number(cur.humanUntil) || 0) > now;
+        return {
+          phone,
+          humanUntil: wasHuman ? now - 1 : (Number(cur.humanUntil) || 0),
+          humanReleasedAtMs: now,
+          updatedAtMs: now,
+          ...(wasHuman ? { turns: appendTurn(cur.turns, 'sys', '老板释放，bot 恢复', now) } : {}),
+        };
+      });
       return NextResponse.json({ ok: true, wasHuman });
     }
 

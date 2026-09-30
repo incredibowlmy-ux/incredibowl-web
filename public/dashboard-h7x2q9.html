@@ -687,6 +687,9 @@
         .inbox-left, .inbox-main, .inbox-right { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
         .inbox-tools { padding: 10px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
         .inbox-tools input[type=search] { width: 100%; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 13px; }
+        .inbox-search-row { display: flex; gap: 6px; align-items: center; }
+        .inbox-search-row input[type=search] { flex: 1; min-width: 0; }
+        .inbox-conn { font-size: 11px; padding: 4px 8px; border-radius: 6px; background: rgba(245,158,11,0.14); color: #B45309; }
         .inbox-seg { flex-wrap: wrap; }
         .inbox-seg button { font-size: 11px; padding: 4px 8px; }
         .inbox-list { flex: 1; overflow-y: auto; }
@@ -708,6 +711,8 @@
         .inbox-chip.warn { background: rgba(245,158,11,0.14); color: #B45309; }
         .inbox-unread { background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 6px; min-width: 18px; text-align: center; }
         .inbox-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+        /* 名字块至少留 240px：按钮多了就整排换到下一行，别把「人工接管中 · 已追 n 次」挤成三行 */
+        .inbox-head-id { min-width: 0; flex: 1 1 240px; }
         .inbox-head-name { font-weight: 700; font-size: 15px; }
         .inbox-head-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .inbox-head-actions { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -754,7 +759,8 @@
         .inbox-wrap .btn.ghost.danger-text:hover { background: var(--danger-soft); }
         .inbox-icon-btn { width: 28px; height: 28px; padding: 0 !important; justify-content: center; }
         .inbox-icon-btn svg { pointer-events: none; }
-        .inbox-icon-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+        /* 要带 .inbox-wrap：上面的 .inbox-wrap .btn.ghost 优先级更高，不带的话「选中」永远显示不出来 */
+        .inbox-wrap .inbox-icon-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
         .inbox-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
         .inbox-kv { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
         .inbox-kv span:first-child { color: var(--text-muted); }
@@ -1884,7 +1890,11 @@
                     <div class="inbox-wrap">
                         <aside class="inbox-left">
                             <div class="inbox-tools">
-                                <input type="search" id="inboxSearch" placeholder="搜号码 / 名字 / 最后一句…">
+                                <div class="inbox-search-row">
+                                    <input type="search" id="inboxSearch" placeholder="搜号码 / 名字 / 最后一句…">
+                                    <button class="btn ghost sm inbox-icon-btn" id="inboxAlertBtn" title="新消息提醒" aria-label="新消息提醒" aria-pressed="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>
+                                </div>
+                                <div id="inboxConn" class="inbox-conn" hidden></div>
                                 <div class="seg inbox-seg" id="inboxFilter">
                                     <button class="active" data-f="all">全部</button>
                                     <button data-f="unread">未读 <span id="inboxUnreadCount"></span></button>
@@ -9105,7 +9115,16 @@ incredibowl.my`,
             '付款可以 TnG / DuitNow / FPX / 信用卡，暂不支持 COD 哦。',
             '好的，那先不打扰你啦，想吃的时候随时找碗妈 ❤️',
         ];
-        const inbox = { rows: [], filter: 'all', q: '', phone: '', detail: null, listTimer: null, threadTimer: null, sendConfigured: null, stickBottom: true, mode: 'text', replyTo: null, replyText: '', tpl: '', tplParams: [] };
+        const INBOX_PULSE_MS = 30000;
+        const INBOX_ALERT_KEY = 'incredibowl_inbox_alert';
+        const INBOX_BASE_TITLE = document.title;
+        const inbox = { rows: [], filter: 'all', q: '', phone: '', detail: null, listTimer: null, threadTimer: null, sendConfigured: null, stickBottom: true, mode: 'text', replyTo: null, replyText: '', tpl: '', tplParams: [],
+            drafts: {},            // 号码 → 没发出去的草稿（切换对话不串台）
+            seenIn: {},            // 号码 → 已知的最后一条客户消息时间（判断「有没有新消息」）
+            seeded: false,         // 第一次拿到列表前不提醒（一登录就响一串没意义）
+            pulseSince: 0, pulseBusy: false, starting: false,
+            okAt: 0, connErr: '',  // 上次成功更新的时间 / 当前的连接错误
+            profilePhone: '' };    // 档案栏的备注表单是给哪个号码画的
         // 客户发来的图片要带 Authorization 才能取（Meta 媒体 URL 5 分钟过期且要 token），
         // 所以 <img src> 用不了 —— fetch 成 blob 再挂上去，同一张只取一次。
         const inboxMediaCache = new Map();
@@ -9254,11 +9273,102 @@ incredibowl.my`,
             return c.join('');
         }
 
+        // ── 「老板是不是真的在看这个线程」──────────────────────────────
+        //   标已读 / 不提醒 都只认这个：标签页在前台 + 停在收件箱页 + 线程在屏幕上
+        //   （手机上线程是全屏层，回到列表就不算在看）。以前线程一开就每 10 秒标一次已读：
+        //   老板人去了厨房，客户那边照样蓝勾、这边也不再出未读（2026-09-30 审计）。
+        const inboxIsMobile = () => window.matchMedia('(max-width: 700px)').matches;
+        function inboxWatching(phone) {
+            if (!inbox.phone || (phone && phone !== inbox.phone)) return false;
+            if (document.hidden || state.currentPage !== 'inbox') return false;
+            return !inboxIsMobile() || !!document.querySelector('.inbox-wrap.thread-open');
+        }
+
+        // ── 未读角标 / 标题 / 提示音 ─────────────────────────────────
+        //   数的是「有未读的对话」个数，不是消息条数（一个客户连发 5 条 ≠ 5 件事）。
+        function inboxUpdateBadges() {
+            const n = inbox.rows.filter(r => r.unread).length;
+            const uc = $('#inboxUnreadCount'); if (uc) uc.textContent = n ? `(${n})` : '';
+            const nb = $('#inboxNavBadge'); if (nb) { nb.textContent = n; nb.hidden = !n; }
+            document.title = n ? `(${n}) ${INBOX_BASE_TITLE}` : INBOX_BASE_TITLE;
+        }
+        const inboxAlertOn = () => { try { return localStorage.getItem(INBOX_ALERT_KEY) !== '0'; } catch { return true; } };
+        function renderInboxAlertBtn() {
+            const b = $('#inboxAlertBtn'); if (!b) return;
+            const on = inboxAlertOn();
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-pressed', String(on));
+            b.title = on ? '新消息提醒：开（点一下关掉）' : '新消息提醒：关（点一下打开）';
+        }
+        let inboxAudioCtx = null;
+        function inboxBeep() {
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (!AC) return;
+                inboxAudioCtx = inboxAudioCtx || new AC();
+                if (inboxAudioCtx.state === 'suspended') inboxAudioCtx.resume();
+                const t0 = inboxAudioCtx.currentTime;
+                [[880, 0], [1175, 0.16]].forEach(([hz, at]) => {
+                    const o = inboxAudioCtx.createOscillator(), g = inboxAudioCtx.createGain();
+                    o.type = 'sine'; o.frequency.value = hz;
+                    g.gain.setValueAtTime(0.0001, t0 + at);
+                    g.gain.exponentialRampToValueAtTime(0.18, t0 + at + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t0 + at + 0.22);
+                    o.connect(g); g.connect(inboxAudioCtx.destination);
+                    o.start(t0 + at); o.stop(t0 + at + 0.24);
+                });
+            } catch { /* 浏览器不给出声就算了，标题和角标还在 */ }
+        }
+        function inboxNotify(fresh) {
+            if (!fresh.length || !inboxAlertOn()) return;
+            inboxBeep();
+            const r = fresh[0];
+            const head = fresh.length > 1 ? `${fresh.length} 个对话有新消息` : `${r.name || r.phone} 发来消息`;
+            if (!document.hidden) { toast(`碗妈收件箱 · ${head}`); return; }
+            try {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const n = new Notification(`碗妈收件箱 · ${head}`, { body: String(r.lastMsg?.text || '').slice(0, 100), tag: 'incredibowl-inbox' });
+                    n.onclick = () => { window.focus(); inboxJump(r.phone); n.close(); };
+                }
+            } catch { /* file:// 等环境不给桌面通知，标题 + 提示音照常 */ }
+        }
+        /** 拿到新的行数据后：记下各对话最后一条客户消息的时间，挑出「比上次新」的去提醒。 */
+        function inboxTrackIncoming(rows) {
+            const fresh = [];
+            for (const r of rows) {
+                if (!r.lastInMs || r.lastInMs <= (inbox.seenIn[r.phone] || 0)) continue;
+                inbox.seenIn[r.phone] = r.lastInMs;
+                if (inbox.seeded && r.unread > 0 && !inboxWatching(r.phone)) fresh.push(r);
+            }
+            inbox.seeded = true;
+            inboxNotify(fresh);
+        }
+        /** full=true 整份替换；否则按号码并进现有列表（pulse 只带回有新消息的那几条）。 */
+        function inboxSetRows(rows, full) {
+            if (full) inbox.rows = rows;
+            else if (rows.length) {
+                const m = new Map(inbox.rows.map(r => [r.phone, r]));
+                rows.forEach(r => m.set(r.phone, r));
+                inbox.rows = [...m.values()].sort((a, b) => (b.activityMs || b.lastMsgMs || 0) - (a.activityMs || a.lastMsgMs || 0));
+            }
+            inboxTrackIncoming(rows);
+        }
+        /** 连接状态小条：err 为空 = 刚成功更新过。失败时旧数据留着，只提示「连接中断」。 */
+        function inboxConn(err) {
+            if (err) inbox.connErr = err; else { inbox.connErr = ''; inbox.okAt = Date.now(); }
+            const el = $('#inboxConn'); if (!el) return;
+            el.hidden = !inbox.connErr;
+            if (inbox.connErr) el.textContent = `连接中断，自动重试中${inbox.okAt ? ` · 上次更新 ${inboxHm(inbox.okAt)}` : ''}`;
+        }
+
         async function inboxStart() {
-            if (inbox.listTimer) return;
-            await inboxRefreshList();
-            inbox.listTimer = setInterval(inboxRefreshList, INBOX_LIST_MS);
-            if (inbox.phone) inboxStartThreadTimer();
+            if (inbox.listTimer || inbox.starting) return;
+            inbox.starting = true;   // await 期间再点一次侧栏不能再起一个定时器（以前会留下清不掉的）
+            try { await inboxRefreshList(); } finally { inbox.starting = false; }
+            if (state.currentPage !== 'inbox') return;   // 等数据的时候已经切到别的页
+            inbox.listTimer = setInterval(() => { if (!document.hidden) inboxRefreshList(); }, INBOX_LIST_MS);
+            renderInboxAlertBtn();
+            if (inbox.phone) { inboxStartThreadTimer(); inboxRefreshThread(true); }
         }
         function inboxStop() {
             clearInterval(inbox.listTimer); clearInterval(inbox.threadTimer);
@@ -9266,19 +9376,44 @@ incredibowl.my`,
         }
         function inboxStartThreadTimer() {
             clearInterval(inbox.threadTimer);
-            inbox.threadTimer = setInterval(() => { if (inbox.phone) inboxRefreshThread(true); }, INBOX_THREAD_MS);
+            inbox.threadTimer = setInterval(() => { if (inbox.phone && !document.hidden) inboxRefreshThread(true); }, INBOX_THREAD_MS);
         }
 
         async function inboxRefreshList() {
             try {
                 const d = await callAdminAPI('/api/admin/wa-lead', { op: 'list' });
-                inbox.rows = d.rows || [];
+                inboxSetRows(d.rows || [], true);
                 inbox.sendConfigured = !!d.sendConfigured;
+                if (d.now) inbox.pulseSince = d.now - 15000;
+                inboxConn('');
             } catch (err) {
-                $('#inboxList').innerHTML = `<div style="padding:14px;color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
+                // 旧列表留着别清：手机网络抖一下就把整列换成报错，老板会以为没人找
+                inboxConn(err.message);
+                if (!inbox.rows.length) $('#inboxList').innerHTML = `<div style="padding:14px;color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
                 return;
             }
             renderInboxList();
+        }
+
+        /**
+         * 全局轻量轮询：不管停在哪一页、标签页在不在前台都跑，只为两件事 ——
+         * 侧栏未读角标随时是对的、有新客户消息时出声。后端只读「since 之后有新入站」的对话，
+         * 没新消息时一次只算 1 次 Firestore 读取（since=0 的第一次等同整份列表）。
+         */
+        async function inboxPulse() {
+            if (inbox.pulseBusy || !auth.currentUser) return;
+            inbox.pulseBusy = true;
+            try {
+                const d = await callAdminAPI('/api/admin/wa-lead', { op: 'pulse', since: inbox.pulseSince });
+                const rows = d.rows || [];
+                inboxSetRows(rows, !!d.full);
+                if (d.full) inbox.sendConfigured = !!d.sendConfigured;
+                if (d.now) inbox.pulseSince = d.now - 15000;   // 留 15 秒重叠：宁可重复并一次，不能漏
+                if (d.full || rows.length) renderInboxList();
+                // 正在看的线程来了新消息 → 不等 10 秒那一拍
+                if (rows.some(r => r.phone === inbox.phone) && inboxWatching()) inboxRefreshThread(true);
+            } catch { /* 下一轮再来；收件箱页自己的轮询会亮「连接中断」 */ }
+            finally { inbox.pulseBusy = false; }
         }
 
         function renderInboxList() {
@@ -9293,35 +9428,73 @@ incredibowl.my`,
                 if (q && !(r.phone.includes(q) || (r.name || '').toLowerCase().includes(q) || (r.lastMsg?.text || '').toLowerCase().includes(q))) return false;
                 return true;
             });
-            const totalUnread = inbox.rows.reduce((s, r) => s + (r.unread || 0), 0);
-            $('#inboxUnreadCount').textContent = totalUnread ? `(${totalUnread})` : '';
-            const nb = $('#inboxNavBadge'); if (nb) { nb.textContent = totalUnread; nb.hidden = !totalUnread; }
+            inboxUpdateBadges();
             if (!rows.length) { $('#inboxList').innerHTML = '<div class="inbox-thread-empty" style="padding:30px">没有匹配的对话</div>'; return; }
             $('#inboxList').innerHTML = rows.map(r => {
                 const nm = r.name || r.phone;
                 const initial = (r.name || '#').trim().charAt(0).toUpperCase();
                 const who = r.lastMsg ? (r.lastMsg.role === 'in' ? '' : r.lastMsg.role === 'boss' ? '你：' : r.lastMsg.role === 'bc' ? '群发：' : r.lastMsg.role === 'sys' ? '· ' : '碗妈：') : '';
+                // 别的对话里没发出去的草稿：预览换成草稿，提醒老板那边还有半句话
+                const draft = r.phone !== inbox.phone ? inbox.drafts[r.phone] : '';
+                const preview = draft ? `<span style="color:var(--danger)">草稿：</span>${escapeHtml(draft.slice(0, 80))}` : escapeHtml(who + (r.lastMsg?.text || ''));
                 return `<div class="inbox-row${r.unread ? ' unread' : ''}${r.phone === inbox.phone ? ' active' : ''}" data-phone="${r.phone}">
                     <div class="inbox-avatar">${escapeHtml(initial)}</div>
                     <div class="inbox-row-main">
-                        <div class="inbox-row-top"><span class="inbox-row-name">${escapeHtml(nm)}</span><span class="inbox-row-time">${inboxRel(r.lastMsgMs)}</span></div>
-                        <div class="inbox-row-preview">${escapeHtml(who + (r.lastMsg?.text || ''))}</div>
+                        <div class="inbox-row-top"><span class="inbox-row-name">${escapeHtml(nm)}</span><span class="inbox-row-time">${inboxRel(r.activityMs || r.lastMsgMs)}</span></div>
+                        <div class="inbox-row-preview">${preview}</div>
                         <div class="inbox-row-chips">${inboxStatusChips(r)}${r.unread ? `<span class="inbox-unread" style="margin-left:auto">${r.unread}</span>` : ''}</div>
                     </div>
                 </div>`;
             }).join('');
         }
 
+        const INBOX_BACK_BTN = '<button class="btn ghost sm inbox-icon-btn inbox-back" title="回对话列表" aria-label="返回"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>';
+
+        /** 回复框里没发出去的字，按号码记下来（切走再切回还在；不会带到别的客户那边）。 */
+        function inboxStashDraft() {
+            if (!inbox.phone) return;
+            const v = $('#inboxText').value;
+            if (v.trim()) inbox.drafts[inbox.phone] = v; else delete inbox.drafts[inbox.phone];
+        }
+        /** 切线程 / 关线程：回复框恢复干净 —— 引用、附件面板、模板变量都是「上一位客户」的。 */
+        function inboxResetComposer(phone) {
+            inbox.replyTo = null; inbox.replyText = ''; inbox.mode = 'text'; inbox.tplParams = [];
+            $('#inboxText').value = (phone && inbox.drafts[phone]) || '';
+            $('#inboxReplyBar').hidden = true; $('#inboxEmoji').hidden = true; $('#inboxQrEditor').hidden = true;
+            [...$$('.inbox-mode')].forEach(b => b.classList.remove('active'));
+            renderInboxAttach(true);
+            // 新线程的数据回来之前不许发：头部还没换完，这时按发送就是发错人
+            $('#inboxSend').disabled = true;
+        }
+
         async function openInboxThread(phoneRaw) {
             const phone = inboxIntl(phoneRaw);
             if (!phone) return;
-            inbox.phone = phone; inbox.stickBottom = true;
+            // 已经开着的就只把它显示出来（手机从列表点回同一个对话），草稿原样
+            if (phone === inbox.phone && inbox.detail) { inboxMobileThread(true); inboxRefreshThread(true); return; }
+            inboxStashDraft();
+            inbox.phone = phone; inbox.detail = null; inbox.stickBottom = true; inbox.profilePhone = '';
+            inboxResetComposer(phone);
+            const row = inbox.rows.find(r => r.phone === phone);
             $('#inboxEmpty').hidden = true; $('#inboxHead').hidden = false; $('#inboxMsgs').hidden = false; $('#inboxComposer').hidden = false;
-            inboxMobileThread(true);
+            $('#inboxHead').innerHTML = `${INBOX_BACK_BTN}<div class="inbox-head-id"><div class="inbox-head-name">${escapeHtml(row?.name || phone)}</div><div class="inbox-head-sub">加载中…</div></div>`;
             $('#inboxMsgs').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
-            $$('.inbox-row').forEach(el => el.classList.toggle('active', el.dataset.phone === phone));
+            $('#inboxProfile').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
+            inboxMobileThread(true);
+            renderInboxList();
             await inboxRefreshThread(false);
-            inboxStartThreadTimer();
+            if (inbox.phone === phone) inboxStartThreadTimer();
+        }
+        /** 关掉线程回到列表（手机的 ← / 「标为未读」后）。线程不在屏幕上就不该继续轮询、更不该标已读。 */
+        function inboxCloseThread() {
+            inboxStashDraft();
+            clearInterval(inbox.threadTimer); inbox.threadTimer = null;
+            inbox.phone = ''; inbox.detail = null; inbox.profilePhone = '';
+            inboxResetComposer('');
+            $('#inboxEmpty').hidden = false; $('#inboxHead').hidden = true; $('#inboxMsgs').hidden = true; $('#inboxComposer').hidden = true;
+            $('#inboxProfile').innerHTML = '<div class="inbox-thread-empty">客户档案</div>';
+            inboxMobileThread(false);
+            renderInboxList();
         }
         function inboxJump(phoneRaw) { switchPage('inbox'); openInboxThread(phoneRaw); }
 
@@ -9344,14 +9517,22 @@ incredibowl.my`,
             const phone = inbox.phone;
             let d;
             try { d = await callAdminAPI('/api/admin/wa-lead', { op: 'get', phone }); }
-            catch (err) { if (!silent) $('#inboxMsgs').innerHTML = `<div style="color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`; return; }
+            catch (err) {
+                if (inbox.phone !== phone) return;
+                if (silent) { inboxConn(err.message); return; }
+                $('#inboxMsgs').innerHTML = `<div style="color:var(--danger)">读取失败：${escapeHtml(err.message)}</div>`;
+                const sub = document.querySelector('#inboxHead .inbox-head-sub'); if (sub) sub.textContent = '读取失败，点左边的对话重试';
+                return;
+            }
             if (inbox.phone !== phone) return;   // 用户已切到别的线程
+            inboxConn('');
             const prevCount = inbox.detail?.turns?.length || 0;
             inbox.detail = d;
             renderInboxHead(d); renderInboxMsgs(d, prevCount); renderInboxComposer(d); renderInboxProfile(d);
-            // 标已读：有新的客户消息才写，避免每 10 秒白打一次
+            // 标已读：有新的客户消息、而且老板真的在看这个线程才写（见 inboxWatching）。
+            // 标签页在后台 / 手机已回到列表时不标 —— 未读数留着，客户那边也不会变蓝勾。
             const unreadIn = (d.turns || []).some(t => t.role === 'in' && t.ts > (d.bossReadAtMs || 0));
-            if (unreadIn) {
+            if (unreadIn && inboxWatching(phone)) {
                 callAdminAPI('/api/admin/wa-lead', { op: 'read', phone }).then(() => {
                     const row = inbox.rows.find(r => r.phone === phone); if (row) { row.unread = 0; renderInboxList(); }
                 }).catch(() => { /* 下次刷新会再试 */ });
@@ -9362,8 +9543,8 @@ incredibowl.my`,
             const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600"><i class="inbox-dot" style="background:var(--danger)"></i>人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600"><i class="inbox-dot" style="background:var(--success)"></i>bot 接待中</span>';
             const nudge = d.status === 'ordered' ? waOrderedLabel(d) : d.status === 'closed' ? '已关闭' : d.nudgeOff ? '追单已停' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
             $('#inboxHead').innerHTML = `
-                <button class="btn ghost sm inbox-icon-btn inbox-back" title="回对话列表" aria-label="返回"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-                <div style="min-width:0;flex:1">
+                ${INBOX_BACK_BTN}
+                <div class="inbox-head-id">
                     <div class="inbox-head-name">${escapeHtml(d.name || '（无名字）')} <span style="font-weight:400;color:var(--text-muted);font-size:12px">${escapeHtml(d.phone)}${d.lang ? ' · ' + escapeHtml(d.lang) : ''}</span></div>
                     <div class="inbox-head-sub">${humanLine} · ${nudge}</div>
                 </div>
@@ -9486,20 +9667,15 @@ incredibowl.my`,
                 if (k === 'preferredMeal' && v) v = v === 'dinner' ? '晚餐' : '午餐';
                 return v ? `<div class="inbox-kv"><span>${label}</span><span style="text-align:right">${escapeHtml(String(v))}</span></div>` : '';
             }).filter(Boolean).join('') || '<div style="color:var(--text-muted)">（还没有备注）</div>';
-            $('#inboxProfile').innerHTML = `
-                <div>
-                    <div class="inbox-section-title">客户</div>
-                    <div class="inbox-kv"><span>名字</span><span>${escapeHtml(user?.displayName || d.name || '—')}</span></div>
-                    <div class="inbox-kv"><span>电话</span><span>${escapeHtml(d.phone)}</span></div>
-                    <div class="inbox-kv"><span>账号</span><span>${user ? (user.email ? escapeHtml(user.email) : '会员') : '未注册 / 访客'}</span></div>
-                    <div class="inbox-kv"><span>已付订单</span><span>${orders.length} 单 · RM${spent.toFixed(0)}</span></div>
-                    <div class="inbox-kv"><span>最近下单</span><span>${lastOrder ? `${lastOrder.getMonth() + 1}/${lastOrder.getDate()}` : '—'}</span></div>
-                    ${addr ? `<div class="inbox-kv"><span>地址</span><span style="text-align:right">${escapeHtml(String(addr)).slice(0, 80)}</span></div>` : ''}
-                    <div class="inbox-kv"><span>Lead 状态</span><span>${escapeHtml(d.status || '—')}${d.clicked ? ' · 点过链接' : ''}</span></div>
-                </div>
+            // 备注表单每个号码只画一次：线程每 10 秒刷新一次，整段重画会把老板正在打的备注清空。
+            // 会变的内容（客户信息 / 已有备注）放进两个容器里单独更新。
+            if (inbox.profilePhone !== d.phone || !$('#inboxProfileInfo')) {
+                inbox.profilePhone = d.phone;
+                $('#inboxProfile').innerHTML = `
+                <div id="inboxProfileInfo"></div>
                 <div>
                     <div class="inbox-section-title">备注（bot 会引用）</div>
-                    ${profileRows}
+                    <div id="inboxProfileNotes"></div>
                     <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
                         <select id="inboxNoteKey" style="padding:6px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--bg-input);font-size:12px">
                             ${Object.entries(WA_PROFILE_LABEL).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}
@@ -9509,6 +9685,17 @@ incredibowl.my`,
                     </div>
                 </div>
                 <div style="color:var(--text-muted);font-size:11px">线程保留最近 200 条；更早的在「客户对话」页（Google Sheet 全量）。</div>`;
+            }
+            $('#inboxProfileInfo').innerHTML = `
+                    <div class="inbox-section-title">客户</div>
+                    <div class="inbox-kv"><span>名字</span><span>${escapeHtml(user?.displayName || d.name || '—')}</span></div>
+                    <div class="inbox-kv"><span>电话</span><span>${escapeHtml(d.phone)}</span></div>
+                    <div class="inbox-kv"><span>账号</span><span>${user ? (user.email ? escapeHtml(user.email) : '会员') : '未注册 / 访客'}</span></div>
+                    <div class="inbox-kv"><span>已付订单</span><span>${orders.length} 单 · RM${spent.toFixed(0)}</span></div>
+                    <div class="inbox-kv"><span>最近下单</span><span>${lastOrder ? `${lastOrder.getMonth() + 1}/${lastOrder.getDate()}` : '—'}</span></div>
+                    ${addr ? `<div class="inbox-kv"><span>地址</span><span style="text-align:right">${escapeHtml(String(addr)).slice(0, 80)}</span></div>` : ''}
+                    <div class="inbox-kv"><span>Lead 状态</span><span>${escapeHtml(d.status || '—')}${d.clicked ? ' · 点过链接' : ''}</span></div>`;
+            $('#inboxProfileNotes').innerHTML = profileRows;
         }
 
         /** 把三个模式的输入拼成 /api/admin/wa-lead op=send 的 body。返回字符串 = 本地就能报的错。 */
@@ -9560,24 +9747,35 @@ incredibowl.my`,
 
         async function inboxSend() {
             const ta = $('#inboxText'), btn = $('#inboxSend');
+            const phone = inbox.phone;   // 锁定收件人：等 Meta 的那几秒里老板可能已经点到别的对话
+            if (!phone || btn.disabled) return;
             const text = ta.value.trim();
-            if (!inbox.phone) return;
             const body = inboxSendBody(text);
             if (typeof body === 'string') { toast(body, 'error'); return; }
             btn.disabled = true; ta.disabled = true;
+            let failed = '';
             try {
                 const r = await callAdminAPI('/api/admin/wa-lead', body);
-                if (!r.ok) { toast(r.error || '发送失败', 'error'); btn.disabled = false; ta.disabled = false; return; }
-                ta.value = '';
+                if (!r.ok) failed = r.error || '发送失败';
+            } catch (err) { failed = '发送失败：' + err.message; }
+            const still = inbox.phone === phone;
+            if (failed) {
+                toast(failed, 'error');
+                // 没发出去：字留着。已经切走的话，那段字在 inbox.drafts[phone] 里（切换时存的）
+                if (still) { ta.disabled = false; btn.disabled = false; if (inbox.detail) renderInboxComposer(inbox.detail); }
+                return;
+            }
+            delete inbox.drafts[phone];
+            toast('已发送 · bot 已静音 2 小时', 'success');
+            if (still) {
+                ta.value = ''; ta.disabled = false; btn.disabled = false;
                 inbox.replyTo = null; inbox.replyText = '';
                 inbox.mode = 'text';
-                toast('已发送 · bot 已静音 2 小时', 'success');
                 inbox.stickBottom = true;
+                if (inbox.detail) renderInboxComposer(inbox.detail);   // 下面的刷新就算失败，发送键也不会一直灰着
                 await inboxRefreshThread(true);
-                inboxRefreshList();
-            } catch (err) {
-                toast('发送失败：' + err.message, 'error'); btn.disabled = false; ta.disabled = false;
             }
+            inboxRefreshList();
         }
 
         document.addEventListener('click', async (e) => {
@@ -9615,7 +9813,18 @@ incredibowl.my`,
             if (e.target.id === 'inboxEmojiBtn') { const p = $('#inboxEmoji'); p.hidden = !p.hidden; if (!p.hidden) renderInboxEmoji(); return; }
             const emojiBtn = e.target.closest('#inboxEmoji button');
             if (emojiBtn) { inboxInsertEmoji(emojiBtn.dataset.e); return; }
-            if (e.target.closest('.inbox-back')) { inboxMobileThread(false); return; }
+            if (e.target.closest('.inbox-back')) { inboxCloseThread(); return; }
+            if (e.target.closest('#inboxAlertBtn')) {
+                const on = !inboxAlertOn();
+                try { localStorage.setItem(INBOX_ALERT_KEY, on ? '1' : '0'); } catch { /* noop */ }
+                renderInboxAlertBtn();
+                if (on) {
+                    inboxBeep();   // 让老板听一下是什么声音；同时借这次点击解锁浏览器的音频
+                    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch { /* noop */ }
+                }
+                toast(on ? '新消息提醒已打开（提示音 + 标题角标）' : '新消息提醒已关闭（角标照常）', 'success');
+                return;
+            }
             if (e.target.closest('.inbox-profile-btn')) { inboxMobileProfile(true); return; }
             if (e.target.closest('#inboxProfileClose') || e.target.id === 'inboxSheetBackdrop') { inboxMobileProfile(false); return; }
             if (e.target.id === 'inboxQrEditBtn') { $('#inboxQrText').value = inboxQuickReplies().join('\n'); $('#inboxQrEditor').hidden = false; return; }
@@ -9640,9 +9849,15 @@ incredibowl.my`,
             if (e.target.id === 'inboxNoteSave' && inbox.phone) {
                 const key = $('#inboxNoteKey').value, value = $('#inboxNoteValue').value.trim();
                 if (!value) { toast('备注不能为空', 'error'); return; }
-                e.target.disabled = true;
-                try { await callAdminAPI('/api/admin/wa-lead', { op: 'note', phone: inbox.phone, key, value }); toast('备注已保存，碗妈下次对话就会用上', 'success'); await inboxRefreshThread(true); }
-                catch (err) { toast('保存失败：' + err.message, 'error'); e.target.disabled = false; }
+                const btn = e.target;
+                btn.disabled = true;
+                try {
+                    await callAdminAPI('/api/admin/wa-lead', { op: 'note', phone: inbox.phone, key, value });
+                    toast('备注已保存，碗妈下次对话就会用上', 'success');
+                    const inp = $('#inboxNoteValue'); if (inp) inp.value = '';   // 表单不再随轮询重画，要自己清
+                    await inboxRefreshThread(true);
+                } catch (err) { toast('保存失败：' + err.message, 'error'); }
+                finally { btn.disabled = false; }
             }
         });
         document.addEventListener('change', (e) => {
@@ -9666,6 +9881,19 @@ incredibowl.my`,
         document.addEventListener('keydown', (e) => {
             if (e.target.id === 'inboxText' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); inboxSend(); }
         });
+        // 回到前台：马上追平（后台期间线程轮询是停的），顺带把正在看的线程标已读
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden || state.currentPage !== 'inbox') return;
+            inboxRefreshList();
+            if (inbox.phone) inboxRefreshThread(true);
+        });
+        // 全局轮询：登录后 4 秒内先拿一次整份列表（角标马上对），之后每 30 秒一拍
+        setInterval(inboxPulse, INBOX_PULSE_MS);
+        let inboxSeedTries = 0;
+        const inboxSeedTimer = setInterval(() => {
+            if (inbox.seeded || inboxSeedTries >= 15) { clearInterval(inboxSeedTimer); return; }   // 一直失败就交给 30 秒那一拍，别 4 秒一次打到天荒地老
+            if (auth.currentUser) { inboxSeedTries++; inboxPulse(); }
+        }, 4000);
 
         // Centralized launcher — guards against unconfigured promo before opening WA.
         function launchPromo(category, phoneNorm, ctx = {}) {
