@@ -760,6 +760,11 @@
         .inbox-composer-row select { flex: 1; min-width: 160px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--bg-input); font-size: 12px; }
         .inbox-window { font-size: 11px; color: var(--text-muted); }
         .inbox-window.closed { color: var(--danger); font-weight: 600; }
+        /* 发送键左边那一行：窗口倒计时在前（最要紧），提示在后，放不下就省略 —— 发送键永远留在屏幕里 */
+        .inbox-hintline { flex: 1 1 0; min-width: 0; display: flex; gap: 8px; white-space: nowrap; overflow: hidden; }
+        .inbox-hintline #inboxWindow { flex: 0 0 auto; }
+        .inbox-hintline #inboxSendHint { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+        .inbox-fail { display: block; margin-top: 3px; font-size: 11px; color: var(--danger); }
         .inbox-right { padding: 12px; overflow-y: auto; gap: 12px; font-size: 12px; }
         .inbox-section-title { font-weight: 600; font-size: 11px; letter-spacing: 0.04em; color: var(--text-muted); margin-bottom: 6px; }
         /* 收件箱内的按钮层级：每区一个实心主按钮，其余 ghost = 透明底细边框，hover 才上底色 */
@@ -816,13 +821,14 @@
             .inbox-composer-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
             .inbox-composer-row::-webkit-scrollbar { display: none; }
             .inbox-composer-row > * { flex: 0 0 auto; }
+            .inbox-composer-row > .inbox-hintline { flex: 1 1 0; }
             .inbox-composer-row select { flex: 1 1 140px; min-width: 120px; font-size: 14px; }
             .inbox-icon-btn { width: 36px; height: 36px; }
             .inbox-attach input, .inbox-attach select { font-size: 16px; }
             #inboxSend { padding: 10px 18px; font-size: 14px; }
             /* 客户档案：底部抽屉 */
             .inbox-right { display: none; }
-            .inbox-wrap.profile-open .inbox-right { display: flex; position: fixed; left: 0; right: 0; bottom: 0; max-height: 78dvh; z-index: 160; border-radius: 16px 16px 0 0; border-bottom: 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.18); padding: 0 14px calc(14px + env(safe-area-inset-bottom)); }
+            .inbox-wrap.profile-open .inbox-right { display: flex; position: fixed; left: 0; right: 0; bottom: 0; height: auto; max-height: 78dvh; z-index: 160; border-radius: 16px 16px 0 0; border-bottom: 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.18); padding: 0 14px calc(14px + env(safe-area-inset-bottom)); }
             .inbox-wrap.profile-open .inbox-sheet-bar { display: flex; position: sticky; top: 0; background: var(--bg-elev); z-index: 1; align-items: center; justify-content: space-between; padding: 10px 0 8px; border-bottom: 1px solid var(--border); font-weight: 700; font-size: 13px; }
             .inbox-sheet-backdrop { position: fixed; inset: 0; background: rgba(20, 30, 25, 0.35); z-index: 155; }
             .inbox-wrap.profile-open .inbox-sheet-backdrop { display: block; }
@@ -1930,7 +1936,6 @@
                                     <button class="btn ghost sm inbox-icon-btn inbox-mode" data-mode="list" title="发列表（最多 10 项）"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
                                     <button class="btn ghost sm inbox-icon-btn" id="inboxEmojiBtn" title="插入表情"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
                                     <button class="btn ghost sm inbox-icon-btn" id="inboxLinkBtn" title="插入下单链接（带这条对话的标识：客户点了、下了单都归得回来）" aria-label="插入下单链接"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
-                                    <span class="inbox-window" id="inboxWindow"></span>
                                 </div>
                                 <div id="inboxEmoji" class="inbox-emoji" hidden></div>
                                 <div id="inboxQrEditor" hidden>
@@ -1944,7 +1949,7 @@
                                 <div id="inboxAttach" class="inbox-attach" hidden></div>
                                 <textarea id="inboxText" placeholder="输入回复，Ctrl+Enter 发送"></textarea>
                                 <div class="inbox-composer-row" style="justify-content:space-between">
-                                    <span id="inboxSendHint" class="inbox-window"></span>
+                                    <span class="inbox-hintline"><span class="inbox-window" id="inboxWindow"></span><span id="inboxSendHint" class="inbox-window"></span></span>
                                     <button class="btn sm" id="inboxSend">发送</button>
                                 </div>
                             </div>
@@ -9225,7 +9230,8 @@ incredibowl.my`,
                 <div class="inbox-attach-title">24 小时窗口已过，只能发 Meta 审核过的模板</div>
                 <select id="inboxTplName">${st.templates.map(x => `<option value="${escapeHtml(x.name)}"${x.name === t.name ? ' selected' : ''}>${escapeHtml(x.name)}（${escapeHtml(x.lang)}）</option>`).join('')}</select>
                 ${params.map((v, i) => `<input class="inbox-tpl-param" data-i="${i}" placeholder="变量 {{${i + 1}}}" value="${escapeHtml(v)}">`).join('')}
-                <div style="font-size:11px;color:var(--text-muted);white-space:pre-wrap;border-top:1px solid var(--border);padding-top:6px">${escapeHtml(inboxTplPreview(t, params))}</div>`;
+                <div class="inbox-attach-title" style="border-top:1px solid var(--border);padding-top:6px">客户会看到：</div>
+                <div id="inboxTplPreview" style="font-size:11px;color:var(--text-muted);white-space:pre-wrap">${escapeHtml(inboxTplPreview(t, params))}</div>`;
         }
 
         function inboxTplPreview(t, params) {
@@ -9603,12 +9609,19 @@ incredibowl.my`,
             $('#inboxMsgs').dataset.sig = '';   // 手动换过内容了：下次渲染不能被「内容没变就不重画」挡住
             $('#inboxProfile').innerHTML = '<div class="inbox-thread-empty">加载中…</div>';
             inboxMobileThread(true);
+            // 手机：记一条历史，这样按系统返回键 / 侧滑是回到对话列表，而不是直接离开 dashboard
+            try { if (inboxIsMobile() && !(history.state && history.state.inboxThread)) history.pushState({ inboxThread: true }, ''); } catch { /* noop */ }
             renderInboxList();
             await inboxRefreshThread(false);
             if (inbox.phone === phone) inboxStartThreadTimer();
         }
-        /** 关掉线程回到列表（手机的 ← / 「标为未读」后）。线程不在屏幕上就不该继续轮询、更不该标已读。 */
-        function inboxCloseThread() {
+        /**
+         * 关掉线程回到列表（手机的 ← / 系统返回键 / 「标为未读」后）。线程不在屏幕上就不该继续轮询、更不该标已读。
+         * 开线程时压过一条历史的话，先把它退掉 —— popstate 会带着 fromHistory=true 回到这里做真正的关闭，
+         * 这样「界面上的 ←」和「系统返回键」走的是同一条路，历史里不会留下多余的一格。
+         */
+        function inboxCloseThread(fromHistory) {
+            if (!fromHistory && history.state && history.state.inboxThread) { history.back(); return; }
             inboxStashDraft();
             clearInterval(inbox.threadTimer); inbox.threadTimer = null;
             inbox.phone = ''; inbox.detail = null; inbox.profilePhone = '';
@@ -9662,6 +9675,17 @@ incredibowl.my`,
             }
         }
 
+        /**
+         * 「接管到早上 9 点」要接管多少分钟。以前按钮写「接管到明早」实际是固定 12 小时 ——
+         * 上午点只到晚上、晚上 10 点点又多管到上午 10 点。离 9 点不到 1 小时（比如 08:30）就算到下一个 9 点。
+         */
+        function inboxMorning(now = new Date()) {
+            const t = new Date(now); t.setHours(9, 0, 0, 0);
+            if (t.getTime() - now.getTime() < 60 * 60000) t.setDate(t.getDate() + 1);
+            const sameDay = t.getDate() === now.getDate();
+            return { minutes: Math.min(1440, Math.max(1, Math.round((t.getTime() - now.getTime()) / 60000))), label: sameDay ? '接管到今早 9 点' : '接管到明早 9 点' };
+        }
+
         function renderInboxHead(d) {
             const humanLine = d.human ? `<span style="color:var(--danger);font-weight:600"><i class="inbox-dot" style="background:var(--danger)"></i>人工接管中</span> · 到 ${waFmtTs(d.humanUntil)}` : '<span style="color:var(--success);font-weight:600"><i class="inbox-dot" style="background:var(--success)"></i>bot 接待中</span>';
             const nudge = d.status === 'ordered' ? waOrderedLabel(d) : d.status === 'closed' ? '已关闭' : d.nudgeOff ? '追单已停' : `已追 ${d.nudgeCount} 次${d.nextNudgeMs ? ` · 下次 ${waFmtTs(d.nextNudgeMs)}` : ''}`;
@@ -9675,7 +9699,7 @@ incredibowl.my`,
                 <div class="inbox-head-actions">
                     ${d.human
                         ? '<button class="btn sm inbox-act" data-op="release">交回 bot</button>'
-                        : '<button class="btn sm inbox-act" data-op="human" data-minutes="120">接管 2 小时</button><button class="btn ghost sm inbox-act" data-op="human" data-minutes="720">接管到明早</button>'}
+                        : `<button class="btn sm inbox-act" data-op="human" data-minutes="120">接管 2 小时</button><button class="btn ghost sm inbox-act" data-op="human" data-until="morning" title="bot 静音到早上 9 点">${inboxMorning().label}</button>`}
                     ${waOutcomeButtons(d, 'inbox-act')}
                     ${(d.turns || []).some(t => t.role === 'in') ? '<button class="btn ghost sm inbox-act" data-op="unread" title="现在没空回：放回「未读」，角标也算上（客户那边的已读收不回来）">标为未读</button>' : ''}
                     <a class="btn ghost sm" href="https://wa.me/${d.phone}" target="_blank" rel="noopener" title="在 WhatsApp 里打开">WhatsApp <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
@@ -9724,7 +9748,9 @@ incredibowl.my`,
                         : `<div class="inbox-media-file">${label}</div>`;
                 }
                 const act = t.msgId ? `<span class="act inbox-quote-btn" data-msgid="${escapeHtml(t.msgId)}" title="引用回复">引用</span>` : '';
-                return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${inboxLinkify(escapeHtml(t.text))}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
+                // 没送达的原因直接写出来：以前只在 title 里，手机上根本看不到
+                const fail = t.status === 'failed' && role !== 'in' ? `<span class="inbox-fail">没送到客户手上：${escapeHtml(t.err || '原因未知')}</span>` : '';
+                return `${sep}<div class="inbox-bubble ${role}">${act}${who[role] ? `<span class="who">${who[role]}</span>` : ''}${quote}${media}${inboxLinkify(escapeHtml(t.text))}${fail}<span class="t">${inboxHm(t.ts)}${inboxTick(t)}</span></div>`;
             }).join('');
             inboxHydrateMedia();
             if (inbox.stickBottom || nearBottom || turns.length !== prevCount) box.scrollTop = box.scrollHeight;
@@ -9734,15 +9760,18 @@ incredibowl.my`,
         function renderInboxComposer(d) {
             const win = $('#inboxWindow'), hint = $('#inboxSendHint'), btn = $('#inboxSend'), ta = $('#inboxText');
             const rem = d.windowRemainingMs || 0;
-            if (rem > 0) { const h = Math.floor(rem / 3600000), m = Math.floor((rem % 3600000) / 60000); win.textContent = `24h 窗口开着 · 还剩 ${h}h${m}m`; win.className = 'inbox-window'; }
-            else { win.textContent = '24h 窗口已过 · 只能你手机直接发'; win.className = 'inbox-window closed'; }
+            if (rem > 0) { const h = Math.floor(rem / 3600000), m = Math.floor((rem % 3600000) / 60000); win.textContent = `窗口还剩 ${h}h${m}m`; win.className = 'inbox-window'; win.title = '客户最后一条消息起 24 小时内可以自由回复'; }
+            else { win.textContent = d.sendConfigured ? '24h 窗口已过 · 只能发模板' : '24h 窗口已过'; win.className = 'inbox-window closed'; win.title = '窗口外 Meta 只允许发审核过的模板（按条计费）'; }
             // 窗口过了不再是死路：改用模板（Meta 唯一允许的窗口外消息）
             const tplMode = rem <= 0 && d.sendConfigured;
             if (tplMode) { inboxLoadTemplates(); inbox.mode = 'template'; }
             else if (inbox.mode === 'template') inbox.mode = 'text';
             const hasTpl = tplMode && !!(inboxTemplates?.templates || []).length;
             const canSend = d.sendConfigured && (rem > 0 || hasTpl);
-            btn.disabled = !canSend; ta.disabled = !canSend && !tplMode;
+            // 模板模式下输入框锁住：模板只发上面的变量，这里打的字不会发出去（以前能打、发完还被清空 = 静默丢字）。
+            // 框里已有的草稿原样留着，等客户回了、窗口重开再发。
+            btn.disabled = !canSend; ta.disabled = !canSend || tplMode;
+            ta.placeholder = tplMode ? '模板模式：这里的文字不会发出，请填上面的变量' : '输入回复，Ctrl+Enter 发送';
             btn.textContent = tplMode ? '发送模板' : '发送';
             hint.textContent = !d.sendConfigured ? 'Vercel 还没配 WA_ACCESS_TOKEN，暂时不能从这里发（其它功能正常）'
                 : tplMode ? (hasTpl ? '模板消息按条计费，发出去就会重开 24 小时窗口' : '还没有已过审模板')
@@ -9976,10 +10005,13 @@ incredibowl.my`,
                 if (still) { ta.disabled = false; btn.disabled = false; if (inbox.detail) renderInboxComposer(inbox.detail); }
                 return;
             }
-            delete inbox.drafts[phone];
-            toast('已发送 · bot 已静音 2 小时', 'success');
+            const wasTemplate = !!body.template;   // 模板发的是变量，回复框里的草稿没发出去 → 留着
+            if (!wasTemplate) delete inbox.drafts[phone];
+            toast(wasTemplate ? '模板已发送 · bot 已静音 2 小时' : '已发送 · bot 已静音 2 小时', 'success');
             if (still) {
-                ta.value = ''; ta.disabled = false; btn.disabled = false;
+                if (!wasTemplate) ta.value = '';
+                else inbox.tplParams = [];
+                ta.disabled = false; btn.disabled = false;
                 inbox.replyTo = null; inbox.replyText = '';
                 inbox.mode = 'text'; inbox.upload = null;
                 inbox.stickBottom = true;
@@ -10072,7 +10104,8 @@ incredibowl.my`,
                 if (!waActConfirm(op)) return;
                 act.disabled = true;
                 try {
-                    await callAdminAPI('/api/admin/wa-lead', { op, phone: inbox.phone, minutes: Number(act.dataset.minutes) || undefined });
+                    const minutes = act.dataset.until === 'morning' ? inboxMorning().minutes : (Number(act.dataset.minutes) || undefined);
+                    await callAdminAPI('/api/admin/wa-lead', { op, phone: inbox.phone, minutes });
                     toast(WA_ACT_TOAST[op] || '已更新', 'success');
                     // 标为未读：线程得关掉，不然下一拍轮询又把它标回已读
                     if (op === 'unread') { inboxCloseThread(); inboxRefreshList(); return; }
@@ -10166,10 +10199,27 @@ incredibowl.my`,
             }
         });
         document.addEventListener('input', (e) => {
-            if (e.target.id === 'inboxSearch') { inbox.q = e.target.value; renderInboxList(); }
+            if (e.target.id === 'inboxSearch') { inbox.q = e.target.value; renderInboxList(); return; }
+            // 模板变量：边打边记、边更新预览（以前预览永远停在 {{1}}，而且面板一重画填的就没了）
+            if (e.target.classList?.contains('inbox-tpl-param')) {
+                inbox.tplParams[Number(e.target.dataset.i) || 0] = e.target.value;
+                const t = (inboxTemplates?.templates || []).find(x => x.name === inbox.tpl);
+                const pv = $('#inboxTplPreview');
+                if (t && pv) pv.textContent = inboxTplPreview(t, inbox.tplParams.map(v => String(v || '').trim()));
+            }
         });
         document.addEventListener('keydown', (e) => {
             if (e.target.id === 'inboxText' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); inboxSend(); }
+        });
+        // 手机系统返回键：先收档案抽屉（再压回一格，下一次返回才关线程），否则关线程回列表
+        window.addEventListener('popstate', () => {
+            const w = document.querySelector('.inbox-wrap');
+            if (w && w.classList.contains('profile-open')) {
+                inboxMobileProfile(false);
+                try { history.pushState({ inboxThread: true }, ''); } catch { /* noop */ }
+                return;
+            }
+            if (inbox.phone || (w && w.classList.contains('thread-open'))) inboxCloseThread(true);
         });
         // 回到前台：马上追平（后台期间线程轮询是停的），顺带把正在看的线程标已读
         document.addEventListener('visibilitychange', () => {

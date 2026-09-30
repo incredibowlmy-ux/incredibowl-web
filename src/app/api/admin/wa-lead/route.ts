@@ -343,11 +343,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (op === 'human') {
-      const minutes = Math.min(720, Math.max(1, Number(body?.minutes) || 120));
+      // 上限 24 小时：收件箱的「接管到早上 9 点」按真实分钟数来（上午点要管到第二天早上，超过原来的 12 小时）
+      const minutes = Math.min(1440, Math.max(1, Number(body?.minutes) || 120));
       const humanUntil = now + minutes * 60 * 1000;
       await mutateLead(ref, (cur) => ({
         phone, humanUntil, humanBy: 'dashboard', humanSetAtMs: now, updatedAtMs: now,
-        turns: appendTurn(cur.turns, 'sys', `老板在 dashboard 接管 ${minutes} 分钟，bot 静音`, now),
+        turns: appendTurn(cur.turns, 'sys', `老板在 dashboard 接管 ${minutes > 180 ? `约 ${Math.round(minutes / 60)} 小时` : `${minutes} 分钟`}，bot 静音`, now),
       }));
       return corsify(NextResponse.json({ ok: true, humanUntil }));
     }

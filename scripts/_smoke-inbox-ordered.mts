@@ -195,6 +195,17 @@ try {
     ck('send(上传)：没配 token → 明确告知未配置，不报 500', up.http === 200 && up.ok === false && up.configured === false, up);
   }
 
+  console.log('\n=== 10. 接管时长（第 3 批）===');
+  {
+    const t0 = Date.now();
+    let h = await post('/api/admin/wa-lead', signIn.idToken, { op: 'human', phone: PHONE, minutes: 1000 });
+    ck('接管 1000 分钟（上午点「接管到明早 9 点」）→ 不再被截到 12 小时', Math.abs(h.humanUntil - (t0 + 1000 * 60000)) < 15000, h.humanUntil - t0);
+    ck('系统行写成「约 17 小时」而不是 1000 分钟', /约 17 小时/.test((await doc()).turns.at(-1)?.text || ''), (await doc()).turns.at(-1)?.text);
+    h = await post('/api/admin/wa-lead', signIn.idToken, { op: 'human', phone: PHONE, minutes: 5000 });
+    ck('上限 24 小时', Math.abs(h.humanUntil - (Date.now() + 1440 * 60000)) < 15000, h.humanUntil - Date.now());
+    await op('release');
+  }
+
   console.log('\n=== 6. 护栏 ===');
   r = await op('ordered', GHOST);
   ck('没有对话记录的号码 → 404，不建档', r.http === 404 && !(await db.collection('waLeads').doc(GHOST).get()).exists, r);

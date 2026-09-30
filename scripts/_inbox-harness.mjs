@@ -35,7 +35,7 @@ if (cmd === 'seed') {
     const docs = [
         base('60000000021', 'SMOKE 阿明', {   // bot 接待中、有 1 条未读
             lastMsgMs: now - 12 * M, bossReadAtMs: now - 30 * M,
-            turns: [t('in', '你好，今天有什么菜', 40 * M), t('out', '今天有香煎鸡扒饭和白萝卜焖花肉哦', 39 * M), t('in', '鸡扒多少钱', 12 * M, { msgId: 'wamid.SMK21' }), t('out', 'RM12.90，要帮你下单吗？', 11 * M, { msgId: 'wamid.SMK21o', status: 'delivered' })],
+            turns: [t('in', '你好，今天有什么菜', 40 * M), t('out', '今天有香煎鸡扒饭和白萝卜焖花肉哦', 39 * M), t('in', '鸡扒多少钱', 12 * M, { msgId: 'wamid.SMK21' }), t('out', 'RM12.90，要帮你下单吗？', 11 * M, { msgId: 'wamid.SMK21o', status: 'delivered' }), t('nudge', '还在考虑吗？今天 6 点前下单明天就能吃到', 10 * M, { msgId: 'wamid.SMK21n', status: 'failed', err: 'Meta 131026: Message undeliverable' })],
             profile: { nickname: '阿明', tags: ['常客'], notes: ['放 guard house'] },
         }),
         base('60000000022', 'SMOKE Bella', {  // 人工接管中、客户说了最后一句
@@ -147,7 +147,9 @@ window.__calls = []; window.__sendDelay = 1200; window.__sendFail = false; windo
 window.addEventListener('error', e => window.__errors.push(String(e.message)));
 window.addEventListener('unhandledrejection', e => window.__errors.push('rejection: ' + String(e.reason?.message || e.reason)));
 async function callAdminAPI(path, body) {
-    window.__calls.push({ path, op: body.op, phone: body.phone || '', at: Date.now(), hidden: document.hidden });
+    window.__calls.push({ path, op: body.op, phone: body.phone || '', minutes: body.minutes, at: Date.now(), hidden: document.hidden });
+    // 本机没有 WA token，模板清单用假的（只为了把「窗口外发模板」的界面跑起来）
+    if (body.op === 'templates') return { configured: true, templates: [{ name: 'order_followup_v1', lang: 'zh_CN', bodyText: '你好 {{1}}，上次看的 {{2}} 还需要吗？', paramCount: 2 }, { name: 'weekly_menu_v2', lang: 'en', bodyText: 'Hi {{1}}, this week\\'s menu is out.', paramCount: 1 }] };
     const ph = String(body.phone || '').replace(/\\D/g, '');
     if (ph && !SYN.test(ph)) throw new Error('harness：只允许合成号码');
     if (window.__offline) throw new Error('模拟断网');
@@ -180,7 +182,7 @@ ${helpers}
 ${inboxJs}
 $('#hOther').onclick = () => switchPage('revenue');
 $('#hInbox').onclick = () => switchPage('inbox');
-window.__inbox = inbox; window.__fn = { inboxPulse, inboxRefreshList, inboxRefreshThread, openInboxThread, inboxWatching, inboxCloseThread };
+window.__inbox = inbox; window.__fn = { inboxPulse, inboxRefreshList, inboxRefreshThread, openInboxThread, inboxWatching, inboxCloseThread, inboxMorning, inboxMatches };
 switchPage('inbox');
 </script></body></html>`;
 fs.mkdirSync(path.dirname(outArg), { recursive: true });
